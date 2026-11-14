@@ -261,6 +261,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The ExternalEvent stays, so a later <see cref="Configure"/> can start the host again.
         /// </summary>
         public static void Stop() {
+            AgentRecorder.StopIfActive("host_stopped");
             DisposeTabHighlight();
             lock (sync) {
                 if (pipeServer == null)
@@ -382,6 +383,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static string InstancesDir => Path.Combine(RootDir, "instances");
         public static string RunsDir => Path.Combine(RootDir, "runs");
         public static string CapturesDir => Path.Combine(RootDir, "captures");
+        public static string RecordingsDir => Path.Combine(RootDir, "recordings");
         public static string InstanceFile =>
             Path.Combine(InstancesDir, AgentHost.ProcessId + ".json");
 
@@ -405,6 +407,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static void PruneOldRecords(DateTime cutoff) {
             var removed = 0;
             try {
+                removed += AgentRecordingStore.Prune(RecordingsDir, DateTime.Now, null);
                 if (Directory.Exists(RunsDir)) {
                     foreach (var runDir in Directory.GetDirectories(RunsDir)) {
                         if (Directory.GetLastWriteTime(runDir) >= cutoff)

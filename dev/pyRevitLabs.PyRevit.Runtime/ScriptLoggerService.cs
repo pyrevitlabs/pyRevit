@@ -126,6 +126,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 var normalizedName = string.IsNullOrEmpty(loggerName) ? "root" : loggerName;
                 var normalizedMessage = message ?? string.Empty;
                 var visible = IsVisibleEnabled(level, runtime);
+                if (visible)
+                    Agent.AgentRecorder.RecordLog(normalizedName, (int)normalizedLevel, normalizedMessage);
                 var explicitLogPath = runtime?.ScriptRuntimeConfigs?.LogFilePath ?? _logFilePath;
                 var defaultLogPath = IsDefaultFileLoggingEnabled()
                     ? GetDefaultLogFilePath(runtime)

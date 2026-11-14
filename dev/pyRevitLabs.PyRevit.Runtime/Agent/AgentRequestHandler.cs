@@ -89,6 +89,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case "capture":
                     var captureRequest = ParseParameters(() => AgentCapture.Parse(parameters));
                     return InvokeCapturingDialogs((app, _) => AgentCapture.Capture(app, captureRequest), parameters);
+                case "recording_start":
+                    var recordingOptions = ParseParameters(() => AgentRecordingOptions.FromJson(parameters));
+                    return InvokeOnMainThread(app => AgentRecorder.Start(app, recordingOptions), parameters);
+                case "recording_stop":
+                    return InvokeOnMainThread(_ => AgentRecorder.Stop("user"), parameters);
+                case "recording_status":
+                    return AgentRecorder.Status();
                 case "lookup_api":
                     var query = AgentParams.Get<string>(parameters, "name");
                     return AgentApiLookup.Lookup(query);

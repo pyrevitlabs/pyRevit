@@ -358,6 +358,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     warnings.Add("Could not write the agent run record: " + ex.Message);
                 }
 
+                AgentRecorder.RecordAgentRun(response);
                 return response;
             }
             finally {

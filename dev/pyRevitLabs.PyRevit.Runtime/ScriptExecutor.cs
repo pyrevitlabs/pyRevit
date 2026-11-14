@@ -244,8 +244,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private static int ExecuteScriptNow(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
+            try {
+                return ExecuteScriptRecorded(scriptData, scriptRuntimeCfg, scriptExecConfigs);
+            }
+            catch (System.Exception ex) {
+                Agent.AgentRecorder.RecordCommand(
+                    "end", scriptData?.CommandName, scriptData?.CommandUniqueId,
+                    ScriptExecutorResultCodes.UnknownException, ex.ToString());
+                throw;
+            }
+        }
+
+        private static int ExecuteScriptRecorded(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
             // create runtime
             var runtime = new ScriptRuntime(scriptData, scriptRuntimeCfg);
+            Agent.AgentRecorder.RecordCommand("start", scriptData?.CommandName, scriptData?.CommandUniqueId, null, null);
 
             // determine which engine to use, and execute
             if (EnsureTargetScript(ref runtime)) {
@@ -302,6 +315,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             int result = runtime.ExecutionResult;
             if (scriptExecConfigs.SendTelemetry)
                 ScriptTelemetry.LogScriptTelemetryRecord(ref runtime);
+            Agent.AgentRecorder.RecordCommand("end", scriptData?.CommandName, scriptData?.CommandUniqueId, result, runtime.TraceMessage);
 
             // Drain any output still buffered by the engine (trailing prints,
             // logger records, uncaught tracebacks) to the live window before the

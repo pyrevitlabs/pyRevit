@@ -221,6 +221,8 @@ namespace pyRevitCLI {
         public static string InstancesDir => Path.Combine(AgentDir, "instances");
         public static string RunsDir => Path.Combine(AgentDir, "runs");
 
+        public static string RecordingsDir => Path.Combine(AgentDir, "recordings");
+
         /// <summary>
         /// Registered hosts whose process metadata or named pipe establishes liveness, newest first.
         /// Only certainly stale registration files are removed best-effort.

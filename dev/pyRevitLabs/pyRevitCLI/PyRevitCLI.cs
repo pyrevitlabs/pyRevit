@@ -607,6 +607,20 @@ namespace pyRevitCLI {
                 else if (all("show"))
                     PyRevitCLIAgentCmds.ShowRun(TryGetValue("<run_id>"));
 
+                else if (all("record"))
+                    PyRevitCLIAgentCmds.Record(
+                        action: TryGetValue("<action>"),
+                        screenshots: arguments["--no-screenshots"].IsFalse,
+                        screenshotInterval: TryGetValue("--screenshot-interval"),
+                        maxScreenshots: TryGetValue("--max-screenshots"),
+                        maxEvents: TryGetValue("--max-events"),
+                        maxDuration: TryGetValue("--max-duration"),
+                        revitSelector: TryGetValue("--revit")
+                        );
+
+                else if (all("recordings"))
+                    PyRevitCLIAgentCmds.PrintRecordings(TryGetValue("--limit"));
+
                 else
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Agent);
             }

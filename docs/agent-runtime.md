@@ -114,6 +114,7 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 | `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
 | `run_modify` | after approval | Run a changing script against the active document; it is refused when no document is active. `dry_run=true` previews the change set and rolls back. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
+| `get_recording` | no | A [session recording](#session-recorder) the user made: a JSON timeline of element changes, pyRevit commands and output, logs, extension breadcrumbs and screenshot files. Without `recording_id` it lists recent recordings. Works without Revit |
 | `lookup_pyrevit_api` | no | Signature, docstring and import line of a pyrevitlib or rpw function, a module listing, or a search by words. Works without Revit |
 | `list_automation` | no | The marked pyrevitlib and rpw operations (see [Automation operations](#automation-operations)), with `invocable` and the `inputs` each takes. Works without Revit |
 | `run_automation` | never | Run an invocable operation by id with a JSON input object. Runs as a query, so changes are rolled back; it accepts no Python source. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
@@ -589,6 +590,75 @@ line.
 Run records and `capture_view` images older than 14 days are deleted when the host starts, and
 again at most once a day when a run is recorded.
 
+### Session recorder
+
+An agent only sees a bug through what the user says afterwards. The session recorder
+([#3892](https://github.com/pyrevitlabs/pyRevit/issues/3892)) records what happens in Revit between two
+explicit user actions, so the agent can read the sequence that led to a bug.
+
+```shell
+pyrevit agent record start [--no-screenshots] [--screenshot-interval=5] [--max-screenshots=20]
+                           [--max-events=5000] [--max-duration=1800] [--revit=<year>]
+pyrevit agent record stop
+pyrevit agent record status
+pyrevit agent recordings [--limit=<count>]
+```
+
+The user starts a recording, reproduces the problem and stops it. Then the agent calls
+`get_recording` (with `recording_id`, `offset` and `limit` to page the timeline). There is no
+always-on mode: nothing is captured outside a recording, and every hook is a no-op then. It needs
+the agent host enabled, because the CLI reaches Revit through the same pipe.
+
+Each event in `events.jsonl` has `seq`, `t_ms` (since the start), `time` and a `kind`:
+
+| `kind` | Captured |
+|---|---|
+| `element_changes` | One per `DocumentChanged`: document, operation, transaction names, counts, and up to 25 each of added and modified elements (id, category, family and type name, location as point, curve endpoints or bounding box) and deleted ids. No parameter values |
+| `command` | `start` and `end` of every pyRevit command or script, with result code and traceback |
+| `output` | Text a command printed to its output window or console; consecutive writes are merged into one event, flushed at the next other event or when Revit is idle |
+| `agent_run` | The outcome of each agent run (`run_query`, `run_modify`): status, decision, error with traceback, and its captured output. The `command` event of an agent run only brackets it, since agent scripts capture their own output and report failure here |
+| `log` | Logger messages at info level and above that pyRevit shows, with logger name and level (`20` info, `30` warning, `40` error) |
+| `mark` | Breadcrumbs from [`pyrevit.recorder.mark`](#extension-trace-api) |
+| `view_activated`, `selection_changed` | View changes, and selection changes seen when Revit is idle (first 20 ids) |
+| `dialog`, `failures` | Dialogs Revit showed (task dialog text, dialog id) and warnings or errors from transactions |
+| `screenshot`, `screenshot_failed` | A PNG of the active view under `screenshots/`, referenced by relative path |
+
+Decisions:
+
+- **Native Revit commands** are visible only through their transaction names, plus dialogs, failures,
+  view and selection changes. Revit has no event for an arbitrary command; journal parsing was left out.
+- **Screenshots** trigger after a change and on a dialog, are taken on the next `Idling` (Revit can't
+  export inside a transaction or a modal dialog, and `Idling` does not fire while a modal dialog is open, so a
+  dialog's screenshot shows the view after it closes; the `dialog` event itself carries its text), and are limited by `--screenshot-interval` and
+  `--max-screenshots`. Large models pay one view export per screenshot; `--no-screenshots` removes it. Locations are
+  read for only the first 25 elements of each change, so there is no category filter yet.
+- **Limits.** `--max-events` stops storing events beyond the cap and counts them in `dropped_events`; output and
+  log text is cut at 4000 characters, and a `mark` payload over 16000 characters is replaced by a preview and its
+  original length; events stop being stored at `--max-duration` even before the recording is stopped; a recording stops itself after `--max-duration`, when the host
+  stops or Revit closes.
+- **Storage** is local plaintext under `%APPDATA%\pyRevit\agent\recordings\<timestamp>-<id>\`
+  (`events.jsonl`, `recording.json`, `screenshots\`). Recordings older than 7 days, and all but
+  the newest 20, are deleted when a recording starts and when the host starts; a recording another Revit is
+  still writing is never deleted. The recorder uploads nothing itself; an
+  agent reads a recording only through `get_recording`, and what that returns may be sent to the agent's model
+  provider like any other tool result. Element names and screenshots can contain client data, so review a recording
+  before sharing it.
+- A recording that has no `recording.json` is reported as `recording` while Revit still holds it and as
+  `incomplete` when it was interrupted by a crash; either way `get_recording` returns the events written.
+  A page stops at about 200 KB: use `next_offset` to continue.
+
+#### Extension trace API
+
+```python
+from pyrevit import recorder
+
+recorder.mark("my-extension", {"step": "placed sheets", "count": 12})
+```
+
+`recorder.mark(source, data)` adds a `mark` event with the JSON-serializable `data`. It does nothing
+and never raises when no recording is active (`recorder.is_recording()` tells which). Without
+it, the recorder still captures logger and console output.
+
 ### Testing agent skills and library changes through MCP
 
 A change to a skill under `pyrevitlib/pyrevit/agent/skills` or to a pyrevitlib helper it describes
@@ -798,7 +868,8 @@ Deliberately **not** reused:
 | `pyRevitLabs.PyRevit` `PyRevitConfigs` | `Get/SetAgentEnabled`, `Get/SetAgentPolicy`, `Get/SetAgentEngine`, `Get/SetAgentReckless`, `Get/SetAgentUserSkillsEnabled`, `Get/SetAgentTabHighlight`. |
 | `pyRevitCLI` | `PyRevitAgentClient` (discovery and pipe protocol), `PyRevitCLIAgentCmds` (`agent`, `configs agent`, `mcp install` and `uninstall`), `PyRevitMcpServer` (`pyrevit mcp`). |
 | `pyRevitDevTools` `Debug.panel/Agent Tests.pulldown` | In-Revit end-to-end tests that drive the host through `AgentHost.HandleRequest`. |
-| `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.Agent.Tests` | Unit tests of the run guard against Revit test doubles; run in CI. |
+| `dev/pyRevitLabs.PyRevit.Runtime/Agent/AgentRecorder*.cs`, `AgentRecording*.cs` | The [session recorder](#session-recorder): facade, Revit event session, Revit-free store and reader (the reader is also compiled into `pyRevitCLI` for `get_recording`). |
+| `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.Agent.Tests` | Unit tests of the run guard against Revit test doubles, and of the recording store, reader, limits and throttle; run in CI. |
 
 ### Pipe protocol
 
@@ -810,7 +881,8 @@ characters (up to three bytes each in UTF-8) is answered with a `request_too_lar
 the same limit. Reading a line character by character costs about 1.5 to 2 s for a 16 MB line
 on .NET 8 and about twice that on .NET Framework, well inside the 30 second idle limit.
 Methods: `ping`,
-`get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`. Errors carry a stable
+`get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`, `recording_start`,
+`recording_stop`, `recording_status`. Errors carry a stable
 `data.type`, such as `revit_busy`, `no_active_document`, `document_changed`, `policy_readonly` or
 `invalid_params`. Only a line that isn't JSON is `parse_error` (-32700). A parameter of the
 wrong JSON type, or a `capture` width outside 320-2400, is `invalid_params`. Any other
