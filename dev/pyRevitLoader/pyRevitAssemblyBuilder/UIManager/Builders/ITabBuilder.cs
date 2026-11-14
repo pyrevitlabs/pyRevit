@@ -17,8 +17,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// <remarks>
         /// Invariant: the tab is found and created under the component's folder name
         /// (<see cref="ParsedComponent.DisplayName"/>), which Revit keeps as the tab id. The localized
-        /// title is applied afterwards to a new tab, or to one still showing a title this component
-        /// declares, so a title a script chose is left alone.
+        /// title is applied afterwards to a new tab, or to one still showing the title the loader applied
+        /// last in this Revit session, so a bundle title edit or locale change takes effect on reload and
+        /// a title a script chose is left alone.
         /// </remarks>
         /// <param name="component">The tab component to create.</param>
         /// <returns>

@@ -118,7 +118,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                             if (string.IsNullOrEmpty(panelName))
                                 continue;
 
-                            var panelKey = BuildKey("panel", panelName, tabName);
+                            var panelKey = BuildKey("panel", panelName, tab.Id);
                             _elementRegistry[panelKey] = false;
                             panelCount++;
 
@@ -349,7 +349,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                             if (panel == null) continue;
 
                             var panelName = RibbonPanelNaming.GetStableName(panel);
-                            var panelKey = BuildKey("panel", panelName, tab.Title);
+                            var panelKey = BuildKey("panel", panelName, tab.Id);
 
                             if (untouchedElements.Contains(panelKey))
                             {

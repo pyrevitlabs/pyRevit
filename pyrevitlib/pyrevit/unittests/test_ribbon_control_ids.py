@@ -2,10 +2,10 @@
 """Hosted tests for the ribbon ids the loader registers for pyRevit's own panels.
 
 Run from Revit via the DevTools "Ribbon Control Id Tests" button (zero-doc
-context) or the "Run All Tests" aggregator. They assert that the control id of
-every command in the pyRevit tab resolves to the ribbon item Revit registered,
-whatever the pyRevit ``user_locale``: panels are created under their folder
-name and only display the localized title (#4035).
+context). The module is Integration level, so "Run All Tests" skips it. They
+assert that the control id of every command in the pyRevit tab resolves to the
+ribbon item Revit registered, whatever the pyRevit ``user_locale``: panels are
+created under their folder name and only display the localized title (#4035).
 """
 
 import unittest

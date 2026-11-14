@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using Autodesk.Revit.UI;
 using Autodesk.Windows;
@@ -13,6 +14,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
     /// </summary>
     public class TabBuilder : ITabBuilder
     {
+        private static readonly ConcurrentDictionary<string, string> AppliedTitles =
+            new ConcurrentDictionary<string, string>();
+
         private readonly ILogger _logger;
         private readonly UIApplication _uiApp;
 
@@ -59,7 +63,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 var ribbon = ComponentManager.Ribbon;
                 if (ribbon?.Tabs == null) return null;
 
-                // Primary search: exact Id match, then Title match
                 var existingTab = ribbon.Tabs.FirstOrDefault(t => t.Id == tabText)
                     ?? ribbon.Tabs.FirstOrDefault(t => t.Title == tabText);
 
@@ -80,8 +83,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     existingTab.IsVisible = true;
                     existingTab.IsEnabled = true;
 
-                    if (ShouldApplyTitle(existingTab, component, tabText, tabTitle))
+                    if (ShouldApplyTitle(existingTab, tabText, tabTitle))
+                    {
                         existingTab.Title = tabTitle;
+                        AppliedTitles[tabText] = tabTitle;
+                    }
 
                     // Detect rename: if the current Title differs, return it so the
                     // caller can dual-mark the scanner registry under both names.
@@ -100,14 +106,13 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             return renamedTitle;
         }
 
-        private static bool ShouldApplyTitle(RibbonTab tab, ParsedComponent component, string tabName, string tabTitle)
+        private static bool ShouldApplyTitle(RibbonTab tab, string tabName, string tabTitle)
         {
             if (string.IsNullOrEmpty(tabTitle) || tab.Title == tabTitle)
                 return false;
 
             return tab.Title == tabName
-                || tab.Title == component.Title
-                || (component.LocalizedTitles?.Values.Contains(tab.Title) ?? false);
+                || (AppliedTitles.TryGetValue(tabName, out var appliedTitle) && appliedTitle == tab.Title);
         }
 
         /// <inheritdoc/>

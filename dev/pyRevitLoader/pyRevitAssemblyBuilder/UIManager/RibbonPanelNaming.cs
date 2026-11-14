@@ -1,5 +1,7 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using AdwRibbonPanel = Autodesk.Windows.RibbonPanel;
 
 namespace pyRevitAssemblyBuilder.UIManager
@@ -33,12 +35,20 @@ namespace pyRevitAssemblyBuilder.UIManager
         }
 
         /// <summary>
-        /// True when <paramref name="name"/> is the panel's stable name or its current displayed title.
+        /// Finds the panel whose stable name is <paramref name="name"/>, falling back to a panel whose
+        /// displayed title is <paramref name="name"/> only when no stable name matches.
         /// </summary>
-        internal static bool IsNamed(AdwRibbonPanel panel, string name)
+        /// <remarks>
+        /// Important: a title must never outrank a stable name. Another panel may display the title
+        /// <paramref name="name"/> and come first in the tab.
+        /// </remarks>
+        internal static AdwRibbonPanel? FindByName(IEnumerable<AdwRibbonPanel> panels, string name)
         {
-            return string.Equals(GetStableName(panel), name, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(panel.Source?.Title, name, StringComparison.OrdinalIgnoreCase);
+            var candidates = panels.Where(panel => panel != null).ToList();
+            return candidates.FirstOrDefault(panel =>
+                    string.Equals(GetStableName(panel), name, StringComparison.OrdinalIgnoreCase))
+                ?? candidates.FirstOrDefault(panel =>
+                    string.Equals(panel.Source?.Title, name, StringComparison.OrdinalIgnoreCase));
         }
     }
 }
