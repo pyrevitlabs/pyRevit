@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using NUnit.Framework;
 using pyRevitAssemblyBuilder.UIManager.Buttons;
 using pyRevitExtensionParser;
@@ -71,6 +74,9 @@ namespace pyRevitExtensionParserTest
             catch (IOException)
             {
             }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
 
         [Test]
@@ -128,6 +134,27 @@ namespace pyRevitExtensionParserTest
                 Children = new List<ParsedComponent>()
             });
             _link.TargetAssembly = "OnlyInSibling";
+
+            Assert.That(LinkAssemblyPathResolver.Resolve(_link, _extension), Is.Null);
+        }
+
+        [Test]
+        public void Resolve_IgnoresAnAssemblyAlreadyLoadedFromASiblingsBin()
+        {
+            var panel = _extension.Children[0].Children[0];
+            var siblingBin = Path.Combine(panel.Directory, "A.linkbutton", "bin");
+            Directory.CreateDirectory(siblingBin);
+            var assemblyName = "SiblingOnly" + Guid.NewGuid().ToString("N");
+            var siblingCopy = Path.Combine(siblingBin, assemblyName + ".dll");
+            var compilation = CSharpCompilation.Create(
+                assemblyName,
+                new[] { CSharpSyntaxTree.ParseText("public class Marker { }") },
+                new[] { MetadataReference.CreateFromFile(typeof(object).Assembly.Location) },
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            Assert.That(compilation.Emit(siblingCopy).Success, Is.True);
+            var loaded = Assembly.LoadFrom(siblingCopy);
+            Assume.That(loaded.Location, Is.EqualTo(siblingCopy));
+            _link.TargetAssembly = assemblyName;
 
             Assert.That(LinkAssemblyPathResolver.Resolve(_link, _extension), Is.Null);
         }

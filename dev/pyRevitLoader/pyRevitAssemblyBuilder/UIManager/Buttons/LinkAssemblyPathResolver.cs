@@ -76,7 +76,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a =>
                     a.GetName().Name?.Equals(assemblyName, StringComparison.OrdinalIgnoreCase) == true);
 
-                if (loadedAssembly != null && !string.IsNullOrEmpty(loadedAssembly.Location))
+                if (loadedAssembly != null && IsInSearchPaths(loadedAssembly.Location, searchPaths))
                     return loadedAssembly.Location;
             }
             catch
@@ -84,6 +84,18 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             }
 
             return null;
+        }
+
+        private static bool IsInSearchPaths(string assemblyLocation, IEnumerable<string> searchPaths)
+        {
+            if (string.IsNullOrEmpty(assemblyLocation))
+                return false;
+
+            var assemblyDirectory = Path.GetDirectoryName(Path.GetFullPath(assemblyLocation));
+            return searchPaths.Any(searchPath => string.Equals(
+                Path.GetFullPath(searchPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                assemblyDirectory?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                StringComparison.OrdinalIgnoreCase));
         }
 
         private static IEnumerable<string> CollectOwnAndAncestorPaths(ParsedComponent component, ParsedExtension extension)
