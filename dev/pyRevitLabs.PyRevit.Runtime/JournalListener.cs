@@ -34,6 +34,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     public class JournalListener {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private const int PollIntervalMilliseconds = 250;
+        private const int WorkerJoinMilliseconds = 2000;
         private string JournalFile = "";
         private Thread jtail;
         private CancellationTokenSource _cancellationTokenSource;
@@ -62,6 +63,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (_cancellationTokenSource != null)
                     return;
 
+                var previous = jtail;
+                if (previous != null && previous != Thread.CurrentThread && !previous.Join(WorkerJoinMilliseconds))
+                    logger.Warn("Previous journal worker is still running; starting a new one.");
+
                 var source = new CancellationTokenSource();
                 _cancellationTokenSource = source;
                 var tail = new JournalTail(JournalFile);
@@ -81,6 +86,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             try {
                 var token = source.Token;
                 while (!token.WaitHandle.WaitOne(PollIntervalMilliseconds)) {
+                    if (token.IsCancellationRequested)
+                        break;
+
                     try {
                         Tail(tail);
                         lastFailure = null;
