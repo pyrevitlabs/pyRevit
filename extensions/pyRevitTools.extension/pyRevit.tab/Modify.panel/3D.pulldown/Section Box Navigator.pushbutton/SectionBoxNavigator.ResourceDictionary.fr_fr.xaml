@@ -100,6 +100,21 @@
     <system:String x:Key="SectionBoxAlignedFormat">Boîte de coupe alignée avec la vue '{0}'</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Boîte de recadrage alignée avec la vue '{0}'</system:String>
     <system:String x:Key="ScopeBoxApplied">Boîte de portée appliquée à la vue</system:String>
+    <system:String x:Key="NoSectionBoxPrompt">Cette vue n'a pas de boîte de coupe. Créer à partir de :</system:String>
+    <system:String x:Key="NoCropBoxPrompt">Cette vue n'a pas de boîte de recadrage active. Créer à partir de :</system:String>
+    <system:String x:Key="SourceVisibleElements">Éléments visibles dans la vue</system:String>
+    <system:String x:Key="SourceScopeBoxList">Boîte de portée de la liste</system:String>
+    <system:String x:Key="SourceScopeBoxPick">Boîte de portée choisie dans la vue</system:String>
+    <system:String x:Key="NoScopeBoxes">Ce projet n'a pas de boîte de portée.</system:String>
+    <system:String x:Key="SelectScopeBox">Sélectionner une boîte de portée</system:String>
+    <system:String x:Key="PickScopeBox">Choisir une boîte de portée</system:String>
+    <system:String x:Key="NoVisibleElements">Aucun élément de modèle n'est visible dans cette vue.</system:String>
+    <system:String x:Key="ScopeBoxNotSupported">Cette vue ne peut pas utiliser de boîte de portée.</system:String>
+    <system:String x:Key="ScopeBoxHasNoGeometry">La boîte de portée n'a pas de géométrie.</system:String>
+    <system:String x:Key="NoCropBoxActive">Aucune boîte de recadrage active</system:String>
+    <system:String x:Key="CropBoxDrivenByScopeBox">Une boîte de portée pilote cette boîte de recadrage.</system:String>
+    <system:String x:Key="CropBoxHasCustomShape">La région de recadrage a une forme personnalisée.</system:String>
+    <system:String x:Key="BoxCreatedFormat">Boîte créée à partir de {0}</system:String>
     <system:String x:Key="UnsupportedViewType">Type de vue non pris en charge.</system:String>
     <system:String x:Key="Activated">activé</system:String>
     <system:String x:Key="Deactivated">désactivé</system:String>
@@ -132,7 +147,5 @@
     <!-- Alert messages -->
     <system:String x:Key="StoredSectionBoxFound">SectionBox stockée pour cette vue trouvée ! Restaurer ?</system:String>
     <system:String x:Key="RestoreSectionBox">Restaurer la Boîte de Coupe</system:String>
-    <system:String x:Key="NoSectionBoxMessage">La vue actuelle n'a pas de boîte de coupe active ou stockée.</system:String>
-    <system:String x:Key="NoSectionBoxTitle">Aucune Boîte de Coupe</system:String>
     <system:String x:Key="ErrorTitle">Erreur</system:String>
 </ResourceDictionary>

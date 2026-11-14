@@ -100,6 +100,21 @@
     <system:String x:Key="SectionBoxAlignedFormat">Caixa de corte alinhada à vista '{0}'</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Região de recorte alinhada à vista '{0}'</system:String>
     <system:String x:Key="ScopeBoxApplied">Caixa de escopo aplicada à vista</system:String>
+    <system:String x:Key="NoSectionBoxPrompt">Esta vista não tem caixa de corte. Criar a partir de:</system:String>
+    <system:String x:Key="NoCropBoxPrompt">Esta vista não tem região de recorte ativa. Criar a partir de:</system:String>
+    <system:String x:Key="SourceVisibleElements">Elementos visíveis na vista</system:String>
+    <system:String x:Key="SourceScopeBoxList">Caixa de escopo da lista</system:String>
+    <system:String x:Key="SourceScopeBoxPick">Caixa de escopo escolhida na vista</system:String>
+    <system:String x:Key="NoScopeBoxes">Este projeto não tem caixas de escopo.</system:String>
+    <system:String x:Key="SelectScopeBox">Selecionar caixa de escopo</system:String>
+    <system:String x:Key="PickScopeBox">Escolha uma caixa de escopo</system:String>
+    <system:String x:Key="NoVisibleElements">Nenhum elemento de modelo está visível nesta vista.</system:String>
+    <system:String x:Key="ScopeBoxNotSupported">Esta vista não pode usar uma caixa de escopo.</system:String>
+    <system:String x:Key="ScopeBoxHasNoGeometry">A caixa de escopo não tem geometria.</system:String>
+    <system:String x:Key="NoCropBoxActive">Nenhuma região de recorte ativa</system:String>
+    <system:String x:Key="CropBoxDrivenByScopeBox">Uma caixa de escopo controla esta região de recorte.</system:String>
+    <system:String x:Key="CropBoxHasCustomShape">A região de recorte tem uma forma personalizada.</system:String>
+    <system:String x:Key="BoxCreatedFormat">Caixa criada a partir de {0}</system:String>
     <system:String x:Key="UnsupportedViewType">Tipo de vista não suportado.</system:String>
     <system:String x:Key="Activated">ativado</system:String>
     <system:String x:Key="Deactivated">desativado</system:String>
@@ -132,7 +147,5 @@
     <!-- Alert messages -->
     <system:String x:Key="StoredSectionBoxFound">Caixa de corte armazenada para esta vista encontrada! Restaurar?</system:String>
     <system:String x:Key="RestoreSectionBox">Restaurar caixa de corte</system:String>
-    <system:String x:Key="NoSectionBoxMessage">A vista atual não tem uma caixa de corte ativa ou armazenada.</system:String>
-    <system:String x:Key="NoSectionBoxTitle">Sem caixa de corte</system:String>
     <system:String x:Key="ErrorTitle">Erro</system:String>
 </ResourceDictionary>
