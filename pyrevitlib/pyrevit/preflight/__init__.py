@@ -9,8 +9,10 @@ automatically by the preflight module. Each test case, can perform ``setUp()``,
 ``startTest()``, ``tearDown()``, and ``doCleanups()``.
 """
 
+import hashlib
 import os.path as op
 import inspect
+import re
 import sys
 
 try:
@@ -27,14 +29,36 @@ from pyrevit.preflight.case import PreflightTestCase
 mlogger = get_logger(__name__)
 
 
+_CHECK_MODULE_PREFIX = "pyrevit_preflight_check_"
+
+
+def _private_module_name(name, script_path):
+    """Build a module name unique to one check script.
+
+    Two checks with the same file name in different extensions, or a check
+    named like an importable module, must never share or replace a
+    ``sys.modules`` entry. The name is an identifier: unsafe characters of the
+    check name are replaced and a digest of the script path is appended.
+    """
+    path_key = op.normcase(op.abspath(script_path))
+    if not isinstance(path_key, bytes):
+        path_key = path_key.encode("utf-8")
+    safe_name = re.sub(r"\W", "_", name)
+    return "%s%s_%s" % (
+        _CHECK_MODULE_PREFIX,
+        safe_name,
+        hashlib.md5(path_key).hexdigest()[:8],
+    )
+
+
 def _load_check_with_imp(name, script_path):
-    return imp.load_source(name, script_path)
+    return imp.load_source(_private_module_name(name, script_path), script_path)
 
 
 def _load_check_with_importlib(name, script_path):
     from importlib import machinery, util
 
-    module_name = "pyrevit_preflight_check_" + name
+    module_name = _private_module_name(name, script_path)
     loader = machinery.SourceFileLoader(module_name, script_path)
     spec = util.spec_from_file_location(module_name, script_path, loader=loader)
     if spec is None or spec.loader is None:

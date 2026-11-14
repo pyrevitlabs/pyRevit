@@ -165,6 +165,133 @@ class Python3CompatibilityTests(unittest.TestCase):
         self.assertTrue(re.search(dir_pat, "mylib"))
         self.assertTrue(re.search(dir_pat, "hooks_old"))
 
+    def _legacy_python27_patterns(self):
+        exts = self.components.exts
+        backslash = chr(92)
+
+        def build(names):
+            return "|".join("(" + backslash + name + ")" for name in names)
+
+        dir_names = (
+            exts.TAB_POSTFIX,
+            exts.PANEL_POSTFIX,
+            exts.PULLDOWN_BUTTON_POSTFIX,
+            exts.SPLIT_BUTTON_POSTFIX,
+            exts.SPLITPUSH_BUTTON_POSTFIX,
+            exts.STACK_BUTTON_POSTFIX,
+            exts.PUSH_BUTTON_POSTFIX,
+            exts.SMART_BUTTON_POSTFIX,
+            exts.LINK_BUTTON_POSTFIX,
+            exts.PANEL_PUSH_BUTTON_POSTFIX,
+            exts.PANEL_PUSH_BUTTON_POSTFIX,
+            exts.CONTENT_BUTTON_POSTFIX,
+            exts.COMBOBOX_POSTFIX,
+            exts.COMP_LIBRARY_DIR_NAME,
+            exts.COMP_HOOKS_DIR_NAME,
+        )
+        file_names = (
+            exts.PYTHON_SCRIPT_FILE_FORMAT,
+            exts.CSHARP_SCRIPT_FILE_FORMAT,
+            exts.VB_SCRIPT_FILE_FORMAT,
+            exts.RUBY_SCRIPT_FILE_FORMAT,
+            exts.DYNAMO_SCRIPT_FILE_FORMAT,
+            exts.GRASSHOPPER_SCRIPT_FILE_FORMAT,
+            exts.GRASSHOPPERX_SCRIPT_FILE_FORMAT,
+            exts.CONTENT_FILE_FORMAT,
+            exts.YAML_FILE_FORMAT,
+            exts.JSON_FILE_FORMAT,
+        )
+
+        def as_python27_sees_it(pattern):
+            return re.sub(re.escape(backslash) + "([a-zA-Z])", r"\1", pattern)
+
+        return (
+            as_python27_sees_it(build(dir_names)),
+            as_python27_sees_it(build(file_names)),
+        )
+
+    def test_hash_filters_match_the_same_names_as_before_on_python27(self):
+        """On IronPython 2.7 the new filters select exactly the old names.
+
+        Python 2.7 reads ``\l`` and ``\h`` as the plain letters, so the old
+        pattern matched ``lib`` and ``hooks`` as substrings and escaped every
+        postfix dot. The new pattern gives the same match set, so the stored
+        2.7 extension hashes stay valid and no cache invalidation happens.
+        """
+        old_dir, old_file = self._legacy_python27_patterns()
+        new_dir, new_file = self._extension_hash_patterns()
+        directory_names = [
+            "lib",
+            "hooks",
+            "mylib",
+            "hooks_old",
+            "Library",
+            "My.pushbutton",
+            "Tab.TAB",
+            "A.Panel",
+            "Tools.pulldown",
+            "X.splitbutton",
+            "X.splitpushbutton",
+            "X.stack",
+            "X.smartbutton",
+            "X.linkbutton",
+            "X.panelbutton",
+            "X.content",
+            "X.combobox",
+            "pushbutton",
+            "xpushbutton",
+            "X.urlbutton",
+            "X.invokebutton",
+            "X.nobutton",
+            "checks",
+            "bin",
+            "images",
+            "",
+        ]
+        file_names = [
+            "script.py",
+            "SCRIPT.PY",
+            "a.cs",
+            "a.vb",
+            "a.rb",
+            "a.dyn",
+            "a.gh",
+            "a.ghx",
+            "a.rfa",
+            "bundle.yaml",
+            "config.json",
+            "icon.png",
+            "xpy",
+            "pyc",
+            "script.pyc",
+            "notes.txt",
+            "",
+        ]
+        for name in directory_names:
+            self.assertEqual(
+                bool(re.search(old_dir, name, flags=re.IGNORECASE)),
+                bool(re.search(new_dir, name, flags=re.IGNORECASE)),
+                name,
+            )
+        for name in file_names:
+            self.assertEqual(
+                bool(re.search(old_file, name, flags=re.IGNORECASE)),
+                bool(re.search(new_file, name, flags=re.IGNORECASE)),
+                name,
+            )
+
+    def test_legacy_pattern_is_invalid_on_python3(self):
+        """Documents the original failure: the old ``\l`` escape does not compile."""
+        old_dir = "|".join(
+            "(" + chr(92) + name + ")"
+            for name in (
+                self.components.exts.COMP_LIBRARY_DIR_NAME,
+                self.components.exts.COMP_HOOKS_DIR_NAME,
+            )
+        )
+        with self.assertRaises(re.error):
+            re.compile(old_dir)
+
     def test_real_dir_hash_accepts_extension_patterns(self):
         """The real ``calculate_dir_hash`` runs with the extension patterns."""
         with open(
@@ -256,6 +383,127 @@ class Python3CompatibilityTests(unittest.TestCase):
         with patch.object(importlib.util, "spec_from_file_location", return_value=None):
             with self.assertRaises(ImportError):
                 preflight._load_check_module("levels", "levels_check.py")
+
+
+def _make_fake_imp():
+    fake = types.ModuleType("imp")
+
+    def load_source(name, path):
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+        return module
+
+    fake.load_source = load_source
+    return fake
+
+
+CHECK_SOURCE = (
+    "from pyrevit.preflight.case import PreflightTestCase"
+    + chr(10)
+    + "class LevelsCheck(PreflightTestCase):"
+    + chr(10)
+    + "    'Doc.'"
+    + chr(10)
+    + "    author = 'a'"
+    + chr(10)
+    + "    ORIGIN = %r"
+    + chr(10)
+)
+
+
+class PrivateCheckModuleNameTests(unittest.TestCase):
+    """Checks load under private names on both engines and never shadow modules (#4043)."""
+
+    def _preflight(self, imp_available):
+        _, preflight = _load_production_modules(imp_available=imp_available)
+        if imp_available:
+            preflight.imp = _make_fake_imp()
+        return preflight
+
+    def _discover(self, preflight, scripts_by_extension):
+        extensions = []
+        for index, scripts in enumerate(scripts_by_extension):
+            extension = MagicMock()
+            extension.name = "Ext%d" % index
+            extension.get_checks.return_value = scripts
+            extensions.append(extension)
+        preflight.extensionmgr.get_installed_ui_extensions.return_value = extensions
+        case = types.ModuleType("pyrevit.preflight.case")
+        case.PreflightTestCase = preflight.PreflightTestCase
+        with patch.dict(sys.modules, {"pyrevit.preflight.case": case}):
+            checks = preflight.get_all_preflight_checks()
+            self.modules_after_discovery = dict(sys.modules)
+        return checks
+
+    def _write(self, root, folder, file_name, origin):
+        os.makedirs(os.path.join(root, folder), exist_ok=True)
+        path = os.path.join(root, folder, file_name)
+        with open(path, "w") as check_file:
+            check_file.write(CHECK_SOURCE % origin)
+        return path
+
+    def _assert_same_named_checks_both_load(self, imp_available):
+        preflight = self._preflight(imp_available)
+        with tempfile.TemporaryDirectory() as root:
+            first = self._write(root, "a", "levels_check.py", "first")
+            second = self._write(root, "b", "levels_check.py", "second")
+            checks = self._discover(preflight, [[first], [second]])
+        self.assertEqual(2, len(checks))
+        self.assertEqual(
+            ["first", "second"], sorted(c.check_case.ORIGIN for c in checks)
+        )
+        self.assertNotEqual(checks[0].check_case, checks[1].check_case)
+
+    def test_importlib_same_named_checks_in_two_extensions_both_load(self):
+        """Two ``levels_check.py`` files from different extensions are both returned."""
+        self._assert_same_named_checks_both_load(imp_available=False)
+
+    def test_imp_same_named_checks_in_two_extensions_both_load(self):
+        """The legacy ``imp`` path keeps same-named checks apart too."""
+        self._assert_same_named_checks_both_load(imp_available=True)
+
+    def _assert_stdlib_named_check_leaves_stdlib(self, imp_available):
+        preflight = self._preflight(imp_available)
+        with tempfile.TemporaryDirectory() as root:
+            script = self._write(root, "a", "json_check.py", "json")
+            checks = self._discover(preflight, [[script]])
+        self.assertIs(json, self.modules_after_discovery["json"])
+        self.assertEqual("json", checks[0].name)
+
+    def test_importlib_check_named_json_leaves_sys_modules_json(self):
+        """``json_check.py`` on the importlib path keeps the real ``json`` module."""
+        self._assert_stdlib_named_check_leaves_stdlib(imp_available=False)
+
+    def test_imp_check_named_json_leaves_sys_modules_json(self):
+        """``json_check.py`` on the ``imp`` path keeps the real ``json`` module."""
+        self._assert_stdlib_named_check_leaves_stdlib(imp_available=True)
+
+    def test_imp_loader_receives_prefixed_name_with_path_disambiguator(self):
+        """The ``imp`` loader never sees the bare check name."""
+        preflight = self._preflight(imp_available=True)
+        seen = []
+        real = preflight.imp.load_source
+        preflight.imp.load_source = lambda name, path: (
+            seen.append(name) or real(name, path)
+        )
+        with tempfile.TemporaryDirectory() as root:
+            first = self._write(root, "a", "levels_check.py", "first")
+            second = self._write(root, "b", "levels_check.py", "second")
+            self._discover(preflight, [[first], [second]])
+        self.assertEqual(2, len(set(seen)))
+        for name in seen:
+            self.assertTrue(name.startswith("pyrevit_preflight_check_levels"))
+
+    def test_dotted_check_name_gives_valid_module_name(self):
+        """``coord.v2_check.py`` gets an identifier-safe module name."""
+        preflight = self._preflight(imp_available=False)
+        with tempfile.TemporaryDirectory() as root:
+            script = self._write(root, "a", "coord.v2_check.py", "dotted")
+            checks = self._discover(preflight, [[script]])
+        self.assertEqual(1, len(checks))
+        self.assertTrue(checks[0].check_case.__module__.isidentifier())
 
 
 class BrokenCheckScriptTests(unittest.TestCase):
