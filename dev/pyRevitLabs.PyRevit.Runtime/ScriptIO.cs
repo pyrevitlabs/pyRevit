@@ -278,7 +278,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             }
 
-            bool needShow = output != null && !output.IsVisible;
+            bool needShow = output != null && !output.IsOutputVisible;
             int pendingChars;
 
             lock (this) {
@@ -322,7 +322,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _partial.Append(normalized.NormalizeNewLine());
                 FinalizePendingEntry(keepIncompleteShortcode: false);
 
-                needShow = output != null && !output.IsVisible;
+                needShow = output != null && !output.IsOutputVisible;
             }
 
             if (output == null) {
@@ -349,7 +349,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             }
 
-            bool needShow = outputText.Length > 0 && output != null && !output.IsVisible;
+            bool needShow = outputText.Length > 0 && output != null && !output.IsOutputVisible;
             int pendingChars;
 
             lock (this) {
@@ -481,8 +481,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             try {
-                if (!output.IsVisible)
-                    output.Show();
+                if (!output.IsOutputVisible)
+                    output.ShowOutput();
             }
             catch (Exception ex) {
                 ScriptOutputUiLog.Debug("output hand-off could not show the window | {0}", ex);
@@ -495,7 +495,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void PumpAfterWrite(ScriptConsole output, bool needShow, int pendingChars, bool forceSyncFlush = false) {
             if (needShow) {
                 try {
-                    output.Show();
+                    output.ShowOutput();
                 }
                 catch {
                     return;
@@ -1015,12 +1015,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return true;
             }
 
-            if (output.IsVisible)
+            if (output.IsOutputVisible)
                 return false;
 
             try {
-                output.Show();
-                output.Focus();
+                output.ShowOutput();
+                output.FocusOutput();
             }
             catch {
                 return true;

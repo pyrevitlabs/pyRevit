@@ -319,6 +319,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             this.Closing += Window_Closing;
             this.Closed += Window_Closed;
 
+            if (InitializeIsolatedComponent())
+                return;
+
             // record the active stylesheet; the initial page is written and
             // loaded lazily on first renderer use
             SetupDefaultPage();
@@ -444,7 +447,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </summary>
         public bool SupportsWebMessages {
             get {
-                if (ClosedByUser)
+                if (ClosedByUser || _isolatedUi)
                     return false;
                 EnsureDocumentReady();
                 return _plainTextOutput == null
@@ -468,6 +471,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </summary>
         public Version RendererVersion {
             get {
+                if (_isolatedUi)
+                    return new Version(0, 0);
                 EnsureDocumentReadyBlocking();
                 return Version.TryParse(_renderer.BrowserVersion.Split(' ')[0], out var parsed)
                     ? parsed
@@ -495,6 +500,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </summary>
         public string RendererFullVersion {
             get {
+                if (_isolatedUi)
+                    return string.Empty;
                 EnsureDocumentReadyBlocking();
                 return _renderer.BrowserVersion;
             }
@@ -506,7 +513,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// (number, boolean, object) is returned as its raw JSON text.
         /// </summary>
         public string RunJavaScript(string javaScript) {
-            if (string.IsNullOrEmpty(javaScript))
+            if (string.IsNullOrEmpty(javaScript) || _isolatedUi)
                 return string.Empty;
             EnsureDocumentReadyBlocking();
             var result = _renderer.EvalScript(javaScript);
@@ -520,6 +527,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// <summary>Full current document including the html wrapper.</summary>
         public string GetFullHtml() {
+            if (_isolatedUi)
+                return GetIsolatedHtml();
             EnsureDocumentReadyBlocking();
             if (_plainTextOutput != null)
                 return ScriptConsoleConfigs.DOCTYPE
@@ -532,6 +541,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         internal string GetHeadHtml() {
+            if (_isolatedUi)
+                return string.Empty;
             EnsureDocumentReadyBlocking();
             return DecodeJsonString(_renderer.EvalScript("(document.head ? document.head.innerHTML : '')"))
                 ?? string.Empty;
@@ -541,6 +552,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         internal void NavigateInWindow(string url) {
             if (string.IsNullOrEmpty(url))
                 return;
+            if (_isolatedUi) {
+                NavigateIsolated(url);
+                return;
+            }
             EnsureDocumentReadyBlocking();
             _renderer.Navigate(url);
         }
@@ -583,6 +598,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </summary>
         public void SetupDefaultPage(string styleSheetFilePath = null) {
             _initialStyleSheetPath = styleSheetFilePath ?? GetStyleSheetFile();
+            if (_isolatedUi) {
+                SetupIsolatedDefaultPage(ToStyleSheetHref(_initialStyleSheetPath));
+                return;
+            }
             if (_documentStarted && _renderer.IsCoreReady) {
                 SyncFlushBlocking();
                 _renderer.Navigate(WriteInitialPageFile());
@@ -603,7 +622,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// until the document is interactive. Safe from any thread.
         /// </summary>
         internal void EnsureDocumentReady() {
-            if (ClosedByUser)
+            if (ClosedByUser || _isolatedUi)
                 return;
             if (!Dispatcher.CheckAccess()) {
                 try {
@@ -668,14 +687,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return WriteInitialPageFile();
         }
 
-        private string WriteInitialPageFile() {
-            var cssPath = _initialStyleSheetPath ?? GetStyleSheetFile();
+        private static string ToStyleSheetHref(string cssPath) {
             var cssHref = cssPath ?? string.Empty;
             try {
                 cssHref = new Uri(Path.GetFullPath(cssPath)).AbsoluteUri;
             }
             catch {
             }
+            return cssHref;
+        }
+
+        private string WriteInitialPageFile() {
+            var cssHref = ToStyleSheetHref(_initialStyleSheetPath ?? GetStyleSheetFile());
             var dochead = string.Format(
                 ScriptConsoleConfigs.DOCTYPE + ScriptConsoleConfigs.DOCHead,
                 AppVersion,
@@ -694,14 +717,26 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
             set {
                 Title = value;
+                if (_isolatedUi && _isolatedWindowCreated)
+                    Wait(IsolatedOutput.SetTitleAsync(OutputUniqueId, value));
             }
         }
 
         public void LockSize() {
+            if (_isolatedUi) {
+                if (_isolatedWindowCreated)
+                    Wait(IsolatedOutput.SetResizableAsync(OutputUniqueId, false));
+                return;
+            }
             this.ResizeMode = ResizeMode.NoResize;
         }
 
         public void UnlockSize() {
+            if (_isolatedUi) {
+                if (_isolatedWindowCreated)
+                    Wait(IsolatedOutput.SetResizableAsync(OutputUniqueId, true));
+                return;
+            }
             this.ResizeMode = ResizeMode.CanResizeWithGrip;
         }
 
@@ -709,6 +744,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void Freeze() {
             if (_frozen)
                 return;
+            if (_isolatedUi) {
+                FreezeIsolated();
+                return;
+            }
             EnsureDocumentReadyBlocking();
             _frozenBodyHtml = _renderer.Failure != RendererFailure.None
                 ? string.Empty
@@ -721,6 +760,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void Unfreeze() {
             if (!_frozen)
                 return;
+            if (_isolatedUi) {
+                UnfreezeIsolated();
+                return;
+            }
             EnsureDocumentReadyBlocking();
             string snapshot;
             lock (_pendingLock) {
@@ -774,6 +817,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// <summary>Focuses the visible browser or plain-text output control.</summary>
         public void FocusOutput() {
+            if (_isolatedUi) {
+                FocusIsolated();
+                return;
+            }
             if (_plainTextOutput != null)
                 _plainTextOutput.Focus();
             else
@@ -809,6 +856,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void AppendText(string OutputText, string HtmlElementType, bool record = true) {
+            if (_isolatedUi) {
+                AppendIsolatedText(OutputText, HtmlElementType, record);
+                return;
+            }
+
             if (record)
                 _lastLine = OutputText;
 
@@ -963,7 +1015,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void PostScriptWhenReady(string javaScript) {
-            if (string.IsNullOrEmpty(javaScript) || ClosedByUser)
+            if (string.IsNullOrEmpty(javaScript) || ClosedByUser || _isolatedUi)
                 return;
 
             EnsureDocumentReady();
@@ -1000,6 +1052,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// path; see <see cref="IScriptRenderer.WaitUntilReady"/>.
         /// </summary>
         internal void EnsureDocumentReadyBlocking() {
+            if (_isolatedUi)
+                return;
             EnsureDocumentReady();
             _renderer.WaitUntilReady();
             SyncFlushBlocking();
@@ -1081,6 +1135,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public string GetInput() {
+            if (_isolatedUi)
+                return ReadIsolatedInput();
+
             // checkout the last line and configure the input control
             string lastLine = GetLastLine().ToLower();
             // determine debugger
@@ -1174,7 +1231,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void SetActivityBarVisibility(bool visibility) {
+            if (_isolatedUi)
+                return;
             activityBar.Visibility = visibility ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Writes a message to the activity log at <paramref name="level"/>
+        /// (<c>debug</c>, <c>success</c>, <c>info</c>, <c>warning</c> or <c>error</c>),
+        /// in the isolated UI host when it is enabled.
+        /// </summary>
+        public void AppendActivityLog(string level, string message) {
+            if (_isolatedUi) {
+                AppendIsolatedActivityLog(level, message);
+                return;
+            }
+
+            switch (level) {
+                case "success": activityBar.ConsoleLogOK(message); break;
+                case "info": activityBar.ConsoleLogInfo(message); break;
+                case "warning": activityBar.ConsoleLogWarning(message); break;
+                case "error": activityBar.ConsoleLogError(message); break;
+                default: activityBar.ConsoleLog(message); break;
+            }
         }
 
         public void UpdateTaskBarProgress(float curValue, float maxValue) {
@@ -1202,6 +1281,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             }
 
+            if (_isolatedUi) {
+                SetIsolatedProgress(curValue, maxValue);
+                return;
+            }
+
             UpdateTaskBarProgress(curValue, maxValue);
             activityBar.UpdateProgressBar(curValue, maxValue);
             SetActivityBarVisibility(true);
@@ -1209,6 +1293,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public void UpdateActivityBar(bool indeterminate) {
             if (this.ClosedByUser) {
+                return;
+            }
+
+            if (_isolatedUi) {
+                SetIsolatedIndeterminate(indeterminate);
                 return;
             }
 
@@ -1223,6 +1312,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             UpdateTaskBarProgress(curValue, maxValue);
+
+            if (_isolatedUi)
+                return;
 
             if (!this.IsVisible) {
                 try {
@@ -1256,7 +1348,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void UpdateInlineWait() {
-            if (this.ClosedByUser) {
+            if (this.ClosedByUser || _isolatedUi) {
                 return;
             }
 
@@ -1331,7 +1423,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         internal void InjectHtmlElement(string targetName, string elementTag, string contents, Dictionary<string, string> attribs) {
-            if (string.IsNullOrEmpty(elementTag))
+            if (string.IsNullOrEmpty(elementTag) || _isolatedUi)
                 return;
 
             EnsureDocumentReadyBlocking();

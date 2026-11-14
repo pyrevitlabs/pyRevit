@@ -306,6 +306,9 @@
         感谢 Parallax 团队提供 "Parallax Tabbed Views"
     </system:String>
 
+    <system:String x:Key="UI-UX.IsolatedUI">Isolated UI (beta)</system:String>
+    <system:String x:Key="UI-UX.IsolatedUI.Description">Runs the experimental pyRevit UI host in a separate process to isolate UI dependencies from Revit. Restart Revit after changing this option.</system:String>
+    <system:String x:Key="UI-UX.IsolatedUI.RestartRequired">Isolated UI setting changed. Restart Revit for this change to take effect.</system:String>
     <system:String x:Key="UI-UX.OutputWindow">输出窗口</system:String>
     <system:String x:Key="UI-UX.OutputStyling">输出样式 (CSS 样式表)</system:String>
     <system:String x:Key="UI-UX.PickCssToolTip">选择 CSS 样式表以覆盖默认值。</system:String>
