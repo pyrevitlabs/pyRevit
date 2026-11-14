@@ -452,6 +452,8 @@ func main() {
 					"--allowdialogs": complete.PredictNothing,
 					"--help":         complete.PredictNothing,
 					"--import":       complete.PredictNothing,
+					"--inputs":       complete.PredictNothing,
+					"--inputs-file":  complete.PredictNothing,
 					"--models":       complete.PredictNothing,
 					"--purge":        complete.PredictNothing,
 					"--revit":        complete.PredictNothing,

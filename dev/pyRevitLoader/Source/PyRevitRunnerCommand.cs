@@ -41,6 +41,9 @@ namespace PyRevitRunner
                 if (dataMap.TryGetValue("Models", out var modelPaths) && !string.IsNullOrEmpty(modelPaths))
                     ModelPaths.AddRange(modelPaths.Split(';'));
                 LogFile = dataMap.TryGetValue("LogFile", out var logFile) ? logFile : null;
+                InputsJson = dataMap.TryGetValue("Inputs", out var inputsJson) && !string.IsNullOrWhiteSpace(inputsJson)
+                    ? inputsJson
+                    : "{}";
                 dataMap.TryGetValue("EngineConfigs", out var engineConfigs);
 
                 // add pyrevit library path and script directory path to search paths
@@ -84,6 +87,7 @@ namespace PyRevitRunner
                             {"__batchexec__",  true },
                             {"__logfile__", LogFile ?? string.Empty },
                             {"__models__", ModelPaths },
+                            {"__inputs__", InputsJson },
                         });
                     }
                 }
@@ -121,6 +125,7 @@ namespace PyRevitRunner
         public List<string> ModuleSearchPaths { get; private set; }
         public List<string> ModelPaths { get; private set; }
         public string LogFile { get; private set; }
+        public string InputsJson { get; private set; }
         public bool DebugMode { get; private set; }
 
         private static string GetDeployPath()
