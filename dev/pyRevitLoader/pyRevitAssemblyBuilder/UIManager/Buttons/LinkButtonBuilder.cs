@@ -17,7 +17,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
     /// </summary>
     public class LinkButtonBuilder : ButtonBuilderBase
     {
-        private ParsedExtension? _currentExtension;
+        private readonly BuildContext _buildContext;
 
         /// <inheritdoc/>
         public override CommandComponentType[] SupportedTypes => new[]
@@ -28,20 +28,13 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         /// <summary>
         /// Initializes a new instance of the <see cref="LinkButtonBuilder"/> class.
         /// </summary>
+        /// <param name="buildContext">Shared build context that carries the extension being built.</param>
         /// <param name="logger">The logger instance.</param>
         /// <param name="buttonPostProcessor">The button post-processor.</param>
-        public LinkButtonBuilder(ILogger logger, IButtonPostProcessor buttonPostProcessor)
+        public LinkButtonBuilder(BuildContext buildContext, ILogger logger, IButtonPostProcessor buttonPostProcessor)
             : base(logger, buttonPostProcessor)
         {
-        }
-
-        /// <summary>
-        /// Sets the current extension for assembly path resolution.
-        /// </summary>
-        /// <param name="extension">The current extension being processed.</param>
-        public void SetCurrentExtension(ParsedExtension? extension)
-        {
-            _currentExtension = extension;
+            _buildContext = buildContext ?? throw new ArgumentNullException(nameof(buildContext));
         }
 
         /// <inheritdoc/>
@@ -114,8 +107,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 {
                     linkBtn.AssemblyName = assemblyPath;
                     linkBtn.ClassName = className;
-                    if (!string.IsNullOrEmpty(availabilityClassName))
-                        linkBtn.AvailabilityClassName = availabilityClassName;
+                    AvailabilityBinding.Apply(linkBtn, AvailabilityBinding.ForResolved(availabilityClassName));
 
                     linkBtn.ItemText = buttonText;
                     ButtonPostProcessor.Process(linkBtn, component, parentComponent, iconMode);
@@ -187,7 +179,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 return false;
             }
 
-            assemblyPath = ResolveAssemblyPath(component) ?? string.Empty;
+            assemblyPath = LinkAssemblyPathResolver.Resolve(component, _buildContext.CurrentExtension) ?? string.Empty;
             if (string.IsNullOrEmpty(assemblyPath) || !File.Exists(assemblyPath))
             {
                 Logger.Debug($"LinkButton '{component.DisplayName}' assembly not found at resolved path.");
@@ -210,88 +202,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Resolves the full path to an assembly specified in a LinkButton or InvokeButton.
-        /// </summary>
-        private string? ResolveAssemblyPath(ParsedComponent component)
-        {
-            if (string.IsNullOrWhiteSpace(component.TargetAssembly))
-                return null;
-
-            var assemblyValue = component.TargetAssembly.Trim();
-
-            // If it's already a rooted path and exists, return it
-            if (Path.IsPathRooted(assemblyValue) && File.Exists(assemblyValue))
-                return Path.GetFullPath(assemblyValue);
-
-            // Ensure the assembly has a .dll extension
-            var baseFileName = assemblyValue;
-            if (!assemblyValue.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                baseFileName += ".dll";
-
-            // Check if path includes directories (relative path)
-            var includesDirectories = assemblyValue.Contains(Path.DirectorySeparatorChar) ||
-                                      assemblyValue.Contains(Path.AltDirectorySeparatorChar);
-
-            // Try relative path from component directory
-            if (!Path.IsPathRooted(assemblyValue) && includesDirectories && !string.IsNullOrEmpty(component.Directory))
-            {
-                var relativePath = Path.GetFullPath(Path.Combine(component.Directory, assemblyValue));
-                if (File.Exists(relativePath))
-                    return relativePath;
-            }
-
-            // Search in component directory and binary paths
-            var searchPaths = new List<string>();
-
-            // Only use expensive CollectBinaryPaths for LinkButton and InvokeButton types
-            if (_currentExtension != null &&
-                (component.Type == CommandComponentType.LinkButton || component.Type == CommandComponentType.InvokeButton))
-            {
-                searchPaths.AddRange(_currentExtension.CollectBinaryPaths(component));
-                foreach (var libPath in _currentExtension.CollectLibraryPaths(component))
-                {
-                    if (!searchPaths.Contains(libPath))
-                        searchPaths.Add(libPath);
-                }
-            }
-            else if (!string.IsNullOrEmpty(component.Directory))
-            {
-                searchPaths.Add(component.Directory);
-
-                // Also check bin subdirectory
-                var binPath = Path.Combine(component.Directory, "bin");
-                if (Directory.Exists(binPath))
-                    searchPaths.Add(binPath);
-            }
-
-            // Search in all paths
-            foreach (var searchPath in searchPaths)
-            {
-                var candidatePath = Path.Combine(searchPath, baseFileName);
-                if (File.Exists(candidatePath))
-                    return candidatePath;
-            }
-
-            // Search for loaded assembly in AppDomain
-            try
-            {
-                var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-                var assemblyName = Path.GetFileNameWithoutExtension(baseFileName);
-                var loadedAssembly = loadedAssemblies.FirstOrDefault(a =>
-                    a.GetName().Name?.Equals(assemblyName, StringComparison.OrdinalIgnoreCase) == true);
-
-                if (loadedAssembly != null && !string.IsNullOrEmpty(loadedAssembly.Location))
-                    return loadedAssembly.Location;
-            }
-            catch
-            {
-                // Ignore errors searching loaded assemblies
-            }
-
-            return null;
         }
     }
 }

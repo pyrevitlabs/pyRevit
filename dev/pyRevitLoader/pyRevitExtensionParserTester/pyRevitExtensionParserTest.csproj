@@ -52,6 +52,9 @@
     <Compile Include="FullIntegrationQuoteTest.cs" />
     <Compile Include="StartupScriptTests.cs" />
     <Compile Include="SeparatorTests.cs" />
+    <Compile Include="ExtensionAssemblyNameTests.cs" />
+    <Compile Include="LinkAssemblyPathResolverTests.cs" />
+    <Compile Include="AvailabilityBindingTests.cs" />
     <Compile Include="LayoutMarkerPlacementTests.cs" />
     <Compile Include="DebugPanelCustomTitleTest.cs" />
     <Compile Include="CSharpScriptTests.cs" />

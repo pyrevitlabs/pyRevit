@@ -193,7 +193,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 // Assembly names follow: pyRevit_{revitVersion}_{hash}_{extensionName}
                 foreach (var name in _loadedPyRevitAssemblyNames)
                 {
-                    if (name.EndsWith(extension.Name, StringComparison.OrdinalIgnoreCase))
+                    if (ExtensionAssemblyName.BelongsTo(name, extension.Name))
                     {
                         _logger.Debug($"Found loaded extension assembly: {name}");
                         return true;
