@@ -83,6 +83,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// 1. Whether the extension is disabled in config
         /// 2. Whether authorized users are defined and current user is in the list
         /// 3. Whether authorized groups are defined and user is member of at least one
+        /// 4. Whether the access list could be read at all (unreadable lists reject everyone)
         /// </summary>
         private bool IsExtensionAllowed(ParsedExtension ext)
         {
@@ -100,7 +101,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (_unauthorizedExtensions.Contains(cacheKey))
                 return false;
 
-            var isAllowed = EvaluateAuthorization(ext, ext.AuthorizedUsers, ext.AuthorizedGroups);
+            var isAllowed = !ext.AuthDefinitionUnreadable
+                && EvaluateAuthorization(ext, ext.AuthorizedUsers, ext.AuthorizedGroups);
 
             if (isAllowed)
                 _authorizedExtensions.Add(cacheKey);
