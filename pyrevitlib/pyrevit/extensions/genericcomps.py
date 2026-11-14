@@ -93,6 +93,7 @@ class GenericUIComponent(GenericComponent):
         self.min_revit_ver = self.max_revit_ver = None
         self.is_beta = False
         self.highlight_type = None
+        self.shortcuts = []
         self.collapsed = False
         self.version = None
 
@@ -229,6 +230,14 @@ class GenericUIComponent(GenericComponent):
         highlight = self.meta.get(exts.MDATA_HIGHLIGHT_KEY, None)
         if highlight and isinstance(highlight, str):
             self.highlight_type = highlight.lower()
+
+        shortcuts = self.meta.get(exts.MDATA_SHORTCUTS_KEY, None)
+        if isinstance(shortcuts, str):
+            shortcuts = [shortcuts]
+        if isinstance(shortcuts, list):
+            self.shortcuts = [
+                str(shortcut).strip() for shortcut in shortcuts if str(shortcut).strip()
+            ]
 
         self.collapsed = (
             self.meta.get(exts.MDATA_COLLAPSED_KEY, "false").lower() == "true"

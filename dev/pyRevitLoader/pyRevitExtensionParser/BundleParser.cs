@@ -145,6 +145,9 @@ namespace pyRevitExtensionParser
                 case "highlight":
                     parsed.Highlight = GetScalar(valueNode)?.ToLowerInvariant();
                     return;
+                case "shortcuts":
+                    ParseShortcuts(valueNode, parsed, sourcePath);
+                    return;
                 case "is_beta":
                 case "beta":
                     parsed.IsBeta = ParseBool(valueNode);
@@ -252,6 +255,34 @@ namespace pyRevitExtensionParser
                 var text = GetScalar(entry.Value);
                 if (text != null)
                     localizedTarget[normalizedLocale] = text;
+            }
+        }
+
+        private static void ParseShortcuts(YamlNode node, ParsedBundle parsed, string sourcePath)
+        {
+            var candidates = new List<string>();
+
+            if (node is YamlScalarNode scalar)
+            {
+                candidates.Add(scalar.Value);
+            }
+            else if (node is YamlSequenceNode seq)
+            {
+                foreach (var child in seq.Children)
+                    candidates.Add(GetScalar(child));
+            }
+            else
+            {
+                var suffix = string.IsNullOrEmpty(sourcePath) ? string.Empty : $" ({sourcePath})";
+                ExtensionParser.LogWarning($"'shortcuts' in bundle.yaml must be a string or a list of strings{suffix}");
+                return;
+            }
+
+            foreach (var candidate in candidates)
+            {
+                var shortcut = candidate?.Trim();
+                if (!string.IsNullOrEmpty(shortcut))
+                    parsed.Shortcuts.Add(shortcut);
             }
         }
 

@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using Autodesk.Revit.UI;
@@ -11,6 +12,7 @@ using pyRevitExtensionParser;
 using RibbonItem = Autodesk.Revit.UI.RibbonItem;
 using RibbonButton = Autodesk.Windows.RibbonButton;
 using pyRevitAssemblyBuilder.SessionManager;
+using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitAssemblyBuilder.UIManager.Buttons
 {
@@ -23,6 +25,16 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         private readonly ILogger _logger;
         private readonly IIconManager _iconManager;
         private readonly ITooltipManager _tooltipManager;
+        private readonly ShortcutRegistrar _shortcutRegistrar;
+
+        private static readonly HashSet<CommandComponentType> ShortcutCapableTypes = new HashSet<CommandComponentType>
+        {
+            CommandComponentType.PushButton,
+            CommandComponentType.SmartButton,
+            CommandComponentType.InvokeButton,
+            CommandComponentType.UrlButton,
+            CommandComponentType.LinkButton
+        };
 
         // Total post-processing time across all Process(...) calls in the current build window.
         // Interlocked so a future off-thread caller (e.g. parallel icon warm-up) can't tear it.
@@ -46,6 +58,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _iconManager = iconManager ?? throw new ArgumentNullException(nameof(iconManager));
             _tooltipManager = tooltipManager ?? throw new ArgumentNullException(nameof(tooltipManager));
+            _shortcutRegistrar = new ShortcutRegistrar(_logger);
         }
 
         /// <inheritdoc/>
@@ -78,6 +91,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 _tooltipManager.ApplyTooltip(ribbonItem, component);
                 ApplyContextualHelp(ribbonItem, component);
                 ApplyHighlight(ribbonItem, component);
+                ApplyShortcuts(ribbonItem, component);
             }
             catch (Exception ex)
             {
@@ -157,6 +171,29 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             catch (Exception ex)
             {
                 _logger.Debug($"Failed to apply highlight to button '{ribbonItem?.ItemText ?? "unknown"}'. Exception: {ex.Message}");
+            }
+        }
+
+        /// <inheritdoc/>
+        public void ApplyShortcuts(RibbonItem ribbonItem, ParsedComponent component)
+        {
+            if (component.Shortcuts == null || component.Shortcuts.Count == 0)
+                return;
+
+            if (!ShortcutCapableTypes.Contains(component.Type))
+                return;
+
+            try
+            {
+                var adwButton = GetAutodeskWindowsButton(ribbonItem);
+                if (adwButton == null)
+                    return;
+
+                _shortcutRegistrar.Enqueue(adwButton.Id, component.DisplayName, component.Shortcuts);
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to apply shortcuts to button '{ribbonItem?.ItemText ?? "unknown"}'. Exception: {ex.Message}");
             }
         }
 
