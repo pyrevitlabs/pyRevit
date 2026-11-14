@@ -329,8 +329,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // request command exec now
                 var raised = extExecEvent.Raise();
                 if (raised != ExternalEventRequest.Accepted && raised != ExternalEventRequest.Pending) {
-                    extExecEventHandler.TryWithdraw(request);
-                    return ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
+                    if (extExecEventHandler.TryWithdraw(request))
+                        return ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
                 }
 
                 // wait until the script is executed

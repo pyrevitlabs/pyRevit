@@ -60,6 +60,21 @@ namespace pyRevitExtensionParserTester
         }
 
         /// <summary>
+        /// A request Revit already took cannot be withdrawn, and stays unfinished so the caller waits
+        /// for it instead of reporting a failure.
+        /// </summary>
+        [Test]
+        public void ATakenRequestCannotBeWithdrawnAndIsNotCompleted()
+        {
+            var slot = new ScriptRequestSlot();
+            var request = slot.Submit(null, null);
+
+            Assert.That(slot.Take(), Is.SameAs(request));
+            Assert.That(slot.TryWithdraw(request), Is.False);
+            Assert.That(request.Completed.IsSet, Is.False);
+        }
+
+        /// <summary>
         /// A request that never ran reports the failed-request result code.
         /// </summary>
         [Test]
