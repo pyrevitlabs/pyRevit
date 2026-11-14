@@ -10,8 +10,13 @@ automatically by the preflight module. Each test case, can perform ``setUp()``,
 """
 
 import os.path as op
-import imp
 import inspect
+import sys
+
+try:
+    import imp
+except ImportError:
+    imp = None
 
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import COMP_CHECK_POSTFIX
@@ -20,6 +25,33 @@ from pyrevit.extensions import extpackages as extpkg
 from pyrevit.preflight.case import PreflightTestCase
 
 mlogger = get_logger(__name__)
+
+
+def _load_check_with_imp(name, script_path):
+    return imp.load_source(name, script_path)
+
+
+def _load_check_with_importlib(name, script_path):
+    from importlib import machinery, util
+
+    module_name = "pyrevit_preflight_check_" + name
+    loader = machinery.SourceFileLoader(module_name, script_path)
+    spec = util.spec_from_file_location(module_name, script_path, loader=loader)
+    if spec is None or spec.loader is None:
+        raise ImportError("Cannot load check script: %s" % script_path)
+    module = util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        sys.modules.pop(module_name, None)
+        raise
+    return module
+
+
+_load_check_module = (
+    _load_check_with_imp if imp is not None else _load_check_with_importlib
+)
 
 
 def _grab_test_types(module):
@@ -96,7 +128,15 @@ def get_all_preflight_checks():
         # find the checks in the extension
         for check_script in ext.get_checks():
             # load the check source file so all the checks can be extracted
-            check_mod = imp.load_source(_get_check_name(check_script), check_script)
+            try:
+                check_mod = _load_check_module(
+                    _get_check_name(check_script), check_script
+                )
+            except Exception as load_ex:
+                mlogger.error(
+                    "Skipping preflight check script %s: %s", check_script, load_ex
+                )
+                continue
             # extract the checks and wrap
             for check_type in _grab_test_types(check_mod):
                 preflight_checks.append(PreflightCheck(ext, check_type, check_script))
