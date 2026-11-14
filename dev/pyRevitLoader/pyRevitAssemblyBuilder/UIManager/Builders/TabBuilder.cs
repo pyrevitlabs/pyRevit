@@ -4,6 +4,7 @@ using System.Linq;
 using Autodesk.Revit.UI;
 using Autodesk.Windows;
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
 
 namespace pyRevitAssemblyBuilder.UIManager.Builders
@@ -15,16 +16,19 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
     {
         private readonly ILogger _logger;
         private readonly UIApplication _uiApp;
+        private readonly ITabIconDecorator _tabIconDecorator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TabBuilder"/> class.
         /// </summary>
         /// <param name="uiApp">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
-        public TabBuilder(UIApplication uiApp, ILogger logger)
+        /// <param name="tabIconDecorator">Shows the optional tab bundle icon before the tab title.</param>
+        public TabBuilder(UIApplication uiApp, ILogger logger, ITabIconDecorator tabIconDecorator)
         {
             _uiApp = uiApp ?? throw new ArgumentNullException(nameof(uiApp));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _tabIconDecorator = tabIconDecorator ?? throw new ArgumentNullException(nameof(tabIconDecorator));
         }
 
         /// <inheritdoc/>
@@ -79,6 +83,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     existingTab.Tag = UIManagerConstants.PyRevitTabIdentifier;
                     existingTab.IsVisible = true;
                     existingTab.IsEnabled = true;
+                    ApplyTabIcon(existingTab, component);
 
                     // Detect rename: if the current Title differs, return it so the
                     // caller can dual-mark the scanner registry under both names.
@@ -95,6 +100,33 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             }
 
             return renamedTitle;
+        }
+
+        private void ApplyTabIcon(RibbonTab tab, ParsedComponent component)
+        {
+            var lightIconPath = component.Icons?.PrimaryIcon?.FilePath;
+            var darkIconPath = component.Icons?.PrimaryDarkIcon?.FilePath;
+            if (lightIconPath == null && darkIconPath == null)
+                return;
+
+            try
+            {
+                var currentSource = _tabIconDecorator.GetIconSource(tab);
+                if (currentSource == null)
+                {
+                    _tabIconDecorator.TryAddIcons(tab, component.Directory, lightIconPath, darkIconPath);
+                }
+                else if (!string.Equals(currentSource, component.Directory, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.Error(
+                        $"Tab '{tab.Title}' already shows the icon from '{currentSource}'; " +
+                        $"the icon in '{component.Directory}' is ignored. Keep a tab icon in only one extension.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to apply icon to tab '{tab.Title}'. Exception: {ex.Message}");
+            }
         }
 
         /// <inheritdoc/>
