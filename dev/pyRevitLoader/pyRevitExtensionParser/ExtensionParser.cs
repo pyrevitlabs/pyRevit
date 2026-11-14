@@ -1886,19 +1886,27 @@ namespace pyRevitExtensionParser
         private static string StripTrailingComment(string value)
         {
             var quoteChar = '\0';
+            var quoteLength = 0;
             for (int i = 0; i < value.Length; i++)
             {
                 var ch = value[i];
                 if (quoteChar != '\0')
                 {
                     if (ch == '\\')
+                    {
                         i++;
-                    else if (ch == quoteChar)
+                    }
+                    else if (ch == quoteChar && HasRun(value, i, quoteChar, quoteLength))
+                    {
+                        i += quoteLength - 1;
                         quoteChar = '\0';
+                    }
                 }
                 else if (ch == '"' || ch == '\'')
                 {
                     quoteChar = ch;
+                    quoteLength = HasRun(value, i, ch, 3) ? 3 : 1;
+                    i += quoteLength - 1;
                 }
                 else if (ch == '#')
                 {
@@ -1906,6 +1914,18 @@ namespace pyRevitExtensionParser
                 }
             }
             return value.Trim();
+        }
+
+        private static bool HasRun(string value, int index, char ch, int length)
+        {
+            if (index + length > value.Length)
+                return false;
+            for (int offset = 0; offset < length; offset++)
+            {
+                if (value[index + offset] != ch)
+                    return false;
+            }
+            return true;
         }
 
         /// <summary>

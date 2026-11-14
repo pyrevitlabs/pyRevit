@@ -44,6 +44,16 @@ namespace pyRevitExtensionParserTest
             Assert.That(button.Title, Is.EqualTo("Door #1"));
         }
 
+        /// <summary>A quote inside a triple-quoted dict value does not end the string, so the hash and the other locales survive.</summary>
+        [Test]
+        public void Title_DictWithTripleQuotedValueContainingQuotes_KeepsEveryLocale()
+        {
+            var button = ParseButton("__title__ = {\"en_us\": \"\"\"Select \"Door #1\" \"\"\", \"fr_fr\": \"Portes\"}\n");
+
+            Assert.That(button.Title, Does.Contain("Door #1"));
+            Assert.That(button.GetLocalizedTitle("fr_fr"), Is.EqualTo("Portes"));
+        }
+
         /// <summary>A trailing comment after a boolean flag does not turn it off.</summary>
         [Test]
         public void BooleanFlags_WithTrailingComment_AreRead()
