@@ -818,7 +818,8 @@ Methods: `ping`,
 `invalid_params`. Only a line that isn't JSON is `parse_error` (-32700). A parameter of the
 wrong JSON type, or a `capture` width outside 320-2400, is `invalid_params`. Any other
 unexpected failure is `internal_error` with `data.outcome` `unknown`, because the work may
-already have run.
+already have run. When a failed `capture` could not be rolled back either, the details also
+carry `rollback_failure`.
 
 ### What became of a request that got no answer
 
