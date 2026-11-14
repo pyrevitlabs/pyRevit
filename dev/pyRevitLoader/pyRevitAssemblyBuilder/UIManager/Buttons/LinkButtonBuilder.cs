@@ -107,7 +107,8 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 {
                     linkBtn.AssemblyName = assemblyPath;
                     linkBtn.ClassName = className;
-                    AvailabilityBinding.Apply(linkBtn, AvailabilityBinding.ForResolved(availabilityClassName));
+                    if (!string.IsNullOrEmpty(availabilityClassName))
+                        linkBtn.AvailabilityClassName = availabilityClassName;
 
                     linkBtn.ItemText = buttonText;
                     ButtonPostProcessor.Process(linkBtn, component, parentComponent, iconMode);

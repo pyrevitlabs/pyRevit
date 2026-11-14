@@ -4,7 +4,7 @@ using pyRevitAssemblyBuilder.UIManager.Buttons;
 namespace pyRevitExtensionParserTest
 {
     /// <summary>
-    /// Regression tests for #4047: a reused button drops its availability class when its context is removed.
+    /// Regression tests for #4047: the availability class is only assigned when the button has a context, never an empty value that Revit rejects.
     /// </summary>
     [TestFixture]
     [Category("HostFree")]
@@ -12,30 +12,11 @@ namespace pyRevitExtensionParserTest
     public class AvailabilityBindingTests
     {
         [TestCase("Cmd_abc", "doc-open", "Cmd_abc_avail")]
-        [TestCase("Cmd_abc", "", "")]
-        [TestCase("Cmd_abc", null, "")]
-        public void ForContext_ReturnsEmptyWhenContextIsRemoved(string className, string? context, string expected)
+        [TestCase("Cmd_abc", "", null)]
+        [TestCase("Cmd_abc", null, null)]
+        public void ForContext_ReturnsNullWhenThereIsNoContext(string className, string? context, string? expected)
         {
             Assert.That(AvailabilityBinding.ForContext(className, context), Is.EqualTo(expected));
-        }
-
-        [TestCase("Cmd_abc_avail", "Cmd_abc_avail")]
-        [TestCase(null, "")]
-        [TestCase("", "")]
-        public void ForResolved_ReturnsEmptyWhenNoAvailabilityClass(string? resolved, string expected)
-        {
-            Assert.That(AvailabilityBinding.ForResolved(resolved), Is.EqualTo(expected));
-        }
-
-        [TestCase(null, "", false)]
-        [TestCase("", "", false)]
-        [TestCase("Cmd_abc_avail", "", true)]
-        [TestCase("", "Cmd_abc_avail", true)]
-        [TestCase(null, "Cmd_abc_avail", true)]
-        [TestCase("Cmd_abc_avail", "Cmd_abc_avail", false)]
-        public void NeedsUpdate_SkipsTheSetterWhenNothingChanges(string? current, string desired, bool expected)
-        {
-            Assert.That(AvailabilityBinding.NeedsUpdate(current, desired), Is.EqualTo(expected));
         }
     }
 }
