@@ -13,7 +13,8 @@ namespace pyRevitExtensionParserTest
 {
     /// <summary>
     /// Regression tests for #4047: link and invoke buttons resolve their assembly from their own
-    /// folders and ancestor folders, never from a sibling bundle's <c>bin/</c>.
+    /// folders and ancestor folders up to the extension, never from a sibling bundle's <c>bin/</c>,
+    /// while an assembly already loaded from anywhere is still accepted by name.
     /// </summary>
     [TestFixture]
     [Category("HostFree")]
@@ -139,7 +140,7 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
-        public void Resolve_IgnoresAnAssemblyAlreadyLoadedFromASiblingsBin()
+        public void Resolve_AcceptsAnAssemblyAlreadyLoadedFromAnotherFolder()
         {
             var panel = _extension.Children[0].Children[0];
             var siblingBin = Path.Combine(panel.Directory, "A.linkbutton", "bin");
@@ -155,6 +156,18 @@ namespace pyRevitExtensionParserTest
             var loaded = Assembly.LoadFrom(siblingCopy);
             Assume.That(loaded.Location, Is.EqualTo(siblingCopy));
             _link.TargetAssembly = assemblyName;
+
+            Assert.That(LinkAssemblyPathResolver.Resolve(_link, _extension), Is.EqualTo(siblingCopy));
+        }
+
+        [Test]
+        public void Resolve_DoesNotSearchAboveTheExtension_WhenItsDirectoryUsesAnotherSeparator()
+        {
+            var aboveBin = Path.Combine(_root, "bin");
+            Directory.CreateDirectory(aboveBin);
+            File.WriteAllBytes(Path.Combine(aboveBin, "AboveExtension.dll"), new byte[] { 0 });
+            _link.TargetAssembly = "AboveExtension";
+            _extension.Directory = _extension.Directory.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
             Assert.That(LinkAssemblyPathResolver.Resolve(_link, _extension), Is.Null);
         }

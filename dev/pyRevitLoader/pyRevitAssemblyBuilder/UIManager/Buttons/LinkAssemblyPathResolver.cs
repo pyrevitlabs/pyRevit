@@ -21,7 +21,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         /// The owning extension. Link and invoke buttons search the button's own folder,
         /// <c>bin/</c> and <c>lib/</c>, then those of each ancestor up to the extension, nearest
         /// first. A sibling bundle's folders are never searched. Without the extension only the
-        /// component folder and its <c>bin/</c> are searched.
+        /// component folder and its <c>bin/</c> are searched. When no file is found, an assembly with
+        /// the same name already loaded from any folder is accepted, because link buttons can target
+        /// other add-ins.
         /// </param>
         public static string? Resolve(ParsedComponent component, ParsedExtension? extension)
         {
@@ -76,8 +78,8 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a =>
                     a.GetName().Name?.Equals(assemblyName, StringComparison.OrdinalIgnoreCase) == true);
 
-                if (loadedAssembly != null && IsInSearchPaths(loadedAssembly.Location, searchPaths))
-                    return loadedAssembly.Location;
+                if (!string.IsNullOrEmpty(loadedAssembly?.Location))
+                    return loadedAssembly!.Location;
             }
             catch
             {
@@ -86,16 +88,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             return null;
         }
 
-        private static bool IsInSearchPaths(string assemblyLocation, IEnumerable<string> searchPaths)
+        private static string? NormalizeDirectory(string? directory)
         {
-            if (string.IsNullOrEmpty(assemblyLocation))
-                return false;
-
-            var assemblyDirectory = Path.GetDirectoryName(Path.GetFullPath(assemblyLocation));
-            return searchPaths.Any(searchPath => string.Equals(
-                Path.GetFullPath(searchPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
-                assemblyDirectory?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
-                StringComparison.OrdinalIgnoreCase));
+            return string.IsNullOrEmpty(directory)
+                ? directory
+                : Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
 
         private static IEnumerable<string> CollectOwnAndAncestorPaths(ParsedComponent component, ParsedExtension extension)
@@ -106,8 +103,8 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
             paths.Add(component.Directory);
 
-            var stop = extension.Directory?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            var current = component.Directory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var stop = NormalizeDirectory(extension.Directory);
+            var current = NormalizeDirectory(component.Directory);
             while (!string.IsNullOrEmpty(current))
             {
                 paths.Add(Path.Combine(current, "bin"));
