@@ -654,20 +654,47 @@ namespace pyRevitExtensionParser
 
             if (component.LayoutOrder != null && component.LayoutOrder.Count > 0)
             {
-                // Build reordered list (first pass: add matching components)
                 var reorderedChildren = new List<ParsedComponent>();
+                var lastLayoutIndex = component.LayoutOrder.Count - 1;
 
-                foreach (var layoutItem in component.LayoutOrder)
+                for (int idx = 0; idx < component.LayoutOrder.Count; idx++)
                 {
-                    // Skip separator and slideout markers in first pass
-                    if (layoutItem.Contains("---") || layoutItem.Contains(">>>"))
-                        continue;
+                    var layoutItem = component.LayoutOrder[idx];
 
-                    // Find matching component by DisplayName
+                    if (layoutItem.Contains("---"))
+                    {
+                        if (idx < lastLayoutIndex)
+                        {
+                            reorderedChildren.Add(new ParsedComponent
+                            {
+                                Name = "---",
+                                DisplayName = "---",
+                                Type = CommandComponentType.Separator,
+                                Directory = component.Directory
+                            });
+                        }
+                        continue;
+                    }
+
+                    if (layoutItem.Contains(">>>"))
+                    {
+                        if (idx < lastLayoutIndex)
+                        {
+                            reorderedChildren.Add(new ParsedComponent
+                            {
+                                Name = ">>>",
+                                DisplayName = ">>>",
+                                Type = CommandComponentType.Separator,
+                                HasSlideout = true,
+                                Directory = component.Directory
+                            });
+                        }
+                        continue;
+                    }
+
                     var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
                     if (matchingComponent != null && !reorderedChildren.Contains(matchingComponent))
                     {
-                        // Apply custom title if specified in LayoutItemTitles
                         if (component.LayoutItemTitles != null &&
                             component.LayoutItemTitles.ContainsKey(layoutItem))
                         {
@@ -675,40 +702,6 @@ namespace pyRevitExtensionParser
                         }
 
                         reorderedChildren.Add(matchingComponent);
-                    }
-                }
-
-                // Second pass: insert separators and slideouts at their positions
-                for (int idx = 0; idx < component.LayoutOrder.Count; idx++)
-                {
-                    var layoutItem = component.LayoutOrder[idx];
-                    var insertIndex = Math.Min(idx, reorderedChildren.Count);
-
-                    // Check if this is a separator or slideout marker
-                    if (layoutItem.Contains("---") && idx < component.LayoutOrder.Count - 1)
-                    {
-                        // Create a separator component and insert at position
-                        var separator = new ParsedComponent
-                        {
-                            Name = "---",
-                            DisplayName = "---",
-                            Type = CommandComponentType.Separator,
-                            Directory = component.Directory
-                        };
-                        reorderedChildren.Insert(insertIndex, separator);
-                    }
-                    else if (layoutItem.Contains(">>>") && idx < component.LayoutOrder.Count - 1)
-                    {
-                        // Create a slideout marker component and insert at position
-                        var slideout = new ParsedComponent
-                        {
-                            Name = ">>>",
-                            DisplayName = ">>>",
-                            Type = CommandComponentType.Separator,  // Slideout acts like a separator
-                            HasSlideout = true,  // Mark it as a slideout marker
-                            Directory = component.Directory
-                        };
-                        reorderedChildren.Insert(insertIndex, slideout);
                     }
                 }
 
