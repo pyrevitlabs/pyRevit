@@ -38,6 +38,10 @@ namespace pyRevitCLI {
     /// host also accepts one connection at a time; calls
     /// to different Revit sessions never wait for each other. <c>notifications/cancelled</c> stops
     /// a call that waits for its turn or for Revit's answer, but cannot stop what Revit already runs.
+    /// When input ends, calls still open keep their answer for <see cref="DefaultInputClosedGracePeriod"/>
+    /// (a one-shot client may close stdin and still wait for its answer), then they are cancelled and
+    /// the process waits at most <see cref="AbandonedCallsWait"/> more before exiting anyway, so a
+    /// vanished client can't keep the process, and the folder it locks, alive indefinitely.
     /// </remarks>
     internal sealed class PyRevitMcpServer {
         private const string LatestProtocolVersion = "2025-06-18";
@@ -45,6 +49,8 @@ namespace pyRevitCLI {
             "2025-06-18", "2025-03-26", "2024-11-05",
         };
         private static readonly TimeSpan ProgressInterval = TimeSpan.FromSeconds(10);
+        internal static readonly TimeSpan DefaultInputClosedGracePeriod = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan AbandonedCallsWait = TimeSpan.FromSeconds(10);
         private const int MaxRunResultPage = 200 * 1024;
 
         private readonly string defaultRevit;
@@ -72,9 +78,11 @@ namespace pyRevitCLI {
         /// <summary>
         /// Serves requests read from <paramref name="input"/> until it ends, writing responses to
         /// <paramref name="output"/>. Lets tests drive the server without a process.
+        /// <paramref name="inputClosedGracePeriod"/> is how long calls still open after the input ended may
+        /// keep running before they are cancelled; <see cref="DefaultInputClosedGracePeriod"/> when omitted.
         /// </summary>
-        internal static void Serve(string defaultRevit, TextReader input, TextWriter output) {
-            new PyRevitMcpServer(defaultRevit).Run(input, output);
+        internal static void Serve(string defaultRevit, TextReader input, TextWriter output, TimeSpan? inputClosedGracePeriod = null) {
+            new PyRevitMcpServer(defaultRevit).Run(input, output, inputClosedGracePeriod ?? DefaultInputClosedGracePeriod);
         }
 
         private string ReadRequestLine(BoundedLineReader lines) {
@@ -87,11 +95,11 @@ namespace pyRevitCLI {
             }
         }
 
-        private void Run(TextReader input, TextWriter output) {
+        private void Run(TextReader input, TextWriter output, TimeSpan inputClosedGracePeriod) {
             LogManager.Configuration = new LoggingConfiguration();
             this.output = output;
 
-            var inFlight = new List<Task>();
+            var inFlight = new List<(Task Task, CancellationTokenSource Cancellation, string Key)>();
             var lines = new BoundedLineReader(input);
             string line;
             while ((line = ReadRequestLine(lines)) != null) {
@@ -143,11 +151,11 @@ namespace pyRevitCLI {
                             Write(Result(id, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }));
                             break;
                         case "tools/call":
-                            inFlight.RemoveAll(task => task.IsCompleted);
+                            inFlight.RemoveAll(call => call.Task.IsCompleted);
                             var cancellation = new CancellationTokenSource();
                             var key = id.ToString(Formatting.None);
                             var tracked = pendingCalls.TryAdd(key, cancellation);
-                            inFlight.Add(Task.Run(() => {
+                            inFlight.Add((Task.Run(() => {
                                 try {
                                     CallTool(id, parameters, cancellation);
                                 }
@@ -155,7 +163,7 @@ namespace pyRevitCLI {
                                     if (tracked)
                                         pendingCalls.TryRemove(key, out _);
                                 }
-                            }));
+                            }), cancellation, key));
                             break;
                         default:
                             Write(Error(id, -32601, "Method not found"));
@@ -167,7 +175,15 @@ namespace pyRevitCLI {
                 }
             }
 
-            Task.WaitAll(inFlight.ToArray());
+            var openTasks = inFlight.Select(call => call.Task).ToArray();
+            if (Task.WaitAll(openTasks, inputClosedGracePeriod))
+                return;
+            foreach (var call in inFlight)
+                Cancel(call.Cancellation);
+            if (Task.WaitAll(openTasks, AbandonedCallsWait))
+                return;
+            var abandoned = inFlight.Where(call => !call.Task.IsCompleted).Select(call => call.Key);
+            System.Console.Error.WriteLine("pyrevit mcp: exiting with calls still running (request ids: " + string.Join(", ", abandoned) + ")");
         }
 
         private static JObject Initialize(JObject parameters) {
@@ -191,6 +207,10 @@ namespace pyRevitCLI {
         private void Cancel(JToken requestId) {
             if (requestId == null || !pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
                 return;
+            Cancel(cancellation);
+        }
+
+        private static void Cancel(CancellationTokenSource cancellation) {
             if (!Monitor.TryEnter(cancellation))
                 return;
             try {

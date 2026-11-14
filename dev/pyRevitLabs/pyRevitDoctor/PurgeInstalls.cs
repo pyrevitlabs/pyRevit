@@ -56,6 +56,7 @@ namespace pyRevitDoctor {
                     }
                     catch {
                         Console.WriteLine($"Can not open \"({target.BaseKey})\\{target.SubKeyName}\". Run this command as admin");
+                        Environment.ExitCode = 1;
                         continue;
                     }
 
@@ -78,6 +79,7 @@ namespace pyRevitDoctor {
                                 }
                                 catch (Exception delEx) {
                                     Console.WriteLine($"Error Deleting {key.Name}\\{subkeyName}\\ ({product.Name} {product.Version}) | {delEx.Message}");
+                                    Environment.ExitCode = 1;
                                 }
                     key.Close();
                 }
@@ -89,59 +91,45 @@ namespace pyRevitDoctor {
         }
 
         static bool CheckInstallerProducts(RegistryTarget searchTarget, RegistryKey searchTargetKey, string subKeyName, Product product, bool dryrun) {
-            var targetKey = searchTargetKey.OpenSubKey(subKeyName);
+            string Label() => $"{searchTargetKey.Name}\\{subKeyName} ({product.Name} {product.Version})";
             try {
-                // if product code is listed in iconpath, assume a match
-                var productName = (string)targetKey.GetValue("ProductName");
-                var productIcon = (string)targetKey.GetValue("ProductIcon");
-                targetKey.Close();
-                if (productName == product.Name && productIcon.Contains(product.Key)) {
-
-                    // cleanup reference under Features
-                    var featuresKey = RegistryKey.OpenBaseKey(searchTarget.BaseKey, RegistryView.Default).OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\Features"), writable: true);
-                    if (featuresKey.GetSubKeyNames().Contains(subKeyName))
-                        try {
-                            if (!dryrun) {
-                                featuresKey.DeleteSubKey(subKeyName);
-                                Console.WriteLine($"Deleted {featuresKey.Name}\\{subKeyName}\\ ({product.Name} {product.Version})");
-                            }
-                            else
-                                Console.WriteLine($"Fake Deleted {featuresKey.Name}\\{subKeyName}\\ ({product.Name} {product.Version})");
-                        }
-                        catch (Exception delEx) {
-                            Console.WriteLine($"Error Deleting {featuresKey.Name}\\{subKeyName}\\ ({product.Name} {product.Version}) | {delEx.Message}");
-                        }
-                    featuresKey.Close();
-
-                    // cleanup reference under UpgradeCodes
-                    var upgradeInfoKey = RegistryKey.OpenBaseKey(searchTarget.BaseKey, RegistryView.Default).OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\UpgradeCodes"), writable: true);
-                    foreach (var upgradeInfoSubKeyName in upgradeInfoKey.GetSubKeyNames()) {
-                        var subUpgradeInfoKey = upgradeInfoKey.OpenSubKey(upgradeInfoSubKeyName, writable: true);
-                        if (subUpgradeInfoKey.GetValueNames().Contains(subKeyName))
-                            try {
-                                if (!dryrun) {
-                                    subUpgradeInfoKey.DeleteValue(subKeyName);
-                                    Console.WriteLine($"Deleted {subUpgradeInfoKey.Name}\\{subKeyName} ({product.Name} {product.Version})");
-                                }
-                                else
-                                    Console.WriteLine($"Fake Deleted {subUpgradeInfoKey.Name}\\{subKeyName} ({product.Name} {product.Version})");
-                            }
-                            catch (Exception delEx) {
-                                Console.WriteLine($"Error Deleting {subUpgradeInfoKey.Name}\\{subKeyName} ({product.Name} {product.Version}) | {delEx.Message}");
-                            }
-                    }
-                    upgradeInfoKey.Close();
-
-                    // return true so the root key gets deleted also
-                    return true;
+                string productName;
+                string productIcon;
+                using (var targetKey = searchTargetKey.OpenSubKey(subKeyName)) {
+                    if (targetKey == null)
+                        return false;
+                    productName = (string)targetKey.GetValue("ProductName");
+                    productIcon = (string)targetKey.GetValue("ProductIcon");
                 }
-            }
-            catch { }
+                if (productName != product.Name || productIcon == null || !productIcon.Contains(product.Key))
+                    return false;
 
-            // close opened key and return
-            if (targetKey != null)
-                targetKey.Close();
-            return false;
+                using var baseKey = RegistryKey.OpenBaseKey(searchTarget.BaseKey, RegistryView.Default);
+                using var featuresKey = baseKey.OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\Features"), writable: true);
+                using var upgradeInfoKey = baseKey.OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\UpgradeCodes"), writable: true);
+
+                if (featuresKey != null && featuresKey.GetSubKeyNames().Contains(subKeyName)) {
+                    if (!dryrun)
+                        featuresKey.DeleteSubKey(subKeyName);
+                    Console.WriteLine($"{(dryrun ? "Fake Deleted" : "Deleted")} {featuresKey.Name}\\{subKeyName}\\ ({product.Name} {product.Version})");
+                }
+
+                foreach (var upgradeInfoSubKeyName in upgradeInfoKey?.GetSubKeyNames() ?? Array.Empty<string>()) {
+                    using var subUpgradeInfoKey = upgradeInfoKey.OpenSubKey(upgradeInfoSubKeyName, writable: true);
+                    if (subUpgradeInfoKey != null && subUpgradeInfoKey.GetValueNames().Contains(subKeyName)) {
+                        if (!dryrun)
+                            subUpgradeInfoKey.DeleteValue(subKeyName);
+                        Console.WriteLine($"{(dryrun ? "Fake Deleted" : "Deleted")} {subUpgradeInfoKey.Name}\\{subKeyName} ({product.Name} {product.Version})");
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex) {
+                Console.WriteLine($"Error purging {Label()}, its Products key was kept | {ex.Message}");
+                Environment.ExitCode = 1;
+                return false;
+            }
         }
     }
 }
