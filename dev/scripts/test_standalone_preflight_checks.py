@@ -76,6 +76,7 @@ class SysModulesIsolatedTestCase(unittest.TestCase):
     """Restores ``sys.modules`` after each test so loaded checks never leak."""
 
     def setUp(self):
+        """Snapshot ``sys.modules`` and restore it on cleanup."""
         patcher = patch.dict(sys.modules)
         patcher.start()
         self.addCleanup(patcher.stop)
