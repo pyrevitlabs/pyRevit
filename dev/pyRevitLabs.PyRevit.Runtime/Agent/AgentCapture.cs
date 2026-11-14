@@ -442,14 +442,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc.IsReadOnly)
                 throw new AgentException("document_read_only", "A schedule is captured on a temporary sheet, which a read-only document doesn't allow.");
 
-            return ExportInRolledBackGroup(doc, "pyRevit Agent schedule sheet", () => {
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent schedule sheet", () => {
                 var sheet = ViewSheet.Create(doc, ElementId.InvalidElementId);
                 var appearsInSheetList = sheet.get_Parameter(BuiltInParameter.SHEET_SCHEDULED);
                 if (appearsInSheetList != null && !appearsInSheetList.IsReadOnly)
                     appearsInSheetList.Set(0);
                 ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, XYZ.Zero);
                 return sheet;
-            }, directory, baseName, request.Width,
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
                 message => $"Schedule '{schedule.Name}' could not be placed on a temporary sheet: {message}");
         }
 
@@ -461,18 +461,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc.IsReadOnly)
                 throw new AgentException("document_read_only", "'detail_level' and 'display_style' change the view temporarily, which a read-only document doesn't allow.");
 
-            return ExportInRolledBackGroup(doc, "pyRevit Agent display override", () => {
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent display override", () => {
                 var target = ViewToEdit(doc, view);
                 OverrideDisplay(target, request.DetailLevel, request.DisplayStyle);
                 return target;
-            }, directory, baseName, request.Width,
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
                 message => $"View '{view.Name}' could not be shown with the requested display settings: {message}");
-        }
-
-        private static string ExportInRolledBackGroup(Document doc, string transactionName, Func<View> prepare,
-            string directory, string baseName, int width, Func<string, string> describeFailure) {
-            return AgentCaptureGroup.Run(doc, transactionName, prepare,
-                target => ExportView(doc, target, directory, baseName, width), describeFailure);
         }
 
         /// <remarks>
@@ -512,12 +506,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     $"View '{view.Name}' is not yours in this workshared model, so 'viewport' would crop a copy without its "
                     + "temporary hide/isolate; use mode 'screen' to capture it as shown.");
             var corners = uiView.GetZoomCorners();
-            return ExportInRolledBackGroup(doc, "pyRevit Agent crop to viewport", () => {
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent crop to viewport", () => {
                 var target = ViewToEdit(doc, view);
                 OverrideDisplay(target, request.DetailLevel, request.DisplayStyle);
                 CropToCorners(target, corners[0], corners[1]);
                 return target;
-            }, directory, baseName, request.Width,
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
                 message => $"View '{view.Name}' could not be cropped to its on-screen region: {message} Use mode 'export' or 'screen'.");
         }
 
@@ -552,12 +546,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc.IsReadOnly)
                 throw new AgentException("document_read_only", "A temporary view can't be created in a read-only document.");
 
-            return ExportInRolledBackGroup(doc, "pyRevit Agent capture view", () => {
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent capture view", () => {
                 var view = CreateTemporary(doc, request);
                 ApplyDisplay(view, request.DetailLevel ?? "medium", request.DisplayStyle ?? "shaded_edges");
                 ShowModelOnly(doc, view);
                 return view;
-            }, directory, baseName, request.Width,
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
                 message => $"The temporary view could not be created: {message}");
         }
 
