@@ -294,18 +294,17 @@ namespace pyRevitAssemblyBuilder.UIManager
             // script), or null if no rename detected.
             var renamedTabTitle = _tabBuilder.CreateTab(component);
 
-            // Get tab name for children using localized title
-            var tabText = ExtensionParser.GetComponentTitle(component);
+            var tabName = component.DisplayName;
 
             // Mark tab as touched in the registry (matching Python's set_dirty_flag behavior)
-            _ribbonScanner?.MarkElementTouched("tab", tabText);
+            _ribbonScanner?.MarkElementTouched("tab", tabName);
 
             // If CreateTab detected a rename, also mark the current (renamed) Title
             // so CleanupOrphanedElements() doesn't deactivate the tab (#3167).
             if (!string.IsNullOrEmpty(renamedTabTitle))
             {
                 _ribbonScanner?.MarkElementTouched("tab", renamedTabTitle!);
-                _logger.Debug($"Tab '{tabText}' has current Title '{renamedTabTitle}' — marked both as touched.");
+                _logger.Debug($"Tab '{tabName}' has current Title '{renamedTabTitle}' — marked both as touched.");
             }
 
             // Recursively build children, passing the renamed title so panels can dual-mark too.
@@ -314,7 +313,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                 if (child == null)
                     continue;
 
-                RecursivelyBuildUI(child, component, null, tabText, assemblyInfo, renamedTabTitle);
+                RecursivelyBuildUI(child, component, null, tabName, assemblyInfo, renamedTabTitle);
             }
         }
 
@@ -324,18 +323,17 @@ namespace pyRevitAssemblyBuilder.UIManager
             // Use PanelBuilder to create the panel
             var panel = _panelBuilder.CreatePanel(component, tabName);
 
-            // Get panel name for registry (using localized title)
-            var panelText = ExtensionParser.GetComponentTitle(component);
+            var panelName = component.DisplayName;
 
             // Mark panel as touched in the registry (matching Python's set_dirty_flag behavior)
-            _ribbonScanner?.MarkElementTouched("panel", panelText, tabName);
+            _ribbonScanner?.MarkElementTouched("panel", panelName, tabName);
 
             // If the parent tab was renamed (e.g. by a translation script), the scanner
-            // registered this panel under "panel:{renamedTab}:{panelText}". Mark that
+            // registered this panel under "panel:{renamedTab}:{panelName}". Mark that
             // key as touched too so cleanup doesn't hide the panel.
             if (!string.IsNullOrEmpty(renamedTabTitle))
             {
-                _ribbonScanner?.MarkElementTouched("panel", panelText, renamedTabTitle);
+                _ribbonScanner?.MarkElementTouched("panel", panelName, renamedTabTitle);
             }
 
             // Apply background colors if specified

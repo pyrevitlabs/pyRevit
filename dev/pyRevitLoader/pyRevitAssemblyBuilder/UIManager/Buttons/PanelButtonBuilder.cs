@@ -134,7 +134,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
                 var adwPanel = adwTab
                     .Panels
-                    .First(p => p.Source.Title == parentPanel.Name);
+                    .First(p => RibbonPanelNaming.IsNamed(p, parentPanel.Name));
                 var adwBtn = adwPanel
                     .Source
                     .Items

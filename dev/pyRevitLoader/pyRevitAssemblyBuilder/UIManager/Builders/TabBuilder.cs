@@ -36,8 +36,8 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 return null;
             }
 
-            // Use localized title which handles fallback to DisplayName
-            var tabText = ExtensionParser.GetComponentTitle(component);
+            var tabText = component.DisplayName;
+            var tabTitle = ExtensionParser.GetComponentTitle(component);
 
             try
             {
@@ -59,9 +59,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 var ribbon = ComponentManager.Ribbon;
                 if (ribbon?.Tabs == null) return null;
 
-                // Primary search: exact Title or Id match
-                var existingTab = ribbon.Tabs.FirstOrDefault(t =>
-                    t.Title == tabText || t.Id == tabText);
+                // Primary search: exact Id match, then Title match
+                var existingTab = ribbon.Tabs.FirstOrDefault(t => t.Id == tabText)
+                    ?? ribbon.Tabs.FirstOrDefault(t => t.Title == tabText);
 
                 // Fallback: tab was renamed by a script (e.g. translation) so Title no
                 // longer matches. Search by pyRevit Tag (set during the previous session)
@@ -80,6 +80,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     existingTab.IsVisible = true;
                     existingTab.IsEnabled = true;
 
+                    if (ShouldApplyTitle(existingTab, component, tabText, tabTitle))
+                        existingTab.Title = tabTitle;
+
                     // Detect rename: if the current Title differs, return it so the
                     // caller can dual-mark the scanner registry under both names.
                     if (existingTab.Title != tabText)
@@ -95,6 +98,16 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             }
 
             return renamedTitle;
+        }
+
+        private static bool ShouldApplyTitle(RibbonTab tab, ParsedComponent component, string tabName, string tabTitle)
+        {
+            if (string.IsNullOrEmpty(tabTitle) || tab.Title == tabTitle)
+                return false;
+
+            return tab.Title == tabName
+                || tab.Title == component.Title
+                || (component.LocalizedTitles?.Values.Contains(tab.Title) ?? false);
         }
 
         /// <inheritdoc/>

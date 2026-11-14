@@ -88,9 +88,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Panels
                 if (string.IsNullOrEmpty(panelName))
                     return null;
 
-                return tab.Panels.FirstOrDefault(p =>
-                    string.Equals(p.Source?.Title, panelName, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(p.Source?.Id, panelName, StringComparison.OrdinalIgnoreCase));
+                return tab.Panels.FirstOrDefault(p => RibbonPanelNaming.IsNamed(p, panelName));
             }
             catch (Exception ex)
             {
