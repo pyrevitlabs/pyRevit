@@ -1,6 +1,5 @@
 using System;
 using Autodesk.Revit.DB;
-using PyRevitLabs.PyRevit.Runtime.Agent;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     /// <summary>
@@ -36,7 +35,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             Assert.Equal("capture_failed", failure.Code);
             Assert.False(prepared);
+            Assert.Equal("failed: Revit did not start the temporary capture group, so the view was not changed.", failure.Message);
             Assert.Equal(0, document.TransactionStarts);
+            Assert.Equal(0, document.RollbackCalls);
         }
 
         /// <summary>
@@ -54,6 +55,118 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Contains("RolledBack", failure.Message);
             Assert.False(exported);
             Assert.Equal(1, document.TransactionStarts);
+            Assert.Equal(1, document.RollbackCalls);
+            Assert.Equal(0, document.OpenTransactions);
+        }
+
+        /// <summary>
+        /// A transaction Revit does not start fails the capture before the view is changed, and the
+        /// group is rolled back.
+        /// </summary>
+        [Fact]
+        public void ATransactionThatDoesNotStartFailsTheCaptureBeforePreparing() {
+            var document = new Document { TransactionStartStatus = TransactionStatus.Uninitialized };
+            var prepared = false;
+
+            var failure = Assert.Throws<AgentException>(() =>
+                AgentCaptureGroup.Run(document, "t", () => { prepared = true; return 1; }, target => "png", Describe));
+
+            Assert.Equal("capture_failed", failure.Code);
+            Assert.Equal("failed: Revit did not start the temporary view change (status Uninitialized).", failure.Message);
+            Assert.False(prepared);
+            Assert.Equal(1, document.RollbackCalls);
+        }
+
+        /// <summary>
+        /// A rollback Revit does not confirm is reported as rollback_incomplete, not as a success.
+        /// </summary>
+        [Fact]
+        public void AnUnconfirmedRollbackFailsTheCapture() {
+            var document = new Document { RollbackStatus = TransactionStatus.Started };
+
+            var failure = Assert.Throws<AgentException>(() =>
+                AgentCaptureGroup.Run(document, "t", () => 1, target => "png", Describe));
+
+            Assert.Equal("rollback_incomplete", failure.Code);
+            Assert.Equal("failed: Revit did not confirm the rollback of the temporary capture group (status Started).", failure.Message);
+        }
+
+        /// <summary>
+        /// A rollback that throws after a successful export is reported as rollback_incomplete.
+        /// </summary>
+        [Fact]
+        public void ARollbackThatThrowsAfterAnExportFailsTheCapture() {
+            var document = new Document { ThrowOnRollback = true };
+
+            var failure = Assert.Throws<AgentException>(() =>
+                AgentCaptureGroup.Run(document, "t", () => 1, target => "png", Describe));
+
+            Assert.Equal("rollback_incomplete", failure.Code);
+            Assert.Equal("failed: Revit could not roll back the temporary capture group: Rollback failed.", failure.Message);
+        }
+
+        /// <summary>
+        /// A rollback that throws never masks the capture failure: the original exception is thrown
+        /// and the rollback failure is attached to it.
+        /// </summary>
+        [Fact]
+        public void ARollbackThatThrowsDoesNotMaskTheCaptureFailure() {
+            var document = new Document { ThrowOnRollback = true };
+
+            var failure = Assert.Throws<AgentException>(() =>
+                AgentCaptureGroup.Run<int>(document, "t",
+                    () => throw new AgentException("view_not_supported", "no"), target => "png", Describe));
+
+            Assert.Equal("view_not_supported", failure.Code);
+            Assert.Equal("no", failure.Message);
+            Assert.Contains("Rollback failed.", (string)failure.Data["rollback_failure"]);
+        }
+
+        /// <summary>
+        /// An unconfirmed rollback after a capture failure keeps the original exception and attaches
+        /// the status.
+        /// </summary>
+        [Fact]
+        public void AnUnconfirmedRollbackDoesNotMaskTheCaptureFailure() {
+            var document = new Document { RollbackStatus = TransactionStatus.Started };
+
+            var failure = Assert.Throws<AgentException>(() =>
+                AgentCaptureGroup.Run<int>(document, "t",
+                    () => throw new AgentException("view_not_supported", "no"), target => "png", Describe));
+
+            Assert.Equal("view_not_supported", failure.Code);
+            Assert.Contains("Started", (string)failure.Data["rollback_failure"]);
+        }
+
+        /// <summary>
+        /// A failed prepare leaves no open transaction: it rolls back when disposed, like in Revit.
+        /// </summary>
+        [Fact]
+        public void AFailedPrepareLeavesNoTransactionBehind() {
+            var document = new Document();
+
+            Assert.Throws<AgentException>(() =>
+                AgentCaptureGroup.Run<int>(document, "t",
+                    () => throw new AgentException("view_not_supported", "no"), target => "png", Describe));
+
+            Assert.Equal(0, document.OpenTransactions);
+            Assert.Equal(1, document.TransactionsRolledBackOnDispose);
+        }
+
+        /// <summary>
+        /// An exception that is not a Revit one still rolls the group back and passes through.
+        /// </summary>
+        [Theory]
+        [InlineData(typeof(InvalidOperationException))]
+        [InlineData(typeof(System.IO.IOException))]
+        public void AnUnexpectedExportExceptionStillRollsTheGroupBack(Type exceptionType) {
+            var document = new Document();
+
+            var failure = Assert.Throws(exceptionType, () =>
+                AgentCaptureGroup.Run<int>(document, "t", () => 1,
+                    target => throw (Exception)Activator.CreateInstance(exceptionType, "boom"), Describe));
+
+            Assert.Equal("boom", failure.Message);
             Assert.Equal(1, document.RollbackCalls);
         }
 
