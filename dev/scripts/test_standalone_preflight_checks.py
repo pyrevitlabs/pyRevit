@@ -14,6 +14,8 @@ from unittest.mock import MagicMock, patch
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 PYREVIT_ROOT = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit")
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
 
 
 def _load_module(name, path):
