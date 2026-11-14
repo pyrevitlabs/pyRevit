@@ -2212,9 +2212,13 @@ class _PyRevitUI(GenericPyRevitUIContainer):
         return [tab for tab in self if tab.is_pyrevit_tab()]
 
     def create_ribbon_tab(self, tab_name, update_if_exists=False):
-        if self.contains(tab_name):
+        try:
+            existing_pyrvt_tab = self.ribbon_tab(tab_name)
+        except PyRevitUIError:
+            existing_pyrvt_tab = None
+
+        if existing_pyrvt_tab is not None:
             if update_if_exists:
-                existing_pyrvt_tab = self._get_component(tab_name)
                 existing_pyrvt_tab.activate()
             else:
                 raise PyRevitUIError(
