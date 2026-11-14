@@ -442,14 +442,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc.IsReadOnly)
                 throw new AgentException("document_read_only", "A schedule is captured on a temporary sheet, which a read-only document doesn't allow.");
 
-            return ExportInRolledBackGroup(doc, "pyRevit Agent schedule sheet", () => {
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent schedule sheet", () => {
                 var sheet = ViewSheet.Create(doc, ElementId.InvalidElementId);
                 var appearsInSheetList = sheet.get_Parameter(BuiltInParameter.SHEET_SCHEDULED);
                 if (appearsInSheetList != null && !appearsInSheetList.IsReadOnly)
                     appearsInSheetList.Set(0);
                 ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, XYZ.Zero);
                 return sheet;
-            }, directory, baseName, request.Width,
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
                 message => $"Schedule '{schedule.Name}' could not be placed on a temporary sheet: {message}");
         }
 
@@ -461,47 +461,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc.IsReadOnly)
                 throw new AgentException("document_read_only", "'detail_level' and 'display_style' change the view temporarily, which a read-only document doesn't allow.");
 
-            return ExportInRolledBackGroup(doc, "pyRevit Agent display override", () => {
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent display override", () => {
                 var target = ViewToEdit(doc, view);
                 OverrideDisplay(target, request.DetailLevel, request.DisplayStyle);
                 return target;
-            }, directory, baseName, request.Width,
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
                 message => $"View '{view.Name}' could not be shown with the requested display settings: {message}");
-        }
-
-        /// <summary>
-        /// Changes the model with <paramref name="prepare"/> in one transaction, exports the view
-        /// it returns, and rolls the whole capture group back, so nothing stays in the model.
-        /// </summary>
-        /// <remarks>
-        /// A Revit <see cref="Autodesk.Revit.Exceptions.ApplicationException"/> becomes
-        /// <c>capture_failed</c> with the text <paramref name="describeFailure"/> builds from its
-        /// message; an <see cref="AgentException"/> from <paramref name="prepare"/> passes through.
-        /// </remarks>
-        private static string ExportInRolledBackGroup(Document doc, string transactionName, Func<View> prepare,
-            string directory, string baseName, int width, Func<string, string> describeFailure) {
-            using (var group = new TransactionGroup(doc, "pyRevit Agent capture")) {
-                if (group.Start() != TransactionStatus.Started)
-                    throw new AgentException("capture_failed", "Revit did not start the temporary capture group, so the view was not changed.");
-                try {
-                    View target;
-                    using (var transaction = new Transaction(doc, transactionName)) {
-                        transaction.Start();
-                        target = prepare();
-                        var committed = transaction.Commit();
-                        if (committed != TransactionStatus.Committed)
-                            throw new AgentException("capture_failed", describeFailure($"Revit did not commit the temporary view change (status {committed})."));
-                    }
-                    return ExportView(doc, target, directory, baseName, width);
-                }
-                catch (Autodesk.Revit.Exceptions.ApplicationException ex) {
-                    throw new AgentException("capture_failed", describeFailure(ex.Message));
-                }
-                finally {
-                    if (group.HasStarted() && !group.HasEnded())
-                        group.RollBack();
-                }
-            }
         }
 
         /// <remarks>
@@ -541,12 +506,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     $"View '{view.Name}' is not yours in this workshared model, so 'viewport' would crop a copy without its "
                     + "temporary hide/isolate; use mode 'screen' to capture it as shown.");
             var corners = uiView.GetZoomCorners();
-            return ExportInRolledBackGroup(doc, "pyRevit Agent crop to viewport", () => {
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent crop to viewport", () => {
                 var target = ViewToEdit(doc, view);
                 OverrideDisplay(target, request.DetailLevel, request.DisplayStyle);
                 CropToCorners(target, corners[0], corners[1]);
                 return target;
-            }, directory, baseName, request.Width,
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
                 message => $"View '{view.Name}' could not be cropped to its on-screen region: {message} Use mode 'export' or 'screen'.");
         }
 
@@ -581,12 +546,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc.IsReadOnly)
                 throw new AgentException("document_read_only", "A temporary view can't be created in a read-only document.");
 
-            return ExportInRolledBackGroup(doc, "pyRevit Agent capture view", () => {
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent capture view", () => {
                 var view = CreateTemporary(doc, request);
                 ApplyDisplay(view, request.DetailLevel ?? "medium", request.DisplayStyle ?? "shaded_edges");
                 ShowModelOnly(doc, view);
                 return view;
-            }, directory, baseName, request.Width,
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
                 message => $"The temporary view could not be created: {message}");
         }
 

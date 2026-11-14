@@ -363,6 +363,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(0, document.RollbackCalls);
         }
 
+        /// <summary>
+        /// An assimilation Revit does not confirm throws and leaves Committed false, so the guard-level
+        /// host-error decision is rolled_back. That is not a confirmed rollback: when cleanup finds the
+        /// model still shows changes, the run service reports rollback_incomplete instead, which
+        /// AnAssimilationRevitRolledBackStillReportsTracesTheModelShows covers.
+        /// </summary>
         [Fact]
         public void AnAssimilationRevitDoesNotConfirmIsNotCommitted() {
             var document = new Document { AssimilateStatus = TransactionStatus.RolledBack };

@@ -6,12 +6,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     [Trait("Environment", "HostFree")]
     [Trait("Level", "Unit")]
     public sealed class JsonTextTests {
-        [Fact]
-        public void DateLikeStringsKeepTheirText() {
-            var token = JsonText.Parse("{\"a\":\"2024-05-01\",\"b\":[\"2025-06-18T10:00:00Z\"]}");
+        /// <summary>
+        /// A script result with a date-like or offset timestamp string comes back as written.
+        /// </summary>
+        [Theory]
+        [InlineData("2024-05-01")]
+        [InlineData("2024-05-01T10:00:00+02:00")]
+        [InlineData("2024-05-01T10:00:00.1234567+02:00")]
+        [InlineData("2024-05-01T10:00:00.123Z")]
+        [InlineData("2025-06-18T10:00:00Z")]
+        public void DateLikeStringsKeepTheirText(string text) {
+            var result = JsonText.Parse("{\"d\":\"" + text + "\",\"list\":[\"" + text + "\"]}");
 
-            Assert.Equal(JTokenType.String, token["a"].Type);
-            Assert.Equal("{\"a\":\"2024-05-01\",\"b\":[\"2025-06-18T10:00:00Z\"]}", token.ToString(Formatting.None));
+            Assert.Equal(JTokenType.String, result["d"].Type);
+            Assert.Equal("{\"d\":\"" + text + "\",\"list\":[\"" + text + "\"]}", result.ToString(Formatting.None));
         }
 
         [Fact]
@@ -19,14 +27,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("2024-05-01", JsonText.Parse("\"2024-05-01\"").Value<string>());
         }
 
-        [Fact]
-        public void RunRequestInputsKeepDateLikeStrings() {
+        /// <summary>
+        /// Inputs with date-like and offset timestamp strings reach the run record as written.
+        /// </summary>
+        [Theory]
+        [InlineData("2024-05-01")]
+        [InlineData("2024-05-01T10:00:00+02:00")]
+        [InlineData("2024-05-01T10:00:00.1234567+02:00")]
+        [InlineData("2024-05-01T10:00:00.50Z")]
+        [InlineData("2024-05-01T00:00:00.000Z")]
+        public void RunRequestInputsKeepDateLikeStrings(string text) {
             var request = AgentRunRequest.FromJson(new JObject {
                 ["script"] = "x = 1",
-                ["inputs"] = new JObject { ["day"] = "2024-05-01T00:00:00.000Z" },
+                ["inputs"] = new JObject { ["d"] = text, ["list"] = new JArray(text) },
             });
 
-            Assert.Equal("2024-05-01T00:00:00.000Z", request.ToJson()["inputs"]["day"].Value<string>());
+            var record = request.ToJson().ToString(Formatting.None);
+
+            Assert.Contains("\"d\":\"" + text + "\"", record);
+            Assert.Contains("\"list\":[\"" + text + "\"]", record);
         }
 
         [Theory]
