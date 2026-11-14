@@ -12,6 +12,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string EnvVarsDictKey = keyPrefix + "EnvVarsDict";
         public static string EnginesDictKey = keyPrefix + "CachedEngines";
         public static string ActiveEnginesDictKey = keyPrefix + "ActiveEngines";
+        public static string RetiredEnginesDictKey = keyPrefix + "RetiredEngines";
         public static string IronPythonEngineDefaultOutputStreamCfgKey = keyPrefix + "CachedEngineDefaultOutputStreamCfg";
         public static string IronPythonEngineDefaultErrorStreamCfgKey = keyPrefix + "CachedEngineDefaultErrorStreamCfg";
         public static string IronPythonEngineDefaultInputStreamCfgKey = keyPrefix + "CachedEngineDefaultInputStreamCfg";

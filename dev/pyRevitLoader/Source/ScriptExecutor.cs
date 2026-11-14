@@ -171,7 +171,31 @@ namespace PyRevitLoader
             return engine;
         }
 
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ScriptEngine, object> _enginesWithEmbeddedLib =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<ScriptEngine, object>();
+
+        /// <summary>
+        /// Registers the embedded python library as an import source of <paramref name="engine"/>.
+        /// </summary>
+        /// <remarks>
+        /// Idempotent per engine: smart buttons and combo boxes reuse one engine across calls to
+        /// <see cref="SetupEnvironment(ScriptEngine, ScriptScope)"/>, and each extra registration
+        /// would add another importer to <c>sys.meta_path</c>.
+        /// </remarks>
         public void AddEmbeddedLib(ScriptEngine engine)
+        {
+            lock (_enginesWithEmbeddedLib)
+            {
+                object registered;
+                if (_enginesWithEmbeddedLib.TryGetValue(engine, out registered))
+                    return;
+
+                RegisterEmbeddedLib(engine);
+                _enginesWithEmbeddedLib.Add(engine, new object());
+            }
+        }
+
+        private void RegisterEmbeddedLib(ScriptEngine engine)
         {
             // use embedded python lib
             var asm = this.GetType().Assembly;

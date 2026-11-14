@@ -15,6 +15,8 @@ namespace pyRevitExtensionParserTester
     /// and dropped instead of piling up in the cache.
     /// </summary>
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     [NonParallelizable]
     public class ScriptEngineManagerTests : TempFileTestBase
     {
@@ -226,6 +228,35 @@ namespace pyRevitExtensionParserTester
             {
                 ScriptEngineManager.ExitEngine(running.TypeId);
             }
+        }
+
+        /// <summary>
+        /// An engine dropped from the cache while running is shut down once its outermost execution
+        /// exits, and only once.
+        /// </summary>
+        [Test]
+        public void ClearEnginesShutsARunningEngineDownWhenItsExecutionEnds()
+        {
+            var excluded = GetEngine("ExcludedExtension.extension");
+            var running = GetEngine("RunningExtension.extension");
+            ScriptEngineManager.EnterEngine(running.TypeId);
+            ScriptEngineManager.EnterEngine(running.TypeId);
+
+            ScriptEngineManager.ClearEngines(excluded.TypeId);
+            ScriptEngineManager.ExitEngine(running.TypeId);
+
+            Assert.That(running.ShutdownCount, Is.EqualTo(0),
+                "an outer execution of the engine is still in progress");
+
+            ScriptEngineManager.ExitEngine(running.TypeId);
+
+            Assert.That(running.ShutdownCount, Is.EqualTo(1),
+                "an engine dropped from the cache while running must not leak");
+
+            ScriptEngineManager.EnterEngine(running.TypeId);
+            ScriptEngineManager.ExitEngine(running.TypeId);
+
+            Assert.That(running.ShutdownCount, Is.EqualTo(1));
         }
 
         [Test]
