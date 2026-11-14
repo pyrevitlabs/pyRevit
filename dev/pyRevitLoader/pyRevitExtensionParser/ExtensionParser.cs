@@ -1787,7 +1787,11 @@ namespace pyRevitExtensionParser
                             if (listValue != null && listValue.Count > 0)
                                 result.Author = string.Join("\n", listValue);
                             else if (listValue == null && IsQuotedValue(trimmedLine))
-                                result.Author = ExtractPythonConstantValue(trimmedLine);
+                            {
+                                var authorsText = ExtractPythonConstantValue(trimmedLine);
+                                if (!string.IsNullOrEmpty(authorsText))
+                                    result.Author = authorsText;
+                            }
                         }
                         else if (trimmedLine.StartsWith("__author__"))
                         {

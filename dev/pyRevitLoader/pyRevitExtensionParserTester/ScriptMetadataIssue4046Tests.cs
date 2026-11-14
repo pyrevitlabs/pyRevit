@@ -75,6 +75,25 @@ namespace pyRevitExtensionParserTest
             Assert.That(button.Author, Is.EqualTo("Bob"));
         }
 
+        /// <summary>An empty __authors__ string keeps the author set by __author__, in either order.</summary>
+        [TestCase("__author__ = \"Ann\"\n__authors__ = \"\"\n")]
+        [TestCase("__authors__ = \"\"\n__author__ = \"Ann\"\n")]
+        public void Author_EmptyAuthors_KeepsAuthor(string script)
+        {
+            var button = ParseButton(script);
+
+            Assert.That(button.Author, Is.EqualTo("Ann"));
+        }
+
+        /// <summary>An empty __authors__ string alone leaves no author.</summary>
+        [Test]
+        public void Author_EmptyAuthorsAlone_LeavesNoAuthor()
+        {
+            var button = ParseButton("__authors__ = \"\"\n");
+
+            Assert.That(button.Author, Is.Null.Or.Empty);
+        }
+
         /// <summary>A docstring closing quote at column zero does not remain in the tooltip.</summary>
         [Test]
         public void Doc_ClosingQuoteAtColumnZero_IsNotKept()

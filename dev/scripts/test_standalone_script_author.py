@@ -19,6 +19,8 @@ EXTENSIONS_INIT = op.join(
     ROOT_DIR, "pyrevitlib", "pyrevit", "extensions", "__init__.py"
 )
 METHOD_NAME = "_read_bundle_metadata_from_python_script"
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
 
 
 def _load_method():
