@@ -1571,6 +1571,18 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
         self._dirty = True
 
 
+def _get_panel_id_name(adwnd_panel):
+    """Return the name segment of a panel id, or None when the id has none.
+
+    Panels are created under their folder name, which Revit keeps as the last
+    segment of the panel id, while the displayed title may be localized.
+    """
+    panel_id = adwnd_panel.Source.Id
+    if not panel_id or "%" not in panel_id:
+        return None
+    return panel_id.rsplit("%", 1)[1] or None
+
+
 class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
     button = GenericPyRevitUIContainer._get_component
     ribbon_item = GenericPyRevitUIContainer._get_component
@@ -1607,8 +1619,12 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                 )
 
     def get_adwindows_object(self):
-        for panel in self.parent_tab.Panels:
-            if panel.Source and panel.Source.Title == self.name:
+        panels = [panel for panel in self.parent_tab.Panels if panel.Source]
+        for panel in panels:
+            if _get_panel_id_name(panel) == self.name:
+                return panel
+        for panel in panels:
+            if panel.Source.Title == self.name:
                 return panel
 
     def set_background(self, argb_color):
@@ -2006,7 +2022,7 @@ class _PyRevitRibbonTab(GenericPyRevitUIContainer):
     def __init__(self, revit_ribbon_tab, is_pyrvt_tab=False):
         GenericPyRevitUIContainer.__init__(self)
 
-        self.name = revit_ribbon_tab.Title
+        self.name = revit_ribbon_tab.Id or revit_ribbon_tab.Title
         self._rvtapi_object = revit_ribbon_tab
 
         # is this tab created by pyrevit.revitui?
@@ -2200,7 +2216,10 @@ class _PyRevitUI(GenericPyRevitUIContainer):
                 # so find the tab object in exiting ui
                 revit_tab_ctrl = None
                 for exiting_rvt_ribbon_tab in AdWindows.ComponentManager.Ribbon.Tabs:
-                    if exiting_rvt_ribbon_tab.Title == tab_name:
+                    if tab_name in (
+                        exiting_rvt_ribbon_tab.Id,
+                        exiting_rvt_ribbon_tab.Title,
+                    ):
                         revit_tab_ctrl = exiting_rvt_ribbon_tab
 
                 # create _PyRevitRibbonTab object with

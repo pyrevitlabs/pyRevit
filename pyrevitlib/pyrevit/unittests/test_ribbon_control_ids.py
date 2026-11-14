@@ -40,8 +40,13 @@ def _ribbon_item_ids():
 
     for tab in AdWindows.ComponentManager.Ribbon.Tabs:
         for panel in tab.Panels:
-            for item in list(panel.Source.Items):
+            source = panel.Source
+            for item in list(source.Items):
                 collect(item)
+            for item in list(getattr(source, "SlideOutPanelItemsView", None) or []):
+                collect(item)
+            if getattr(source, "DialogLauncher", None) is not None:
+                collect(source.DialogLauncher)
     return item_ids
 
 

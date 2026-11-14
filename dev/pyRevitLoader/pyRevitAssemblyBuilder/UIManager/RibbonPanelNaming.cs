@@ -23,30 +23,32 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// </summary>
         internal static string GetStableName(AdwRibbonPanel panel)
         {
-            var id = panel.Source?.Id;
-            if (!string.IsNullOrEmpty(id))
-            {
-                var separator = id!.LastIndexOf('%');
-                if (separator >= 0 && separator < id.Length - 1)
-                    return id.Substring(separator + 1);
-            }
+            return GetIdName(panel) ?? panel.Source?.Title ?? string.Empty;
+        }
 
-            return panel.Source?.Title ?? string.Empty;
+        private static string? GetIdName(AdwRibbonPanel panel)
+        {
+            var id = panel.Source?.Id;
+            if (string.IsNullOrEmpty(id))
+                return null;
+
+            var separator = id!.LastIndexOf('%');
+            return separator >= 0 && separator < id.Length - 1 ? id.Substring(separator + 1) : null;
         }
 
         /// <summary>
-        /// Finds the panel whose stable name is <paramref name="name"/>, falling back to a panel whose
-        /// displayed title is <paramref name="name"/> only when no stable name matches.
+        /// Finds the panel whose id carries the name <paramref name="name"/>, falling back to a panel whose
+        /// displayed title is <paramref name="name"/> only when no id carries it.
         /// </summary>
         /// <remarks>
-        /// Important: a title must never outrank a stable name. Another panel may display the title
-        /// <paramref name="name"/> and come first in the tab.
+        /// Important: a title must never outrank a name taken from a panel id. Another panel may display
+        /// the title <paramref name="name"/> and come first in the tab.
         /// </remarks>
         internal static AdwRibbonPanel? FindByName(IEnumerable<AdwRibbonPanel> panels, string name)
         {
             var candidates = panels.Where(panel => panel != null).ToList();
             return candidates.FirstOrDefault(panel =>
-                    string.Equals(GetStableName(panel), name, StringComparison.OrdinalIgnoreCase))
+                    string.Equals(GetIdName(panel), name, StringComparison.OrdinalIgnoreCase))
                 ?? candidates.FirstOrDefault(panel =>
                     string.Equals(panel.Source?.Title, name, StringComparison.OrdinalIgnoreCase));
         }

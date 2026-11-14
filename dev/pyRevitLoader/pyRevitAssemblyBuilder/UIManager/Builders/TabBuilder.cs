@@ -111,8 +111,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             if (string.IsNullOrEmpty(tabTitle) || tab.Title == tabTitle)
                 return false;
 
-            return tab.Title == tabName
-                || (AppliedTitles.TryGetValue(tabName, out var appliedTitle) && appliedTitle == tab.Title);
+            return AppliedTitles.TryGetValue(tabName, out var appliedTitle)
+                ? appliedTitle == tab.Title
+                : tab.Title == tabName;
         }
 
         /// <inheritdoc/>
