@@ -76,7 +76,7 @@ namespace pyRevitExtensionParser
         // Static HashSet for O(1) extension lookup - much faster than string comparisons
         private static readonly HashSet<string> _scriptExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx", ".xaml", ".yaml", ".json"
+            ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx", ".xaml", ".yaml", ".json", ".rfa"
         };
 
         // Cached hash value to avoid recalculation
@@ -94,6 +94,8 @@ namespace pyRevitExtensionParser
             ".smartbutton",
             ".linkbutton",
             ".nobutton",
+            ".urlbutton",
+            ".invokebutton",
             ".panelbutton",
             ".content",
             ".combobox"
@@ -102,7 +104,8 @@ namespace pyRevitExtensionParser
         private static readonly HashSet<string> _hashDirNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "lib",
-            "hooks"
+            "hooks",
+            "checks"
         };
 
         /// <summary>
@@ -173,7 +176,7 @@ namespace pyRevitExtensionParser
                     }
 
                     var dirName = dirInfo.Name;
-                    var includeDir = IsHashDirectory(dirName);
+                    var includeDir = pendingDirectory.isExtensionRoot || IsHashDirectory(dirName);
 
                     if (includeDir)
                     {
