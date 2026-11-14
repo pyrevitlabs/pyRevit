@@ -52,7 +52,7 @@ Build and validate before finishing doc changes:
 
 ```bash
 mkdocs build --strict                 # Build docs, fail on warnings
-pipenv run check-docstrings           # Lint docstrings with ruff
+pipenv run check-docstrings           # Lint docstrings with ruff (report only)
 ```
 
 ## Testing

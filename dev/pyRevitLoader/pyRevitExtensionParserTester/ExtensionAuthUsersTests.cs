@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -210,6 +211,44 @@ namespace pyRevitExtensionParserTester
             Assert.That(parsed.AuthDefinitionUnreadable, Is.False);
             Assert.That(parsed.AuthorizedUsers, Is.EquivalentTo(new[] { user }));
             Assert.That(InvokeIsExtensionAllowed(new ExtensionManagerService(), parsed), Is.True);
+        }
+
+        [Test]
+        public void ApplyRegistryAuthorization_ReadsRegistriesOfAllConfiguredRoots_RegardlessOfOrder()
+        {
+            var rootA = Path.Combine(TestTempDir, "rootA");
+            var rootB = Path.Combine(TestTempDir, "rootB");
+            var extA = TestExtensionBuilder.CreateMinimalExtension(rootA, "FirstExt");
+            var extB = TestExtensionBuilder.CreateMinimalExtension(rootB, "SecondExt");
+            File.WriteAllText(
+                Path.Combine(rootB, "extensions.json"),
+                @"{
+  ""extensions"": [
+    {
+      ""name"": ""FirstExt"",
+      ""type"": ""extension"",
+      ""authusers"": [""FirstExtUser""]
+    },
+    {
+      ""name"": ""SecondExt"",
+      ""type"": ""extension"",
+      ""authusers"": [""SomeoneElse""]
+    }
+  ]
+}");
+            UseTestPyRevitConfig(
+                "[core]\n" +
+                "userextensions = [\"" + rootA.Replace("\\", "\\\\") + "\",\"" + rootB.Replace("\\", "\\\\") + "\"]\n");
+
+            List<string> usersA = null;
+            List<string> groupsA = null;
+            List<string> usersB = null;
+            List<string> groupsB = null;
+            ExtensionRegistryAuth.ApplyRegistryAuthorization(extA, "FirstExt", null, ref usersA, ref groupsA);
+            ExtensionRegistryAuth.ApplyRegistryAuthorization(extB, "SecondExt", null, ref usersB, ref groupsB);
+
+            Assert.That(usersA, Is.EquivalentTo(new[] { "FirstExtUser" }));
+            Assert.That(usersB, Is.EquivalentTo(new[] { "SomeoneElse" }));
         }
 
         private static bool InvokeIsExtensionAllowed(
