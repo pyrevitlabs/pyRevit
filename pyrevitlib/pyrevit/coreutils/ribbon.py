@@ -1571,6 +1571,18 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
         self._dirty = True
 
 
+def _get_panel_id_name(adwnd_panel):
+    """Return the name segment of a panel id, or None when the id has none.
+
+    Panels are created under their folder name, which Revit keeps as the last
+    segment of the panel id, while the displayed title may be localized.
+    """
+    panel_id = adwnd_panel.Source.Id
+    if not panel_id or "%" not in panel_id:
+        return None
+    return panel_id.rsplit("%", 1)[1] or None
+
+
 class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
     button = GenericPyRevitUIContainer._get_component
     ribbon_item = GenericPyRevitUIContainer._get_component
@@ -1607,8 +1619,12 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                 )
 
     def get_adwindows_object(self):
-        for panel in self.parent_tab.Panels:
-            if panel.Source and panel.Source.Title == self.name:
+        panels = [panel for panel in self.parent_tab.Panels if panel.Source]
+        for panel in panels:
+            if _get_panel_id_name(panel) == self.name:
+                return panel
+        for panel in panels:
+            if panel.Source.Title == self.name:
                 return panel
 
     def set_background(self, argb_color):
@@ -2006,7 +2022,7 @@ class _PyRevitRibbonTab(GenericPyRevitUIContainer):
     def __init__(self, revit_ribbon_tab, is_pyrvt_tab=False):
         GenericPyRevitUIContainer.__init__(self)
 
-        self.name = revit_ribbon_tab.Title
+        self.name = revit_ribbon_tab.Id or revit_ribbon_tab.Title
         self._rvtapi_object = revit_ribbon_tab
 
         # is this tab created by pyrevit.revitui?
@@ -2087,7 +2103,22 @@ class _PyRevitRibbonTab(GenericPyRevitUIContainer):
 class _PyRevitUI(GenericPyRevitUIContainer):
     """Captures the existing ui state and elements at creation."""
 
-    ribbon_tab = GenericPyRevitUIContainer._get_component
+    def ribbon_tab(self, tab_name):
+        """Get a ribbon tab by its id, falling back to its displayed title.
+
+        Tabs are keyed by id, which does not change when a script retitles
+        a tab, so a retitled tab stays reachable under its new title.
+
+        Raises:
+            PyRevitUIError: when no tab has the given id or title.
+        """
+        try:
+            return self._get_component(tab_name)
+        except PyRevitUIError:
+            for pyrvt_tab in self:
+                if pyrvt_tab.get_rvtapi_object().Title == tab_name:
+                    return pyrvt_tab
+            raise
 
     def __init__(self, all_native=False):
         GenericPyRevitUIContainer.__init__(self)
@@ -2181,9 +2212,13 @@ class _PyRevitUI(GenericPyRevitUIContainer):
         return [tab for tab in self if tab.is_pyrevit_tab()]
 
     def create_ribbon_tab(self, tab_name, update_if_exists=False):
-        if self.contains(tab_name):
+        try:
+            existing_pyrvt_tab = self.ribbon_tab(tab_name)
+        except PyRevitUIError:
+            existing_pyrvt_tab = None
+
+        if existing_pyrvt_tab is not None:
             if update_if_exists:
-                existing_pyrvt_tab = self._get_component(tab_name)
                 existing_pyrvt_tab.activate()
             else:
                 raise PyRevitUIError(
@@ -2200,7 +2235,10 @@ class _PyRevitUI(GenericPyRevitUIContainer):
                 # so find the tab object in exiting ui
                 revit_tab_ctrl = None
                 for exiting_rvt_ribbon_tab in AdWindows.ComponentManager.Ribbon.Tabs:
-                    if exiting_rvt_ribbon_tab.Title == tab_name:
+                    if tab_name in (
+                        exiting_rvt_ribbon_tab.Id,
+                        exiting_rvt_ribbon_tab.Title,
+                    ):
                         revit_tab_ctrl = exiting_rvt_ribbon_tab
 
                 # create _PyRevitRibbonTab object with
