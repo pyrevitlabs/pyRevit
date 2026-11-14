@@ -2103,7 +2103,22 @@ class _PyRevitRibbonTab(GenericPyRevitUIContainer):
 class _PyRevitUI(GenericPyRevitUIContainer):
     """Captures the existing ui state and elements at creation."""
 
-    ribbon_tab = GenericPyRevitUIContainer._get_component
+    def ribbon_tab(self, tab_name):
+        """Get a ribbon tab by its id, falling back to its displayed title.
+
+        Tabs are keyed by id, which does not change when a script retitles
+        a tab, so a retitled tab stays reachable under its new title.
+
+        Raises:
+            PyRevitUIError: when no tab has the given id or title.
+        """
+        try:
+            return self._get_component(tab_name)
+        except PyRevitUIError:
+            for pyrvt_tab in self:
+                if pyrvt_tab.get_rvtapi_object().Title == tab_name:
+                    return pyrvt_tab
+            raise
 
     def __init__(self, all_native=False):
         GenericPyRevitUIContainer.__init__(self)
