@@ -6,14 +6,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     [Trait("Environment", "HostFree")]
     [Trait("Level", "Unit")]
     public sealed class JsonTextTests {
-        [Fact]
-        public void DateLikeStringsKeepTheirText() {
-            var token = JsonText.Parse("{\"a\":\"2024-05-01\",\"b\":[\"2025-06-18T10:00:00Z\"]}");
-
-            Assert.Equal(JTokenType.String, token["a"].Type);
-            Assert.Equal("{\"a\":\"2024-05-01\",\"b\":[\"2025-06-18T10:00:00Z\"]}", token.ToString(Formatting.None));
-        }
-
         /// <summary>
         /// A script result with a date-like or offset timestamp string comes back as written.
         /// </summary>
@@ -22,26 +14,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         [InlineData("2024-05-01T10:00:00+02:00")]
         [InlineData("2024-05-01T10:00:00.1234567+02:00")]
         [InlineData("2024-05-01T10:00:00.123Z")]
-        public void AResultKeepsTheTimestampTextAsWritten(string text) {
-            var result = JsonText.Parse("{\"d\":\"" + text + "\"}");
+        [InlineData("2025-06-18T10:00:00Z")]
+        public void DateLikeStringsKeepTheirText(string text) {
+            var result = JsonText.Parse("{\"d\":\"" + text + "\",\"list\":[\"" + text + "\"]}");
 
             Assert.Equal(JTokenType.String, result["d"].Type);
-            Assert.Equal(text, result["d"].Value<string>());
+            Assert.Equal("{\"d\":\"" + text + "\",\"list\":[\"" + text + "\"]}", result.ToString(Formatting.None));
         }
 
         [Fact]
         public void ScalarsAreAccepted() {
             Assert.Equal("2024-05-01", JsonText.Parse("\"2024-05-01\"").Value<string>());
-        }
-
-        [Fact]
-        public void RunRequestInputsKeepDateLikeStrings() {
-            var request = AgentRunRequest.FromJson(new JObject {
-                ["script"] = "x = 1",
-                ["inputs"] = new JObject { ["day"] = "2024-05-01T00:00:00.000Z" },
-            });
-
-            Assert.Equal("2024-05-01T00:00:00.000Z", request.ToJson()["inputs"]["day"].Value<string>());
         }
 
         /// <summary>
@@ -52,7 +35,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         [InlineData("2024-05-01T10:00:00+02:00")]
         [InlineData("2024-05-01T10:00:00.1234567+02:00")]
         [InlineData("2024-05-01T10:00:00.50Z")]
-        public void TheRunRecordKeepsTheInputTimestampText(string text) {
+        [InlineData("2024-05-01T00:00:00.000Z")]
+        public void RunRequestInputsKeepDateLikeStrings(string text) {
             var request = AgentRunRequest.FromJson(new JObject {
                 ["script"] = "x = 1",
                 ["inputs"] = new JObject { ["d"] = text, ["list"] = new JArray(text) },
