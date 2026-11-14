@@ -626,11 +626,7 @@ namespace pyRevitLabs.PyRevit {
             var cloneDeployArgs = clone.DeploymentArgs;
             logger.Debug("Clone Name=\"{0}\", Path=\"{1}\" Args=> {2}", cloneName, clonePath, cloneDeployArgs);
 
-            // delete existing clone
-            Delete(clone);
-
-            // re-deploy
-            DeployFromImage(
+            ReplaceClone(cloneName, clonePath, () => DeployFromImage(
                 cloneName: cloneName,
                 deploymentName: cloneDeployArgs.DeploymentName,
                 branchName: cloneDeployArgs.BranchName,
@@ -638,7 +634,55 @@ namespace pyRevitLabs.PyRevit {
                 destPath: clonePath,
                 installBinaries: !skipBin,
                 binInstallMode: BinArtifactInstallMode.Update
-                );
+                ));
+        }
+
+        internal static void ReplaceClone(string cloneName, string clonePath, Action redeploy) {
+            var backupPath = clonePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                             + ".update-backup-" + Guid.NewGuid().ToString("N");
+
+            Directory.Move(clonePath, backupPath);
+
+            try {
+                redeploy();
+            }
+            catch (pyRevitBinArtifactNotFoundException) {
+                DeleteCloneBackup(backupPath);
+                throw;
+            }
+            catch {
+                RestoreClone(cloneName, clonePath, backupPath);
+                throw;
+            }
+
+            DeleteCloneBackup(backupPath);
+        }
+
+        private static void DeleteCloneBackup(string backupPath) {
+            try {
+                CommonUtils.DeleteDirectory(backupPath);
+            }
+            catch (Exception delEx) {
+                logger.Error(string.Format("Error removing previous clone backup \"{0}\" | {1}",
+                                           backupPath, delEx.Message));
+            }
+        }
+
+        internal static void RestoreClone(string cloneName, string clonePath, string backupPath) {
+            logger.Warn("Update failed. Restoring previous clone at \"{0}\"", clonePath);
+            try {
+                if (CommonUtils.VerifyPath(clonePath)) {
+                    UnregisterCloneAtPath(clonePath);
+                    CommonUtils.DeleteDirectory(clonePath);
+                }
+                Directory.Move(backupPath, clonePath);
+                RegisterClone(cloneName, clonePath, forceUpdate: true);
+            }
+            catch (Exception restoreEx) {
+                logger.Error(string.Format("Could not restore clone \"{0}\" at \"{1}\". " +
+                                           "The previous clone is kept at \"{2}\" | {3}",
+                                           cloneName, clonePath, backupPath, restoreEx.Message));
+            }
         }
 
         // uninstall primary or specified clone, has option for clearing configs

@@ -168,15 +168,10 @@ namespace pyRevitLabs.PyRevit {
                                             string repoPath, string destPath = null, string branchName = null,
                                             GitInstallerCredentials credentials = null) {
             // make sure extension is not installed already
-            try {
-                var existExt = GetInstalledExtension(extensionName);
-                if (existExt != null)
-                    throw new PyRevitException(string.Format("Extension \"{0}\" is already installed under \"{1}\"",
-                                                             existExt.Name, existExt.InstallPath));
-            }
-            catch {
-                // extension is not installed so everything is fine
-            }
+            var existingInstallPath = FindInstalledExtensionByExactName(extensionName);
+            if (existingInstallPath != null)
+                throw new PyRevitException(string.Format("Extension \"{0}\" is already installed under \"{1}\"",
+                                                         extensionName, existingInstallPath));
 
             // determine repo folder name
             // Name.extension for UI Extensions
@@ -199,26 +194,67 @@ namespace pyRevitLabs.PyRevit {
             // Check installation
             if (repo != null) {
                 // make sure to delete the repo if error occured after cloning
-                var clonedPath = repo.Info.WorkingDirectory;
+                string clonedPath;
+                using (repo)
+                    clonedPath = repo.Info.WorkingDirectory;
                 if (GitInstaller.IsValidRepo(clonedPath)) {
                     _logger.Debug("Clone successful \"{0}\"", clonedPath);
                     RegisterExtensionSearchPath(destPath.NormalizeAsPath());
                 }
                 else {
-                    _logger.Debug("Invalid repo after cloning. Deleting clone \"{0}\"", repoPath);
-                    try {
-                        CommonUtils.DeleteDirectory(repoPath);
-                    }
-                    catch (Exception delEx) {
-                        _logger.Error(string.Format("Error post-install cleanup on \"{0}\" | {1}",
-                                                   repoPath, delEx.Message));
-                    }
+                    DeleteInvalidClone(clonedPath, repoPath);
                 }
             }
             else
                 throw new PyRevitException(string.Format("Error installing extension. Null repo error on \"{0}\"",
                                                          repoPath));
 
+        }
+
+        private static string FindInstalledExtensionByExactName(string extensionName) {
+            foreach (var searchPath in GetRegisteredExtensionSearchPaths()) {
+                if (!Directory.Exists(searchPath))
+                    continue;
+                foreach (var extPostFix in PyRevitExtension.GetAllExtentionDirExts()) {
+                    if (string.IsNullOrEmpty(extPostFix))
+                        continue;
+                    foreach (var subdir in Directory.EnumerateDirectories(searchPath, "*" + extPostFix))
+                        if (IsInstalledExtensionNamed(subdir, extPostFix, extensionName))
+                            return subdir;
+                }
+            }
+            return null;
+        }
+
+        private static bool IsInstalledExtensionNamed(string extensionDir, string extPostFix, string extensionName) {
+            if (!PyRevitExtension.IsExtensionDirectory(extensionDir))
+                return false;
+            var dirName = Path.GetFileName(extensionDir);
+            if (string.Equals(dirName.Substring(0, dirName.Length - extPostFix.Length),
+                              extensionName, StringComparison.OrdinalIgnoreCase))
+                return true;
+            try {
+                return string.Equals(new PyRevitExtension(extensionDir).Name,
+                                     extensionName, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception ex) {
+                _logger.Warn("Skipping extension \"{0}\" with unreadable metadata | {1}", extensionDir, ex.Message);
+                return false;
+            }
+        }
+
+        internal static void DeleteInvalidClone(string clonedPath, string repoPath) {
+            _logger.Debug("Invalid repo after cloning. Deleting clone \"{0}\"", clonedPath);
+            try {
+                CommonUtils.DeleteDirectory(clonedPath);
+            }
+            catch (Exception delEx) {
+                _logger.Error(string.Format("Error post-install cleanup on \"{0}\" | {1}",
+                                           clonedPath, delEx.Message));
+            }
+            throw new PyRevitException(string.Format(
+                "Error installing extension. Cloned repository from \"{0}\" is not valid and was discarded.",
+                repoPath));
         }
 
         /// <summary>
