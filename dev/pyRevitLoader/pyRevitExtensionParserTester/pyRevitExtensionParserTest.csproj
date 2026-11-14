@@ -45,6 +45,7 @@
     <Compile Include="ParsedComponentTests.cs" />
     <Compile Include="ParserBasicTests.cs" />
     <Compile Include="ParsedExtensionHashTests.cs" />
+    <Compile Include="ScriptMetadataIssue4046Tests.cs" />
     <Compile Include="ParserErrorHandlingTests.cs" />
     <Compile Include="DiagnosticTests.cs" />
     <Compile Include="QuotedValueTests.cs" />
