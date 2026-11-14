@@ -481,13 +481,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static string ExportInRolledBackGroup(Document doc, string transactionName, Func<View> prepare,
             string directory, string baseName, int width, Func<string, string> describeFailure) {
             using (var group = new TransactionGroup(doc, "pyRevit Agent capture")) {
-                group.Start();
+                if (group.Start() != TransactionStatus.Started)
+                    throw new AgentException("capture_failed", "Revit did not start the temporary capture group, so the view was not changed.");
                 try {
                     View target;
                     using (var transaction = new Transaction(doc, transactionName)) {
                         transaction.Start();
                         target = prepare();
-                        transaction.Commit();
+                        var committed = transaction.Commit();
+                        if (committed != TransactionStatus.Committed)
+                            throw new AgentException("capture_failed", describeFailure($"Revit did not commit the temporary view change (status {committed})."));
                     }
                     return ExportView(doc, target, directory, baseName, width);
                 }

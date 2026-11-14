@@ -51,6 +51,7 @@
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentConfigRefresh.cs" Link="Sources\AgentConfigRefresh.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\JournalTail.cs" Link="Sources\JournalTail.cs"/>
         <Compile Include="..\..\pyRevitLabs.Common\BoundedLineReader.cs" Link="Sources\BoundedLineReader.cs"/>
+        <Compile Include="..\..\pyRevitLabs.Common\JsonText.cs" Link="Sources\JsonText.cs"/>
     </ItemGroup>
 
 </Project>

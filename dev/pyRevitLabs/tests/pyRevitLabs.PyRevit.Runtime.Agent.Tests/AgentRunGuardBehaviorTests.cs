@@ -364,6 +364,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void AnAssimilationRevitDoesNotConfirmIsNotCommitted() {
+            var document = new Document { AssimilateStatus = TransactionStatus.RolledBack };
+            using (var guard = new AgentRunGuard(new UIApplication(), document)) {
+                guard.Arm("Test");
+
+                Assert.Throws<InvalidOperationException>(() => guard.Assimilate());
+
+                Assert.False(guard.Committed);
+            }
+        }
+
+        [Fact]
         public void LinkedDocumentsAreNotTrackedAsChangedOtherDocuments() {
             var app = new UIApplication();
             var active = new Document();
@@ -503,6 +515,38 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             guard.Dispose();
 
+            Assert.True(guard.RollbackFailed);
+        }
+
+        [Fact]
+        public void AnAssimilationRevitRolledBackIsNeitherCommittedNorIncompleteWhenTheModelIsClean() {
+            var app = new UIApplication();
+            var document = new Document { AssimilateStatus = TransactionStatus.RolledBack };
+            var guard = new AgentRunGuard(app, document);
+            guard.Arm("Test");
+            Assert.Throws<InvalidOperationException>(() => guard.Assimilate());
+
+            guard.Dispose();
+
+            Assert.False(guard.Committed);
+            Assert.False(guard.RollbackFailed);
+            Assert.Equal(0, document.RollbackCalls);
+        }
+
+        [Fact]
+        public void AnAssimilationRevitRolledBackStillReportsTracesTheModelShows() {
+            var app = new UIApplication();
+            var document = new Document { AssimilateStatus = TransactionStatus.RolledBack };
+            var deleted = new ElementId();
+            var guard = new AgentRunGuard(app, document);
+            guard.Arm("Test");
+            app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+            document.Deleted.Add(deleted);
+            Assert.Throws<InvalidOperationException>(() => guard.Assimilate());
+
+            guard.Dispose();
+
+            Assert.False(guard.Committed);
             Assert.True(guard.RollbackFailed);
         }
 
