@@ -70,8 +70,10 @@ namespace pyRevitCLI {
                             { "--json",                 "Switch output format to json" },
                             { "--redact",               "Mask user names, user profile folders, server names and Git URLs so the report can be shared publicly" },
                             { "list | ensure | remove", "Report the PATH entries, add a directory when missing, or drop every copy of it" },
+                            { "which",                  "List every pyrevit.exe on the machine and user PATH; a new terminal runs the first one" },
                             { "<dir>",                  "Directory to add to or remove from the PATH" },
                             { "--scope=<scope>",        "PATH to target: user (default) or machine" },
+                            { "--first",                "Make <dir> the first entry of that PATH, so it wins over the other entries of the same scope" },
                         });
                     break;
 

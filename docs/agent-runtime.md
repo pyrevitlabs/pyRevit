@@ -565,7 +565,10 @@ pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --ow
 
 The `agent` and `mcp` commands ship with the pyRevit CLI of the same build. An older `pyrevit`
 on `PATH` doesn't know them and prints the global usage; upgrade the CLI or call the one from
-the build that provides the agent runtime.
+the build that provides the agent runtime. If that still happens after an upgrade, another
+install comes first on `PATH`: `where.exe pyrevit` in a new terminal lists every `pyrevit.exe` in the
+order Windows resolves them (`pyrevit env path which` does the same on a CLI that has it), and
+the first one is the one that runs. Update or uninstall that install.
 
 ### Run records
 
