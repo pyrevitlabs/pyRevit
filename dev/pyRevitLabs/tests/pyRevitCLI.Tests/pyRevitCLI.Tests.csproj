@@ -35,6 +35,7 @@
 
     <ItemGroup>
         <Compile Include="..\..\pyRevitCLI\PyRevitMcpRunResults.cs" Link="Sources\PyRevitMcpRunResults.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitCloneLocation.cs" Link="Sources\PyRevitCloneLocation.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitEnvRedactor.cs" Link="Sources\PyRevitEnvRedactor.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitCLIAgentCmds.cs" Link="Sources\PyRevitCLIAgentCmds.cs"/>
         <Compile Include="..\..\pyRevitCLI\McpClients.cs" Link="Sources\McpClients.cs"/>

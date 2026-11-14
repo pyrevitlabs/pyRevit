@@ -44,6 +44,14 @@ namespace pyRevitExtensionParser
         /// </summary>
         public List<string> AuthorizedGroups { get; set; }
 
+        /// <summary>
+        /// True when the extension declares an access list that could not be read
+        /// (unparsable extension.json mentioning one, a non-list value, or a list with only
+        /// blank entries). The extension is then treated as restricted for everyone, so a
+        /// broken definition never widens access. Absent or empty lists leave this false.
+        /// </summary>
+        public bool AuthDefinitionUnreadable { get; set; }
+
         // Cache directory existence checks to avoid repeated file system calls
         private Dictionary<string, bool> _dirExistsCache = new Dictionary<string, bool>();
 

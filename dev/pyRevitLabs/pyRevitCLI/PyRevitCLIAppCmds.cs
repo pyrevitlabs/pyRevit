@@ -53,7 +53,7 @@ namespace pyRevitCLI {
                 );
 
         internal static bool IsRunningInsideClone(PyRevitClone clone) =>
-            GetProcessPath().NormalizeAsPath().Contains(clone.ClonePath.NormalizeAsPath());
+            PyRevitCloneLocation.IsInside(GetProcessPath(), clone.ClonePath);
 
         internal static void
         ClearCaches(bool allCaches, string revitYear, TargetCacheType cachetype) {
@@ -303,6 +303,8 @@ namespace pyRevitCLI {
             };
             var utilityProcess = Process.Start(cpyProcessInfo);
             utilityProcess.WaitForExit();
+            if (utilityProcess.ExitCode != 0)
+                Environment.ExitCode = utilityProcess.ExitCode;
         }
     }
 }
