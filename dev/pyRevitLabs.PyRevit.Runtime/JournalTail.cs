@@ -26,6 +26,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// <summary>
         /// Starts reading at the current end of the file, or at the beginning if it does not exist yet.
+        /// If the file ends inside an unfinished line, the rest of that line is skipped when it arrives.
         /// </summary>
         /// <param name="journalFile">Path of the journal file to follow.</param>
         public JournalTail(string journalFile) : this(journalFile, DefaultMaxChunkBytes) {
@@ -36,6 +37,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
             this.maxChunkBytes = maxChunkBytes;
             var info = new FileInfo(journalFile);
             offset = info.Exists ? info.Length : 0;
+            discardingLine = offset > 0 && EndsInsideLine(offset);
+        }
+
+        private bool EndsInsideLine(long length) {
+            try {
+                using (var stream = new FileStream(journalFile, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.ReadWrite)) {
+                    if (stream.Length < length)
+                        return false;
+                    stream.Seek(length - 1, SeekOrigin.Begin);
+                    return stream.ReadByte() != '\n';
+                }
+            }
+            catch (IOException) {
+                return false;
+            }
         }
 
         /// <summary>

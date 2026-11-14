@@ -4,11 +4,13 @@ using System.IO;
 using System.Text;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    /// <summary>Unit tests for the append-only reading contract of <see cref="JournalTail"/>.</summary>
     [Trait("Environment", "HostFree")]
     [Trait("Level", "Unit")]
     public sealed class JournalTailTests : IDisposable {
         private readonly string _path = Path.Combine(Path.GetTempPath(), "journal-tail-" + Guid.NewGuid().ToString("N") + ".txt");
 
+        /// <summary>Deletes the temporary journal file created for the test.</summary>
         public void Dispose() {
             if (File.Exists(_path))
                 File.Delete(_path);
@@ -30,6 +32,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             return lines.ToArray();
         }
 
+        /// <summary>Appending to a file whose last line is unfinished at construction does not return that line's remainder.</summary>
+        [Fact]
+        public void PartialLineInProgressAtConstructionIsDropped() {
+            File.WriteAllText(_path, "old prefix");
+            var tail = new JournalTail(_path);
+
+            Append("suffix\nnext\n");
+            Assert.Equal(new[] { "next" }, ReadAll(tail));
+        }
+
+        /// <summary>Content ending with a line feed at construction does not trigger the partial-line discard.</summary>
+        [Fact]
+        public void CompleteLineAtConstructionDoesNotDropTheNextLine() {
+            File.WriteAllText(_path, "old\n");
+            var tail = new JournalTail(_path);
+
+            Append("next\n");
+            Assert.Equal(new[] { "next" }, ReadAll(tail));
+        }
+
+        /// <summary>Content present at construction is not returned; only later appends are.</summary>
         [Fact]
         public void ExistingContentIsSkipped() {
             File.WriteAllText(_path, "old line\r\n");
@@ -41,6 +64,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "new line" }, tail.ReadNewLines());
         }
 
+        /// <summary>A line written across several reads is returned once, whole, after its line break arrives.</summary>
         [Fact]
         public void LineSplitAcrossReadsIsDeliveredOnceWhole() {
             File.WriteAllText(_path, "");
@@ -54,6 +78,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Empty(tail.ReadNewLines());
         }
 
+        /// <summary>A CRLF split across reads does not produce an empty line.</summary>
         [Fact]
         public void LineBreakSplitBetweenCarriageReturnAndLineFeedYieldsNoEmptyLine() {
             File.WriteAllText(_path, "");
@@ -66,6 +91,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "first", "second" }, tail.ReadNewLines());
         }
 
+        /// <summary>Blank lines are returned as empty entries.</summary>
         [Fact]
         public void BlankLinesArePreserved() {
             File.WriteAllText(_path, "");
@@ -75,6 +101,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "a", "", "b" }, tail.ReadNewLines());
         }
 
+        /// <summary>Lines beyond the per-read chunk limit are returned by later reads.</summary>
         [Fact]
         public void LinesBeyondTheChunkLimitAreDeliveredOnLaterReads() {
             File.WriteAllText(_path, "");
@@ -85,6 +112,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "ccc", "ddd" }, tail.ReadNewLines());
         }
 
+        /// <summary>A full chunk without a line feed is discarded and reading resumes at the next line.</summary>
         [Fact]
         public void ChunkWithoutLineFeedAtTheLimitIsDiscardedSoReadingContinues() {
             File.WriteAllText(_path, "");
@@ -98,6 +126,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "ok" }, ReadAll(tail));
         }
 
+        /// <summary>The tail of an oversized line ending inside a later chunk is not returned.</summary>
         [Fact]
         public void OversizedLineEndingPartwayThroughALaterChunkDoesNotLeakItsTail() {
             File.WriteAllText(_path, "");
@@ -107,6 +136,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "ok" }, ReadAll(tail));
         }
 
+        /// <summary>An oversized line ending exactly at a chunk boundary does not yield an empty line.</summary>
         [Fact]
         public void OversizedLineEndingExactlyAtAChunkBoundaryDoesNotLeakAnEmptyLine() {
             File.WriteAllText(_path, "");
@@ -116,6 +146,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "ok" }, ReadAll(tail));
         }
 
+        /// <summary>Consecutive chunks of one oversized line are all discarded.</summary>
         [Fact]
         public void SeveralConsecutiveOversizedChunksAreAllDiscarded() {
             File.WriteAllText(_path, "");
@@ -130,6 +161,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "ok" }, ReadAll(tail));
         }
 
+        /// <summary>Truncating the file ends the discard state and reads from the start.</summary>
         [Fact]
         public void DiscardEndsWhenTheFileIsTruncated() {
             File.WriteAllText(_path, "");
@@ -142,6 +174,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "x" }, tail.ReadNewLines());
         }
 
+        /// <summary>A shorter replacement file is read from the start, dropping the pending partial line.</summary>
         [Fact]
         public void FileReplacedByAShorterOneAfterPartialLineIsReadFromTheStart() {
             File.WriteAllText(_path, "");
@@ -154,6 +187,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "new" }, tail.ReadNewLines());
         }
 
+        /// <summary>A multi-byte character split across reads is decoded intact.</summary>
         [Fact]
         public void MultiByteCharacterSplitAcrossReadsIsDecodedIntact() {
             File.WriteAllText(_path, "");
@@ -167,6 +201,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "café" }, tail.ReadNewLines());
         }
 
+        /// <summary>A truncated file is read from the start.</summary>
         [Fact]
         public void TruncatedFileIsReadFromTheStart() {
             File.WriteAllText(_path, "a long first generation of journal text\r\n");
@@ -176,6 +211,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(new[] { "fresh" }, tail.ReadNewLines());
         }
 
+        /// <summary>A missing file yields nothing and content created later is read from the start.</summary>
         [Fact]
         public void MissingFileYieldsNothingAndPicksUpLaterContent() {
             var tail = new JournalTail(_path);
