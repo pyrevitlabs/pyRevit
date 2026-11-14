@@ -95,7 +95,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static AgentRunVerdict CarryOut(
             AgentRunVerdict verdict, AgentRunGuard guard, AgentScriptContext context, UIDocument uidoc,
-            AgentRunRequest request, string runId, int exitCode, JObject changes, AgentTabHighlight.Lease highlight,
+            AgentRunRequest request, string runId, string runDir, int exitCode, JObject changes, AgentTabHighlight.Lease highlight,
             AgentRunTimings timings) {
             switch (verdict) {
                 case AgentRunVerdict.TransactionLeftOpen:
@@ -143,6 +143,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return verdict;
                 case AgentRunVerdict.AskUser:
                     timings.Lap("decide");
+                    AgentPendingRecord.Write(request, runId, runDir);
                     AgentHost.AwaitTabApproval(highlight);
                     var approved = AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures);
                     timings.Lap("approval");
@@ -265,7 +266,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             Policy = AgentRunDecision.Stricter(policyAtStart, policyInForce.Tighten(ReadPolicy())),
                         });
                         timings.Lap("decide");
-                        verdict = CarryOut(verdict, guard, context, uidoc, request, runId, exitCode, changes, highlight, timings);
+                        verdict = CarryOut(verdict, guard, context, uidoc, request, runId, runDir, exitCode, changes, highlight, timings);
                         timings.Lap("guard_release");
 
                         var approval = AgentRunDecision.Approval(verdict);

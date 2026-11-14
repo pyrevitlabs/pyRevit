@@ -497,6 +497,14 @@ clone the session was loaded from. When that clone has no CPython engine, CPytho
 reports `attached`, and `clone` and the IronPython `python` are null when the session
 doesn't know them, instead of `Unknown` or `0`.
 
+`pyrevitlib/` loads live from the clone's working tree, but the runtime DLLs only change on a rebuild.
+`get_context.pyrevit.bin_commit` is the commit the binaries were built from. When it differs from
+`commit`, `bin_stale: true` and a `bin_hint` ask for a rebuild (`dotnet run -c Release -- local`), and
+`pyrevit agent status` shows the same fields. Nothing is flagged when the clone's commit is unknown.
+The instance record is written when the session starts, so `pyrevit agent status` asks the live host
+for `commit`, `bin_commit` and `bin_stale` when it pings it, and a checkout with Revit open shows up at
+once. A host that cannot be reached, or an older one that does not send them, falls back to the startup values.
+
 Syntax measured in Revit on IronPython 3.4.2:
 
 | Syntax | IronPython 3.4.2 |
@@ -573,7 +581,11 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 
 - `script.py`: the submitted source
 - `request.json`: title, mode, engine and inputs
-- `response.json`: status, decision, changes, failures, dialogs, output and result
+- `response.json`: status, decision, changes, failures, dialogs, output and result. While a run waits
+  for the user's approval it holds a provisional record with `status` `pending` and `decision`
+  `awaiting_approval`, which the final record replaces. A run folder that keeps it was interrupted at
+  the prompt or before the final write (for example Revit exited), so its outcome is unknown: the user
+  may have approved and the change committed. Check the model before repeating the run.
 - `result.json`: present when the result was too large to return inline
 
 For runs that start, `response.json` (and `get_run`) also carries `timings_ms`, the run's
