@@ -99,23 +99,20 @@ namespace pyRevitLabs.PyRevit {
 
         // equality checks
         public override bool Equals(object obj) {
-            var other = obj as PyRevitClone;
-
-            if (ClonePath != other.ClonePath)
-                return false;
-
-            return true;
+            if (ReferenceEquals(this, obj))
+                return true;
+            return obj is PyRevitClone other && ClonePath.IsSamePathAs(other.ClonePath);
         }
 
         public override int GetHashCode() {
-            return ClonePath.GetHashCode();
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(ClonePath.ToComparablePath() ?? ClonePath);
         }
 
         public bool Matches(string copyNameOrPath) {
             if (Name.ToLower() == copyNameOrPath.ToLower())
                 return true;
             try {
-                return ClonePath == copyNameOrPath.NormalizeAsPath();
+                return ClonePath.IsSamePathAs(copyNameOrPath);
             }
             catch {
                 return false;

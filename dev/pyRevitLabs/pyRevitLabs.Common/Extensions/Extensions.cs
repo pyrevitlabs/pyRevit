@@ -126,6 +126,66 @@ namespace pyRevitLabs.Common.Extensions {
             return validPath && (uriResult.HostNameType <= UriHostNameType.Basic);
         }
 
+        /// <summary>
+        /// True when both paths have the same comparable form, ignoring case and trailing separators.
+        /// Returns false instead of throwing when either path is null, empty or invalid.
+        /// </summary>
+        public static bool IsSamePathAs(this string path, string otherPath) {
+            var comparable = path.ToComparablePath();
+            var otherComparable = otherPath.ToComparablePath();
+            if (comparable is null || otherComparable is null)
+                return false;
+            return string.Equals(comparable, otherComparable, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// True when the path is the parent path or lies below it, matching whole directory
+        /// names so <c>C:\pyrevit2\x</c> is not within <c>C:\pyrevit</c>. Ignores case and returns
+        /// false instead of throwing when either path is null, empty or invalid.
+        /// </summary>
+        /// <remarks>
+        /// Purely lexical: junctions, symlinks and 8.3 short names are not resolved.
+        /// </remarks>
+        public static bool IsPathWithin(this string path, string parentPath) {
+            var comparable = path.ToComparablePath();
+            var comparableParent = parentPath.ToComparablePath();
+            if (comparable is null || comparableParent is null)
+                return false;
+            if (string.Equals(comparable, comparableParent, StringComparison.OrdinalIgnoreCase))
+                return true;
+            return comparable.StartsWith(
+                comparableParent + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Returns the full path without trailing separators, the form compared by
+        /// <see cref="IsSamePathAs"/> and <see cref="IsPathWithin"/>, or null when the path is
+        /// null, empty, invalid or only separators. Compare the result ignoring case. Dot segments
+        /// are resolved for local, UNC and relative paths; URLs are only trimmed.
+        /// </summary>
+        public static string ToComparablePath(this string path) {
+            if (string.IsNullOrWhiteSpace(path))
+                return null;
+            if (path.Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Length == 0)
+                return null;
+            var fullPath = path;
+            if (!path.IsRemoteUri()) {
+                try {
+                    fullPath = Path.GetFullPath(path);
+                }
+                catch (Exception ex) {
+                    logger.Debug("Can not compare path \"{0}\" | {1}", path, ex.Message);
+                    return null;
+                }
+            }
+            var comparable = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return comparable.Length == 0 ? null : comparable;
+        }
+
+        private static bool IsRemoteUri(this string path) {
+            return Uri.TryCreate(path, UriKind.Absolute, out var uri) && !uri.IsFile && !uri.IsUnc;
+        }
+
         public static string NormalizeAsPath(this string path) {
             // determine if we are dealing with a uri or local path
             if (path.IsLocalPath()) {
