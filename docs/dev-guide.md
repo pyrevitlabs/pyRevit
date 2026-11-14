@@ -283,7 +283,7 @@ pipenv run docs
 pipenv run ruff check pyrevitlib/pyrevit
 ```
 
-`pipenv run docs` is `mkdocs build`. Adding `--strict` makes warnings fail the build, but the build currently reports existing warnings (relative links to files outside `docs/` and docstring cross-references), so check that your change adds none. `pipenv run check-docstrings` runs the same `ruff check` with `--fix` and can rewrite files under `pyrevitlib/pyrevit`. The `pyRevitDocsCI` workflow (`docs.yml`) publishes the site with `mkdocs gh-deploy` when the `docs` branch changes. It also runs on pull requests into `master` and on manual dispatch. Do not push to the `docs` branch directly.
+`pipenv run docs` is `mkdocs build`. Adding `--strict` makes warnings fail the build, but the build currently reports existing warnings (relative links to files outside `docs/` and docstring cross-references), so check that your change adds none. `pipenv run check-docstrings` runs the same `ruff check` and only reports findings. `pipenv run fix-docstrings` adds `--fix` and can rewrite files under `pyrevitlib/pyrevit`, so run it deliberately and review the diff. The `pyRevitDocsCI` workflow (`docs.yml`) publishes the site with `mkdocs gh-deploy` when the `docs` branch changes. It also runs on pull requests into `master` and on manual dispatch. Do not push to the `docs` branch directly.
 
 ## Conclusion
 
