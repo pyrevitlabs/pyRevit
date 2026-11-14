@@ -106,8 +106,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         /// <summary>
-        /// A rollback that throws never masks the capture failure: the original exception is thrown
-        /// and the rollback failure is attached to it.
+        /// A rollback that throws never masks the capture failure: the original code and message are kept
+        /// and the rollback failure is added to the error details sent to the client.
         /// </summary>
         [Fact]
         public void ARollbackThatThrowsDoesNotMaskTheCaptureFailure() {
@@ -119,12 +119,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             Assert.Equal("view_not_supported", failure.Code);
             Assert.Equal("no", failure.Message);
-            Assert.Contains("Rollback failed.", (string)failure.Data["rollback_failure"]);
+            Assert.Contains("Rollback failed.", failure.Details.Value<string>("rollback_failure"));
         }
 
         /// <summary>
-        /// An unconfirmed rollback after a capture failure keeps the original exception and attaches
-        /// the status.
+        /// An unconfirmed rollback after a capture failure keeps the original code and message and adds
+        /// the status to the error details.
         /// </summary>
         [Fact]
         public void AnUnconfirmedRollbackDoesNotMaskTheCaptureFailure() {
@@ -135,7 +135,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                     () => throw new AgentException("view_not_supported", "no"), target => "png", Describe));
 
             Assert.Equal("view_not_supported", failure.Code);
-            Assert.Contains("Started", (string)failure.Data["rollback_failure"]);
+            Assert.Contains("Started", failure.Details.Value<string>("rollback_failure"));
         }
 
         /// <summary>

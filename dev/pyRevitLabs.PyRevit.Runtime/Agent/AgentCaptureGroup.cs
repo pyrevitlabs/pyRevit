@@ -23,7 +23,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Invariant: once the group started, it is rolled back on every exit path.
         /// Warning: a rollback that does not return <c>RolledBack</c> or throws fails the capture with
         /// <c>rollback_incomplete</c>. When the capture already failed, that original exception is
-        /// thrown instead and the rollback problem is attached as <c>Data["rollback_failure"]</c>.
+        /// thrown instead with the same code and message, and the rollback problem is added to the error
+        /// details as <c>rollback_failure</c> so the client sees it; any other exception type carries it
+        /// only as <c>Data["rollback_failure"]</c>.
         /// </remarks>
         internal static string Run<TTarget>(Document doc, string transactionName, Func<TTarget> prepare,
             Func<TTarget, string> export, Func<string, string> describeFailure) {
@@ -46,11 +48,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     throw new AgentException("rollback_incomplete", describeFailure(rollbackProblem));
                 if (failure != null) {
                     if (rollbackProblem != null)
-                        failure.SourceException.Data["rollback_failure"] = rollbackProblem;
+                        throw WithRollbackFailure(failure, rollbackProblem);
                     failure.Throw();
                 }
                 return result;
             }
+        }
+
+        private static Exception WithRollbackFailure(ExceptionDispatchInfo failure, string rollbackProblem) {
+            if (!(failure.SourceException is AgentException original)) {
+                failure.SourceException.Data["rollback_failure"] = rollbackProblem;
+                return failure.SourceException;
+            }
+            var reported = new AgentException(original.Code, original.Message);
+            reported.Details.Merge(original.Details);
+            reported.Details["rollback_failure"] = rollbackProblem;
+            return reported;
         }
 
         private static string Capture<TTarget>(Document doc, string transactionName, Func<TTarget> prepare,
