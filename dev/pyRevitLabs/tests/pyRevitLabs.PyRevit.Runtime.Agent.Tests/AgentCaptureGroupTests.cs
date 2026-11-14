@@ -123,6 +123,30 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         /// <summary>
+        /// A rollback that throws after a non-agent failure keeps the original exception object and
+        /// exposes the rollback problem to the request handler through RollbackFailureOf.
+        /// </summary>
+        [Fact]
+        public void ARollbackThatThrowsAfterAnIoFailureKeepsTheExceptionAndExposesTheRollbackProblem() {
+            var document = new Document { ThrowOnRollback = true };
+            var original = new System.IO.IOException("disk full");
+
+            var failure = Assert.Throws<System.IO.IOException>(() =>
+                AgentCaptureGroup.Run<int>(document, "t", () => 1, target => throw original, Describe));
+
+            Assert.Same(original, failure);
+            Assert.Contains("Rollback failed.", AgentCaptureGroup.RollbackFailureOf(failure));
+        }
+
+        /// <summary>
+        /// An exception without a rollback problem has no rollback failure to forward.
+        /// </summary>
+        [Fact]
+        public void AnExceptionWithoutARollbackProblemHasNoRollbackFailure() {
+            Assert.Null(AgentCaptureGroup.RollbackFailureOf(new System.IO.IOException("disk full")));
+        }
+
+        /// <summary>
         /// An unconfirmed rollback after a capture failure keeps the original code and message and adds
         /// the status to the error details.
         /// </summary>

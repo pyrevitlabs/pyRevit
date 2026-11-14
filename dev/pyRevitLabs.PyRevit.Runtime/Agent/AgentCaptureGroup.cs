@@ -25,7 +25,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <c>rollback_incomplete</c>. When the capture already failed, that original exception is
         /// thrown instead with the same code and message, and the rollback problem is added to the error
         /// details as <c>rollback_failure</c> so the client sees it; any other exception type carries it
-        /// only as <c>Data["rollback_failure"]</c>.
+        /// only as <c>Data["rollback_failure"]</c>, which <see cref="RollbackFailureOf"/> reads for the request
+        /// handler's <c>internal_error</c> details.
         /// </remarks>
         internal static string Run<TTarget>(Document doc, string transactionName, Func<TTarget> prepare,
             Func<TTarget, string> export, Func<string, string> describeFailure) {
@@ -53,6 +54,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 }
                 return result;
             }
+        }
+
+        /// <summary>
+        /// The rollback problem <see cref="Run{TTarget}"/> attached to <paramref name="failure"/>, or
+        /// <c>null</c> when it has none.
+        /// </summary>
+        internal static string RollbackFailureOf(Exception failure) {
+            return failure.Data["rollback_failure"] as string;
         }
 
         private static Exception WithRollbackFailure(ExceptionDispatchInfo failure, string rollbackProblem) {
