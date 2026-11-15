@@ -259,6 +259,16 @@ namespace pyRevitLabs.Common.Extensions {
                 && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
 
+        /// <summary>
+        /// Returns <paramref name="sourceString"/> with the user name and password of a URL replaced by
+        /// <c>***</c>, so the text is safe to write to a log. Text without credentials is returned unchanged.
+        /// </summary>
+        public static string RedactUrlCredentials(this string sourceString) {
+            return string.IsNullOrEmpty(sourceString)
+                ? sourceString
+                : Regex.Replace(sourceString, @"(?<=://)[^/\s@]+@", "***@");
+        }
+
         public static List<string> GetLines(this string sourceString) {
             return new List<string>(sourceString.Split(Environment.NewLine.ToCharArray()));
         }
