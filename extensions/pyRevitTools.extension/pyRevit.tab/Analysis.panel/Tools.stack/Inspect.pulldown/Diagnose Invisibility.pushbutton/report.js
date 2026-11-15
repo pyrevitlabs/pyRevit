@@ -922,7 +922,7 @@
      * one more reload when it completes.
      */
     refreshScene(viewId) {
-      if (!this.viewers.has(viewId)) return;
+      if (!this.viewers.has(viewId) && !this.sceneOpen.has(viewId)) return;
       if (this.sceneLoading.has(viewId)) {
         this.sceneStale.add(viewId);
         return;
