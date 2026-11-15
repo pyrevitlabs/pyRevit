@@ -320,17 +320,13 @@ def _set_detail_level(owner, view, element, fix):
     """Set the detail level to one the element draws at.
 
     Invariant:
-        The fix moves the level only in the direction it was diagnosed in
-        (``fix["from"]`` is the level at diagnosis). A level already at or
-        past the target in that direction is kept, so "Fix all" ends at the
-        finest level any element needs, whatever order the fixes run in.
+        A level at which the element already draws is kept (``fix["shown"]``
+        lists them), so "Fix all" does not move the level past a level an
+        earlier fix already made work for the next element.
     """
-    target = DETAIL_LEVELS.index(_detail_level(fix))
-    start = DETAIL_LEVELS.index(getattr(DB.ViewDetailLevel, fix["from"]))
-    current = DETAIL_LEVELS.index(owner.DetailLevel)
-    if (target > start and current >= target) or (target < start and current <= target):
+    if str(owner.DetailLevel) in fix["shown"]:
         return
-    owner.DetailLevel = DETAIL_LEVELS[target]
+    owner.DetailLevel = _detail_level(fix)
 
 
 def _set_discipline_coordination(owner, view, element, fix):
@@ -475,8 +471,15 @@ def apply_visibility_change(doc, plan, hide, name):
     except Exception:
         transaction.RollBack()
         raise
-    if applied:
-        transaction.Commit()
-    else:
+    if not applied:
         transaction.RollBack()
+        return applied, errors
+    status = transaction.Commit()
+    if status != DB.TransactionStatus.Committed:
+        errors.append(
+            t("fix_error_rolled_back", "Revit rolled the change back ({})").format(
+                status
+            )
+        )
+        return [], errors
     return applied, errors

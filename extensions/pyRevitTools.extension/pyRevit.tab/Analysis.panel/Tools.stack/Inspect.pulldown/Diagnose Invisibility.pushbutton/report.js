@@ -136,7 +136,7 @@
         if (section) section.remove();
       }
       this.views = state.views;
-      const known = new Set(state.views.flatMap((v) => v.elements.map((e) => e.id)));
+      const known = new Set(state.elementIds);
       for (const id of [...this.selected]) if (!known.has(id)) this.selected.delete(id);
       for (const id of [...this.ghosted]) if (!known.has(id)) this.ghosted.delete(id);
       for (const view of this.views) {

@@ -314,6 +314,7 @@ class DiagnosisSession(object):
         views = [self.doc.GetElement(view_id) for view_id in self.view_ids]
         return {
             "elementCount": len(self.element_ids),
+            "elementIds": [id_value(element_id) for element_id in self.element_ids],
             "views": [self.view_payload(v) for v in views if v is not None],
         }
 

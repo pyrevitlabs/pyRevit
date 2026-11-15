@@ -1142,7 +1142,9 @@ def _check_detail_level(ctx):
         view_level = ctx.view.DetailLevel
         if view_level not in DETAIL_LEVELS or ctx.is_view_specific:
             return []
-        if _draws_in_view(ctx.element, ctx.view):
+        if _draws_at_detail_level(ctx.element, view_level) or _draws_in_view(
+            ctx.element, ctx.view
+        ):
             return []
         shown_at = [
             level
@@ -1165,7 +1167,7 @@ def _check_detail_level(ctx):
                 fix={
                     "action": "set_detail_level",
                     "level": str(target_detail_level(shown_at, view_level)),
-                    "from": str(view_level),
+                    "shown": [str(level) for level in shown_at],
                 },
             )
         ]
