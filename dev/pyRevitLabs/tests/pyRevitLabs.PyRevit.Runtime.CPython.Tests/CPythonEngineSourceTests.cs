@@ -4,6 +4,8 @@ namespace PyRevitLabs.PyRevit.Runtime.CPython.Tests;
 /// Guards the two pyRevit-side halves of the interpreter lifecycle contract. The runtime assembly
 /// cannot be loaded outside a Revit host, so these read the engine source instead of calling it.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class CPythonEngineSourceTests {
     /// <summary>
     /// Releasing the engine at Reload or Refresh Engine must not tear down the process-wide

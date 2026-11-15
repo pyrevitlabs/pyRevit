@@ -44,7 +44,6 @@
               CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
-    <!-- CrtLocale has no Revit dependency, so it is compiled into the tests and exercised for real. -->
     <ItemGroup>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\CrtLocale.cs"
                  Link="Sources\CrtLocale.cs"/>

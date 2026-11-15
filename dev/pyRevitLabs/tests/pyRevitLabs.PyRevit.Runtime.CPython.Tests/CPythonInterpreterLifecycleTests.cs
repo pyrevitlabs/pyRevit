@@ -9,6 +9,8 @@ namespace PyRevitLabs.PyRevit.Runtime.CPython.Tests;
 /// strongest assertions available without a live Revit session. The pyRevit-side halves of the
 /// contract are asserted in <see cref="CPythonEngineSourceTests"/>.
 /// </remarks>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class CPythonInterpreterLifecycleTests {
     /// <summary>
     /// A Reload drops the engine from the session cache and the next CPython command re-attaches:
