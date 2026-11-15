@@ -156,6 +156,10 @@ _UI_STRINGS = {
         "ui_reveal_left_out",
         "{0} more not drawn. Zoom in to see them.",
     ),
+    "revealSmallSkipped": (
+        "ui_reveal_skipped",
+        "{0} tiny element(s) skipped.",
+    ),
     "revealNone": ("ui_reveal_none", "Nothing is hidden in the visible area."),
     "inTemplate": (
         "ui_in_template_hint",

@@ -786,9 +786,8 @@
             )
           )
         );
-      const note = summary.drawn
-        ? format(this.s.revealSummary, summary.drawn)
-        : this.s.revealNone;
+      const skipped = summary.drawn || summary.tooSmall || summary.notEvaluated;
+      const note = skipped ? format(this.s.revealSummary, summary.drawn) : this.s.revealNone;
       return h(
         "div",
         { class: "dvi-reveal" },
@@ -797,6 +796,7 @@
           { class: "dvi-reveal-bar" },
           h("strong", null, note),
           summary.notEvaluated ? h("span", { class: "dvi-reveal-left" }, format(this.s.revealLeftOut, summary.notEvaluated)) : null,
+          summary.tooSmall ? h("span", { class: "dvi-reveal-left" }, format(this.s.revealSmallSkipped, summary.tooSmall)) : null,
           h(
             "button",
             { class: "dvi-btn small", onclick: (e) => this.run(e.currentTarget, "reveal_refresh", { viewId }) },
@@ -822,6 +822,7 @@
 
     onReveal(summary) {
       const viewId = summary.viewId;
+      this.revealFollow = summary.active ? Boolean(summary.follow) : false;
       if (summary.active) {
         this.revealed.set(viewId, summary);
       } else {

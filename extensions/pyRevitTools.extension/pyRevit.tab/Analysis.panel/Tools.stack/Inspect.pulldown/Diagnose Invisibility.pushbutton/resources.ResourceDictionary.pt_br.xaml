@@ -176,6 +176,7 @@
     <sys:String x:Key="ui_reveal_select">Selecionar</sys:String>
     <sys:String x:Key="ui_reveal_summary">{0} elemento(s) oculto(s) desenhado(s)</sys:String>
     <sys:String x:Key="ui_reveal_left_out">Mais {0} não desenhados. Aproxime para vê-los.</sys:String>
+    <sys:String x:Key="ui_reveal_skipped">{0} elemento(s) minúsculo(s) ignorado(s).</sys:String>
     <sys:String x:Key="ui_reveal_none">Nada está oculto na área visível.</sys:String>
     <sys:String x:Key="reveal_unsupported">A sobreposição não está disponível em vistas do tipo {}.</sys:String>
     <sys:String x:Key="reveal_needs_webview2">Revelar ocultos requer a janela de saída WebView2 e o IronPython.</sys:String>

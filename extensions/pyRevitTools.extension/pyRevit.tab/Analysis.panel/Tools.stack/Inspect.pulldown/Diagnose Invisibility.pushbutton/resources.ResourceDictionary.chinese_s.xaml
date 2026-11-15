@@ -176,6 +176,7 @@
     <sys:String x:Key="ui_reveal_select">选择</sys:String>
     <sys:String x:Key="ui_reveal_summary">已绘制 {0} 个隐藏图元</sys:String>
     <sys:String x:Key="ui_reveal_left_out">另有 {0} 个未绘制。放大视图即可查看。</sys:String>
+    <sys:String x:Key="ui_reveal_skipped">已跳过 {0} 个过小的图元。</sys:String>
     <sys:String x:Key="ui_reveal_none">可见区域内没有被隐藏的内容。</sys:String>
     <sys:String x:Key="reveal_unsupported">叠加层在{}类型的视图中不可用。</sys:String>
     <sys:String x:Key="reveal_needs_webview2">显示隐藏图元需要 WebView2 输出窗口和 IronPython。</sys:String>

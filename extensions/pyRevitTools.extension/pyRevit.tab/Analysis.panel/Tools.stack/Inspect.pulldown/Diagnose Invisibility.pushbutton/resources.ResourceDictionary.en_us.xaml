@@ -176,6 +176,7 @@
     <sys:String x:Key="ui_reveal_select">Select</sys:String>
     <sys:String x:Key="ui_reveal_summary">{0} hidden element(s) drawn</sys:String>
     <sys:String x:Key="ui_reveal_left_out">{0} more not drawn. Zoom in to see them.</sys:String>
+    <sys:String x:Key="ui_reveal_skipped">{0} tiny element(s) skipped.</sys:String>
     <sys:String x:Key="ui_reveal_none">Nothing is hidden in the visible area.</sys:String>
     <sys:String x:Key="reveal_unsupported">The reveal overlay is not available in {} views.</sys:String>
     <sys:String x:Key="reveal_needs_webview2">Reveal hidden needs the WebView2 output window and IronPython.</sys:String>

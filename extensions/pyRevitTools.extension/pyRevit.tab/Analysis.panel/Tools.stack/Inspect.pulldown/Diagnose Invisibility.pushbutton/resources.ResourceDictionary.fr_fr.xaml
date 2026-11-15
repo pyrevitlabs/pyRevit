@@ -176,6 +176,7 @@
     <sys:String x:Key="ui_reveal_select">Sélectionner</sys:String>
     <sys:String x:Key="ui_reveal_summary">{0} élément(s) masqué(s) dessiné(s)</sys:String>
     <sys:String x:Key="ui_reveal_left_out">{0} autres non dessinés. Zoomez pour les voir.</sys:String>
+    <sys:String x:Key="ui_reveal_skipped">{0} très petit(s) élément(s) ignoré(s).</sys:String>
     <sys:String x:Key="ui_reveal_none">Rien n'est masqué dans la zone visible.</sys:String>
     <sys:String x:Key="reveal_unsupported">La superposition n'est pas disponible dans les vues de type {}.</sys:String>
     <sys:String x:Key="reveal_needs_webview2">Révéler les masqués nécessite la fenêtre de sortie WebView2 et IronPython.</sys:String>

@@ -141,8 +141,10 @@ def _box_outline(box):
 def search_outline(view, corners):
     """Return the world-space outline to search for candidates, or None.
 
-    The screen rectangle is extruded both ways along the view direction, so
-    elements hidden by cut plane, view range or far clip are still found. A 3D
+    All four corners of the screen rectangle are rebuilt from the view axes,
+    so a rotated plan is covered, and extruded both ways along the view
+    direction, so elements hidden by cut plane, view range or far clip are
+    still found. A 3D
     view has no usable screen rectangle: its section box or crop box limits
     the search, otherwise the whole model is searched.
     """
@@ -152,9 +154,13 @@ def search_outline(view, corners):
         return _box_outline(view.CropBox) if view.CropBoxActive else None
     if corners is None:
         return _box_outline(view.CropBox) if view.CropBoxActive else None
+    first, second = corners
+    span = second - first
+    across = view.RightDirection * span.DotProduct(view.RightDirection)
+    up = view.UpDirection * span.DotProduct(view.UpDirection)
     direction = view.ViewDirection * _FAR_FT
     points = []
-    for corner in corners:
+    for corner in (first, first + across, first + up, second):
         points.extend([corner + direction, corner - direction])
     return _outline_of(points)
 
@@ -193,6 +199,12 @@ def _is_candidate(element, view):
 
 
 def _candidates(view, outline, min_size, visible_ids):
+    """Return ``(entries, too_small)``, hidden elements first, then biggest first.
+
+    Elements the view collector reports are kept, after the others: it still
+    lists elements that have no geometry at the view's detail level or sit
+    outside the crop, which only ``diagnose`` can tell.
+    """
     collector = DB.FilteredElementCollector(
         view.Document
     ).WhereElementIsNotElementType()
@@ -201,16 +213,21 @@ def _candidates(view, outline, min_size, visible_ids):
     found = []
     too_small = 0
     for element in collector:
-        if id_value(element.Id) in visible_ids:
-            continue
         measured = _is_candidate(element, view)
         if measured is None:
             continue
         if measured[0] < min_size:
             too_small += 1
             continue
-        found.append((measured[0], element, measured[1]))
-    found.sort(key=lambda entry: entry[0], reverse=True)
+        found.append(
+            (
+                measured[0],
+                element,
+                measured[1],
+                id_value(element.Id) in visible_ids,
+            )
+        )
+    found.sort(key=lambda entry: (entry[3], -entry[0]))
     return found, too_small
 
 
@@ -238,7 +255,7 @@ def build_overlay(uidoc, view):
     started = time.time()
     by_code = {}
     evaluated = 0
-    for index, (size, element, box) in enumerate(candidates):
+    for size, element, box, _ in candidates:
         if evaluated >= _MAX_EVALUATED or time.time() - started > _TIME_BUDGET_S:
             break
         evaluated += 1
@@ -249,7 +266,7 @@ def build_overlay(uidoc, view):
             continue
         if code:
             by_code.setdefault(code, []).append((size, element, box))
-    not_evaluated = len(candidates) - evaluated
+    not_evaluated = len([entry for entry in candidates[evaluated:] if not entry[3]])
 
     ranked = sorted(
         (
@@ -264,9 +281,10 @@ def build_overlay(uidoc, view):
     triangles = 0
     for rank, (size, code, element, box) in enumerate(ranked):
         color = _overlay_color(code)
-        if rank < _MAX_SOLID_ELEMENTS and triangles < _MAX_TRIANGLES:
+        meshes = []
+        if rank < _MAX_SOLID_ELEMENTS:
             meshes = element_meshes(element, color, DB.ViewDetailLevel.Coarse)
-        else:
+        if not meshes or triangles + _triangle_count(meshes) > _MAX_TRIANGLES:
             mesh = dc3dserver.Mesh.from_boundingbox(box, color, black_edges=False)
             meshes = [mesh] if mesh is not None else []
         triangles += _triangle_count(meshes)
@@ -351,6 +369,8 @@ class RevealPreview(object):
         """
         self._cancel_pending()
         self._on_built = on_built
+        if self.view_id != view.Id:
+            self._hidden_codes = set()
         self.view_id = view.Id
         if uidoc.ActiveView.Id == view.Id:
             self._build(uidoc, view)
@@ -423,6 +443,7 @@ class RevealPreview(object):
         summary, meshes_by_code = build_overlay(uidoc, view)
         self._meshes_by_code = meshes_by_code
         self._ids_by_code = summary.pop("ids")
+        summary["follow"] = self._following
         self._built_key = _corner_key(zoom_corners(uidoc, view))
         self._seen_key = self._built_key
         if self._server is None:
@@ -449,7 +470,7 @@ class RevealPreview(object):
 
     def _on_idling(self, sender, args):
         uidoc = HOST_APP.uiapp.ActiveUIDocument
-        if uidoc is None or self.view_id is None or uidoc.ActiveView.Id != self.view_id:
+        if not self._is_target(uidoc):
             return
         key = _corner_key(zoom_corners(uidoc, uidoc.ActiveView))
         now = time.time()
@@ -458,6 +479,14 @@ class RevealPreview(object):
             self._changed_at = now
         elif key != self._built_key and now - self._changed_at >= _FOLLOW_DEBOUNCE_S:
             self._build(uidoc, uidoc.ActiveView)
+
+    def _is_target(self, uidoc):
+        return (
+            uidoc is not None
+            and self.view_id is not None
+            and uidoc.Document.Equals(self.doc)
+            and uidoc.ActiveView.Id == self.view_id
+        )
 
     def _build_after_activation(self, view):
         """Build once ``view`` is active and settled.
@@ -471,7 +500,7 @@ class RevealPreview(object):
         def on_idling(sender, args):
             self._cancel_pending()
             uidoc = uiapp.ActiveUIDocument
-            if uidoc is not None and uidoc.ActiveView.Id == view_id:
+            if self._is_target(uidoc) and uidoc.ActiveView.Id == view_id:
                 self._build(uidoc, uidoc.ActiveView)
 
         def on_view_activated(sender, args):

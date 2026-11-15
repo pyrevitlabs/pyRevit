@@ -176,6 +176,7 @@
     <sys:String x:Key="ui_reveal_select">Выбрать</sys:String>
     <sys:String x:Key="ui_reveal_summary">Нарисовано скрытых элементов: {0}</sys:String>
     <sys:String x:Key="ui_reveal_left_out">Ещё {0} не нарисовано. Увеличьте масштаб, чтобы их увидеть.</sys:String>
+    <sys:String x:Key="ui_reveal_skipped">Пропущено мелких элементов: {0}.</sys:String>
     <sys:String x:Key="ui_reveal_none">В видимой области нет скрытых элементов.</sys:String>
     <sys:String x:Key="reveal_unsupported">Наложение недоступно на видах типа {}.</sys:String>
     <sys:String x:Key="reveal_needs_webview2">Для показа скрытых нужны окно вывода WebView2 и IronPython.</sys:String>

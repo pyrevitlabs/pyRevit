@@ -176,6 +176,7 @@
     <sys:String x:Key="ui_reveal_select">Auswählen</sys:String>
     <sys:String x:Key="ui_reveal_summary">{0} ausgeblendete(s) Element(e) gezeichnet</sys:String>
     <sys:String x:Key="ui_reveal_left_out">{0} weitere nicht gezeichnet. Zum Anzeigen hineinzoomen.</sys:String>
+    <sys:String x:Key="ui_reveal_skipped">{0} winzige(s) Element(e) übersprungen.</sys:String>
     <sys:String x:Key="ui_reveal_none">Im sichtbaren Bereich ist nichts ausgeblendet.</sys:String>
     <sys:String x:Key="reveal_unsupported">Die Überlagerung ist in Ansichten vom Typ {} nicht verfügbar.</sys:String>
     <sys:String x:Key="reveal_needs_webview2">Aufdecken benötigt das WebView2-Ausgabefenster und IronPython.</sys:String>
