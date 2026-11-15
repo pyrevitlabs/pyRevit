@@ -277,7 +277,8 @@
         box.checked = this.selected.has(Number(box.dataset.pick));
       }
       if (this.selectAllInput) {
-        this.selectAllInput.checked = this.selected.size > 0 && this.selected.size === this.elementCount;
+        const selectable = this.views.length ? this.views[0].elements.length : 0;
+        this.selectAllInput.checked = this.selected.size > 0 && this.selected.size === selectable;
       }
       this.emptyStateNode.hidden = this.views.length > 0 && this.elementCount > 0;
       const count = this.selected.size;
