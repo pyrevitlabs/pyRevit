@@ -282,8 +282,16 @@
       this.selectionNode.hidden = !this.data.bridge || count === 0;
       this.selectionNode.replaceChildren(
         h("span", { class: "dvi-selection-count" }, format(this.s.selectedCount, count)),
-        h("button", { class: "dvi-btn small", onclick: () => this.openHideDialog(true) }, this.s.hideInViews),
-        h("button", { class: "dvi-btn small", onclick: () => this.openHideDialog(false) }, this.s.unhideInViews),
+        h(
+          "button",
+          { class: "dvi-btn small", disabled: !this.views.length, onclick: () => this.openHideDialog(true) },
+          this.s.hideInViews
+        ),
+        h(
+          "button",
+          { class: "dvi-btn small", disabled: !this.views.length, onclick: () => this.openHideDialog(false) },
+          this.s.unhideInViews
+        ),
         h(
           "button",
           {
@@ -303,6 +311,7 @@
      * request carries ids only; Python re-checks every element and view.
      */
     openHideDialog(hide) {
+      if (!this.views.length) return;
       const ids = [...this.selected];
       const boxes = this.views.map((view) => ({ view, input: h("input", { type: "checkbox", checked: true }) }));
       const opener = document.activeElement;
@@ -437,15 +446,12 @@
      * never selects cards the user cannot see.
      */
     selectableIds() {
+      const shown = new Set();
+      for (const view of this.views) {
+        for (const element of view.elements) if (this.matches(element)) shown.add(element.id);
+      }
       const first = this.views.length ? this.views[0].elements : [];
-      return first
-        .filter((element) =>
-          this.views.some((view) => {
-            const entry = view.elements.find((e) => e.id === element.id);
-            return entry && this.matches(entry);
-          })
-        )
-        .map((element) => element.id);
+      return first.filter((element) => shown.has(element.id)).map((element) => element.id);
     }
 
     syncSelectAll() {
