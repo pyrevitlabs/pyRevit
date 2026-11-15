@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Autodesk.Revit.UI;
 using pyRevitLabs.Common.Security;
 using pyRevitExtensionParser;
 
@@ -11,25 +10,36 @@ namespace pyRevitAssemblyBuilder.SessionManager
     /// <summary>
     /// Service for managing and querying installed pyRevit extensions.
     /// </summary>
+    /// <remarks>
+    /// Must not reference RevitAPIUI types: the service is constructed and exercised outside
+    /// a Revit host by the parser tests, where touching <c>UIApplication</c> fails to load
+    /// RevitAPIUI. The Revit username therefore arrives through a provider.
+    /// </remarks>
     public class ExtensionManagerService : IExtensionManagerService
     {
         private readonly int _revitYear;
-        private readonly UIApplication? _uiApplication;
+        private readonly Func<string?>? _revitUsernameProvider;
         private readonly ILogger? _logger;
         private List<ParsedExtension>? _cachedExtensions;
         private readonly HashSet<string> _authorizedExtensions = new(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _unauthorizedExtensions = new(StringComparer.OrdinalIgnoreCase);
 
-        public ExtensionManagerService(int revitYear = 0, UIApplication? uiApplication = null, ILogger? logger = null)
+        /// <param name="revitYear">Revit year used to filter version-gated extensions; 0 for none.</param>
+        /// <param name="revitUsernameProvider">
+        /// Returns the signed-in Revit username, read on each authorization check. When null or
+        /// returning null, the Windows username is used.
+        /// </param>
+        /// <param name="logger">Optional logger.</param>
+        public ExtensionManagerService(int revitYear = 0, Func<string?>? revitUsernameProvider = null, ILogger? logger = null)
         {
             _revitYear = revitYear;
-            _uiApplication = uiApplication;
+            _revitUsernameProvider = revitUsernameProvider;
             _logger = logger;
         }
 
         private string GetRevitUsername()
         {
-            var revitUsername = _uiApplication?.Application?.Username;
+            var revitUsername = _revitUsernameProvider?.Invoke();
             var uname = revitUsername ?? Environment.UserName;
             var atIndex = uname.IndexOf('@');
             if (atIndex > 0)
@@ -73,6 +83,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// 1. Whether the extension is disabled in config
         /// 2. Whether authorized users are defined and current user is in the list
         /// 3. Whether authorized groups are defined and user is member of at least one
+        /// 4. Whether the access list could be read at all (unreadable lists reject everyone)
         /// </summary>
         private bool IsExtensionAllowed(ParsedExtension ext)
         {
@@ -90,7 +101,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (_unauthorizedExtensions.Contains(cacheKey))
                 return false;
 
-            var isAllowed = EvaluateAuthorization(ext, ext.AuthorizedUsers, ext.AuthorizedGroups);
+            var isAllowed = !ext.AuthDefinitionUnreadable
+                && EvaluateAuthorization(ext, ext.AuthorizedUsers, ext.AuthorizedGroups);
 
             if (isAllowed)
                 _authorizedExtensions.Add(cacheKey);

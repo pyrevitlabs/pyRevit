@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <!-- Check Names -->
-    <system:String x:Key="CheckName_GridsDataLister">Список данных сетки</system:String>
+    <system:String x:Key="CheckName_GridsDataLister">Список данных осей</system:String>
     <system:String x:Key="CheckName_LevelsDataLister">Список данных уровней</system:String>
     <system:String x:Key="CheckName_ReferencePlanLister">Список опорных плоскостей</system:String>
     <system:String x:Key="CheckName_SchedulesNotOnSheet">Список спецификаций не на листах</system:String>
@@ -15,10 +15,10 @@
     <system:String x:Key="CheckName_NamingConvention">Соглашение об именовании</system:String>
     
     <!-- Check Descriptions (Docstrings) -->
-    <system:String x:Key="CheckDescription_GridsDataLister">Список сеток, если они закреплены, в области видимости или названы
+    <system:String x:Key="CheckDescription_GridsDataLister">Список осей, если они закреплены, в области видимости или названы
 
 Этот инструмент контроля качества возвращает следующие данные:
-    Количество сеток, имя, тип, статус закрепления</system:String>
+    Количество осей, имя, тип, статус закрепления</system:String>
     <system:String x:Key="CheckDescription_LevelsDataLister">Список уровней, если они закреплены, в области видимости или названы и их отметка.
 
 Этот инструмент контроля качества возвращает следующие данные:
@@ -142,11 +142,11 @@
 как определено списком типов стен в Revit.</system:String>
     
     <!-- Common Output Strings -->
-    <system:String x:Key="GridsDataLister">Список данных сетки</system:String>
+    <system:String x:Key="GridsDataLister">Список данных осей</system:String>
     <system:String x:Key="LevelsDataLister">Список данных уровней</system:String>
-    <system:String x:Key="NumberOfGrids">Количество сеток</system:String>
+    <system:String x:Key="NumberOfGrids">Количество осей</system:String>
     <system:String x:Key="NumberOfLevels">Количество уровней</system:String>
-    <system:String x:Key="Grids">Сетки</system:String>
+    <system:String x:Key="Grids">Оси</system:String>
     <system:String x:Key="Levels">Уровни</system:String>
     <system:String x:Key="Name">Имя</system:String>
     <system:String x:Key="Type">Тип</system:String>

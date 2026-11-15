@@ -132,6 +132,40 @@ class PipeTests(TestCase):
         self.assertGreater(elapsed, 0.8)
         self.assertLess(elapsed, 15)
 
+    def test_a_busy_refusal_says_the_request_was_discarded(self):
+        """revit_busy keeps the request id, names its outcome and says it will not run later."""
+        answer = _call("get_context", request_id="req-0123456789ab", start_timeout_s=1)
+        self.assertEqual("req-0123456789ab", answer["id"])
+        self.assertEqual("revit_busy", answer["error"]["data"]["type"])
+        self.assertEqual("not_run", answer["error"]["data"]["outcome"])
+        self.assertIn("will not run later", answer["error"]["message"])
+
+    def test_a_refused_run_leaves_a_not_run_record(self):
+        """A run that could not start is recorded as not_run under its request id."""
+        answer = _call(
+            "run",
+            request_id="req-ba5eba11ba5e",
+            script="result = 1",
+            title="Refused run",
+            start_timeout_s=1,
+        )
+        data = answer["error"]["data"]
+        self.assertEqual("revit_busy", data["type"])
+        self.assertEqual("not_run", data["outcome"])
+        self.assertTrue(op.isdir(data["run_dir"]), data["run_dir"])
+        self.assertTrue(op.basename(data["run_dir"]).endswith(data["run_id"]))
+        with open(op.join(data["run_dir"], "response.json")) as handle:
+            record = json.load(handle)
+        self.assertEqual("not_run", record["status"])
+        self.assertEqual("not_run", record["decision"])
+        self.assertEqual(data["run_id"], record["run_id"])
+        self.assertEqual("req-ba5eba11ba5e", record["request_id"])
+        self.assertEqual("revit_busy", record["error"]["type"])
+        with open(op.join(data["run_dir"], "request.json")) as handle:
+            self.assertEqual("req-ba5eba11ba5e", json.load(handle)["request_id"])
+        with open(op.join(data["run_dir"], "script.py")) as handle:
+            self.assertEqual("result = 1", handle.read())
+
     def test_a_bad_start_timeout_is_rejected_on_the_pipe(self):
         """start_timeout_s is validated before the request waits for Revit."""
         for value in (0, -1, 3601):

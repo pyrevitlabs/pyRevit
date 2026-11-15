@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="sheets_referencing">Листы, на которых размещён вид {} {}</sys:String>
+    <sys:String x:Key="no_sheets">Вид не размещён ни на одном листе.</sys:String>
+    <sys:String x:Key="table_title">Вид размещён на листах: {}</sys:String>
+    <sys:String x:Key="column_number">Номер листа</sys:String>
+    <sys:String x:Key="column_name">Название листа</sys:String>
+    <sys:String x:Key="column_show">Выбрать/Показать элемент</sys:String>
+</ResourceDictionary>

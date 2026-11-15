@@ -39,10 +39,10 @@ class RouteHandlerNotDefinedException(Exception):
 class RouteHandlerDeniedException(Exception):
     """Route handler was denied by host."""
 
-    def __init__(self, request):
-        message = 'Route handler was denied by host: "%s"' % request.route
+    def __init__(self, request, message=None):
+        message = message or 'Route handler was denied by host: "%s"' % request.path
         super(RouteHandlerDeniedException, self).__init__(message)
-        self.status = 406  # https://httpstatuses.com/406
+        self.status = 503
         self.source = HOST_APP.pretty_name
 
 
@@ -50,9 +50,9 @@ class RouteHandlerTimedOutException(Exception):
     """Route handler was timed out by host."""
 
     def __init__(self, request):
-        message = 'Route handler was timed out by host: "%s"' % request.route
+        message = 'Route handler was timed out by host: "%s"' % request.path
         super(RouteHandlerTimedOutException, self).__init__(message)
-        self.status = 408  # https://httpstatuses.com/408
+        self.status = 504
         self.source = HOST_APP.pretty_name
 
 
@@ -72,7 +72,7 @@ class RouteHandlerExecException(Exception):
     def __init__(self, message):
         message = "Route exception in Execute: %s" % message
         super(RouteHandlerExecException, self).__init__(message)
-        self.status = 408  # https://httpstatuses.com/408
+        self.status = 500
         self.source = HOST_APP.pretty_name
 
 
@@ -99,5 +99,5 @@ class RouteHandlerException(Exception):
             clsx_targetsite,
         )
         super(RouteHandlerException, self).__init__(message)
-        self.status = 408  # https://httpstatuses.com/408
+        self.status = 500
         self.source = HOST_APP.pretty_name

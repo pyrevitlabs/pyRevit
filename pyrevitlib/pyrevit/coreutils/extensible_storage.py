@@ -15,8 +15,8 @@ boilerplate behind two things:
       a given schema as a plain dict, so callers never touch
       SchemaBuilder, Entity, or Get[T]/Set[T] directly.
 
-Only "simple" fields (a single value per field -- str, int, float,
-bool, DB.ElementId, System.Guid, etc.) and "array" fields (an ordered
+Only "simple" fields (a single value per field -- str, System.Int32,
+float, bool, DB.ElementId, System.Guid, etc.) and "array" fields (an ordered
 list of one of those types -- e.g. every ElementId a tool generated)
 are covered directly. A schema that also needs SchemaBuilder.AddMapField
 can add it via the BaseSchema.extend_builder hook (see below).
@@ -84,7 +84,9 @@ class BaseSchema(object):
         array_fields (dict): {field_name: element_type}, e.g.
             {"ManagedIds": DB.ElementId} -- each is stored/read as an
             ordered list of that type. A field name must not appear in
-            both `fields` and `array_fields`.
+            both `fields` and `array_fields`. Declare integers as
+            System.Int32, not the builtin int: on IronPython 3 int
+            maps to BigInteger, which Extensible Storage rejects.
         documentation (str or None): optional overall schema doc string
     """
 

@@ -28,3 +28,5 @@ tooltip:
     Es wird der Plan geöffnet, der die Ansicht enthält und zoomt auf das Ansichtsfenster
   pt_br: |-
     Abre a folha contendo esta vista e aplica zoom na viewport
+context:
+  - doc-project

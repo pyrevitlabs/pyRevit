@@ -39,7 +39,7 @@ cd build
 # Unsigned product build (no version stamping; Channel=none by default)
 dotnet run -c Release -- ci
 
-# WIP-style stamping + product build (matches develop push on the main repo)
+# WIP-style stamping + product build (matches a develop or release/* push on the main repo)
 $env:Build__Channel = 'wip'
 dotnet run -c Release -- ci
 
@@ -107,7 +107,7 @@ Run unit tests:
 dotnet test tests/Build.Tests.csproj -c Release
 ```
 
-The `ci` pipeline also runs the configuration core, INI backend, and parser parity tests.
+The `ci` pipeline also runs the configuration core, INI backend, parser parity, and Python shell tests. Shell tests use the built IronPython engine assemblies after the runners build; they do not add engine source builds to Labs.
 
 ### Pipeline modes
 
@@ -177,6 +177,6 @@ On GitHub Actions, version stamping on the main repo is gated by `Build__Channel
 ## GitHub workflows
 
 - [`ci.yml`](../.github/workflows/ci.yml) — `dotnet run -- ci` + unit tests
-- [`wip.yml`](../.github/workflows/wip.yml) — `dotnet run -- pack sign`
+- [`wip.yml`](../.github/workflows/wip.yml) — `dotnet run -- pack sign`, called by `ci.yml` on pushes to `develop` and `release/*`, so a release candidate branch gets signed WIP installers
 - [`release.yml`](../.github/workflows/release.yml) — `dotnet run -- release pack sign publish`
 - [`winget.yml`](../.github/workflows/winget.yml) — `dotnet run -- winget` (on release published)

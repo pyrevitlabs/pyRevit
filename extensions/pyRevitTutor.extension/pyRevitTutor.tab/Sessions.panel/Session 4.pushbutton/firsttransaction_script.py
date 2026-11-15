@@ -33,7 +33,7 @@ t = Transaction(doc, "Update Sheet Parmeters")
 t.Start()
 
 for sheet in sheets_collector:
-    custom_param = sheet.Parameter[BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+    custom_param = sheet.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)
     if custom_param:
         custom_param.Set("Example value")
 

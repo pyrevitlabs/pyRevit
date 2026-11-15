@@ -67,7 +67,7 @@ namespace pyRevitCLI.Properties {
         ///	pyrevit (-V | --version)
         ///	pyrevit --usage
         ///	pyrevit (blog | docs | source | youtube | support)
-        ///	pyrevit env [--json] [--help] [--log=&lt;log_file&gt;]
+        ///	pyrevit env [--json] [--redact] [--help] [--log=&lt;log_file&gt;]
         ///	pyrevit clone --help
         ///	pyrevit clone &lt;clone_name&gt; &lt;deployment_name&gt; [--dest=&lt;dest_path&gt;] [--branch=&lt;branch_name&gt;] [--log=&lt;log_file&gt;]
         ///	pyrevit clone &lt;clone_name&gt; --image=&lt;image_url&gt; [--dest=&lt;dest_path&gt;] [--log=&lt;log_file&gt;]

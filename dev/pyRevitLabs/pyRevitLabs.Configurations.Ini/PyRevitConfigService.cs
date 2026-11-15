@@ -117,7 +117,8 @@ public static class PyRevitConfigService {
     /// Builds the process's shared configuration service: repairs a split admin
     /// install, then selects and returns the appropriate config tier. The Seed,
     /// User, and New tiers all resolve to the same writable per-user config,
-    /// after any seeding the Seed tier needs.
+    /// after any seeding the Seed tier needs and, on an all-users install, after
+    /// pulling in extension search paths newly added to the machine config.
     /// </summary>
     private static IConfigurationService BuildConfigService() {
         MigrateSplitAdminConfigIfNeeded();
@@ -153,8 +154,121 @@ public static class PyRevitConfigService {
                 break;
         }
 
-        return BuildWritable(userConfig);
+        var userService = CreateConfiguration(userConfig, false);
+        if (adminExists && PyRevitInstallScope.IsAllUsersInstall())
+            SyncMachineExtensionPaths(userService.Configuration, adminConfig);
+        RunMigration(userService, userConfig);
+        return userService;
     }
+
+    private const string CoreSectionName = "core";
+    private const string UserExtensionsKeyName = "userextensions";
+
+    /// <summary>
+    /// Records, in the per-user config, every machine extension search path
+    /// ever offered to the user. Paths in this list have already been offered,
+    /// so their absence from the user's own list is a removal the user made,
+    /// not a path they have yet to receive.
+    /// </summary>
+    /// <remarks>
+    /// Invariant: the list only grows. Pruning it when the administrator drops
+    /// a path would let a later re-add bring back a path the user removed.
+    /// </remarks>
+    internal const string SyncedMachineExtensionsKeyName = "syncedmachineuserextensions";
+
+    /// <summary>
+    /// Copies extension search paths the administrator added to the machine
+    /// config since the last sync into the per-user config, so a standard user
+    /// on an all-users install picks them up without the loader having to read
+    /// a second config file.
+    /// </summary>
+    /// <remarks>
+    /// The per-user config stays the single source of truth for the user's
+    /// extension paths: it is the file the loader reads and the file the
+    /// Settings window writes. A path is offered once; a user who removes it
+    /// keeps it removed, because it is then recorded under
+    /// <see cref="SyncedMachineExtensionsKeyName"/>. A per-user config that
+    /// predates that key is treated as having seen nothing, so paths the
+    /// machine config gained after the user was seeded are not lost.
+    /// Paths the administrator later drops from the machine config are left in
+    /// the per-user config: the user may have added the same path themselves.
+    /// <para>
+    /// Changes are applied to <paramref name="userConfig"/> in memory before
+    /// they are saved. When the save fails (the file is locked or not
+    /// writable), the in-memory config still carries the new paths, so they load
+    /// for this session, and the next build offers them again.
+    /// </para>
+    /// No-op when the machine config is missing or its list cannot be decoded.
+    /// </remarks>
+    internal static void SyncMachineExtensionPaths(IConfiguration userConfig, string machineConfigPath) {
+        if (!File.Exists(machineConfigPath))
+            return;
+
+        List<string> added;
+        try {
+            var machine = IniConfiguration.Create(machineConfigPath, true);
+            List<string> machinePaths = ReadPathList(machine, UserExtensionsKeyName);
+            List<string> syncedPaths = ReadPathList(userConfig, SyncedMachineExtensionsKeyName);
+            List<string> userPaths = ReadPathList(userConfig, UserExtensionsKeyName);
+
+            added = new List<string>();
+            var newlySynced = new List<string>();
+            foreach (string path in machinePaths) {
+                if (ContainsPath(syncedPaths, path) || ContainsPath(newlySynced, path))
+                    continue;
+                newlySynced.Add(path);
+                if (!ContainsPath(userPaths, path))
+                    added.Add(path);
+            }
+
+            if (newlySynced.Count == 0)
+                return;
+
+            if (added.Count > 0) {
+                userPaths.AddRange(added);
+                userConfig.SetValue(CoreSectionName, UserExtensionsKeyName, userPaths);
+            }
+
+            syncedPaths.AddRange(newlySynced);
+            userConfig.SetValue(CoreSectionName, SyncedMachineExtensionsKeyName, syncedPaths);
+        }
+        catch (Exception ex) {
+            ConfigurationDiagnostics.ReportWarning(
+                "Could not sync extension search paths from the machine config: " + ex.Message);
+            return;
+        }
+
+        foreach (string path in added)
+            ConfigurationDiagnostics.ReportInfo(
+                "Added extension search path from the machine config: " + path);
+
+        try {
+            userConfig.SaveConfiguration();
+        }
+        catch (Exception ex) {
+            ConfigurationDiagnostics.ReportWarning(
+                "Could not save the synced extension search paths to " + userConfig.ConfigurationPath
+                + "; they apply to this session only and will be offered again on the next load: "
+                + ex.Message);
+        }
+    }
+
+    private static List<string> ReadPathList(IConfiguration config, string keyName) {
+        if (!config.HasSectionKey(CoreSectionName, keyName))
+            return new List<string>();
+
+        var paths = config.GetValue<List<string>>(CoreSectionName, keyName);
+        return paths?.Where(path => !string.IsNullOrWhiteSpace(path)).ToList() ?? new List<string>();
+    }
+
+    private static bool ContainsPath(IEnumerable<string> paths, string candidate) =>
+        paths.Any(path => PathsEqual(path, candidate));
+
+    private static bool PathsEqual(string left, string right) =>
+        string.Equals(TrimPath(left), TrimPath(right), StringComparison.OrdinalIgnoreCase);
+
+    private static string TrimPath(string path) =>
+        path.Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
     private static IConfigurationService BuildWritable(string configPath) {
         var service = CreateConfiguration(configPath, false);

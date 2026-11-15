@@ -20,3 +20,4 @@ tooltip:
     Verwendet den Arbeitsteilungs-Tooltip, um herauszufinden, welches Element  durch den Benutzer in der aktuellen Ansicht zuletzt bearbeitet wurde.  Wenn die aktuelle Ansicht ein Plan ist, durchsucht das Werkzeug auch  alle Ansichten, die auf diesem Plan platziert wurden. "Zuletzt bearbeitete"  Elemente sind Elemente, die vom Benutzer zuletzt bearbeitet wurden,  und unterscheiden sich von ausgeliehenen Elementen
   pt_br: >-
     Usa a dica de ferramenta de Compartilhamento de Trabalho para descobrir o elemento "último editado" pelo usuário na vista atual. Se a vista atual for uma folha, a ferramenta pesquisa todas as vistas colocadas nesta folha também. Elementos "Último Editado" são elementos editados pela última vez pelo usuário e são diferentes de elementos emprestados
+context: doc-workshared

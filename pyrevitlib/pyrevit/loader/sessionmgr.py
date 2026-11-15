@@ -325,7 +325,9 @@ def load_session():
 
 
 def reload_pyrevit():
+    """Remove Python event subscriptions, then load a fresh pyRevit session."""
     mlogger.info("Reloading....")
+    revit.events.unregister_all_exec_handlers()
     return load_session()
 
 

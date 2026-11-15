@@ -587,6 +587,29 @@ def escape_for_html(input_string):
     return input_string.replace("<", "&lt;").replace(">", "&gt;")
 
 
+_MARKDOWN_SPECIAL_CHARACTERS = "|*_`["
+
+
+def escape_for_output(text):
+    """Make model text render literally in output window tables and headings.
+
+    ``print_table`` splits cells on pipes and renders Markdown, so pipes,
+    emphasis and link characters are encoded as entities. Ampersands are
+    encoded so names such as "&copy;" are not read as entities, and line
+    breaks become spaces so a name stays on one table row.
+
+    Args:
+        text (str): text taken from the model, such as an element or type name
+
+    Returns:
+        (str): text safe to embed in Markdown or table cells
+    """
+    escaped = escape_for_html(" ".join(text.splitlines()).replace("&", "&#38;"))
+    for character in _MARKDOWN_SPECIAL_CHARACTERS:
+        escaped = escaped.replace(character, "&#{};".format(ord(character)))
+    return escaped
+
+
 def read_url(url_to_open):
     """Get the url and return response.
 
@@ -671,10 +694,17 @@ def cleanup_filename(file_name, windows_safe=False):
 
     Args:
         file_name (str): file name
-        windows_safe (bool): whether to use windows safe characters
+        windows_safe (bool): apply Windows naming rules instead of keeping
+            only word characters: remove slashes, ``:*?"<>|`` and control
+            characters, then trim leading spaces and trailing spaces and
+            dots. Leading dots are kept.
 
     Returns:
         (str): cleaned up file name
+
+    Invariant:
+        `pathtemplate` cleans every folder name with ``windows_safe=True``,
+        so changing that branch changes Print Sheets output folders too.
 
     Examples:
         ```python
@@ -688,7 +718,8 @@ def cleanup_filename(file_name, windows_safe=False):
         "Perforations 18 (New).txt"
     """
     if windows_safe:
-        return re.sub(r'[\/:*?"<>|]', "", file_name)
+        cleaned = re.sub(r'[\\/:*?"<>|\x00-\x1f\x7f]', "", file_name)
+        return cleaned.lstrip(" ").rstrip(" .")
     else:
         return re.sub(r'[^\w_.() -#]|["]', "", file_name)
 

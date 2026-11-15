@@ -1,43 +1,51 @@
-context: selection
 title:
-  en_us: Count lines of selected style
-  ko: 선택 스타일 선 개수
-  fr_fr: Compter les lignes d'un style choisi
-  ru: Посчитать линии выделенного стиля
-  chinese_s: 统计选定线样式的线数量
-  es_es: Contar líneas del estilo seleccionado
-  de_de: Zähle die Linien des ausgewählten Stils
-  pt_br: Contar Linhas do Estilo Selecionado
+  en_us: Count lines of selected style ●
+  ko: 선택 스타일 선 개수 ●
+  fr_fr: Compter les lignes d'un style choisi ●
+  ru: Посчитать линии выделенного стиля ●
+  chinese_s: 统计选定线样式的线数量 ●
+  es_es: Contar líneas del estilo seleccionado ●
+  de_de: Zähle die Linien des ausgewählten Stils ●
+  pt_br: Contar Linhas do Estilo Selecionado ●
 tooltip:
-  en_us: >-
-    Counts all lines in the model with matching style to the selected line
+  en_us: |-
+    Count all lines in the model that have the line style of the selected lines.
 
+    Shift-click:
+    List every matching line.
+  ko: |-
+    선택한 선과 선 스타일이 같은 모델의 모든 선을 셉니다.
 
-    CTRL-Click: Lists every matching line
-  ko: "선택한 선과 스타일이 일치하는 모델의 모든 선을 셉니다. CTRL+클릭: 일치하는 모든 선을 나열합니다."
-  fr_fr: >-
-    Compte toutes les lignes du modèle avec un style correspondant à la ligne sélectionnée
+    Shift 키를 누르고 클릭:
+    일치하는 모든 선을 나열합니다.
+  fr_fr: |-
+    Compter toutes les lignes du modèle qui ont le style de ligne des lignes sélectionnées.
 
+    Maj+clic :
+    Lister chaque ligne correspondante.
+  ru: |-
+    Считает все линии в модели со стилем линий выделенных линий.
 
-    CTRL-Click: Lister toutes les lignes correspondantes
-  ru: >-
-    Считает все линии в модели с таким же стилем выделенной линии.
+    Shift + Щелчок:
+    Вывести каждую найденную линию.
+  chinese_s: |-
+    统计模型中所有与所选线样式相同的线。
 
+    Shift-单击：
+    列出每一条匹配的线。
+  es_es: |-
+    Contar todas las líneas del modelo que tienen el estilo de línea de las líneas seleccionadas.
 
-    CTRL-Click: Выводит найденные линии.
-  chinese_s: "统计模型中所有与所选线样式匹配的线\n\nCTRL-单击：列出每一条匹配的线"
-  es_es: >-
-    Cuenta todas las líneas del modelo con estilo coincidente a la línea seleccionada
+    Mayús+clic:
+    Listar cada línea coincidente.
+  de_de: |-
+    Zähle alle Linien im Modell, die den Linienstil der ausgewählten Linien haben.
 
+    Umschalt-Klick:
+    Liste jede übereinstimmende Linie auf.
+  pt_br: |-
+    Contar todas as linhas do modelo que têm o estilo de linha das linhas selecionadas.
 
-    CTRL-Clic: Lista cada línea coincidente
-  de_de: >-
-    Zählt alle Linien im Modell, deren Stil mit dem der ausgewählten Linie übereinstimmt
-
-
-    CTRL-Click: Listet jede übereinstimmende Linie auf
-  pt_br: >-
-    Conta todas as linhas no modelo com estilo correspondente à linha selecionada
-    
-    
-    CTRL-Clique: Lista todas as linhas correspondentes
+    Shift+clique:
+    Listar cada linha correspondente.
+context: OST_Lines

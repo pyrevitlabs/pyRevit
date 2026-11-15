@@ -11,14 +11,15 @@ using System.Windows;
 using System.Windows.Threading;
 using System.Windows.Input;
 using System.Threading;
-using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Windows.Interop;
 
 namespace PythonConsoleControl
 {
     /// <summary>
     /// Adapts AvalonEdit for console input, output, and completion.
     /// </summary>
-    public class PythonTextEditor
+    public class PythonTextEditor : IDisposable
     {
         internal TextEditor textEditor;
         internal TextArea textArea;
@@ -33,12 +34,15 @@ namespace PythonConsoleControl
         Thread completionThread;
         PythonConsoleCompletionDataProvider completionProvider = null;
         Action<Action> completionDispatcher = new Action<Action>((command) => command());
+        readonly PythonExecution completionExecution = new PythonExecution();
+        readonly ManualResetEvent disposedEvent = new ManualResetEvent(false);
+        volatile bool disposed;
 
         public PythonTextEditor(TextEditor textEditor)
         {
             this.textEditor = textEditor;
             this.textArea = textEditor.TextArea;
-            completionWaitHandles = new WaitHandle[] { completionRequestedEvent, descriptionRequestedEvent };
+            completionWaitHandles = new WaitHandle[] { completionRequestedEvent, descriptionRequestedEvent, disposedEvent };
             completionThread = new Thread(new ThreadStart(Completion));
             completionThread.Priority = ThreadPriority.Lowest;
             completionThread.IsBackground = true;
@@ -51,9 +55,56 @@ namespace PythonConsoleControl
         /// </summary>
         public void SetCompletionDispatcher(Action<Action> newDispatcher)
         {
-            completionDispatcher = newDispatcher;
+            completionDispatcher = command => completionExecution.Run(
+                completionProvider.Engine, command, newDispatcher, IsCompletionStopKeyPressed);
         }
 
+
+        [DllImport("user32.dll")]
+        static extern short GetAsyncKeyState(int virtualKey);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetAncestor(IntPtr window, uint flags);
+
+        bool HasForegroundInput()
+        {
+            if (!textArea.Dispatcher.CheckAccess() || !textArea.IsKeyboardFocusWithin) return false;
+            var source = PresentationSource.FromVisual(textArea) as HwndSource;
+            return source != null && GetAncestor(source.Handle, 2) == GetAncestor(GetForegroundWindow(), 2);
+        }
+
+        internal bool IsInterruptKeyPressed()
+        {
+            return HasForegroundInput() && SelectionLength == 0
+                && (GetAsyncKeyState(0x11) & 0x8000) != 0
+                && (GetAsyncKeyState(0x43) & 0x8000) != 0;
+        }
+
+        bool IsCompletionStopKeyPressed()
+        {
+            return HasForegroundInput() && (GetAsyncKeyState(0x0D) & 0x8000) != 0;
+        }
+
+        public void Dispose()
+        {
+            if (disposed) return;
+            disposed = true;
+            completionExecution.Dispose();
+            disposedEvent.Set();
+            completionWindow?.Close();
+        }
+
+        internal bool WaitForExit(TimeSpan timeout)
+        {
+            if (!completionThread.Join(timeout)) return false;
+            completionRequestedEvent.Dispose();
+            descriptionRequestedEvent.Dispose();
+            disposedEvent.Dispose();
+            return true;
+        }
         /// <summary>
         /// Whether completion popups should render with the dark theme. Set by the host control
         /// when its theme is applied; read each time a completion window is created.
@@ -75,10 +126,9 @@ namespace PythonConsoleControl
             Write(text, false, true);
         }
 
-        Stopwatch sw;
-
         public void Write(string text, bool allowSynchronous, bool moveToEnd)
         {
+            if (disposed) return;
             text = text.Replace("\r\r\n", "\r\n");
             text = text.Replace("\r\n", "\n");
             text = text.Replace("\0", "");
@@ -100,32 +150,30 @@ namespace PythonConsoleControl
             {
                 writeInProgress = true;
                 ThreadPool.QueueUserWorkItem(new WaitCallback(CheckAndOutputWriteBuffer), moveToEnd);
-                sw = Stopwatch.StartNew();
             }
         }
 
         private void CheckAndOutputWriteBuffer(Object stateInfo)
         {
             bool moveToEnd = (bool)stateInfo;
-
-            AutoResetEvent writeCompletedEvent = new AutoResetEvent(false);
+            using var writeCompletedEvent = new AutoResetEvent(false);
             Action action = new Action(delegate()
             {
-                string toWrite;
-                lock (writeBuffer)
+                try
                 {
-                    toWrite = writeBuffer.ToString();
-                    writeBuffer.Remove(0, writeBuffer.Length);
+                    if (disposed) return;
+                    string toWrite;
+                    lock (writeBuffer)
+                    {
+                        toWrite = writeBuffer.ToString();
+                        writeBuffer.Remove(0, writeBuffer.Length);
+                    }
+                    if (moveToEnd) MoveToEnd();
+                    PerformTextInput(toWrite);
                 }
-                if (moveToEnd)
-                {
-                    MoveToEnd();
-                }
-                PerformTextInput(toWrite);
-                writeCompletedEvent.Set();
+                finally { writeCompletedEvent.Set(); }
             });
-
-            while (true)
+            while (!disposed)
             {
                 textArea.Dispatcher.BeginInvoke(action, DispatcherPriority.Normal);
                 writeCompletedEvent.WaitOne();
@@ -282,9 +330,9 @@ namespace PythonConsoleControl
 
         public bool StopCompletion()
         {
-            if (completionProvider.AutocompletionInProgress)
+            if (completionExecution.IsRunning)
             {
-                completionThread.Abort(new Microsoft.Scripting.KeyboardInterruptException(""));
+                completionExecution.Interrupt();
                 return true;
             }
             return false;
@@ -297,11 +345,13 @@ namespace PythonConsoleControl
 
         public void ShowCompletionWindow()
         {
+            if (disposed) return;
             completionRequestedEvent.Set();
         }
 
         public void UpdateCompletionDescription()
         {
+            if (disposed) return;
             descriptionRequestedEvent.Set();
         }
 
@@ -313,8 +363,13 @@ namespace PythonConsoleControl
             while (true)
             {
                 int action = WaitHandle.WaitAny(completionWaitHandles);
-                if (action == completionEventIndex && completionProvider != null) BackgroundShowCompletionWindow();
-                if (action == descriptionEventIndex && completionProvider != null && completionWindow != null) BackgroundUpdateCompletionDescription();
+                if (completionWaitHandles[action] == disposedEvent) return;
+                try
+                {
+                    if (action == completionEventIndex && completionProvider != null) BackgroundShowCompletionWindow();
+                    if (action == descriptionEventIndex && completionProvider != null && completionWindow != null) BackgroundUpdateCompletionDescription();
+                }
+                catch (Microsoft.Scripting.KeyboardInterruptException) { }
             }
         }
 
@@ -326,9 +381,11 @@ namespace PythonConsoleControl
             string itemForCompletion = "";
             textArea.Dispatcher.Invoke(new Action(delegate()
             {
+                if (disposed) return;
                 DocumentLine line = textArea.Document.Lines[textArea.Caret.Line - 1];
                 itemForCompletion = textArea.Document.GetText(line.Offset, textArea.Caret.Column - 1);
             }));
+            if (disposed) return;
 
 
             completionDispatcher.Invoke(new Action(delegate()
@@ -337,7 +394,7 @@ namespace PythonConsoleControl
                 {
                     var completionInfo = completionProvider.GenerateCompletionData(itemForCompletion);
 
-                    if (completionInfo != null)
+                    if (completionInfo != null && !disposed)
                     {
                         ICompletionData[] completions = completionInfo.Item1;
                         string objectName = completionInfo.Item2;
@@ -345,6 +402,7 @@ namespace PythonConsoleControl
 
                         if (completions.Length > 0) textArea.Dispatcher.BeginInvoke(new Action(delegate()
                         {
+                            if (disposed) return;
                             completionWindow = new PythonConsoleCompletionWindow(textArea, this);
                             completionWindow.ApplyTheme(UseDarkCompletionTheme);
                             IList<ICompletionData> data = completionWindow.CompletionList.CompletionData;
@@ -363,6 +421,7 @@ namespace PythonConsoleControl
                         }));
                     }
                 }
+                catch (Microsoft.Scripting.KeyboardInterruptException) { throw; }
                 catch (Exception exception)
                 {
                     MessageBox.Show(exception.ToString(), "Error");
@@ -379,6 +438,7 @@ namespace PythonConsoleControl
                 {
                     completionWindow.UpdateCurrentItemDescription();
                 }
+                catch (Microsoft.Scripting.KeyboardInterruptException) { throw; }
                 catch (Exception exception)
                 {
                     MessageBox.Show(exception.ToString(), "Error");

@@ -26,3 +26,4 @@ tooltip:
     vom Quellprojekt auf die Zielprojekte übernommen. Damit haben alle  Ansichten projektübergreifend den gleichen Titel auf einem Plan.
   pt_br: >-
     Iguala o valor de "Título da pagina" de todas as vistas em documentos abertos ao documento atual para que todas as vistas com nomes correspondentes tenham valores de "Título da pagina" correspondentes
+context: doc-project

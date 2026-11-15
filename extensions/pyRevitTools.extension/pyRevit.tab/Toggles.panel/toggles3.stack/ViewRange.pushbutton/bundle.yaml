@@ -30,3 +30,6 @@ engine:
   clean: false
   full_frame: false
   persistent: true
+context:
+  - doc-project
+  - active-3d-view

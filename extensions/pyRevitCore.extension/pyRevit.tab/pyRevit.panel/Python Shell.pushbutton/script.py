@@ -9,7 +9,7 @@ choose the mode.
 import sys
 
 from pyrevit import script, forms, framework, HOST_APP
-from System import AppDomain
+from System import AppDomain, InvalidOperationException
 from System.IO import File, Path
 from System.Collections.Generic import List
 
@@ -75,7 +75,11 @@ if shell_mode in ("Docked", "Docked Editor"):
             exitscript=True,
         )
     try:
+        shell, paths = _load_shell()
+        shell.RegisterDockablePane(HOST_APP.uiapp, paths, shell_mode == "Docked Editor")
         forms.open_dockable_panel(DOCKABLE_PANEL_ID)
+    except InvalidOperationException as mode_error:
+        forms.alert(str(mode_error.Message), title="Python Shell", exitscript=True)
     except Exception:
         mlogger.exception("Failed to open dockable Python Shell pane")
         forms.alert(

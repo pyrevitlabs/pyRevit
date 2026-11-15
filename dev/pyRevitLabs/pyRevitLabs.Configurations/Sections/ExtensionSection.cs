@@ -19,11 +19,21 @@ namespace pyRevitLabs.Configurations.Sections;
 /// without asking.
 /// </remarks>
 public sealed record ExtensionSection {
+    /// <summary>Stored key name of <see cref="Disabled"/>.</summary>
+    public const string DisabledKeyName = "disabled";
+
     /// <summary>
-    /// Whether the extension is excluded from the session. Default false, so an
-    /// extension with no stored setting loads.
+    /// Whether the extension is excluded from the session. Default false.
+    /// <para>
+    /// The default is filled in at read time, so this cannot tell an absent key
+    /// from an explicit "enabled". The load decision must fall back to the
+    /// extension manifest's <c>default_enabled</c> when the key is absent; read
+    /// the stored key via
+    /// <see cref="Abstractions.IConfigurationService.ResolveExtensionSectionName"/>
+    /// for that.
+    /// </para>
     /// </summary>
-    [KeyName("disabled")]
+    [KeyName(DisabledKeyName)]
     [DefaultValue(false)]
     public bool? Disabled { get; set; }
 

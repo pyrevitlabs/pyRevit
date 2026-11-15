@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="sheets_containing">Feuilles contenant les éléments sélectionnés</sys:String>
+    <sys:String x:Key="no_sheets">Aucun des éléments sélectionnés n'apparaît sur une feuille.</sys:String>
+    <sys:String x:Key="table_title">Feuilles et fenêtres de vue</sys:String>
+    <sys:String x:Key="column_number">Numéro de feuille</sys:String>
+    <sys:String x:Key="column_sheet">Nom de la feuille</sys:String>
+    <sys:String x:Key="column_sheet_show">Afficher la feuille</sys:String>
+    <sys:String x:Key="column_view">Vue</sys:String>
+    <sys:String x:Key="column_viewport_show">Afficher la fenêtre de vue</sys:String>
+</ResourceDictionary>

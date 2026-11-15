@@ -17,7 +17,7 @@ Before you begin, you'll need to set up your development environment with the fo
 Install Visual Studio 2022 and select:
 
 - under **workloads**, enable **.NET desktop development**
-- under ¨**Individual components** make sure the following are selected:
+- under **Individual components** make sure the following are selected:
     - .NET 8.0 Runtime (Long Term Support)
     - .NET 10.0 Runtime
     - .NET Framework 4.7.2 Targeting Pack
@@ -29,7 +29,7 @@ Install Visual Studio 2022 and select:
 
 ### Python 3
 
-Make sure Python 3 is installed on your system.
+Make sure Python 3.14 is installed on your system (the `Pipfile` requires it).
 
 Download it from the [Python official website](https://www.python.org/downloads/).
 
@@ -62,7 +62,7 @@ Make sure to uncheck the "Copy the master branch only" option, since we mostly u
 | **1 — Run in Revit** | Use pyRevit without building C# | `pyrevit clone` | Public Release `ci-binaries` (`develop`/`master`) or signed `bin-v{version}.zip` on a published `v*` tag |
 | **2 — C# contributor** | Change DLLs and debug in Visual Studio | `git clone` | `dotnet run -- ci` in [`build/`](../build/) |
 
-#### Profile 1 — Run in Revit (CI binaries)
+#### Profile 1: Run in Revit (CI binaries)
 
 Uses the pyRevit CLI to clone git source **and** download pre-built `bin/` from the [`ci-binaries`](https://github.com/pyrevitlabs/pyRevit/releases/tag/ci-binaries) release (or the matching GitHub Release when `--branch` is a `v*` tag). Normal path on `pyrevitlabs/pyRevit` needs no `GITHUBTOKEN`. Synced forks use upstream Release assets for the same commit SHA.
 
@@ -85,7 +85,7 @@ pyrevit clones update dev
 
 If public Release download fails (diverged fork, private repo), set `GITHUBTOKEN` (`read:packages` and/or `actions:read`) and retry — the CLI falls back to the `PyRevit.UnsignedBin` NuGet mirror and Actions artifacts. See [download order](ci-cd.md#prebuilt-binaries-for-clone).
 
-#### Profile 2 — C# contributor (local build)
+#### Profile 2: C# contributor (local build)
 
 Use **git**, not `pyrevit clone` — `clone` would pull CI binaries and overwrite the local-build workflow.
 
@@ -182,7 +182,7 @@ You can choose any name for the remote, but "upstream" is a common convention.
 
 ### Retrieve the submodules
 
-If you skipped Profile 2 step 4, or switch branches that change dependencies:
+If you did not run `git submodule update --init --recursive` in Profile 2, or you switch branches that change dependencies:
 
 ```shell
 git submodule update --init --recursive
@@ -194,11 +194,14 @@ git submodule update --init --recursive
 
 ## Initialize the pipenv environment
 
-This will create a python environment for running the toolchain scripts to build the various pyrevit components.
+This will create a python environment for the repository's Python tooling: the documentation build, linting (`ruff`), the compatibility checkers in `dev/scripts`, and the pre-commit hooks.
 
 ```shell
-pipenv install
+pipenv install --dev
+pipenv run install-hooks
 ```
+
+The hooks run `ruff format` on staged Python files and `dotnet format` on staged C# files, and fail the commit when they change anything.
 
 ## IDE Setup
 
@@ -227,7 +230,7 @@ pyrevit attachments
 
 !!! note
 
-    pyRevit 7 (current WIP) needs a WIP `pyrevit` CLI — a released CLI does not know the commands added in `develop`. Build it from this repo if you need one:
+    A released `pyrevit` CLI can predate commands added in `develop`. Use the CLI built from your clone:
 
     ```shell
     cd build
@@ -235,6 +238,24 @@ pyrevit attachments
     cd ..
     .\bin\pyrevit.exe attach dev default --installed
     ```
+
+## Running several clones at the same time
+
+`pyrevit attach` records one clone and engine per Revit year in `%APPDATA%\Autodesk\Revit\Addins\<year>\pyRevit.addin`, so parallel work (PR reviews, bisecting, a feature branch next to `develop`) fights over the attachment. `pyrevit launch` starts Revit on a clone and engine without touching that file:
+
+```shell
+pyrevit launch C:\work\pyrevit-review-1234 default 2026 --language=ENU
+pyrevit launch dev 342 2026 --isolated
+```
+
+The command prints the process id, clone, engine and launch directory, stays in the foreground while Revit runs, and removes its temporary manifest and journal (`%TEMP%\pyrevit\launch\<id>`) when Revit exits, after copying the session journal Revit wrote there into Revit's `Journals` folder as `journal.launch-<id>.0001.txt`. Start it as a background process when you drive the session from a script or an agent. Leftovers of killed launchers are pruned by the next launch.
+
+- The clone is a registered name or the path of a built clone (a git worktree works); the engine is `default`, a version such as `342`, or an engine id.
+- `--language` takes a three-letter Revit language code such as `ENU`.
+- A model path after the year, such as `pyrevit launch dev default 2026 C:\Models\Tower.rvt`, is opened when Revit starts; a path that doesn't exist, or that has characters outside ASCII, is refused before anything is prepared.
+- `--isolated` gives the session its own pyRevit config folder, seeded with a copy of the config the clone would load anyway (the clone's own config, else yours); a config stored in the clone is ignored by that session. Instance records, run records and captures stay in `%APPDATA%\pyRevit\agent`, where `pyrevit agent` and `pyrevit mcp` look for sessions.
+- Sessions of the same Revit year are told apart by clone: `pyrevit agent context --revit=<clone name>`, or `revit: "<clone name>"` in the MCP tools. See [Running several clones side by side](agent-runtime.md#running-several-clones-side-by-side).
+- A plain Revit start, and `pyrevit attach` or `detach`, keep working as before and ignore launched sessions.
 
 ## Debugging Code
 
@@ -252,6 +273,17 @@ Currently, you cannot use Visual Studio's "Run" button to debug pyRevit because 
 
 3. **Attach the Debugger**: Attach the Visual Studio debugger to the `revit.exe` process to start debugging:
    - Go to `Debug` > `Attach to Process...` and select `revit.exe` from the list.
+
+## Building the documentation
+
+The website is built with mkdocs. The reference API pages are generated from the docstrings under `pyrevitlib/pyrevit` by `docs/gen_ref_pages.py`, which also copies the `*.md` files of the repository root into the site.
+
+```shell
+pipenv run docs
+pipenv run ruff check pyrevitlib/pyrevit
+```
+
+`pipenv run docs` is `mkdocs build`. Adding `--strict` makes warnings fail the build, but the build currently reports existing warnings (relative links to files outside `docs/` and docstring cross-references), so check that your change adds none. `pipenv run check-docstrings` runs the same `ruff check` and only reports findings. `pipenv run fix-docstrings` adds `--fix` and can rewrite files under `pyrevitlib/pyrevit`, so run it deliberately and review the diff. The `pyRevitDocsCI` workflow (`docs.yml`) publishes the site with `mkdocs gh-deploy` when the `docs` branch changes. It also runs on pull requests into `master` and on manual dispatch. Do not push to the `docs` branch directly.
 
 ## Conclusion
 

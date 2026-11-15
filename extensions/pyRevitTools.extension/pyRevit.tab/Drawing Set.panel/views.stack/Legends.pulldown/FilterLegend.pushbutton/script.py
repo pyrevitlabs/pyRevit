@@ -21,17 +21,19 @@ sort order, and auto-open behavior -- see config.py.
 from pyrevit import revit, forms, script, op
 from pyrevit import DB
 from pyrevit.coreutils.configparser import open_config_file
-from pyrevit.coreutils import appdata, unique_name
+from pyrevit.coreutils import appdata
 
 from match.filter_utils import (
     dissect_parameter_filter,
     ogs_has_overrides,
 )
 
-from legend_utils import (
-    create_legend_row,
-    autofit_column_widths,
-    clear_legend_view,
+from legend.drawing import clear_legend_view
+from legend.table import (
+    LegendLayout,
+    LegendRow,
+    create_legend_view,
+    draw_legend_table,
 )
 from legend_storage import (
     save_link,
@@ -160,10 +162,38 @@ track_links = bool(
     cfg.get_option("track_legend_updates", DEFAULTS_BOOL["track_legend_updates"])
 )
 
-# Column X offsets (relative to swatch's right edge)
-COL_NAME_X = swatch_width + col_width * 0.05
-COL_PARAM_X = swatch_width + col_width * 1.05
-COL_VALUE_X = swatch_width + col_width * 2.05
+layout = LegendLayout(text_type.Id, row_height, row_spacing, swatch_width, col_width)
+header = [
+    _t("Header_FilterName", "Filter Name"),
+    _t("Header_Parameter", "Parameter"),
+    _t("Header_Value", "Value"),
+]
+
+
+def build_filter_row(src_view, view_filter):
+    """Describe one filter of ``src_view`` as a legend row.
+
+    The swatch only gets the filter's overrides when it has any, so
+    filters without graphics keep the swatch's plain look.
+    """
+    info = dissect_parameter_filter(doc, view_filter)
+    if info:
+        param_name = info.get("parameter_name") or NA_TEXT
+        display_val = info.get("display_value")
+        if display_val:
+            value_text = display_val
+        elif info.get("value") is not None:
+            value_text = str(info.get("value"))
+        else:
+            value_text = NA_TEXT
+    else:
+        param_name = NA_TEXT
+        value_text = NA_TEXT
+
+    ogs = src_view.GetFilterOverrides(view_filter.Id)
+    overrides = ogs if ogs and ogs_has_overrides(ogs) else None
+    return LegendRow([view_filter.Name, param_name, value_text], overrides)
+
 
 # ---------------------------------------------------------------------------
 # LEGEND CREATION
@@ -191,91 +221,22 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                     tracked_ids = get_managed_elements(legend_view)
                     clear_legend_view(doc, legend_view, tracked_ids)
                 else:
-                    legend_view = doc.GetElement(
-                        base_legend.Duplicate(DB.ViewDuplicateOption.Duplicate)
-                    )
-                    legend_view.Scale = 1
-
-                    legend_name = unique_name(
+                    legend_view = create_legend_view(
+                        doc,
+                        base_legend,
                         "Legend_Filters_{0}".format(src_view.Name),
                         existing_view_names,
                     )
-                    legend_view.Name = legend_name
-                    existing_view_names.add(legend_name)
 
                 filter_elems = revit.query.get_view_filters(src_view)
 
                 if sort_alpha:
                     filter_elems.sort(key=lambda f: f.Name)
 
-                y = 0.0
-                name_notes, param_notes, value_notes = [], [], []
-                swatch_regions = []
-
-                # -- header row --
-                # Row height/next-row offset is measured from the actual
-                # created TextNotes' bounding boxes (see create_legend_row),
-                # not assumed equal to the configured row_height -- that's
-                # what keeps rows from overlapping/misaligning regardless
-                # of which TextNoteType/font size a given project uses.
-                header_notes, _, header_height = create_legend_row(
-                    doc,
-                    legend_view,
-                    y,
-                    text_type.Id,
-                    columns=[
-                        (COL_NAME_X, _t("Header_FilterName", "Filter Name")),
-                        (COL_PARAM_X, _t("Header_Parameter", "Parameter")),
-                        (COL_VALUE_X, _t("Header_Value", "Value")),
-                    ],
-                    min_row_height=row_height,
-                )
-                name_notes.append(header_notes[0])
-                param_notes.append(header_notes[1])
-                value_notes.append(header_notes[2])
-                y -= header_height + row_spacing
-
-                # -- data rows --
+                rows = []
                 for f in filter_elems:
                     try:
-                        ogs = src_view.GetFilterOverrides(f.Id)
-
-                        info = dissect_parameter_filter(doc, f)
-                        if info:
-                            param_name = info.get("parameter_name") or NA_TEXT
-                            display_val = info.get("display_value")
-                            if display_val:
-                                value_text = display_val
-                            elif info.get("value") is not None:
-                                value_text = str(info.get("value"))
-                            else:
-                                value_text = NA_TEXT
-                        else:
-                            param_name = NA_TEXT
-                            value_text = NA_TEXT
-
-                        row_notes, region, row_advance = create_legend_row(
-                            doc,
-                            legend_view,
-                            y,
-                            text_type.Id,
-                            columns=[
-                                (COL_NAME_X, f.Name),
-                                (COL_PARAM_X, param_name),
-                                (COL_VALUE_X, value_text),
-                            ],
-                            swatch_col_width=swatch_width,
-                            swatch_height=row_height,
-                            min_row_height=row_height,
-                        )
-                        name_notes.append(row_notes[0])
-                        param_notes.append(row_notes[1])
-                        value_notes.append(row_notes[2])
-                        if region is not None:
-                            swatch_regions.append(region)
-                        if ogs and region and ogs_has_overrides(ogs):
-                            legend_view.SetElementOverrides(region.Id, ogs)
-
+                        rows.append(build_filter_row(src_view, f))
                     except Exception:
                         logger.exception(
                             "Failed to process filter '%s' on view '%s'",
@@ -284,23 +245,10 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                         )
                         raise
 
-                    y -= row_advance + row_spacing
-
-                # -- auto-fit column widths to actual rendered text --
-                autofit_column_widths(
-                    doc,
-                    legend_view,
-                    notes_by_column=[name_notes, param_notes, value_notes],
-                    base_offsets=[COL_NAME_X, COL_PARAM_X, COL_VALUE_X],
-                    min_gap=col_width * 0.05,
-                )
+                managed_ids = draw_legend_table(doc, legend_view, layout, header, rows)
 
                 if track_links:
                     save_link(src_view, legend_view)
-                    all_notes = name_notes + param_notes + value_notes
-                    managed_ids = [n.Id for n in all_notes] + [
-                        r.Id for r in swatch_regions
-                    ]
                     save_managed_elements(legend_view, managed_ids)
 
                 if existing_legend is not None:
@@ -313,7 +261,7 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
         except Exception:
             logger.exception("Failed to create legend for view '%s'", src_view.Name)
 
-revit.uidoc.RefreshActiveView()
+uidoc.RefreshActiveView()
 
 # ---------------------------------------------------------------------------
 # WRAP UP

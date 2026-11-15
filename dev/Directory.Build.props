@@ -17,10 +17,12 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>7.0.1.26312+1155</Version>
+    <Version>7.1.0.26319+1907</Version>
     <Copyright>Copyright © 2014-2026</Copyright>
     <Company>pyRevitLabs.io</Company>
   </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)WebView2Version.props" />
 
   <ItemGroup Condition="'$(UseRevit)' == 'true'">
     <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />

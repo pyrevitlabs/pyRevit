@@ -6,6 +6,9 @@
     <system:String x:Key="Model">Модель</system:String>
     <system:String x:Key="LinkedPrefix">Связано: </system:String>
     <system:String x:Key="SheetIndex">Индекс листов</system:String>
+    <system:String x:Key="AllModels">&lt;Все модели&gt;</system:String>
+    <system:String x:Key="EachModelPrintSetting">&lt;Текущие параметры печати каждой модели&gt;</system:String>
+    <system:String x:Key="SameFileNameAcrossModels">Листы разных моделей получили бы одинаковое имя файла. Добавьте {index} или {proj_number} в формат именования, чтобы их различать.</system:String>
     
     <system:String x:Key="SheetOrdering">Порядок листов</system:String>
     <system:String x:Key="ReversePrintOrder">Обратить порядок печати</system:String>
@@ -22,6 +25,11 @@
     <system:String x:Key="EditFormats">Редактировать форматы</system:String>
     <system:String x:Key="Printer">Принтер</system:String>
     <system:String x:Key="PageSettings">Настройки страницы</system:String>
+    <system:String x:Key="OutputFolder">Папка вывода</system:String>
+    <system:String x:Key="Browse">Обзор</system:String>
+    <system:String x:Key="OutputFolderTooltip">Куда сохраняются файлы PDF и DWG. Поддерживает {date}, {time}, {model} и {sheet_index}. Оставьте пустым для Desktop\pyRevit Print Folder. Внешние PDF-принтеры могут использовать собственную папку.</system:String>
+    <system:String x:Key="Subfolder">Подпапка</system:String>
+    <system:String x:Key="SubfolderTooltip">Используйте {date}, {time}, {model} и {sheet_index}. Используйте \ для вложенных папок. Оставьте пустым, чтобы сохранять прямо в папку вывода.</system:String>
     <system:String x:Key="IncompatibleWithPrinter">Несовместимо с принтером</system:String>
     
     <system:String x:Key="ListOfSheets">Список листов в выбранном индексе листов</system:String>

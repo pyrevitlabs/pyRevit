@@ -1,0 +1,14 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="CommandSwitchWindow.MessageLabel.Content">
+        选择命令选项:
+    </system:String>
+
+    <system:String x:Key="CommandSwitchWindow.SearchTextBox.Tag">
+        输入以筛选 / 按 Tab 键选择 / 按 Enter 键或单击运行
+    </system:String>
+
+</ResourceDictionary>

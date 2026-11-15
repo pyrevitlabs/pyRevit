@@ -17,4 +17,6 @@
     <system:String x:Key="CreateSheets">Crear hojas</system:String>
     <system:String x:Key="CreatePlaceholders">Crear marcadores de posición</system:String>
     <system:String x:Key="CreateButton">Crear</system:String>
+    <system:String x:Key="SheetParametersLabel">Parámetros de hoja</system:String>
+    <system:String x:Key="SheetParametersHint">Marque los parámetros que se asignarán a cada hoja creada en este lote e introduzca un valor para cada uno.</system:String>
 </ResourceDictionary>

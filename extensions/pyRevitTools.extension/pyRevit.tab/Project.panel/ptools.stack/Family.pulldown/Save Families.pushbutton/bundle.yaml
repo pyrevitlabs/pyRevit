@@ -16,3 +16,5 @@ tooltip:
   es_es: Guarda las familias elegidas del proyecto
   de_de: Speichert die im Projekt ausgewählten Familien
   pt_br: Salva famílias escolhidas do projeto
+context:
+  - doc-project

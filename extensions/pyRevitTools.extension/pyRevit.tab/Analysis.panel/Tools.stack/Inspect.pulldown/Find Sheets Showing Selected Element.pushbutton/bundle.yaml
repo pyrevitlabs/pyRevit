@@ -1,4 +1,6 @@
-context: selection
+context:
+  - doc-project
+  - selection
 title:
   en_us: Find sheets showing selected element
   ko: 선택한 요소가 표시된 시트 찾기
@@ -9,7 +11,7 @@ title:
   de_de: Finde Pläne die das Element anzeigen
   pt_br: Encontrar Folhas Exibindo Elemento Selecionado
 tooltip:
-  en_us: Lists all sheets and views that the selected elements is visible in
+  en_us: List all sheets and views that show the selected elements.
   ko: 선택한 요소가 표시되는 모든 시트와 뷰를 나열합니다
   fr_fr: Lister toutes les feuilles et vues dans lesquelles l'élément sélectionné est visible
   ru: Выводит все листы и виды, на которых видны выбранные элементы.

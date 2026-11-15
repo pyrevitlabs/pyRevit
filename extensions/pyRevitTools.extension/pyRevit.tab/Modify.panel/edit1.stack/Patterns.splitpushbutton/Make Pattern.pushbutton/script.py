@@ -260,7 +260,9 @@ class MakePatternWindow(forms.WPFWindow):
         biparam = DB.BuiltInParameter.VIEW_SCALE_PULLDOWN_IMPERIAL
         if revit.query.is_metric(revit.doc):
             biparam = DB.BuiltInParameter.VIEW_SCALE_PULLDOWN_METRIC
-        self.viewscale_tb.Text = revit.active_view.Parameter[biparam].AsValueString()
+        self.viewscale_tb.Text = revit.active_view.get_Parameter(
+            biparam
+        ).AsValueString()
 
     def pick_domain(self):
         # ask user for origin and max domain points

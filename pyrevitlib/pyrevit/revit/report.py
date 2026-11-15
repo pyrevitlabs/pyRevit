@@ -45,8 +45,8 @@ def print_sheet(sht, prefix="", print_id=True):
         print_id (bool, optional): whether to print the sheet id. Defaults to True.
     """
     outstr = "{}\t{}".format(
-        sht.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString(),
-        sht.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString(),
+        sht.get_Parameter(DB.BuiltInParameter.SHEET_NUMBER).AsString(),
+        sht.get_Parameter(DB.BuiltInParameter.SHEET_NAME).AsString(),
     )
     if print_id:
         outstr = PyRevitOutputWindow.linkify(sht.Id) + "\t" + outstr

@@ -17,4 +17,6 @@
     <system:String x:Key="CreateSheets">Create Sheets</system:String>
     <system:String x:Key="CreatePlaceholders">Create Placeholders</system:String>
     <system:String x:Key="CreateButton">Create</system:String>
+    <system:String x:Key="SheetParametersLabel">Sheet Parameters</system:String>
+    <system:String x:Key="SheetParametersHint">Tick the parameters to set on every sheet created in this batch and enter a value for each.</system:String>
 </ResourceDictionary>

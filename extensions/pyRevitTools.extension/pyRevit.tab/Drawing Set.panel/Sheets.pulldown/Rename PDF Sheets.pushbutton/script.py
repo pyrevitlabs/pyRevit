@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys
+import os
 import os.path as op
 import re
-
-from pathlib import Path
 
 from pyrevit import forms, EXEC_PARAMS
 from pyrevit.coreutils.applocales import get_locale_string
@@ -57,48 +56,64 @@ STR = {
         "de_de": "Datei NICHT umbenannt (Namensverarbeitung fehlgeschlagen): {}",
         "pt_br": "Arquivo NÃO renomeado (falha no processamento do nome): {}",
     },
+    "directory_scan_failed": {
+        "en_us": "Directory scan failed: {}",
+        "fr_fr": "Échec de l'analyse du répertoire : {}",
+        "ru": "Не удалось просканировать каталог: {}",
+        "chinese_s": "目录扫描失败：{}",
+        "es_es": "Error al explorar el directorio: {}",
+        "de_de": "Verzeichnis konnte nicht durchsucht werden: {}",
+        "pt_br": "Falha ao verificar o diretório: {}",
+    },
     "summary": {
         "en_us": (
             "{pdf_count} PDF files found\n"
             "{sheet_count} files matching sheet prefix\n"
             "{rename_count} files renamed\n"
-            "{err_count} errors"
+            "{err_count} errors\n"
+            "{scan_error_count} directory scan errors"
         ),
         "fr_fr": (
             "{pdf_count} fichiers PDF trouvés\n"
             "{sheet_count} fichiers avec préfixe de feuille\n"
             "{rename_count} fichiers renommés\n"
-            "{err_count} erreurs"
+            "{err_count} erreurs\n"
+            "{scan_error_count} erreurs d'analyse de répertoire"
         ),
         "ru": (
             "{pdf_count} файлов PDF найдено\n"
             "{sheet_count} файлов с префиксом листа\n"
             "{rename_count} файлов переименовано\n"
-            "{err_count} ошибок"
+            "{err_count} ошибок\n"
+            "{scan_error_count} ошибок сканирования каталогов"
         ),
         "chinese_s": (
             "共找到 {pdf_count} 个 PDF 文件\n"
             "{sheet_count} 个文件匹配图纸前缀\n"
             "{rename_count} 个文件已重命名\n"
-            "{err_count} 个错误"
+            "{err_count} 个错误\n"
+            "{scan_error_count} 次目录扫描错误"
         ),
         "es_es": (
             "{pdf_count} archivos PDF encontrados\n"
             "{sheet_count} archivos con prefijo de hoja\n"
             "{rename_count} archivos renombrados\n"
-            "{err_count} errores"
+            "{err_count} errores\n"
+            "{scan_error_count} errores de exploración de directorios"
         ),
         "de_de": (
             "{pdf_count} PDF-Dateien gefunden\n"
             "{sheet_count} Dateien mit Blatt-Präfix\n"
             "{rename_count} Dateien umbenannt\n"
-            "{err_count} Fehler"
+            "{err_count} Fehler\n"
+            "{scan_error_count} Fehler beim Durchsuchen von Verzeichnissen"
         ),
         "pt_br": (
             "{pdf_count} arquivos PDF encontrados\n"
             "{sheet_count} arquivos com prefixo de folha\n"
             "{rename_count} arquivos renomeados\n"
-            "{err_count} erros"
+            "{err_count} erros\n"
+            "{scan_error_count} erros ao verificar diretórios"
         ),
     },
 }
@@ -168,53 +183,119 @@ include_subfolders = forms.alert(
     yes=True,
     no=True,
 )
-dir_pattern = "**/" if include_subfolders else ""
 
 # Main loop
 
-pdf_files = list(Path(basefolder).glob("{}*.pdf".format(dir_pattern)))
+pdf_files = []
+scan_errors = []
+
+def report_scan_error(error):
+    # type: (OSError) -> None
+    """Records a directory scanning error and prints its localized message."""
+    scan_errors.append(error)
+    print(
+        get_locale_string(STR["directory_scan_failed"]).format(
+            getattr(error, "filename", None) or error
+        )
+    )
+
+def on_walk_error(error):
+    # type: (OSError) -> None
+    """Handles errors raised by os.walk() during directory traversal."""
+    report_scan_error(error)
+
+if include_subfolders:
+    for root, dirs, files in os.walk(
+        basefolder,
+        onerror=on_walk_error
+    ):
+        for filename in files:
+            if filename.lower().endswith(".pdf"):
+                pdf_files.append(op.join(root, filename))
+else:
+    try:
+        filenames = os.listdir(basefolder)
+    except OSError as error:
+        report_scan_error(error)
+        filenames = []
+
+    for filename in filenames:
+        filepath = op.join(basefolder, filename)
+        if (
+            filename.lower().endswith(".pdf")
+            and op.isfile(filepath)
+        ):
+            pdf_files.append(filepath)
+
 pdf_count = len(pdf_files)
 sheet_count = rename_count = err_count = 0
 
 for pdf_file in pdf_files:
-    if not prefix_stripper.search(pdf_file.stem):
+    pdf_stem = op.splitext(op.basename(pdf_file))[0]
+
+    if not prefix_stripper.search(pdf_stem):
         continue
+
     sheet_count += 1
 
     # --- compute new name ---
     try:
-        new_stem = renamepdf(pdf_file.stem)
+        new_stem = renamepdf(pdf_stem)
     except (ValueError, re.error) as e:
         err_count += 1
-        print(get_locale_string(STR["not_renamed_bad_name"]).format(pdf_file))
+        print(
+            get_locale_string(STR["not_renamed_bad_name"]).format(
+                pdf_file
+            )
+        )
         print("  -> {}".format(e))
         continue
 
-    target = pdf_file.with_name("{}.pdf".format(new_stem))
+    # Preserve the original extension and directory.
+    target = op.join(
+        op.dirname(pdf_file),
+        "{}{}".format(new_stem, op.splitext(pdf_file)[1])
+    )
 
     # --- guard: target already exists ---
-    if target.exists():
+    if op.exists(target):
         err_count += 1
-        print(get_locale_string(STR["not_renamed_exists"]).format(pdf_file))
+        print(
+            get_locale_string(STR["not_renamed_exists"]).format(
+                pdf_file
+            )
+        )
         print("  -> {}".format(target))
         continue
 
     # --- rename ---
     try:
-        pdf_file.rename(target)
+        os.rename(pdf_file, target)
         rename_count += 1
+
     except OSError as e:
         import errno as _errno
 
         err_count += 1
+
         if e.errno == _errno.EEXIST:
-            print(get_locale_string(STR["not_renamed_exists"]).format(pdf_file))
+            print(
+                get_locale_string(STR["not_renamed_exists"]).format(
+                    pdf_file
+                )
+            )
             print("  -> {}".format(target))
         else:
-            print(get_locale_string(STR["not_renamed_locked"]).format(pdf_file))
+            print(
+                get_locale_string(STR["not_renamed_locked"]).format(
+                    pdf_file
+                )
+            )
             print("  -> {}".format(e))
 
 # Summary
+
+scan_error_count = len(scan_errors)
 
 forms.alert(
     get_locale_string(STR["summary"]).format(
@@ -222,5 +303,6 @@ forms.alert(
         sheet_count=sheet_count,
         rename_count=rename_count,
         err_count=err_count,
+        scan_error_count=scan_error_count,
     )
 )

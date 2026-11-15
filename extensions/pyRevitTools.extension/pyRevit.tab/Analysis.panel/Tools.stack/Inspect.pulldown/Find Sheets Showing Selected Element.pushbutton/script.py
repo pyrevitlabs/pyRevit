@@ -1,69 +1,83 @@
-"""Lists all sheets and views that the selected elements is visible in."""
+# -*- coding: utf-8 -*-
+"""List all sheets and views that the selected elements are visible in."""
 
-# pylint: disable=E0401,C0103
-from collections import defaultdict, namedtuple
+from collections import OrderedDict
+
 from pyrevit import script
 from pyrevit import revit, DB
-
+from pyrevit.coreutils import applocales, escape_for_output
 
 output = script.get_output()
-selection = revit.get_selection()
+
+RESOURCES = script.get_bundle_file("resources.xaml")
 
 
-VportView = namedtuple("VportView", ["viewport", "view"])
-
-cl_views = DB.FilteredElementCollector(revit.doc)
-allsheets = (
-    cl_views.OfCategory(DB.BuiltInCategory.OST_Sheets)
-    .WhereElementIsNotElementType()
-    .ToElements()
-)
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
-sorted_sheets = sorted(allsheets, key=lambda x: x.SheetNumber)
+def collect_sheets():
+    sheets = (
+        DB.FilteredElementCollector(revit.doc)
+        .OfCategory(DB.BuiltInCategory.OST_Sheets)
+        .WhereElementIsNotElementType()
+    )
+    return sorted(sheets, key=lambda sheet: sheet.SheetNumber)
 
 
-def find_sheeted_views(target_sheet):
-    return [
-        VportView(
-            revit.doc.GetElement(vp),
-            revit.doc.GetElement(revit.doc.GetElement(vp).ViewId),
-        )
-        for vp in target_sheet.GetAllViewports()
-    ]
+def shows_selection(viewport, view, selected_ids):
+    """Tell whether the viewport is selected or its view contains a selected element."""
+    if viewport.Id in selected_ids:
+        return True
+    view_element_ids = set(
+        DB.FilteredElementCollector(revit.doc, view.Id)
+        .WhereElementIsNotElementType()
+        .ToElementIds()
+    )
+    return not view_element_ids.isdisjoint(selected_ids)
 
 
-sheet_dict = defaultdict(list)
-for sheet in sorted_sheets:
-    for vpview_tuple in find_sheeted_views(sheet):
-        view_els = (
-            DB.FilteredElementCollector(revit.doc, vpview_tuple.view.Id)
-            .WhereElementIsNotElementType()
-            .ToElementIds()
-        )
+def find_showing_viewports(sheets, selected_ids):
+    """Map each sheet to the (viewport, view) pairs that show a selected element."""
+    viewports_by_sheet = OrderedDict()
+    for sheet in sheets:
+        for viewport_id in sheet.GetAllViewports():
+            viewport = revit.doc.GetElement(viewport_id)
+            view = revit.doc.GetElement(viewport.ViewId)
+            if shows_selection(viewport, view, selected_ids):
+                viewports_by_sheet.setdefault(sheet, []).append((viewport, view))
+    return viewports_by_sheet
 
-        # check if selected element is a viewport on a sheet
-        if vpview_tuple.viewport.Id in selection.element_ids:
-            sheet_dict[sheet].append(vpview_tuple)
 
-        # check if view contains any of the selected elements
-        for el_id in selection.element_ids:
-            if el_id in view_els:
-                sheet_dict[sheet].append(vpview_tuple)
-
-output.print_md("### Sheets Containing the selected objects:")
-
-for sheet in sheet_dict:
-    output.print_md(
-        "-----\nSheet {}: **{} - {}**".format(
-            output.linkify(sheet.Id), sheet.SheetNumber, sheet.Name
-        )
+def main():
+    selected_ids = set(revit.get_selection().element_ids)
+    viewports_by_sheet = find_showing_viewports(collect_sheets(), selected_ids)
+    output.print_md("### {}".format(_t("sheets_containing")))
+    if not viewports_by_sheet:
+        output.print_md("**{}**".format(_t("no_sheets")))
+        return
+    output.print_table(
+        table_data=[
+            [
+                escape_for_output(sheet.SheetNumber),
+                escape_for_output(sheet.Name),
+                output.linkify(sheet.Id),
+                escape_for_output(revit.query.get_name(view)),
+                output.linkify(viewport.Id),
+            ]
+            for sheet, viewports in viewports_by_sheet.items()
+            for viewport, view in viewports
+        ],
+        title=_t("table_title"),
+        columns=[
+            _t("column_number"),
+            _t("column_sheet"),
+            _t("column_sheet_show"),
+            _t("column_view"),
+            _t("column_viewport_show"),
+        ],
     )
 
-    for vpview_tuple in sheet_dict[sheet]:
-        print(
-            "\t\tViewport {}: {}".format(
-                output.linkify(vpview_tuple.viewport.Id),
-                revit.query.get_name(vpview_tuple.view),
-            )
-        )
+
+if __name__ == "__main__":
+    main()

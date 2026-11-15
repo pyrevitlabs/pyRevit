@@ -6,6 +6,9 @@
     <system:String x:Key="Model">모델</system:String>
     <system:String x:Key="LinkedPrefix">링크: </system:String>
     <system:String x:Key="SheetIndex">시트 인덱스</system:String>
+    <system:String x:Key="AllModels">&lt;모든 모델&gt;</system:String>
+    <system:String x:Key="EachModelPrintSetting">&lt;각 모델의 현재 인쇄 설정&gt;</system:String>
+    <system:String x:Key="SameFileNameAcrossModels">서로 다른 모델의 시트가 같은 파일 이름을 가지게 됩니다. 이름 형식에 {index} 또는 {proj_number}을(를) 추가하여 구분하세요.</system:String>
 
     <system:String x:Key="SheetOrdering">시트 순서</system:String>
     <system:String x:Key="ReversePrintOrder">인쇄 순서 반전</system:String>
@@ -22,6 +25,11 @@
     <system:String x:Key="EditFormats">형식 편집</system:String>
     <system:String x:Key="Printer">프린터</system:String>
     <system:String x:Key="PageSettings">페이지 설정</system:String>
+    <system:String x:Key="OutputFolder">출력 폴더</system:String>
+    <system:String x:Key="Browse">찾아보기</system:String>
+    <system:String x:Key="OutputFolderTooltip">PDF 및 DWG 파일이 저장되는 위치입니다. {date}, {time}, {model}, {sheet_index}를 사용할 수 있습니다. 비워 두면 Desktop\pyRevit Print Folder를 사용합니다. 외부 PDF 프린터는 자체 저장 위치를 사용할 수 있습니다.</system:String>
+    <system:String x:Key="Subfolder">하위 폴더</system:String>
+    <system:String x:Key="SubfolderTooltip">사용 가능한 항목: {date}, {time}, {model}, {sheet_index}. 중첩 폴더는 \를 사용하세요. 비워 두면 출력 폴더에 바로 저장합니다.</system:String>
     <system:String x:Key="IncompatibleWithPrinter">프린터와 호환되지 않음</system:String>
 
     <system:String x:Key="ListOfSheets">선택한 시트 인덱스의 시트 목록</system:String>

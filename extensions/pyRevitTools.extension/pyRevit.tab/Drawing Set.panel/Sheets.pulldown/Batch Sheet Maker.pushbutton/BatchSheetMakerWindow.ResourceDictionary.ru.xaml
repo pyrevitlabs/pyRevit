@@ -17,4 +17,6 @@
     <system:String x:Key="CreateSheets">Создать листы</system:String>
     <system:String x:Key="CreatePlaceholders">Создать заполнители</system:String>
     <system:String x:Key="CreateButton">Создать</system:String>
+    <system:String x:Key="SheetParametersLabel">Параметры листа</system:String>
+    <system:String x:Key="SheetParametersHint">Отметьте параметры, которые нужно задать для каждого листа, созданного в этом пакете, и введите значение для каждого.</system:String>
 </ResourceDictionary>

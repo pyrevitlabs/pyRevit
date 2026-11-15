@@ -9,9 +9,9 @@ title:
   pt_br: Encontrar Folhas de Referência
 tooltip:
   en_us: >-
-    Find all sheets referencing the current view
+    Find all sheets referencing the current view.
 
-    Especially useful for finding legends
+    Especially useful for finding legends.
   ko: 현재 뷰를 참조하는 모든 시트 찾기
   fr_fr: >-
     Trouver toutes les vues qui référencent la vue active
@@ -35,3 +35,10 @@ tooltip:
     
     Especialmente útil para encontrar legendas
 author: '{{author}}'
+context:
+  all:
+    - doc-project
+  not_any:
+    - active-sheet
+    - active-project-browser
+    - active-system-browser

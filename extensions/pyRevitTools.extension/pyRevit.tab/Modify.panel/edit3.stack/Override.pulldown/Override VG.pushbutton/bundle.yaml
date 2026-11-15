@@ -26,4 +26,10 @@ tooltip:
     8) Solid-Blue Selected = Mit Farbe blau und Muster Flächenfüllung überschreiben
     9) Dashed-Line Selected = Mit Linienmuster gestrichelt überschreiben
   pt_br: Fornece opções para substituir Visibilidade/Gráficos nos elementos selecionados
-context: selection
+context:
+  all:
+    - selection
+  not_any:
+    - active-project-browser
+    - active-system-browser
+    - active-schedule

@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-from System import Windows
 from pyrevit import forms, script
 
 
@@ -10,6 +9,8 @@ class CoordinateSystemSelector(forms.WPFWindow):
 
     def __init__(self, xaml_source):
         super(CoordinateSystemSelector, self).__init__(xaml_source)
+        self.Closed += self._window_closed
+        script.restore_window_position(self, "ToggleGridBubblesByDirectionSelector")
 
         # Result storage
         self.result = None
@@ -69,8 +70,6 @@ class CoordinateSystemSelector(forms.WPFWindow):
         self.result = {
             "coordinate_system": self.get_selected_coordinate_system(),
             "angle_tolerance": int(self.angle_slider.Value),
-            "window_left": self.Left,
-            "window_top": self.Top,
         }
         self.Close()
 
@@ -79,14 +78,11 @@ class CoordinateSystemSelector(forms.WPFWindow):
         self.result = None
         self.Close()
 
-    def move_window(self, sender, args):
-        """Allow window dragging."""
-        self.DragMove()
+    def _window_closed(self, sender, args):
+        script.save_window_position(self, "ToggleGridBubblesByDirectionSelector")
 
 
-def show_coordinate_system_selector(
-    previous_system=None, previous_tolerance=None, window_left=None, window_top=None
-):
+def show_coordinate_system_selector(previous_system=None, previous_tolerance=None):
     """Show the coordinate system selector dialog and return user selection."""
 
     # Load XAML file using pyRevit's method (same as your main script)
@@ -106,11 +102,6 @@ def show_coordinate_system_selector(
     if previous_tolerance:
         dialog.angle_slider.Value = previous_tolerance
         dialog.update_angle_display()
-
-    if window_left is not None and window_top is not None:
-        dialog.WindowStartupLocation = Windows.WindowStartupLocation.Manual
-        dialog.Left = window_left
-        dialog.Top = window_top
 
     dialog.ShowDialog()
 

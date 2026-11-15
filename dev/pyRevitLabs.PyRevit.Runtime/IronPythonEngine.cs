@@ -90,7 +90,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     flags["Tracing"] = true;
                 }
 
-                Engine = IronPython.Hosting.Python.CreateEngine(flags);
+                Engine = CreateEngineWithUtf8Streams(flags);
+                IronPythonRuleCaches.Track(Engine);
 
                 // also, allow access to the PyRevitLoader internals
                 Engine.Runtime.LoadAssembly(typeof(PyRevitLoader.ScriptExecutor).Assembly);
@@ -120,6 +121,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public override int Execute(ref ScriptRuntime runtime) {
             // Setup the command scope in this engine with proper builtin and scope parameters
             var scope = Engine.CreateScope();
+            foreach (var variable in ScriptBuiltins.CreateRuntimeVariables(
+                runtime, RecoveredFromCache, TypeId))
+                scope.SetVariable(variable.Key, variable.Value);
 
             // Create the script from source file
             var script = Engine.CreateScriptSourceFromFile(
@@ -220,6 +224,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecEngineConfigs = configs;
         }
 
+        /// <summary>
+        /// Creates the IronPython engine with UTF-8 standard streams already in place.
+        /// </summary>
+        /// <remarks>
+        /// IronPython 3 builds <c>sys.stdout</c>, <c>sys.stderr</c> and <c>sys.stdin</c> while the engine is
+        /// created and fixes their encoding name from the console writer at that moment. In a process without
+        /// a console that writer reports code page 0 and the name becomes <c>codepage___0</c>, which fails on
+        /// the first <c>print</c>. Redirecting the streams afterwards does not rename it, so the redirect
+        /// has to happen before the engine exists.
+        /// </remarks>
+        private static Microsoft.Scripting.Hosting.ScriptEngine CreateEngineWithUtf8Streams(IDictionary<string, object> flags) {
+#if IPY342
+            var scriptRuntime = IronPython.Hosting.Python.CreateRuntime(flags);
+            scriptRuntime.IO.SetOutput(Stream.Null, System.Text.Encoding.UTF8);
+            scriptRuntime.IO.SetErrorOutput(Stream.Null, System.Text.Encoding.UTF8);
+            scriptRuntime.IO.SetInput(Stream.Null, System.Text.Encoding.UTF8);
+            return IronPython.Hosting.Python.GetEngine(scriptRuntime);
+#else
+            return IronPython.Hosting.Python.CreateEngine(flags);
+#endif
+        }
+
         private void SetupStreams(ref ScriptRuntime runtime) {
             Engine.Runtime.IO.SetOutput(runtime.OutputStream, System.Text.Encoding.UTF8);
             Engine.Runtime.IO.SetErrorOutput(runtime.OutputStream, System.Text.Encoding.UTF8);
@@ -236,49 +262,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // Get builtin to add custom variables
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
 
-            // Add timestamp and executuin uuid
-            builtin.SetVariable("__execid__", runtime.ExecId);
-            builtin.SetVariable("__timestamp__", runtime.ExecTimestamp);
-
-            // Let commands know if they're being run in a cached engine
-            builtin.SetVariable("__cachedengine__", recoveredFromCache);
-
-            // Add current engine id to builtins
-            builtin.SetVariable("__cachedengineid__", typeId);
-
-            // Add this script executor to the the builtin to be globally visible everywhere
-            // This support pyrevit functionality to ask information about the current executing command
-            builtin.SetVariable("__scriptruntime__", runtime);
-
-            // Add host application handle to the builtin to be globally visible everywhere
-            builtin.SetVariable("__revit__", runtime.UIApp);
-
-            // Adding data provided by IExternalCommand.Execute
-            builtin.SetVariable("__commanddata__", runtime.ScriptRuntimeConfigs.CommandData);
-            builtin.SetVariable("__elements__", runtime.ScriptRuntimeConfigs.SelectedElements);
-
-            // Add ui button handle
-            builtin.SetVariable("__uibutton__", runtime.UIControl);
-
-            // Adding information on the command being executed
-            builtin.SetVariable("__commandpath__", Path.GetDirectoryName(runtime.ScriptData.ScriptPath));
-            builtin.SetVariable("__configcommandpath__", Path.GetDirectoryName(runtime.ScriptData.ConfigScriptPath));
-            builtin.SetVariable("__commandname__", runtime.ScriptData.CommandName);
-            builtin.SetVariable("__commandbundle__", runtime.ScriptData.CommandBundle);
-            builtin.SetVariable("__commandextension__", runtime.ScriptData.CommandExtension);
-            builtin.SetVariable("__commanduniqueid__", runtime.ScriptData.CommandUniqueId);
-            builtin.SetVariable("__commandcontrolid__", runtime.ScriptData.CommandControlId);
-            builtin.SetVariable("__forceddebugmode__", runtime.ScriptRuntimeConfigs.DebugMode);
-            builtin.SetVariable("__shiftclick__", runtime.ScriptRuntimeConfigs.ConfigMode);
-
-            // Add reference to the results dictionary
-            // so the command can add custom values for logging
-            builtin.SetVariable("__result__", runtime.GetResultsDictionary());
-
-            // EVENT HOOKS BUILTINS ----------------------------------------------------------------------------------
-            // set event arguments for engine
-            builtin.SetVariable("__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
-            builtin.SetVariable("__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
+            foreach (var variable in ScriptBuiltins.CreateRuntimeVariables(
+                runtime, recoveredFromCache, typeId))
+                builtin.SetVariable(variable.Key, variable.Value);
 
             foreach (var variable in ScriptBuiltins.FilterUserVariables(runtime.ScriptRuntimeConfigs?.Variables))
                 builtin.SetVariable(variable.Key, variable.Value);

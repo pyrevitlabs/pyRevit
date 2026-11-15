@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_line_style">选择质心标记使用的线样式</sys:String>
+    <sys:String x:Key="transaction_name">获取质心</sys:String>
+    <sys:String x:Key="select_element">请至少选择一个图元。</sys:String>
+    <sys:String x:Key="no_solid_geometry">所选图元没有可测量的实体几何。</sys:String>
+</ResourceDictionary>

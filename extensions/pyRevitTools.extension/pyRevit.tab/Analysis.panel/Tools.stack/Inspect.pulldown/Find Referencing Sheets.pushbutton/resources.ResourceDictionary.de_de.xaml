@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="sheets_referencing">Pläne, die die Ansicht {} {} zeigen</sys:String>
+    <sys:String x:Key="no_sheets">Die Ansicht ist auf keinem Plan platziert.</sys:String>
+    <sys:String x:Key="table_title">Ansicht wird auf {} Plan/Plänen referenziert</sys:String>
+    <sys:String x:Key="column_number">Plannummer</sys:String>
+    <sys:String x:Key="column_name">Planname</sys:String>
+    <sys:String x:Key="column_show">Element auswählen/anzeigen</sys:String>
+</ResourceDictionary>

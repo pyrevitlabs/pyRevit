@@ -20,3 +20,7 @@ tooltip:
   en_us: Create section parallel to the plane of selected walls or planar element
   ko: 선택한 벽 또는 평면 요소의 평면에 평행한 단면을 생성합니다
   chinese_s: 创建与选定墙或平面图元平面平行的剖面
+context:
+  - doc-project
+  - selection
+  - OST_Walls

@@ -288,8 +288,8 @@ elif selected_switch == "Areas":
     for el in arealist:
         print(
             "AREA NAME: {0} AREA NUMBER: {1} AREA ID: {2} LEVEL: {3} AREA: {4}".format(
-                el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString().ljust(30),
-                el.Parameter[DB.BuiltInParameter.ROOM_NUMBER].AsString().ljust(10),
+                el.get_Parameter(DB.BuiltInParameter.ROOM_NAME).AsString().ljust(30),
+                el.get_Parameter(DB.BuiltInParameter.ROOM_NUMBER).AsString().ljust(10),
                 el.Id,
                 str(el.Level.Name).ljust(50),
                 el.Area,
@@ -309,8 +309,8 @@ elif selected_switch == "Rooms":
     for el in roomlist:
         print(
             "ROOM NAME: {0} ROOM NUMBER: {1} ROOM ID: {2}".format(
-                el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString().ljust(30),
-                el.Parameter[DB.BuiltInParameter.ROOM_NUMBER].AsString().ljust(20),
+                el.get_Parameter(DB.BuiltInParameter.ROOM_NAME).AsString().ljust(30),
+                el.get_Parameter(DB.BuiltInParameter.ROOM_NUMBER).AsString().ljust(20),
                 el.Id,
             )
         )
@@ -355,8 +355,8 @@ elif selected_switch == "Sheets":
     for s in sheets:
         print(
             "NUMBER: {0}   NAME:{1}".format(
-                s.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString().rjust(10),
-                s.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString().ljust(50),
+                s.get_Parameter(DB.BuiltInParameter.SHEET_NUMBER).AsString().rjust(10),
+                s.get_Parameter(DB.BuiltInParameter.SHEET_NAME).AsString().ljust(50),
             )
         )
 

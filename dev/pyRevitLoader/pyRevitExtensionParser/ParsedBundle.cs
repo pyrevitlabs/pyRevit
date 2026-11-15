@@ -280,6 +280,7 @@ namespace pyRevitExtensionParser
         /// <item><description>"doc-family" - Available in family editor</description></item>
         /// <item><description>"OST_Walls", "OST_Doors", etc. - Built-in category names</description></item>
         /// <item><description>"active-floor-plan", "active-3d-view", etc. - Active view type conditions</description></item>
+        /// <item><description>"active-project-browser", "active-system-browser" - Project/System Browser has focus (read from UIDocument.ActiveView, unlike the other active-* tokens which read ActiveGraphicalView); typically used under not_any to opt out</description></item>
         /// </list>
         /// <para>The context can be specified as:</para>
         /// <list type="bullet">

@@ -89,6 +89,14 @@
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorSaving">Fehler beim Speichern des Schemas</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorLoading">Fehler beim Laden des Schemas</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.FileDoesNotExist">Die Datei existiert nicht.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation">Farbschema speichern in:</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation.Tooltip">Wählen Sie, wo das Farbschema gespeichert und von wo es geladen wird.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile">Datei</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile.Tooltip">In eine .cschn-Datei speichern oder daraus laden.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView">Aktive Ansicht</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Empty">Aktive Ansicht (kein Schema gespeichert)</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Tooltip">In der aktiven Ansicht speichern oder daraus laden. Eine Ansicht speichert ein Farbschema; erneutes Speichern ersetzt es.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SavedToView">Farbschema in Ansicht gespeichert: {0}</system:String>
 
     <!-- TaskDialog Titles -->
     <system:String x:Key="ColorSplasher.TaskDialog.Title">Elemente nach Parameter einfärben</system:String>

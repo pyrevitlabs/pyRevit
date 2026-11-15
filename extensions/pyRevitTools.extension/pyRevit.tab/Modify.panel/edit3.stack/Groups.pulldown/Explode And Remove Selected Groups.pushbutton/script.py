@@ -30,7 +30,7 @@ group_type_ids.update(
     [
         get_elementid_value(x.GroupType.Id)
         for x in all_groups
-        if x.Parameter[DB.BuiltInParameter.GROUP_ATTACHED_PARENT_NAME]
+        if x.get_Parameter(DB.BuiltInParameter.GROUP_ATTACHED_PARENT_NAME)
     ]
 )
 logger.debug("group types: %s", group_type_ids)

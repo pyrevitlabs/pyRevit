@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using pyRevitLabs.Configurations;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Ini;
+using pyRevitLabs.Configurations.Sections;
 
 using pyRevitLabs.Common;
 
@@ -247,20 +248,25 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Retrieves the configuration for a specific extension by its name
         /// (without the .extension or .lib suffix), or null if not configured.
+        /// <see cref="ExtensionConfig.Disabled"/> carries the stored key as-is, so
+        /// it is null when the section exists without a <c>disabled</c> key.
         /// </summary>
         public ExtensionConfig ParseExtensionByName(string extensionName)
         {
-            var section = AsService().GetExtensionSection(extensionName);
-            if (section is null)
+            var service = AsService();
+            var sectionName = service.ResolveExtensionSectionName(extensionName);
+            if (sectionName is null)
                 return null;
 
+            var section = service.GetExtensionSection(extensionName);
             return new ExtensionConfig
             {
                 Name = extensionName,
-                Disabled = section.Disabled ?? false,
-                PrivateRepo = section.PrivateRepo ?? false,
-                Username = section.Username,
-                Password = section.Password
+                Disabled = service.GetSectionKeyValueOrDefault<bool?>(
+                    sectionName, ExtensionSection.DisabledKeyName),
+                PrivateRepo = section?.PrivateRepo ?? false,
+                Username = section?.Username,
+                Password = section?.Password
             };
         }
 
@@ -308,13 +314,14 @@ namespace pyRevitExtensionParser
         public string Name { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the extension is disabled.
+        /// Gets or sets the stored disabled flag, or null when the extension's
+        /// section has no <c>disabled</c> key.
         /// </summary>
         /// <remarks>
-        /// When true, the extension will not be loaded by pyRevit.
-        /// Defaults to false if not specified in configuration.
+        /// Null means the user made no choice: the extension manifest's
+        /// <c>default_enabled</c> decides. Do not collapse null to false.
         /// </remarks>
-        public bool Disabled { get; set; }
+        public bool? Disabled { get; set; }
 
         /// <summary>
         /// Gets or sets whether this extension is hosted in a private repository.

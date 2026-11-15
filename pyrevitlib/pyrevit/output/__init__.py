@@ -12,13 +12,16 @@ Examples:
     ```
 """
 
+import functools
+import json
 import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS, DB
 from pyrevit import framework
-from pyrevit.compat import PY3, safe_strtype
+from pyrevit.compat import IRONPY, PY3, safe_strtype
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import charts
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.runtime.types import ScriptConsoleManager, ScriptOutput
 from pyrevit.userconfig import user_config
 from pyrevit.output import linkmaker
@@ -29,6 +32,8 @@ if PY3:
 else:
     from urllib import quote as urlquote
 
+
+mlogger = get_logger(__name__)
 
 DEFAULT_STYLESHEET_NAME = "outputstyles.css"
 
@@ -77,6 +82,21 @@ active_stylesheet = user_config.output_stylesheet or get_default_stylesheet()
 set_stylesheet(active_stylesheet)
 
 
+def _command_runtime_output():
+    """Return the ``ScriptOutput`` of the running command.
+
+    Outside of a command (e.g. during session load) falls back to the session
+    output.
+    """
+    out = None
+    runtime = EXEC_PARAMS.script_runtime
+    if runtime:
+        out = getattr(runtime, "OutputService", None)
+    if out is None:
+        out = ScriptOutput.GetDefault()
+    return out
+
+
 class PyRevitOutputWindow(object):
     """Wrapper to interact with the output window.
 
@@ -108,7 +128,10 @@ class PyRevitOutputWindow(object):
     def __init__(self):
         # Deferred callbacks must retain the command output selected while the
         # command runtime is still active.
-        self._runtime_output()
+        output = self._runtime_output()
+        object.__setattr__(
+            self, "linkify", functools.partial(self.linkify, output=output)
+        )
 
     def _runtime_output(self):
         """Return the runtime ``ScriptOutput`` this wrapper is bound to.
@@ -118,13 +141,7 @@ class PyRevitOutputWindow(object):
         """
         out = self.__dict__.get("_rt_out")
         if out is None:
-            # bind to the output of the running command; outside of a command
-            # (e.g. during session load) fall back to the session output
-            runtime = EXEC_PARAMS.script_runtime
-            if runtime:
-                out = getattr(runtime, "OutputService", None)
-            if out is None:
-                out = ScriptOutput.GetDefault()
+            out = _command_runtime_output()
             object.__setattr__(self, "_rt_out", out)
         return out
 
@@ -397,6 +414,129 @@ class PyRevitOutputWindow(object):
         """
         return self._runtime_output().open_page(dest_file)
 
+    @property
+    def supports_messages(self):
+        """bool: Whether the page can exchange messages with Python.
+
+        False when the window falls back to plain text (e.g. the WebView2
+        runtime is missing) or has been closed by the user. Scripts should
+        check this and fall back to a printed report.
+
+        Note:
+            Opens the output window and starts its renderer if needed, without
+            waiting for it, but never reopens a window the user closed.
+        """
+        runtime_output = self._runtime_output()
+        if runtime_output.IsWindowClosed:
+            return False
+        return runtime_output.window.SupportsWebMessages
+
+    def on_message(self, handler):
+        """Register a handler for messages the output page posts to Python.
+
+        The page sends with ``window.chrome.webview.postMessage(value)``. The
+        handler receives the JSON-decoded value (``dict`` for a posted object)
+        and runs in Revit API context through
+        :func:`pyrevit.revit.events.execute_in_revit_context`, one call per
+        message in arrival order. Return values are ignored; answer with
+        :func:`post_message`. Handlers are released when the window closes.
+
+        Warning:
+            ``execute_in_revit_context`` is IronPython-only. Under CPython
+            handlers run directly on the UI thread, outside Revit API
+            context, so they can update the page but cannot read or modify
+            the model.
+
+        Args:
+            handler (function): ``handler(message)``; a plain function or
+                method, as required by ``execute_in_revit_context``
+
+        Returns:
+            (bool): False when the window cannot receive messages; see
+            :attr:`supports_messages`.
+
+        Important:
+            Handlers outlive the command, so the bundle must run on a
+            persistent engine (``engine: persistent`` in ``bundle.yaml``).
+
+        Examples:
+            ```python
+            output = script.get_output()
+
+            def select_elements(message):
+                revit.get_selection().set_to(message["ids"])
+
+            if output.on_message(select_elements):
+                output.print_html(
+                    '<button onclick="chrome.webview.postMessage('
+                    '{ids: [1234]})">Select</button>'
+                )
+            else:
+                output.print_md("Interactive actions need the WebView2 runtime.")
+            ```
+        """
+        if not self.supports_messages:
+            return False
+        window = self._runtime_output().window
+        if self.__dict__.get("_message_window") != window:
+            self._message_handlers = []
+            subscription = self.__dict__.setdefault(
+                "_message_subscription", self._dispatch_message
+            )
+            window.WebMessageReceived += subscription
+            self._message_window = window
+        handlers = self._message_handlers
+        if handler not in handlers:
+            handlers.append(handler)
+        return True
+
+    def off_message(self, handler):
+        """Unregister a handler added with :func:`on_message`."""
+        handlers = self.__dict__.get("_message_handlers", [])
+        if handler in handlers:
+            handlers.remove(handler)
+
+    def post_message(self, data):
+        """Send a JSON-serializable value to the page.
+
+        The page receives it as the ``data`` of a ``message`` event:
+        ``chrome.webview.addEventListener("message", e => e.data)``.
+
+        Args:
+            data (object): value to serialize with ``json.dumps``. Non-ASCII
+                text is sent as is, not escaped as unicode sequences, because
+                IronPython 2's ASCII-escaping encoder raises on some mixed
+                Cyrillic and Latin-1 strings.
+
+        Returns:
+            (bool): False when the window is closed or cannot deliver messages,
+            including while the page is loading or navigating (e.g. right
+            after :func:`open_page`).
+        """
+        if not self._runtime_output().IsWindowReady:
+            return False
+        return self._runtime_output().window.PostWebMessage(
+            json.dumps(data, ensure_ascii=False)
+        )
+
+    def _dispatch_message(self, sender, args):
+        """Decode one page message and schedule every handler in API context."""
+        from pyrevit.revit import events
+
+        try:
+            message = json.loads(args.Json)
+        except ValueError:
+            mlogger.debug("Ignoring output page message that is not valid JSON")
+            return
+        for handler in list(self.__dict__.get("_message_handlers", [])):
+            if IRONPY:
+                events.execute_in_revit_context(handler, message)
+                continue
+            try:
+                handler(message)
+            except Exception as ex:
+                mlogger.error("Output message handler failed: {}".format(ex))
+
     def update_progress(self, cur_value, max_value):
         """Activate and update the output window progress bar.
 
@@ -654,14 +794,22 @@ class PyRevitOutputWindow(object):
         return self._runtime_output().next_page()
 
     @staticmethod
-    def linkify(element_ids, title=None):
+    def linkify(element_ids, title=None, output=None):
         """Create clickable link for the provided element ids.
 
-        This method, creates the link but does not print it directly.
+        This method, creates the link but does not print it directly. Any number
+        of ids is supported: lists too long to fit in a url are stored in the
+        output window and the link refers to them.
+
+        Note:
+            Called on an output wrapper, the link is bound to that wrapper's
+            window. Called on the class, it is bound to the running command's.
 
         Args:
             element_ids (ElementId | list[ElementId]): single or multiple ids
             title (str): tile of the link. defaults to list of element ids
+            output (ScriptOutput): output window that resolves the link when
+                the ids are stored; defaults to the running command's output
 
         Returns:
             (str): clickable link
@@ -673,8 +821,13 @@ class PyRevitOutputWindow(object):
                 print('{}: {}'.format(idx+1, output.linkify(elid)))
             ```
         """
+
+        def register_ids(comma_separated_ids):
+            target = output or _command_runtime_output()
+            return target.register_element_ids(comma_separated_ids)
+
         return coreutils.prepare_html_str(
-            linkmaker.make_link(element_ids, contents=title)
+            linkmaker.make_link(element_ids, contents=title, register_ids=register_ids)
         )
 
     def make_chart(self, version=None):

@@ -20,7 +20,7 @@
             OutputFile="pyrevit-bin.wxs"
             Transforms="pyrevit-bin.xslt"
             KeepEmptyDirectories="false"
-            DirectoryRefId="INSTALLDIR"
+            DirectoryRefId="BINDIR"
             ComponentGroupName="PYREVIT_BIN"
             ToolPath="$(WixToolPath)"
             AutogenerateGuids="true"

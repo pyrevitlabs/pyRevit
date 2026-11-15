@@ -5,7 +5,8 @@
         ScrollViewer.VerticalScrollBarVisibility="Disabled">
     <Window.Resources>
         <Style TargetType="Button">
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Height" Value="30"/>
             <Setter Property="Background" Value="{DynamicResource pyRevitButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
@@ -14,6 +15,8 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border"
                                 Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="5"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -567,8 +570,6 @@
             </GroupBox.Header>
             <StackPanel Orientation="Horizontal" Margin="5">
                 <CheckBox x:Name="chkPreview" Content="{DynamicResource ShowPreviewOnHover}" 
-                        Margin="5" IsChecked="True"/>
-                <CheckBox x:Name="chkAutoupdate" Content="{DynamicResource UpdateUIOnEvents}" 
                         Margin="5" IsChecked="True"/>
                 <CheckBox x:Name="chkIncludeLinks" Content="{DynamicResource IncludeLinkedLevelsAndGrids}" 
                         Margin="5" IsChecked="False"

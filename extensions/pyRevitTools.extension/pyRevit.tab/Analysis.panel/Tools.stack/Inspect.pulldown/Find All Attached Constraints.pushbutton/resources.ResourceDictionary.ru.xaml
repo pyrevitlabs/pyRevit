@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="constraints_of_element">Ограничения, связанные с элементом {}</sys:String>
+    <sys:String x:Key="no_constraints">К этому элементу не привязано ограничений.</sys:String>
+    <sys:String x:Key="table_title">Ограничений: {}</sys:String>
+    <sys:String x:Key="column_constraint">Ограничение</sys:String>
+    <sys:String x:Key="column_constraint_type">Тип ограничения</sys:String>
+    <sys:String x:Key="column_reference_type">Тип ссылки</sys:String>
+    <sys:String x:Key="column_category">Связанная категория</sys:String>
+    <sys:String x:Key="column_element">Связанный элемент</sys:String>
+    <sys:String x:Key="this_element">этот</sys:String>
+    <sys:String x:Key="unknown_category">Неизвестно</sys:String>
+</ResourceDictionary>

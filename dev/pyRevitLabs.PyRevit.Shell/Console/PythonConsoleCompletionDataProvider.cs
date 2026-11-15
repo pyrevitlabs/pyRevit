@@ -7,7 +7,6 @@ using System.Text;
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using Microsoft.Scripting.Hosting.Shell;
 using Microsoft.Scripting;
-using System.Threading;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
@@ -19,8 +18,8 @@ namespace PythonConsoleControl
     public class PythonConsoleCompletionDataProvider
     {
         CommandLine commandLine;
-        internal volatile bool AutocompletionInProgress = false;
 
+        internal Microsoft.Scripting.Hosting.ScriptEngine Engine => commandLine.ScriptScope.Engine;
         bool excludeCallables;
         public bool ExcludeCallables { get { return excludeCallables; } set { excludeCallables = value; } }
 
@@ -52,7 +51,6 @@ namespace PythonConsoleControl
             System.IO.Stream stream = commandLine.ScriptScope.Engine.Runtime.IO.OutputStream;
             try
             {
-                AutocompletionInProgress = true;
                 var lastWord = GetLastWord(name);
                 var beforeLastWord = name.Substring(0, name.Length - lastWord.Length);
                 if (beforeLastWord.EndsWith("."))
@@ -76,18 +74,16 @@ namespace PythonConsoleControl
                 else
                 {
                     PopulateFromPythonType(items, objectName);
-                    AutocompletionInProgress = false;
                 }
             }
-            catch (ThreadAbortException tae)
-            {
-                if (tae.ExceptionState is Microsoft.Scripting.KeyboardInterruptException) Thread.ResetAbort();
-            }
+            catch (KeyboardInterruptException) { throw; }
             catch
             {
             }
-            commandLine.ScriptScope.Engine.Runtime.IO.SetOutput(stream, Encoding.UTF8);
-            AutocompletionInProgress = false;
+            finally
+            {
+                commandLine.ScriptScope.Engine.Runtime.IO.SetOutput(stream, Encoding.UTF8);
+            }
             return Tuple.Create(items.Cast<ICompletionData>().ToArray(), objectName, memberName);
         }
 
@@ -99,10 +95,7 @@ namespace PythonConsoleControl
             {
                 type = commandLine.ScriptScope.Engine.CreateScriptSourceFromString(tryGetType, SourceCodeKind.Expression).Execute(commandLine.ScriptScope);
             }
-            catch (ThreadAbortException tae)
-            {
-                if (tae.ExceptionState is Microsoft.Scripting.KeyboardInterruptException) Thread.ResetAbort();
-            }
+            catch (KeyboardInterruptException) { throw; }
             catch
             {
             }
@@ -175,7 +168,6 @@ namespace PythonConsoleControl
             {
                 try
                 {
-                    AutocompletionInProgress = true;
                     string docCommand = "";
 
                     if (isInstance)
@@ -203,18 +195,15 @@ namespace PythonConsoleControl
 
                     object value = commandLine.ScriptScope.Engine.CreateScriptSourceFromString(docCommand, SourceCodeKind.Expression).Execute(commandLine.ScriptScope);
                     description = (string)value;
-                    AutocompletionInProgress = false;
                 }
-                catch (ThreadAbortException tae)
-                {
-                    if (tae.ExceptionState is Microsoft.Scripting.KeyboardInterruptException) Thread.ResetAbort();
-                    AutocompletionInProgress = false;
-                }
+                catch (KeyboardInterruptException) { throw; }
                 catch
                 {
-                    AutocompletionInProgress = false;
                 }
-                commandLine.ScriptScope.Engine.Runtime.IO.SetOutput(stream, Encoding.UTF8);
+                finally
+                {
+                    commandLine.ScriptScope.Engine.Runtime.IO.SetOutput(stream, Encoding.UTF8);
+                }
                 updateDescription(description);
             }
         }
