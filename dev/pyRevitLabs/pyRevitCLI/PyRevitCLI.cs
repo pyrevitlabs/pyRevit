@@ -1096,7 +1096,7 @@ namespace pyRevitCLI {
         }
 
         internal static string TryGetValue(string key, string defaultValue = null) {
-            return arguments[key] != null ? arguments[key].Value as string : defaultValue;
+            return PyRevitCLIArguments.Value(arguments, key, defaultValue);
         }
 
         /// <summary>
