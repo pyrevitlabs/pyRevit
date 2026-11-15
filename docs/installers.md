@@ -24,7 +24,19 @@ pyrevit caches clear --all
 pyrevit detach --all
 ```
 
-`pyrevit detach --all` removes the pyRevit `.addin` manifests from every Revit version. Running a CLI installer on a machine where pyRevit is already installed therefore leaves Revit without pyRevit until you attach a clone again, for example with `pyrevit attach <clone-name> default --installed`. Uninstalling the CLI runs the same two commands.
+`pyrevit detach --all` removes the pyRevit `.addin` manifests from every Revit version, both the current user's and the all-users ones. Running a CLI installer on a machine where pyRevit is already installed therefore leaves Revit without pyRevit until you attach a clone again. Uninstalling the CLI runs the same two commands.
+
+To attach a clone again:
+
+```shell
+pyrevit attach <clone-name> default --installed
+```
+
+To attach it for all users, run this from an elevated command prompt:
+
+```shell
+pyrevit attach <clone-name> default --installed --allusers
+```
 
 The pyRevit installers run the same two commands, then register the installed clone and attach it to Revit again, so Revit has pyRevit when they finish.
 
