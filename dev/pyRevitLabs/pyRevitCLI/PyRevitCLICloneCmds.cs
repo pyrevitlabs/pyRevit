@@ -156,14 +156,14 @@ namespace pyRevitCLI {
                         clone.SetTag(tagName);
                     }
                     else {
-                        logger.Error("Version finder not yet implemented for git clones.");
+                        throw new PyRevitException("Version finder not yet implemented for git clones.");
                         // TODO: grab version from repo (last tag?)
                     }
                 }
                 // get version for other clones
                 else {
                     if (tagName != null) {
-                        logger.Error("Version setter not yet implemented for clones.");
+                        throw new PyRevitException("Version setter not yet implemented for clones.");
                         // TODO: set version for archive clones?
                     }
                     else {
@@ -229,7 +229,7 @@ namespace pyRevitCLI {
         PrintCloneEngines(string cloneName) {
             if (cloneName != null) {
                 var clone = PyRevitClones.GetRegisteredClone(cloneName);
-                PyRevitCLIAppCmds.PrintHeader(string.Format("Deployments for \"{0}\"", clone.Name));
+                PyRevitCLIAppCmds.PrintHeader(string.Format("Engines for \"{0}\"", clone.Name));
                 foreach (var engine in clone.GetConfiguredEngines()) {
                     Console.WriteLine(engine);
                 }
