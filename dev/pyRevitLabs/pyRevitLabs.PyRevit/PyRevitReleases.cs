@@ -41,12 +41,14 @@ namespace pyRevitLabs.PyRevit {
             return GetReleases().Where(r => r.IsPyRevitRelease).Select(r => r.Version).Max();
         }
 
-        // find latest cli release version
-        public static Version GetLatestCLIReleaseVersion() {
-            // pick the latest release and return
-            // could be null
-            return GetReleases().Where(r => r.IsCLIRelease).Select(r => r.Version).Max();
-        }
+        /// <summary>
+        /// Version of the newest stable release that ships the CLI installer, or null when GitHub lists none.
+        /// </summary>
+        /// <remarks>
+        /// The CLI installers are assets of the regular pyRevit releases. The separate <c>cli-v</c> releases
+        /// ended at 4.8.8 and must not decide whether a newer CLI exists.
+        /// </remarks>
+        public static Version GetLatestCLIReleaseVersion() => GetLatestRelease()?.Version;
 
     }
 }
