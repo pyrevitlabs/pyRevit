@@ -206,7 +206,7 @@
         if (reload) {
           e.preventDefault();
           this.toast(this.s.reloadBlocked, "error");
-        } else if (e.key === "/" && document.activeElement !== this.searchInput) {
+        } else if (e.key === "/" && document.activeElement !== this.searchInput && !document.querySelector(".dvi-modal")) {
           e.preventDefault();
           this.searchInput.focus();
         } else if (e.key === "Escape" && document.activeElement === this.searchInput) {
@@ -276,10 +276,7 @@
       for (const box of this.root.querySelectorAll("input.dvi-pick")) {
         box.checked = this.selected.has(Number(box.dataset.pick));
       }
-      if (this.selectAllInput) {
-        const selectable = this.views.length ? this.views[0].elements.length : 0;
-        this.selectAllInput.checked = this.selected.size > 0 && this.selected.size === selectable;
-      }
+      this.syncSelectAll();
       this.emptyStateNode.hidden = this.views.length > 0 && this.elementCount > 0;
       const count = this.selected.size;
       this.selectionNode.hidden = !this.data.bridge || count === 0;
@@ -308,7 +305,12 @@
     openHideDialog(hide) {
       const ids = [...this.selected];
       const boxes = this.views.map((view) => ({ view, input: h("input", { type: "checkbox", checked: true }) }));
-      const close = () => overlay.remove();
+      const opener = document.activeElement;
+      const close = () => {
+        overlay.remove();
+        const target = opener && opener.isConnected ? opener : this.root.querySelector(".dvi-btn");
+        if (target) target.focus();
+      };
       const apply = h(
         "button",
         {
@@ -332,11 +334,14 @@
           onclick: (e) => {
             if (e.target === overlay) close();
           },
+          onkeydown: (e) => {
+            if (e.key === "Escape") close();
+          },
         },
         h(
           "div",
-          { class: "dvi-dialog", role: "dialog" },
-          h("h3", null, format(hide ? this.s.hideDialogTitle : this.s.unhideDialogTitle, ids.length)),
+          { class: "dvi-dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": "dvi-dialog-title" },
+          h("h3", { id: "dvi-dialog-title" }, format(hide ? this.s.hideDialogTitle : this.s.unhideDialogTitle, ids.length)),
           h(
             "ul",
             { class: "dvi-dialog-views" },
@@ -348,6 +353,7 @@
         )
       );
       this.root.append(overlay);
+      boxes[0].input.focus();
     }
 
     renderHeader() {
@@ -426,13 +432,35 @@
       this.renderChips();
     }
 
+    /**
+     * Ids of the elements shown by the current filters, so "Select all"
+     * never selects cards the user cannot see.
+     */
+    selectableIds() {
+      const first = this.views.length ? this.views[0].elements : [];
+      return first
+        .filter((element) =>
+          this.views.some((view) => {
+            const entry = view.elements.find((e) => e.id === element.id);
+            return entry && this.matches(entry);
+          })
+        )
+        .map((element) => element.id);
+    }
+
+    syncSelectAll() {
+      if (!this.selectAllInput) return;
+      const selectable = this.selectableIds();
+      this.selectAllInput.checked = selectable.length > 0 && selectable.every((id) => this.selected.has(id));
+    }
+
     selectAllToggle() {
       this.selectAllInput = h("input", {
         type: "checkbox",
         onchange: (e) => {
           this.selected.clear();
           if (e.target.checked) {
-            for (const element of this.views.length ? this.views[0].elements : []) this.selected.add(element.id);
+            for (const id of this.selectableIds()) this.selected.add(id);
           }
           this.syncSelection();
         },
@@ -516,6 +544,7 @@
     }
 
     applyFilters() {
+      this.syncSelectAll();
       for (const view of this.views) {
         const section = this.viewSection(view.id);
         if (!section) continue;
