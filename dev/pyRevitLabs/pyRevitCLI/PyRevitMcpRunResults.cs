@@ -58,6 +58,8 @@ namespace pyRevitCLI {
 
             if (run.Value<string>("mode") != "query")
                 compact["decision"] = run["decision"];
+            if (run["rollback_failure"]?.Type == JTokenType.String)
+                compact["rollback_failure"] = run["rollback_failure"];
             if (run["approval"] != null)
                 compact["approval"] = run["approval"];
 

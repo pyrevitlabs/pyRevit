@@ -62,6 +62,14 @@ public class McpRunResultsTests {
         }
 
         [Fact]
+        public void ARollbackFailureReasonIsKeptForEveryMode() {
+            var extra = new JObject { ["decision"] = "rollback_incomplete", ["rollback_failure"] = "Revit returned Pending." };
+
+            Assert.Equal("Revit returned Pending.", PyRevitMcpRunResults.Compact(Run("query", extra: extra))["rollback_failure"].Value<string>());
+            Assert.Null(PyRevitMcpRunResults.Compact(Run("modify"))["rollback_failure"]);
+        }
+
+        [Fact]
         public void EmptyBookkeepingIsDropped() {
             var compact = PyRevitMcpRunResults.Compact(Run());
 
