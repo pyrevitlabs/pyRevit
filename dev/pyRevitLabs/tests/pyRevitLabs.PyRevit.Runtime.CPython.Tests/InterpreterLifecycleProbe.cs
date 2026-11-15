@@ -11,6 +11,9 @@ internal sealed class InterpreterLifecycleRecord {
     public required bool BroughtUp { get; init; }
     public required string? LcCtypeBeforeInitialize { get; init; }
     public required string? LcCtypeAfterInitialize { get; init; }
+    public required string? LcCtypeBeforeUserLocaleAdoption { get; init; }
+    public required string? LcCtypeWhileAdoptingUserLocale { get; init; }
+    public required string? LcCtypeAfterScope { get; init; }
     public required IReadOnlyList<Exception> ReattachFailures { get; init; }
     public required int? MarkerAfterReattaches { get; init; }
     public required Exception? PythonDllReassignment { get; init; }
@@ -31,6 +34,9 @@ internal static class InterpreterLifecycleProbe {
     public const int ReattachCount = 3;
 
     private const string MarkerName = "pyrevit_reload_probe";
+    private const string AdoptUserLocale =
+        "import locale; locale.setlocale(locale.LC_CTYPE, 'English_United States.1252')";
+
     private static readonly string MarkerRead = $"__import__('sys').{MarkerName}";
 
     private static readonly Lazy<InterpreterLifecycleRecord> _record = new(
@@ -68,6 +74,14 @@ internal static class InterpreterLifecycleProbe {
 
         int? marker = reattachFailures.Count == 0 ? ReadMarker() : null;
 
+        string? lcCtypeBeforeAdoption = CrtLocale.Query(CrtLocale.LcCtype);
+        string? lcCtypeWhileAdopting;
+        using (CrtLocale.Preserve(CrtLocale.LcCtype)) {
+            Exec(AdoptUserLocale);
+            lcCtypeWhileAdopting = CrtLocale.Query(CrtLocale.LcCtype);
+        }
+        string? lcCtypeAfterScope = CrtLocale.Query(CrtLocale.LcCtype);
+
         Exception pythonDllReassignment = Capture(() => CpyRuntime.PythonDLL = pythonDll);
         Exception shutdown = Capture(PythonEngine.Shutdown);
         bool isInitializedAfterShutdown = PythonEngine.IsInitialized;
@@ -76,6 +90,9 @@ internal static class InterpreterLifecycleProbe {
             BroughtUp = broughtUp,
             LcCtypeBeforeInitialize = lcCtypeBefore,
             LcCtypeAfterInitialize = lcCtypeAfter,
+            LcCtypeBeforeUserLocaleAdoption = lcCtypeBeforeAdoption,
+            LcCtypeWhileAdoptingUserLocale = lcCtypeWhileAdopting,
+            LcCtypeAfterScope = lcCtypeAfterScope,
             ReattachFailures = reattachFailures,
             MarkerAfterReattaches = marker,
             PythonDllReassignment = pythonDllReassignment,
@@ -90,7 +107,7 @@ internal static class InterpreterLifecycleProbe {
         return value is null ? null : Convert.ToInt32(value);
     }
 
-    internal static void Exec(string code) {
+    private static void Exec(string code) {
         using Py.GILState gil = Py.GIL();
         PythonEngine.Exec(code);
     }

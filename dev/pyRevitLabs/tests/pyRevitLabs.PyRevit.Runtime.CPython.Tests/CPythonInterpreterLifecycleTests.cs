@@ -85,19 +85,9 @@ public class CPythonInterpreterLifecycleTests {
     /// </summary>
     [Fact]
     public void CrtLocaleScope_RestoresLcCtypeThatCPythonChanged() {
-        Assert.True(InterpreterLifecycleProbe.Record.BroughtUp);
-        const string adoptUserLocale =
-            "import locale; locale.setlocale(locale.LC_CTYPE, 'English_United States.1252')";
+        InterpreterLifecycleRecord record = InterpreterLifecycleProbe.Record;
 
-        string? before = CrtLocale.Query(CrtLocale.LcCtype);
-        string? during;
-        using (CrtLocale.Preserve(CrtLocale.LcCtype)) {
-            InterpreterLifecycleProbe.Exec(adoptUserLocale);
-            during = CrtLocale.Query(CrtLocale.LcCtype);
-        }
-        string? after = CrtLocale.Query(CrtLocale.LcCtype);
-
-        Assert.NotEqual(before, during);
-        Assert.Equal(before, after);
+        Assert.NotEqual(record.LcCtypeBeforeUserLocaleAdoption, record.LcCtypeWhileAdoptingUserLocale);
+        Assert.Equal(record.LcCtypeBeforeUserLocaleAdoption, record.LcCtypeAfterScope);
     }
 }
