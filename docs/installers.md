@@ -38,6 +38,6 @@ To attach it for all users, run this from an elevated command prompt:
 pyrevit attach <clone-name> default --installed --allusers
 ```
 
-The pyRevit installers run the same two commands, then register the installed clone and attach it to Revit again, so Revit has pyRevit when they finish.
+The pyRevit installers run the same two commands, then register the installed clone and attach it to Revit again, so Revit has pyRevit when they finish. This only covers Revit versions that the installed pyRevit release supports. A Revit version below that minimum loses its attachment and is not attached again; use a pyRevit release that supports that Revit version to run pyRevit there.
 
 If pyRevit disappeared from Revit after you installed the CLI, either run the pyRevit installer again or attach the existing clone with `pyrevit attach`.
