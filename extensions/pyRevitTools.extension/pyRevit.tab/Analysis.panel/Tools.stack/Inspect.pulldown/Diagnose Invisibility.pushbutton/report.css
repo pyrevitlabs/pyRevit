@@ -349,3 +349,19 @@
 .dvi-dialog-views li { padding: 3px 0; }
 .dvi-dialog-views label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .dvi-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.dvi-btn.reveal.active { background: var(--dvi-warn); color: #fff; border-color: var(--dvi-warn); }
+.dvi-reveal {
+  margin: 8px 0;
+  padding: 8px 10px;
+  background: var(--dvi-sunken);
+  border: 1px solid var(--dvi-line);
+  border-left: 4px solid var(--dvi-warn);
+  border-radius: 6px;
+}
+.dvi-reveal[hidden] { display: none; }
+.dvi-reveal-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 6px; }
+.dvi-reveal-left { color: var(--dvi-muted); }
+.dvi-reveal-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.dvi-reveal-name { margin-right: auto; }
+.dvi-reveal-row .dvi-swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }

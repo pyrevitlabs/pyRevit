@@ -169,4 +169,16 @@
     <sys:String x:Key="ui_empty_state">尚无可诊断的内容。请添加图元和视图。</sys:String>
     <sys:String x:Key="ui_reload_blocked">重新加载会清除此报告。请改用“重新检查”。</sys:String>
 
+    <sys:String x:Key="ui_reveal">显示隐藏图元</sys:String>
+    <sys:String x:Key="ui_reveal_hint">在 Revit 中绘制此视图屏幕区域内所有被隐藏的图元，每种原因一种颜色。再次单击可移除。</sys:String>
+    <sys:String x:Key="ui_reveal_refresh">刷新叠加层</sys:String>
+    <sys:String x:Key="ui_reveal_follow">跟随视口</sys:String>
+    <sys:String x:Key="ui_reveal_select">选择</sys:String>
+    <sys:String x:Key="ui_reveal_summary">已绘制 {0} 个隐藏图元</sys:String>
+    <sys:String x:Key="ui_reveal_left_out">另有 {0} 个未绘制。放大视图即可查看。</sys:String>
+    <sys:String x:Key="ui_reveal_none">可见区域内没有被隐藏的内容。</sys:String>
+    <sys:String x:Key="reveal_unsupported">叠加层在{}类型的视图中不可用。</sys:String>
+    <sys:String x:Key="reveal_needs_webview2">显示隐藏图元需要 WebView2 输出窗口和 IronPython。</sys:String>
+    <sys:String x:Key="reveal_unsupported_active">请先打开平面、剖面、立面或三维视图。</sys:String>
+
 </ResourceDictionary>

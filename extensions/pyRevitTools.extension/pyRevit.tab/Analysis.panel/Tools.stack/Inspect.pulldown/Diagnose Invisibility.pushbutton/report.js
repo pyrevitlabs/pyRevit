@@ -6,7 +6,7 @@
  * .payload(). When data.bridge is true, buttons post
  * {channel, action, payload, requestId} through chrome.webview.postMessage and
  * Python answers with {channel, event, payload} messages (events: view,
- * state, result, scene, error). Without the bridge the report is read-only and
+ * state, reveal, result, scene, error). Without the bridge the report is read-only and
  * falls back to pyRevit's revit:// links for selection.
  */
 (function () {
@@ -62,6 +62,8 @@
       this.showContext = false;
       this.elementCount = data.elementCount;
       this.selected = new Set();
+      this.revealed = new Map();
+      this.revealOff = new Map();
       this.requests = new Map();
       this.requestSeq = 0;
       this.viewers = new Map();
@@ -108,6 +110,8 @@
         this.applyFilters();
         this.syncViewer(payload);
         this.refreshScene(payload.id);
+      } else if (event === "reveal") {
+        this.onReveal(payload);
       } else if (event === "state") {
         this.applyState(payload);
       } else if (event === "scene") {
@@ -132,6 +136,8 @@
         this.sceneOpen.delete(id);
         this.sceneLoading.delete(id);
         this.sceneStale.delete(id);
+        this.revealed.delete(id);
+        this.revealOff.delete(id);
         const section = this.viewSection(id);
         if (section) section.remove();
       }
@@ -277,7 +283,8 @@
         box.checked = this.selected.has(Number(box.dataset.pick));
       }
       this.syncSelectAll();
-      this.emptyStateNode.hidden = this.views.length > 0 && this.elementCount > 0;
+      const revealOnly = this.data.autoReveal !== null && this.views.length > 0;
+      this.emptyStateNode.hidden = revealOnly || (this.views.length > 0 && this.elementCount > 0);
       const count = this.selected.size;
       this.selectionNode.hidden = !this.data.bridge || count === 0;
       this.selectionNode.replaceChildren(
@@ -561,7 +568,7 @@
           if (card) card.hidden = !match;
           if (match) shown++;
         }
-        section.querySelector(".dvi-empty").hidden = shown > 0;
+        section.querySelector(".dvi-empty").hidden = shown > 0 || view.elements.length === 0;
       }
       for (const row of this.matrixNode.querySelectorAll("tr[data-element]")) {
         const id = Number(row.dataset.element);
@@ -669,6 +676,19 @@
           ? h(
               "button",
               {
+                class: `dvi-btn reveal${this.revealed.has(view.id) ? " active" : ""}`,
+                title: this.s.revealHint,
+                dataset: { reveal: view.id },
+                onclick: (e) =>
+                  this.run(e.currentTarget, "reveal", { viewId: view.id, on: !this.revealed.has(view.id) }),
+              },
+              this.s.reveal
+            )
+          : null,
+        this.data.bridge
+          ? h(
+              "button",
+              {
                 class: "dvi-btn danger",
                 title: this.s.removeView,
                 onclick: (e) => this.run(e.currentTarget, "remove_view", { viewId: view.id }),
@@ -722,12 +742,99 @@
         { class: `dvi-view${sceneOpen ? " scene-open" : ""}`, dataset: { view: view.id } },
         header,
         sceneHost,
+        this.revealPanel(view.id),
         h("div", { class: "dvi-cards" }, cards),
         h("p", { class: "dvi-empty", hidden: true }, this.s.noMatch)
       );
       if (existing) existing.replaceWith(section);
       else this.viewsNode.append(section);
       this.applyFilters();
+    }
+
+    /**
+     * Legend of one view's reveal overlay: a swatch, count, visibility toggle
+     * and select button per reason, plus refresh and follow-viewport. Colors
+     * come from Python so the legend matches what Revit draws.
+     */
+    revealPanel(viewId) {
+      const summary = this.revealed.get(viewId);
+      if (!summary) return h("div", { class: "dvi-reveal", hidden: true });
+      const off = this.revealOff.get(viewId) || new Set();
+      const rows = Object.entries(summary.counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([code, count]) =>
+          h(
+            "div",
+            { class: "dvi-reveal-row" },
+            h("input", {
+              type: "checkbox",
+              checked: !off.has(code),
+              onchange: (e) => {
+                if (e.target.checked) off.delete(code);
+                else off.add(code);
+                this.revealOff.set(viewId, off);
+                this.run(null, "reveal_filter", { viewId, code, visible: e.target.checked });
+              },
+            }),
+            h("span", { class: "dvi-swatch", style: `background:${this.data.revealColors[code] || "#9e9e9e"}` }),
+            h("span", { class: "dvi-reveal-name" }, this.data.codes[code] || code),
+            h("span", { class: "dvi-chip-count" }, count),
+            h(
+              "button",
+              { class: "dvi-btn small", onclick: (e) => this.run(e.currentTarget, "reveal_select", { viewId, code }) },
+              this.s.revealSelect
+            )
+          )
+        );
+      const note = summary.drawn
+        ? format(this.s.revealSummary, summary.drawn)
+        : this.s.revealNone;
+      return h(
+        "div",
+        { class: "dvi-reveal" },
+        h(
+          "div",
+          { class: "dvi-reveal-bar" },
+          h("strong", null, note),
+          summary.notEvaluated ? h("span", { class: "dvi-reveal-left" }, format(this.s.revealLeftOut, summary.notEvaluated)) : null,
+          h(
+            "button",
+            { class: "dvi-btn small", onclick: (e) => this.run(e.currentTarget, "reveal_refresh", { viewId }) },
+            this.s.revealRefresh
+          ),
+          h(
+            "label",
+            { class: "dvi-toggle" },
+            h("input", {
+              type: "checkbox",
+              checked: Boolean(this.revealFollow),
+              onchange: (e) => {
+                this.revealFollow = e.target.checked;
+                this.run(null, "reveal_follow", { viewId, on: e.target.checked });
+              },
+            }),
+            this.s.revealFollow
+          )
+        ),
+        rows
+      );
+    }
+
+    onReveal(summary) {
+      const viewId = summary.viewId;
+      if (summary.active) {
+        this.revealed.set(viewId, summary);
+      } else {
+        this.revealed.delete(viewId);
+        this.revealOff.delete(viewId);
+      }
+      const section = this.viewSection(viewId);
+      if (!section) return;
+      const panel = section.querySelector(".dvi-reveal");
+      panel.replaceWith(this.revealPanel(viewId));
+      for (const button of section.querySelectorAll(".dvi-btn.reveal")) {
+        button.classList.toggle("active", this.revealed.has(viewId));
+      }
     }
 
     card(view, element) {
@@ -1068,6 +1175,9 @@
       const app = new App(root, data);
       apps.set(data.channel, app);
       listen();
+      if (data.bridge && data.autoReveal !== null) {
+        app.request("reveal", { viewId: data.autoReveal, on: true }).catch((error) => app.toast(String(error.message || error), "error"));
+      }
       return app;
     },
   };

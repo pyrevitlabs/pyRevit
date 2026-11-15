@@ -169,4 +169,16 @@
     <sys:String x:Key="ui_empty_state">Noch nichts zu diagnostizieren. Elemente und Ansichten hinzufügen.</sys:String>
     <sys:String x:Key="ui_reload_blocked">Neuladen würde diesen Bericht löschen. Verwenden Sie stattdessen „Erneut prüfen“.</sys:String>
 
+    <sys:String x:Key="ui_reveal">Ausgeblendete aufdecken</sys:String>
+    <sys:String x:Key="ui_reveal_hint">Alle im Bildschirmbereich dieser Ansicht ausgeblendeten Elemente in Revit zeichnen, je Grund in einer Farbe. Erneut klicken zum Entfernen.</sys:String>
+    <sys:String x:Key="ui_reveal_refresh">Überlagerung aktualisieren</sys:String>
+    <sys:String x:Key="ui_reveal_follow">Ansichtsfenster folgen</sys:String>
+    <sys:String x:Key="ui_reveal_select">Auswählen</sys:String>
+    <sys:String x:Key="ui_reveal_summary">{0} ausgeblendete(s) Element(e) gezeichnet</sys:String>
+    <sys:String x:Key="ui_reveal_left_out">{0} weitere nicht gezeichnet. Zum Anzeigen hineinzoomen.</sys:String>
+    <sys:String x:Key="ui_reveal_none">Im sichtbaren Bereich ist nichts ausgeblendet.</sys:String>
+    <sys:String x:Key="reveal_unsupported">Die Überlagerung ist in Ansichten vom Typ {} nicht verfügbar.</sys:String>
+    <sys:String x:Key="reveal_needs_webview2">Aufdecken benötigt das WebView2-Ausgabefenster und IronPython.</sys:String>
+    <sys:String x:Key="reveal_unsupported_active">Zuerst einen Grundriss, Schnitt, eine Ansicht oder eine 3D-Ansicht öffnen.</sys:String>
+
 </ResourceDictionary>

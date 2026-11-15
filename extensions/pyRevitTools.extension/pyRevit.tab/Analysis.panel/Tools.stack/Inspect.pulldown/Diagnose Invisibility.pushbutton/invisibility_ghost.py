@@ -35,16 +35,16 @@ def _solids(geometry):
                 pending.append(item)
 
 
-def _element_meshes(element):
-    """Translucent meshes of an element's solids, or of its bounding box."""
+def element_meshes(element, color=GHOST_COLOR, detail_level=DB.ViewDetailLevel.Fine):
+    """Return meshes of an element's solids in ``color``, else of its bounding box."""
     options = DB.Options()
-    options.DetailLevel = DB.ViewDetailLevel.Fine
+    options.DetailLevel = detail_level
     meshes = []
     try:
         geometry = element.get_Geometry(options)
         if geometry is not None:
             for solid in _solids(geometry):
-                mesh = dc3dserver.Mesh.from_solid(element.Document, solid, GHOST_COLOR)
+                mesh = dc3dserver.Mesh.from_solid(element.Document, solid, color)
                 if mesh is not None:
                     meshes.append(mesh)
     except Exception:
@@ -52,7 +52,7 @@ def _element_meshes(element):
     if not meshes:
         bbox = element.get_BoundingBox(None)
         if bbox is not None:
-            mesh = dc3dserver.Mesh.from_boundingbox(bbox, GHOST_COLOR)
+            mesh = dc3dserver.Mesh.from_boundingbox(bbox, color)
             if mesh is not None:
                 meshes.append(mesh)
     return meshes
@@ -109,7 +109,7 @@ class GhostPreview(object):
             del self._meshes[key]
             self._refresh(uidoc)
             return False
-        self._meshes[key] = _element_meshes(element)
+        self._meshes[key] = element_meshes(element)
         self._refresh(uidoc)
         if uidoc.ActiveView.Id == view.Id:
             _zoom_to(uidoc, view, element)

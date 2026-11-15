@@ -169,4 +169,16 @@
     <sys:String x:Key="ui_empty_state">Rien à diagnostiquer pour le moment. Ajoutez des éléments et des vues.</sys:String>
     <sys:String x:Key="ui_reload_blocked">Recharger effacerait ce rapport. Utilisez plutôt « Revérifier ».</sys:String>
 
+    <sys:String x:Key="ui_reveal">Révéler les masqués</sys:String>
+    <sys:String x:Key="ui_reveal_hint">Dessiner dans Revit chaque élément masqué dans la zone d'écran de cette vue, avec une couleur par raison. Cliquez à nouveau pour supprimer.</sys:String>
+    <sys:String x:Key="ui_reveal_refresh">Actualiser la superposition</sys:String>
+    <sys:String x:Key="ui_reveal_follow">Suivre la zone affichée</sys:String>
+    <sys:String x:Key="ui_reveal_select">Sélectionner</sys:String>
+    <sys:String x:Key="ui_reveal_summary">{0} élément(s) masqué(s) dessiné(s)</sys:String>
+    <sys:String x:Key="ui_reveal_left_out">{0} autres non dessinés. Zoomez pour les voir.</sys:String>
+    <sys:String x:Key="ui_reveal_none">Rien n'est masqué dans la zone visible.</sys:String>
+    <sys:String x:Key="reveal_unsupported">La superposition n'est pas disponible dans les vues de type {}.</sys:String>
+    <sys:String x:Key="reveal_needs_webview2">Révéler les masqués nécessite la fenêtre de sortie WebView2 et IronPython.</sys:String>
+    <sys:String x:Key="reveal_unsupported_active">Ouvrez d'abord un plan, une coupe, une élévation ou une vue 3D.</sys:String>
+
 </ResourceDictionary>

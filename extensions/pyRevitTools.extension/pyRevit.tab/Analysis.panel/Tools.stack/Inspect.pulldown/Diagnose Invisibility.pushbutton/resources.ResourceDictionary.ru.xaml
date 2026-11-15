@@ -169,4 +169,16 @@
     <sys:String x:Key="ui_empty_state">Пока нечего диагностировать. Добавьте элементы и виды.</sys:String>
     <sys:String x:Key="ui_reload_blocked">Перезагрузка сотрёт этот отчёт. Используйте вместо неё «Проверить снова».</sys:String>
 
+    <sys:String x:Key="ui_reveal">Показать скрытые</sys:String>
+    <sys:String x:Key="ui_reveal_hint">Нарисовать в Revit все скрытые элементы в видимой области этого вида, по одному цвету на причину. Нажмите ещё раз, чтобы убрать.</sys:String>
+    <sys:String x:Key="ui_reveal_refresh">Обновить наложение</sys:String>
+    <sys:String x:Key="ui_reveal_follow">Следовать за областью просмотра</sys:String>
+    <sys:String x:Key="ui_reveal_select">Выбрать</sys:String>
+    <sys:String x:Key="ui_reveal_summary">Нарисовано скрытых элементов: {0}</sys:String>
+    <sys:String x:Key="ui_reveal_left_out">Ещё {0} не нарисовано. Увеличьте масштаб, чтобы их увидеть.</sys:String>
+    <sys:String x:Key="ui_reveal_none">В видимой области нет скрытых элементов.</sys:String>
+    <sys:String x:Key="reveal_unsupported">Наложение недоступно на видах типа {}.</sys:String>
+    <sys:String x:Key="reveal_needs_webview2">Для показа скрытых нужны окно вывода WebView2 и IronPython.</sys:String>
+    <sys:String x:Key="reveal_unsupported_active">Сначала откройте план, разрез, фасад или 3D-вид.</sys:String>
+
 </ResourceDictionary>

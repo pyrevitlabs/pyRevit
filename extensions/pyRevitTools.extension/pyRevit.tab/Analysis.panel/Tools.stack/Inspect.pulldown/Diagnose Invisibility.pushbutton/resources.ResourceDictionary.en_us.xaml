@@ -169,4 +169,16 @@
     <sys:String x:Key="ui_empty_state">Nothing to diagnose yet. Add elements and views.</sys:String>
     <sys:String x:Key="ui_reload_blocked">Reloading would erase this report. Use Re-check instead.</sys:String>
 
+    <sys:String x:Key="ui_reveal">Reveal hidden</sys:String>
+    <sys:String x:Key="ui_reveal_hint">Draw every element that is hidden in this view's screen area in Revit, in one color per reason. Click again to remove.</sys:String>
+    <sys:String x:Key="ui_reveal_refresh">Refresh overlay</sys:String>
+    <sys:String x:Key="ui_reveal_follow">Follow viewport</sys:String>
+    <sys:String x:Key="ui_reveal_select">Select</sys:String>
+    <sys:String x:Key="ui_reveal_summary">{0} hidden element(s) drawn</sys:String>
+    <sys:String x:Key="ui_reveal_left_out">{0} more not drawn. Zoom in to see them.</sys:String>
+    <sys:String x:Key="ui_reveal_none">Nothing is hidden in the visible area.</sys:String>
+    <sys:String x:Key="reveal_unsupported">The reveal overlay is not available in {} views.</sys:String>
+    <sys:String x:Key="reveal_needs_webview2">Reveal hidden needs the WebView2 output window and IronPython.</sys:String>
+    <sys:String x:Key="reveal_unsupported_active">Open a plan, section, elevation or 3D view first.</sys:String>
+
 </ResourceDictionary>

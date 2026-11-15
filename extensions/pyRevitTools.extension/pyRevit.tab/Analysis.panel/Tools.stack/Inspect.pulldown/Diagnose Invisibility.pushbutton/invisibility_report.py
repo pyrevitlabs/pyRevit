@@ -12,10 +12,11 @@ ignored.
 Page -> Python actions: ``select``, ``zoom``, ``open_view``, ``fix``,
 ``fix_all``, ``recheck``, ``scene``, ``ghost``, ``add_selection``,
 ``add_pick``, ``add_views``, ``remove_element``, ``remove_view``,
-``set_hidden``.
+``set_hidden``, ``reveal``, ``reveal_refresh``, ``reveal_filter``,
+``reveal_select``, ``reveal_follow``.
 Python -> page events: ``view`` (refreshed view section), ``state`` (the
-element and view lists changed), ``result`` (outcome of a request), ``scene``
-(3D preview data), ``error``.
+element and view lists changed), ``reveal`` (overlay built or removed),
+``result`` (outcome of a request), ``scene`` (3D preview data), ``error``.
 """
 
 import io
@@ -24,19 +25,26 @@ import os
 import uuid
 
 from pyrevit import DB, HOST_APP, forms, revit, script
-from pyrevit.compat import get_elementid_from_value_func
+from pyrevit.compat import IRONPY, get_elementid_from_value_func
 from pyrevit.framework import List
 from pyrevit.revit import events
 
 import invisibility_fixes as fixes
 import invisibility_scene as scene
 from invisibility_ghost import GhostPreview
+from invisibility_reveal import (
+    REASON_COLORS,
+    SUPPORTED_VIEW_TYPES,
+    RevealPreview,
+    color_hex,
+)
 from invisibility_checks import collect_visible_ids, diagnose, id_value, t
 
 logger = script.get_logger()
 
 get_elementid_from_value = get_elementid_from_value_func()
 
+_WEBVIEW2_ENGINE = "WebView2/Chromium"
 _BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 _ASSETS = ("viewer3d.js", "report.js")
 _STYLESHEET = "report.css"
@@ -134,6 +142,21 @@ _UI_STRINGS = {
         "ui_reload_blocked",
         "Reloading would erase this report. Use Re-check instead.",
     ),
+    "reveal": ("ui_reveal", "Reveal hidden"),
+    "revealHint": (
+        "ui_reveal_hint",
+        "Draw every element that is hidden in this view's screen area in Revit,"
+        " in one color per reason. Click again to remove.",
+    ),
+    "revealRefresh": ("ui_reveal_refresh", "Refresh overlay"),
+    "revealFollow": ("ui_reveal_follow", "Follow viewport"),
+    "revealSelect": ("ui_reveal_select", "Select"),
+    "revealSummary": ("ui_reveal_summary", "{0} hidden element(s) drawn"),
+    "revealLeftOut": (
+        "ui_reveal_left_out",
+        "{0} more not drawn. Zoom in to see them.",
+    ),
+    "revealNone": ("ui_reveal_none", "Nothing is hidden in the visible area."),
     "inTemplate": (
         "ui_in_template_hint",
         "Changes the view template, which affects every view using it.",
@@ -212,8 +235,9 @@ class DiagnosisSession(object):
         engine; a cleaned-up engine would leave dangling callbacks.
     """
 
-    def __init__(self, output, doc, elements, views):
+    def __init__(self, output, doc, elements, views, reveal=False):
         self.output = output
+        self.reveal_on_start = reveal
         self.doc = doc
         self.element_ids = [e.Id for e in elements]
         self.view_ids = [v.Id for v in views]
@@ -222,6 +246,7 @@ class DiagnosisSession(object):
         self.interactive = False
         self._handlers = {}
         self.ghost = GhostPreview(doc)
+        self.reveal = RevealPreview(doc)
 
     def _elements(self):
         resolved = []
@@ -324,6 +349,8 @@ class DiagnosisSession(object):
             "channel": self.channel,
             "bridge": self.interactive,
             "document": self.doc.Title,
+            "revealColors": dict((code, color_hex(code)) for code in REASON_COLORS),
+            "autoReveal": id_value(self.view_ids[0]) if self.reveal_on_start else None,
             "strings": dict(
                 (name, t(key, default)) for name, (key, default) in _UI_STRINGS.items()
             ),
@@ -358,6 +385,11 @@ class DiagnosisSession(object):
                 ("remove_element", self._on_remove_element),
                 ("remove_view", self._on_remove_view),
                 ("set_hidden", self._on_set_hidden),
+                ("reveal", self._on_reveal),
+                ("reveal_refresh", self._on_reveal_refresh),
+                ("reveal_filter", self._on_reveal_filter),
+                ("reveal_select", self._on_reveal_select),
+                ("reveal_follow", self._on_reveal_follow),
             ):
                 self._handlers[action] = handler
             self.output.window.Closed += self._on_window_closed
@@ -647,6 +679,8 @@ class DiagnosisSession(object):
     def _on_remove_view(self, payload, request_id):
         value = int(payload["viewId"])
         self.view_ids = [i for i in self.view_ids if id_value(i) != value]
+        if self.reveal.view_id is not None and id_value(self.reveal.view_id) == value:
+            self.reveal.close()
         self._push_state()
         self._reply(request_id, True)
 
@@ -720,8 +754,63 @@ class DiagnosisSession(object):
             message += " " + "; ".join(errors)
         self._reply(request_id, True, message)
 
+    def _on_reveal(self, payload, request_id):
+        view = self._view(payload["viewId"])
+        view_id = id_value(view.Id)
+        previous = self.reveal.view_id
+        if not payload.get("on", True):
+            self.reveal.close()
+            self._send("reveal", {"viewId": view_id, "active": False})
+            self._reply(request_id, True)
+            return
+        uidoc = self._uidoc()
+        if view.ViewType not in SUPPORTED_VIEW_TYPES:
+            self._reply(
+                request_id,
+                False,
+                t(
+                    "reveal_unsupported",
+                    "The reveal overlay is not available in {} views.",
+                ).format(self._view_type_label(view)),
+            )
+            return
+        if previous is not None and id_value(previous) != view_id:
+            self._send("reveal", {"viewId": id_value(previous), "active": False})
+        self.reveal.show(uidoc, view, self._send_reveal)
+        self._reply(request_id, True)
+
+    def _send_reveal(self, summary):
+        self._send("reveal", summary)
+
+    def _view_type_label(self, view):
+        return str(view.ViewType)
+
+    def _on_reveal_refresh(self, payload, request_id):
+        self.reveal.refresh(self._uidoc())
+        self._reply(request_id, True)
+
+    def _on_reveal_filter(self, payload, request_id):
+        self.reveal.set_code_visible(
+            self._uidoc(), payload["code"], bool(payload.get("visible"))
+        )
+        self._reply(request_id, True)
+
+    def _on_reveal_select(self, payload, request_id):
+        ids = List[DB.ElementId](
+            [
+                get_elementid_from_value(value)
+                for value in self.reveal.ids_for(payload["code"])
+            ]
+        )
+        self._uidoc().Selection.SetElementIds(ids)
+        self._reply(request_id, True)
+
+    def _on_reveal_follow(self, payload, request_id):
+        self.reveal.follow(bool(payload.get("on")))
+        self._reply(request_id, True)
+
     def _close_ghosts(self):
-        events.execute_in_revit_context(_close_ghost_preview, self.ghost)
+        events.execute_in_revit_context(_close_previews, self.ghost, self.reveal)
 
     def _on_scene(self, payload, request_id):
         view = self._view(payload["viewId"])
@@ -752,18 +841,40 @@ def _try_describe_fix(view, fix):
         return None, t("fix_describe_failed", "Could not describe fix: {}").format(ex)
 
 
-def _close_ghost_preview(ghost):
-    """Unregister a report's ghost preview; runs through an ExternalEvent."""
+def _close_previews(ghost, reveal):
+    """Unregister a report's ghost and reveal previews; runs through an ExternalEvent."""
     ghost.close()
+    reveal.close()
 
 
-def show_report(output, elements, views):
+def supports_interactive_report(output):
+    """Return True when ``output`` can show the interactive report.
+
+    It needs IronPython and the WebView2 output renderer.
+    """
+    try:
+        return IRONPY and output.renderer_engine == _WEBVIEW2_ENGINE
+    except Exception:
+        return False
+
+
+def show_report(output, elements, views, reveal=False):
     """Diagnose ``elements`` in ``views`` and show the interactive report.
+
+    Args:
+        output (PyRevitOutputWindow): the command's output window.
+        elements (list[DB.Element]): elements to diagnose.
+        views (list[DB.View]): views to diagnose them in; the first one is
+            revealed when ``reveal`` is set.
+        reveal (bool): also start the reveal-hidden overlay on the first view
+            once the page is ready. ``elements`` may then be empty.
 
     Returns:
         (DiagnosisSession): the live session (kept alive by its output window
         subscriptions).
     """
-    session = DiagnosisSession(output, elements[0].Document, elements, views)
+    session = DiagnosisSession(
+        output, views[0].Document, elements, views, reveal=reveal
+    )
     session.show()
     return session

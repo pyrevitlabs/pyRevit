@@ -169,4 +169,16 @@
     <sys:String x:Key="ui_empty_state">Aún no hay nada que diagnosticar. Añada elementos y vistas.</sys:String>
     <sys:String x:Key="ui_reload_blocked">Recargar borraría este informe. Use «Volver a comprobar» en su lugar.</sys:String>
 
+    <sys:String x:Key="ui_reveal">Revelar ocultos</sys:String>
+    <sys:String x:Key="ui_reveal_hint">Dibujar en Revit cada elemento oculto en el área de pantalla de esta vista, con un color por motivo. Haga clic de nuevo para quitarlo.</sys:String>
+    <sys:String x:Key="ui_reveal_refresh">Actualizar superposición</sys:String>
+    <sys:String x:Key="ui_reveal_follow">Seguir la ventana gráfica</sys:String>
+    <sys:String x:Key="ui_reveal_select">Seleccionar</sys:String>
+    <sys:String x:Key="ui_reveal_summary">{0} elemento(s) oculto(s) dibujado(s)</sys:String>
+    <sys:String x:Key="ui_reveal_left_out">{0} más sin dibujar. Acérquese para verlos.</sys:String>
+    <sys:String x:Key="ui_reveal_none">No hay nada oculto en el área visible.</sys:String>
+    <sys:String x:Key="reveal_unsupported">La superposición no está disponible en vistas de tipo {}.</sys:String>
+    <sys:String x:Key="reveal_needs_webview2">Revelar ocultos requiere la ventana de salida WebView2 e IronPython.</sys:String>
+    <sys:String x:Key="reveal_unsupported_active">Abra primero una planta, sección, alzado o vista 3D.</sys:String>
+
 </ResourceDictionary>
