@@ -27,7 +27,7 @@ public sealed class PublishGithubReleaseModule(IOptions<PublishOptions> publishO
         var repositoryInfo = context.GitHub().RepositoryInfo;
         var newRelease = new NewRelease("v" + versionInfo.BuildVersion)
         {
-            Name = "pyRevit v" + versionInfo.InstallVersion,
+            Name = "pyRevit v" + versionInfo.SemanticVersion,
             Body = releaseNotes,
             Draft = publishOptions.Value.DraftRelease,
             Prerelease = versionInfo.IsWip,

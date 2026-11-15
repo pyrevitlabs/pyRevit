@@ -43,11 +43,16 @@ public static partial class VersionHelper
     public static VersionInfo CreateVersionInfo(string buildVersion)
     {
         var installVersion = buildVersion.Split('+')[0];
+        var versionParts = VersionPartFinder().Match(buildVersion);
+        var semanticVersion = versionParts.Success
+            ? $"{versionParts.Groups[1].Value}.{versionParts.Groups[2].Value}.{versionParts.Groups[3].Value}"
+            : installVersion;
         return new VersionInfo(
             buildVersion,
             installVersion,
             buildVersion.Replace("+", "%2B", StringComparison.Ordinal),
-            buildVersion.Contains(PyRevitPaths.WipVersionExtension, StringComparison.Ordinal));
+            buildVersion.Contains(PyRevitPaths.WipVersionExtension, StringComparison.Ordinal),
+            semanticVersion);
     }
 
     public static string UpdateBuildNumber(string version)
