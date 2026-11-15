@@ -44,6 +44,12 @@
               CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
+    <!-- CrtLocale has no Revit dependency, so it is compiled into the tests and exercised for real. -->
+    <ItemGroup>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\CrtLocale.cs"
+                 Link="Sources\CrtLocale.cs"/>
+    </ItemGroup>
+
     <!-- The tracked CPython engine pyRevit deploys, staged so the tests need no local Python
          install and no Revit session. -->
     <ItemGroup>

@@ -9,6 +9,8 @@ namespace PyRevitLabs.PyRevit.Runtime.CPython.Tests;
 /// </summary>
 internal sealed class InterpreterLifecycleRecord {
     public required bool BroughtUp { get; init; }
+    public required string? LcCtypeBeforeInitialize { get; init; }
+    public required string? LcCtypeAfterInitialize { get; init; }
     public required IReadOnlyList<Exception> ReattachFailures { get; init; }
     public required int? MarkerAfterReattaches { get; init; }
     public required Exception? PythonDllReassignment { get; init; }
@@ -41,7 +43,11 @@ internal static class InterpreterLifecycleProbe {
         Assert.True(File.Exists(pythonDll), $"CPython engine fixture missing: {pythonDll}");
 
         CpyRuntime.PythonDLL = pythonDll;
-        PythonEngine.Initialize();
+        string? lcCtypeBefore = CrtLocale.Query(CrtLocale.LcCtype);
+        using (CrtLocale.Preserve(CrtLocale.LcCtype)) {
+            PythonEngine.Initialize();
+        }
+        string? lcCtypeAfter = CrtLocale.Query(CrtLocale.LcCtype);
         bool broughtUp = PythonEngine.IsInitialized;
         Exec("import clr");
         Exec($"import sys; sys.{MarkerName} = 1");
@@ -68,6 +74,8 @@ internal static class InterpreterLifecycleProbe {
 
         return new InterpreterLifecycleRecord {
             BroughtUp = broughtUp,
+            LcCtypeBeforeInitialize = lcCtypeBefore,
+            LcCtypeAfterInitialize = lcCtypeAfter,
             ReattachFailures = reattachFailures,
             MarkerAfterReattaches = marker,
             PythonDllReassignment = pythonDllReassignment,
@@ -82,7 +90,7 @@ internal static class InterpreterLifecycleProbe {
         return value is null ? null : Convert.ToInt32(value);
     }
 
-    private static void Exec(string code) {
+    internal static void Exec(string code) {
         using Py.GILState gil = Py.GIL();
         PythonEngine.Exec(code);
     }
