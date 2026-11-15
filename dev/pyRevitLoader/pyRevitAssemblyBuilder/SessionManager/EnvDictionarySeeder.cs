@@ -185,6 +185,20 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
         internal static string ReadIPYVersion(string pyRevitRoot)
         {
+            return ReadIPYVersion(pyRevitRoot, Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+        }
+
+        /// <summary>
+        /// Resolves the IronPython version from <paramref name="activeEngineDir"/> first, then
+        /// from the engine folders under <paramref name="pyRevitRoot"/>.
+        /// </summary>
+        /// <param name="pyRevitRoot">Clone root; skipped when empty.</param>
+        /// <param name="activeEngineDir">
+        /// Folder of the running engine. In production this is the directory of this assembly,
+        /// passed in so tests can probe a folder that does not sit next to a real IronPython.dll.
+        /// </param>
+        internal static string ReadIPYVersion(string pyRevitRoot, string activeEngineDir)
+        {
             // IronPython engines live under bin/{netcore|netfx}/engines/{IPY342|IPY2712PR}/.
             // IPY342 ships as "IronPython.dll"; IPY2712PR ships as "pyRevitLabs.IronPython.dll".
             // Check the executing assembly's directory FIRST — it sits in the active engine
@@ -193,9 +207,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var candidateDirs = new List<string>();
 
             // Priority 1: active engine directory (same folder as this DLL)
-            var selfDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            if (!string.IsNullOrEmpty(selfDir))
-                candidateDirs.Add(selfDir);
+            if (!string.IsNullOrEmpty(activeEngineDir))
+                candidateDirs.Add(activeEngineDir);
 
             // Priority 2: all known engine directories under the repo root
             if (!string.IsNullOrEmpty(pyRevitRoot))

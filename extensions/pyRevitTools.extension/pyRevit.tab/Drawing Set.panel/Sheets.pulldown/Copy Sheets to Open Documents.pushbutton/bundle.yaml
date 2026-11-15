@@ -45,3 +45,5 @@ tooltip:
     de Legenda (a API do Revit não fornece um método para criar vistas de Legenda, 
     portanto, este script precisa duplicar uma existente para criar uma nova Legenda) 
     a ferramenta não copia vistas de modelo (plantas de piso, elevações, cortes, ...)
+context:
+  - doc-project

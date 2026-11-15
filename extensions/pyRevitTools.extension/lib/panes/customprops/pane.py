@@ -22,7 +22,10 @@ from match import filter_utils
 
 get_elementid_value = get_elementid_value_func()
 
-CONFIG_SECTION = "custom_properties_pane"
+CONFIG_SECTION = "PYREVITTOOLS_CUSTOMPROPS_CONFIG"
+WS_POSTFIX = "_WS_INFO"
+ADD_PARAMS = "additional_parameters"
+SHOW_WS_INFO = "show_worksharing_info"
 
 _SEL_CB_TAG = "sel_checkbox"
 _RAW_INT_TAG = "_raw_int"
@@ -46,17 +49,17 @@ def get_pane_config():
     line renders as a plain separator if nothing follows it.
     """
     raw = script.get_envvar(CONFIG_SECTION)
-    show_worksharing = bool(script.get_envvar(CONFIG_SECTION + "_ws_info"))
+    show_worksharing = bool(script.get_envvar(CONFIG_SECTION + WS_POSTFIX))
     if not raw:
         try:
             user_config.reload()
             if not user_config.has_section(CONFIG_SECTION):
                 return [], True
             section = getattr(user_config, CONFIG_SECTION)
-            raw = section.get_option("additional_parameters", "")
-            show_worksharing = bool(section.get_option("show_worksharing_info", True))
+            raw = section.get_option(ADD_PARAMS, "")
+            show_worksharing = bool(section.get_option(SHOW_WS_INFO, True))
             script.set_envvar(CONFIG_SECTION, raw)
-            script.set_envvar(CONFIG_SECTION + "_ws_info", show_worksharing)
+            script.set_envvar(CONFIG_SECTION + WS_POSTFIX, show_worksharing)
         except Exception:
             return [], True
 
@@ -256,6 +259,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
             "pt_br": "Propriedades personalizadas",
             "ru": "Свойства элемента",
             "chinese_s": "自定义属性",
+            "ko": "사용자 지정 속성",
         }
     )
     panel_id = "d3a7f2c1-8e45-4b9a-a312-0f6b7c8d9e10"
@@ -1310,7 +1314,20 @@ class CustomPropertiesPanel(forms.WPFPanel):
         view = uidoc.ActiveView
 
         if not isinstance(view, DB.View):
-            forms.alert("Active view is not suitable for filters.")
+            forms.alert(
+                applocales.get_locale_string(
+                    {
+                        "en_us": "Active view is not suitable for filters.",
+                        "de_de": "Die aktive Ansicht ist für Filter nicht geeignet.",
+                        "fr_fr": "La vue active ne convient pas aux filtres.",
+                        "es_es": "La vista activa no es adecuada para filtros.",
+                        "pt_br": "A vista ativa não é adequada para filtros.",
+                        "ru": "Активный вид не подходит для фильтров.",
+                        "chinese_s": "当前视图不适用于过滤器。",
+                        "ko": "활성 뷰에는 필터를 사용할 수 없습니다.",
+                    }
+                )
+            )
             return
 
         checked_names = self._get_checked_param_names()

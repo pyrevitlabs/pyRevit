@@ -183,7 +183,9 @@ def check_model(doc, output):
         for count, cad in enumerate(cad_instances, start=1):
             cad_id = cad.Id
             cad_is_link = cad.IsLinked
-            cad_name = cad.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
+            cad_name = cad.get_Parameter(
+                DB.BuiltInParameter.IMPORT_SYMBOL_NAME
+            ).AsString()
 
             table_row = [
                 count,

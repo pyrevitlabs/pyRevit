@@ -8,7 +8,7 @@ title:
   de_de: Suche Revit Verknüpfung die das gewählte Element überwacht
   pt_br: Encontrar Vínculos do Revit Monitorados
 tooltip:
-  en_us: List Revit link that is being monitored by selected element(s)
+  en_us: List the Revit links that are monitored by the selected elements.
   ko: 선택한 요소에 의해 모니터링되는 Revit 링크를 나열합니다
   fr_fr: Lister les liens Revit qui sont monitorés par l'élément sélectionné
   ru: Выводит связи Revit, отслеживаемые у выделенных элементов.
@@ -17,4 +17,6 @@ tooltip:
   de_de: >-
     Es werden alle Revit Verknüpfungen aufgelistet,  die von dem/den ausgewälten Element(en) überwacht  werden. (Kopieren u. Überwachen Funktion)
   pt_br: Lista o vínculo do Revit que está sendo monitorado pelo(s) elemento(s) selecionado(s)
-context: selection
+context:
+  - doc-project
+  - selection

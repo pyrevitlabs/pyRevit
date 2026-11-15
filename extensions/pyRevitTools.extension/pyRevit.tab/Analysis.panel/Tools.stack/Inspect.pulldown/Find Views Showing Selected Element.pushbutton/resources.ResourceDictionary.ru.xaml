@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="progress_title">Поиск по видам</sys:String>
+    <sys:String x:Key="views_containing">Виды, содержащие выбранные элементы</sys:String>
+    <sys:String x:Key="no_views">Ни один из выбранных элементов не виден ни на одном виде.</sys:String>
+    <sys:String x:Key="table_title">Видов: {}</sys:String>
+    <sys:String x:Key="column_view">Вид</sys:String>
+    <sys:String x:Key="column_view_type">Тип вида</sys:String>
+    <sys:String x:Key="column_matches">Показано выбранных элементов</sys:String>
+    <sys:String x:Key="column_show">Выбрать/Показать элемент</sys:String>
+</ResourceDictionary>

@@ -1,0 +1,49 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Fixed parameter rows -->
+    <system:String x:Key="LblWorkset">작업집합</system:String>
+    <system:String x:Key="ChkWorkset.Tooltip">복사에 작업집합 포함</system:String>
+    <system:String x:Key="ComboWorkset.Tooltip">이 요소의 사용자 작업집합입니다.</system:String>
+    <system:String x:Key="LblDesignOption">디자인 옵션</system:String>
+    <system:String x:Key="ChkDesignOption.Tooltip">디자인 옵션은 읽기 전용입니다</system:String>
+    <system:String x:Key="TbDesignOption.Tooltip">읽기 전용입니다. 디자인 옵션 소속은 API로 변경할 수 없습니다.</system:String>
+    <system:String x:Key="LblCreator">작성자</system:String>
+    <system:String x:Key="TbCreator.Tooltip">요소를 만든 사용자입니다.</system:String>
+    <system:String x:Key="LblLastChangedBy">마지막 수정자</system:String>
+    <system:String x:Key="TbLastChangedBy.Tooltip">요소를 마지막으로 수정한 사용자입니다.</system:String>
+    <system:String x:Key="LblOwner">소유자</system:String>
+    <system:String x:Key="TbOwner.Tooltip">요소의 현재 작업 공유 소유자입니다.</system:String>
+
+    <!-- Parameters section -->
+    <system:String x:Key="LblParameters">매개변수</system:String>
+
+    <!-- Action buttons -->
+    <system:String x:Key="BtnCopy">복사</system:String>
+    <system:String x:Key="BtnCopy.Tooltip">현재 선택에서 체크한 매개변수를 복사합니다</system:String>
+    <system:String x:Key="BtnPaste">붙여넣기</system:String>
+    <system:String x:Key="BtnPaste.Tooltip">클립보드에서 필드를 채웁니다. 적용을 눌러 확정하세요</system:String>
+    <system:String x:Key="BtnFilter">필터</system:String>
+    <system:String x:Key="BtnFilter.Tooltip">체크한 매개변수에 대한 같음 뷰 필터를 만들거나 적용합니다</system:String>
+    <system:String x:Key="BtnApply">적용</system:String>
+
+    <!-- Design option fallback -->
+    <system:String x:Key="MainModel">주 모델</system:String>
+
+    <!-- Status messages -->
+    <system:String x:Key="Varies">다양함</system:String>
+    <system:String x:Key="StatusNoSelection">선택 없음</system:String>
+    <system:String x:Key="StatusOneElement">요소 1개</system:String>
+    <system:String x:Key="StatusElements">요소 {}개</system:String>
+    <system:String x:Key="StatusCopied">매개변수 {}개 복사됨</system:String>
+
+    <!-- Parameter tooltips -->
+    <system:String x:Key="TooltipParamNotFound">선택한 요소에서 매개변수를 찾을 수 없습니다</system:String>
+    <system:String x:Key="TooltipParamMissing">선택한 모든 요소에서 사용할 수 있는 매개변수가 아닙니다</system:String>
+    <system:String x:Key="TooltipParamReadOnly">선택한 모든 요소에서 쓸 수 있는 매개변수가 아닙니다</system:String>
+    <system:String x:Key="TooltipParamOpaque">정수 옵션 매개변수 — 표시 전용</system:String>
+    <system:String x:Key="TooltipMixedValues">선택 항목 간 값이 서로 다릅니다</system:String>
+    <system:String x:Key="TooltipUndo">현재 요소 값으로 되돌립니다</system:String>
+
+</ResourceDictionary>

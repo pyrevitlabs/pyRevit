@@ -9,7 +9,7 @@ title:
   de_de: Finde alle referenzierten Elemente
   pt_br: Encontrar Elementos Referenciados
 tooltip:
-  en_us: Lists all the elements that are tied to the selected element. For example elements tags or dimensions
+  en_us: List all elements that are tied to the selected element, for example tags or dimensions.
   ko: "선택한 요소에 연결된 모든 요소를 나열합니다(예: 요소 태그 또는 치수)."
   fr_fr: Lister tous les éléments qui sont liés à l'élément sélectionné. Par exemple, les étiquettes et les dimensions
   ru: Выводит все элементы, которые связаны с выделенным элементом. Например, элементы маркировки или размеров.

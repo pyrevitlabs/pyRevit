@@ -15,4 +15,6 @@
         "**/__pycache__": true,
         "**/Prerequisites": true,
     },
+    "dotnet.preferCSharpExtension": true,
+    "git.detectSubmodules": false
 }

@@ -20,3 +20,5 @@ tooltip:
   en_us: Open keynotes file
   ko: 키노트 파일 열기
   chinese_s: 打开注释文件
+context:
+  - doc-project

@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="lines_per_view">Linhas de detalhe por vista</sys:String>
+    <sys:String x:Key="line_count_in_document">Contagem de linhas no documento atual: {}</sys:String>
+    <sys:String x:Key="lines_in_links">Linhas de detalhe por vista em vínculos do Revit</sys:String>
+    <sys:String x:Key="line_count_in_link">Contagem de linhas no vínculo do Revit: {}</sys:String>
+    <sys:String x:Key="no_detail_lines">Nenhuma linha de detalhe foi encontrada.</sys:String>
+    <sys:String x:Key="no_view_name">&lt;nome da vista indisponível&gt;</sys:String>
+    <sys:String x:Key="lines_in_total">{} linhas no total</sys:String>
+    <sys:String x:Key="in_views">Em {} vistas</sys:String>
+    <sys:String x:Key="column_number">Número</sys:String>
+    <sys:String x:Key="column_name">Nome</sys:String>
+    <sys:String x:Key="column_id">Id</sys:String>
+    <sys:String x:Key="column_creator">Criador</sys:String>
+</ResourceDictionary>

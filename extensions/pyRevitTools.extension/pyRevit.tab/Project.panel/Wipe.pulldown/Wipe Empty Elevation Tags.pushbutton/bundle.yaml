@@ -22,3 +22,5 @@ tooltip:
     Wenn alle Ansichten gelöscht werden, die durch eine  Ansichtsbeschriftung generiert wurden, dann bleibt die  leere Ansichtsbeschriftung übrig. Dieses Skript löscht alle  leeren Ansichtsbeschriftungen im Modell.
   pt_br: >-
     Geralmente, se todas as elevações criadas por um identificador de elevação forem excluídas do modelo, o identificador de elevação vazio ainda permanecerá em seu local. Este script excluirá todos os identificadores de elevação vazios do modelo
+context:
+  - doc-project

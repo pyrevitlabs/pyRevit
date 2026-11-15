@@ -24,7 +24,10 @@
 
   <ItemGroup>
     <Compile Include="TestHelpers\TempFileTestBase.cs" />
+    <Compile Include="DynamoGraphSelectionTests.cs" />
     <Compile Include="TestHelpers\TestExtensionBuilder.cs" />
+    <Compile Include="TestHelpers\MachineConfigIsolation.cs" />
+    <Compile Include="MachineConfigIsolationTests.cs" />
     <Compile Include="MockLogger.cs" />
     <Compile Include="DarkIconTests.cs" />
     <Compile Include="TestConfiguration.cs" />
@@ -41,6 +44,8 @@
     <Compile Include="ParsedBundleTests.cs" />
     <Compile Include="ParsedComponentTests.cs" />
     <Compile Include="ParserBasicTests.cs" />
+    <Compile Include="ParsedExtensionHashTests.cs" />
+    <Compile Include="ScriptMetadataIssue4046Tests.cs" />
     <Compile Include="ParserErrorHandlingTests.cs" />
     <Compile Include="DiagnosticTests.cs" />
     <Compile Include="QuotedValueTests.cs" />
@@ -48,6 +53,10 @@
     <Compile Include="FullIntegrationQuoteTest.cs" />
     <Compile Include="StartupScriptTests.cs" />
     <Compile Include="SeparatorTests.cs" />
+    <Compile Include="ExtensionAssemblyNameTests.cs" />
+    <Compile Include="LinkAssemblyPathResolverTests.cs" />
+    <Compile Include="AvailabilityBindingTests.cs" />
+    <Compile Include="LayoutMarkerPlacementTests.cs" />
     <Compile Include="DebugPanelCustomTitleTest.cs" />
     <Compile Include="CSharpScriptTests.cs" />
     <Compile Include="DynamoScriptTests.cs" />
@@ -88,6 +97,10 @@
     <Compile Include="LoadTimelineTests.cs" />
     <Compile Include="EnvDictionaryTests.cs" />
     <Compile Include="ScriptEngineManagerTests.cs" />
+    <Compile Include="ScriptRequestTests.cs" />
+    <Compile Include="SessionResourceRegistryTests.cs" />
+    <Compile Include="IronPythonRuleCachesTests.cs" />
+    <Compile Include="..\Source\SessionResourceRegistry.cs" Link="Source\SessionResourceRegistry.cs" />
     <Compile Include="ScriptBuiltinsTests.cs" />
   </ItemGroup>
 

@@ -8,7 +8,7 @@ title:
   de_de: Liste alle Elemente der ausgewählten Ebene(n) auf
   pt_br: Listar Elementos do(s) Nível(is) Selecionado(s)
 tooltip:
-  en_us: List all Elements of the selected level(s)
+  en_us: List all elements of the selected levels.
   ko: 선택한 레벨의 모든 요소를 나열합니다
   fr_fr: Lister les éléments du ou des niveau(x) sélectionné(s)
   ru: Отображает все элементы на выделенных уровнях.
@@ -18,3 +18,4 @@ tooltip:
   pt_br: Lista todos os elementos do(s) nível(is) selecionado(s)
 author: 'Frederic Beaupere'
 contact: 'https://github.com/frederic-beaupere'
+context: doc-project

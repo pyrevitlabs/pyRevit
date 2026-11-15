@@ -1,0 +1,11 @@
+{
+ "about": "Known findings of check_revit_api_compat.py, accepted so CI fails only on new ones. Fix an entry, then run with --update-baseline to drop it; never add entries by hand.",
+ "findings": [
+  {
+   "path": "pyrevitlib/pyrevit/framework.py",
+   "code": "API-DEPRECATED",
+   "message": "`System.Net.WebClient` is deprecated in Revit 2025-2027 (WebClient is obsolete on .NET 6+ (SYSLIB0014))",
+   "count": 1
+  }
+ ]
+}

@@ -39,13 +39,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var extensionScope = runtime.ScriptRuntimeConfigs.SharedSessionEngine
                 ? "__pyrevit_session__"
                 : runtime.ScriptData.CommandExtension;
-            TypeId = string.Join(":",
-                runtime.SessionUUID,
-                runtime.EngineType.ToString(),
-                extensionScope);
+            TypeId = BuildTypeId(runtime.SessionUUID, runtime.EngineType, extensionScope);
 
             // default to false since this is a new engine
             RecoveredFromCache = false;
+        }
+
+        /// <summary>
+        /// The <see cref="TypeId"/> an engine of this type and scope gets in the given session,
+        /// for callers that look the engine up in <see cref="ScriptEngineManager.EngineDict"/>.
+        /// </summary>
+        public static string BuildTypeId(string sessionId, ScriptEngineType engineType, string extensionScope) {
+            return string.Join(":", sessionId, engineType.ToString(), extensionScope);
         }
 
         public virtual void Start(ref ScriptRuntime runtime) { }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="../Directory.Build.targets" />
+
+    <!--
+      The WebView2 renderer must never sit next to the host process binaries:
+      on Revit 2025 and newer it is loaded into an isolated load context from a
+      dedicated folder, so the host process never binds against it.
+    -->
+    <Target Condition="'$(PermitDeploy)' == '' or '$(PermitDeploy)' == 'false'" Name="Deploy" AfterTargets="AfterBuild">
+        <PropertyGroup>
+            <PyRevitRendererDeployDir Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'">$(PyRevitBinDir)\isolated</PyRevitRendererDeployDir>
+            <PyRevitRendererDeployDir Condition="'$(TargetFrameworkIdentifier)' != '.NetCoreApp'">$(PyRevitBinDir)</PyRevitRendererDeployDir>
+        </PropertyGroup>
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitRendererDeployDir)"
+              Condition="'$(SkipPyRevitDeploy)' != 'true'" />
+        <Message Importance="high" Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitRendererDeployDir)'))" />
+    </Target>
+</Project>

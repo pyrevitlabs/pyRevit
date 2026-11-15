@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <PermitDeploy>true</PermitDeploy>
+        <IronPythonVersion Condition="'$(IronPythonVersion)' == ''">IPY2712PR</IronPythonVersion>
+        <IronPythonPrefix Condition="'$(IronPythonVersion)' == 'IPY2712PR'">pyRevitLabs.</IronPythonPrefix>
+        <UseWpf>true</UseWpf>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+        <PackageReference Include="xunit" Version="2.5.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(ShellEnginesDirectory)' == ''">
+        <ProjectReference Include="../../../pyRevitLabs.PyRevit.Shell/pyRevitLabs.PyRevit.Shell.csproj"
+                          AdditionalProperties="Configuration=Release $(IronPythonVersion);TargetFrameworks=net8.0-windows;PlatformTarget=AnyCPU;RevitVersion=2025"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(ShellEnginesDirectory)' != ''">
+        <Reference Include="pyRevitLabs.PyRevit.Shell" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/pyRevitLabs.PyRevit.Shell.dll"/>
+        <Reference Include="ICSharpCode.AvalonEdit" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/ICSharpCode.AvalonEdit.dll"/>
+        <Reference Include="IronPython" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/$(IronPythonPrefix)IronPython.dll"/>
+        <Reference Include="IronPython.Modules" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/$(IronPythonPrefix)IronPython.Modules.dll"/>
+        <Reference Include="Microsoft.Dynamic" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/$(IronPythonPrefix)Microsoft.Dynamic.dll"/>
+        <Reference Include="Microsoft.Scripting" HintPath="$(ShellEnginesDirectory)/$(IronPythonVersion)/$(IronPythonPrefix)Microsoft.Scripting.dll"/>
+    </ItemGroup>
+
+</Project>

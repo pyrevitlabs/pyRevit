@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="progress_title">Listar tamanhos de famílias</sys:String>
+    <sys:String x:Key="sort_options">Opções de ordenação:</sys:String>
+    <sys:String x:Key="field_size">Tamanho</sys:String>
+    <sys:String x:Key="field_name">Nome</sys:String>
+    <sys:String x:Key="field_category">Categoria</sys:String>
+    <sys:String x:Key="field_creator">Criador</sys:String>
+    <sys:String x:Key="field_count">Instâncias</sys:String>
+    <sys:String x:Key="group_by">Agrupar por: {}</sys:String>
+    <sys:String x:Key="sort_by">Ordenar por: {}</sys:String>
+    <sys:String x:Key="families_total">{} famílias, tamanho total encontrado: {}</sys:String>
+    <sys:String x:Key="not_available">N/D</sys:String>
+</ResourceDictionary>

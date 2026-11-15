@@ -21,6 +21,45 @@ def set_name(element, new_name):
     element.Name = new_name
 
 
+def set_formula(family_manager, parameter, formula):
+    """Set a family parameter formula and name the parameter when Revit refuses it.
+
+    Revit reports only "It is an invalid formula string", so a batch of
+    formulas gives no hint which one failed.
+
+    Args:
+        family_manager (DB.FamilyManager): manager of the family document.
+        parameter (DB.FamilyParameter): parameter that receives the formula.
+        formula (str): formula text; ``None`` clears it.
+
+    Raises:
+        PyRevitException: when the family has no type yet, or Revit rejects the
+            formula. The message names the parameter and the formula, and
+            points to ``not(a > b)`` for ``<=`` and ``>=``, which formulas lack.
+
+    Important:
+        Create a type with ``family_manager.NewType`` first, and call it inside
+        a transaction on the family document.
+    """
+    name = parameter.Definition.Name
+    if family_manager.CurrentType is None:
+        raise PyRevitException(
+            "Cannot set the formula of {!r}: the family has no type. "
+            "Call NewType first.".format(name)
+        )
+    try:
+        family_manager.SetFormula(parameter, formula)
+    except Exception as ex:
+        hint = ""
+        if formula and ("<=" in formula or ">=" in formula):
+            hint = " Formulas have no <= or >=; use not(a > b) or not(a < b)."
+        raise PyRevitException(
+            "Cannot set the formula of {!r} to {!r}: {}.{}".format(
+                name, formula, str(ex).strip().splitlines()[0].rstrip("."), hint
+            )
+        )
+
+
 def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
     doc = doc or DOCS.doc
     get_elementid_value = get_elementid_value_func()
@@ -186,7 +225,9 @@ def attach_wall_tops(walls, target):
                 "Wall attachment is unavailable in this Revit version. "
                 "Use an untrimmed wall or model the gable end explicitly."
             )
-        attach(target.Id, DB.AttachmentLocation.Top)
+        attach(
+            target.Id, DB.AttachmentLocation.Top
+        )  # compat-ignore: ships with AddAttachment
     target.Document.Regenerate()
 
 
@@ -252,11 +293,31 @@ def crop_view_to_elements(view, elements=None, padding=3.0, doc=None):
             query.get_model_elements().
         padding (float, optional): clearance around the elements, in feet.
         doc (DB.Document, optional): document, defaults to the view's.
+
+    Raises:
+        PyRevitException: when there is nothing to crop to, or when the
+            view's scope box can't be cleared, for example because its view
+            template controls the parameter.
+
+    Note:
+        Revit ignores the crop box of a view that has a scope box, so the
+        view's scope box is cleared first.
     """
     doc = doc or view.Document
     box = query.get_elements_bounding_box(elements or query.get_model_elements(doc=doc))
     if box is None:
         raise PyRevitException("Nothing to crop to: no elements with a bounding box.")
+    scope_box = view.get_Parameter(DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP)
+    if scope_box is not None and not scope_box.IsReadOnly:
+        scope_box.Set(DB.ElementId.InvalidElementId)
+    if (
+        scope_box is not None
+        and scope_box.AsElementId() != DB.ElementId.InvalidElementId
+    ):
+        raise PyRevitException(
+            "Can't crop view {!r}: its scope box can't be cleared. "
+            "Remove it or the view template that controls it.".format(view.Name)
+        )
     to_view = view.CropBox.Transform.Inverse
     corners = [
         to_view.OfPoint(DB.XYZ(x, y, z))

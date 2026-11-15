@@ -16,3 +16,5 @@ tooltip:
   es_es: Elimina todas las restricciones adjuntas adjuntas al objeto seleccionado
   de_de: Es werden alle dazugehörigen Abhängigkeiten des ausgewählten Objekts gelöscht
   pt_br: Exclui todas as restrições anexadas ao objeto selecionado
+context:
+  - doc-project

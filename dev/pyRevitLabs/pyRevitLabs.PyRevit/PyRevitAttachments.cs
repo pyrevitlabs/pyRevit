@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
@@ -72,26 +73,25 @@ namespace pyRevitLabs.PyRevit {
             if (engine.Runtime) {
                 logger.Debug(string.Format("Attaching Clone \"{0}\" @ \"{1}\" to Revit {2}", clone.Name, clone.ClonePath, revitYear));
 
-                // remove existing attachments first
-                // this is critical as there might be invalid attachments to expired clones
-                Detach(revitYear, currentAndAllUsers: true);
-
-                // now recreate attachment
-                RevitAddons.CreateManifestFile(
-                    revitYear,
-                    PyRevitConsts.AddinFileName,
-                    PyRevitConsts.AddinName,
-                    engine.AssemblyPath,
-                    PyRevitConsts.AddinId,
-                    PyRevitConsts.AddinClassName,
-                    PyRevitConsts.VendorId,
-                    allusers: allUsers
-                    );
+                try {
+                    RevitAddons.CreateManifestFile(
+                        revitYear,
+                        PyRevitConsts.AddinFileName,
+                        PyRevitConsts.AddinName,
+                        engine.AssemblyPath,
+                        PyRevitConsts.AddinId,
+                        PyRevitConsts.AddinClassName,
+                        PyRevitConsts.VendorId,
+                        allusers: allUsers,
+                        beforeReplace: () => Detach(revitYear, currentAndAllUsers: true)
+                        );
+                }
+                finally {
+                    ClearAttachmentCache();
+                }
             }
             else
                 throw new PyRevitException($"Engine {engineVer} can not be used as runtime.");
-
-            ClearAttachmentCache();
         }
 
         /// <summary>
@@ -188,21 +188,46 @@ namespace pyRevitLabs.PyRevit {
         /// Attach a clone to every installed Revit this pyRevit line can run on.
         /// </summary>
         /// <remarks>
-        /// Products this line cannot run on are skipped with the reason logged, rather
-        /// than aborting the ones it can.
+        /// Products this line cannot run on are skipped with the reason logged.
+        /// Attachment failures are reported after every eligible year has been attempted.
         /// </remarks>
         // @handled @logs
         public static void AttachToAll(PyRevitClone clone, PyRevitEngineVersion engineVer, bool allUsers = false) {
-            foreach (var revit in GetAttachableProducts())
-                Attach(revit.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
+            AttachToAll(GetAttachableProducts().Select(product => product.ProductYear),
+                        year => Attach(year, clone, engineVer: engineVer, allUsers: allUsers));
+        }
+
+        /// <summary>
+        ///     Attempts each distinct year and reports all attachment failures after the remaining years have been attempted.
+        /// </summary>
+        /// <exception cref="PyRevitException">One or more attachment attempts failed; the message identifies every failed year.</exception>
+        public static void AttachToAll(IEnumerable<int> revitYears, Action<int> attach) {
+            var failures = new List<string>();
+            foreach (var revitYear in revitYears.Distinct()) {
+                try {
+                    attach(revitYear);
+                }
+                catch (Exception exception) {
+                    var failure = string.Format("Revit {0}: {1}", revitYear, exception.Message);
+                    logger.Error("Could not attach to {0}", failure);
+                    failures.Add(failure);
+                }
+            }
+            if (failures.Count > 0)
+                throw new PyRevitException("Could not attach to all Revit versions:" +
+                                          Environment.NewLine + string.Join(Environment.NewLine, failures));
         }
 
         // detach from revit version
         // @handled @logs
         public static void Detach(int revitYear, bool currentAndAllUsers = false) {
             logger.Debug("Detaching from Revit {0}", revitYear);
-            RevitAddons.RemoveManifestFile(revitYear, PyRevitConsts.AddinName, currentAndAllUsers: currentAndAllUsers);
-            ClearAttachmentCache();
+            try {
+                RevitAddons.RemoveManifestFile(revitYear, PyRevitConsts.AddinName, currentAndAllUsers: currentAndAllUsers);
+            }
+            finally {
+                ClearAttachmentCache();
+            }
         }
 
         // detach pyrevit attachment
@@ -220,8 +245,45 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
+        /// <summary>
+        /// The attachment of a Revit started by <c>pyrevit launch</c>, or null for any other process.
+        /// </summary>
+        /// <remarks>
+        /// A launched Revit loads pyRevit from a manifest outside the standard add-in folders, so the
+        /// shared per-year manifests describe some other clone. The launcher names its manifest and
+        /// Revit year in the environment of the process it starts; the year check keeps a lookup
+        /// for any other installed year from reporting this session's clone. Only the Revit
+        /// process itself honors them: a pyrevit.exe started from that Revit inherits the
+        /// variables but manages the shared attachment.
+        /// </remarks>
+        private static PyRevitAttachment FindLaunchAttachment(RevitProduct revit) {
+            var manifestFile = Environment.GetEnvironmentVariable(PyRevitConsts.LaunchManifestEnvVar);
+            var launchYear = Environment.GetEnvironmentVariable(PyRevitConsts.LaunchRevitYearEnvVar);
+            if (string.IsNullOrWhiteSpace(manifestFile) || launchYear != revit.ProductYear.ToString() || !IsRevitProcess())
+                return null;
+
+            try {
+                return new PyRevitAttachment(new RevitAddonManifest(manifestFile), revit, PyRevitAttachmentType.PerLaunch);
+            }
+            catch (Exception exception) {
+                logger.Debug("Can not read launch manifest \"{0}\" | {1}", manifestFile, exception.Message);
+                return null;
+            }
+        }
+
+        private static bool IsRevitProcess() {
+            using (var process = Process.GetCurrentProcess())
+                return process.ProcessName.Equals("Revit", StringComparison.OrdinalIgnoreCase);
+        }
+
         private static PyRevitAttachment FindAttachment(RevitProduct revit) {
             logger.Debug("Checking attachment to Revit \"{0}\"", revit.Version);
+
+            var launchAttachment = FindLaunchAttachment(revit);
+            if (launchAttachment != null) {
+                logger.Debug("pyRevit (Per Launch) is attached to Revit \"{0}\"", revit.Version);
+                return launchAttachment;
+            }
 
             var allUsersManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: true);
             if (allUsersManifest != null) {
@@ -241,7 +303,7 @@ namespace pyRevitLabs.PyRevit {
 
         private static void ResolveRegisteredClone(PyRevitAttachment attachment, IEnumerable<PyRevitClone> registeredClones) {
             foreach (var clone in registeredClones) {
-                if (attachment.Clone != null && attachment.Clone.ClonePath.Contains(clone.ClonePath)) {
+                if (attachment.Clone != null && attachment.Clone.ClonePath.IsPathWithin(clone.ClonePath)) {
                     attachment.SetClone(clone);
                     return;
                 }

@@ -43,10 +43,10 @@ if revit.doc.IsWorkshared:
                         filteredlist.append(sheet)
                         print(
                             "{0}{1}".format(
-                                sheet.Parameter[DB.BuiltInParameter.SHEET_NUMBER]
+                                sheet.get_Parameter(DB.BuiltInParameter.SHEET_NUMBER)
                                 .AsString()
                                 .ljust(10),
-                                sheet.Parameter[DB.BuiltInParameter.SHEET_NAME]
+                                sheet.get_Parameter(DB.BuiltInParameter.SHEET_NAME)
                                 .AsString()
                                 .ljust(50),
                             )

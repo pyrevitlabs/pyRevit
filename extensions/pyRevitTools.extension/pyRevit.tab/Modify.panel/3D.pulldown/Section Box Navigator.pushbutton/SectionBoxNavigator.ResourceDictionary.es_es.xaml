@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">Navegador de Caja de Sección</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">Navegador de Caja de Sección</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">Navegador de Región de Recorte</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">Tipo de vista no compatible</system:String>
     
     <system:String x:Key="LevelNavigation">Navegación por Nivel</system:String>
     <system:String x:Key="TopUp">Arriba ↑</system:String>
@@ -55,7 +58,6 @@
     
     <system:String x:Key="Settings">Configuración</system:String>
     <system:String x:Key="ShowPreviewOnHover">Mostrar vista previa al pasar el mouse</system:String>
-    <system:String x:Key="UpdateUIOnEvents">Actualizar interfaz en Eventos</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">Incluir Niveles y Cuadrículas Vinculados</system:String>
     
     <!-- Dynamic UI strings -->
@@ -122,6 +124,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Ocurrió un error al contraer: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">Seleccionar Vista 2D para Caja de Sección</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">Seleccionar Vista 3D para Copiar</system:String>
+    <system:String x:Key="Select3DViewForTempBox">Seleccionar Vista 3D para Caja de Sección Temporal</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">No se pudo extraer información de la vista.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">La vista 3D no tiene caja de sección.</system:String>
     <system:String x:Key="Unknown">Desconocido</system:String>

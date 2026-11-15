@@ -30,11 +30,48 @@ func main() {
 				Flags: complete.Flags{},
 			},
 			"env": complete.Command{
-				Sub: complete.Commands{},
+				Sub: complete.Commands{
+					"path": complete.Command{
+						Sub: complete.Commands{
+							"list": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":   complete.PredictNothing,
+									"--scope": complete.PredictNothing,
+								},
+							},
+							"ensure": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--first": complete.PredictNothing,
+									"--log":   complete.PredictNothing,
+									"--scope": complete.PredictNothing,
+								},
+							},
+							"remove": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":   complete.PredictNothing,
+									"--scope": complete.PredictNothing,
+								},
+							},
+							"which": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
+						},
+						Flags: complete.Flags{
+							"--help": complete.PredictNothing,
+						},
+					},
+				},
 				Flags: complete.Flags{
-					"--help": complete.PredictNothing,
-					"--json": complete.PredictNothing,
-					"--log":  complete.PredictNothing,
+					"--help":   complete.PredictNothing,
+					"--json":   complete.PredictNothing,
+					"--log":    complete.PredictNothing,
+					"--redact": complete.PredictNothing,
 				},
 			},
 			"update": complete.Command{
@@ -358,24 +395,39 @@ func main() {
 					"download": complete.Command{
 						Sub: complete.Commands{
 							"installer": complete.Command{
-								Sub: complete.Commands{},
+								Sub: complete.Commands{
+									"latest": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--admin": complete.PredictNothing,
+											"--dest":  complete.PredictNothing,
+											"--pre":   complete.PredictNothing,
+										},
+									},
+								},
 								Flags: complete.Flags{
-									"--dest": complete.PredictNothing,
-									"--pre":  complete.PredictNothing,
+									"--admin": complete.PredictNothing,
+									"--dest":  complete.PredictNothing,
+									"--pre":   complete.PredictNothing,
 								},
 							},
 							"archive": complete.Command{
-								Sub: complete.Commands{},
+								Sub: complete.Commands{
+									"latest": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--dest": complete.PredictNothing,
+											"--pre":  complete.PredictNothing,
+										},
+									},
+								},
 								Flags: complete.Flags{
 									"--dest": complete.PredictNothing,
 									"--pre":  complete.PredictNothing,
 								},
 							},
 						},
-						Flags: complete.Flags{
-							"--dest": complete.PredictNothing,
-							"--pre":  complete.PredictNothing,
-						},
+						Flags: complete.Flags{},
 					},
 				},
 				Flags: complete.Flags{
@@ -425,6 +477,24 @@ func main() {
 					"--models":       complete.PredictNothing,
 					"--purge":        complete.PredictNothing,
 					"--revit":        complete.PredictNothing,
+				},
+			},
+			"launch": complete.Command{
+				Sub: complete.Commands{
+					"default": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--isolated": complete.PredictNothing,
+							"--language": complete.PredictNothing,
+							"--log":      complete.PredictNothing,
+						},
+					},
+				},
+				Flags: complete.Flags{
+					"--help":     complete.PredictNothing,
+					"--isolated": complete.PredictNothing,
+					"--language": complete.PredictNothing,
+					"--log":      complete.PredictNothing,
 				},
 			},
 			"agent": complete.Command{
@@ -943,6 +1013,25 @@ func main() {
 								},
 							},
 							"skills": complete.Command{
+								Sub: complete.Commands{
+									"enable": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+									"disable": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+								},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
+							"reckless": complete.Command{
 								Sub: complete.Commands{
 									"enable": complete.Command{
 										Sub: complete.Commands{},

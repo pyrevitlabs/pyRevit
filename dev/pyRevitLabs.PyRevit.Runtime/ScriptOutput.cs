@@ -30,6 +30,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private WeakReference<ScriptRuntime> _runtime;
         private ScriptConsole _window;
+        private readonly ElementIdRegistry _elementIds = new ElementIdRegistry();
         private ScriptIO _outputStream;
         private UIApplication _uiApp;
         private bool _debugMode;
@@ -217,13 +218,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
             get {
                 var runtime = BoundRuntime;
                 if (runtime != null) {
-                    _window = runtime.OutputWindow;
-                    return _window;
+                    var runtimeWindow = runtime.OutputWindow;
+                    TrackRuntimeWindow(runtimeWindow);
+                    return runtimeWindow;
                 }
 
                 if (_window == null || _window.ClosedByUser) {
                     _heldRecords.Close();
                     _window = new ScriptConsole(_debugMode, _uiApp);
+                    _window.ElementIds = _elementIds;
                     _window.Closed += hold_records_while_closed;
                     if (string.IsNullOrEmpty(_window.OutputId))
                         _window.OutputId = "pyrevit-output";
@@ -236,6 +239,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
                 return _window;
             }
+        }
+
+        internal void TrackRuntimeWindow(ScriptConsole window) {
+            if (window == null)
+                return;
+            _window = window;
+            _window.ElementIds = _elementIds;
         }
 
         internal Dispatcher WindowDispatcher => _window?.Dispatcher;
@@ -258,7 +268,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             get {
                 var runtime = BoundRuntime;
                 if (runtime != null) {
-                    _window = runtime.OutputWindow;
+                    TrackRuntimeWindow(runtime.OutputWindow);
                     return runtime.OutputStream;
                 }
 
@@ -296,7 +306,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        private bool IsWindowClosed => _window != null && _window.ClosedByUser;
+        /// <summary>
+        /// True only when a window was created and has since been closed. Unlike
+        /// <see cref="is_closed_by_user"/> it never creates a window, and unlike
+        /// <see cref="IsWindowReady"/> it is false before the first window exists.
+        /// </summary>
+        public bool IsWindowClosed => _window != null && _window.ClosedByUser;
 
         /// <summary>
         /// True only when a window already exists and has not been closed. Lets callers
@@ -355,10 +370,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// logged before that point - on a first load, the whole preload including its [PERF]
         /// checkpoints - would otherwise reach the runtime log file and nothing else.
         /// <para>
-        /// Only the session output holds, because only it gets its window through the
-        /// <see cref="window"/> getter, where the backlog is released. A command's window is
-        /// created by its <see cref="ScriptRuntime"/> and written through the runtime's own stream,
-        /// so nothing here would ever see it open.
+        /// Only the session output holds. A command's window is created by its
+        /// <see cref="ScriptRuntime"/> and retained here when its stream resolves the window; a
+        /// deferred record must write there or be dropped, not wait for a new window to release it.
         /// </para>
         /// <para>
         /// Invariant: held records are released when the window is created, whatever opened it -
@@ -369,7 +383,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </para>
         /// </remarks>
         internal void write_forwarded_log_record(string content, bool markError) {
-            if (BoundRuntime == null && _heldRecords.TryHold(content, markError))
+            if (_runtime == null && _heldRecords.TryHold(content, markError))
                 return;
             if (IsWindowReady)
                 write_log_record(content, markError);
@@ -473,6 +487,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (IsWindowReady)
                 _window.IsSessionOutput = isSessionOutput;
         }
+
+        /// <summary>
+        /// Stores element ids too many to fit in a <c>revit://</c> link and returns the token the
+        /// link carries instead. Safe from any thread: it does not touch the output window. The
+        /// token resolves in this output's window until that window closes.
+        /// </summary>
+        /// <param name="comma_separated_ids">Element id values joined by commas.</param>
+        public string register_element_ids(string comma_separated_ids) => _elementIds.Register(comma_separated_ids);
 
         public void close() { window.Close(); }
         public void hide() { window.Hide(); }
@@ -731,8 +753,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var lines = markdown.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
             var inList = false;
 
-            foreach (var rawLine in lines) {
-                var line = rawLine.TrimEnd();
+            for (var i = 0; i < lines.Length; i++) {
+                var line = lines[i].TrimEnd();
                 if (string.IsNullOrWhiteSpace(line)) {
                     if (inList) {
                         html.Append("</ul>");
@@ -777,8 +799,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         html.Append("</ul>");
                         inList = false;
                     }
-                    html.Append(MarkdownTableToHtml(lines));
-                    break;
+                    var tableEnd = i;
+                    while (tableEnd + 1 < lines.Length) {
+                        var next = lines[tableEnd + 1].Trim();
+                        if (!string.IsNullOrWhiteSpace(next) && next.StartsWith("|"))
+                            tableEnd++;
+                        else
+                            break;
+                    }
+                    html.Append(MarkdownTableToHtml(lines, i, tableEnd));
+                    i = tableEnd;
+                    continue;
                 }
 
                 if (inList) {
@@ -794,11 +825,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return html.ToString();
         }
 
-        private static string MarkdownTableToHtml(IEnumerable<string> lines) {
+        private static string MarkdownTableToHtml(string[] lines, int startIndex, int endIndex) {
             var rows = new List<string[]>();
             var aligns = new List<string>();
-            foreach (var line in lines) {
-                var trimmed = line.Trim();
+            for (var i = startIndex; i <= endIndex; i++) {
+                var trimmed = lines[i].Trim();
                 if (!(trimmed.StartsWith("|") && trimmed.EndsWith("|")))
                     continue;
                 if (Regex.IsMatch(trimmed, @"^\|[:\-\s\|]+\|$")) {

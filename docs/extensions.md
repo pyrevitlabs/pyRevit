@@ -15,6 +15,8 @@ Extensions follow this hierarchy:
 MyExtension.extension/
   extension.json          # optional extension-level manifest
   startup.py               # optional, runs once when the extension loads
+  commands/                # optional, runner commands (*_command.py) for `pyrevit run`
+  checks/                  # optional, preflight checks
   MyTab.tab/
     MyPanel.panel/
       MyButton.pushbutton/
@@ -33,8 +35,8 @@ Supported bundle types (folder postfix): `pushbutton`, `smartbutton`, `pulldown`
 
 A command bundle (e.g. `.pushbutton`) can contain:
 
-- `script.py` / `script.cs` / `script.vb` / `script.rb` / `script.dyn` / `script.gh` / `script.ghx` — the command's entry point; the file extension picks the [script engine](#script-engines).
-- `config.py` (or the matching extension for the script's language) — runs instead of `script.py` on a shift-click; falls back to `script.py` itself if absent.
+- `*script.py` / `*script.cs` / `*script.vb` / `*script.rb` / `*script.dyn` / `*script.gh` / `*script.ghx` — the command's entry point; the file extension picks the [script engine](#script-engines).
+- `*config.py` (or the matching extension for the script's language) — runs instead of `script.py` on a shift-click; falls back to `script.py` itself if absent.
 - `bundle.yaml` — [metadata](#bundleyaml) for the button.
 - `icon.png` — button icon; `on.png` / `off.png` for a toggle button's two states; `icon.dark.png` for a dark-theme variant.
 - `tooltip.*` — media (image/gif) shown in the extended tooltip.
@@ -51,7 +53,7 @@ Common keys:
 
 - `title`, `tooltip` — either a plain string or a map of locale (`en_us`, `fr_fr`, `ko`, ...) to string, for translations.
 - `author` / `authors`, `help_url`.
-- `context` — restricts when the button is enabled (active view, selected category, workset, etc.); see the context grammar in `pyrevit.extensions.genericcomps._parse_context_directives`.
+- `context` — restricts when the button is enabled (active view, selected category, workset, etc.); see the context grammar in `pyrevit.extensions.genericcomps._parse_context_directives` or human friendly [here](https://pyrevitlabs.notion.site/Bundle-Context-630fa1f3611f4ee0aa15d290275e7ef3).
 - `min_revit_version` / `max_revit_version`.
 - `is_beta`, `highlight` (`new` or `updated`), `collapsed`.
 - `engine` — `clean`, `full_frame`, `persistent`, `mainthread` (plus Dynamo-specific `automate`, `dynamo_path`, `dynamo_path_check_existing`, `dynamo_force_manual_run`, `dynamo_model_nodes_info`).
@@ -118,7 +120,38 @@ This is different from the entry an extension gets in `extensions/extensions.jso
 
 A `hooks/` folder (at the bundle, tab, panel, or extension level) can hold Python scripts named after a Revit/pyRevit event, e.g. `doc-opened.py`, `view-activated.py`, `command-before-exec[ID_INPLACE_COMPONENT].py` (the bracketed suffix scopes the hook to one command id). Each script runs whenever that event fires while the extension is loaded.
 
-There is no exhaustive published list of event names — `extensions/pyRevitDevHooks.extension/hooks/` has one example script per supported event and is the most complete reference. Hook registration is handled by `pyrevitlib/pyrevit/loader/hooks.py`.
+There is no exhaustive published list of event names — `extensions/pyRevitDevHooks.extension/hooks/` has one example script per supported event and is the most complete reference. Hook registration is handled by `pyrevitlib/pyrevit/loader/hooks.py`. A more detailed list of event names is published [here](https://pyrevitlabs.notion.site/Extension-Hooks-b771ecf65f6a45fe87ae12beab2a73a6).
+
+## Runner commands
+
+A `commands/` folder at the root of a UI extension holds scripts that the CLI can run against Revit models without a ribbon button. A file is a runner command when it ends in `_command.py` (case-insensitive); its name is the file name without that trailing postfix, so `commands/list_views_command.py` is the command `list_views` and `Foo_Command.PY` is the command `Foo`. Other files in the folder, and subfolders, are ignored. The constants are `ExtensionUICommandsDirName` and `ExtensionUICommandPostfix` in `PyRevitConsts.cs`, and the scan is `PyRevitExtension.GetCommands()`.
+
+```text
+pyrevit run commands                              # list the commands of every registered clone and installed extension
+pyrevit run list_views "C:\models\house.rvt"      # run a command by name on a model
+pyrevit run list_views --models=models.txt --revit=2026   # run it on every model listed in a text file, one path per line
+pyrevit run C:\scripts\one_off.py "house.rvt"     # a path to a .py file runs that script instead of looking up a command
+```
+
+- The name lookup is case-insensitive. It searches the extensions of the clone attached to the target Revit first, then installed extensions. The first match wins; when a later extension defines the same command name, `pyrevit run` prints a warning to standard error naming the file that runs and the file it shadows.
+- The runner starts Revit from a generated journal with the attached pyRevit and quits Revit when the script ends. Without `--revit`, the Revit version comes from the model, or is the newest installed; the `--models` form always requires `--revit`.
+- The script runs in a full-frame engine with output windows suppressed; what the script prints and logs (`script.get_logger()`) goes to the run's log file. Besides the usual builtins it gets `__models__` (the model paths passed on the command line), `__batchexec__` (`True`) and `__logfile__` (the run's log file).
+- The script opens the models itself (`HOST_APP.app.OpenDocumentFile(path)`) and is responsible for saving and closing them. Error dialogs are dismissed automatically unless `--allowdialogs` is passed.
+
+`extensions/pyRevitDevTools.extension/commands/list_views_command.py` is the reference example.
+
+## Preflight checks
+
+A `checks/` folder at the root of a UI extension holds [preflight][pyrevit.preflight] checks: model-quality scripts offered by the *Preflight Checks* button in pyRevitTools. Only files ending in `_check.py` (case-insensitive) are imported, at the time the dialog opens. `checks/` is not on `sys.path`, and the checks are loaded with the import path of the Preflight Checks button, which belongs to pyRevitTools. A check can import from `pyrevitlib` and from pyRevitTools' own `lib/` folders, but a check in any other UI extension cannot import from that extension's `lib/`; a failing import raises in the loader and the dialog does not open. Keep checks from other extensions self-contained. Other file types (JSON data, `locale/` resources) can stay in `checks/`; the loader ignores them and the checks read them by path.
+
+Each class in a file that derives from `pyrevit.preflight.PreflightTestCase` becomes one entry in the dialog:
+
+- The entry name is the class attribute `name`, or, when `name` is absent, the file name with the trailing `_check.py` removed (`model_check_views_check.py` becomes `model_check_views`).
+- The class docstring is required. Its first line is the subtitle and the remaining lines are the description; a missing docstring is logged as an error.
+- The optional class attribute `author` overrides the extension's author.
+- `setUp(doc, output)`, `startTest(doc, output)`, `tearDown(doc, output)` and `doCleanups(doc, output)` run in that order on a fresh instance against the active document. An exception in any of them aborts the run, so `tearDown` and `doCleanups` are skipped after a failure; don't rely on them for cleanup that must always happen.
+
+Checks from all enabled UI extensions are merged into one list; a disabled extension, such as the default-disabled pyRevitDevTools, contributes none. `extensions/pyRevitDevTools.extension/checks/view_count_check.py` is the reference example, and the checks in `extensions/pyRevitTools.extension/checks/` show localized, multi-check files.
 
 ## The `__revit__` host handle
 
@@ -126,9 +159,9 @@ Every script pyRevit runs — commands, event hooks, smart buttons, combo boxes 
 
 > `__revit__` is an `Autodesk.Revit.UI.UIApplication` wherever a usable session handle exists, and `None` only outside a Revit host.
 
-Revit hands subscribers four unrelated application types depending on the event that fired: `UIApplication`, `Application`, `UIControlledApplication` and `ControlledApplication`. Every `Application_*` hook is registered on `uiApp.Application`, so its sender is DB-only. Before the handle was normalized, `__revit__` was simply whatever Revit sent, which made it polymorphic — and because the whole pyrevit library resolves the host application through it, `HOST_APP.uiapp`, `HOST_APP.uidoc` and `HOST_APP.doc` silently read `None` inside those hooks instead of failing.
+Revit hands subscribers four unrelated application types depending on the event that fired: `UIApplication`, `Application`, `UIControlledApplication` and `ControlledApplication`. Every `Application_*` hook is registered on `uiApp.Application`, so its sender is DB-only.
 
-`PyRevitLabs.PyRevit.Runtime.RevitAppResolver` now funnels every handle into one shape before it reaches a script:
+`PyRevitLabs.PyRevit.Runtime.RevitAppResolver` funnels every handle into one shape before it reaches a script:
 
 | `__eventsender__` type | How `__revit__` is derived |
 |---|---|

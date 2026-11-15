@@ -1,5 +1,5 @@
 title:
-  en_us: Lists Family Sizes
+  en_us: List Family Sizes
   ko: 패밀리 크기 목록
   fr_fr: Lister la taille des familles
   ru: Оторбразить размеры семейств
@@ -8,7 +8,7 @@ title:
   de_de: Liste alle Familien Dateigrößen auf
   pt_br: Listar Tamanho das Famílias
 tooltip:
-  en_us: List all families and their sizes
+  en_us: List all families and their sizes.
   ko: 모든 패밀리와 크기를 나열합니다
   fr_fr: Liste toutes les familles et leur taille
   ru: Отображает все семейства и их размеры.
@@ -19,3 +19,4 @@ tooltip:
 author: 'Frederic Beaupere, Alex Melnikov, Jean-Marc Couffin'
 contact: 'https://github.com/frederic-beaupere'
 
+context: doc-project

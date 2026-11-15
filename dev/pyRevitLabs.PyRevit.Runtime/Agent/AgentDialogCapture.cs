@@ -32,6 +32,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public JArray Dialogs { get; } = new JArray();
 
         /// <summary>
+        /// Every dialog shown while armed, including those past the recording limit.
+        /// </summary>
+        public int Shown { get; private set; }
+
+        /// <summary>
         /// Stops closing dialogs, so a prompt the host itself shows stays visible.
         /// </summary>
         public void Disarm() {
@@ -46,6 +51,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void OnDialogBoxShowing(object sender, DialogBoxShowingEventArgs e) {
+            Shown++;
             var entry = new JObject { ["dialog_id"] = e.DialogId };
             if (e is TaskDialogShowingEventArgs taskDialog)
                 entry["message"] = taskDialog.Message;
@@ -57,8 +63,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 Dialogs.Add(entry);
         }
 
+        /// <remarks>
+        /// Revit may reject a result that matches none of the dialog's buttons, so the declining
+        /// answers are tried first and Ok last. A dialog that rejects all of them, such as one with
+        /// only command links, stays open for the user.
+        /// </remarks>
         private static bool TryDismiss(DialogBoxShowingEventArgs e) {
-            foreach (var result in new[] { TaskDialogResult.Cancel, TaskDialogResult.Close, TaskDialogResult.Ok }) {
+            foreach (var result in new[] { TaskDialogResult.Cancel, TaskDialogResult.Close, TaskDialogResult.No, TaskDialogResult.Ok }) {
                 try {
                     if (e.OverrideResult((int)result))
                         return true;

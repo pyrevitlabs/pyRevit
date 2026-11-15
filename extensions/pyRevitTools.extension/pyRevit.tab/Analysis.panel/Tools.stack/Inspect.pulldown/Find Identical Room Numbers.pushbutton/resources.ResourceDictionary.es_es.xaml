@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_duplicates">No se encontraron números de habitación idénticos en la vista activa.</sys:String>
+    <sys:String x:Key="duplicates_found">Números de habitación usados más de una vez: {}</sys:String>
+    <sys:String x:Key="number_title">Número de habitación {}</sys:String>
+    <sys:String x:Key="column_name">Nombre</sys:String>
+    <sys:String x:Key="column_level">Nivel</sys:String>
+    <sys:String x:Key="column_show">Seleccionar/Mostrar elemento</sys:String>
+    <sys:String x:Key="no_rooms_in_view">Esta vista no puede mostrar habitaciones. Abra una planta, sección, alzado, vista 3D o una tabla de habitaciones.</sys:String>
+    <sys:String x:Key="no_level">Sin nivel</sys:String>
+</ResourceDictionary>

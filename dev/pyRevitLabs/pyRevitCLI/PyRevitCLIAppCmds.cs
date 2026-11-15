@@ -53,7 +53,7 @@ namespace pyRevitCLI {
                 );
 
         internal static bool IsRunningInsideClone(PyRevitClone clone) =>
-            GetProcessPath().NormalizeAsPath().Contains(clone.ClonePath.NormalizeAsPath());
+            PyRevitCloneLocation.IsInside(GetProcessPath(), clone.ClonePath);
 
         internal static void
         ClearCaches(bool allCaches, string revitYear, TargetCacheType cachetype) {
@@ -79,6 +79,8 @@ namespace pyRevitCLI {
                     break;
             }
         }
+
+        private const string CliExecutableName = "pyrevit.exe";
 
         // env commands
         internal static string
@@ -116,6 +118,10 @@ namespace pyRevitCLI {
                                 { "targetPacks", UserEnv.GetInstalledDotnetTargetPacks() },
                                 { "targetPacksCore", UserEnv.GetInstalledDotnetCoreTargetPacks() },
                                 { "cliVersion", PyRevitCLI.CLIInfoVersion },
+                                { "userPathEntries", SystemPath.GetPathEntries(EnvironmentVariableTarget.User) },
+                                { "userPathDuplicates", SystemPath.GetDuplicatePathEntries(EnvironmentVariableTarget.User) },
+                                { "machinePathEntries", SystemPath.GetPathEntries(EnvironmentVariableTarget.Machine) },
+                                { "machinePathDuplicates", SystemPath.GetDuplicatePathEntries(EnvironmentVariableTarget.Machine) },
                             }
                         },
                     };
@@ -132,30 +138,107 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        MakeEnvReport(bool json) {
+        MakeEnvReport(bool json, bool redact = false) {
             RevitProductData.RefreshIfStale();
             PyRevitProductData.RefreshIfStale();
-            if (json)
-                Console.WriteLine(CreateEnvJson());
-            else {
-                PyRevitCLICloneCmds.PrintClones();
-                PyRevitCLICloneCmds.PrintAttachments();
-                PyRevitCLIExtensionCmds.PrintExtensions();
-                PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
-                PyRevitCLIExtensionCmds.PrintExtensionLookupSources();
-                PyRevitCLIRevitCmds.PrintLocalRevits();
-                PyRevitCLIRevitCmds.PrintLocalRevits(running: true);
-                PrinUserEnv();
+            var userProfilePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (json) {
+                var envJson = CreateEnvJson();
+                Console.WriteLine(redact ? PyRevitEnvRedactor.RedactJson(envJson, userProfilePath, Environment.UserName) : envJson);
             }
+            else if (redact)
+                PyRevitEnvRedactor.RunRedacted(() => PrintEnvReport(redact: true), userProfilePath, Environment.UserName);
+            else
+                PrintEnvReport(redact: false);
+        }
+
+        private static void
+        PrintEnvReport(bool redact) {
+            PyRevitCLICloneCmds.PrintClones();
+            PyRevitCLICloneCmds.PrintAttachments();
+            PyRevitCLIExtensionCmds.PrintExtensions();
+            PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
+            PyRevitCLIExtensionCmds.PrintExtensionLookupSources();
+            PyRevitCLIRevitCmds.PrintLocalRevits();
+            PyRevitCLIRevitCmds.PrintLocalRevits(running: true);
+            PrinUserEnv(redact);
         }
 
         internal static void
-        PrinUserEnv() {
+        EnsurePathEntry(string dir, string scopeName, bool first = false) {
+            var scope = ParsePathScope(scopeName);
+            bool changed = SystemPath.EnsurePathEntry(scope, dir, first);
+            if (first)
+                Console.WriteLine(changed
+                    ? string.Format("Put \"{0}\" first in the {1} PATH.", dir, ScopeName(scope))
+                    : string.Format("\"{0}\" is already first in the {1} PATH.", dir, ScopeName(scope)));
+            else
+                Console.WriteLine(changed
+                    ? string.Format("Added \"{0}\" to the {1} PATH.", dir, ScopeName(scope))
+                    : string.Format("\"{0}\" is already in the {1} PATH.", dir, ScopeName(scope)));
+        }
+
+        /// <summary>
+        /// Prints the full path of every pyRevit CLI found on the machine and user PATH, one per
+        /// line and nothing else, in the order a new terminal resolves <c>pyrevit</c>.
+        /// </summary>
+        /// <remarks>
+        /// The installers read this output to tell whether another install shadows the one they
+        /// just registered, so the first line must stay the copy that runs.
+        /// </remarks>
+        internal static void
+        ListCliCopiesOnPath() {
+            foreach (string cliCopy in SystemPath.FindFileOnPath(CliExecutableName))
+                Console.WriteLine(cliCopy);
+        }
+
+        internal static void
+        RemovePathEntry(string dir, string scopeName) {
+            var scope = ParsePathScope(scopeName);
+            int removed = SystemPath.RemovePathEntries(scope, dir);
+            Console.WriteLine(removed == 0
+                ? string.Format("\"{0}\" is not in the {1} PATH.", dir, ScopeName(scope))
+                : string.Format("Removed {0} occurrence(s) of \"{1}\" from the {2} PATH.",
+                    removed, dir, ScopeName(scope)));
+        }
+
+        internal static void
+        ListPathEntries(string scopeName) {
+            var scope = ParsePathScope(scopeName);
+            Console.WriteLine(string.Format("{0} PATH entries:", ScopeName(scope)));
+            foreach (string entry in SystemPath.GetPathEntries(scope))
+                Console.WriteLine(string.Format("    {0}", entry));
+
+            var duplicates = SystemPath.GetDuplicatePathEntries(scope);
+            if (duplicates.Count > 0) {
+                Console.WriteLine("Duplicated entries:");
+                foreach (string duplicate in duplicates)
+                    Console.WriteLine(string.Format("    {0}", duplicate));
+            }
+        }
+
+        private static EnvironmentVariableTarget ParsePathScope(string scopeName) {
+            EnvironmentVariableTarget scope;
+            if (!SystemPath.TryParseScope(scopeName, out scope))
+                throw new ArgumentException(
+                    string.Format("Unknown PATH scope \"{0}\". Use \"user\" or \"machine\".", scopeName));
+            return scope;
+        }
+
+        private static string ScopeName(EnvironmentVariableTarget scope) {
+            return scope == EnvironmentVariableTarget.Machine ? "Machine" : "User";
+        }
+
+        internal static void
+        PrinUserEnv(bool redact = false) {
             PrintHeader("User Environment");
             Console.WriteLine(UserEnv.GetWindowsVersion());
-            Console.WriteLine(string.Format("Executing User: {0}\\{1}",
-                                            Environment.UserDomainName, Environment.UserName));
-            Console.WriteLine(string.Format("Active User: {0}", UserEnv.GetLoggedInUserName()));
+            Console.WriteLine(string.Format("Executing User: {0}",
+                                            redact
+                                                ? PyRevitEnvRedactor.Placeholder
+                                                : string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName)));
+            Console.WriteLine(string.Format("Active User: {0}",
+                                            redact ? PyRevitEnvRedactor.Placeholder : UserEnv.GetLoggedInUserName()));
             Console.WriteLine(string.Format("Admin Access: {0}", UserEnv.IsRunAsAdmin() ? "Yes" : "No"));
             Console.WriteLine(string.Format("Install Scope: {0}",
                                             PyRevitInstallScope.IsAllUsersInstall() ? "AllUsers" : "PerUser"));
@@ -241,6 +324,8 @@ namespace pyRevitCLI {
             };
             var utilityProcess = Process.Start(cpyProcessInfo);
             utilityProcess.WaitForExit();
+            if (utilityProcess.ExitCode != 0)
+                Environment.ExitCode = utilityProcess.ExitCode;
         }
     }
 }

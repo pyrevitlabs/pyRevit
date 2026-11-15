@@ -88,3 +88,5 @@ tooltip:
 
 
     重置窗口配置并打开
+context:
+  - doc-project

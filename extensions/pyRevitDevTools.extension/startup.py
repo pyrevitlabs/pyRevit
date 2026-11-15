@@ -17,11 +17,12 @@ import sys
 import time
 import os.path as op
 
-from pyrevit import HOST_APP, framework
+from pyrevit import HOST_APP
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import routes
 from pyrevit.compat import get_elementid_value_func
+from pyrevit.revit import events
 
 
 # add your module paths to the sys.path here
@@ -39,14 +40,18 @@ print("lib/ import works in startup.py")
 # test code for creating event handlers =======================================
 # define event handler
 def docopen_eventhandler(sender, args):
-    forms.alert("Document Opened: {}".format(args.PathName))
+    forms.toast("Document Opened: {}".format(args.PathName), title="pyRevitDevTools")
 
 
-# add to DocumentOpening
-# type is EventHandler[DocumentOpeningEventArgs] so create that correctly
-HOST_APP.app.DocumentOpening += framework.EventHandler[
-    DB.Events.DocumentOpeningEventArgs
-](docopen_eventhandler)
+DOCOPEN_HANDLER_SLOT = "pyRevitDevTools.DocumentOpeningHandler"
+
+events.replace_handler(
+    DOCOPEN_HANDLER_SLOT,
+    HOST_APP.app,
+    "DocumentOpening",
+    docopen_eventhandler,
+    DB.Events.DocumentOpeningEventArgs,
+)
 
 
 # test code routes module =====================================================

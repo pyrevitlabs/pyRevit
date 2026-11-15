@@ -42,7 +42,7 @@ def _get_service():
 # Handler
 
 
-class Handler(UI.ITemporaryGraphicsHandler):
+class Handler(UI.ITemporaryGraphicsHandler):  # compat-ignore: imported only on 2022+
     """Base ITemporaryGraphicsHandler implementation.
 
     Subclass and override :meth:`on_click` to react to control clicks.

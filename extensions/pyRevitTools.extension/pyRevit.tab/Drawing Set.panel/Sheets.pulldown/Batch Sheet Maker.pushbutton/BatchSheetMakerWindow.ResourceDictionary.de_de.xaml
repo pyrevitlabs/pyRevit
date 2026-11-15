@@ -17,4 +17,6 @@
     <system:String x:Key="CreateSheets">Blätter erstellen</system:String>
     <system:String x:Key="CreatePlaceholders">Platzhalter erstellen</system:String>
     <system:String x:Key="CreateButton">Erstellen</system:String>
+    <system:String x:Key="SheetParametersLabel">Blattparameter</system:String>
+    <system:String x:Key="SheetParametersHint">Wählen Sie die Parameter, die für jedes in diesem Stapel erstellte Blatt gesetzt werden sollen, und geben Sie jeweils einen Wert ein.</system:String>
 </ResourceDictionary>

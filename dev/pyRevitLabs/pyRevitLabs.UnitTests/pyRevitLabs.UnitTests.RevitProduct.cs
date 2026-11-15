@@ -676,4 +676,110 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
             Assert.AreEqual(SupportedYear, attachable[0].ProductYear);
         }
     }
+    /// <summary>
+    /// Covers versions the host database lists more than once: a hotfix re-released
+    /// under the same file version with a new build (#3859).
+    /// </summary>
+    /// <remarks>
+    /// The registry reports only the file version, so the first lookup of such an
+    /// install cannot pick a record. That is expected, not a database defect: it must
+    /// stay quiet so the startup scan does not pop up a warning, and the binary's
+    /// build number must then resolve the exact release.
+    /// </remarks>
+    [TestClass()]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
+    public class SharedHostVersionTests {
+        private const string Hotfix2021Version = "21.1.80.35";
+        private const string Update2023Version = "23.1.10.4";
+
+        private LoggingConfiguration _previousConfig;
+        private MemoryTarget _capture;
+
+        [TestInitialize()]
+        public void StartCapturingLog() {
+            _previousConfig = LogManager.Configuration;
+            _capture = new MemoryTarget("sharedHostVersion") { Layout = "${level}|${message}" };
+            var config = new LoggingConfiguration();
+            config.AddTarget(_capture);
+            config.AddRuleForAllLevels(_capture);
+            LogManager.Configuration = config;
+            LogManager.ReconfigExistingLoggers();
+        }
+
+        [TestCleanup()]
+        public void StopCapturingLog() {
+            LogManager.Configuration = _previousConfig;
+            LogManager.ReconfigExistingLoggers();
+            _capture?.Dispose();
+        }
+
+        private List<string> Warnings() {
+            return _capture.Logs.Where(line => line.StartsWith("Warn|")).ToList();
+        }
+
+        private static HostProductInfo Record(string release, string version, string build) {
+            return new HostProductInfo {
+                meta = new HostProductInfoMeta { schema = "1.0" },
+                product = "Autodesk Revit",
+                release = release,
+                version = version,
+                build = build,
+                target = "x64"
+            };
+        }
+
+        /// <summary>The records as they stand in pyrevit-hosts.json.</summary>
+        private static List<HostProductInfo> HostDatabaseRecords() {
+            return new List<HostProductInfo>() {
+                Record("2021.1.7", "21.1.70.21", "20220517_1515"),
+                Record("2021.1.8 Hotfix", Hotfix2021Version, "20230515_0935"),
+                Record("2021.1.8 Hotfix (20230515)", Hotfix2021Version, "20230515_1515"),
+                Record("2023.1.1 Update", Update2023Version, "20221122_1550"),
+                Record("2023.1.1.1 Update", Update2023Version, "20221122_1550")
+            };
+        }
+
+        [TestMethod()]
+        public void SharedVersion_DefersToTheBuildWithoutWarning() {
+            var records = HostDatabaseRecords();
+
+            Assert.IsNull(RevitProductData.FindProductInfo(records, Hotfix2021Version,
+                                                            @"C:\Program Files\Autodesk\Revit 2021\"));
+            Assert.IsNull(RevitProductData.FindProductInfo(records, Update2023Version,
+                                                            @"C:\Program Files\Autodesk\Revit 2023\"));
+            CollectionAssert.AreEqual(new List<string>(), Warnings());
+        }
+
+        [TestMethod()]
+        public void SharedVersion_ResolvesExactlyFromTheBinaryBuild() {
+            var records = HostDatabaseRecords();
+
+            Assert.AreEqual("2021.1.8 Hotfix",
+                            RevitProductData.FindProductInfo(records, "20230515_0935(x64)", null, new Version(Hotfix2021Version)).release);
+            Assert.AreEqual("2021.1.8 Hotfix (20230515)",
+                            RevitProductData.FindProductInfo(records, "20230515_1515(x64)", null, new Version(Hotfix2021Version)).release);
+            CollectionAssert.AreEqual(new List<string>(), Warnings());
+        }
+
+        [TestMethod()]
+        public void SharedVersion_NamedReleaseStillResolves() {
+            var records = HostDatabaseRecords();
+
+            Assert.AreEqual("2021.1.8 Hotfix (20230515)",
+                            RevitProductData.FindProductInfo(records, "2021.1.8 Hotfix (20230515)").release);
+        }
+
+        [TestMethod()]
+        public void BuildSharedAcrossProductYears_StillWarns() {
+            var records = new List<HostProductInfo>() {
+                Record("2020.2.9", "20.2.90.12", "20220517_1515"),
+                Record("2021.1.7", "21.1.70.21", "20220517_1515")
+            };
+
+            Assert.IsNull(RevitProductData.FindProductInfo(records, "20220517_1515"));
+            Assert.AreEqual(1, Warnings().Count);
+            StringAssert.Contains(Warnings()[0], "Ambiguous host product");
+        }
+    }
 }

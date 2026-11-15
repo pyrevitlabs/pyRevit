@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
@@ -122,21 +123,25 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
-        public void DisposedRuntimeIgnoresFurtherRecords()
+        public void DisposedRuntimeKeepsDeferredLoggingBoundToItsCommand()
         {
             var path = Path.Combine(_tempDirectory, "disposed.log");
             var runtime = CreateRuntime(suppressOutput: true, logFilePath: path);
             var service = ScriptLoggerService.GetForRuntime(runtime);
+            runtime.ScriptRuntimeConfigs.LogFilePath = null;
+            runtime.ScriptRuntimeConfigs.SuppressOutput = false;
             SetProperty(runtime, "IsDisposed", true);
 
+            Assert.That(runtime.LoggerService, Is.SameAs(service));
             service.Log("tests", (int)ScriptLogLevel.Error, "late record");
 
-            Assert.That(File.Exists(path), Is.False);
-            Assert.That(service.HasErrors, Is.False);
+            Assert.That(File.ReadAllText(path), Does.Contain(
+                "ERROR [<Test Command> tests] late record"));
+            Assert.That(service.HasErrors, Is.True);
         }
 
         [Test]
-        public void DisposedRuntimeResolutionUsesSessionService()
+        public void DisposedRuntimeWithoutAServiceUsesSessionService()
         {
             var runtime = CreateRuntime(suppressOutput: true);
             SetProperty(runtime, "IsDisposed", true);
@@ -144,6 +149,35 @@ namespace pyRevitExtensionParserTester
             Assert.That(
                 ScriptLoggerService.GetForRuntime(runtime),
                 Is.SameAs(ScriptLoggerService.GetDefault()));
+        }
+
+        [Test]
+        public void DeferredForwardedRecordsAreNotHeldByDisposedCommandOutput()
+        {
+            var runtime = CreateRuntime(suppressOutput: true);
+            SetProperty(runtime, "IsDisposed", true);
+            var output = (ScriptOutput)FormatterServices.GetUninitializedObject(
+                typeof(ScriptOutput));
+            var heldRecords = new HeldRecordBuffer(10);
+            SetField(output, "_runtime", new WeakReference<ScriptRuntime>(runtime));
+            SetField(output, "_heldRecords", heldRecords);
+
+            output.write_forwarded_log_record("deferred error", markError: true);
+
+            Assert.That(heldRecords.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void RuntimeOutputWindowIsTrackedForDeferredWrites()
+        {
+            var output = (ScriptOutput)FormatterServices.GetUninitializedObject(
+                typeof(ScriptOutput));
+            var window = (ScriptConsole)FormatterServices.GetUninitializedObject(
+                typeof(ScriptConsole));
+
+            output.TrackRuntimeWindow(window);
+
+            Assert.That(output.IsWindowReady, Is.True);
         }
 
         [TestCase(ScriptLogLevel.Debug, "DEBUG [sample] value <tag>")]
@@ -200,6 +234,14 @@ namespace pyRevitExtensionParserTester
             target.GetType().GetProperty(
                 propertyName,
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .SetValue(target, value);
+        }
+
+        private static void SetField(object target, string fieldName, object value)
+        {
+            target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic)
                 .SetValue(target, value);
         }
 

@@ -64,6 +64,47 @@ class ScriptLoggerTests(unittest.TestCase):
         for level in ("success", "deprecate", "dev_log"):
             self.assertTrue(callable(getattr(self.logger, level)))
 
+    def test_logger_created_without_runtime_resolves_active_service_later(self):
+        """A session-created logger follows the command that becomes active."""
+        from pyrevit.coreutils import logger
+
+        original_exec_params = logger.EXEC_PARAMS
+        original_resolve_service = logger._resolve_service
+        service = object()
+        logger.EXEC_PARAMS = type(
+            "ExecutorParamsWithoutRuntime", (object,), {"script_runtime": None}
+        )()
+        logger._resolve_service = lambda: service
+        try:
+            bound_logger = logger.get_bound_logger("deferred-command")
+
+            self.assertIsNone(bound_logger._bound_service)
+            self.assertIs(service, bound_logger._get_service())
+        finally:
+            logger.EXEC_PARAMS = original_exec_params
+            logger._resolve_service = original_resolve_service
+
+    def test_bound_logger_can_create_its_output_window(self):
+        """Command-bound loggers can open their captured output window."""
+        from pyrevit.coreutils import logger
+
+        class Service(object):
+            def Log(self, name, level, message, allow_window_creation):
+                self.allow_window_creation = allow_window_creation
+
+        service = Service()
+        logger.LoggerWrapper("bound-command", service)._emit(40, "message")
+        self.assertTrue(service.allow_window_creation)
+
+        original_resolve_service = logger._resolve_service
+        logger._resolve_service = lambda: service
+        try:
+            logger.LoggerWrapper("unbound-command")._emit(40, "message")
+        finally:
+            logger._resolve_service = original_resolve_service
+
+        self.assertFalse(service.allow_window_creation)
+
 
 class BundleFileTests(unittest.TestCase):
     """Bundle resource resolution relative to the command bundle."""

@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
 #define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "7.0.0.26278"
+#define MyAppVersion "7.1.0.26319"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #include "CodeDependencies.iss"
@@ -70,14 +70,6 @@ Source: "..\site-packages\*"; DestDir: "{app}\site-packages"; Flags: ignoreversi
 Source: "..\release\.pyrevitargs"; DestDir: "{app}"; Flags: ignoreversion; Components: core dev learn
 Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: core dev learn
 
-[Registry]
-; Uninstaller does not undo this change
-; Multiple installs keep adding the path
-; When run as admin, HKCU would be the elevated user's; PATH is set in CurStepChanged via ExecAsOriginalUser instead.
-; https://stackoverflow.com/a/3431379/2350244
-; https://stackoverflow.com/a/9962307/2350244 (mod path module)
-Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Check: NotAdminAndPathNotExists
-
 [Run]
 Filename: "{app}\bin\pyrevit.exe"; Description: "Clearing caches..."; Parameters: "caches clear --all"; Flags: runhidden; Check: not IsAdmin
 Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden; Check: not IsAdmin
@@ -89,22 +81,9 @@ Filename: "{app}\bin\pyrevit.exe"; Description: "Seeding extension defaults...";
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemoveMcpServers"; Parameters: "mcp uninstall --all --owned"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemovePathEntry"; Parameters: "env path remove ""{app}\bin"" --scope=user"; Flags: runhidden
 
 [Code]
-function NotAdminAndPathNotExists: Boolean;
-var
-  OrigPath: String;
-  AppPath: String;
-begin
-  Result := not IsAdmin;
-  if Result then
-  begin
-    AppPath := ExpandConstant('{app}\bin');
-    if RegQueryStringValue(HKCU, 'Environment', 'Path', OrigPath) then
-      Result := Pos(';' + Uppercase(AppPath) + ';', ';' + Uppercase(OrigPath) + ';') = 0;
-  end;
-end;
-
 function RunPyRevitCommand(const Params: String): Boolean;
 var
   ResultCode: Integer;
@@ -139,30 +118,55 @@ begin
     Log('Elevated install: pyrevit configs seedshippeddefaults failed for original user');
 end;
 
-procedure CurStepChanged(CurStep: TSetupStep);
+function FindShadowingPyRevitExe: String;
 var
-  Params: String;
-  InstallPathEscaped: String;
   ResultCode: Integer;
+  Output: TExecOutput;
+  PyRevitExe: String;
 begin
-  if (CurStep = ssPostInstall) and IsAdmin then
+  Result := '';
+  PyRevitExe := ExpandConstant('{app}\bin\pyrevit.exe');
+  if not ExecAndCaptureOutput(PyRevitExe, 'env path which', ExpandConstant('{app}\bin'), SW_HIDE, ewWaitUntilTerminated, ResultCode, Output) then
   begin
-    RunElevatedUserPostInstallCommands;
-    InstallPathEscaped := ExpandConstant('{app}\bin');
-    StringChangeEx(InstallPathEscaped, '''', '''''', True);
-    Params := '-NoProfile -ExecutionPolicy Bypass -Command "' +
-      '$appPath = ''' + InstallPathEscaped + ''';' +
-      '$userPath = [Environment]::GetEnvironmentVariable(''Path'', ''User'');' +
-      'if ($userPath -notlike "' + '"*$appPath*"' + '") {' +
-      '  [Environment]::SetEnvironmentVariable(''Path'', $userPath + '';'' + $appPath, ''User'')' +
-      '}"';
-    if ExecAsOriginalUser(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
-      Log('Added install path to original user PATH')
+    Log('Failed to execute pyrevit env path which');
+    Exit;
+  end;
+  if (ResultCode <> 0) or (GetArrayLength(Output.StdOut) = 0) then
+    Exit;
+  if CompareText(Trim(Output.StdOut[0]), PyRevitExe) <> 0 then
+    Result := Trim(Output.StdOut[0]);
+end;
+
+procedure WarnIfShadowedOnPath;
+var
+  ShadowingExe: String;
+begin
+  ShadowingExe := FindShadowingPyRevitExe;
+  if ShadowingExe = '' then
+    Exit;
+  Log('Another pyrevit.exe precedes this install on PATH: ' + ShadowingExe);
+  SuppressibleMsgBox(
+    'pyRevit was installed, but another pyrevit.exe comes earlier in the PATH environment variable. The "pyrevit" command keeps running that one:' + #13#10 +
+    '  ' + ShadowingExe + #13#10 + #13#10 +
+    'Update or uninstall that installation, or run this one by its full path:' + #13#10 +
+    '  ' + ExpandConstant('{app}\bin\pyrevit.exe'),
+    mbError, MB_OK, MB_OK);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+  begin
+    if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=user --first') then
+      SuppressibleMsgBox(
+        'pyRevit was installed, but the installer could not register the install folder in your user PATH environment variable.' + #13#10 + #13#10 +
+        'You may need to manually add the following folder to your user PATH:' + #13#10 +
+        '  ' + ExpandConstant('{app}\bin'),
+        mbError, MB_OK, MB_OK)
     else
-    begin
-      Log('ExecAsOriginalUser failed or non-zero exit when adding PATH');
-      MsgBox('pyRevit was installed, but the installer could not update the original user PATH environment variable.' + #13#10 + #13#10 + 'You may need to manually add the following folder to your user PATH, or re-run the installer without administrative privileges:' + #13#10 + '  ' + ExpandConstant('{app}\bin'), mbError, MB_OK);
-    end;
+      WarnIfShadowedOnPath;
+    if IsAdmin then
+      RunElevatedUserPostInstallCommands;
   end;
 end;
 

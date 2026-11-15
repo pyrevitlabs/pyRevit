@@ -8,6 +8,7 @@ process-wide builtins used by live engines.
 import ast
 import io
 import os
+import sys
 import unittest
 
 try:
@@ -37,10 +38,23 @@ def _load(relative_path, names, namespace):
     for name in ("__revit__", "__scriptruntime__", "__eventargs__", "__eventsender__"):
         isolated_builtins.pop(name, None)
     namespace["__builtins__"] = isolated_builtins
+    namespace["sys"] = sys
+    namespace["_EXEC_PARAMS_NOT_SET"] = object()
     tree = ast.parse(_source(relative_path))
+    names = set(names)
+    names.add("_get_execution_scope_value")
     tree.body = [node for node in tree.body if getattr(node, "name", None) in names]
     exec(compile(tree, relative_path, "exec"), namespace)
     return namespace
+
+
+def _call_stack_holds_script_runtime():
+    frame = sys._getframe(1)
+    while frame:
+        if "__scriptruntime__" in frame.f_globals:
+            return True
+        frame = frame.f_back
+    return False
 
 
 class _Application(object):
@@ -137,6 +151,45 @@ class HostHandleTests(unittest.TestCase):
             )
         )
         self.assertEqual(self.scope["_DocsGetter"]().doc, "changed-document")
+
+    def test_executor_params_use_deferred_execution_scope(self):
+        """A retained callback reads its command values after builtins change."""
+        params = self.scope["_ExecutorParams"]()
+        builtins_scope = self.scope["__builtins__"]
+        builtins_scope.update(
+            {
+                "__scriptruntime__": "second runtime",
+                "__commandname__": "SecondCommand",
+                "__commandpath__": "second/path",
+                "__commanduniqueid__": "second-id",
+            }
+        )
+        execution_scope = {
+            "__builtins__": builtins_scope,
+            "__scriptruntime__": "first runtime",
+            "__commandname__": "Measure",
+            "__commandpath__": "first/path",
+            "__commanduniqueid__": "first-id",
+        }
+        exec(
+            "def deferred_callback(params):\n"
+            "    return (params.script_runtime, params.command_name,\n"
+            "            params.command_path, params.command_uniqueid)\n",
+            execution_scope,
+        )
+
+        self.assertEqual(
+            execution_scope["deferred_callback"](params),
+            ("first runtime", "Measure", "first/path", "first-id"),
+        )
+
+    def test_executor_params_fall_back_to_builtins_without_execution_scope(self):
+        """Command values come from the builtins when no caller holds a script scope."""
+        if _call_stack_holds_script_runtime():
+            self.skipTest("a hosted caller's script scope always takes precedence")
+        params = self.scope["_ExecutorParams"]()
+        self.scope["__builtins__"].update({"__commandname__": "SecondCommand"})
+        self.assertEqual(params.command_name, "SecondCommand")
 
     def test_none_metadata_is_safe(self):
         """Metadata returns None and version comparisons return False without a host."""

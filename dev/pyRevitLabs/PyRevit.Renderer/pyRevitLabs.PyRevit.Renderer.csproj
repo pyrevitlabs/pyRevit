@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <UseWpf>true</UseWpf>
+
+        <Platforms>x64</Platforms>
+        <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+
+        <AssemblyName>pyRevitLabs.PyRevit.Renderer</AssemblyName>
+        <RootNamespace>PyRevitLabs.PyRevit.Renderer</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
+    </ItemGroup>
+</Project>

@@ -1,0 +1,18 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="kind_area">面积</sys:String>
+    <sys:String x:Key="kind_room">房间</sys:String>
+    <sys:String x:Key="kind_space">空间</sys:String>
+    <sys:String x:Key="column_element">图元</sys:String>
+    <sys:String x:Key="column_number">编号</sys:String>
+    <sys:String x:Key="column_name">名称</sys:String>
+    <sys:String x:Key="column_level">标高</sys:String>
+    <sys:String x:Key="column_area">面积</sys:String>
+    <sys:String x:Key="skipped_title">已跳过（未放置）</sys:String>
+    <sys:String x:Key="total_found">共找到：{}</sys:String>
+    <sys:String x:Key="average_area">平均面积：{}</sys:String>
+    <sys:String x:Key="average_area_alt">{:.4f} 英亩 · {:.4f} 公顷</sys:String>
+    <sys:String x:Key="select_spatial_element">请至少选择一个房间、面积或空间。</sys:String>
+</ResourceDictionary>

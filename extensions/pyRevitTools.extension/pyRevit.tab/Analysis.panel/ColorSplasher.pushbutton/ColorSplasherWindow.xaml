@@ -15,6 +15,13 @@
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
+        <Style x:Key="PromptTextStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="6,2,0,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitSubtleForegroundBrush}"/>
+        </Style>
     </Window.Resources>
     
     <Grid Margin="12,0,12,12">
@@ -58,8 +65,12 @@
         <!-- Category Dropdown -->
         <ComboBox x:Name="_categories" Grid.Column="0" Grid.Row="1"
                   Height="20" Margin="0,2,0,0" FontSize="12"
-                  DisplayMemberPath="Key"
+                  DisplayMemberPath="name"
+                  SelectionChanged="category_changed"
                   ToolTip="{DynamicResource ColorSplasher.Tooltips.CategorySelection}"/>
+        <TextBlock x:Name="_txt_category_prompt" Grid.Column="0" Grid.Row="1"
+                   Style="{StaticResource PromptTextStyle}"
+                   Text="{DynamicResource ColorSplasher.Messages.SelectCategory}"/>
 
         <!-- Save / Load Color Scheme Button -->
         <Button x:Name="_button_save_load_scheme" Grid.Column="2" Grid.Row="1"
@@ -82,10 +93,13 @@
         <!-- Search TextBox -->
         <TextBox x:Name="_search_box" Grid.Column="0" Grid.Row="3"
                  Height="20" Margin="0,0,0,0"
-                 FontSize="11" GotFocus="search_box_enter" LostFocus="search_box_leave"
-                 TextChanged="on_search_text_changed"
+                 FontSize="11"
+                 TextChanged="search_text_changed"
                  VerticalContentAlignment="Center"
                  ToolTip="{DynamicResource ColorSplasher.Tooltips.SearchParameters}"/>
+        <TextBlock x:Name="_txt_search_prompt" Grid.Column="0" Grid.Row="3"
+                   Style="{StaticResource PromptTextStyle}"
+                   Text="{DynamicResource ColorSplasher.Placeholders.SearchParameters}"/>
 
         <!-- Gradient Colors Button -->
         <Button x:Name="_button_gradient_colors" Grid.Column="2" Grid.Row="3"
@@ -95,11 +109,15 @@
                 ToolTip="{DynamicResource ColorSplasher.Tooltips.GradientColors}"/>
 
         <!-- Parameters Dropdown -->
-        <ComboBox x:Name="_list_box1" Grid.Column="0" Grid.Row="4"
+        <ComboBox x:Name="_parameters" Grid.Column="0" Grid.Row="4"
                   Height="20" Margin="0,4,0,0" FontSize="12"
-                  DisplayMemberPath="Key"
-                  SelectionChanged="check_item"
+                  DisplayMemberPath="name"
+                  SelectionChanged="parameter_changed"
                   ToolTip="{DynamicResource ColorSplasher.Tooltips.ParameterSelection}"/>
+        <TextBlock x:Name="_txt_parameter_prompt" Grid.Column="0" Grid.Row="4"
+                   Style="{StaticResource PromptTextStyle}"
+                   Margin="6,4,0,0"
+                   Text="{DynamicResource ColorSplasher.Messages.SelectParameter}"/>
 
         <!-- Random Colors Button -->
         <Button x:Name="_button_random_colors" Grid.Column="2" Grid.Row="4"
@@ -127,15 +145,21 @@
 
         <!-- Values ListBox - Extended to bottom, aligned with Set Colors button bottom -->
         <Grid Grid.Column="0" Grid.Row="6" Grid.RowSpan="10" Margin="0,2,0,0">
-            <!-- Virtualization is off so every row owns a container: the assigned
-                 colour is painted onto the ListBoxItem itself by
-                 _update_listbox_colors(), which can only reach realized containers. -->
-            <ListBox x:Name="list_box2"
-                     DisplayMemberPath="Key"
+            <ListBox x:Name="_values_list"
+                     DisplayMemberPath="name"
                      FontSize="11"
                      VerticalAlignment="Stretch"
-                     VirtualizingStackPanel.IsVirtualizing="False"
-                     ToolTip="{DynamicResource ColorSplasher.Tooltips.ValuesColorAssignment}"/>
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     SelectionChanged="value_clicked"
+                     ToolTip="{DynamicResource ColorSplasher.Tooltips.ValuesColorAssignment}">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListBoxItem}"
+                           BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                        <Setter Property="Background" Value="{Binding background_brush}"/>
+                        <Setter Property="Foreground" Value="{Binding foreground_brush}"/>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+            </ListBox>
             <TextBlock x:Name="_txt_placeholder_values"
                        Text="{DynamicResource ColorSplasher.Placeholders.SelectCategoryAndParameter}"
                        HorizontalAlignment="Center"
@@ -152,21 +176,18 @@
         <CheckBox x:Name="_chk_line_color" Grid.Column="2" Grid.Row="6"
                   Content="{DynamicResource ColorSplasher.Checkboxes.ApplyLineColor}"
                   FontSize="11" Margin="0,2,0,0"
-                  Checked="checkbox_changed" Unchecked="checkbox_changed"
                   ToolTip="{DynamicResource ColorSplasher.Tooltips.ApplyLineColor}"/>
 
         <!-- Checkbox: Foreground Pattern Color -->
         <CheckBox x:Name="_chk_foreground_pattern" Grid.Column="2" Grid.Row="7"
                   Content="{DynamicResource ColorSplasher.Checkboxes.ApplyForegroundPattern}"
                   FontSize="11" Margin="0,2,0,0"
-                  Checked="checkbox_changed" Unchecked="checkbox_changed"
                   ToolTip="{DynamicResource ColorSplasher.Tooltips.ApplyForegroundPattern}"/>
 
         <!-- Checkbox: Background Pattern Color -->
         <CheckBox x:Name="_chk_background_pattern" Grid.Column="2" Grid.Row="8"
                   Content="{DynamicResource ColorSplasher.Checkboxes.ApplyBackgroundPattern}"
                   FontSize="11" Margin="0,2,0,0"
-                  Checked="checkbox_changed" Unchecked="checkbox_changed"
                   ToolTip="{DynamicResource ColorSplasher.Tooltips.ApplyBackgroundPattern}"/>
 
         <!-- Create Legend Button -->
@@ -184,7 +205,7 @@
                 ToolTip="{DynamicResource ColorSplasher.Tooltips.CreateViewFilters}"/>
 
         <!-- Warning Message (Hidden by default) -->
-        <TextBlock x:Name="_txt_block5" Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="14"
+        <TextBlock x:Name="_txt_color_scheme_hint" Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="14"
                    Text="{DynamicResource ColorSplasher.Messages.SpacesColorScheme}"
                    FontSize="12" Foreground="Red" TextDecorations="Underline"
                    Margin="0,5,0,0" Visibility="Collapsed"/>

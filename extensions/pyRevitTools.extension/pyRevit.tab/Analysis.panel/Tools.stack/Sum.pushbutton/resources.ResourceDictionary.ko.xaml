@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="all_selected">선택한 모든 요소</sys:String>
+    <sys:String x:Key="sum_prompt">합산할 매개변수:</sys:String>
+    <sys:String x:Key="no_shared_params">선택한 요소가 공유하는 합산 가능한 숫자 매개변수가 없습니다.</sys:String>
+    <sys:String x:Key="sum_of_parameter">{} 합계</sys:String>
+    <sys:String x:Key="summary_title">합계</sys:String>
+    <sys:String x:Key="column_group">그룹</sys:String>
+    <sys:String x:Key="column_elements">요소</sys:String>
+    <sys:String x:Key="column_total">합계</sys:String>
+    <sys:String x:Key="breakdown_title">상세 내역: {}</sys:String>
+    <sys:String x:Key="column_element">요소</sys:String>
+    <sys:String x:Key="column_value">값</sys:String>
+    <sys:String x:Key="total">합계</sys:String>
+</ResourceDictionary>

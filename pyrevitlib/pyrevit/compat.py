@@ -165,18 +165,20 @@ def urlopen(url):
     return urllib2.urlopen(url)
 
 
-def make_request(url, headers, data):
+def make_request(url, headers, data, timeout=None):
     """Urlopen wrapper to create and send a request.
 
     Args:
         url (str): request url
         headers (dict[str, str]): headers
         data (bytes | None): request data
+        timeout (float | None): socket timeout in seconds; None keeps the default.
     """
+    timeout_kwargs = {} if timeout is None else {"timeout": timeout}
     if PY3:
         req = urllib.request.Request(url, headers, data)
-        urllib.request.urlopen(req).close()
+        urllib.request.urlopen(req, **timeout_kwargs).close()
         return
 
     req = urllib2.Request(url, headers, data)
-    urllib2.urlopen(req).close()
+    urllib2.urlopen(req, **timeout_kwargs).close()

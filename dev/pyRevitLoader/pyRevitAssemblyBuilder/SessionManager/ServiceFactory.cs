@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
@@ -45,7 +46,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <returns>A new IExtensionManagerService instance.</returns>
         public static IExtensionManagerService CreateExtensionManagerService(int revitYear = 0, UIApplication? uiApplication = null, ILogger? logger = null)
         {
-            return new ExtensionManagerService(revitYear, uiApplication, logger);
+            Func<string?>? revitUsernameProvider = uiApplication == null
+                ? null
+                : () => uiApplication.Application?.Username;
+            return new ExtensionManagerService(revitYear, revitUsernameProvider, logger);
         }
 
         /// <summary>
@@ -134,7 +138,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         public static IButtonBuilderFactory CreateButtonBuilderFactory(ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext, SmartButtonScriptInitializer smartButtonScriptInitializer)
         {
             // Create individual button builders
-            var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
+            var linkButtonBuilder = new LinkButtonBuilder(buildContext, logger, buttonPostProcessor);
             var pushButtonBuilder = new PushButtonBuilder(logger, buttonPostProcessor, smartButtonScriptInitializer);
             var panelButtonBuilder = new PanelButtonBuilder(logger, buttonPostProcessor);
             var pulldownButtonBuilder = new PulldownButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
@@ -163,7 +167,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <returns>A new IStackBuilder instance.</returns>
         public static IStackBuilder CreateStackBuilder(ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext, SmartButtonScriptInitializer smartButtonScriptInitializer)
         {
-            var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
+            var linkButtonBuilder = new LinkButtonBuilder(buildContext, logger, buttonPostProcessor);
             var pulldownButtonBuilder = new PulldownButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
             var splitButtonBuilder = new SplitButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
 
@@ -236,11 +240,16 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="buildStrategy">The build strategy to use for assembly generation.</param>
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <returns>A new ISessionManagerService instance.</returns>
+        /// <remarks>
+        ///     Important: configuration invalidation must remain before <see cref="CreateLogger"/> and <see cref="UIManagerService"/> construction; moving it later reinstates stale session settings from issue #3776.
+        /// </remarks>
         public static ISessionManagerService CreateSessionManagerService(
             string revitVersion,
             AssemblyBuildStrategy buildStrategy,
             UIApplication uiApplication)
         {
+            PyRevitConfig.ClearCache();
+
             // Create logger first - it's used by all other services.
             var logger = CreateLogger();
             ExtensionParser.SetLogger(new ExtensionParserLoggerAdapter(logger));
@@ -304,6 +313,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="ribbonScanner">Custom ribbon scanner service.</param>
         /// <param name="logger">Custom logger.</param>
         /// <returns>A new ISessionManagerService instance.</returns>
+        /// <remarks>Callers injecting custom services own configuration freshness; this overload does not invalidate the shared configuration.</remarks>
         public static ISessionManagerService CreateSessionManagerService(
             IAssemblyBuilderService assemblyBuilder,
             IExtensionManagerService extensionManager,

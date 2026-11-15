@@ -21,14 +21,14 @@ if not revclouds:
 src_comment = None
 for el in selection.elements:
     if isinstance(el, DB.RevisionCloud):
-        cparam = el.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+        cparam = el.get_Parameter(DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)
         src_comment = cparam.AsString()
 
 # find matching clouds
 if src_comment:
     clouds = []
     for revcloud in revclouds:
-        cparam = revcloud.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+        cparam = revcloud.get_Parameter(DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)
         dest_comment = cparam.AsString()
         if src_comment == dest_comment:
             clouds.append(revcloud.Id)

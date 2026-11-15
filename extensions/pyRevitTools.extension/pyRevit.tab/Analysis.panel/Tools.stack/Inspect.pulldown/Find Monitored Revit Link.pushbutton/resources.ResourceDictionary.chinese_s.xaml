@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_monitored_links">所选图元未监视任何 Revit 链接。</sys:String>
+    <sys:String x:Key="table_title">被监视的 Revit 链接</sys:String>
+    <sys:String x:Key="column_element">图元</sys:String>
+    <sys:String x:Key="column_link">Revit 链接</sys:String>
+</ResourceDictionary>

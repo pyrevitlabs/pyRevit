@@ -25,7 +25,11 @@ if revisions:
             print("-" * 100)
             for s in updated_sheets:
                 snum = (
-                    s.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString().rjust(10)
+                    s.get_Parameter(DB.BuiltInParameter.SHEET_NUMBER)
+                    .AsString()
+                    .rjust(10)
                 )
-                sname = s.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString().ljust(50)
+                sname = (
+                    s.get_Parameter(DB.BuiltInParameter.SHEET_NAME).AsString().ljust(50)
+                )
                 print("NUMBER: {0}   NAME:{1}".format(snum, sname))

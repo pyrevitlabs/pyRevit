@@ -1155,7 +1155,7 @@
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
                         </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
+                        <Trigger SourceName="border" Property="IsMouseOver" Value="True">
                             <Setter TargetName="header" Property="TextElement.Foreground" Value="{DynamicResource pyRevitAccentBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">

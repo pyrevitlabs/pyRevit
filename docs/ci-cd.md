@@ -15,7 +15,7 @@ Feature work branches from **`develop`**. Changes reach **`develop`** and **`mas
 
 ## Workflow architecture
 
-pyRevit's pipeline is split across workflows in [`.github/workflows/`](https://github.com/pyrevitlabs/pyRevit/tree/develop/.github/workflows), each invoking the ModularPipelines console project via `dotnet run`:
+pyRevit's build and release pipeline is split across workflows in [`.github/workflows/`](https://github.com/pyrevitlabs/pyRevit/tree/develop/.github/workflows), each invoking the ModularPipelines console project via `dotnet run`. The documentation and issue-housekeeping workflows are listed last:
 
 | Workflow | File | What it does |
 |----------|------|--------------|
@@ -23,7 +23,9 @@ pyRevit's pipeline is split across workflows in [`.github/workflows/`](https://g
 | **`pyRevit WIP`** | [`wip.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/wip.yml) | **Reusable workflow** (`workflow_call`) — it has no trigger of its own. The **`wip` job** of `ci.yml` calls it on `develop` pushes to the main repo. It downloads the CI artifacts, runs `dotnet run -- pack sign` under the **`production`** environment, and uploads signed WIP installers. Because it runs as a job, WIP activity appears **inside the `pyRevit CI` run**, not as a separate workflow run. |
 | **`pyRevit Release`** | [`release.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/release.yml) | On `v*` tag pushes, waits for CI, runs `dotnet run -- release pack sign publish` under **`production`**, attaches signed `bin-v{version}.zip` to the draft GitHub Release, then notifies linked issues. |
 | **`Update Winget manifests`** | [`winget.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/winget.yml) | After a GitHub release is **published**, runs `dotnet run -- winget` to submit WinGet manifest PRs. Strips `ElevationRequirement: elevationProhibited` from generated user-scope installers before submit (see Troubleshooting). |
-| **`pyRevit Revit integration tests`** | [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) | Signs `bin/` with a throwaway certificate, launches every supported Revit year, and fails if any of them shows the unsigned add-in dialog. Needs a self-hosted runner with Revit; see [Revit integration tests](#revit-integration-tests). |
+| **`pyRevit Revit integration tests`** | [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) | Signs `bin/` with a throwaway certificate, launches Revit 2022-2027 by default, and fails if any of them shows the unsigned add-in dialog. Needs a self-hosted runner with Revit; see [Revit integration tests](#revit-integration-tests). |
+| **`pyRevitDocsCI`** | [`docs.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs.yml) | Builds the mkdocs site and deploys it with `mkdocs gh-deploy`. Runs on pushes to the `docs` branch that touch `mkdocs.yml`, `docs/`, `pyrevitlib/` or root `*.md` files, on PRs into `master` with the same paths, and on manual dispatch. It does not use the ModularPipelines project. |
+| **`issues-manager`**, **`Close inactive issues`** | [`issues-manager.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/issues-manager.yml), [`stale-issues.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/stale-issues.yml) | Issue housekeeping: slash commands and the `needs-more-info` follow-up on comments, and a daily job that marks `needs-more-info` issues stale after 60 days without activity and closes them 14 days later. |
 
 The CI **`notify`** job (develop pushes only) runs `dotnet run -- notify` inline in `ci.yml` with `issues: write` and does **not** use the `production` environment. It `needs` both `build` and `wip`, so a failed WIP pack also holds back the notification.
 
@@ -35,6 +37,10 @@ This split guarantees that:
 - the `.nupkg` itself carries a NuGet author signature so Chocolatey clients can verify it.
 
 ## Revit integration tests
+
+!!! warning "Existing workflow differs from testing policy"
+
+    The [repository testing policy](testing.md#repository-testing-policy) requires every test using the Revit API or requiring installed/running Revit to run locally outside CI. All other first-party automated suites must be discovered and run in CI. The workflow described below still launches Revit on pushes to `develop`; moving Revit testing entirely out of CI is pending implementation. This section records current wiring, not the target policy.
 
 GitHub-hosted runners cannot run Revit, so [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) targets a self-hosted runner labelled `self-hosted, windows, revit`. It answers one question the unit tests cannot: **does Revit load the build without the unsigned add-in dialog?**
 
@@ -62,7 +68,7 @@ The job does not run for pull requests, and in particular never for fork PRs. It
 
 ### Verified support matrix
 
-Confirmed on a Windows 11 host with Revit 2021-2027 installed, using a self-signed code-signing certificate in `CurrentUser\Root` plus `CurrentUser\TrustedPublisher`:
+Result of running the job on a Windows 11 host with Revit 2021-2027 installed, using a self-signed code-signing certificate in `CurrentUser\Root` plus `CurrentUser\TrustedPublisher`:
 
 | Revit | Engine | Result |
 |---|---|---|
@@ -87,6 +93,10 @@ Doc-only or other out-of-scope changes skip CI entirely.
 !!! note "New commits to an open PR do re-run CI"
 
     The pull-request trigger includes `synchronize`, so every push to an open PR's head branch starts a fresh run — no need to close and reopen to get one after fixes. Concurrency is keyed by `pyrevit-ci-<pr number>` with `cancel-in-progress`, so a push supersedes the PR's previous run instead of queueing behind it.
+
+!!! warning "Anything the `build` job runs must be inside the filter"
+
+    The filter decides whether a change is verified at all. The host-free suites live under `dev/scripts`, which the filter covers. A suite outside the filter could be broken or deleted without triggering a run, and on a `v*` tag a missing CI run also blocks `release.yml`, since it polls for that CI run. When adding a step to the `build` job, add its inputs to both `paths:` lists in the same change.
 
 ### Official repository vs forks
 
@@ -154,13 +164,13 @@ See also [`build/README.md`](../build/README.md) and the [developer guide](dev-g
 
 ## Cutting a release (tag-driven)
 
-Releases are no longer auto-triggered by merging into `master`. A maintainer runs through the ritual below, and pushing the `v<version>` tag triggers `ci.yml` (rebuild on the tagged SHA) and `release.yml` (waits for CI, then signs and publishes) in parallel.
+Merging into `master` does not trigger a release. A maintainer runs through the ritual below, and pushing the `v<version>` tag triggers `ci.yml` (rebuild on the tagged SHA) and `release.yml` (waits for CI, then signs and publishes) in parallel.
 
 ### Pre-flight
 
 - Confirm **`develop`** is green: the latest `pyRevit CI` run on `develop` succeeded and its **`wip` job** produced the signed artifact (`pyrevit-wip-installers-<install-version>`). The WIP job is part of that run, not a workflow of its own — check it in the run's job list.
 - Confirm `pyrevitlib/pyrevit/version` and `release/version` reflect the version you intend to publish. `release.yml` hard-fails if the tag name does not match `pyrevitlib/pyrevit/version`.
-- On **tag** pushes, CI preserves the committed build version (including the `+HHMM` suffix) from git. **`develop`** and **`master`** branch pushes still re-stamp the build number as before.
+- On **tag** pushes, CI preserves the committed build version (including the `+HHMM` suffix) from git. **`develop`** and **`master`** branch pushes re-stamp the build number.
 - Make sure the required secrets are configured in the **`production`** GitHub environment:
 
     - `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_ENDPOINT`, `AZURE_CODE_SIGNING_NAME`, `AZURE_CERT_PROFILE_NAME`
@@ -199,7 +209,7 @@ Releases are no longer auto-triggered by merging into `master`. A maintainer run
 
 4. Pushing the tag triggers two workflows in parallel:
 
-    - **`ci.yml`** rebuilds DLLs on the tagged commit and uploads `unsigned-bin-<sha>` (DLLs only; installers are no longer built in CI).
+    - **`ci.yml`** rebuilds DLLs on the tagged commit and uploads `unsigned-bin-<sha>` (DLLs only; the `release` job builds the installers).
     - **`release.yml`** starts immediately and polls for the matching CI run (via `gh run watch`). The **`release`** job downloads CI artifacts, runs `dotnet run -- release pack sign publish` under **`production`** (sign via `sign code trusted-signing`, draft GitHub Release including signed `bin-v{version}.zip` for `pyrevit clone --branch=v*`, Chocolatey push). **`notify`** then posts to linked issues. After you publish the draft release, **`winget.yml`** submits WinGet manifest PRs.
 
 5. Open the draft release on GitHub, review the auto-generated notes, then publish it.
@@ -265,7 +275,8 @@ CI and local product builds invoke the ModularPipelines project from [`build/`](
 |---------|----------------|
 | `dotnet run -- ci` (in `build/`) | Validate the environment, stamp configured metadata, build products, and stage CI outputs. |
 | `dotnet test tests/Build.Tests.csproj` | Build-project unit tests (also run in CI) |
-| `python -m unittest discover -s tests` | Standalone CPython suites under `tests/` (also run in CI). They need no Revit host, so they run in the `build` job instead of waiting for the Revit integration workflow. `tests/` is not in the `ci.yml` path filter, so deleting or adding files there does not trigger CI by itself. |
+| `python -m unittest discover -s dev/scripts -p 'test_standalone_*.py'` | Host-free CPython suites for `pyrevitlib` modules (also run in CI, and as `pipenv run test-standalone`). They live in `dev/scripts` because every test in `pyrevitlib/pyrevit/unittests/` imports `pyrevit` and needs a Revit host, so a suite that gates CI cannot live beside the code it covers. Same reason for the load-by-path at the top of each file. |
+| `python dev/scripts/check_revit_api_compat.py --baseline` | Revit API version-compatibility lint of `pyRevitTools.extension` and `pyrevitlib`. Run by `dotnet run -- ci` (`CheckRevitApiCompatModule`), and as `pipenv run check-revit-api`. Fails only on findings missing from the committed baseline. The module uses the first `python`, `python3` or `py` on `PATH` that is 3.10 or newer, so `ci.yml` has no Python setup step for it. See [Revit API compatibility lint](revit-api-compat.md). |
 | `dotnet run -- pack sign` | WIP/release pack path after artifact restore |
 | `dotnet run -- publish` | Draft GitHub release + Chocolatey push |
 | `dotnet run -- notify` | Post WIP/release URL to linked issues |
@@ -288,12 +299,12 @@ CI and local product builds invoke the ModularPipelines project from [`build/`](
 - **`unsigned-bin-master-latest.zip` is older than the current `master` HEAD / tagged release**: the master push event may have been dropped, or prune previously deleted the per-SHA zip. Run **`workflow_dispatch`** of `ci.yml` on **`master`** to rebuild and refresh `ci-binaries`. Tag CI and `release.yml` also refresh `unsigned-bin-master-latest.zip` so clone-of-master does not depend on that push.
 - **Release fails on `Build Installers`**: Inno Setup (`ISCC.exe`), MSBuild, or the legacy WiX v3.x CLI MSI project failed. `windows-2025` preinstalls Inno Setup 6 and WiX Toolset v3.x; MSBuild is resolved from `PATH` or Visual Studio's `vswhere.exe`. Local installer builds need the same tools installed.
 - **Release fails on `Build Choco Package`**: `choco pack` failed, or the upstream signed installer was missing when the SHA was computed. Confirm `Sign installers` produced the expected `dist/*.exe`/`.msi` outputs before this step ran.
-- **Release fails on `Sign Choco Package`**: this step uses the `dotnet sign` CLI (installed via `dotnet tool install --global sign --prerelease`) and authenticates to Azure Trusted Signing via the `AZURE_TENANT_ID` / `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` env vars (DefaultAzureCredential chain). Common causes: (a) the certificate profile lacks the `1.3.6.1.5.5.7.3.3` Code Signing EKU required for NuGet author signing; (b) the App Registration is missing the `Trusted Signing Certificate Profile Signer` role on the Signing Account; (c) the `--prerelease` flag was removed and `sign` is no longer marked prerelease (drop `--prerelease` once the tool has a stable GA release). The previous attempt used `Azure/artifact-signing-action`, but its v2.0.0 PowerShell module routes `.nupkg` to `signtool.exe`, which doesn't recognize the format. Don't switch back without verifying upstream support for NuGet via that action.
+- **Release fails on `Sign Choco Package`**: this step uses the `dotnet sign` CLI (installed via `dotnet tool install --global sign --prerelease`) and authenticates to Azure Trusted Signing via the `AZURE_TENANT_ID` / `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` env vars (DefaultAzureCredential chain). Common causes: (a) the certificate profile lacks the `1.3.6.1.5.5.7.3.3` Code Signing EKU required for NuGet author signing; (b) the App Registration is missing the `Trusted Signing Certificate Profile Signer` role on the Signing Account; (c) the `--prerelease` flag was removed and `sign` is no longer marked prerelease (drop `--prerelease` once the tool has a stable GA release). `Azure/artifact-signing-action` is not an option for the `.nupkg`: its v2.0.0 PowerShell module routes `.nupkg` to `signtool.exe`, which doesn't recognize the format. Verify upstream NuGet support before changing this.
 - **Signing step fails (DLLs or installers)**: verify the `production` environment secrets above are present and not expired.
 - **Choco push fails**: check `CHOCO_TOKEN` and that `dist/pyrevit-cli.<version>.nupkg` was produced by `Build Choco Package` in the **`release`** job. Re-run the workflow without re-pushing the tag.
 - **Draft release exists but issues were not notified**: check the **`notify`** job log. If `notify` succeeded but no comments appeared, commits since the previous tag must include `#<issue>` in the message. If `notify` failed with 403, confirm the job has `issues: write` and is **not** assigned to the `production` environment (environment deployment tokens can block issue comments).
 - **Notify hit GitHub secondary rate limit**: large merges can reference many issues; GitHub may throttle rapid comment creation (`SecondaryRateLimitExceededException`). The notify step uses `continue-on-error: true` so **`build`** / **`wip`** / **`release`** are unaffected. `NotifyIssuesModule` throttles comments and stops gracefully when rate-limited — check logs for `Posted X of Y` and re-run **`notify`** later if needed.
-- **Notify failed on empty `release_url`**: the **`release`** job did not write `dist/github-release-url.txt` during publish (check **`Run release pipeline`** logs for `Deployment GitHub`). Re-run **`release`**, then re-run **`notify`**. The notify job receives the URL from the release job output; it no longer looks up releases by tag (tags containing `+` break `gh release view`).
+- **Notify failed on empty `release_url`**: in a tag-triggered run, the **`release`** job did not write `dist/github-release-url.txt` during publish (check **`Run release pipeline`** logs for `Deployment GitHub`). Re-run **`release`**, then re-run **`notify`**. In a manual `notify_only` dispatch, the URL comes from the `release_url` input instead, so check that input before re-running. The notify job does not look up releases by tag, because tags containing `+` break `gh release view`.
 - **Draft release exists but `notify` did not run**: the **`release`** job must finish successfully (including Choco push) before **`notify`** starts. Fix or re-run **`release`**, then re-run **`notify`** if the draft release URL is already available.
 - **WinGet validation fails with `0x8A150056` / `elevationProhibited`**: WinGet's validation VM uses an administrator-capable account. Inno user installers built with `PrivilegesRequired=lowest` still block installation there even after removing `ElevationRequirement: elevationProhibited` from the manifest (WinGet reads the restriction from the installer). The `winget` pipeline publishes **machine-scope admin installers only** and strips `elevationProhibited` if `wingetcreate` adds it. Per-user installers remain on GitHub Releases. Pushing a manifest update to the winget-pkgs PR re-triggers validation automatically (`@wingetbot run` requires Moderator).
 - **`pyrevit clone --branch=v*` fails to find binaries**: the GitHub Release for that tag must be **published** (draft assets are not anonymous). Confirm `bin-v{version}.zip` is listed on the release, then retry. Use `--skip-bin` only when you will sideload `bin/` yourself.

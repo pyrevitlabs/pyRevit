@@ -65,8 +65,8 @@ for sheetid, revids in sheetrevs.items():
     if len(missedrevids) > 0:
         print(
             "SHEET:  {0}\t{1}\nDOES NOT LIST THESE REVISIONS:\n".format(
-                sheet.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString(),
-                sheet.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString(),
+                sheet.get_Parameter(DB.BuiltInParameter.SHEET_NUMBER).AsString(),
+                sheet.get_Parameter(DB.BuiltInParameter.SHEET_NAME).AsString(),
             )
         )
 

@@ -3,8 +3,10 @@
 Revit 2024 introduced a light/dark UI theme. pyRevit follows it: ribbon icons, panel backgrounds,
 and WPF forms all switch with the host, and a theme change applies without reloading the session.
 
-On Revit 2021–2023 there is no theme API. Everything below degrades to the light theme, and no
-bundle key or form attribute needs removing to build for those versions.
+On Revit 2021–2023 the theme API *is* present and reports `Dark`, but the ribbon button bar and the
+window chrome stay light, so pyRevit keeps the light assets on those hosts - dark icons drawn on a
+light ribbon are invisible. Everything below degrades to the light theme, and no bundle key or form
+attribute needs removing to build for those versions.
 
 ## How the theme is detected
 
@@ -12,6 +14,14 @@ bundle key or form attribute needs removing to build for those versions.
 reference, so the same detector logic supports every supported Revit version. The loader uses
 the `net48` assembly for Revit 2021–2024 and the `net8.0` assembly for Revit 2025 and later.
 When the API is missing the detector reports light.
+
+The detector also takes the running host's Revit year, read from the `UIApplication` the loader
+already holds, and reports light for anything before 2024 so the reported theme is reconciled
+against what the ribbon actually paints. Every consumer goes through that gate: `IconManager`,
+`PanelBuilder` and `SmartButtonScriptInitializer` share one detector, and the loader's live refresh
+calls `RevitThemeDetector.IsDarkRibbonTheme`. The Python Shell keeps its own copy of the rule in
+`PyRevitLabs.PyRevit.Shell.RevitThemeDetector`, and `pyrevit.forms.is_dark_theme()` applies the
+same bound.
 
 Two consumers sit on top of it:
 
@@ -117,9 +127,18 @@ no-op on older Windows. Before Windows 10 20H1, the title bar stays in the syste
 - A window that declares its own literal `Background` — a transparent overlay, for instance — keeps
   it. Root colours are only forced before the window's own XAML is parsed.
 
+## Agent document tab overlay
+
+Agent runs use the pyRevit amber accent with black foreground for contrast in both UI themes.
+Revit versions before 2024 retain the light UI classification described above; the overlay does not depend on their reported dark theme.
+The overlay is a temporary style based on the tab's current style.
+Tab Coloring detaches the overlay before rebuilding its styles and reapplies it afterward.
+Restoration preserves bindings and resource expressions, and skips any property whose current value another add-in replaced.
+The [agent runtime reference](agent-runtime.md#run-document-tab) describes its duration and configuration.
+
 ## Version support
 
 | Revit | Theme API | Behaviour |
 |---|---|---|
 | 2024+ | `UITheme` available | Full: icons, panel backgrounds, forms, title bar, live switching |
-| 2021–2023 | none | Light theme everywhere; `is_dark_theme()` returns `False`, `icon.dark.png` and `background_dark` are ignored |
+| 2021–2023 | present, reports `Dark`, but the UI stays light | Light theme everywhere; `is_dark_theme()` returns `False`, `icon.dark.png` and `background_dark` are ignored |

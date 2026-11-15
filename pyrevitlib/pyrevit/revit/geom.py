@@ -51,8 +51,12 @@ def intersect_curves(curve1, curve2):
             return intres, _extract_intersection_points(results)
         except (TypeError, ValueError):
             pass
-    intersect_result = curve1.Intersect(curve2, DB.CurveIntersectResultOption.Detailed)
-    overlap_items = list(intersect_result.GetOverlaps() or [])
+    intersect_result = curve1.Intersect(
+        curve2, DB.CurveIntersectResultOption.Detailed
+    )  # compat-ignore: only reached on 2027+
+    overlap_items = list(
+        intersect_result.GetOverlaps() or []
+    )  # compat-ignore: only reached on 2027+
     points = [overlap.Point for overlap in overlap_items] if overlap_items else None
     return intersect_result.Result, points
 

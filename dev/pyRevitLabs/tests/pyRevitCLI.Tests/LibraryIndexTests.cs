@@ -136,6 +136,42 @@ public class LibraryIndexTests : IDisposable {
     }
 
     [Fact]
+    public void AMarkerReadsItsDeclaredInputsInOrder() {
+        var symbols = Parse(
+            "@automation.operation(\n    \"pyrevit.elements.name\",\n    PlainEnglish=\"Read a name.\",\n    effects=(\"model.read\",),\n"
+            + "    inputs=(\"element: element\", \" title_on_sheet :boolean ? \"),\n)\n"
+            + "def get_name(element, title_on_sheet=False):\n    pass\n");
+
+        var inputs = Named(symbols, "get_name").Automation.Inputs;
+
+        Assert.Equal(new[] { "element", "title_on_sheet" }, inputs.Select(input => input.Name));
+        Assert.Equal(new[] { "element", "boolean" }, inputs.Select(input => input.Type));
+        Assert.Equal(new[] { true, false }, inputs.Select(input => input.Required));
+        Assert.Equal(new[] { "model.read" }, Named(symbols, "get_name").Automation.Effects);
+    }
+
+    [Fact]
+    public void NoInputsDeclarationDiffersFromAnEmptyOne() {
+        var symbols = Parse(
+            "@automation.operation(\"a.listed\", PlainEnglish=\"Listed only.\")\ndef listed():\n    pass\n\n"
+            + "@automation.operation(\"a.empty\", PlainEnglish=\"No inputs.\", inputs=())\ndef empty(doc=None):\n    pass\n");
+
+        Assert.Null(Named(symbols, "listed").Automation.Inputs);
+        Assert.Empty(Named(symbols, "empty").Automation.Inputs);
+    }
+
+    [Theory]
+    [InlineData("(\"x: text\",)")]
+    [InlineData("(\"x string\",)")]
+    [InlineData("(\"1x: string\",)")]
+    [InlineData("(\"x: string\", \"x: integer?\")")]
+    public void AMalformedInputsDeclarationDropsTheMarker(string inputs) {
+        var symbols = Parse($"@automation.operation(\"a.bad\", PlainEnglish=\"Bad.\", inputs={inputs})\ndef bad(x):\n    pass\n");
+
+        Assert.Null(Named(symbols, "bad").Automation);
+    }
+
+    [Fact]
     public void ModuleNamesFollowTheFolderLayoutAndInitFilesBecomeTheirPackage() {
         Directory.CreateDirectory(Path.Combine(root, "pkg", "sub"));
         Parse("def top():\n    pass\n", Path.Combine("pkg", "sub", "mod.py"));

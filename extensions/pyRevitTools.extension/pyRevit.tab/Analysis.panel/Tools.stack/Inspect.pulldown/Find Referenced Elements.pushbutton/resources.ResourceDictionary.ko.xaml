@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="tied_to_element">요소 {}에 연결된 요소</sys:String>
+    <sys:String x:Key="table_title">요소 {}개</sys:String>
+    <sys:String x:Key="selected_object">선택한 객체</sys:String>
+    <sys:String x:Key="column_element">요소</sys:String>
+    <sys:String x:Key="column_class">클래스</sys:String>
+    <sys:String x:Key="column_category">카테고리</sys:String>
+    <sys:String x:Key="column_family_type">패밀리: 유형</sys:String>
+    <sys:String x:Key="column_note">비고</sys:String>
+</ResourceDictionary>

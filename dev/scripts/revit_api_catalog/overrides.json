@@ -1,0 +1,241 @@
+{
+ "about": "Hand-curated additions to catalog.json, deep-merged by check_revit_api_compat.py at load time; edit freely, no regeneration needed. 'types'/'instance_members' entries may add: fix (replaces the generic hint), tier ('warning' demotes an error), match (false disables an instance name; true re-enables a name the catalog marks bcl, so deleting a 'match: true' drops its coverage), receiver_exempt (regex searched in the receiver's last identifier, ignoring a trailing .Id, that skips an ambiguous instance name; anchor it with $), avail/obsolete (to assert facts the assemblies cannot express), code (finding code), sources. 'namespaces' match any name under them. Keep every entry backed by a source.",
+ "types": {
+  "Autodesk.Revit.DB.ElementId": {
+   "members": {
+    "IntegerValue": {
+     "fix": "read ids with `pyrevit.compat.get_elementid_value_func()` (returns Value on 2024+, IntegerValue before)",
+     "sources": [
+      "https://rvtdocs.com/2024/whats-new/",
+      "https://rvtdocs.com/2026/whats-new/"
+     ]
+    },
+    "Value": {
+     "fix": "read ids with `pyrevit.compat.get_elementid_value_func()` (returns Value on 2024+, IntegerValue before)",
+     "sources": [
+      "https://rvtdocs.com/2024/whats-new/"
+     ]
+    }
+   }
+  },
+  "Autodesk.Revit.DB.DisplayUnitType": {
+   "fix": "use `DB.UnitTypeId` members (ForgeTypeId) on 2021+, branching with `HOST_APP.is_newer_than(2021)` if older Revit matters - see `pyrevit.revit.units`",
+   "sources": [
+    "https://rvtdocs.com/2022/whats-new/"
+   ]
+  },
+  "Autodesk.Revit.DB.UnitType": {
+   "fix": "use `DB.SpecTypeId` members (ForgeTypeId)",
+   "sources": [
+    "https://rvtdocs.com/2022/whats-new/"
+   ]
+  },
+  "Autodesk.Revit.DB.ParameterType": {
+   "fix": "use `DB.SpecTypeId` members and `Definition.GetDataType()` (ForgeTypeId)",
+   "sources": [
+    "https://rvtdocs.com/2022/whats-new/",
+    "https://rvtdocs.com/2023/whats-new/"
+   ]
+  },
+  "Autodesk.Revit.DB.BuiltInParameterGroup": {
+   "fix": "use `DB.GroupTypeId` members (ForgeTypeId), available since 2022",
+   "sources": [
+    "https://rvtdocs.com/2024/whats-new/",
+    "https://rvtdocs.com/2025/whats-new/"
+   ]
+  },
+  "Autodesk.Revit.DB.Definition": {
+   "members": {
+    "ParameterGroup": {
+     "fix": "use `Definition.GetGroupTypeId()` on 2022+ (see `pyrevit.revit.db.ParamDef`)"
+    },
+    "ParameterType": {
+     "fix": "use `Definition.GetDataType()` on 2022+ (see `pyrevit.revit.db.ParamDef`)"
+    }
+   }
+  },
+  "Autodesk.Revit.DB.Revision": {
+   "members": {
+    "NumberType": {
+     "fix": "use `pyrevit.revit.db.ensure.revision_has_numbertype()` or `doc.GetElement(rev.RevisionNumberingSequenceId).NumberType` on 2022+"
+    },
+    "RevisionNumberingSequenceId": {
+     "fix": "use `pyrevit.revit.db.ensure.revision_has_numbertype()`, which branches on the Revit version"
+    }
+   }
+  },
+  "System.AppDomain": {
+   "members": {
+    "CreateDomain": {
+     "avail": [
+      [
+       2021,
+       2024
+      ]
+     ],
+     "code": "DOTNET",
+     "fix": "Revit 2025+ runs on .NET 8+, where AppDomain.CreateDomain throws PlatformNotSupportedException; use AssemblyLoadContext there",
+     "sources": [
+      "https://learn.microsoft.com/dotnet/core/porting/net-framework-tech-unavailable"
+     ]
+    }
+   }
+  },
+  "System.Threading.Thread": {
+   "members": {
+    "Abort": {
+     "avail": [
+      [
+       2021,
+       2024
+      ]
+     ],
+     "code": "DOTNET",
+     "fix": "Thread.Abort throws PlatformNotSupportedException on .NET 5+ (Revit 2025+); use a CancellationToken",
+     "sources": [
+      "https://learn.microsoft.com/dotnet/core/compatibility/core-libraries/5.0/thread-abort-obsolete"
+     ]
+    }
+   }
+  },
+  "System.Reflection.Assembly": {
+   "members": {
+    "ReflectionOnlyLoad": {
+     "avail": [
+      [
+       2021,
+       2024
+      ]
+     ],
+     "code": "DOTNET",
+     "fix": "reflection-only loading is unsupported on .NET Core (Revit 2025+); use System.Reflection.MetadataLoadContext",
+     "sources": [
+      "https://learn.microsoft.com/dotnet/standard/assembly/inspect-contents-using-metadataloadcontext"
+     ]
+    },
+    "ReflectionOnlyLoadFrom": {
+     "avail": [
+      [
+       2021,
+       2024
+      ]
+     ],
+     "code": "DOTNET",
+     "fix": "reflection-only loading is unsupported on .NET Core (Revit 2025+); use System.Reflection.MetadataLoadContext",
+     "sources": [
+      "https://learn.microsoft.com/dotnet/standard/assembly/inspect-contents-using-metadataloadcontext"
+     ]
+    }
+   }
+  },
+  "System.Runtime.Serialization.Formatters.Binary.BinaryFormatter": {
+   "code": "DOTNET",
+   "avail": [
+    [
+     2021,
+     2026
+    ]
+   ],
+   "obsolete": {
+    "since": 2025,
+    "message": "BinaryFormatter is obsolete on .NET 8 (SYSLIB0011)."
+   },
+   "fix": "BinaryFormatter is obsolete on .NET 8 (Revit 2025/2026) and always throws on .NET 9+ (Revit 2027); serialize with JSON or XML",
+   "sources": [
+    "https://learn.microsoft.com/dotnet/standard/serialization/binaryformatter-migration-guide/"
+   ]
+  },
+  "System.Net.WebClient": {
+   "code": "DOTNET",
+   "obsolete": {
+    "since": 2025,
+    "message": "WebClient is obsolete on .NET 6+ (SYSLIB0014)."
+   },
+   "fix": "use `pyrevit.compat.urlopen` / `pyrevit.netrequests`, or System.Net.Http.HttpClient",
+   "sources": [
+    "https://learn.microsoft.com/dotnet/fundamentals/syslib-diagnostics/syslib0014"
+   ]
+  }
+ },
+ "instance_members": {
+  "IntegerValue": {
+   "avail": [
+    [
+     2021,
+     2025
+    ]
+   ],
+   "obsolete_years": [
+    [
+     2024,
+     2025
+    ]
+   ],
+   "receiver_exempt": "(?i)(workset|field)(_?id)?$",
+   "fix": "for ElementIds read with `pyrevit.compat.get_elementid_value_func()`; WorksetId/ScheduleFieldId keep IntegerValue (suppress with `# compat-ignore: WorksetId`)",
+   "about": "ElementId.IntegerValue was removed in 2026; WorksetId and ScheduleFieldId still expose IntegerValue, so receivers that look like those are skipped.",
+   "sources": [
+    "https://rvtdocs.com/2026/whats-new/"
+   ]
+  },
+  "NumberType": {
+   "avail": [
+    [
+     2021,
+     2022
+    ]
+   ],
+   "tier": "warning",
+   "receiver_exempt": "(?i)(sequence|numbering|settings?)$",
+   "fix": "for a Revision use `pyrevit.revit.db.ensure.revision_has_numbertype()` (Revision.NumberType is gone in 2023+); RevisionNumberingSequence.NumberType is fine",
+   "about": "Revision.NumberType exists 2021-2022 only; RevisionNumberingSequence.NumberType exists 2022+. The name alone cannot tell them apart, so this is a warning."
+  },
+  "ParameterType": {
+   "match": true,
+   "fix": "use `Definition.GetDataType()` (ForgeTypeId) on 2022+ - see `pyrevit.revit.db.ParamDef`",
+   "about": "Also a System.Reflection.ParameterInfo member, but in Revit scripts it is almost always Definition.ParameterType, removed in 2023.",
+   "sources": [
+    "https://rvtdocs.com/2023/whats-new/"
+   ]
+  },
+  "ParameterGroup": {
+   "fix": "use `Definition.GetGroupTypeId()` on 2022+ - see `pyrevit.revit.db.ParamDef`",
+   "sources": [
+    "https://rvtdocs.com/2024/whats-new/"
+   ]
+  }
+ },
+ "namespaces": {
+  "System.Runtime.Remoting": {
+   "avail": [
+    [
+     2021,
+     2024
+    ]
+   ],
+   "code": "DOTNET",
+   "fix": ".NET Remoting does not exist on .NET Core (Revit 2025+); use pipes, sockets or HTTP",
+   "sources": [
+    "https://learn.microsoft.com/dotnet/core/porting/net-framework-tech-unavailable"
+   ]
+  },
+  "System.Web.Script.Serialization": {
+   "avail": [
+    [
+     2021,
+     2024
+    ]
+   ],
+   "code": "DOTNET",
+   "fix": "JavaScriptSerializer (System.Web.Extensions) does not exist on .NET Core (Revit 2025+); use the Python json module",
+   "sources": [
+    "https://learn.microsoft.com/dotnet/core/porting/net-framework-tech-unavailable"
+   ]
+  }
+ },
+ "engine": {
+  "cpython_unavailable_modules": {
+   "wpf": "the `wpf` module ships with IronPython only; on CPython load XAML via System.Windows.Markup.XamlReader, or run the script on IronPython (drop `#! python3`)"
+  }
+ }
+}

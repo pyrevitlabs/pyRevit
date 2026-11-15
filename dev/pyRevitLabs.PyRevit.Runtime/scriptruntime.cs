@@ -151,6 +151,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool IsDisposed { get; private set; }
         public ScriptLoggerService LoggerService =>
             ScriptLoggerService.GetForRuntime(this);
+        internal ScriptOutput ExistingOutputService => _outputService;
         public ScriptOutput OutputService {
             get {
                 if (_outputService == null)
@@ -460,13 +461,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 if (ScriptOutput.IsStartupRuntime(this)) {
                     ScriptOutput.ConfigureForRuntime(this);
-                    return ScriptOutput.GetDefault(UIApp, ScriptRuntimeConfigs.DebugMode).window;
+                    return TrackOutputWindow(
+                        ScriptOutput.GetDefault(UIApp, ScriptRuntimeConfigs.DebugMode).window);
                 }
 
                 ScriptConsole output;
                 var re = _scriptOutput.TryGetTarget(out output);
                 if (re && output != null && !output.ClosedByUser)
-                    return output;
+                    return TrackOutputWindow(output);
                 var newOutput = new ScriptConsole(ScriptRuntimeConfigs.DebugMode, UIApp);
                 newOutput.OutputTitle = ScriptData.CommandName;
                 newOutput.OutputId = ScriptData.CommandUniqueId;
@@ -478,8 +480,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     );
 
                 _scriptOutput = new WeakReference<ScriptConsole>(newOutput);
-                return newOutput;
+                return TrackOutputWindow(newOutput);
             }
+        }
+
+        private ScriptConsole TrackOutputWindow(ScriptConsole output) {
+            _outputService?.TrackRuntimeWindow(output);
+            return output;
         }
 
         /// <summary>
@@ -499,7 +506,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 var re = _scriptOutput.TryGetTarget(out output);
                 if (!re || output == null)
                     return OutputWindow;
-                return output.ClosedByUser ? null : output;
+                return output.ClosedByUser ? null : TrackOutputWindow(output);
             }
         }
 

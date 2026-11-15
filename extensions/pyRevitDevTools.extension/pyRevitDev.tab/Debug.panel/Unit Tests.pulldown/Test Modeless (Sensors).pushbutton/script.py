@@ -27,12 +27,13 @@ class SensorGroup(forms.Reactive):
 
 
 class Sensor(forms.Reactive):
-    def __init__(self, header, value="", has_progress=False):
+    def __init__(self, header, value="", has_progress=False, category_id=None):
         self._header = header
         self._value = value
         self._has_progress = has_progress
-        self._progress = 0
-        self._progress_max = 1
+        self._progress = 0.0
+        self._progress_max = 1.0
+        self.category_id = category_id
 
     @forms.reactive
     def header(self):
@@ -71,12 +72,40 @@ class Sensor(forms.Reactive):
         self._has_progress = value
 
 
+def _count_all_elements(doc):
+    return (
+        DB.FilteredElementCollector(doc)
+        .WherePasses(
+            DB.LogicalOrFilter(
+                DB.ElementIsElementTypeFilter(False),
+                DB.ElementIsElementTypeFilter(True),
+            )
+        )
+        .GetElementCount()
+    )
+
+
+def _count_category_instances(doc, category_id):
+    return (
+        DB.FilteredElementCollector(doc)
+        .OfCategoryId(category_id)
+        .WhereElementIsNotElementType()
+        .GetElementCount()
+    )
+
+
+def _refresh_scheduled_update():
+    ui._run_scheduled_update()
+
+
 class NonModalWindow(forms.WPFWindow):
     def __init__(self):
         pass
 
     def setup(self):
         # self.set_image_source(self.icon, 'sensors.png')
+        self._update_scheduled = False
+        self._closed = False
         self.doc_title_snsr = Sensor("Title")
         self.doc_elmnts_snsr = Sensor("Elements", has_progress=True)
         self.doc_snsrs = SensorGroup(
@@ -92,17 +121,41 @@ class NonModalWindow(forms.WPFWindow):
         # the decorator captures the function from the class and not from the
         # instance. so the capture function is not bound thus no 'self'
         # ui however is inside the context and still accessible
-        ui.update_ui()
+        ui.schedule_update()
+
+    def schedule_update(self):
+        """Queue one coalesced ``update_ui`` through an ExternalEvent.
+
+        Note:
+            Event handlers must not refresh synchronously: a refresh counts
+            every category and would block Revit on each model change. Events
+            raised before the queued refresh runs share that one refresh. A
+            refresh that could not be queued leaves the next event free to
+            queue again.
+        """
+        if self._update_scheduled or self._closed:
+            return
+        self._update_scheduled = True
+        queued = False
+        try:
+            queued = revit.events.execute_in_revit_context(_refresh_scheduled_update)
+        finally:
+            if not queued:
+                self._update_scheduled = False
+
+    def _run_scheduled_update(self):
+        self._update_scheduled = False
+        if not self._closed:
+            self.update_ui()
 
     def update_ui(self):
         if revit.doc:
             self.doc_title_snsr.value = revit.doc.Title
-            elements = revit.query.get_all_elements(doc=revit.doc)
-            count = len(elements)
+            count = _count_all_elements(revit.doc)
             self.doc_elmnts_snsr.value = str(count)
-            self.doc_elmnts_snsr.progress = count
+            self.doc_elmnts_snsr.progress = float(count)
 
-            self.dispatch(self.update_category_sensors, self.cat_snsrs.sensors, count)
+            self.update_category_sensors(self.cat_snsrs.sensors, count)
         else:
             self.doc_title_snsr.value = "N/A"
             self.doc_elmnts_snsr.value = 0
@@ -110,7 +163,7 @@ class NonModalWindow(forms.WPFWindow):
     def make_category_sensors(self):
         sensors = []
         for cat in revit.query.get_doc_categories(doc=revit.doc, include_subcats=False):
-            sensors.append(Sensor(cat.Name, has_progress=True))
+            sensors.append(Sensor(cat.Name, has_progress=True, category_id=cat.Id))
         return sensors
 
     def sort_category_sensors_list(self):
@@ -119,23 +172,32 @@ class NonModalWindow(forms.WPFWindow):
         )
 
     def update_category_sensors(self, sensors, max_count):
+        """Count instances per category sensor and re-sort by count.
+
+        Args:
+            sensors: Category sensors to refresh; sensors without a
+                ``category_id`` are skipped.
+            max_count: Document-wide element count used as every sensor's
+                ``progress_max``.
+
+        Note:
+            Uses ``FilteredElementCollector``, so it must run in Revit API
+            context.
+        """
         for sensor in sensors:
-            bicat = revit.query.get_builtincategory(sensor.header, doc=revit.doc)
-            if bicat:
-                elements = revit.query.get_elements_by_categories(
-                    [bicat], doc=revit.doc
-                )
-                count = len(elements)
+            if sensor.category_id is not None:
+                count = _count_category_instances(revit.doc, sensor.category_id)
                 sensor.value = count
-                sensor.progress = count
-                sensor.progress_max = max_count
-        self.dispatch(self.sort_category_sensors_list)
+                sensor.progress = float(count)
+                sensor.progress_max = float(max_count)
+        self.sort_category_sensors_list()
 
     def window_moving(self, sender, args):
         if args.ChangedButton == Input.MouseButton.Left:
             self.DragMove()
 
     def window_closing(self, sender, args):  # pylint: disable=unused-argument
+        self._closed = True
         revit.events.stop_events()
 
 

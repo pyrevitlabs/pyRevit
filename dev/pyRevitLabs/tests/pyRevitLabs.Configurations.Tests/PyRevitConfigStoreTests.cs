@@ -132,6 +132,7 @@ public class PyRevitConfigStoreTests : IDisposable
         public TelemetrySection Telemetry => new();
         public EnvironmentSection Environment => new();
         public ExtensionSection? GetExtensionSection(string extensionName) => null;
+        public string? ResolveExtensionSectionName(string extensionName) => null;
 
         public void ReloadLoadConfigurations() { }
         public T GetSection<T>() => throw new NotImplementedException();

@@ -89,6 +89,14 @@
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorSaving">구성표 저장 오류</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorLoading">구성표 불러오기 오류</system:String>
     <system:String x:Key="ColorSplasher.SaveLoadDialog.FileDoesNotExist">파일이 존재하지 않습니다.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation">색상 구성표 저장 위치:</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageLocation.Tooltip">색상 구성표를 저장하고 불러올 위치를 선택합니다.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile">파일</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageFile.Tooltip">.cschn 파일에 저장하거나 불러옵니다.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView">활성 뷰</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Empty">활성 뷰 (저장된 구성표 없음)</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.StorageView.Tooltip">활성 뷰에 저장하거나 불러옵니다. 뷰에는 하나의 색상 구성표만 저장되며, 저장하면 기존 구성표를 대체합니다.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SavedToView">색상 구성표가 뷰에 저장되었습니다: {0}</system:String>
 
     <!-- TaskDialog Titles -->
     <system:String x:Key="ColorSplasher.TaskDialog.Title">매개변수로 요소 색상 지정</system:String>

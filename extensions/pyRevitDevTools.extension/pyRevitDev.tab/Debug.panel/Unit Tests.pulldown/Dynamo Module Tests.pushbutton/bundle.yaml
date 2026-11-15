@@ -1,0 +1,4 @@
+title: Dynamo Tests
+tooltip: Assert Dynamo starts and evaluates a fresh token without changing the model. Close existing Dynamo graphs first. Runs locally outside CI.
+context: doc-project
+inherit_icon: false

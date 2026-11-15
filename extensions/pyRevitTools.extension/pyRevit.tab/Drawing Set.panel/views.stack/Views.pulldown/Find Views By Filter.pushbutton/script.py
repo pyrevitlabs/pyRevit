@@ -23,10 +23,12 @@ def elementid_has_value(p):
 def find_views_with_underlay(invert=False):
     for v in views:
         try:
-            base_underlay_param = v.Parameter[
+            base_underlay_param = v.get_Parameter(
                 DB.BuiltInParameter.VIEW_UNDERLAY_BOTTOM_ID
-            ]
-            top_underlay_param = v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_TOP_ID]
+            )
+            top_underlay_param = v.get_Parameter(
+                DB.BuiltInParameter.VIEW_UNDERLAY_TOP_ID
+            )
             if (
                 base_underlay_param
                 and top_underlay_param
@@ -59,7 +61,7 @@ def find_view_with_template(invert=False):
         vtid = v.ViewTemplateId
         vt = revit.doc.GetElement(vtid)
         if bool(vt) != invert:
-            phasep = v.Parameter[DB.BuiltInParameter.VIEW_PHASE]
+            phasep = v.get_Parameter(DB.BuiltInParameter.VIEW_PHASE)
             print(
                 "TYPE: {1}\nID: {2}\nTEMPLATE: {3}\nPHASE:{4}\n{0}".format(
                     revit.query.get_name(v),

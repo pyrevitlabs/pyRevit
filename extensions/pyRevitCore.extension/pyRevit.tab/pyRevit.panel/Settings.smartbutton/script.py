@@ -448,6 +448,7 @@ class SettingsWindow(forms.WPFWindow):
     def _setup_agent(self):
         self._agent_enabled_at_open = PyRevit.PyRevitConfigs.GetAgentEnabled()
         self.agent_cb.IsChecked = self._agent_enabled_at_open
+        self.agent_tab_highlight_cb.IsChecked = PyRevit.PyRevitConfigs.GetAgentTabHighlight()
         policy = PyRevit.PyRevitConfigs.GetAgentPolicy()
         self.agent_policy_readonly_rb.IsChecked = policy == "readonly"
         self.agent_policy_auto_rb.IsChecked = policy == "auto"
@@ -563,6 +564,9 @@ class SettingsWindow(forms.WPFWindow):
             # if attachment is for all users dont attempt at making changes
             # user probably does not have write access and this fails
             if attachment.AttachmentType == PyRevit.PyRevitAttachmentType.AllUsers:
+                return
+
+            if attachment.AttachmentType == PyRevit.PyRevitAttachmentType.PerLaunch:
                 return
 
             # notify use to restart if engine has changed
@@ -1060,6 +1064,9 @@ class SettingsWindow(forms.WPFWindow):
             )
 
         PyRevit.PyRevitConfigs.SetAgentEnabled(enabled)
+        PyRevit.PyRevitConfigs.SetAgentTabHighlight(
+            bool(self.agent_tab_highlight_cb.IsChecked)
+        )
         if self.agent_policy_readonly_rb.IsChecked:
             PyRevit.PyRevitConfigs.SetAgentPolicy("readonly")
         elif self.agent_policy_auto_rb.IsChecked:

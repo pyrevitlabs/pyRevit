@@ -15,21 +15,23 @@ namespace pyRevitLabs.PyRevit {
         // private logger and data
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        public static PyRevitRelease GetLatestRelease(bool includePreRelease = false) {
-            if (includePreRelease)
-                return GetReleases().Where(r => r.IsPyRevitRelease)
-                                          .OrderByDescending(r => r.Version).ToList().FirstOrDefault();
-            else
-                return GetReleases().Where(r => r.IsPyRevitRelease && !r.PreRelease)
-                                          .OrderByDescending(r => r.Version).ToList().FirstOrDefault();
-        }
+        public static PyRevitRelease GetLatestRelease(bool includePreRelease = false) =>
+            FilterPyRevitReleases(GetReleases(), includePreRelease).OrderByDescending(r => r.Version).FirstOrDefault();
+
+        /// <summary>
+        /// Keeps pyRevit releases (dropping CLI releases) and, unless <paramref name="includePreRelease"/>
+        /// is set, drops pre-releases such as the rolling ci-binaries one.
+        /// </summary>
+        public static List<PyRevitRelease> FilterPyRevitReleases(IEnumerable<PyRevitRelease> releases, bool includePreRelease) =>
+            releases.Where(r => r.IsPyRevitRelease && (includePreRelease || !r.PreRelease)).ToList();
 
         // Find releases
         public static List<PyRevitRelease> GetReleases() =>
             GithubAPI.GetReleases<PyRevitRelease>(PyRevitLabsConsts.OriginalRepoId).OrderByDescending(r => r.CreatedTimeStamp).ToList();
 
         public static List<PyRevitRelease> FindReleases(string searchPattern, bool includePreRelease = false) {
-            return GetReleases().Where(r => r.IsPyRevitRelease && (r.Name.Contains(searchPattern) || r.Tag.Contains(searchPattern))).ToList();
+            return FilterPyRevitReleases(GetReleases(), includePreRelease)
+                .Where(r => r.Name.Contains(searchPattern) || r.Tag.Contains(searchPattern)).ToList();
         }
 
         // find latest release version

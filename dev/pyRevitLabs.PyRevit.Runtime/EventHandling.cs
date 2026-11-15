@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Interop;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Reflection;
 
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
@@ -704,19 +702,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public class UIAppEventUtils {
-        public static Visual GetWindowRoot(UIApplication uiapp) {
-            IntPtr wndHndle = IntPtr.Zero;
-            try {
-                wndHndle = uiapp.MainWindowHandle;
-            }
-            catch { }
-
-            if (wndHndle != IntPtr.Zero) {
-                var wndSource = HwndSource.FromHwnd(wndHndle);
-                return wndSource.RootVisual;
-            }
-            return null;
-        }
+        public static Visual GetWindowRoot(UIApplication uiapp) => DocumentTabLocator.GetWindowRoot(uiapp);
     }
 
     public static class DocumentEventUtils {
@@ -1166,26 +1152,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public List<RuleSlot> StyledDocuments => _ruleSlots.ToList();
 
+        internal static event Action<bool> TabStylesChanging;
+
         static string GetTabUniqueId(TabItem tab) {
             return $"{((LayoutDocument)tab.Header).Title}+{tab.GetHashCode()}+{tab.IsSelected}";
         }
 
-        static long GetTabDocumentId(TabItem tab) {
-            return (
-                (MFCMDIFrameHost)(
-                    (MFCMDIChildFrameControl)(
-                        (LayoutDocument)tab.Content
-                    ).Content
-                ).Content
-            ).document.ToInt64();
-        }
-
-        internal static long GetAPIDocumentId(Document doc) {
-            MethodInfo getMFCDocMethod = doc.GetType().GetMethod("getMFCDoc", BindingFlags.Instance | BindingFlags.NonPublic);
-            object mfcDoc = getMFCDocMethod.Invoke(doc, new object[] { });
-            MethodInfo ptfValMethod = mfcDoc.GetType().GetMethod("GetPointerValue", BindingFlags.Instance | BindingFlags.NonPublic);
-            return ((IntPtr)ptfValMethod.Invoke(mfcDoc, new object[] { })).ToInt64();
-        }
         public void SetTheme(UIApplication uiApp, IEnumerable<TabItem> docTabs) {
             // dont do anything if it is the same tabs as before
             string newState = string.Join(";", docTabs.Select(t => GetTabUniqueId(t)));
@@ -1193,34 +1165,40 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             else
                 _lastTabState = newState;
+            TabStylesChanging?.Invoke(true);
+            try {
 
-            var (docIds, familyDocIds) = DocumentTabEventUtils.GetCachedDocumentAndFamilyIds();
+                var (docIds, familyDocIds) = DocumentTabEventUtils.GetCachedDocumentAndFamilyIds();
 
-            // cleanup styling for docs that do no exists anymore
-            // empty this before setting new styles so empty slots can be taken
-            var removedDocs = _ruleSlots.Where(d => !docIds.Contains(d.Id)).ToList();
-            foreach (RuleSlot rslot in removedDocs)
-                rslot.Clear();
+                // cleanup styling for docs that do no exists anymore
+                // empty this before setting new styles so empty slots can be taken
+                var removedDocs = _ruleSlots.Where(d => !docIds.Contains(d.Id)).ToList();
+                foreach (RuleSlot rslot in removedDocs)
+                    rslot.Clear();
 
-            // cleanup any recorded tabs that do not exist anymore
-            var removedTabs = _tabOrigStyles.Keys.Where(t => !docTabs.Contains(t)).ToList();
-            foreach (TabItem tab in removedTabs)
-                _tabOrigStyles.Remove(tab);
+                // cleanup any recorded tabs that do not exist anymore
+                var removedTabs = _tabOrigStyles.Keys.Where(t => !docTabs.Contains(t)).ToList();
+                foreach (TabItem tab in removedTabs)
+                    _tabOrigStyles.Remove(tab);
 
-            // go over each tab and apply style
-            foreach (TabItem tab in docTabs) {
-                long docId = GetTabDocumentId(tab);
+                // go over each tab and apply style
+                foreach (TabItem tab in docTabs) {
+                    long docId = DocumentTabLocator.GetTabDocumentId(tab);
 
-                // store original style, if it has not been stored yet
-                if (!_tabOrigStyles.ContainsKey(tab))
-                    _tabOrigStyles[tab] = tab.Style;
+                    // store original style, if it has not been stored yet
+                    if (!_tabOrigStyles.ContainsKey(tab))
+                        _tabOrigStyles[tab] = tab.Style;
 
-                // set style
-                Set(
-                    tab: tab,
-                    docId: docId,
-                    isFamilyTab: familyDocIds.Contains(docId)
-                );
+                    // set style
+                    Set(
+                        tab: tab,
+                        docId: docId,
+                        isFamilyTab: familyDocIds.Contains(docId)
+                    );
+                }
+            }
+            finally {
+                TabStylesChanging?.Invoke(false);
             }
         }
 
@@ -1300,11 +1278,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void ClearTheme(UIApplication uiApp, IEnumerable<TabItem> docTabs) {
-            foreach (TabItem tab in docTabs)
-                if (_tabOrigStyles.TryGetValue(tab, out var tabStyle))
-                    tab.Style = tabStyle;
-            _tabOrigStyles.Clear();
-            _lastTabState = string.Empty;
+            TabStylesChanging?.Invoke(true);
+            try {
+                foreach (TabItem tab in docTabs)
+                    if (_tabOrigStyles.TryGetValue(tab, out var tabStyle))
+                        tab.Style = tabStyle;
+                _tabOrigStyles.Clear();
+                _lastTabState = string.Empty;
+            }
+            finally {
+                TabStylesChanging?.Invoke(false);
+            }
         }
 
         internal void ResetSlots() {
@@ -1393,12 +1377,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return new List<TabItem>();
         }
 
-        public static IEnumerable<TabItem> GetDocumentTabs(LayoutDocumentPaneGroupControl docTabGroup) {
-            if (docTabGroup != null) {
-                return docTabGroup.FindVisualChildren<TabItem>();
-            }
-            return new List<TabItem>();
-        }
+        public static IEnumerable<TabItem> GetDocumentTabs(LayoutDocumentPaneGroupControl docTabGroup) =>
+            DocumentTabLocator.GetDocumentTabs(docTabGroup);
 
         /// <summary>
         /// Starts document tab grouping, seeds cached document identities, and tracks document lifecycle changes.
@@ -1459,7 +1439,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 foreach (Document doc in documents) {
                     try {
                         if (!doc.IsLinked) {
-                            long docId = global::PyRevitLabs.PyRevit.Runtime.TabColoringTheme.GetAPIDocumentId(doc);
+                            long docId = DocumentTabLocator.GetAPIDocumentId(doc);
                             documentCache[docId] = doc.IsFamilyDocument;
                         }
                     }

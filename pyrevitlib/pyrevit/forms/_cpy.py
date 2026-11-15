@@ -7,7 +7,8 @@ load WPF/clr assemblies at import time.
 Stubbed symbols:
 WPFWindow, TemplateUserInputWindow, SelectFromList, CommandSwitchWindow,
 ProgressBar, ask_for_string, ask_for_unique_string, ask_for_one_item,
-ask_for_date, ask_for_number_slider, pick_file, pick_folder, show_balloon.
+ask_for_date, ask_for_number_slider, pick_file, pick_folder, show_balloon,
+activate_open_window.
 """
 
 from pyrevit import PyRevitCPythonNotSupported
@@ -26,6 +27,7 @@ __all__ = [
     "pick_file",
     "pick_folder",
     "show_balloon",
+    "activate_open_window",
 ]
 
 
@@ -101,3 +103,7 @@ def pick_folder(*args, **kwargs):
 
 def show_balloon(*args, **kwargs):
     _raise_not_supported("pyrevit.forms.show_balloon")
+
+
+def activate_open_window(*args, **kwargs):
+    _raise_not_supported("pyrevit.forms.activate_open_window")

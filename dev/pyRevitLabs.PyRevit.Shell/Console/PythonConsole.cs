@@ -75,18 +75,20 @@ namespace PythonConsoleControl
         int lineReceivedEventIndex = 0;
         ManualResetEvent lineReceivedEvent = new ManualResetEvent(false);
         ManualResetEvent disposedEvent = new ManualResetEvent(false);
-        AutoResetEvent statementsExecutionRequestedEvent = new AutoResetEvent(false);
         WaitHandle[] waitHandles;
         int promptLength = 4;
         List<string> previousLines = new List<string>();
         CommandLine commandLine;
         CommandLineHistory commandLineHistory = new CommandLineHistory();
 
-        volatile bool executing = false;
+        bool executing => execution.IsRunning;
+        readonly PythonExecution execution = new PythonExecution();
+        int disposed;
 
         // The dedicated dispatcher allows commands to be interrupted without blocking the REPL or control.
         Thread dispatcherThread;
         public Dispatcher dispatcher;
+        Dispatcher ownedDispatcher;
 
         string scriptText = String.Empty;
         bool consoleInitialized = false;
@@ -101,6 +103,7 @@ namespace PythonConsoleControl
 
         public PythonConsole(PythonTextEditor textEditor, CommandLine commandLine)
         {
+            using var dispatcherReady = new ManualResetEventSlim();
             waitHandles = new WaitHandle[] { lineReceivedEvent, disposedEvent };
 
             this.commandLine = commandLine;
@@ -108,16 +111,26 @@ namespace PythonConsoleControl
             textEditor.CompletionProvider = new PythonConsoleCompletionDataProvider(commandLine) { ExcludeCallables = disableAutocompletionForCallables };
             textEditor.PreviewKeyDown += textEditor_PreviewKeyDown;
             textEditor.TextEntering += textEditor_TextEntering;
-            dispatcherThread = new Thread(new ThreadStart(DispatcherThreadStartingPoint));
+            dispatcherThread = new Thread(() =>
+            {
+                dispatcher = Dispatcher.CurrentDispatcher;
+                ownedDispatcher = dispatcher;
+                dispatcherReady.Set();
+                DispatcherThreadStartingPoint();
+            });
             dispatcherThread.SetApartmentState(ApartmentState.STA);
             dispatcherThread.IsBackground = true;
             dispatcherThread.Start();
+            dispatcherReady.Wait();
 
             prompt = ">>> ";
 
             this.textEditor.textArea.Dispatcher.Invoke(new Action(delegate()
             {
                 CommandBinding pasteBinding = null;
+                execution.StopWindow = new PythonStatementStopWindow();
+                this.textEditor.textArea.Loaded += TextEditorLoaded;
+                TextEditorLoaded(null, null);
                 CommandBinding copyBinding = null;
                 CommandBinding cutBinding = null;
                 CommandBinding undoBinding = null;
@@ -137,7 +150,7 @@ namespace PythonConsoleControl
                 if (undoBinding != null) this.textEditor.textArea.CommandBindings.Remove(undoBinding);
                 if (deleteBinding != null) this.textEditor.textArea.CommandBindings.Remove(deleteBinding);
                 this.textEditor.textArea.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, OnPaste, CanPaste));
-                this.textEditor.textArea.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, OnCopy, PythonEditingCommandHandler.CanCutOrCopy));
+                this.textEditor.textArea.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, OnCopy, CanCopy));
                 this.textEditor.textArea.CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, PythonEditingCommandHandler.OnCut, CanCut));
                 this.textEditor.textArea.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, OnUndo, CanUndo));
                 this.textEditor.textArea.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, PythonEditingCommandHandler.OnDelete(ApplicationCommands.NotACommand), CanDeleteCommand));
@@ -149,6 +162,12 @@ namespace PythonConsoleControl
             });
         }
 
+        void TextEditorLoaded(object sender, RoutedEventArgs args)
+        {
+            var source = PresentationSource.FromVisual(textEditor.textArea) as System.Windows.Interop.HwndSource;
+            execution.StopWindow.SetAnchor(source?.Handle ?? IntPtr.Zero);
+        }
+
         public Action<Action> GetCommandDispatcher()
         {
             var languageContext = Microsoft.Scripting.Hosting.Providers.HostingHelpers.GetLanguageContext(commandLine.ScriptScope.Engine);
@@ -158,27 +177,46 @@ namespace PythonConsoleControl
             return result;
         }
 
+        /// <summary>
+        /// Registers the statement dispatcher for this console.
+        /// </summary>
+        /// <remarks>
+        /// Important: register the Revit API dispatcher after the constructor's console-initialized handler; later registrations replace earlier dispatchers.
+        /// </remarks>
         public void SetCommandDispatcher(Action<Action> newDispatcher)
         {
+            commandDispatcher = newDispatcher;
             var languageContext = Microsoft.Scripting.Hosting.Providers.HostingHelpers.GetLanguageContext(commandLine.ScriptScope.Engine);
             var pythonContext = (IronPython.Runtime.PythonContext)languageContext;
-            pythonContext.GetSetCommandDispatcher(newDispatcher);
+            pythonContext.GetSetCommandDispatcher(command =>
+            {
+                try
+                {
+                    execution.Run(ScriptScope.Engine, command, newDispatcher, textEditor.IsInterruptKeyPressed);
+                }
+                catch (KeyboardInterruptException exception)
+                {
+                    textEditor.Write(ScriptScope.Engine.GetService<ExceptionOperations>().FormatException(exception) + Environment.NewLine);
+                    textEditor.Write(prompt);
+                }
+            });
         }
 
         protected void DispatchCommand(Delegate command)
         {
             if (command != null)
             {
-                // Polling leaves the calling thread able to deliver a keyboard interrupt.
-                executing = true;
-                var operation = dispatcher.BeginInvoke(DispatcherPriority.Normal, command);
-                while (executing)
+                Exception error = null;
+                var operation = dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
                 {
-                    if (operation.Status != DispatcherOperationStatus.Completed)
-                        operation.Wait(TimeSpan.FromSeconds(1));
-                    if (operation.Status == DispatcherOperationStatus.Completed)
-                        executing = false;
-                }
+                    try { command.DynamicInvoke(); }
+                    catch (System.Reflection.TargetInvocationException exception) { error = exception.InnerException; }
+                    catch (Exception exception) { error = exception; }
+                }));
+                while (operation.Status != DispatcherOperationStatus.Completed
+                    && operation.Status != DispatcherOperationStatus.Aborted)
+                    operation.Wait(TimeSpan.FromSeconds(1));
+                if (error != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw();
             }
         }
 
@@ -199,22 +237,12 @@ namespace PythonConsoleControl
 
         private void DispatcherThreadStartingPoint()
         {
-            dispatcher = new Window().Dispatcher;
-            while (true)
+            if (Volatile.Read(ref disposed) != 0)
             {
-                try
-                {
-                    System.Windows.Threading.Dispatcher.Run();
-                }
-                catch (ThreadAbortException tae)
-                {
-                    if (tae.ExceptionState is Microsoft.Scripting.KeyboardInterruptException)
-                    {
-                        Thread.ResetAbort();
-                        executing = false;
-                    }
-                }
+                ownedDispatcher.InvokeShutdown();
+                return;
             }
+            Dispatcher.Run();
         }
 
         public void SetDispatcher(Dispatcher dispatcher)
@@ -224,9 +252,27 @@ namespace PythonConsoleControl
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+            execution.Dispose();
             disposedEvent.Set();
-            textEditor.PreviewKeyDown -= textEditor_PreviewKeyDown;
-            textEditor.TextEntering -= textEditor_TextEntering;
+            Action detachEditor = () =>
+            {
+                textEditor.textArea.Loaded -= TextEditorLoaded;
+                textEditor.PreviewKeyDown -= textEditor_PreviewKeyDown;
+                textEditor.TextEntering -= textEditor_TextEntering;
+            };
+            if (textEditor.textArea.Dispatcher.CheckAccess()) detachEditor();
+            else textEditor.textArea.Dispatcher.BeginInvoke(detachEditor);
+            ownedDispatcher?.BeginInvoke(new Action(() => ownedDispatcher.InvokeShutdown()), DispatcherPriority.Send);
+        }
+
+        internal bool WaitForExit(TimeSpan timeout)
+        {
+            var stopWindowExited = execution.StopWindow.WaitForExit(TimeSpan.FromSeconds(2));
+            if (!dispatcherThread.Join(timeout) || !stopWindowExited) return false;
+            lineReceivedEvent.Dispose();
+            disposedEvent.Dispose();
+            return true;
         }
 
         public TextWriter Output
@@ -338,13 +384,30 @@ namespace PythonConsoleControl
         protected void OnCopy(object target, ExecutedRoutedEventArgs args)
         {
             if (target != textEditor.textArea) return;
+            args.Handled = true;
+            HandleCopyShortcut(PythonExecution.InputTimestamp);
+        }
+
+        protected void CanCopy(object target, CanExecuteRoutedEventArgs args)
+        {
+            if (target != textEditor.textArea) return;
+            args.CanExecute = executing || textEditor.SelectionLength > 0
+                || textEditor.textArea.Options.CutCopyWholeLine;
+            args.Handled = true;
+        }
+
+        void HandleCopyShortcut(int inputTimestamp)
+        {
+            if (execution.IsInterruptedInput(inputTimestamp)) return;
             if (textEditor.SelectionLength == 0 && executing)
             {
-                MoveToHomePosition();
-                dispatcherThread.Abort(new Microsoft.Scripting.KeyboardInterruptException(""));
-                args.Handled = true;
+                execution.Interrupt(inputTimestamp);
             }
-            else PythonEditingCommandHandler.OnCopy(target, args);
+            else if (textEditor.SelectionLength > 0)
+                PythonEditingCommandHandler.CopySelectedText(textEditor.textArea);
+            else if (textEditor.textArea.Options.CutCopyWholeLine)
+                PythonEditingCommandHandler.CopyWholeLine(textEditor.textArea,
+                    textEditor.textArea.Document.GetLineByNumber(textEditor.textArea.Caret.Line));
         }
 
         // Clipboard format used by Visual Studio to identify whole-line copies.
@@ -374,6 +437,11 @@ namespace PythonConsoleControl
         /// </summary>
         void ExecuteStatements()
         {
+            if (execution.IsRunning)
+            {
+                textEditor.Write("A Python statement is already running. Interrupt it or wait before running editor code.\r\n");
+                return;
+            }
             lock (scriptText)
             {
                 textEditor.Write("\r\n");
@@ -381,7 +449,6 @@ namespace PythonConsoleControl
                 string error = "";
                 try
                 {
-                    executing = true;
                     var errors = new ErrorReporter();
                     var command = scriptSource.Compile(errors);
                     if (command == null)
@@ -390,40 +457,14 @@ namespace PythonConsoleControl
                     }
                     else
                     {
-                        Exception capturedEx = null;
-                        var dispatcher = GetCommandDispatcherSafe();
-
-                        ManualResetEventSlim done = new ManualResetEventSlim();
-
-                        dispatcher(() =>
+                        if (!execution.TryRun(commandLine.ScriptScope.Engine,
+                            () => command.Execute(commandLine.ScriptScope),
+                            GetCommandDispatcherSafe(), textEditor.IsInterruptKeyPressed))
                         {
-                            try
-                            {
-                                scriptSource.Execute(commandLine.ScriptScope);
-                            }
-                            catch (Exception ex)
-                            {
-                                capturedEx = ex;
-                            }
-                            finally
-                            {
-                                done.Set();
-                            }
-                        });
-
-                        done.Wait();
-
-                        if (capturedEx != null)
-                        {
-                            var eo = commandLine.ScriptScope.Engine.GetService<ExceptionOperations>();
-                            error = eo.FormatException(capturedEx) + Environment.NewLine;
+                            textEditor.Write("A Python statement is already running. Interrupt it or wait before running editor code.\r\n");
+                            return;
                         }
                     }
-                }
-                catch (ThreadAbortException tae)
-                {
-                    if (tae.ExceptionState is Microsoft.Scripting.KeyboardInterruptException) Thread.ResetAbort();
-                    error = "KeyboardInterrupt" + System.Environment.NewLine;
                 }
                 catch (Microsoft.Scripting.SyntaxErrorException exception)
                 {
@@ -437,7 +478,6 @@ namespace PythonConsoleControl
                     eo = commandLine.ScriptScope.Engine.GetService<ExceptionOperations>();
                     error = eo.FormatException(exception) + System.Environment.NewLine;
                 }
-                executing = false;
                 if (error != "") textEditor.Write(error);
                 textEditor.Write(prompt);
             }
@@ -537,7 +577,9 @@ namespace PythonConsoleControl
 
         string ReadLineFromTextEditor()
         {
+            if (Volatile.Read(ref disposed) != 0) return null;
             int result = WaitHandle.WaitAny(waitHandles);
+            if (Volatile.Read(ref disposed) != 0) return null;
             if (result == lineReceivedEventIndex)
             {
                 lock (previousLines)
@@ -559,6 +601,13 @@ namespace PythonConsoleControl
         /// </summary>
         void textEditor_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control
+                && (executing || textEditor.SelectionLength == 0))
+            {
+                e.Handled = true;
+                if (!e.IsRepeat) HandleCopyShortcut(e.Timestamp);
+                return;
+            }
             switch (e.Key)
             {
                 case Key.Delete:

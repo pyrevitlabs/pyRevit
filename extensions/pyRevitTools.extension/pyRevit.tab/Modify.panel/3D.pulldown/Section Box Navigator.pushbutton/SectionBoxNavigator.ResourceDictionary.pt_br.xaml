@@ -2,6 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="Title">Navegador de caixa de corte</system:String>
+    <system:String x:Key="SectionBoxNavigatorTitle">Navegador de caixa de corte</system:String>
+    <system:String x:Key="CropBoxNavigatorTitle">Navegador de região de recorte</system:String>
+    <system:String x:Key="UnsupportedViewTypeTitle">Tipo de vista não compatível</system:String>
     
     <system:String x:Key="LevelNavigation">Navegação por nível</system:String>
     <system:String x:Key="TopUp">Topo ↑</system:String>
@@ -55,7 +58,6 @@
     
     <system:String x:Key="Settings">Configurações</system:String>
     <system:String x:Key="ShowPreviewOnHover">Mostrar visualização ao passar o mouse</system:String>
-    <system:String x:Key="UpdateUIOnEvents">Atualizar IU em eventos</system:String>
     <system:String x:Key="IncludeLinkedLevelsAndGrids">Incluir níveis e eixos vinculados</system:String>
     
     <!-- Dynamic UI strings -->
@@ -122,6 +124,7 @@
     <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Ocorreu um erro ao contrair: {0}</system:String>
     <system:String x:Key="Select2DViewForSectionBox">Selecionar vista 2D para caixa de corte</system:String>
     <system:String x:Key="Select3DViewToCopyFrom">Selecionar vista 3D para copiar de</system:String>
+    <system:String x:Key="Select3DViewForTempBox">Selecionar vista 3D para caixa de corte temporária</system:String>
     <system:String x:Key="CouldNotExtractViewInformation">Não foi possível extrair informações da vista.</system:String>
     <system:String x:Key="View3DHasNoSectionBox">A vista 3D não tem caixa de corte.</system:String>
     <system:String x:Key="Unknown">Desconhecido</system:String>

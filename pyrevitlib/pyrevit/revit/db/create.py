@@ -40,7 +40,6 @@ PARAM_VALUE_EVALUATORS = {
 }
 
 
-# http://www.revitapidocs.com/2018.1/5da8e3c5-9b49-f942-02fc-7e7783fe8f00.htm
 class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
     """Family loader options handler."""
 
@@ -188,17 +187,59 @@ def create_new_project(template=None, imperial=True):
         return HOST_APP.app.NewProjectDocument(units)
 
 
+def _find_revision_numbering_sequence(doc, number_type):
+    if HOST_APP.is_older_than(2023):
+        return None
+    if number_type == coreutils.get_enum_none(DB.RevisionNumberType):
+        return DB.ElementId.InvalidElementId
+    for sequence in DB.FilteredElementCollector(doc).OfClass(
+        DB.RevisionNumberingSequence
+    ):
+        if sequence.NumberType == number_type:
+            return sequence.Id
+    raise PyRevitException(
+        "The document has no {} revision numbering sequence.".format(number_type)
+    )
+
+
+def _set_revision_number_type(revision, number_type, sequence_id):
+    if HOST_APP.is_older_than(2023):
+        revision.NumberType = number_type
+        return
+    revision.RevisionNumberingSequenceId = sequence_id
+
+
 def create_revision(
     description=None, by=None, to=None, date=None, alphanum=False, nonum=False, doc=None
 ):
-    new_rev = DB.Revision.Create(doc or DOCS.doc)
+    """Create a revision.
+
+    Note:
+        On Revit 2023+, numbering comes from a RevisionNumberingSequence, so
+        ``alphanum`` assigns the document's first alphanumeric sequence and
+        ``nonum`` clears the sequence.
+
+    Raises:
+        PyRevitException: ``alphanum`` is set on Revit 2023+ and the document
+            has no alphanumeric numbering sequence.
+    """
+    doc = doc or DOCS.doc
+    number_type = None
+    if alphanum:
+        number_type = DB.RevisionNumberType.Alphanumeric
+    if nonum:
+        number_type = coreutils.get_enum_none(DB.RevisionNumberType)
+    sequence_id = (
+        _find_revision_numbering_sequence(doc, number_type)
+        if number_type is not None
+        else None
+    )
+    new_rev = DB.Revision.Create(doc)
     new_rev.Description = description
     new_rev.IssuedBy = by or ""
     new_rev.IssuedTo = to or ""
-    if alphanum:
-        new_rev.NumberType = DB.RevisionNumberType.Alphanumeric
-    if nonum:
-        new_rev.NumberType = coreutils.get_enum_none(DB.RevisionNumberType)
+    if number_type is not None:
+        _set_revision_number_type(new_rev, number_type, sequence_id)
     new_rev.RevisionDate = date or ""
     return new_rev
 
@@ -270,6 +311,20 @@ def copy_viewtemplates(viewtemplates, src_doc, dest_doc):
 def create_sheet(
     sheet_num, sheet_name, titleblock_id=DB.ElementId.InvalidElementId, doc=None
 ):
+    """Create a sheet with a number and a name.
+
+    Must run inside a transaction. Raises if the sheet number is already used.
+
+    Args:
+        sheet_num (str): sheet number, unique in the document.
+        sheet_name (str): sheet name.
+        titleblock_id (DB.ElementId): title block type id; the default
+            creates a sheet without a title block.
+        doc (DB.Document): target document; defaults to the active one.
+
+    Returns:
+        DB.ViewSheet: the new sheet.
+    """
     doc = doc or DOCS.doc
     mlogger.debug("Creating sheet: %s - %s", sheet_num, sheet_name)
     mlogger.debug("Titleblock id is: %s", titleblock_id)
@@ -528,17 +583,21 @@ def create_text_type(
     tnote_type = doc.GetElement(tnote_typeid)
     spec_tnote_type = tnote_type.Duplicate(name)
     if font_name:
-        spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_FONT].Set(font_name)
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_SIZE].Set(font_size)
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_TAB_SIZE].Set(tab_size)
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_STYLE_BOLD].Set(1 if bold else 0)
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_STYLE_ITALIC].Set(
+        spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_FONT).Set(font_name)
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_SIZE).Set(font_size)
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_TAB_SIZE).Set(tab_size)
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_STYLE_BOLD).Set(
+        1 if bold else 0
+    )
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_STYLE_ITALIC).Set(
         1 if italic else 0
     )
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_STYLE_UNDERLINE].Set(
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_STYLE_UNDERLINE).Set(
         1 if underline else 0
     )
-    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_WIDTH_SCALE].Set(width_factor)
+    spec_tnote_type.get_Parameter(DB.BuiltInParameter.TEXT_WIDTH_SCALE).Set(
+        width_factor
+    )
     return spec_tnote_type
 
 
@@ -985,7 +1044,12 @@ def create_ceiling(points, ceiling_type, level=None, offset=8.0, doc=None):
 
     Returns:
         (DB.Ceiling): the ceiling.
+
+    Raises:
+        PyRevitException: on Revit 2021, which has no ceiling creation API.
     """
+    if HOST_APP.is_older_than(2022):
+        raise PyRevitException("Creating ceilings requires Revit 2022 or later.")
     doc = doc or DOCS.doc
     _require_transaction(doc, "create ceilings")
     level = query.find_level(level, doc=doc)
@@ -1534,13 +1598,13 @@ def create_section_view(
     direction = along.Normalize()
     transform = DB.Transform.Identity
     transform.Origin = DB.XYZ((start.X + end.X) / 2.0, (start.Y + end.Y) / 2.0, 0.0)
-    transform.BasisX = direction
+    transform.BasisX = direction.Negate()
     transform.BasisY = DB.XYZ.BasisZ
-    transform.BasisZ = direction.CrossProduct(DB.XYZ.BasisZ)
+    transform.BasisZ = DB.XYZ.BasisZ.CrossProduct(direction)
     box = DB.BoundingBoxXYZ()
     box.Transform = transform
-    box.Min = DB.XYZ(-half_length, bottom, -units.parse_length(depth))
-    box.Max = DB.XYZ(half_length, top, 0.0)
+    box.Min = DB.XYZ(-half_length, bottom, 0.0)
+    box.Max = DB.XYZ(half_length, top, units.parse_length(depth))
     view = DB.ViewSection.CreateSection(
         doc, _view_family_type(DB.ViewFamily.Section, doc).Id, box
     )
@@ -1887,7 +1951,9 @@ def _sheet_area(sheet, doc):
     )
 
 
-def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
+def place_on_sheet(
+    sheet, view, anchor="top_left", margin=0.1, doc=None, right_margin=0.0
+):
     """Place a view or schedule on a sheet, aligned to a corner of the title block.
 
     Args:
@@ -1900,14 +1966,19 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
         margin (float | str, optional): gap between the placed box and the
             title block edge, in sheet feet (0.1 ft is 1.2 in).
         doc (DB.Document, optional): document, defaults to the active one.
+        right_margin (float | str, optional): width of the title block's
+            right-hand information strip, in sheet feet, which right anchors
+            and center keep clear. The title block's bounding box includes
+            the strip and its width is not exposed by the API, so measure it
+            on the sheet.
 
     Returns:
         (DB.Viewport | DB.ScheduleSheetInstance): the placed viewport or
         schedule instance.
 
     Raises:
-        PyRevitException: when the view can't be added to the sheet, for
-            example because it is already on another sheet.
+        PyRevitException: when ``view`` is a sheet, or can't be added to the
+            sheet, for example because it is already on another sheet.
     """
     doc = doc or DOCS.doc
     _require_transaction(doc, "place views on sheets")
@@ -1916,10 +1987,17 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
             "anchor must be one of {}.".format(", ".join(SHEET_ANCHORS))
         )
     margin = units.parse_length(margin)
+    right_margin = units.parse_length(right_margin)
     is_schedule = isinstance(view, DB.ViewSchedule)
     if is_schedule:
         placed = DB.ScheduleSheetInstance.Create(doc, sheet.Id, view.Id, DB.XYZ.Zero)
     else:
+        if isinstance(view, DB.ViewSheet):
+            raise PyRevitException(
+                "{!r} is the sheet {}, not a view; pass the view to place.".format(
+                    view.Name, view.SheetNumber
+                )
+            )
         if not DB.Viewport.CanAddViewToSheet(doc, sheet.Id, view.Id):
             raise PyRevitException(
                 "View {!r} can't be placed on sheet {}; it may already be on a sheet.".format(
@@ -1935,6 +2013,7 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
         outline = placed.GetBoxOutline()
         low, high = outline.MinimumPoint, outline.MaximumPoint
     area_low, area_high = _sheet_area(sheet, doc)
+    area_high = DB.XYZ(area_high.X - right_margin, area_high.Y, area_high.Z)
     width, height = high.X - low.X, high.Y - low.Y
     if anchor == "center":
         target_x = (area_low.X + area_high.X - width) / 2.0
@@ -1957,3 +2036,244 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
         placed.SetBoxCenter(placed.GetBoxCenter() + move)
     doc.Regenerate()
     return placed
+
+
+def _require_family_document(doc, action):
+    if not doc.IsFamilyDocument:
+        raise PyRevitException("To {}, use a family document.".format(action))
+    _require_transaction(doc, action)
+
+
+def create_reference_plane(
+    name, start, end, view, cut_vector=None, reference=None, doc=None
+):
+    """Create a named reference plane in a family document.
+
+    Args:
+        name (str): plane name, unique within the family.
+        start (DB.XYZ | tuple): bubble end of the plane.
+        end (DB.XYZ | tuple): free end of the plane.
+        view (DB.View): plan or elevation view the plane is drawn in.
+        cut_vector (DB.XYZ, optional): direction normal to the drawn line in
+            the view, defaults to the view direction.
+        reference (str, optional): "Is Reference" setting, a key of
+            ``query.REFERENCE_PLANE_REFERENCES`` such as ``"left"`` or ``"strong"``.
+            Required for a plane that a host family aligns to.
+        doc (DB.Document, optional): family document, defaults to the active one.
+
+    Returns:
+        (DB.ReferencePlane): the plane.
+
+    Raises:
+        PyRevitException: outside a family document or transaction, or for an
+            unknown ``reference``.
+
+    Important:
+        Revit keeps ``"left"``, ``"center_left_right"``, ``"right"``,
+        ``"front"``, ``"center_front_back"``, ``"back"``, ``"bottom"``,
+        ``"center_elevation"`` and ``"top"`` on one plane per family. Giving one
+        to a new plane resets the plane that had it to ``"not_a_reference"``
+        without an error. ``"strong"``, ``"weak"`` and ``"not_a_reference"`` can
+        be on many planes.
+
+    Note:
+        The ``query.REFERENCE_PLANE_REFERENCES`` values were checked in Revit
+        2024 and 2026.
+    """
+    doc = doc or DOCS.doc
+    _require_family_document(doc, "create reference planes")
+    if reference is not None and reference not in query.REFERENCE_PLANE_REFERENCES:
+        raise PyRevitException(
+            "reference must be one of {}.".format(
+                ", ".join(sorted(query.REFERENCE_PLANE_REFERENCES))
+            )
+        )
+    plane = doc.FamilyCreate.NewReferencePlane(
+        to_xyz(start), to_xyz(end), cut_vector or view.ViewDirection, view
+    )
+    plane.Name = name
+    if reference is not None:
+        plane.get_Parameter(DB.BuiltInParameter.ELEM_REFERENCE_NAME).Set(
+            query.REFERENCE_PLANE_REFERENCES[reference]
+        )
+    return plane
+
+
+def create_labelled_dimension(
+    view, planes, start, end, label=None, equal_segments=False, doc=None
+):
+    """Dimension reference planes in a family, optionally driving a parameter.
+
+    Args:
+        view (DB.View): view the dimension is drawn in.
+        planes (list[DB.ReferencePlane]): at least two planes, in dimension order.
+        start (DB.XYZ | tuple): start of the dimension line.
+        end (DB.XYZ | tuple): end of the dimension line.
+        label (DB.FamilyParameter, optional): parameter that drives the
+            distance between the two planes.
+        equal_segments (bool, optional): keep the segments equal, which holds
+            a plane centred between two others.
+        doc (DB.Document, optional): family document, defaults to the active one.
+
+    Returns:
+        (DB.Dimension): the dimension.
+
+    Raises:
+        PyRevitException: outside a family document or transaction, with fewer
+            than two planes, when ``label`` is given for more than two planes,
+            or when ``equal_segments`` is set for fewer than three.
+
+    Important:
+        A label on a dimension of three or more planes labels every segment,
+        so the family ends up twice as wide as the parameter. Label a
+        two-plane dimension and add a second, unlabelled dimension through the
+        centre plane with ``equal_segments=True``.
+    """
+    doc = doc or DOCS.doc
+    _require_family_document(doc, "create dimensions")
+    if len(planes) < 2:
+        raise PyRevitException("A dimension needs at least two reference planes.")
+    if equal_segments and len(planes) < 3:
+        raise PyRevitException("equal_segments needs at least three reference planes.")
+    if label is not None and len(planes) > 2:
+        raise PyRevitException(
+            "Label a two-plane dimension; add a separate dimension with "
+            "equal_segments=True for the centre plane."
+        )
+    references = DB.ReferenceArray()
+    for plane in planes:
+        references.Append(plane.GetReference())
+    line = DB.Line.CreateBound(to_xyz(start), to_xyz(end))
+    dimension = doc.FamilyCreate.NewDimension(view, line, references)
+    if equal_segments:
+        dimension.AreSegmentsEqual = True
+    if label is not None:
+        dimension.FamilyLabel = label
+    return dimension
+
+
+def align_faces_to_planes(element, view, planes, tolerance=1e-6, doc=None):
+    """Lock the planar faces of a family element to coincident reference planes.
+
+    Every planar face that lies in one of ``planes`` gets an alignment
+    constraint, so the element follows the planes when their dimensions change.
+
+    Args:
+        element (DB.Element): form such as an extrusion.
+        view (DB.View): view the alignments are made in. A plan view reaches
+            vertical faces, an elevation view reaches horizontal ones.
+        planes (list[DB.ReferencePlane]): candidate planes.
+        tolerance (float, optional): distance in feet within which a face counts
+            as lying in a plane.
+        doc (DB.Document, optional): family document, defaults to the active one.
+
+    Returns:
+        (list[str]): names of the planes that were aligned to a face.
+
+    Note:
+        A face that no plane contains is skipped. A point where two sloped
+        faces meet has no face to align; give it a short flat edge longer than
+        ``Application.ShortCurveTolerance``.
+    """
+    doc = doc or DOCS.doc
+    _require_family_document(doc, "align faces")
+    options = DB.Options()
+    options.ComputeReferences = True
+    options.View = view
+    plane_geometry = [(plane, plane.GetPlane()) for plane in planes]
+    aligned = []
+    for geometry in element.get_Geometry(options):
+        if not isinstance(geometry, DB.Solid):
+            continue
+        for face in geometry.Faces:
+            if not isinstance(face, DB.PlanarFace):
+                continue
+            for plane, plane_def in plane_geometry:
+                parallel = abs(abs(face.FaceNormal.DotProduct(plane_def.Normal)) - 1.0)
+                distance = abs(
+                    (face.Origin - plane_def.Origin).DotProduct(plane_def.Normal)
+                )
+                if parallel < tolerance and distance < tolerance:
+                    doc.FamilyCreate.NewAlignment(
+                        view, plane.GetReference(), face.Reference
+                    )
+                    aligned.append(plane.Name)
+                    break
+    return aligned
+
+
+def load_family_document(family_doc, doc=None, name=None):
+    """Load an open family document into a project or another family.
+
+    A family document that was never saved loads under its document title,
+    such as ``Family24``; pass ``name`` to rename the loaded family.
+
+    Args:
+        family_doc (DB.Document): the family document to load.
+        doc (DB.Document, optional): target document, defaults to the active one.
+        name (str, optional): name for the loaded family.
+
+    Returns:
+        (DB.Family): the loaded family, in ``doc``.
+
+    Raises:
+        PyRevitException: when ``family_doc`` is not a family document, when
+            ``doc`` has an open transaction, when another family in ``doc``
+            already has the requested ``name``, or when ``doc`` already has a
+            family named like ``family_doc`` and ``name`` would rename it. The
+            names are checked before loading, so nothing is loaded in those
+            cases.
+
+    Important:
+        Call it without an open transaction on ``doc``: ``LoadFamily`` manages
+        its own. The rename runs in a transaction of its own, which is rolled
+        back if Revit rejects the name.
+        Reloading replaces the ``Family`` object, so a ``Family`` kept from an
+        earlier load is no longer valid.
+
+    Note:
+        Revit matches an incoming family by its document title, not by the
+        name it was renamed to. Loading the same unsaved document again does
+        not update the renamed family; it adds a new family under the title.
+        The name check refuses that case instead of leaving the duplicate.
+    """
+    doc = doc or DOCS.doc
+    if not family_doc.IsFamilyDocument:
+        raise PyRevitException("load_family_document needs a family document.")
+    if doc.IsModifiable:
+        raise PyRevitException(
+            "Loading a family document must run outside a transaction on the target."
+        )
+    if name and name != family_doc.Title:
+        taken = set(
+            existing.Name
+            for existing in DB.FilteredElementCollector(doc).OfClass(DB.Family)
+        )
+        if name in taken:
+            raise PyRevitException(
+                "A family named {!r} already exists in the target document.".format(
+                    name
+                )
+            )
+        if family_doc.Title in taken:
+            raise PyRevitException(
+                "Loading would overwrite the existing family {!r} and rename it. "
+                "Load without a name to update that family.".format(family_doc.Title)
+            )
+    family = family_doc.LoadFamily(doc, FamilyLoaderOptionsHandler())
+    if name and family.Name != name:
+        rename = DB.Transaction(doc, "Rename loaded family")
+        rename.Start()
+        try:
+            family.Name = name
+            status = rename.Commit()
+            if status != DB.TransactionStatus.Committed:
+                raise PyRevitException(
+                    "Revit did not apply the name {!r} to the loaded family "
+                    "(transaction {}).".format(name, status)
+                )
+        except Exception:
+            if rename.GetStatus() == DB.TransactionStatus.Started:
+                rename.RollBack()
+            raise
+    return family

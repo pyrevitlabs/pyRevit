@@ -63,6 +63,7 @@ namespace pyRevitCLI {
         Doctor,
         Agent,
         Mcp,
+        Launch,
     }
 
     internal static class PyRevitCLI {
@@ -206,11 +207,29 @@ namespace pyRevitCLI {
 
             else if (all("support")) CommonUtils.OpenUrl(PyRevitLabsConsts.SupportUrl);
 
+            else if (all("env", "path")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
+                else if (all("path", "list"))
+                    PyRevitCLIAppCmds.ListPathEntries(TryGetValue("--scope", "user"));
+                else if (all("path", "remove"))
+                    PyRevitCLIAppCmds.RemovePathEntry(arguments["<dir>"].Value as string,
+                                                      TryGetValue("--scope", "user"));
+                else if (all("path", "ensure"))
+                    PyRevitCLIAppCmds.EnsurePathEntry(arguments["<dir>"].Value as string,
+                                                      TryGetValue("--scope", "user"),
+                                                      first: arguments["--first"].IsTrue);
+                else if (all("path", "which"))
+                    PyRevitCLIAppCmds.ListCliCopiesOnPath();
+                else
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
+            }
+
             else if (all("env")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
                 else
-                    PyRevitCLIAppCmds.MakeEnvReport(json: arguments["--json"].IsTrue);
+                    PyRevitCLIAppCmds.MakeEnvReport(json: arguments["--json"].IsTrue, redact: arguments["--redact"].IsTrue);
             }
 
             else if (all("update") && !any("clones", "extensions")) {
@@ -523,7 +542,8 @@ namespace pyRevitCLI {
                         destPath: TryGetValue("--dest"),
                         searchPattern: TryGetValue("<search_pattern>"),
                         latest: arguments["latest"].IsTrue,
-                        listPreReleases: arguments["--pre"].IsTrue
+                        listPreReleases: arguments["--pre"].IsTrue,
+                        admin: arguments["--admin"].IsTrue
                         );
 
                 else
@@ -616,6 +636,21 @@ namespace pyRevitCLI {
 
                 else
                     PyRevitMcpServer.Serve(TryGetValue("--revit"));
+            }
+
+            else if (all("launch")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Launch);
+                else
+                    PyRevitCLIRevitCmds.LaunchClone(
+                        cloneNameOrPath: TryGetValue("<clone_name_or_path>"),
+                        useDefaultEngine: arguments["default"].IsTrue,
+                        engineVersion: TryGetValue("<engine_version>"),
+                        revitYear: TryGetValue("<revit_year>"),
+                        model: TryGetValue("<model_file>"),
+                        isolated: arguments["--isolated"].IsTrue,
+                        language: TryGetValue("--language")
+                        );
             }
 
             else if (all("run")) {
@@ -846,6 +881,10 @@ namespace pyRevitCLI {
                         PyRevitCLIAgentCmds.ConfigureUserSkills(
                             any("enable", "disable") ? arguments["enable"].IsTrue : null);
 
+                    else if (all("reckless"))
+                        PyRevitCLIAgentCmds.ConfigureReckless(
+                            any("enable", "disable") ? arguments["enable"].IsTrue : null);
+
                     else if (all("policy"))
                         PyRevitCLIAgentCmds.ConfigurePolicy(
                             arguments["readonly"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyReadOnly
@@ -1057,7 +1096,7 @@ namespace pyRevitCLI {
         }
 
         internal static string TryGetValue(string key, string defaultValue = null) {
-            return arguments[key] != null ? arguments[key].Value as string : defaultValue;
+            return PyRevitCLIArguments.Value(arguments, key, defaultValue);
         }
 
         /// <summary>
