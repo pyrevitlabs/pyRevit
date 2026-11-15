@@ -156,8 +156,8 @@ If the host cannot persist a result or run record, the response keeps the final 
 and adds a warning. The corresponding `get_run` record can be incomplete or unavailable.
 
 Every tool that talks to Revit accepts an optional `revit` argument (a year such as
-`"2024"`, or a process id) for when several Revit sessions run. `pyrevit mcp --revit=<year>`
-sets a default, which an empty or `null` `revit` also uses. Its schema lists `null` as a type.
+`"2024"`, a process id or a clone name) for when several Revit sessions run.
+`pyrevit mcp --revit=<year|pid|clone>` sets a default, which an empty or `null` `revit` also uses. Its schema lists `null` as a type.
 
 The MCP server sends one call at a time to each Revit, since Revit runs one request at a time
 (and a host older than the multi-connection pipe server accepts one connection at a time); calls to
@@ -548,13 +548,13 @@ it. A run that asks for an engine other than the default also starts cold.
 
 ```text
 pyrevit agent status [--json]              running Revit sessions with the agent host
-pyrevit agent context [--revit=<year>]     get_context of a session
+pyrevit agent context [--revit=<year|pid|clone>]  get_context of a session
 pyrevit agent run <script_file> [--mode=query|dry_run|modify] [--engine=<e>]
-                  [--title=<t>] [--inputs=<json>] [--revit=<year>]
+                  [--title=<t>] [--inputs=<json>] [--revit=<year|pid|clone>]
                   [--timeout=<seconds>] [--workspace=<folder>]
 pyrevit agent runs [--limit=<n>]           recent runs
 pyrevit agent show <run_id|req-id>           request, script and response of a run, by run id or request id
-pyrevit mcp [--revit=<year>]               the MCP server (stdio); started by MCP clients
+pyrevit mcp [--revit=<year|pid|clone>]     the MCP server (stdio); started by MCP clients
 pyrevit mcp (install | uninstall) (claude | codex | cursor | vscode | opencode) [--project]
 pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --owned keeps
                                            entries that point at another pyRevit install
