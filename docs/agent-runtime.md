@@ -310,6 +310,11 @@ Rules the host enforces:
 - When Revit rolls back one of the script's transactions because of an error-level
   failure, the run fails with `revit_failure`, even if the script itself didn't raise.
 - A transaction left open fails the run with `transaction_left_open`.
+- When Revit doesn't finish rolling back a transaction the script left open (`RollBack()`
+  returns `Pending` or any status other than `RolledBack`, or raises), the run fails with
+  `transaction_rollback_failed`, naming each transaction and what Revit returned. The host
+  doesn't keep or finish a pending transaction; it still rolls back the run's group, and
+  `decision: rollback_incomplete` means the changes may remain.
 - A failure in the host itself reports `host_error` with decision `rolled_back`, or
   `not_run` when it failed before the script started (for example when Revit refused to start
   the run's transaction group, or the script engine failed to start), or
