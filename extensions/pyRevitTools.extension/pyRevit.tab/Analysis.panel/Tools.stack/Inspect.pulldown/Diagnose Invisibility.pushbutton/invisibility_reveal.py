@@ -87,6 +87,7 @@ _REASON_PRIORITY = (
 
 _OVERLAY_ALPHA = 120
 _FAR_FT = 2000.0
+_CLIP_MARGIN_FACTOR = 1.0
 _MIN_SIZE_FRACTION = 0.004
 _TIME_BUDGET_S = 3.0
 _MAX_EVALUATED = 2500
@@ -128,9 +129,17 @@ def _outline_of(points):
     return DB.Outline(low, high)
 
 
-def _box_outline(box):
+def _box_outline(box, margin_factor=0.0):
+    size = box.Max - box.Min
+    margin = max(size.X, size.Y, size.Z) * margin_factor
     points = [
-        box.Transform.OfPoint(DB.XYZ(x, y, z))
+        box.Transform.OfPoint(
+            DB.XYZ(
+                x + (margin if x == box.Max.X else -margin),
+                y + (margin if y == box.Max.Y else -margin),
+                z + (margin if z == box.Max.Z else -margin),
+            )
+        )
         for x in (box.Min.X, box.Max.X)
         for y in (box.Min.Y, box.Max.Y)
         for z in (box.Min.Z, box.Max.Z)
@@ -144,14 +153,17 @@ def search_outline(view, corners):
     All four corners of the screen rectangle are rebuilt from the view axes,
     so a rotated plan is covered, and extruded both ways along the view
     direction, so elements hidden by cut plane, view range or far clip are
-    still found. A 3D
-    view has no usable screen rectangle: its section box or crop box limits
-    the search, otherwise the whole model is searched.
+    still found. A 3D view has no usable screen rectangle: its section box or
+    crop box, grown by its own largest size on every side, limits the search
+    so that elements clipped away by the box are still candidates; without a
+    box the whole model is searched.
     """
     if view.ViewType == DB.ViewType.ThreeD:
         if view.IsSectionBoxActive:
-            return _box_outline(view.GetSectionBox())
-        return _box_outline(view.CropBox) if view.CropBoxActive else None
+            return _box_outline(view.GetSectionBox(), _CLIP_MARGIN_FACTOR)
+        if view.CropBoxActive:
+            return _box_outline(view.CropBox, _CLIP_MARGIN_FACTOR)
+        return None
     if corners is None:
         return _box_outline(view.CropBox) if view.CropBoxActive else None
     first, second = corners
@@ -266,7 +278,7 @@ def build_overlay(uidoc, view):
             continue
         if code:
             by_code.setdefault(code, []).append((size, element, box))
-    not_evaluated = len([entry for entry in candidates[evaluated:] if not entry[3]])
+    not_evaluated = len(candidates) - evaluated
 
     ranked = sorted(
         (
