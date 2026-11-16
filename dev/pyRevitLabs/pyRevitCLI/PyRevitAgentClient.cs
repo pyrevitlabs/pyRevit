@@ -36,12 +36,30 @@ namespace pyRevitCLI {
         public string EngineVersion { get; set; }
         public string Commit { get; set; }
 
+        /// <summary>Commit the runtime binaries were built from; null when the host did not record it.</summary>
+        public string BinCommit { get; set; }
+
+        /// <summary>True when the binaries were built from another commit than the clone, so a rebuild is due.</summary>
+        public bool BinStale { get; set; }
+
         /// <summary>Git branch of the clone, or the branch its image was deployed from; null when the host did not record it.</summary>
         public string Branch { get; set; }
         public string ConfigRoot { get; set; }
 
         /// <summary>True for a session started by <c>pyrevit launch</c> rather than through the shared attachment.</summary>
         public bool PerLaunch { get; set; }
+
+        /// <summary>
+        /// Replaces the clone commit and binary fields recorded at startup with the live ones from a
+        /// <c>ping</c> answered with <c>identity</c>. A host that does not send them keeps the recorded values.
+        /// </summary>
+        public void Refresh(JObject pong) {
+            if (pong == null || !pong.ContainsKey("commit"))
+                return;
+            Commit = pong.Value<string>("commit");
+            BinCommit = pong.Value<string>("bin_commit");
+            BinStale = pong.Value<bool?>("bin_stale") ?? false;
+        }
 
         public JObject ToJson() {
             var json = new JObject {
@@ -56,6 +74,9 @@ namespace pyRevitCLI {
                 json["engine"] = Engine;
                 json["engine_version"] = EngineVersion;
                 json["commit"] = Commit;
+                json["bin_commit"] = BinCommit;
+                if (BinStale)
+                    json["bin_stale"] = true;
                 json["branch"] = Branch;
                 json["config_root"] = ConfigRoot;
                 json["per_launch"] = PerLaunch;
@@ -244,6 +265,8 @@ namespace pyRevitCLI {
                         Engine = data.Value<string>("engine"),
                         EngineVersion = data.Value<string>("engine_version"),
                         Commit = data.Value<string>("commit"),
+                        BinCommit = data.Value<string>("bin_commit"),
+                        BinStale = data.Value<bool?>("bin_stale") ?? false,
                         Branch = data.Value<string>("branch"),
                         ConfigRoot = data.Value<string>("config_root"),
                         PerLaunch = data.Value<bool?>("per_launch") ?? false,
@@ -368,8 +391,9 @@ namespace pyRevitCLI {
         /// See <see cref="Call"/>; <c>revit_busy</c> when the pipe isn't accepted in time and
         /// <c>no_answer</c> when the answer doesn't come in time.
         /// </exception>
-        public static void Ping(AgentInstance instance) {
-            Call(instance, "ping", answerTimeoutMs: PingTimeoutMs, connectTimeoutMs: PingConnectTimeoutMs);
+        public static JObject Ping(AgentInstance instance, bool identity = false) {
+            var parameters = identity ? new JObject { ["identity"] = true } : null;
+            return Call(instance, "ping", parameters, answerTimeoutMs: PingTimeoutMs, connectTimeoutMs: PingConnectTimeoutMs) as JObject;
         }
 
         /// <summary>
