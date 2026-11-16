@@ -469,25 +469,26 @@ def build_overlay(uidoc, view, pinned_ids=(), scope=None):
     return hits, rows, stats
 
 
-def mesh_hits(doc, hits, only_ids=None):
+def mesh_hits(doc, hits, only_ids=None, first_ids=()):
     """Mesh ``hits`` for ``dc3dserver.Server``, biggest first.
 
     The ``_MAX_SOLID_ELEMENTS`` biggest are drawn as solids, the rest, and any
     that would pass the triangle cap, as boxes; so meshing a filtered subset
-    spends the whole budget on it.
+    spends the whole budget on it. The budget covers all of ``hits`` together.
 
     Args:
         doc (DB.Document): resolves the hit ids.
         hits (list[Hit]): result of ``build_overlay``.
         only_ids (set[int] | None): mesh only these id values.
+        first_ids (Iterable[int]): id values ranked before the others, so
+            elements the user asked for keep their solids whatever their size.
 
     Returns:
         (dict): meshes per element id value.
     """
     chosen = sorted(
         (hit for hit in hits if only_ids is None or hit.id in only_ids),
-        key=lambda hit: hit.size,
-        reverse=True,
+        key=lambda hit: (hit.id not in first_ids, -hit.size),
     )
     meshes_by_id = {}
     triangles = 0
@@ -648,16 +649,27 @@ class RevealPreview(object):
         """Diagnose ``elements`` in the revealed view and draw the hidden ones.
 
         They are drawn whatever their size, and pinned: later rebuilds
-        diagnose them again, even when they sit outside the screen area.
+        diagnose them again, even when they sit outside the screen area. When
+        the revealed view is not the active one, the elements are only pinned
+        and the view is opened; the rebuild after its activation draws them.
 
         Returns:
             (tuple[list[int], int]): the id values added to the overlay and
             the number of elements the view already shows, which need no
             reveal.
         """
-        view = self._target_view(uidoc)
+        view = self.doc.GetElement(self.view_id) if self.view_id is not None else None
         if view is None:
             return [], 0
+        if uidoc.ActiveView.Id != view.Id:
+            pinned = [
+                id_value(element.Id)
+                for element in elements
+                if element is not None and element.Category is not None
+            ]
+            self._pinned_ids.update(pinned)
+            self.show(uidoc, view, self._on_built)
+            return pinned, 0
         visible_ids = collect_visible_ids(view)
         names = {"types": {}, "levels": {}}
         added = []
@@ -673,8 +685,7 @@ class RevealPreview(object):
             self._hits.append(found[0])
             self._rows[found[0].id] = found[1]
             added.append(found[0])
-        ids = set(hit.id for hit in added)
-        self._base_meshes.update(mesh_hits(self.doc, self._hits, ids))
+        self._base_meshes = mesh_hits(self.doc, self._hits, None, self._pinned_ids)
         self._mesh_focus()
         self._apply_meshes(uidoc)
         if self._on_built is not None:
@@ -746,7 +757,7 @@ class RevealPreview(object):
         self._hits, self._rows, self._stats = build_overlay(
             uidoc, view, self._pinned_ids, self._scope
         )
-        self._base_meshes = mesh_hits(self.doc, self._hits)
+        self._base_meshes = mesh_hits(self.doc, self._hits, None, self._pinned_ids)
         self._mesh_focus()
         self._built_key = _corner_key(zoom_corners(uidoc, view))
         self._seen_key = self._built_key
@@ -766,7 +777,9 @@ class RevealPreview(object):
         if self._focus_ids is None:
             self._focus_meshes = {}
         else:
-            self._focus_meshes = mesh_hits(self.doc, self._hits, self._focus_ids)
+            self._focus_meshes = mesh_hits(
+                self.doc, self._hits, self._focus_ids, self._pinned_ids
+            )
 
     def _apply_meshes(self, uidoc):
         if self._server is None:
