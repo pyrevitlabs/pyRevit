@@ -14,9 +14,11 @@ says what the omitted ones cost in total.
 
 Self-contained on purpose: imports only sys at module load so it can be the first
 line of pyrevit/__init__.py without triggering circular loads. The timeline type
-is resolved on first use. The pyRevit logger is never imported from here, since
-importing it before pyrevit/__init__.py finishes fails and costs time inside the
-very checkpoints being measured; it is used once another import has loaded it.
+is resolved on first use; if that fails before pyrevit.labs has loaded the
+assembly, the lookup is retried once after pyrevit.labs is imported. The pyRevit
+logger is never imported from here, since importing it before
+pyrevit/__init__.py finishes fails and costs time inside the very checkpoints
+being measured; it is used once another import has loaded it.
 Lines recorded before then are held and logged, in order, ahead of the first
 line after it.
 """
@@ -29,6 +31,8 @@ _UNRESOLVED = object()
 
 _TIMELINE_TYPE = [_UNRESOLVED]
 
+_TIMELINE_RETRIED = [False]
+
 _LOGGER = [None]
 
 _PENDING_LINES = []
@@ -36,17 +40,29 @@ _PENDING_LINES = []
 _ROLLUP = [None, 0, 0.0]
 
 
+def _resolve_timeline_type():
+    try:
+        import clr  # pylint: disable=E0401
+
+        clr.AddReference("pyRevitLabs.Common")
+        from pyRevitLabs.Common import LoadTimeline  # pylint: disable=E0401
+
+        return LoadTimeline
+    except Exception:
+        return None
+
+
 def _timeline_type():
     if _TIMELINE_TYPE[0] is _UNRESOLVED:
-        try:
-            import clr  # pylint: disable=E0401
-
-            clr.AddReference("pyRevitLabs.Common")
-            from pyRevitLabs.Common import LoadTimeline  # pylint: disable=E0401
-
-            _TIMELINE_TYPE[0] = LoadTimeline
-        except Exception:
-            _TIMELINE_TYPE[0] = None
+        _TIMELINE_TYPE[0] = _resolve_timeline_type()
+        _TIMELINE_RETRIED[0] = _TIMELINE_TYPE[0] is not None
+    elif (
+        _TIMELINE_TYPE[0] is None
+        and not _TIMELINE_RETRIED[0]
+        and "pyrevit.labs" in sys.modules
+    ):
+        _TIMELINE_RETRIED[0] = True
+        _TIMELINE_TYPE[0] = _resolve_timeline_type()
     return _TIMELINE_TYPE[0]
 
 
