@@ -87,7 +87,7 @@
     <sys:String x:Key="ui_no_match">현재 필터와 일치하는 요소가 없습니다.</sys:String>
     <sys:String x:Key="ui_loading_scene">3D 미리보기를 만드는 중...</sys:String>
     <sys:String x:Key="ui_scene_empty">미리볼 형상이 있는 요소가 없습니다.</sys:String>
-    <sys:String x:Key="ui_scene_help">드래그하여 궤도 회전, Shift+드래그 또는 오른쪽 드래그로 이동, 휠로 확대/축소, 더블 클릭으로 맞춤. 요소를 클릭하면 해당 카드를 찾습니다.</sys:String>
+    <sys:String x:Key="ui_scene_help">드래그하여 궤도 회전, Shift+드래그 또는 오른쪽 드래그로 이동, 휠로 확대/축소, 더블 클릭으로 맞춤. 요소를 클릭하면 해당 카드를 찾습니다. 요소를 마우스 오른쪽 버튼으로 클릭하면 더 많은 작업을 사용할 수 있습니다.</sys:String>
     <sys:String x:Key="ui_layer_hidden">표시 안 됨</sys:String>
     <sys:String x:Key="ui_layer_visible">표시됨</sys:String>
     <sys:String x:Key="ui_layer_clip">자르기 / 단면 상자</sys:String>
@@ -192,6 +192,11 @@
     <sys:String x:Key="ui_reveal_search_all">일치하는 요소 평가</sys:String>
     <sys:String x:Key="ui_reveal_search_all_hint">시간 제한 내에 처리된 큰 요소만이 아니라 필터와 일치하는 모든 요소를 진단합니다. 카테고리, 유형, 레벨, 마크, ID를 검색합니다.</sys:String>
     <sys:String x:Key="ui_reveal_scoped">필터와 일치하는 요소만 평가했습니다. 오버레이를 새로 고치면 모두 평가합니다.</sys:String>
+    <sys:String x:Key="ui_menu_show_card">카드로 이동</sys:String>
+    <sys:String x:Key="ui_menu_frame">3D에서 맞춤</sys:String>
+    <sys:String x:Key="ui_menu_zoom">Revit에서 보기</sys:String>
+    <sys:String x:Key="ui_menu_select">Revit에서 선택</sys:String>
+    <sys:String x:Key="ui_menu_remove">보고서에서 제거</sys:String>
     <sys:String x:Key="reveal_added">선택한 요소 {0}개를 그렸습니다.</sys:String>
     <sys:String x:Key="reveal_added_visible">{0}개는 이미 이 뷰에 보입니다.</sys:String>
     <sys:String x:Key="reveal_unsupported">{} 뷰에서는 오버레이를 사용할 수 없습니다.</sys:String>

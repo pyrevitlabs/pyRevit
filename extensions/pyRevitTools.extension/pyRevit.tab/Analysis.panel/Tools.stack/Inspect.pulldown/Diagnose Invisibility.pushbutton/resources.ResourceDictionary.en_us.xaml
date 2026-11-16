@@ -87,7 +87,7 @@
     <sys:String x:Key="ui_no_match">No elements match the current filter.</sys:String>
     <sys:String x:Key="ui_loading_scene">Building 3D preview...</sys:String>
     <sys:String x:Key="ui_scene_empty">None of these elements has geometry to preview.</sys:String>
-    <sys:String x:Key="ui_scene_help">Drag to orbit, Shift+drag or right-drag to pan, wheel to zoom, double-click to frame. Click an element to find its card.</sys:String>
+    <sys:String x:Key="ui_scene_help">Drag to orbit, Shift+drag or right-drag to pan, wheel to zoom, double-click to frame. Click an element to find its card. Right-click an element for more actions.</sys:String>
     <sys:String x:Key="ui_layer_hidden">Not visible</sys:String>
     <sys:String x:Key="ui_layer_visible">Visible</sys:String>
     <sys:String x:Key="ui_layer_clip">Crop / section box</sys:String>
@@ -192,6 +192,11 @@
     <sys:String x:Key="ui_reveal_search_all">Evaluate matching elements</sys:String>
     <sys:String x:Key="ui_reveal_search_all_hint">Diagnose every element that matches the filter, not only the biggest ones the time budget reached. Searches category, type, level, mark and id.</sys:String>
     <sys:String x:Key="ui_reveal_scoped">Only elements matching the filter were evaluated. Refresh the overlay to evaluate all.</sys:String>
+    <sys:String x:Key="ui_menu_show_card">Go to card</sys:String>
+    <sys:String x:Key="ui_menu_frame">Frame in 3D</sys:String>
+    <sys:String x:Key="ui_menu_zoom">Show in Revit</sys:String>
+    <sys:String x:Key="ui_menu_select">Select in Revit</sys:String>
+    <sys:String x:Key="ui_menu_remove">Remove from report</sys:String>
     <sys:String x:Key="reveal_added">Drew {0} selected element(s).</sys:String>
     <sys:String x:Key="reveal_added_visible">{0} already visible in this view.</sys:String>
     <sys:String x:Key="reveal_unsupported">The reveal overlay is not available in {} views.</sys:String>

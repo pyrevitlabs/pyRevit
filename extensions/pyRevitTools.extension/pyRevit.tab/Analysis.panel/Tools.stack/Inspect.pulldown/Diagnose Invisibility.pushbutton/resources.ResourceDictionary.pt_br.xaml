@@ -87,7 +87,7 @@
     <sys:String x:Key="ui_no_match">Nenhum elemento corresponde ao filtro atual.</sys:String>
     <sys:String x:Key="ui_loading_scene">Gerando visualização 3D...</sys:String>
     <sys:String x:Key="ui_scene_empty">Nenhum destes elementos tem geometria para visualizar.</sys:String>
-    <sys:String x:Key="ui_scene_help">Arraste para orbitar, Shift+arrastar ou botão direito para mover, roda para zoom, clique duplo para enquadrar. Clique em um elemento para encontrar seu cartão.</sys:String>
+    <sys:String x:Key="ui_scene_help">Arraste para orbitar, Shift+arrastar ou botão direito para mover, roda para zoom, clique duplo para enquadrar. Clique em um elemento para encontrar seu cartão. Clique com o botão direito em um elemento para mais ações.</sys:String>
     <sys:String x:Key="ui_layer_hidden">Não visível</sys:String>
     <sys:String x:Key="ui_layer_visible">Visível</sys:String>
     <sys:String x:Key="ui_layer_clip">Recorte / caixa de seção</sys:String>
@@ -192,6 +192,11 @@
     <sys:String x:Key="ui_reveal_search_all">Avaliar elementos correspondentes</sys:String>
     <sys:String x:Key="ui_reveal_search_all_hint">Diagnostica todos os elementos que correspondem ao filtro, não apenas os maiores alcançados pelo orçamento de tempo. Pesquisa categoria, tipo, nível, marca e id.</sys:String>
     <sys:String x:Key="ui_reveal_scoped">Somente os elementos que correspondem ao filtro foram avaliados. Atualize a sobreposição para avaliar todos.</sys:String>
+    <sys:String x:Key="ui_menu_show_card">Ir para o cartão</sys:String>
+    <sys:String x:Key="ui_menu_frame">Enquadrar em 3D</sys:String>
+    <sys:String x:Key="ui_menu_zoom">Mostrar no Revit</sys:String>
+    <sys:String x:Key="ui_menu_select">Selecionar no Revit</sys:String>
+    <sys:String x:Key="ui_menu_remove">Remover do relatório</sys:String>
     <sys:String x:Key="reveal_added">{0} elemento(s) selecionado(s) desenhado(s).</sys:String>
     <sys:String x:Key="reveal_added_visible">{0} já visível(is) nesta vista.</sys:String>
     <sys:String x:Key="reveal_unsupported">A sobreposição não está disponível em vistas do tipo {}.</sys:String>

@@ -87,7 +87,7 @@
     <sys:String x:Key="ui_no_match">Keine Elemente entsprechen dem aktuellen Filter.</sys:String>
     <sys:String x:Key="ui_loading_scene">3D-Vorschau wird erstellt...</sys:String>
     <sys:String x:Key="ui_scene_empty">Keines dieser Elemente hat Geometrie für eine Vorschau.</sys:String>
-    <sys:String x:Key="ui_scene_help">Ziehen zum Drehen, Umschalt+Ziehen oder Rechtsziehen zum Verschieben, Mausrad zum Zoomen, Doppelklick zum Einpassen. Element anklicken, um seine Karte zu finden.</sys:String>
+    <sys:String x:Key="ui_scene_help">Ziehen zum Drehen, Umschalt+Ziehen oder Rechtsziehen zum Verschieben, Mausrad zum Zoomen, Doppelklick zum Einpassen. Element anklicken, um seine Karte zu finden. Rechtsklick auf ein Element für weitere Aktionen.</sys:String>
     <sys:String x:Key="ui_layer_hidden">Nicht sichtbar</sys:String>
     <sys:String x:Key="ui_layer_visible">Sichtbar</sys:String>
     <sys:String x:Key="ui_layer_clip">Ausschnitt / Schnittbox</sys:String>
@@ -192,6 +192,11 @@
     <sys:String x:Key="ui_reveal_search_all">Passende Elemente auswerten</sys:String>
     <sys:String x:Key="ui_reveal_search_all_hint">Jedes Element diagnostizieren, das dem Filter entspricht, nicht nur die größten, die das Zeitbudget erreicht hat. Durchsucht Kategorie, Typ, Ebene, Marke und ID.</sys:String>
     <sys:String x:Key="ui_reveal_scoped">Es wurden nur Elemente ausgewertet, die dem Filter entsprechen. Overlay aktualisieren, um alle auszuwerten.</sys:String>
+    <sys:String x:Key="ui_menu_show_card">Zur Karte</sys:String>
+    <sys:String x:Key="ui_menu_frame">In 3D einpassen</sys:String>
+    <sys:String x:Key="ui_menu_zoom">In Revit zeigen</sys:String>
+    <sys:String x:Key="ui_menu_select">In Revit auswählen</sys:String>
+    <sys:String x:Key="ui_menu_remove">Aus Bericht entfernen</sys:String>
     <sys:String x:Key="reveal_added">{0} ausgewählte(s) Element(e) gezeichnet.</sys:String>
     <sys:String x:Key="reveal_added_visible">{0} bereits in dieser Ansicht sichtbar.</sys:String>
     <sys:String x:Key="reveal_unsupported">Die Überlagerung ist in Ansichten vom Typ {} nicht verfügbar.</sys:String>

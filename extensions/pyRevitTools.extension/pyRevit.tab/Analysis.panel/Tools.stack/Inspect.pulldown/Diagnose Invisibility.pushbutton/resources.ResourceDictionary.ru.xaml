@@ -87,7 +87,7 @@
     <sys:String x:Key="ui_no_match">Нет элементов, соответствующих фильтру.</sys:String>
     <sys:String x:Key="ui_loading_scene">Построение 3D-просмотра...</sys:String>
     <sys:String x:Key="ui_scene_empty">Ни у одного из элементов нет геометрии для просмотра.</sys:String>
-    <sys:String x:Key="ui_scene_help">Перетаскивание — вращение, Shift+перетаскивание или правая кнопка — панорама, колесо — масштаб, двойной щелчок — показать всё. Щелчок по элементу — найти его карточку.</sys:String>
+    <sys:String x:Key="ui_scene_help">Перетаскивание — вращение, Shift+перетаскивание или правая кнопка — панорама, колесо — масштаб, двойной щелчок — показать всё. Щелчок по элементу — найти его карточку. Щелчок правой кнопкой по элементу — другие действия.</sys:String>
     <sys:String x:Key="ui_layer_hidden">Не видим</sys:String>
     <sys:String x:Key="ui_layer_visible">Видим</sys:String>
     <sys:String x:Key="ui_layer_clip">Обрезка / секущий объём</sys:String>
@@ -192,6 +192,11 @@
     <sys:String x:Key="ui_reveal_search_all">Проверить подходящие элементы</sys:String>
     <sys:String x:Key="ui_reveal_search_all_hint">Диагностировать все элементы, подходящие под фильтр, а не только самые крупные, до которых дошёл лимит времени. Поиск по категории, типу, уровню, марке и id.</sys:String>
     <sys:String x:Key="ui_reveal_scoped">Проверены только элементы, подходящие под фильтр. Обновите наложение, чтобы проверить все.</sys:String>
+    <sys:String x:Key="ui_menu_show_card">К карточке</sys:String>
+    <sys:String x:Key="ui_menu_frame">Показать в 3D</sys:String>
+    <sys:String x:Key="ui_menu_zoom">Показать в Revit</sys:String>
+    <sys:String x:Key="ui_menu_select">Выбрать в Revit</sys:String>
+    <sys:String x:Key="ui_menu_remove">Убрать из отчёта</sys:String>
     <sys:String x:Key="reveal_added">Нарисовано выбранных элементов: {0}.</sys:String>
     <sys:String x:Key="reveal_added_visible">Уже видны на этом виде: {0}.</sys:String>
     <sys:String x:Key="reveal_unsupported">Наложение недоступно на видах типа {}.</sys:String>

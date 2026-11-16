@@ -87,7 +87,7 @@
     <sys:String x:Key="ui_no_match">Aucun élément ne correspond au filtre actuel.</sys:String>
     <sys:String x:Key="ui_loading_scene">Création de l'aperçu 3D...</sys:String>
     <sys:String x:Key="ui_scene_empty">Aucun de ces éléments n'a de géométrie à prévisualiser.</sys:String>
-    <sys:String x:Key="ui_scene_help">Glisser pour orbiter, Maj+glisser ou clic droit pour déplacer, molette pour zoomer, double-clic pour cadrer. Cliquer sur un élément pour trouver sa carte.</sys:String>
+    <sys:String x:Key="ui_scene_help">Glisser pour orbiter, Maj+glisser ou clic droit pour déplacer, molette pour zoomer, double-clic pour cadrer. Cliquer sur un élément pour trouver sa carte. Clic droit sur un élément pour plus d'actions.</sys:String>
     <sys:String x:Key="ui_layer_hidden">Non visible</sys:String>
     <sys:String x:Key="ui_layer_visible">Visible</sys:String>
     <sys:String x:Key="ui_layer_clip">Recadrage / boîte de coupe</sys:String>
@@ -192,6 +192,11 @@
     <sys:String x:Key="ui_reveal_search_all">Évaluer les éléments correspondants</sys:String>
     <sys:String x:Key="ui_reveal_search_all_hint">Diagnostique tous les éléments correspondant au filtre, pas seulement les plus grands atteints par le budget de temps. Recherche dans la catégorie, le type, le niveau, le repère et l'id.</sys:String>
     <sys:String x:Key="ui_reveal_scoped">Seuls les éléments correspondant au filtre ont été évalués. Actualisez la superposition pour tout évaluer.</sys:String>
+    <sys:String x:Key="ui_menu_show_card">Aller à la fiche</sys:String>
+    <sys:String x:Key="ui_menu_frame">Cadrer en 3D</sys:String>
+    <sys:String x:Key="ui_menu_zoom">Afficher dans Revit</sys:String>
+    <sys:String x:Key="ui_menu_select">Sélectionner dans Revit</sys:String>
+    <sys:String x:Key="ui_menu_remove">Retirer du rapport</sys:String>
     <sys:String x:Key="reveal_added">{0} élément(s) sélectionné(s) dessiné(s).</sys:String>
     <sys:String x:Key="reveal_added_visible">{0} déjà visible(s) dans cette vue.</sys:String>
     <sys:String x:Key="reveal_unsupported">La superposition n'est pas disponible dans les vues de type {}.</sys:String>

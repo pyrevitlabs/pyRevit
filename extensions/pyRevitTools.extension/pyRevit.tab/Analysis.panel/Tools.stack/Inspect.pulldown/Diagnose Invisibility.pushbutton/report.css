@@ -394,3 +394,20 @@
 .dvi-inspect { margin: 8px 0; }
 .dvi-inspect-bar { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 4px; }
 .dvi-inspect-bar.multi { justify-content: flex-start; align-items: center; }
+.dvi-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 190px;
+  max-width: 320px;
+  padding: 4px;
+  background: var(--dvi-surface);
+  border: 1px solid var(--dvi-line);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(35,55,73,.25);
+  font-size: 13px;
+}
+.dvi-menu-title { padding: 4px 8px 6px; border-bottom: 1px solid var(--dvi-line); margin-bottom: 4px; color: var(--dvi-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dvi-menu-item { display: block; width: 100%; padding: 5px 8px; border: 0; border-radius: 4px; background: transparent; color: var(--dvi-ink); font: inherit; text-align: left; cursor: pointer; }
+.dvi-menu-item:hover, .dvi-menu-item:focus { background: var(--dvi-sunken); outline: none; }
+.dvi-menu-item.danger { color: var(--dvi-bad); }
+.dvi-menu-item.danger:hover, .dvi-menu-item.danger:focus { background: var(--dvi-bad-bg); }

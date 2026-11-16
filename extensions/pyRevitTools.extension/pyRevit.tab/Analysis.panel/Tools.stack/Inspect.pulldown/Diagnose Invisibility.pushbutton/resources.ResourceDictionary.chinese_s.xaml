@@ -87,7 +87,7 @@
     <sys:String x:Key="ui_no_match">没有图元符合当前过滤条件。</sys:String>
     <sys:String x:Key="ui_loading_scene">正在生成三维预览...</sys:String>
     <sys:String x:Key="ui_scene_empty">这些图元都没有可预览的几何图形。</sys:String>
-    <sys:String x:Key="ui_scene_help">拖动以环绕，Shift+拖动或右键拖动以平移，滚轮缩放，双击以适应。单击图元以找到其卡片。</sys:String>
+    <sys:String x:Key="ui_scene_help">拖动以环绕，Shift+拖动或右键拖动以平移，滚轮缩放，双击以适应。单击图元以找到其卡片。 右键单击元素可使用更多操作。</sys:String>
     <sys:String x:Key="ui_layer_hidden">不可见</sys:String>
     <sys:String x:Key="ui_layer_visible">可见</sys:String>
     <sys:String x:Key="ui_layer_clip">裁剪 / 剖切框</sys:String>
@@ -192,6 +192,11 @@
     <sys:String x:Key="ui_reveal_search_all">评估匹配的元素</sys:String>
     <sys:String x:Key="ui_reveal_search_all_hint">诊断所有与筛选匹配的元素，而不仅是时间预算内处理到的较大元素。搜索类别、类型、标高、标记和 ID。</sys:String>
     <sys:String x:Key="ui_reveal_scoped">仅评估了与筛选匹配的元素。刷新叠加层可评估全部元素。</sys:String>
+    <sys:String x:Key="ui_menu_show_card">转到卡片</sys:String>
+    <sys:String x:Key="ui_menu_frame">在 3D 中居中</sys:String>
+    <sys:String x:Key="ui_menu_zoom">在 Revit 中显示</sys:String>
+    <sys:String x:Key="ui_menu_select">在 Revit 中选择</sys:String>
+    <sys:String x:Key="ui_menu_remove">从报告中移除</sys:String>
     <sys:String x:Key="reveal_added">已绘制 {0} 个选中的元素。</sys:String>
     <sys:String x:Key="reveal_added_visible">{0} 个已在此视图中可见。</sys:String>
     <sys:String x:Key="reveal_unsupported">叠加层在{}类型的视图中不可用。</sys:String>

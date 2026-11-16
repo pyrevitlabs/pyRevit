@@ -98,7 +98,8 @@ _UI_STRINGS = {
     "sceneHelp": (
         "ui_scene_help",
         "Drag to orbit, Shift+drag or right-drag to pan, wheel to zoom,"
-        " double-click to frame. Click an element to find its card.",
+        " double-click to frame. Click an element to find its card, right-click"
+        " it for more actions.",
     ),
     "layerHidden": ("ui_layer_hidden", "Not visible"),
     "layerVisible": ("ui_layer_visible", "Visible"),
@@ -188,6 +189,11 @@ _UI_STRINGS = {
         " for example in another view or a schedule.",
     ),
     "revealAddToReport": ("ui_reveal_add_to_report", "Add to report"),
+    "menuShowCard": ("ui_menu_show_card", "Go to card"),
+    "menuFrame": ("ui_menu_frame", "Frame in 3D"),
+    "menuZoom": ("ui_menu_zoom", "Show in Revit"),
+    "menuSelect": ("ui_menu_select", "Select in Revit"),
+    "menuRemove": ("ui_menu_remove", "Remove from report"),
     "revealSearchAll": ("ui_reveal_search_all", "Evaluate matching elements"),
     "revealSearchAllHint": (
         "ui_reveal_search_all_hint",

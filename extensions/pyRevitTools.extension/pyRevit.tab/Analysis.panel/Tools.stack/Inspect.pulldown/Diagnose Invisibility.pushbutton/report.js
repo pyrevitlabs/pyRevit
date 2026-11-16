@@ -1515,6 +1515,7 @@
         const viewer = new window.pyRevitInvisibilityViewer(host, scene, {
           strings: this.s,
           onPick: (id) => this.revealCard(scene.viewId, id),
+          onContextMenu: (id, x, y) => this.openElementMenu(scene.viewId, id, x, y),
         });
         if (camera) viewer.setCamera(camera);
         for (const input of section.querySelectorAll(".dvi-scene-bar input[data-layer]")) {
@@ -1539,6 +1540,73 @@
       card.hidden = false;
       card.scrollIntoView({ behavior: "smooth", block: "nearest" });
       this.flash(card);
+    }
+
+    /**
+     * Right-click menu of an element in the 3D preview: the actions of its card that make sense
+     * without leaving the preview, so a wrongly added element can be removed on the spot.
+     * Closes on any click, Escape, scroll or resize.
+     */
+    openElementMenu(viewId, elementId, x, y) {
+      this.closeMenu();
+      const view = this.views.find((v) => v.id === viewId);
+      const element = view && view.elements.find((e) => e.id === elementId);
+      if (!element) return;
+      const bridge = this.data.bridge;
+      const item = (label, action, kind) =>
+        h(
+          "button",
+          {
+            class: `dvi-menu-item${kind ? ` ${kind}` : ""}`,
+            onclick: () => {
+              this.closeMenu();
+              action();
+            },
+          },
+          label
+        );
+      const viewer = this.viewers.get(viewId);
+      const menu = h(
+        "div",
+        { class: "dvi-menu", role: "menu" },
+        h("div", { class: "dvi-menu-title" }, element.label),
+        item(this.s.menuShowCard, () => this.revealCard(viewId, elementId)),
+        viewer ? item(this.s.menuFrame, () => viewer.focus(elementId)) : null,
+        bridge ? item(this.s.menuZoom, () => this.run(null, "zoom", { elementIds: [elementId] })) : null,
+        bridge ? item(this.s.menuSelect, () => this.run(null, "select", { elementIds: [elementId] })) : null,
+        bridge ? item(this.s.ghost, () => this.toggleGhost({}, view, element)) : null,
+        bridge
+          ? item(this.s.menuRemove, () => this.run(null, "remove_element", { elementId }), "danger")
+          : null
+      );
+      this.root.append(menu);
+      const box = menu.getBoundingClientRect();
+      menu.style.left = `${Math.max(4, Math.min(x, window.innerWidth - box.width - 4))}px`;
+      menu.style.top = `${Math.max(4, Math.min(y, window.innerHeight - box.height - 4))}px`;
+      const onEvent = (e) => {
+        if (e.type === "keydown" && e.key !== "Escape") return;
+        if (e.type === "pointerdown" && menu.contains(e.target)) return;
+        this.closeMenu();
+      };
+      const onWindowBlur = (e) => {
+        if (e.target === window) this.closeMenu();
+      };
+      const events = ["pointerdown", "keydown", "wheel", "resize"];
+      this.menuCleanup = () => {
+        for (const name of events) window.removeEventListener(name, onEvent, true);
+        window.removeEventListener("blur", onWindowBlur);
+        menu.remove();
+      };
+      for (const name of events) window.addEventListener(name, onEvent, true);
+      window.addEventListener("blur", onWindowBlur);
+      const first = menu.querySelector(".dvi-menu-item");
+      if (first) first.focus();
+    }
+
+    closeMenu() {
+      const cleanup = this.menuCleanup;
+      this.menuCleanup = null;
+      if (cleanup) cleanup();
     }
 
     focusInScene(viewId, elementId) {

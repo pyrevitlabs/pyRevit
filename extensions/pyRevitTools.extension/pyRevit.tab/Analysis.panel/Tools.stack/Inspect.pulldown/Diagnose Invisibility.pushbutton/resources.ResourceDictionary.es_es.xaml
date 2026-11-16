@@ -87,7 +87,7 @@
     <sys:String x:Key="ui_no_match">Ningún elemento coincide con el filtro actual.</sys:String>
     <sys:String x:Key="ui_loading_scene">Generando vista previa 3D...</sys:String>
     <sys:String x:Key="ui_scene_empty">Ninguno de estos elementos tiene geometría para previsualizar.</sys:String>
-    <sys:String x:Key="ui_scene_help">Arrastre para orbitar, Mayús+arrastre o clic derecho para desplazar, rueda para zoom, doble clic para encuadrar. Haga clic en un elemento para encontrar su tarjeta.</sys:String>
+    <sys:String x:Key="ui_scene_help">Arrastre para orbitar, Mayús+arrastre o clic derecho para desplazar, rueda para zoom, doble clic para encuadrar. Haga clic en un elemento para encontrar su tarjeta. Clic derecho en un elemento para más acciones.</sys:String>
     <sys:String x:Key="ui_layer_hidden">No visible</sys:String>
     <sys:String x:Key="ui_layer_visible">Visible</sys:String>
     <sys:String x:Key="ui_layer_clip">Recorte / caja de sección</sys:String>
@@ -192,6 +192,11 @@
     <sys:String x:Key="ui_reveal_search_all">Evaluar elementos coincidentes</sys:String>
     <sys:String x:Key="ui_reveal_search_all_hint">Diagnostica todos los elementos que coinciden con el filtro, no solo los más grandes que alcanzó el presupuesto de tiempo. Busca en categoría, tipo, nivel, marca e id.</sys:String>
     <sys:String x:Key="ui_reveal_scoped">Solo se evaluaron los elementos que coinciden con el filtro. Actualice la superposición para evaluarlos todos.</sys:String>
+    <sys:String x:Key="ui_menu_show_card">Ir a la tarjeta</sys:String>
+    <sys:String x:Key="ui_menu_frame">Encuadrar en 3D</sys:String>
+    <sys:String x:Key="ui_menu_zoom">Mostrar en Revit</sys:String>
+    <sys:String x:Key="ui_menu_select">Seleccionar en Revit</sys:String>
+    <sys:String x:Key="ui_menu_remove">Quitar del informe</sys:String>
     <sys:String x:Key="reveal_added">Se dibujaron {0} elemento(s) seleccionado(s).</sys:String>
     <sys:String x:Key="reveal_added_visible">{0} ya visible(s) en esta vista.</sys:String>
     <sys:String x:Key="reveal_unsupported">La superposición no está disponible en vistas de tipo {}.</sys:String>
