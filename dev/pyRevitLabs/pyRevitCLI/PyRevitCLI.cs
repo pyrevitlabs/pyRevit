@@ -217,7 +217,10 @@ namespace pyRevitCLI {
                                                       TryGetValue("--scope", "user"));
                 else if (all("path", "ensure"))
                     PyRevitCLIAppCmds.EnsurePathEntry(arguments["<dir>"].Value as string,
-                                                      TryGetValue("--scope", "user"));
+                                                      TryGetValue("--scope", "user"),
+                                                      first: arguments["--first"].IsTrue);
+                else if (all("path", "which"))
+                    PyRevitCLIAppCmds.ListCliCopiesOnPath();
                 else
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
             }
@@ -539,7 +542,8 @@ namespace pyRevitCLI {
                         destPath: TryGetValue("--dest"),
                         searchPattern: TryGetValue("<search_pattern>"),
                         latest: arguments["latest"].IsTrue,
-                        listPreReleases: arguments["--pre"].IsTrue
+                        listPreReleases: arguments["--pre"].IsTrue,
+                        admin: arguments["--admin"].IsTrue
                         );
 
                 else
@@ -657,6 +661,7 @@ namespace pyRevitCLI {
                         useDefaultEngine: arguments["default"].IsTrue,
                         engineVersion: TryGetValue("<engine_version>"),
                         revitYear: TryGetValue("<revit_year>"),
+                        model: TryGetValue("<model_file>"),
                         isolated: arguments["--isolated"].IsTrue,
                         language: TryGetValue("--language")
                         );
@@ -1105,7 +1110,7 @@ namespace pyRevitCLI {
         }
 
         internal static string TryGetValue(string key, string defaultValue = null) {
-            return arguments[key] != null ? arguments[key].Value as string : defaultValue;
+            return PyRevitCLIArguments.Value(arguments, key, defaultValue);
         }
 
         /// <summary>

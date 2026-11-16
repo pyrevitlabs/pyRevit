@@ -2,7 +2,7 @@ name: pyRevit Revit integration tests
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, 'release/**']
     paths:
       - '.github/workflows/revit-integration.yml'
       - 'build/**'

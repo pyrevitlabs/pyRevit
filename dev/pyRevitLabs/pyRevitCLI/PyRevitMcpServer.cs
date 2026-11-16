@@ -35,9 +35,14 @@ namespace pyRevitCLI {
     /// Revit. Once a tool call has sent a request, a failure that the host did not report itself
     /// is returned with <c>outcome</c> <c>unknown</c> and that <c>request_id</c>, never as bad
     /// arguments, because the request may have run.
-    /// Calls to one Revit are serialized, because its host serves one connection at a time; calls
+    /// Calls to one Revit are serialized, because its host runs one request at a time and an older
+    /// host also accepts one connection at a time; calls
     /// to different Revit sessions never wait for each other. <c>notifications/cancelled</c> stops
     /// a call that waits for its turn or for Revit's answer, but cannot stop what Revit already runs.
+    /// When input ends, calls still open keep their answer for <see cref="DefaultInputClosedGracePeriod"/>
+    /// (a one-shot client may close stdin and still wait for its answer), then they are cancelled and
+    /// the process waits at most <see cref="AbandonedCallsWait"/> more before exiting anyway, so a
+    /// vanished client can't keep the process, and the folder it locks, alive indefinitely.
     /// </remarks>
     internal sealed class PyRevitMcpServer {
         private const string LatestProtocolVersion = "2025-06-18";
@@ -45,6 +50,8 @@ namespace pyRevitCLI {
             "2025-06-18", "2025-03-26", "2024-11-05",
         };
         private static readonly TimeSpan ProgressInterval = TimeSpan.FromSeconds(10);
+        internal static readonly TimeSpan DefaultInputClosedGracePeriod = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan AbandonedCallsWait = TimeSpan.FromSeconds(10);
         private const int MaxRunResultPage = 200 * 1024;
         private const int DefaultRecordingEvents = 200;
         private const int MaxRecordingEvents = 1000;
@@ -74,9 +81,11 @@ namespace pyRevitCLI {
         /// <summary>
         /// Serves requests read from <paramref name="input"/> until it ends, writing responses to
         /// <paramref name="output"/>. Lets tests drive the server without a process.
+        /// <paramref name="inputClosedGracePeriod"/> is how long calls still open after the input ended may
+        /// keep running before they are cancelled; <see cref="DefaultInputClosedGracePeriod"/> when omitted.
         /// </summary>
-        internal static void Serve(string defaultRevit, TextReader input, TextWriter output) {
-            new PyRevitMcpServer(defaultRevit).Run(input, output);
+        internal static void Serve(string defaultRevit, TextReader input, TextWriter output, TimeSpan? inputClosedGracePeriod = null) {
+            new PyRevitMcpServer(defaultRevit).Run(input, output, inputClosedGracePeriod ?? DefaultInputClosedGracePeriod);
         }
 
         private string ReadRequestLine(BoundedLineReader lines) {
@@ -89,11 +98,11 @@ namespace pyRevitCLI {
             }
         }
 
-        private void Run(TextReader input, TextWriter output) {
+        private void Run(TextReader input, TextWriter output, TimeSpan inputClosedGracePeriod) {
             LogManager.Configuration = new LoggingConfiguration();
             this.output = output;
 
-            var inFlight = new List<Task>();
+            var inFlight = new List<(Task Task, CancellationTokenSource Cancellation, string Key)>();
             var lines = new BoundedLineReader(input);
             string line;
             while ((line = ReadRequestLine(lines)) != null) {
@@ -114,7 +123,7 @@ namespace pyRevitCLI {
                 var method = (message["method"] as JValue)?.Value as string;
                 var id = message["id"];
                 if (id == null) {
-                    if (method == "notifications/cancelled")
+                    if (method == "notifications/cancelled" && (message["jsonrpc"] as JValue)?.Value as string == "2.0")
                         Cancel((message["params"] as JObject)?["requestId"]);
                     continue;
                 }
@@ -145,19 +154,19 @@ namespace pyRevitCLI {
                             Write(Result(id, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }));
                             break;
                         case "tools/call":
-                            inFlight.RemoveAll(task => task.IsCompleted);
+                            inFlight.RemoveAll(call => call.Task.IsCompleted);
                             var cancellation = new CancellationTokenSource();
                             var key = id.ToString(Formatting.None);
                             var tracked = pendingCalls.TryAdd(key, cancellation);
-                            inFlight.Add(Task.Run(() => {
+                            inFlight.Add((Task.Run(() => {
                                 try {
-                                    CallTool(id, parameters, cancellation.Token);
+                                    CallTool(id, parameters, cancellation);
                                 }
                                 finally {
                                     if (tracked)
                                         pendingCalls.TryRemove(key, out _);
                                 }
-                            }));
+                            }), cancellation, key));
                             break;
                         default:
                             Write(Error(id, -32601, "Method not found"));
@@ -169,7 +178,15 @@ namespace pyRevitCLI {
                 }
             }
 
-            Task.WaitAll(inFlight.ToArray());
+            var openTasks = inFlight.Select(call => call.Task).ToArray();
+            if (Task.WaitAll(openTasks, inputClosedGracePeriod))
+                return;
+            foreach (var call in inFlight)
+                Cancel(call.Cancellation);
+            if (Task.WaitAll(openTasks, AbandonedCallsWait))
+                return;
+            var abandoned = inFlight.Where(call => !call.Task.IsCompleted).Select(call => call.Key);
+            System.Console.Error.WriteLine("pyrevit mcp: exiting with calls still running (request ids: " + string.Join(", ", abandoned) + ")");
         }
 
         private static JObject Initialize(JObject parameters) {
@@ -186,13 +203,29 @@ namespace pyRevitCLI {
             };
         }
 
+        /// <remarks>
+        /// A call whose answer is being written holds its lock; the cancel then has nothing left to
+        /// stop, so it is dropped instead of making the reader wait for a slow client's stdout.
+        /// </remarks>
         private void Cancel(JToken requestId) {
-            if (requestId != null && pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
-                cancellation.Cancel();
+            if (requestId == null || !pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
+                return;
+            Cancel(cancellation);
         }
 
-        private void CallTool(JToken id, JObject parameters, CancellationToken cancellation) {
-            callCancellation.Value = cancellation;
+        private static void Cancel(CancellationTokenSource cancellation) {
+            if (!Monitor.TryEnter(cancellation))
+                return;
+            try {
+                cancellation.Cancel();
+            }
+            finally {
+                Monitor.Exit(cancellation);
+            }
+        }
+
+        private void CallTool(JToken id, JObject parameters, CancellationTokenSource cancellation) {
+            callCancellation.Value = cancellation.Token;
             Timer progress = null;
             sentRequestId.Value = null;
             try {
@@ -200,11 +233,11 @@ namespace pyRevitCLI {
                 try {
                     var name = (parameters["name"] as JValue)?.Value as string;
                     if (string.IsNullOrWhiteSpace(name)) {
-                        WriteUnlessClosed(Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
+                        AnswerUnlessCancelled(cancellation, Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
                         return;
                     }
                     if (parameters["arguments"] != null && parameters["arguments"] is not JObject) {
-                        WriteUnlessClosed(Error(id, -32602, "Invalid params: 'arguments' must be an object."));
+                        AnswerUnlessCancelled(cancellation, Error(id, -32602, "Invalid params: 'arguments' must be an object."));
                         return;
                     }
                     var arguments = parameters["arguments"] as JObject ?? new JObject();
@@ -243,10 +276,23 @@ namespace pyRevitCLI {
                 }
                 StopProgress(progress);
                 progress = null;
-                WriteUnlessClosed(Result(id, result));
+                AnswerUnlessCancelled(cancellation, Result(id, result));
             }
             finally {
                 StopProgress(progress);
+            }
+        }
+
+        /// <remarks>
+        /// Takes the output lock before the call's own lock, so while the answer waits for another
+        /// call's answer to be written, <see cref="Cancel"/> can still stop it.
+        /// </remarks>
+        private void AnswerUnlessCancelled(CancellationTokenSource cancellation, JObject message) {
+            lock (writeLock) {
+                lock (cancellation) {
+                    if (!cancellation.IsCancellationRequested)
+                        WriteUnlessClosed(message);
+                }
             }
         }
 
@@ -450,7 +496,7 @@ namespace pyRevitCLI {
                 ?? throw new AgentClientException("run_not_found", "No recorded run with id " + runId);
 
             var responsePath = Path.Combine(runDir, "response.json");
-            var run = File.Exists(responsePath) ? JObject.Parse(File.ReadAllText(responsePath)) : new JObject();
+            var run = File.Exists(responsePath) ? (JObject)JsonText.Parse(File.ReadAllText(responsePath)) : new JObject();
             run["script"] = ReadIfExists(Path.Combine(runDir, "script.py"));
 
             var resultPath = Path.Combine(runDir, "result.json");
@@ -797,7 +843,7 @@ namespace pyRevitCLI {
                         new JObject {
                             ["view"] = new JObject {
                                 ["type"] = "string",
-                                ["description"] = "'active' (default), '3d', a view name, or a view id.",
+                                ["description"] = "'active' (default), '3d', a view name, a sheet number, or a view id.",
                             },
                             ["mode"] = new JObject {
                                 ["type"] = "string",

@@ -148,6 +148,18 @@ public class McpRunResultsTests {
         }
 
         [Fact]
+        public void TheHostSummaryLeadsTheChanges() {
+            var changes = Changes(added: 25);
+            changes["summary"] = "added 25 elements (Walls)";
+
+            var compact = PyRevitMcpRunResults.Compact(Run("modify", changes))["changes"];
+
+            Assert.Equal("summary", ((JObject)compact).Properties().First().Name);
+            Assert.Equal("added 25 elements (Walls)", compact.Value<string>("summary"));
+            Assert.Equal(20, ((JArray)compact["added_ids"]).Count);
+        }
+
+        [Fact]
         public void AddedFamiliesAreCappedAtTwenty() {
             var changes = Changes(added: 50);
             changes["added_families"] = new JArray(Enumerable.Range(1, 30).Select(id => new JObject { ["id"] = id, ["class"] = "FamilySymbol" }));

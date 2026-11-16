@@ -108,6 +108,31 @@ public class AgentSkillsTests {
     }
 
     [Fact]
+    public void ASkillNameThatDecodesToATrailingNewlineIsRejected() {
+        var root = Directory.CreateTempSubdirectory("pyrevit-skill-").FullName;
+        try {
+            var skillDir = Directory.CreateDirectory(Path.Combine(root, "foo")).FullName;
+            File.WriteAllText(Path.Combine(skillDir, "SKILL.md"), "---\nname: \"foo\\n\"\ndescription: x\n---\nbody\n");
+
+            Assert.Null(PyRevitAgentSkills.ReadSkill(skillDir, PyRevitAgentSkills.UserSource));
+        }
+        finally {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Theory]
+    [InlineData(@"""C:\\dev\\""", @"C:\dev\")]
+    [InlineData(@"""a\\\""b""", @"a\""b")]
+    [InlineData(@"""one\ntwo\tend""", "one\ntwo\tend")]
+    [InlineData(@"""keeps \q""", @"keeps \q")]
+    public void DoubleQuotedFrontMatterValuesUnescapeInOnePass(string raw, string expected) {
+        var parsed = PyRevitAgentSkills.ParseFrontMatter(new[] { "---", "value: " + raw, "---" });
+
+        Assert.Equal(expected, parsed["value"]);
+    }
+
+    [Fact]
     public void UnclosedFrontMatterIsIgnored() {
         Assert.Empty(PyRevitAgentSkills.ParseFrontMatter(new[] { "---", "name: other", "# Body", "Note: text" }));
     }

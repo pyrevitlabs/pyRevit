@@ -2,6 +2,7 @@
 
 import ast
 import builtins
+import contextlib
 import importlib.util
 import linecache
 import os
@@ -1368,6 +1369,33 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
         self.assertIs(guards["__agent_tick__"], module.__agent_tick__)
         self.assertIsNone(hook.find_module("json"))
 
+    def test_runtime_compiled_workspace_code_turns_on_line_checks(self):
+        """On IronPython, a workspace module with exec asks for per-line deadline checks."""
+        folder = self._workspace(
+            {"dyn.py": "def go(code):\n    exec(code)\n", "plain.py": "VALUE = 1\n"}
+        )
+        guards = {"__agent_tick__": lambda: True, "__agent_loop__": iter}
+        sys.path.insert(0, folder)
+        self.addCleanup(sys.path.remove, folder)
+        for name in ("dyn", "plain"):
+            self.addCleanup(sys.modules.pop, name, None)
+        for implementation, module, expected in (
+            ("ironpython", "dyn", 1),
+            ("ironpython", "plain", 0),
+            ("cpython", "dyn", 0),
+        ):
+            calls = []
+            hook = self.runner._WorkspaceLoopGuard(
+                folder, guards, lambda: calls.append(1)
+            )
+            sys.modules.pop(module, None)
+            self.assertIs(hook, hook.find_module(module))
+            with mock.patch.object(
+                self.runner, "_implementation", return_value=implementation
+            ):
+                hook.load_module(module)
+            self.assertEqual(expected, len(calls), (implementation, module))
+
     def test_the_workspace_hook_is_removed_after_the_run(self):
         """The import hook never outlives the run that installed it."""
         folder = self._workspace({"quiet.py": "VALUE = 1\n"})
@@ -1470,6 +1498,51 @@ class AgentRunnerTracebackTests(unittest.TestCase):
         self.assertEqual("timeout", error_type)
         self.assertIn("could not be interrupted", message)
         self.assertEqual("", text)
+
+    def test_timeout_injected_while_converting_the_result_is_not_an_interruption(self):
+        """A limit passed after the script ended gets the late message on CPython too."""
+        convert = self.runner._to_jsonable
+
+        def slow_convert(value):
+            ends = time.time() + 0.6
+            while time.time() < ends:
+                pass
+            return convert(value)
+
+        source = "class Slow(object):\n    pass\nresult = [Slow()]\n"
+        with mock.patch.object(self.runner, "_to_jsonable", slow_convert):
+            error_type, message, text = self._run(source, timeout_s=0.2)
+        self.assertEqual("timeout", error_type)
+        self.assertIn("could not be interrupted", message)
+        self.assertEqual("", text)
+
+    def test_swallowed_timeout_does_not_blame_an_uninterruptible_call(self):
+        """A loop whose timeout an aliased handler swallowed is not called uninterruptible."""
+        source = "B = BaseException\ntry:\n    while True:\n        pass\nexcept B:\n    pass\n"
+        without_injection = mock.patch.object(
+            self.runner, "_set_async_exc_function", return_value=None
+        )
+        for engine in (without_injection, contextlib.nullcontext()):
+            with self.subTest(engine=engine), engine:
+                error_type, message, text = self._run(source, timeout_s=0.2)
+                self.assertEqual("timeout", error_type)
+                self.assertNotIn("could not be interrupted", message)
+                self.assertEqual("", text)
+
+    def test_a_timeout_raised_in_runner_code_is_not_an_interruption(self):
+        """Only a script frame the tracer stops marks the run as interrupted."""
+        for filename, interrupted in (
+            (self.runner._RUNNER_FILENAME, False),
+            (self.runner.SOURCE_NAME, True),
+        ):
+            state = {"timed_out": True, "interrupted": False, "check_lines": False}
+            trace = self.runner._execution_tracer(5, state, {}, True, False)
+            code = types.SimpleNamespace(co_filename=filename, co_name="f", co_flags=0)
+            frame = types.SimpleNamespace(f_code=code)
+            with mock.patch.object(self.runner, "_track_stack_transactions"):
+                with self.assertRaises(self.runner.RunTimedOut):
+                    trace(frame, "call", None)(frame, "line", None)
+            self.assertEqual(interrupted, state["interrupted"], filename)
 
     def test_error_traceback_keeps_the_script_frames(self):
         """A script error still names each script frame and the error."""
@@ -1874,6 +1947,41 @@ class AgentRunnerWorkspaceTests(unittest.TestCase):
             },
         )
         self.assertEqual(["scratch_ws"], unloaded)
+
+    def test_namespace_packages_in_the_workspace_are_unloaded(self):
+        """Packages without __init__.py, nested too, have no __file__ but are unloaded (#3949)."""
+        workspace = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, workspace)
+        os.makedirs(os.path.join(workspace, "nspkg_ws", "inner"))
+        with open(
+            os.path.join(workspace, "nspkg_ws", "inner", "part.py"), "w"
+        ) as handle:
+            handle.write("VALUE = 1\n")
+        with (
+            mock.patch.object(self.runner, "_LIBRARY_PATHS", []),
+            mock.patch.object(sys, "path", [workspace] + sys.path),
+            mock.patch.dict(sys.modules),
+        ):
+            importlib.import_module("nspkg_ws.inner.part")
+            self.assertIsNone(getattr(sys.modules["nspkg_ws"], "__file__", None))
+            self.runner._unload_modules_under(workspace)
+            for name in ("nspkg_ws", "nspkg_ws.inner", "nspkg_ws.inner.part"):
+                self.assertIsNone(sys.modules.get(name), name)
+
+    def test_namespace_packages_outside_the_workspace_stay_loaded(self):
+        """A namespace package with any portion outside the workspace stays loaded."""
+        workspace = os.path.abspath("work")
+        outside = os.path.abspath("elsewhere")
+        package = types.SimpleNamespace(
+            __file__=None,
+            __path__=[os.path.join(workspace, "ns"), os.path.join(outside, "ns")],
+        )
+        with (
+            mock.patch.object(self.runner, "_LIBRARY_PATHS", []),
+            mock.patch.dict(sys.modules, {"split_ns_ws": package}),
+        ):
+            self.runner._unload_modules_under(workspace)
+            self.assertIn("split_ns_ws", sys.modules)
 
 
 if __name__ == "__main__":

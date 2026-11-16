@@ -2,12 +2,14 @@
 
 import io
 import logging
+import os
 import os.path as op
+import re
 import sys
 import threading
 import traceback
 
-from pyrevit import EXEC_PARAMS, USER_DESKTOP
+from pyrevit import EXEC_PARAMS, USER_SYS_TEMP
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 
@@ -42,6 +44,17 @@ def _safe_text(value):
             return safe_strtype(repr(value))
         except Exception:
             return "<unprintable>"
+
+
+def _safe_filename(name):
+    return re.sub(r'[<>:"/\\|?*\s]+', "_", safe_strtype(name))
+
+
+def _get_devlog_folder():
+    runtime_logfile = get_runtime_logfile_path()
+    if runtime_logfile:
+        return op.dirname(runtime_logfile)
+    return USER_SYS_TEMP
 
 
 def _format_message(message, args):
@@ -204,10 +217,29 @@ class LoggerWrapper(object):
         self.error(coreutils.prepare_html_str(err_msg))
 
     def dev_log(self, source, message=""):
-        """Append a command-specific developer note on the user's desktop."""
-        devlog_fname = "{}.log".format(EXEC_PARAMS.command_uniqueid or self.name)
+        """Append a developer note to a log file in pyRevit's log folder.
+
+        Notes are written only while the debug level is on, so a script can
+        record handled errors without leaving files behind for end users. The
+        file is named after the command unique id, then after this logger,
+        then ``pyrevit``. A callback defined in a command script keeps that
+        command's id; a caller without a command execution scope gets the id of
+        the command running at the time, if any.
+
+        Args:
+            source (str): source of the message
+            message (str): message to log
+        """
+        if not self.is_enabled_for(logging.DEBUG):
+            return
+        devlog_fname = "{}.log".format(
+            _safe_filename(EXEC_PARAMS.command_uniqueid or self.name or "pyrevit")
+        )
+        devlog_folder = _get_devlog_folder()
+        if not op.isdir(devlog_folder):
+            os.makedirs(devlog_folder)
         with io.open(
-            op.join(USER_DESKTOP, devlog_fname), "a", encoding="utf-8"
+            op.join(devlog_folder, devlog_fname), "a", encoding="utf-8"
         ) as devlog_file:
             devlog_file.write(
                 "{tstamp} [{exid}] {src}: {msg}\n".format(

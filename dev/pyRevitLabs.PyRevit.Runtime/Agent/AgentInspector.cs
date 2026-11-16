@@ -15,7 +15,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <remarks>
     /// Read-only: never opens a transaction. Numeric parameter values are reported both as
     /// Revit displays them and raw in internal units (feet, radians). An element Revit can't
-    /// describe gets an <c>error</c> entry instead of failing the whole batch.
+    /// describe gets an <c>error</c> entry instead of failing the whole batch. When any of those
+    /// errors is a memory access error, the response carries one <c>note</c> saying how many, not
+    /// one per element: Revit 2024 raised it for every Material Asset in a batch.
     /// </remarks>
     internal static class AgentInspector {
         private const int MaxElements = 50;
@@ -37,13 +39,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var uidoc = app.ActiveUIDocument
                 ?? throw new AgentException("no_active_document", "Revit has no active document.");
             var doc = uidoc.Document;
-            return new JObject {
+            var elements = new JArray();
+            var memoryErrors = 0;
+            foreach (var id in ids)
+                elements.Add(DescribeOrReportError(doc, id, includeParameters, ref memoryErrors));
+            var response = new JObject {
                 ["document"] = DocumentReference(doc),
-                ["elements"] = new JArray(ids.Select(id => DescribeOrReportError(doc, id, includeParameters))),
+                ["elements"] = elements,
             };
+            if (memoryErrors > 0)
+                response["note"] = string.Format(
+                    "Revit hit a memory access error reading {0} of these elements and may be unstable; save your work before continuing.",
+                    memoryErrors);
+            return response;
         }
 
-        private static JObject DescribeOrReportError(Document doc, long value, bool includeParameters) {
+        private static JObject DescribeOrReportError(Document doc, long value, bool includeParameters, ref int memoryErrors) {
             try {
                 return Describe(doc, value, includeParameters);
             }
@@ -59,7 +70,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 }
                 entry["error"] = ex.Message;
                 if (ex is AccessViolationException)
-                    entry["note"] = "Revit hit a memory access error reading this element and may be unstable; save your work before continuing.";
+                    memoryErrors++;
                 return entry;
             }
         }

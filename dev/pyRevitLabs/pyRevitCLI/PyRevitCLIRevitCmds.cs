@@ -248,10 +248,15 @@ namespace pyRevitCLI {
                                 try {
                                     var cmdScript = ext.GetCommand(commandName);
                                     if (cmdScript != null) {
-                                        logger.Debug("Run command matching \"{0}\" found: \"{1}\"",
-                                                        commandName, cmdScript);
-                                        commandScriptPath = cmdScript.Path;
-                                        break;
+                                        if (commandScriptPath is null) {
+                                            logger.Debug("Run command matching \"{0}\" found: \"{1}\"",
+                                                            commandName, cmdScript);
+                                            commandScriptPath = cmdScript.Path;
+                                        }
+                                        else
+                                            System.Console.Error.WriteLine(
+                                                "Warning: run command \"{0}\" is also defined in \"{1}\" and is shadowed by \"{2}\"",
+                                                commandName, cmdScript.Path, commandScriptPath);
                                     }
                                 }
                                 catch {
@@ -315,7 +320,9 @@ namespace pyRevitCLI {
         /// Revit exits, then removes the launch directory. The shared per-year attachment is not read or written.
         /// </summary>
         internal static void
-        LaunchClone(string cloneNameOrPath, bool useDefaultEngine, string engineVersion, string revitYear, bool isolated, string language) {
+        LaunchClone(string cloneNameOrPath, bool useDefaultEngine, string engineVersion, string revitYear, string model, bool isolated, string language) {
+            var languageCode = PyRevitLauncher.ParseLanguage(language);
+            var modelPath = PyRevitLauncher.ParseModel(model);
             if (!int.TryParse(revitYear, out var revitYearNumber))
                 throw new PyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
 
@@ -328,10 +335,10 @@ namespace pyRevitCLI {
             else
                 engineVer = clone.GetConfiguredEngine(engineVersion).Version;
 
-            var launch = PyRevitLauncher.Prepare(clone, engineVer, revitYearNumber, isolated);
+            var launch = PyRevitLauncher.Prepare(clone, engineVer, revitYearNumber, isolated, modelPath);
             Process process = null;
             try {
-                process = PyRevitLauncher.Start(launch, language);
+                process = PyRevitLauncher.Start(launch, languageCode);
                 PrintLaunch(launch, process);
                 process.WaitForExit();
             }

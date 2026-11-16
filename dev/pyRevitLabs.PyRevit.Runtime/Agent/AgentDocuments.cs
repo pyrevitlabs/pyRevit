@@ -42,7 +42,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// started. Must run on the Revit main thread after the run guard is disposed.
         /// </summary>
         /// <returns>The closed documents' titles, and any that refused to close.</returns>
-        public static JObject CloseLeftovers(Autodesk.Revit.ApplicationServices.Application app, List<Document> openAtStart) {
+        public static JObject CloseLeftovers(Autodesk.Revit.ApplicationServices.Application app, IReadOnlyCollection<Document> openAtStart) {
             var leftovers = app.Documents.Cast<Document>()
                 .Where(open => !openAtStart.Any(before => before.Equals(open)) && IsBackground(open))
                 .ToList();
