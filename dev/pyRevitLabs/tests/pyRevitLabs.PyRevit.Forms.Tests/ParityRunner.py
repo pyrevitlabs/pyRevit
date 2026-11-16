@@ -27,6 +27,16 @@ class _CaseResult(unittest.TestResult):
     def case_name(test):
         return "{0}.{1}".format(type(test).__name__, test._testMethodName)
 
+    @staticmethod
+    def require_case(test, detail):
+        """Fail the session with ``detail`` when ``test`` is not a test method.
+
+        unittest reports a ``setUpClass``, ``tearDownClass`` or module fixture
+        error through a placeholder that has no ``_testMethodName``.
+        """
+        if not hasattr(test, "_testMethodName"):
+            raise RuntimeError("{0}: {1}".format(test, detail))
+
     def startTest(self, test):
         unittest.TestResult.startTest(self, test)
         self.log.Start(self.case_name(test))
@@ -37,14 +47,19 @@ class _CaseResult(unittest.TestResult):
 
     def addFailure(self, test, err):
         unittest.TestResult.addFailure(self, test, err)
-        self.log.Fail(self.case_name(test), self._exc_info_to_string(err, test))
+        detail = self._exc_info_to_string(err, test)
+        self.require_case(test, detail)
+        self.log.Fail(self.case_name(test), detail)
 
     def addError(self, test, err):
         unittest.TestResult.addError(self, test, err)
-        self.log.Fail(self.case_name(test), self._exc_info_to_string(err, test))
+        detail = self._exc_info_to_string(err, test)
+        self.require_case(test, detail)
+        self.log.Fail(self.case_name(test), detail)
 
     def addSkip(self, test, reason):
         unittest.TestResult.addSkip(self, test, reason)
+        self.require_case(test, str(reason))
         self.log.Skip(self.case_name(test), reason)
 
 
