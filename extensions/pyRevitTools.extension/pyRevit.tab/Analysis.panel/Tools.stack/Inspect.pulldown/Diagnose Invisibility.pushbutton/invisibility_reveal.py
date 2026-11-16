@@ -21,10 +21,12 @@ Warning:
 """
 
 import time
+from collections import namedtuple
 
 from pyrevit import DB, HOST_APP
+from pyrevit.compat import get_elementid_from_value_func
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.revit import dc3dserver
+from pyrevit.revit import dc3dserver, query
 
 from invisibility_checks import (
     NOT_IN_3D_CATEGORIES,
@@ -35,6 +37,8 @@ from invisibility_checks import (
 from invisibility_ghost import element_meshes
 
 logger = get_logger(__name__)
+
+_element_id = get_elementid_from_value_func()
 
 _NEVER_DRAWN_CATEGORY_NAMES = (
     "OST_Sheets",
@@ -242,7 +246,7 @@ def _is_candidate(element, view, never_drawn):
         return None
 
 
-def _candidates(view, outline, min_size, visible_ids):
+def _candidates(view, outline, min_size, visible_ids, matches=None):
     """Return ``(entries, too_small)``, in the order the time budget spends them.
 
     Elements hidden with Hide/Isolate come first, then the other elements
@@ -250,7 +254,8 @@ def _candidates(view, outline, min_size, visible_ids):
     collector reports are kept, after those: it still lists elements that
     have no geometry at the view's detail level or sit outside the crop,
     which only ``diagnose`` can tell. Categories the view can never draw
-    (sheets, reference planes, sketches, rooms in 3D) are not candidates.
+    (sheets, reference planes, sketches, rooms in 3D) are not candidates;
+    neither are elements ``matches`` rejects.
     """
     collector = DB.FilteredElementCollector(
         view.Document
@@ -262,7 +267,7 @@ def _candidates(view, outline, min_size, visible_ids):
     too_small = 0
     for element in collector:
         measured = _is_candidate(element, view, never_drawn)
-        if measured is None:
+        if measured is None or (matches is not None and not matches(element)):
             continue
         if measured[0] < min_size:
             too_small += 1
@@ -288,82 +293,225 @@ def _is_explicitly_hidden(element, view):
         return False
 
 
+Hit = namedtuple("Hit", ("id", "code", "size", "box"))
+
+
+def _type_name(element, cache):
+    try:
+        type_id = element.GetTypeId()
+        if type_id == DB.ElementId.InvalidElementId:
+            return query.get_name(element)
+        key = id_value(type_id)
+        if key not in cache:
+            type_element = element.Document.GetElement(type_id)
+            family = getattr(type_element, "FamilyName", "")
+            name = query.get_name(type_element)
+            cache[key] = "{} : {}".format(family, name) if family else name
+        return cache[key]
+    except Exception as ex:
+        logger.debug("Cannot read the type name: %s", ex)
+        return ""
+
+
+def _level_name(element, cache):
+    try:
+        level_id = element.LevelId
+        if level_id == DB.ElementId.InvalidElementId:
+            return ""
+        key = id_value(level_id)
+        if key not in cache:
+            level = element.Document.GetElement(level_id)
+            cache[key] = query.get_name(level) if level is not None else ""
+        return cache[key]
+    except Exception as ex:
+        logger.debug("Cannot read the level: %s", ex)
+        return ""
+
+
+def _mark(element):
+    try:
+        return query.get_mark(element) or ""
+    except Exception as ex:
+        logger.debug("Cannot read the mark: %s", ex)
+        return ""
+
+
+def _scope_matcher(scope, names):
+    """Return a predicate for the elements the page's filter keeps.
+
+    ``scope`` holds ``query``, ``categories`` and ``level``. Every query term
+    must occur in the category, type, level, mark or id; reasons are unknown
+    before the diagnosis, so they cannot be searched here.
+    """
+    terms = [term for term in (scope.get("query") or "").lower().split() if term]
+    categories = set(scope.get("categories") or [])
+    level = scope.get("level") or ""
+
+    def matches(element):
+        category = element.Category
+        category_name = category.Name if category else ""
+        if categories and category_name not in categories:
+            return False
+        level_name = _level_name(element, names["levels"])
+        if level and level_name != level:
+            return False
+        if not terms:
+            return True
+        haystack = " ".join(
+            (
+                category_name,
+                _type_name(element, names["types"]),
+                level_name,
+                _mark(element),
+                str(id_value(element.Id)),
+            )
+        ).lower()
+        return all(term in haystack for term in terms)
+
+    return matches
+
+
+def _row(element, code, size, names):
+    category = element.Category
+    return {
+        "id": id_value(element.Id),
+        "code": code,
+        "category": category.Name if category else "",
+        "name": _type_name(element, names["types"]),
+        "level": _level_name(element, names["levels"]),
+        "mark": _mark(element),
+        "size": round(size, 2),
+    }
+
+
+def _evaluate(element, view, visible_ids, size, box, names):
+    try:
+        code = _primary_reason(element, view, visible_ids)
+    except Exception as ex:
+        logger.debug("Diagnosis failed: %s", ex)
+        return None
+    if not code:
+        return None
+    return Hit(id_value(element.Id), code, size, box), _row(element, code, size, names)
+
+
+def _measure(element):
+    box = element.get_BoundingBox(None)
+    return ((box.Max - box.Min).GetLength() if box is not None else 0.0), box
+
+
 def _triangle_count(meshes):
     return sum(len(mesh.triangles) for mesh in meshes)
 
 
-def build_overlay(uidoc, view):
-    """Diagnose the hidden elements of ``view``'s screen area and mesh them.
+def build_overlay(uidoc, view, pinned_ids=(), scope=None):
+    """Diagnose the hidden elements of ``view``'s screen area.
+
+    Args:
+        uidoc (UI.UIDocument): the document of ``view``.
+        view (DB.View): the active view.
+        pinned_ids (Iterable[int]): element id values to diagnose whatever
+            their size, screen position or the time budget, such as elements
+            the user added from the Revit selection.
+        scope (dict | None): the page's filter (``query``, ``categories``,
+            ``level``). Only elements it keeps are candidates, so the time
+            budget is spent on them instead of the biggest elements.
 
     Returns:
-        (tuple[dict, dict]): ``(summary, meshes_by_code)``. The summary holds
-        ``counts`` and ``ids`` per reason code, ``drawn``, ``notEvaluated``
-        and ``tooSmall``; meshes are ready for ``dc3dserver.Server``.
+        (tuple[list[Hit], dict, dict]): the hidden elements found, a row per
+        element keyed by id value (code, category, type name, level, mark,
+        size), and the stats ``notEvaluated``, ``tooSmall``, ``seconds`` and
+        ``scoped``.
     """
     corners = zoom_corners(uidoc, view)
     min_size = (
         (corners[1] - corners[0]).GetLength() * _MIN_SIZE_FRACTION if corners else 0.0
     )
     visible_ids = collect_visible_ids(view)
+    names = {"types": {}, "levels": {}}
     candidates, too_small = _candidates(
-        view, search_outline(view, corners), min_size, visible_ids
+        view,
+        search_outline(view, corners),
+        min_size,
+        visible_ids,
+        _scope_matcher(scope, names) if scope else None,
     )
 
     started = time.time()
-    by_code = {}
+    hits = []
+    rows = {}
     evaluated = 0
     for size, element, box, _, _ in candidates:
         if evaluated >= _MAX_EVALUATED or time.time() - started > _TIME_BUDGET_S:
             break
         evaluated += 1
-        try:
-            code = _primary_reason(element, view, visible_ids)
-        except Exception as ex:
-            logger.debug("Diagnosis failed: %s", ex)
-            continue
-        if code:
-            by_code.setdefault(code, []).append((size, element, box))
+        found = _evaluate(element, view, visible_ids, size, box, names)
+        if found is not None:
+            hits.append(found[0])
+            rows[found[0].id] = found[1]
     not_evaluated = len(candidates) - evaluated
+    for value in pinned_ids:
+        element = view.Document.GetElement(_element_id(value))
+        if value in rows or element is None:
+            continue
+        size, box = _measure(element)
+        found = _evaluate(element, view, visible_ids, size, box, names)
+        if found is not None:
+            hits.append(found[0])
+            rows[found[0].id] = found[1]
 
-    ranked = sorted(
-        (
-            (size, code, element, box)
-            for code, entries in by_code.items()
-            for size, element, box in entries
-        ),
-        key=lambda entry: entry[0],
+    stats = {
+        "notEvaluated": not_evaluated,
+        "tooSmall": too_small,
+        "seconds": round(time.time() - started, 2),
+        "scoped": bool(scope),
+    }
+    return hits, rows, stats
+
+
+def mesh_hits(doc, hits, only_ids=None):
+    """Mesh ``hits`` for ``dc3dserver.Server``, biggest first.
+
+    The ``_MAX_SOLID_ELEMENTS`` biggest are drawn as solids, the rest, and any
+    that would pass the triangle cap, as boxes; so meshing a filtered subset
+    spends the whole budget on it.
+
+    Args:
+        doc (DB.Document): resolves the hit ids.
+        hits (list[Hit]): result of ``build_overlay``.
+        only_ids (set[int] | None): mesh only these id values.
+
+    Returns:
+        (dict): meshes per element id value.
+    """
+    chosen = sorted(
+        (hit for hit in hits if only_ids is None or hit.id in only_ids),
+        key=lambda hit: hit.size,
         reverse=True,
     )
-    meshes_by_code = {}
+    meshes_by_id = {}
     triangles = 0
-    for rank, (size, code, element, box) in enumerate(ranked):
-        color = _overlay_color(code)
-        edge_color = _overlay_color(code, _OPAQUE)
+    for rank, hit in enumerate(chosen):
+        element = doc.GetElement(_element_id(hit.id))
+        if element is None:
+            continue
+        color = _overlay_color(hit.code)
+        edge_color = _overlay_color(hit.code, _OPAQUE)
         meshes = []
         if rank < _MAX_SOLID_ELEMENTS:
             meshes = element_meshes(
                 element, color, DB.ViewDetailLevel.Coarse, edge_color=edge_color
             )
         if not meshes or triangles + _triangle_count(meshes) > _MAX_TRIANGLES:
-            mesh = dc3dserver.Mesh.from_boundingbox(box, color, edge_color=edge_color)
+            mesh = (
+                dc3dserver.Mesh.from_boundingbox(hit.box, color, edge_color=edge_color)
+                if hit.box is not None
+                else None
+            )
             meshes = [mesh] if mesh is not None else []
         triangles += _triangle_count(meshes)
-        meshes_by_code.setdefault(code, []).extend(meshes)
-
-    summary = {
-        "viewId": id_value(view.Id),
-        "active": True,
-        "counts": dict((code, len(entries)) for code, entries in by_code.items()),
-        "ids": dict(
-            (code, [id_value(element.Id) for _, element, _ in entries])
-            for code, entries in by_code.items()
-        ),
-        "drawn": len(ranked),
-        "notEvaluated": not_evaluated,
-        "tooSmall": too_small,
-        "seconds": round(time.time() - started, 2),
-    }
-    return summary, meshes_by_code
+        meshes_by_id[hit.id] = meshes
+    return meshes_by_id
 
 
 class _ViewServer(dc3dserver.Server):
@@ -397,18 +545,31 @@ class RevealPreview(object):
     screen area; ``follow`` rebuilds it after the user stops panning or
     zooming.
 
+    Each hidden element has a row (reason, category, type, level, mark) the
+    page lists and filters. ``set_focus`` narrows the drawing to chosen
+    elements and meshes just those, so a filtered handful gets solids even
+    when hundreds are hidden; ``add_elements`` diagnoses chosen elements
+    whatever their size and keeps them through rebuilds.
+
     Important:
-        ``show``, ``refresh``, ``follow``, ``set_code_visible`` and ``close``
-        touch Revit's external service registry, events and the UI, so they
-        must run in Revit API context.
+        ``show``, ``refresh``, ``follow``, ``set_code_visible``,
+        ``set_focus``, ``add_elements`` and ``close`` touch Revit's external
+        service registry, events and the UI, so they must run in Revit API
+        context.
     """
 
     def __init__(self, doc):
         self.doc = doc
         self.view_id = None
         self._server = None
-        self._meshes_by_code = {}
-        self._ids_by_code = {}
+        self._hits = []
+        self._rows = {}
+        self._stats = {}
+        self._base_meshes = {}
+        self._focus_ids = None
+        self._focus_meshes = {}
+        self._pinned_ids = set()
+        self._scope = None
         self._hidden_codes = set()
         self._on_built = None
         self._following = False
@@ -431,6 +592,9 @@ class RevealPreview(object):
         self._on_built = on_built
         if self.view_id != view.Id:
             self._hidden_codes = set()
+            self._pinned_ids = set()
+            self._focus_ids = None
+            self._scope = None
         self.view_id = view.Id
         if uidoc.ActiveView.Id == view.Id:
             self._build(uidoc, view)
@@ -438,8 +602,16 @@ class RevealPreview(object):
         self._build_after_activation(view)
         uidoc.RequestViewChange(view)
 
-    def refresh(self, uidoc):
-        """Rebuild the overlay from the view's current screen area."""
+    def refresh(self, uidoc, scope=None):
+        """Rebuild the overlay from the view's current screen area.
+
+        Args:
+            uidoc (UI.UIDocument): the document the report belongs to.
+            scope (dict | None): evaluate only the elements this filter keeps
+                (see ``build_overlay``). It stays in force for rebuilds by
+                ``follow`` until the next ``refresh`` without one.
+        """
+        self._scope = scope
         view = self._target_view(uidoc)
         if view is not None:
             self._build(uidoc, view)
@@ -462,17 +634,88 @@ class RevealPreview(object):
             self._hidden_codes.add(code)
         self._apply_meshes(uidoc)
 
+    def set_focus(self, uidoc, ids):
+        """Draw only the elements with these id values; ``None`` draws all.
+
+        Meshes the chosen elements afresh, with the full solid budget. The
+        focus survives rebuilds until it is cleared.
+        """
+        self._focus_ids = None if ids is None else set(int(value) for value in ids)
+        self._mesh_focus()
+        self._apply_meshes(uidoc)
+
+    def add_elements(self, uidoc, elements):
+        """Diagnose ``elements`` in the revealed view and draw the hidden ones.
+
+        They are drawn whatever their size, and pinned: later rebuilds
+        diagnose them again, even when they sit outside the screen area.
+
+        Returns:
+            (tuple[list[int], int]): the id values added to the overlay and
+            the number of elements the view already shows, which need no
+            reveal.
+        """
+        view = self._target_view(uidoc)
+        if view is None:
+            return [], 0
+        visible_ids = collect_visible_ids(view)
+        names = {"types": {}, "levels": {}}
+        added = []
+        for element in elements:
+            if element is None or element.Category is None:
+                continue
+            size, box = _measure(element)
+            found = _evaluate(element, view, visible_ids, size, box, names)
+            if found is None:
+                continue
+            self._pinned_ids.add(found[0].id)
+            self._hits = [hit for hit in self._hits if hit.id != found[0].id]
+            self._hits.append(found[0])
+            self._rows[found[0].id] = found[1]
+            added.append(found[0])
+        ids = set(hit.id for hit in added)
+        self._base_meshes.update(mesh_hits(self.doc, self._hits, ids))
+        self._mesh_focus()
+        self._apply_meshes(uidoc)
+        if self._on_built is not None:
+            self._on_built(self.summary())
+        return [hit.id for hit in added], len(elements) - len(added)
+
+    def summary(self):
+        """Return what the page lists: counts per reason, rows and stats."""
+        counts = {}
+        for row in self._rows.values():
+            counts[row["code"]] = counts.get(row["code"], 0) + 1
+        summary = {
+            "viewId": id_value(self.view_id),
+            "active": True,
+            "counts": counts,
+            "drawn": len(self._rows),
+            "rows": sorted(
+                self._rows.values(), key=lambda row: row["size"], reverse=True
+            ),
+            "follow": self._following,
+        }
+        summary.update(self._stats)
+        return summary
+
     def ids_for(self, code):
         """Return the element id values drawn for a reason."""
-        return list(self._ids_by_code.get(code, []))
+        return [value for value, row in self._rows.items() if row["code"] == code]
 
     def close(self):
         """Remove the overlay, stop following and unregister the server."""
         self._cancel_pending()
         self.follow(False)
         self.view_id = None
-        self._meshes_by_code = {}
-        self._ids_by_code = {}
+        self._hits = []
+        self._rows = {}
+        self._stats = {}
+        self._base_meshes = {}
+        self._focus_ids = None
+        self._focus_meshes = {}
+        self._pinned_ids = set()
+        self._scope = None
         self._hidden_codes = set()
         if self._server is not None:
             try:
@@ -500,10 +743,11 @@ class RevealPreview(object):
         return view
 
     def _build(self, uidoc, view):
-        summary, meshes_by_code = build_overlay(uidoc, view)
-        self._meshes_by_code = meshes_by_code
-        self._ids_by_code = summary.pop("ids")
-        summary["follow"] = self._following
+        self._hits, self._rows, self._stats = build_overlay(
+            uidoc, view, self._pinned_ids, self._scope
+        )
+        self._base_meshes = mesh_hits(self.doc, self._hits)
+        self._mesh_focus()
         self._built_key = _corner_key(zoom_corners(uidoc, view))
         self._seen_key = self._built_key
         if self._server is None:
@@ -516,15 +760,22 @@ class RevealPreview(object):
         self._server.view_id = view.Id
         self._apply_meshes(uidoc)
         if self._on_built is not None:
-            self._on_built(summary)
+            self._on_built(self.summary())
+
+    def _mesh_focus(self):
+        if self._focus_ids is None:
+            self._focus_meshes = {}
+        else:
+            self._focus_meshes = mesh_hits(self.doc, self._hits, self._focus_ids)
 
     def _apply_meshes(self, uidoc):
         if self._server is None:
             return
+        source = self._base_meshes if self._focus_ids is None else self._focus_meshes
         meshes = []
-        for code, code_meshes in self._meshes_by_code.items():
-            if code not in self._hidden_codes:
-                meshes.extend(code_meshes)
+        for value, item_meshes in source.items():
+            if self._rows[value]["code"] not in self._hidden_codes:
+                meshes.extend(item_meshes)
         self._server.meshes = meshes
         uidoc.RefreshActiveView()
 

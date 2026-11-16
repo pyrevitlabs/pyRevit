@@ -64,6 +64,9 @@
       this.selected = new Set();
       this.revealed = new Map();
       this.revealOff = new Map();
+      this.revealFilters = new Map();
+      this.focusTimers = new Map();
+      this.inspected = null;
       this.requests = new Map();
       this.requestSeq = 0;
       this.viewers = new Map();
@@ -110,8 +113,11 @@
         this.applyFilters();
         this.syncViewer(payload);
         this.refreshScene(payload.id);
+        this.reinspect(payload.id);
       } else if (event === "reveal") {
         this.onReveal(payload);
+      } else if (event === "inspect") {
+        this.showInspected(payload);
       } else if (event === "state") {
         this.applyState(payload);
       } else if (event === "scene") {
@@ -138,6 +144,8 @@
         this.sceneStale.delete(id);
         this.revealed.delete(id);
         this.revealOff.delete(id);
+        this.revealFilters.delete(id);
+        if (this.inspected && this.inspected.viewId === id) this.inspected = null;
         const section = this.viewSection(id);
         if (section) section.remove();
       }
@@ -774,6 +782,7 @@
                 else off.add(code);
                 this.revealOff.set(viewId, off);
                 this.run(null, "reveal_filter", { viewId, code, visible: e.target.checked });
+                this.renderRevealList(viewId);
               },
             }),
             h("span", { class: "dvi-swatch", style: `background:${this.data.revealColors[code] || "#9e9e9e"}` }),
@@ -816,8 +825,312 @@
             this.s.revealFollow
           )
         ),
-        rows
+        rows,
+        this.revealInspector(viewId, summary)
       );
+    }
+
+    revealFilter(viewId) {
+      let filter = this.revealFilters.get(viewId);
+      if (!filter) {
+        filter = { query: "", categories: new Set(), level: "" };
+        this.revealFilters.set(viewId, filter);
+      }
+      return filter;
+    }
+
+    revealFilterActive(filter) {
+      return Boolean(filter.query.trim() || filter.categories.size || filter.level);
+    }
+
+    revealMatches(row, filter, ignoreCategory) {
+      if (filter.level && row.level !== filter.level) return false;
+      if (!ignoreCategory && filter.categories.size && !filter.categories.has(row.category)) return false;
+      const reason = this.data.codes[row.code] || row.code;
+      const haystack = `${row.category} ${row.name} ${row.level} ${row.mark} ${row.id} ${reason}`.toLowerCase();
+      return filter.query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(Boolean)
+        .every((term) => haystack.includes(term));
+    }
+
+    /** Rows whose reason is switched on in the legend. */
+    revealRows(viewId) {
+      const summary = this.revealed.get(viewId);
+      const off = this.revealOff.get(viewId) || new Set();
+      return summary ? summary.rows.filter((row) => !off.has(row.code)) : [];
+    }
+
+    /**
+     * Tell Revit to draw only the rows the filter keeps, so a handful of
+     * matches get solid geometry instead of sharing the budget of hundreds.
+     * Reasons switched off in the legend are not part of the list: Python
+     * hides them itself, so switching one back on needs no new request.
+     */
+    scheduleFocus(viewId) {
+      clearTimeout(this.focusTimers.get(viewId));
+      this.focusTimers.set(
+        viewId,
+        setTimeout(() => {
+          const summary = this.revealed.get(viewId);
+          if (!summary) return;
+          const filter = this.revealFilter(viewId);
+          const ids = this.revealFilterActive(filter)
+            ? summary.rows.filter((row) => this.revealMatches(row, filter, false)).map((row) => row.id)
+            : null;
+          this.run(null, "reveal_focus", { viewId, ids });
+        }, 300)
+      );
+    }
+
+    /**
+     * Search box, category chips, level filter and the table of hidden
+     * elements under a view's legend. Clicking a row zooms Revit to the
+     * element and shows its card; the filter also narrows what Revit draws.
+     */
+    revealInspector(viewId, summary) {
+      const filter = this.revealFilter(viewId);
+      const levels = [...new Set(summary.rows.map((row) => row.level).filter(Boolean))].sort();
+      const refresh = () => {
+        this.renderRevealList(viewId);
+        this.scheduleFocus(viewId);
+      };
+      const search = h("input", {
+        type: "search",
+        class: "dvi-search",
+        placeholder: this.s.revealSearch,
+        value: filter.query,
+        oninput: (e) => {
+          filter.query = e.target.value;
+          refresh();
+        },
+      });
+      const level = h(
+        "select",
+        {
+          class: "dvi-select",
+          onchange: (e) => {
+            filter.level = e.target.value;
+            refresh();
+          },
+        },
+        h("option", { value: "" }, this.s.revealAllLevels),
+        levels.map((name) => h("option", { value: name, selected: name === filter.level }, name))
+      );
+      const clear = h(
+        "button",
+        {
+          class: "dvi-btn small",
+          onclick: () => {
+            filter.query = "";
+            filter.level = "";
+            filter.categories.clear();
+            search.value = "";
+            level.value = "";
+            refresh();
+          },
+        },
+        this.s.revealClearFilter
+      );
+      const selectShown = h(
+        "button",
+        {
+          class: "dvi-btn small",
+          onclick: (e) =>
+            this.run(e.currentTarget, "select", {
+              elementIds: this.revealRows(viewId)
+                .filter((row) => this.revealMatches(row, filter, false))
+                .map((row) => row.id),
+            }),
+        },
+        this.s.revealSelectShown
+      );
+      const addSelection = h(
+        "button",
+        {
+          class: "dvi-btn small",
+          title: this.s.revealAddSelectionHint,
+          onclick: (e) => {
+            filter.query = "";
+            filter.level = "";
+            filter.categories.clear();
+            clearTimeout(this.focusTimers.get(viewId));
+            this.run(e.currentTarget, "reveal_focus", { viewId, ids: null })
+              .then(() => this.run(e.currentTarget, "reveal_add_selection", { viewId }, "{0}"));
+          },
+        },
+        this.s.revealAddSelection
+      );
+      const root = h(
+        "div",
+        { class: "dvi-reveal-inspector" },
+        h("div", { class: "dvi-reveal-tools" }, search, level, clear, selectShown, addSelection),
+        h("div", { class: "dvi-chips dvi-reveal-chips" }),
+        h("div", { class: "dvi-reveal-status" }),
+        h("div", { class: "dvi-inspect", hidden: true }),
+        h("div", { class: "dvi-reveal-table" })
+      );
+      this.renderRevealList(viewId, root);
+      this.renderInspected(viewId, root.querySelector(".dvi-inspect"));
+      return root;
+    }
+
+    renderRevealList(viewId, root) {
+      const section = this.viewSection(viewId);
+      const host = root || (section && section.querySelector(".dvi-reveal-inspector"));
+      const summary = this.revealed.get(viewId);
+      if (!host || !summary) return;
+      const filter = this.revealFilter(viewId);
+      const rows = this.revealRows(viewId);
+
+      const facets = new Map();
+      for (const row of rows) {
+        if (this.revealMatches(row, filter, true)) facets.set(row.category, (facets.get(row.category) || 0) + 1);
+      }
+      for (const category of filter.categories) if (!facets.has(category)) facets.set(category, 0);
+      const chips = [...facets.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([category, count]) =>
+          h(
+            "button",
+            {
+              class: `dvi-chip${filter.categories.has(category) ? " active" : ""}`,
+              onclick: () => {
+                if (filter.categories.has(category)) filter.categories.delete(category);
+                else filter.categories.add(category);
+                this.renderRevealList(viewId);
+                this.scheduleFocus(viewId);
+              },
+            },
+            category,
+            h("span", { class: "dvi-chip-count" }, count)
+          )
+        );
+      host.querySelector(".dvi-reveal-chips").replaceChildren(...chips);
+
+      const shown = rows.filter((row) => this.revealMatches(row, filter, false));
+      const status = [];
+      if (this.revealFilterActive(filter)) {
+        status.push(format(this.s.revealFiltered, shown.length, summary.rows.length));
+        if (summary.notEvaluated) {
+          status.push(
+            h(
+              "button",
+              {
+                class: "dvi-btn small",
+                title: this.s.revealSearchAllHint,
+                onclick: (e) =>
+                  this.run(e.currentTarget, "reveal_refresh", {
+                    viewId,
+                    filter: { query: filter.query, categories: [...filter.categories], level: filter.level },
+                  }),
+              },
+              this.s.revealSearchAll
+            )
+          );
+        }
+      }
+      if (summary.scoped) status.push(h("span", { class: "dvi-reveal-left" }, this.s.revealScoped));
+      host.querySelector(".dvi-reveal-status").replaceChildren(...status);
+
+      const limit = 200;
+      const open = this.inspected && this.inspected.viewId === viewId ? this.inspected.id : null;
+      const body = shown.slice(0, limit).map((row) =>
+        h(
+          "tr",
+          {
+            class: `dvi-reveal-item${row.id === open ? " selected" : ""}`,
+            title: this.s.revealRowHint,
+            onclick: () => this.inspectRow(viewId, row.id),
+          },
+          h(
+            "td",
+            null,
+            h("span", { class: "dvi-swatch", style: `background:${this.data.revealColors[row.code] || "#9e9e9e"}` }),
+            " ",
+            this.data.codes[row.code] || row.code
+          ),
+          h("td", null, row.category),
+          h("td", null, row.name),
+          h("td", null, row.level),
+          h("td", null, row.mark),
+          h("td", null, row.id)
+        )
+      );
+      const header = h("tr", null, this.s.revealColumns.split("|").map((name) => h("th", null, name)));
+      host.querySelector(".dvi-reveal-table").replaceChildren(
+        ...[
+          h("table", { class: "dvi-reveal-grid" }, h("thead", null, header), h("tbody", null, body)),
+          shown.length > limit ? h("p", { class: "dvi-reveal-left" }, format(this.s.revealMoreRows, shown.length - limit)) : null,
+        ].filter(Boolean)
+      );
+    }
+
+    inspectRow(viewId, elementId) {
+      this.inspected = { viewId, id: elementId, element: null };
+      this.renderRevealList(viewId);
+      this.request("reveal_inspect", { viewId, elementId }).catch((error) =>
+        this.toast(String(error.message || error), "error")
+      );
+    }
+
+    /** Refresh the open card after a fix changed the view, without moving Revit's camera. */
+    reinspect(viewId) {
+      if (!this.inspected || this.inspected.viewId !== viewId) return;
+      this.request("reveal_inspect", { viewId, elementId: this.inspected.id, zoom: false }).catch(() => {});
+    }
+
+    showInspected({ viewId, element }) {
+      this.inspected = { viewId, id: element.id, element };
+      this.renderInspected(viewId);
+      this.renderRevealList(viewId);
+    }
+
+    renderInspected(viewId, hostNode) {
+      const section = this.viewSection(viewId);
+      const host = hostNode || (section && section.querySelector(".dvi-inspect"));
+      if (!host) return;
+      const inspected = this.inspected;
+      const view = this.views.find((v) => v.id === viewId);
+      if (!inspected || inspected.viewId !== viewId || !inspected.element || !view) {
+        host.hidden = true;
+        host.replaceChildren();
+        return;
+      }
+      const card = this.card(view, inspected.element);
+      delete card.dataset.element;
+      const inReport = view.elements.some((e) => e.id === inspected.id);
+      host.replaceChildren(
+        h(
+          "div",
+          { class: "dvi-inspect-bar" },
+          inReport
+            ? null
+            : h(
+                "button",
+                {
+                  class: "dvi-btn small",
+                  onclick: (e) => this.run(e.currentTarget, "add_ids", { elementIds: [inspected.id] }, "{0}"),
+                },
+                this.s.revealAddToReport
+              ),
+          h(
+            "button",
+            {
+              class: "dvi-btn small",
+              onclick: () => {
+                this.inspected = null;
+                this.renderInspected(viewId);
+                this.renderRevealList(viewId);
+              },
+            },
+            "×"
+          )
+        ),
+        card
+      );
+      host.hidden = false;
     }
 
     onReveal(summary) {
@@ -828,6 +1141,8 @@
       } else {
         this.revealed.delete(viewId);
         this.revealOff.delete(viewId);
+        this.revealFilters.delete(viewId);
+        if (this.inspected && this.inspected.viewId === viewId) this.inspected = null;
       }
       const section = this.viewSection(viewId);
       if (!section) return;
@@ -836,6 +1151,7 @@
       for (const button of section.querySelectorAll(".dvi-btn.reveal")) {
         button.classList.toggle("active", this.revealed.has(viewId));
       }
+      if (summary.active && this.revealFilterActive(this.revealFilter(viewId))) this.scheduleFocus(viewId);
     }
 
     card(view, element) {

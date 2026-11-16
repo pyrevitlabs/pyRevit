@@ -65,7 +65,7 @@ def element_meshes(
     return meshes
 
 
-def _zoom_to(uidoc, view, element):
+def zoom_to(uidoc, view, element):
     """Zoom the open UI view of ``view`` around the element's extents."""
     bbox = element.get_BoundingBox(None)
     if bbox is None:
@@ -119,7 +119,7 @@ class GhostPreview(object):
         self._meshes[key] = element_meshes(element)
         self._refresh(uidoc)
         if uidoc.ActiveView.Id == view.Id:
-            _zoom_to(uidoc, view, element)
+            zoom_to(uidoc, view, element)
         else:
             self._zoom_after_activation(view, element)
             uidoc.RequestViewChange(view)
@@ -181,7 +181,7 @@ class GhostPreview(object):
             target = self.doc.GetElement(element_id)
             if uidoc is None or target is None or uidoc.ActiveView.Id != view_id:
                 return
-            _zoom_to(uidoc, uidoc.ActiveView, target)
+            zoom_to(uidoc, uidoc.ActiveView, target)
 
         def on_view_activated(sender, args):
             if args.CurrentActiveView is None or args.CurrentActiveView.Id != view_id:
