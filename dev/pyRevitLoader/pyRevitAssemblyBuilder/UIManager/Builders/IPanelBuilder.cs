@@ -13,6 +13,13 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// <summary>
         /// Creates or retrieves a ribbon panel from the specified component.
         /// </summary>
+        /// <remarks>
+        /// Invariant: the panel is found and created under the component's folder name
+        /// (<see cref="ParsedComponent.DisplayName"/>), never under its localized title. The title is
+        /// applied afterwards as display text, so the panel id, and with it every control id inside the
+        /// panel, is the same in every UI locale and an existing panel is retitled in place when the
+        /// locale changes.
+        /// </remarks>
         /// <param name="component">The panel component to create.</param>
         /// <param name="tabName">The name of the tab containing this panel.</param>
         /// <returns>The created or existing RibbonPanel.</returns>

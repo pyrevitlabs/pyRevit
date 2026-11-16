@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -26,6 +27,8 @@ namespace pyRevitLabs.PyRevit {
 
     public static class PyRevitClones {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly ConcurrentDictionary<string, string> reportedRejectedClones =
+            new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         // managing clones ===========================================================================================
         // clones are git clones. pyRevit module likes to know about available clones to
@@ -109,9 +112,13 @@ namespace pyRevitLabs.PyRevit {
                 return validatedClones;
             }
             var listChanged = false;
+            var duplicates = new List<PyRevitClone>();
+            var registrationKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             // verify all registered clones, protect against tampering
             foreach (var cloneKeyValue in clonesDict) {
                 var clonePath = cloneKeyValue.Value.NormalizeAsPath();
+                var registrationKey = cloneKeyValue.Key + "|" + clonePath;
+                registrationKeys.Add(registrationKey);
                 if (!CommonUtils.VerifyPath(clonePath)) {
                     listChanged = true;
                     continue;
@@ -120,18 +127,34 @@ namespace pyRevitLabs.PyRevit {
                     listChanged = true;
                 }
                 try {
-                    var clone = new PyRevitClone(clonePath, name: cloneKeyValue.Key);
-                    if (clone.IsValid && !validatedClones.Contains(clone)) {
-
+                    var clone = CreateVerifiedClone(clonePath, cloneKeyValue.Key);
+                    reportedRejectedClones.TryRemove(registrationKey, out _);
+                    var existing = validatedClones.Find(c => c.Equals(clone));
+                    if (existing is null) {
                         logger.Debug("Verified clone \"{0}={1}\"", clone.Name, clone.ClonePath);
                         validatedClones.Add(clone);
                     }
+                    else {
+                        logger.Debug("Clone \"{0}\" duplicates clone \"{1}\" at \"{2}\"",
+                                     clone.Name, existing.Name, clone.ClonePath);
+                        duplicates.Add(clone);
+                    }
                 }
-                catch {
-                    logger.Debug("Error occured when processing registered clone \"{0}\" at \"{1}\"", cloneKeyValue.Key, clonePath);
+                catch (Exception ex) {
+                    var alreadyReported = reportedRejectedClones.TryGetValue(registrationKey, out var lastReason)
+                                          && lastReason == ex.Message;
+                    reportedRejectedClones[registrationKey] = ex.Message;
+                    if (!alreadyReported)
+                        logger.Warn("Registered clone \"{0}\" at \"{1}\" failed validation and is skipped | {2}",
+                                    cloneKeyValue.Key, clonePath, ex.Message);
                 }
             }
+            foreach (var staleKey in reportedRejectedClones.Keys.Where(k => !registrationKeys.Contains(k)).ToList())
+                reportedRejectedClones.TryRemove(staleKey, out _);
             if (listChanged) {
+                foreach (var duplicate in duplicates)
+                    logger.Info("Registered clone \"{0}\" points to the same path as clone \"{1}\" and is dropped from the clones list",
+                                duplicate.Name, validatedClones.Find(c => c.Equals(duplicate)).Name);
                 // rewrite the verified clones list back to config file
                 try {
                     SaveRegisteredClones(validatedClones);
@@ -143,6 +166,16 @@ namespace pyRevitLabs.PyRevit {
                 }
             }
             return validatedClones;
+        }
+
+        private static PyRevitClone CreateVerifiedClone(string clonePath, string name) {
+            try {
+                return new PyRevitClone(clonePath, name: name);
+            }
+            catch (PyRevitException) {
+                PyRevitClone.VerifyCloneValidity(clonePath);
+                throw;
+            }
         }
 
         // overlay the machine-wide clone registry of an all-users install on top of
@@ -626,11 +659,7 @@ namespace pyRevitLabs.PyRevit {
             var cloneDeployArgs = clone.DeploymentArgs;
             logger.Debug("Clone Name=\"{0}\", Path=\"{1}\" Args=> {2}", cloneName, clonePath, cloneDeployArgs);
 
-            // delete existing clone
-            Delete(clone);
-
-            // re-deploy
-            DeployFromImage(
+            ReplaceClone(cloneName, clonePath, () => DeployFromImage(
                 cloneName: cloneName,
                 deploymentName: cloneDeployArgs.DeploymentName,
                 branchName: cloneDeployArgs.BranchName,
@@ -638,7 +667,55 @@ namespace pyRevitLabs.PyRevit {
                 destPath: clonePath,
                 installBinaries: !skipBin,
                 binInstallMode: BinArtifactInstallMode.Update
-                );
+                ));
+        }
+
+        internal static void ReplaceClone(string cloneName, string clonePath, Action redeploy) {
+            var backupPath = clonePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                             + ".update-backup-" + Guid.NewGuid().ToString("N");
+
+            Directory.Move(clonePath, backupPath);
+
+            try {
+                redeploy();
+            }
+            catch (pyRevitBinArtifactNotFoundException) {
+                DeleteCloneBackup(backupPath);
+                throw;
+            }
+            catch {
+                RestoreClone(cloneName, clonePath, backupPath);
+                throw;
+            }
+
+            DeleteCloneBackup(backupPath);
+        }
+
+        private static void DeleteCloneBackup(string backupPath) {
+            try {
+                CommonUtils.DeleteDirectory(backupPath);
+            }
+            catch (Exception delEx) {
+                logger.Error(string.Format("Error removing previous clone backup \"{0}\" | {1}",
+                                           backupPath, delEx.Message));
+            }
+        }
+
+        internal static void RestoreClone(string cloneName, string clonePath, string backupPath) {
+            logger.Warn("Update failed. Restoring previous clone at \"{0}\"", clonePath);
+            try {
+                if (CommonUtils.VerifyPath(clonePath)) {
+                    UnregisterCloneAtPath(clonePath);
+                    CommonUtils.DeleteDirectory(clonePath);
+                }
+                Directory.Move(backupPath, clonePath);
+                RegisterClone(cloneName, clonePath, forceUpdate: true);
+            }
+            catch (Exception restoreEx) {
+                logger.Error(string.Format("Could not restore clone \"{0}\" at \"{1}\". " +
+                                           "The previous clone is kept at \"{2}\" | {3}",
+                                           cloneName, clonePath, backupPath, restoreEx.Message));
+            }
         }
 
         // uninstall primary or specified clone, has option for clearing configs
@@ -746,7 +823,7 @@ namespace pyRevitLabs.PyRevit {
 
             var normalizedPath = clonePath.NormalizeAsPath();
             foreach (var clone in GetRegisteredClones().ToList()) {
-                if (clone.ClonePath.Equals(normalizedPath, StringComparison.OrdinalIgnoreCase))
+                if (clone.ClonePath.IsSamePathAs(normalizedPath))
                     UnregisterClone(clone);
             }
         }

@@ -14,7 +14,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentSelectors {
         /// <summary>
         /// Finds what a view selector names: the view with that id when the selector is an id
-        /// of a view, otherwise every view whose name matches, ignoring case.
+        /// of a view, otherwise every view whose name or sheet number matches, ignoring case.
         /// </summary>
         /// <returns>
         /// No match, the single match, or several views sharing the name, which the caller must
@@ -22,13 +22,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </returns>
         /// <remarks>
         /// A digits-only selector that is not a view id falls back to the name, so a view named
-        /// "12345" stays reachable.
+        /// "12345" stays reachable. <paramref name="numberOf"/> returns the sheet number of a
+        /// sheet and null for any other view.
         /// </remarks>
-        internal static List<T> FindView<T>(string selector, Func<long, T> byId, IEnumerable<T> views, Func<T, string> nameOf)
+        internal static List<T> FindView<T>(string selector, Func<long, T> byId, IEnumerable<T> views, Func<T, string> nameOf, Func<T, string> numberOf)
             where T : class {
             if (long.TryParse(selector, out var id) && byId(id) is T found)
                 return new List<T> { found };
-            return views.Where(view => string.Equals(nameOf(view), selector, StringComparison.OrdinalIgnoreCase)).ToList();
+            return views.Where(view =>
+                string.Equals(nameOf(view), selector, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(numberOf(view), selector, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
         /// <summary>
