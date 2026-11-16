@@ -823,6 +823,38 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void TheSummaryLeavesOutModifiedElementsWithoutACategoryButTheyStayInTheSamples() {
+            var app = new UIApplication();
+            var document = new Document();
+            var tracker = Add(document, new Element { Name = "AutoJoin Tracker Element" });
+            var wall = Add(document, new Element { Category = new Category { Name = "Walls" } });
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: new ElementId[0], modified: new[] { tracker, wall });
+
+                var description = guard.Changes.Describe(document, 50);
+                Assert.Equal("modified 1 element (Walls)", description.Value<string>("summary"));
+                Assert.Equal(2, description.Value<int>("modified_count"));
+                Assert.Equal(2, description["modified"].Count());
+            }
+        }
+
+        [Fact]
+        public void TheSummaryIsEmptyOfModifiedWhenEveryModifiedElementLacksACategory() {
+            var app = new UIApplication();
+            var document = new Document();
+            var tracker = Add(document, new Element { Name = "AutoJoin Tracker Element" });
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: new ElementId[0], modified: new[] { tracker });
+
+                Assert.Equal("no changes", guard.Changes.Describe(document, 50).Value<string>("summary"));
+            }
+        }
+
+        [Fact]
         public void TheSummaryCountsEveryChangeAndCutsLongNameLists() {
             var app = new UIApplication();
             var document = new Document();

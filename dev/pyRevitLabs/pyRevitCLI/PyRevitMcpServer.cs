@@ -816,7 +816,7 @@ namespace pyRevitCLI {
                 new McpTool("capture_view", readOnly: false, destructive: false, new string[0],
                     () => ("Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "
                         + "through Revit and works for any view by name or id; a name shared by several views fails with "
-                        + "view_ambiguous listing their ids. mode 'viewport' renders an open view through Revit "
+                        + "view_ambiguous listing their ids; pass 'view_type' to narrow by type. mode 'viewport' renders an open view through Revit "
                         + "cropped to the region its window shows now: the user's zoom, pan and temporary isolate, without "
                         + "selection highlight, and unaffected by other windows. mode 'screen' captures the active view's window "
                         + "exactly as the user sees it, including selection and temporary isolate; it fails with view_not_active "
@@ -830,6 +830,10 @@ namespace pyRevitCLI {
                             ["view"] = new JObject {
                                 ["type"] = "string",
                                 ["description"] = "'active' (default), '3d', a view name, a sheet number, or a view id.",
+                            },
+                            ["view_type"] = new JObject {
+                                ["type"] = "string",
+                                ["description"] = "Optional Revit ViewType name such as FloorPlan, CeilingPlan, Section, ThreeD or DrawingSheet; keeps only views of that type when a name is shared.",
                             },
                             ["mode"] = new JObject {
                                 ["type"] = "string",
@@ -882,6 +886,7 @@ namespace pyRevitCLI {
                         }),
                     arguments => CallRevit(arguments, "capture", new JObject {
                         ["view"] = arguments["view"],
+                        ["view_type"] = arguments["view_type"],
                         ["mode"] = arguments["mode"],
                         ["width"] = arguments["width"],
                         ["direction"] = arguments["direction"],

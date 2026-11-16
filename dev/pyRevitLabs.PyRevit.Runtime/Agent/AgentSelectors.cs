@@ -15,6 +15,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <summary>
         /// Finds what a view selector names: the view with that id when the selector is an id
         /// of a view, otherwise every view whose name or sheet number matches, ignoring case.
+        /// A non-empty <paramref name="viewType"/> keeps only the matches of that view type,
+        /// ignoring case, whether they were found by id or by name.
         /// </summary>
         /// <returns>
         /// No match, the single match, or several views sharing the name, which the caller must
@@ -25,13 +27,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// "12345" stays reachable. <paramref name="numberOf"/> returns the sheet number of a
         /// sheet and null for any other view.
         /// </remarks>
-        internal static List<T> FindView<T>(string selector, Func<long, T> byId, IEnumerable<T> views, Func<T, string> nameOf, Func<T, string> numberOf)
+        internal static List<T> FindView<T>(string selector, Func<long, T> byId, IEnumerable<T> views, Func<T, string> nameOf, Func<T, string> numberOf, Func<T, string> typeOf = null, string viewType = null)
             where T : class {
-            if (long.TryParse(selector, out var id) && byId(id) is T found)
-                return new List<T> { found };
-            return views.Where(view =>
-                string.Equals(nameOf(view), selector, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(numberOf(view), selector, StringComparison.OrdinalIgnoreCase)).ToList();
+            var matches = long.TryParse(selector, out var id) && byId(id) is T found
+                ? new List<T> { found }
+                : views.Where(view =>
+                    string.Equals(nameOf(view), selector, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(numberOf(view), selector, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (string.IsNullOrEmpty(viewType) || typeOf == null)
+                return matches;
+            return matches.Where(view => string.Equals(typeOf(view), viewType, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
         /// <summary>

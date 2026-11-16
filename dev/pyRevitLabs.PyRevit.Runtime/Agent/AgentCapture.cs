@@ -47,7 +47,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// A sheet can be named by its sheet number. A schedule is rendered on a temporary sheet in
     /// the rolled-back group, in <c>export</c> mode only.
     /// A view name shared by several views fails with <c>view_ambiguous</c> listing their ids,
-    /// unless <c>screen</c> mode can take the active view among them.
+    /// types and, for sheets, numbers, unless <c>screen</c> mode can take the active view among
+    /// them. The optional <c>view_type</c>, a <c>ViewType</c> name such as <c>FloorPlan</c>,
+    /// keeps only views of that type, so a name shared across types resolves in one call.
     /// Invariant: capturing never leaves a change in the model.
     /// </remarks>
     internal static class AgentCapture {
@@ -126,6 +128,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public sealed class Request {
             public string View;
+            public string ViewType;
             public string Mode;
             public int Width;
             public string Direction;
@@ -152,6 +155,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'direction' must be one of: " + string.Join(", ", Directions.Keys) + ".");
             var request = new Request {
                 View = string.IsNullOrWhiteSpace(AgentParams.Get<string>(parameters, "view")) ? "active" : AgentParams.Get<string>(parameters, "view").Trim(),
+                ViewType = ParseViewType(parameters),
                 Mode = mode,
                 Width = width,
                 Direction = direction,
@@ -164,6 +168,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
             ValidateCombination(request);
             return request;
+        }
+
+        private static string ParseViewType(JObject parameters) {
+            var names = Enum.GetNames(typeof(ViewType));
+            var choice = ParseChoice(parameters, "view_type", names.Select(name => name.ToLowerInvariant()));
+            return choice == null ? null : names.First(name => string.Equals(name, choice, StringComparison.OrdinalIgnoreCase));
         }
 
         private static List<ElementId> ParseElements(JToken token) {
@@ -268,7 +278,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             View captured;
             try {
                 if (request.Mode == "screen") {
-                    captured = ResolveView(doc, uidoc, request.View, preferActive: true);
+                    captured = ResolveView(doc, uidoc, request, preferActive: true);
                     if (captured.Id != uidoc.ActiveView.Id)
                         throw new AgentException("view_not_active",
                             $"Mode 'screen' copies the active view's window, and view '{captured.Name}' is not the active view; "
@@ -276,7 +286,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     path = CaptureScreen(uidoc, captured, Path.Combine(directory, baseName + ".png"));
                 }
                 else if (request.Mode == "viewport") {
-                    captured = ResolveView(doc, uidoc, request.View);
+                    captured = ResolveView(doc, uidoc, request);
                     path = ExportViewport(uidoc, captured, directory, baseName, request);
                 }
                 else if (string.Equals(request.View, "3d", StringComparison.OrdinalIgnoreCase)) {
@@ -284,7 +294,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     path = ExportTemporary(doc, directory, baseName, request);
                 }
                 else {
-                    captured = ResolveView(doc, uidoc, request.View);
+                    captured = ResolveView(doc, uidoc, request);
                     path = ExportWithDisplay(doc, captured, directory, baseName, request);
                 }
             }
@@ -342,7 +352,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JArray PointArray(XYZ point) => new JArray(point.X, point.Y, point.Z);
 
-        private static View ResolveView(Document doc, UIDocument uidoc, string selector, bool preferActive = false) {
+        private static View ResolveView(Document doc, UIDocument uidoc, Request request, bool preferActive = false) {
+            var selector = request.View;
             if (string.Equals(selector, "active", StringComparison.OrdinalIgnoreCase))
                 return uidoc.ActiveView;
 
@@ -351,20 +362,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 id => ViewById(doc, id),
                 new FilteredElementCollector(doc).OfClass(typeof(View)).Cast<View>().Where(view => !view.IsTemplate),
                 view => view.Name,
-                view => (view as ViewSheet)?.SheetNumber);
+                view => (view as ViewSheet)?.SheetNumber,
+                view => view.ViewType.ToString(),
+                request.ViewType);
             if (matches.Count == 0) {
                 var named = long.TryParse(selector, out _) ? $"with id or name '{selector}'" : $"named '{selector}'";
-                throw new AgentException("view_not_found", $"No view {named}. Use 'active', '3d', a view name, a sheet number or a view id.");
+                var ofType = request.ViewType == null ? string.Empty : $" of type {request.ViewType}";
+                throw new AgentException("view_not_found", $"No view {named}{ofType}. Use 'active', '3d', a view name, a sheet number or a view id.");
             }
             if (matches.Count > 1 && preferActive && matches.Any(view => view.Id == uidoc.ActiveView.Id))
                 return uidoc.ActiveView;
             if (matches.Count > 1) {
                 var error = new AgentException("view_ambiguous",
-                    $"{matches.Count} views are named '{selector}'; pass the id of the one to capture.");
+                    $"{matches.Count} views are named '{selector}'; pass the id of the one to capture, or 'view_type' to narrow by type.");
                 error.Details["views"] = new JArray(matches.Select(view => new JObject {
                     ["id"] = AgentIds.ToValue(view.Id),
                     ["name"] = view.Name,
                     ["type"] = view.ViewType.ToString(),
+                    ["number"] = (view as ViewSheet)?.SheetNumber,
                 }));
                 throw error;
             }

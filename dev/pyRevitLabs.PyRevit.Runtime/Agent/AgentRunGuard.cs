@@ -641,6 +641,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <c>summary</c> is one line built from every change, not only the samples, for
         /// example <c>added 1 family (Door) with 3 types and 2 other elements (Legend
         /// Components), modified 1 element (Project Information), deleted 1 element</c>.
+        /// Modified elements without a category, such as bookkeeping elements Revit updates on
+        /// its own, are left out of the line; they stay in the counts, <c>modified</c> and
+        /// <c>by_category</c>.
         /// </para>
         /// </remarks>
         public JObject Describe(Document doc, int maxSamples) {
@@ -723,8 +726,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var parts = new List<string>();
             if (added.Count > 0)
                 parts.Add("added " + DescribeAdded(doc));
-            if (modified.Count > 0)
-                parts.Add("modified " + Count(modified.Count, "element") + (doc == null ? string.Empty : CategoryNames(modified.Select(id => doc.GetElement(id)))));
+            if (doc == null && modified.Count > 0)
+                parts.Add("modified " + Count(modified.Count, "element"));
+            else if (doc != null) {
+                var categorized = modified.Select(id => doc.GetElement(id)).Where(element => element?.Category != null).ToList();
+                if (categorized.Count > 0)
+                    parts.Add("modified " + Count(categorized.Count, "element") + CategoryNames(categorized));
+            }
             if (deleted.Count > 0)
                 parts.Add("deleted " + Count(deleted.Count, "element"));
             return parts.Count > 0 ? string.Join(", ", parts) : "no changes";
