@@ -69,6 +69,7 @@
       this.revealOrder = new Map();
       this.focusTimers = new Map();
       this.inspected = null;
+      this.pendingInspect = null;
       this.requests = new Map();
       this.requestSeq = 0;
       this.viewers = new Map();
@@ -149,7 +150,7 @@
         this.revealFilters.delete(id);
         this.revealPicks.delete(id);
         this.revealOrder.delete(id);
-        if (this.inspected && this.inspected.viewId === id) this.inspected = null;
+        this.dropInspected(id);
         const section = this.viewSection(id);
         if (section) section.remove();
       }
@@ -860,8 +861,7 @@
     revealMatches(row, filter, ignoreCategory) {
       if (filter.level && row.level !== filter.level) return false;
       if (!ignoreCategory && filter.categories.size && !filter.categories.has(row.category)) return false;
-      const reason = this.data.codes[row.code] || row.code;
-      const haystack = `${row.category} ${row.name} ${row.level} ${row.mark} ${row.id} ${reason}`.toLowerCase();
+      const haystack = `${row.category} ${row.name} ${row.level} ${row.mark} ${row.id}`.toLowerCase();
       return filter.query
         .toLowerCase()
         .split(/\s+/)
@@ -970,6 +970,7 @@
             filter.level = "";
             filter.categories.clear();
             clearTimeout(this.focusTimers.get(viewId));
+            this.pendingInspect = { viewId, id: null };
             this.run(e.currentTarget, "reveal_focus", { viewId, ids: null })
               .then(() => this.run(e.currentTarget, "reveal_add_selection", { viewId }, "{0}"));
           },
@@ -1108,13 +1109,14 @@
         this.inspectRow(viewId, [...pick.ids][0]);
         return;
       }
-      if (this.inspected && this.inspected.viewId === viewId) this.inspected = null;
+      this.dropInspected(viewId);
       this.renderRevealList(viewId);
       this.renderInspected(viewId);
     }
 
     inspectRow(viewId, elementId) {
       this.inspected = { viewId, id: elementId, element: null };
+      this.pendingInspect = { viewId, id: elementId };
       this.renderRevealList(viewId);
       this.renderInspected(viewId);
       this.request("reveal_inspect", { viewId, elementId }).catch((error) =>
@@ -1125,10 +1127,25 @@
     /** Refresh the open card after a fix changed the view, without moving Revit's camera. */
     reinspect(viewId) {
       if (!this.inspected || this.inspected.viewId !== viewId) return;
+      this.pendingInspect = { viewId, id: this.inspected.id };
       this.request("reveal_inspect", { viewId, elementId: this.inspected.id, zoom: false }).catch(() => {});
     }
 
+    /** Forget the open card of a view, and any answer still on its way for it. */
+    dropInspected(viewId) {
+      if (this.inspected && this.inspected.viewId === viewId) this.inspected = null;
+      if (this.pendingInspect && this.pendingInspect.viewId === viewId) this.pendingInspect = null;
+    }
+
+    /**
+     * Show a card Python sent, but only one the page asked for and still wants: an answer for an
+     * earlier row, or for a card closed meanwhile, is dropped. Add Revit selection is answered
+     * without a request of its own, so it registers a pending inspect for any element.
+     */
     showInspected({ viewId, element }) {
+      const wanted = this.pendingInspect;
+      if (!wanted || wanted.viewId !== viewId || (wanted.id !== null && wanted.id !== element.id)) return;
+      this.pendingInspect = { viewId, id: element.id };
       this.inspected = { viewId, id: element.id, element };
       this.renderInspected(viewId);
       this.renderRevealList(viewId);
@@ -1172,7 +1189,7 @@
             {
               class: "dvi-btn small",
               onclick: () => {
-                this.inspected = null;
+                this.dropInspected(viewId);
                 this.renderInspected(viewId);
                 this.renderRevealList(viewId);
               },
@@ -1234,7 +1251,7 @@
         this.revealOff.delete(viewId);
         this.revealFilters.delete(viewId);
         this.revealPicks.delete(viewId);
-        if (this.inspected && this.inspected.viewId === viewId) this.inspected = null;
+        this.dropInspected(viewId);
       }
       const section = this.viewSection(viewId);
       if (!section) return;

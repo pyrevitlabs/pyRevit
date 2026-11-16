@@ -871,8 +871,14 @@ class DiagnosisSession(object):
         self._reply(request_id, True)
 
     def _on_reveal_focus(self, payload, request_id):
-        """Draw only the listed elements in the overlay; null draws all."""
-        self.reveal.set_focus(self._uidoc(), payload.get("ids"))
+        """Draw only the listed elements in the overlay; null draws all.
+
+        A request for a view other than the revealed one is stale (the page
+        sent it before the overlay moved) and is ignored.
+        """
+        view = self._view(payload["viewId"])
+        if self.reveal.view_id == view.Id:
+            self.reveal.set_focus(self._uidoc(), payload.get("ids"))
         self._reply(request_id, True)
 
     def _on_reveal_inspect(self, payload, request_id):
