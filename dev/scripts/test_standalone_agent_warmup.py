@@ -45,6 +45,7 @@ class AgentRunnerWarmUpTests(unittest.TestCase):
             SubTransaction=self.runner.DB.SubTransaction,
             Transaction=self.runner.DB.Transaction,
             TransactionGroup=self.runner.DB.TransactionGroup,
+            TransactionStatus=self.runner.DB.TransactionStatus,
         )
         patcher = mock.patch.object(self.runner, "DB", db)
         patcher.start()
