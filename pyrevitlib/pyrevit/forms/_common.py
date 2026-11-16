@@ -27,7 +27,7 @@ from pyrevit import PyRevitCPythonNotSupported, PyRevitException
 from pyrevit import coreutils, framework, revit, versionmgr, UI, DB
 from pyrevit.api import AdWindows
 from pyrevit.compat import IRONPY, safe_strtype, get_elementid_value_func
-from pyrevit.coreutils import colors, envvars
+from pyrevit.coreutils import applocales, colors, envvars
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.framework import System, Threading, Interop, Input
 from pyrevit.framework import Forms, Controls, Documents, Media
@@ -251,6 +251,7 @@ __all__ = [
     "UI",
     "Uri",
     "UriKind",
+    "applocales",
     "colors",
     "coreutils",
     "datetime",
