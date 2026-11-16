@@ -60,15 +60,20 @@ namespace pyRevitLabs.Common {
         public string CreatedTimeStamp => created_at;
         public string PublishedTimeStamp => published_at;
 
-        // Extract installer download url from assets.browser_download_url
-        public string InstallerURL {
-            get {
-                if (assets != null && assets.Count > 0) {
-                    var firstAsset = assets[0];
-                    return firstAsset.SelectToken("browser_download_url").Value<string>();
-                }
-                return string.Empty;
+        /// <summary>
+        /// Returns the download URL of the first release asset whose file name satisfies
+        /// <paramref name="nameMatches"/>, or null when the release has no such asset.
+        /// </summary>
+        public string FindAssetDownloadUrl(Func<string, bool> nameMatches) {
+            if (assets is null)
+                return null;
+
+            foreach (var asset in assets) {
+                var assetName = asset.Value<string>("name");
+                if (assetName != null && nameMatches(assetName))
+                    return asset.Value<string>("browser_download_url");
             }
+            return null;
         }
     }
 

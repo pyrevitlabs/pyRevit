@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Principal;
 using System.Text;
 
 using Autodesk.Revit.UI;
@@ -21,11 +22,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// The host lives for the whole Revit process, like the <see cref="ScriptExecutor"/>
     /// ExternalEvent. <see cref="Configure"/> is called on every session load and is
     /// idempotent: a reload only refreshes the script search paths and never recreates the
-    /// pipe or the ExternalEvent.
+    /// ExternalEvent, or a pipe server that is still listening.
     /// Invariant: <see cref="Configure"/> must run in a valid Revit API context, because the
     /// first start creates an ExternalEvent.
     /// Warning: off unless <c>[agent] enabled = true</c> is set in the pyRevit config. Agent
     /// scripts run with the user's full rights; the pipe ACL is the only access control.
+    /// Important: the host never starts in an elevated Revit. The pipe ACL admits any process of
+    /// the user, including unelevated ones, which would let them run code as administrator.
     /// </remarks>
     public static class AgentHost {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -36,11 +39,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static List<string> searchPaths = new List<string>();
         private static string revitVersion = string.Empty;
         private static bool exitHandlerRegistered;
-        private static string configWatchedPath;
-        private static DateTime configLastWrite = DateTime.MinValue;
+        private static readonly AgentConfigRefresh configRefresh = new AgentConfigRefresh(
+            PyRevitConfigs.GetLoadedConfigFilePath,
+            path => File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue,
+            PyRevitConfigs.ReloadConfig);
         private static AgentTabHighlight tabHighlight;
         private static AgentTabHighlightVisuals tabHighlightVisuals;
         private static bool tabHighlightDisabled;
+        private static readonly AgentEngineWarmUp engineWarmUp = new AgentEngineWarmUp();
 
         internal static AgentTabHighlight.Lease BeginTabHighlight(UIApplication application, Autodesk.Revit.DB.Document document, string title) {
             RefreshConfigIfChanged();
@@ -89,12 +95,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         [ThreadStatic]
         private static UIApplication inlineApplication;
 
-        public static string PipeName => "pyrevit-agent-" + Process.GetCurrentProcess().Id;
+        internal static readonly int ProcessId = ReadProcessId();
 
+        public static string PipeName => "pyrevit-agent-" + ProcessId;
+
+        /// <summary>
+        /// True while the pipe server is up and accepting connections.
+        /// </summary>
+        /// <remarks>
+        /// False after <see cref="Stop"/>, and after the pipe server gave up because Revit kept
+        /// refusing to create its pipe; the next <see cref="Configure"/> starts a new one.
+        /// </remarks>
         public static bool IsRunning {
             get {
                 lock (sync)
-                    return pipeServer != null;
+                    return pipeServer != null && pipeServer.IsListening;
             }
         }
 
@@ -164,21 +179,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </remarks>
         internal static void RefreshConfigIfChanged() {
             try {
-                var configPath = PyRevitConfigs.GetLoadedConfigFilePath();
-                var lastWrite = File.Exists(configPath) ? File.GetLastWriteTimeUtc(configPath) : DateTime.MinValue;
-                lock (sync) {
-                    if (configPath == configWatchedPath && lastWrite == configLastWrite)
-                        return;
-                    configWatchedPath = configPath;
-                    configLastWrite = lastWrite;
-                }
-                PyRevitConfigs.ReloadConfig();
+                configRefresh.RefreshIfChanged();
             }
             catch (Exception ex) {
                 logger.Debug("Could not refresh agent config: {0}", ex.Message);
             }
         }
 
+        /// <summary>
+        /// Whether <c>[agent] enabled</c> is on in the pyRevit config; false when it can't be read.
+        /// </summary>
         public static bool IsEnabled() {
             try {
                 return PyRevitConfigs.GetAgentEnabled();
@@ -193,7 +203,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Starts, refreshes, or stops the host to match the current config. Called by the
         /// session manager on every load and reload.
         /// </summary>
+        /// <remarks>
+        /// A reload also re-enables tab highlighting that visual failures turned off.
+        /// </remarks>
         public static void Configure(UIApplication uiApp, IList<string> scriptSearchPaths) {
+            if (tabHighlightDisabled) {
+                DisposeTabHighlight();
+                tabHighlightDisabled = false;
+            }
+
             lock (sync) {
                 searchPaths = scriptSearchPaths != null
                     ? new List<string>(scriptSearchPaths)
@@ -206,22 +224,31 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
             }
 
+            engineWarmUp.Reset();
+            if (IsElevated()) {
+                Stop();
+                logger.Warn("pyRevit agent host not started: Revit is running as administrator.");
+                return;
+            }
+
             lock (sync) {
                 if (dispatcher == null) {
                     dispatcher = new AgentDispatcher();
                     dispatcher.Attach(ExternalEvent.Create(dispatcher));
                 }
 
-                if (pipeServer != null)
+                if (pipeServer != null && pipeServer.IsListening)
                     return;
 
-                pipeServer = new AgentPipeServer(PipeName, AgentRequestHandler.Handle);
+                pipeServer?.Dispose();
+                pipeServer = new AgentPipeServer(PipeName, AgentRequestHandler.Handle, ForgetStoppedPipe);
                 pipeServer.Start();
                 WriteInstanceFile(uiApp);
                 AgentPaths.PruneOldRecordsInBackground();
 
                 if (!exitHandlerRegistered) {
                     AppDomain.CurrentDomain.ProcessExit += (s, e) => DeleteInstanceFile();
+                    uiApp.ApplicationClosing += (s, e) => Stop();
                     exitHandlerRegistered = true;
                 }
             }
@@ -229,6 +256,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             logger.Info("pyRevit agent host listening on pipe '{0}'", PipeName);
         }
 
+        /// <summary>
+        /// Closes the pipe and removes this Revit's instance file, so clients stop finding it.
+        /// The ExternalEvent stays, so a later <see cref="Configure"/> can start the host again.
+        /// </summary>
         public static void Stop() {
             DisposeTabHighlight();
             lock (sync) {
@@ -242,16 +273,30 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             logger.Info("pyRevit agent host stopped");
         }
 
+        private static void ForgetStoppedPipe(AgentPipeServer stopped) {
+            lock (sync) {
+                if (ReferenceEquals(pipeServer, stopped))
+                    DeleteInstanceFile();
+            }
+        }
+
+        private static bool IsElevated() {
+            using (var identity = WindowsIdentity.GetCurrent())
+                return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
         private static void WriteInstanceFile(UIApplication uiApp) {
             try {
                 Directory.CreateDirectory(AgentPaths.InstancesDir);
                 var instance = new JObject {
-                    ["pid"] = Process.GetCurrentProcess().Id,
+                    ["pid"] = ProcessId,
                     ["pipe"] = PipeName,
                     ["revit_version"] = uiApp.Application.VersionNumber,
                     ["revit_build"] = uiApp.Application.VersionBuild,
                     ["started"] = DateTime.UtcNow.ToString("o"),
                 };
+                if (int.TryParse(uiApp.Application.VersionNumber, out var revitYear))
+                    instance.Merge(AgentSessionIdentity.Describe(revitYear));
                 File.WriteAllText(
                     AgentPaths.InstanceFile,
                     instance.ToString(Formatting.Indented),
@@ -263,6 +308,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        private static int ReadProcessId() {
+            using (var process = Process.GetCurrentProcess())
+                return process.Id;
+        }
+
         private static void DeleteInstanceFile() {
             try {
                 if (File.Exists(AgentPaths.InstanceFile))
@@ -272,31 +322,83 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 logger.Debug("Could not remove agent instance file: {0}", ex.Message);
             }
         }
+
+        /// <summary>
+        /// The session load a request starts in; pass it to <see cref="NoteRequest"/>.
+        /// </summary>
+        internal static int SessionLoad => engineWarmUp.Load;
+
+        /// <summary>
+        /// Queues the engine warm-up after the first agent request of a session load, so the
+        /// first run finds the engine ready. Called on the pipe thread once a request is handled.
+        /// </summary>
+        /// <remarks>
+        /// The warm-up runs through the dispatcher on the Revit main thread, never on the pipe
+        /// thread, and a <c>run</c> queued after it waits for it. Requests made in-process through
+        /// <see cref="HandleRequest"/> don't count: they come from a command, not an agent.
+        /// Failures are logged at debug level only and never affect the host.
+        /// </remarks>
+        internal static void NoteRequest(string method, int loadAtStart) {
+            if (inlineApplication != null || !engineWarmUp.OnRequest(method, loadAtStart))
+                return;
+            try {
+                Dispatcher?.Post(WarmUpEngine);
+            }
+            catch (Exception ex) {
+                logger.Debug("Could not queue the agent engine warm-up: {0}", ex.Message);
+            }
+        }
+
+        private static JToken WarmUpEngine(UIApplication uiApp) {
+            try {
+                var defaultIsIronPython = PyRevitConfigs.GetAgentEngine() == PyRevitConsts.ConfigsAgentEngineIronPython;
+                if (!AgentEngineWarmUp.ShouldWarm(IsRunning && IsEnabled(), defaultIsIronPython, AgentScriptRunner.IsIronPythonEngineCached()))
+                    return null;
+                var clock = Stopwatch.StartNew();
+                var exitCode = AgentScriptRunner.WarmUp(uiApp, SearchPaths);
+                logger.Debug("[PERF] agent engine warm-up: exit code {0} in {1} ms", exitCode, clock.ElapsedMilliseconds);
+            }
+            catch (Exception ex) {
+                logger.Debug("Agent engine warm-up failed: {0}", ex.Message);
+            }
+            return null;
+        }
     }
 
     /// <remarks>
     /// Run records and captures older than <see cref="RecordRetention"/> are deleted when the
-    /// host starts, so a busy agent doesn't fill the user's profile; one night of evals wrote
-    /// about 140 runs.
+    /// host starts and again, at most once per <see cref="PruneInterval"/>, when a run record is
+    /// created, so a busy agent doesn't fill the user's profile even in a Revit session left open
+    /// for weeks; one night of evals wrote about 140 runs.
     /// </remarks>
     internal static class AgentPaths {
         private static readonly Logger pathsLogger = LogManager.GetCurrentClassLogger();
         public static readonly TimeSpan RecordRetention = TimeSpan.FromDays(14);
+        public static readonly TimeSpan PruneInterval = TimeSpan.FromDays(1);
+        private static readonly object pruneLock = new object();
+        private static DateTime nextPrune = DateTime.MinValue;
 
-        public static string RootDir => Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
+        public static string RootDir => PyRevitLabsConsts.AgentPath;
         public static string InstancesDir => Path.Combine(RootDir, "instances");
         public static string RunsDir => Path.Combine(RootDir, "runs");
         public static string CapturesDir => Path.Combine(RootDir, "captures");
         public static string InstanceFile =>
-            Path.Combine(InstancesDir, Process.GetCurrentProcess().Id + ".json");
+            Path.Combine(InstancesDir, AgentHost.ProcessId + ".json");
 
         public static string CreateRunDir(string runId) {
             var runDir = Path.Combine(RunsDir, DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + runId);
             Directory.CreateDirectory(runDir);
+            PruneOldRecordsInBackground();
             return runDir;
         }
 
+        /// <remarks>Does nothing when a prune started less than <see cref="PruneInterval"/> ago.</remarks>
         public static void PruneOldRecordsInBackground() {
+            lock (pruneLock) {
+                if (DateTime.Now < nextPrune)
+                    return;
+                nextPrune = DateTime.Now + PruneInterval;
+            }
             System.Threading.Tasks.Task.Run(() => PruneOldRecords(DateTime.Now - RecordRetention));
         }
 

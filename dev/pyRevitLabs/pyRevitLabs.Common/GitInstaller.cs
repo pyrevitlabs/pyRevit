@@ -255,8 +255,10 @@ namespace pyRevitLabs.Common {
         // get the checkedout branch from repopath
         // @handled @logs
         public static string GetCheckedoutBranch(string repoPath) {
-            if (IsValidRepo(repoPath))
-                return new Repository(repoPath).Head.FriendlyName;
+            if (IsValidRepo(repoPath)) {
+                using (var repo = new Repository(repoPath))
+                    return repo.Head.FriendlyName;
+            }
             logger.Debug("Can not determine head branch for \"{0}\"", repoPath);
             return null;
         }
@@ -265,8 +267,10 @@ namespace pyRevitLabs.Common {
         // @handled @logs
         public static string GetHeadCommit(string repoPath) {
             string head = null;
-            if (IsValidRepo(repoPath))
-                head = new Repository(repoPath).Head?.Tip?.Id.ToString();
+            if (IsValidRepo(repoPath)) {
+                using (var repo = new Repository(repoPath))
+                    head = repo.Head?.Tip?.Id.ToString();
+            }
             if (head is null)
                 logger.Debug("Can not determine head commit hash for \"{0}\"", repoPath);
             return head;

@@ -400,6 +400,21 @@ namespace pyRevitAssemblyBuilder.UIManager
             _uiApp = uiApp;
             _logger = logger;
             EnsureStaticInitialized();
+            ReleasePreviousSessionExecutor();
+        }
+
+        private static void ReleasePreviousSessionExecutor()
+        {
+            try
+            {
+                Action<string> onError = message => nlog.Warn(message);
+                _executorType?.GetMethod("ReleasePreviousSession", BindingFlags.Public | BindingFlags.Static)
+                    ?.Invoke(null, new object[] { onError });
+            }
+            catch (Exception ex)
+            {
+                nlog.Warn($"Failed to release the previous session's ComboBox executor: {ex.Message}");
+            }
         }
 
         /// <summary>

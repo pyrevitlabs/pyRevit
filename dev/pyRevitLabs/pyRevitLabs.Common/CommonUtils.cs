@@ -1,5 +1,6 @@
 using OpenMcdf;
 using System;
+using System.ComponentModel;
 using System.Text;
 using System.Diagnostics;
 using System.IO;
@@ -17,6 +18,8 @@ namespace pyRevitLabs.Common {
         // private static int lastReport;
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
+        private static readonly TimeSpan DownloadTimeout = TimeSpan.FromMinutes(30);
 
         private static readonly HttpClient HttpClient;
         private static readonly HttpClient ConnectivityClient;
@@ -191,15 +194,29 @@ namespace pyRevitLabs.Common {
             if (!CheckInternetConnection())
                 throw new pyRevitNoInternetConnectionException();
 
+            var partialPath = destPath + "." + Guid.NewGuid().ToString("N") + ".download";
+            var partialCreated = false;
             try {
                 logger.Debug("Downloading \"{0}\"", url);
-                using (var response = HttpClient.GetAsync(url).GetAwaiter().GetResult()) {
+                using (var cancellation = new CancellationTokenSource(DownloadTimeout))
+                using (var response = HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellation.Token).GetAwaiter().GetResult()) {
                     response.EnsureSuccessStatusCode();
-                    CopyHttpContentToFile(response.Content, destPath);
+                    using (var stream = response.Content.ReadAsStreamAsync().GetAwaiter().GetResult())
+                    using (var fileStream = new FileStream(partialPath, FileMode.CreateNew, FileAccess.Write)) {
+                        partialCreated = true;
+                        stream.CopyToAsync(fileStream, 81920, cancellation.Token).GetAwaiter().GetResult();
+                    }
                 }
+
+                if (File.Exists(destPath))
+                    File.Replace(partialPath, destPath, null);
+                else
+                    File.Move(partialPath, destPath);
             }
             catch (Exception dlEx) {
                 logger.Debug("Error downloading file. | {0}", dlEx.Message);
+                if (partialCreated && File.Exists(partialPath))
+                    File.Delete(partialPath);
                 throw;
             }
 
@@ -289,12 +306,60 @@ namespace pyRevitLabs.Common {
             }
         }
 
+        internal static ProcessStartInfo CreateShellStartInfo(string target) {
+            return new ProcessStartInfo(target.Trim()) { UseShellExecute = true };
+        }
+
+        internal static ProcessStartInfo CreateUrlStartInfo(string url) {
+            url = url.Trim();
+            if (!Regex.IsMatch(url, @"^https?://", RegexOptions.IgnoreCase))
+                url = "http://" + url;
+            return CreateShellStartInfo(url);
+        }
+
+        /// <summary>
+        /// Opens <paramref name="target"/> (URL, file path or any URI scheme) with its shell-associated handler, unchanged.
+        /// </summary>
+        /// <remarks>
+        /// The target is started through the shell, which .NET 8 and later no longer do by default.
+        /// Logs an error instead of throwing when <paramref name="target"/> is empty or no handler can open it.
+        /// </remarks>
+        public static void OpenWithShell(string target, string logErrMsg = null) {
+            if (string.IsNullOrWhiteSpace(target)) {
+                logger.Error(string.Format("{0}. Nothing to open.", logErrMsg ?? "Error opening target"));
+                return;
+            }
+
+            StartShell(CreateShellStartInfo(target), logErrMsg);
+        }
+
+        private static void StartShell(ProcessStartInfo startInfo, string logErrMsg) {
+            logger.Debug("Opening {0}", startInfo.FileName);
+            try {
+                Process.Start(startInfo);
+            }
+            catch (Win32Exception ex) {
+                logger.Error(string.Format("{0}. {1}",
+                                           logErrMsg ?? string.Format("Error opening \"{0}\"", startInfo.FileName),
+                                           ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Opens <paramref name="url"/> in the default browser, prefixing <c>http://</c> when no scheme is given.
+        /// </summary>
+        /// <remarks>
+        /// Logs an error instead of opening when <paramref name="url"/> is empty, no internet connection is detected
+        /// or no handler can open it. Use <see cref="OpenWithShell"/> for local paths and other URI schemes.
+        /// </remarks>
         public static void OpenUrl(string url, string logErrMsg = null) {
+            if (string.IsNullOrWhiteSpace(url)) {
+                logger.Error(string.Format("{0}. No url given.", logErrMsg ?? "Error opening url"));
+                return;
+            }
+
             if (CheckInternetConnection()) {
-                if (!Regex.IsMatch(url, @"^https?://"))
-                    url = "http://" + url;
-                logger.Debug("Opening {0}", url);
-                Process.Start(url);
+                StartShell(CreateUrlStartInfo(url), logErrMsg);
             }
             else {
                 if (logErrMsg is null)

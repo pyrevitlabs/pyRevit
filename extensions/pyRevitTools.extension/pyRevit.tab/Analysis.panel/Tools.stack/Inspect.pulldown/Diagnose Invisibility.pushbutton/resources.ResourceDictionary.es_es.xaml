@@ -51,6 +51,12 @@
     <sys:String x:Key="fix_error_view_range">Revit rechazó el rango de vista ampliado</sys:String>
     <sys:String x:Key="fix_error_missing">El destino ya no existe</sys:String>
     <sys:String x:Key="fix_error_rolled_back">Revit revirtió el cambio ({})</sys:String>
+    <sys:String x:Key="fix_stale">Esta corrección ya no se puede aplicar. Vuelva a comprobar la vista.</sys:String>
+    <sys:String x:Key="fix_cancelled">Cancelado.</sys:String>
+    <sys:String x:Key="fix_describe_failed">No se pudo describir la corrección: {}</sys:String>
+    <sys:String x:Key="confirm_template_fix">Esto modificará la plantilla de vista '{}' y todas las vistas que la utilizan.</sys:String>
+    <sys:String x:Key="confirm_fix_all_templates">Se modificarán las plantillas de vista de todas las vistas que las utilizan: {}</sys:String>
+    <sys:String x:Key="confirm_fix_all">¿Aplicar {0} correcciones a '{1}'?</sys:String>
     <sys:String x:Key="error_document_inactive">Cambie primero al documento '{}'</sys:String>
     <sys:String x:Key="plane_top">Superior</sys:String>
     <sys:String x:Key="plane_cut">Plano de corte</sys:String>
