@@ -50,8 +50,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             catch (Exception ex) {
                 logger.Error(ex, "Agent request failed");
+                var details = new JObject { ["outcome"] = "unknown" };
+                var rollbackFailure = AgentCaptureGroup.RollbackFailureOf(ex);
+                if (rollbackFailure != null)
+                    details["rollback_failure"] = rollbackFailure;
                 return Failure(id, -32603, "The agent request failed inside Revit; the pyRevit log has the details.",
-                    "internal_error", new JObject { ["outcome"] = "unknown" });
+                    "internal_error", details);
             }
             finally {
                 if (method != null)
@@ -65,12 +69,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 RequireEnabled();
             switch (method) {
                 case "ping":
-                    return new JObject {
+                    var pong = new JObject {
                         ["pong"] = true,
                         ["pid"] = AgentHost.ProcessId,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
                     };
+                    if (AgentParams.Get<bool?>(parameters, "identity") == true && int.TryParse(AgentHost.RevitVersion, out var pingYear)) {
+                        var identity = AgentSessionIdentity.Describe(pingYear);
+                        foreach (var key in new[] { "commit", "bin_commit", "bin_stale", "bin_hint" })
+                            if (identity.TryGetValue(key, out var value))
+                                pong[key] = value;
+                    }
+                    return pong;
                 case "get_context":
                     return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
                 case "run":

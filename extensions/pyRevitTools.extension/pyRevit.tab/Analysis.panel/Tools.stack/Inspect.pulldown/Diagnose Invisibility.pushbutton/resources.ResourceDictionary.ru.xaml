@@ -28,7 +28,7 @@
     <sys:String x:Key="reason_view_template">Применён шаблон вида '{}' - некоторые настройки видимости могут быть заблокированы, их нужно изменить в шаблоне</sys:String>
     <sys:String x:Key="reason_view_specific">Элемент относится к определённому виду и принадлежит другому виду ('{}'), поэтому не может отображаться здесь</sys:String>
     <sys:String x:Key="reason_view_discipline">Для вида установлена дисциплина '{}' - некоторые категории автоматически показываются или скрываются в зависимости от дисциплины, независимо от настроек видимости/графики</sys:String>
-    <sys:String x:Key="reason_unknown">Элемент не виден, но точную причину определить не удалось. Возможные причины: элемент, специфичный для другого вида (например, аннотация), видимость в связанном файле или уровень детализации.</sys:String>
+    <sys:String x:Key="reason_unknown">Элемент не виден, но точную причину определить не удалось. Возможные причины: элемент, специфичный для другого вида (например, аннотация) или видимость в связанном файле.</sys:String>
 
     <sys:String x:Key="reason_temporary_hidden">Элемент скрыт временным скрытием/изоляцией на этом виде</sys:String>
     <sys:String x:Key="reason_behind_cut_plane">Элемент целиком находится позади секущей плоскости вида, поэтому разрез/фасад его не видит</sys:String>
@@ -51,6 +51,12 @@
     <sys:String x:Key="fix_error_view_range">Revit отклонил расширенный диапазон вида</sys:String>
     <sys:String x:Key="fix_error_missing">Цель больше не существует</sys:String>
     <sys:String x:Key="fix_error_rolled_back">Revit откатил изменение ({})</sys:String>
+    <sys:String x:Key="fix_stale">Это исправление больше неприменимо. Проверьте вид повторно.</sys:String>
+    <sys:String x:Key="fix_cancelled">Отменено.</sys:String>
+    <sys:String x:Key="fix_describe_failed">Не удалось описать исправление: {}</sys:String>
+    <sys:String x:Key="confirm_template_fix">Будет изменён шаблон вида '{}' и все виды, использующие его.</sys:String>
+    <sys:String x:Key="confirm_fix_all_templates">Будут изменены шаблоны видов для всех видов, использующих их: {}</sys:String>
+    <sys:String x:Key="confirm_fix_all">Применить исправления ({0}) к виду '{1}'?</sys:String>
     <sys:String x:Key="error_document_inactive">Сначала переключитесь на документ '{}'</sys:String>
     <sys:String x:Key="plane_top">Верх</sys:String>
     <sys:String x:Key="plane_cut">Секущая плоскость</sys:String>
@@ -121,5 +127,46 @@
     <sys:String x:Key="ui_speculative_hint">Только возможная причина: Revit не смог определить, какие подкатегории элемент использует здесь. Не входит в «Исправить все».</sys:String>
     <sys:String x:Key="ui_ghost">Призрак в Revit</sys:String>
     <sys:String x:Key="ui_ghost_hint">Отрисовать геометрию элемента на видах Revit, даже если он скрыт, и приблизить к нему диагностируемый вид. Щёлкните ещё раз, чтобы убрать.</sys:String>
+
+    <sys:String x:Key="reason_model_in_flat_view">'{}' — элемент модели, а виды типа '{}' не могут отображать элементы модели. В них есть только детали и аннотации, относящиеся к самому виду.</sys:String>
+    <sys:String x:Key="reason_not_in_3d">Категория '{}' никогда не отображается на 3D-видах</sys:String>
+    <sys:String x:Key="reason_detail_level">У элемента нет геометрии на уровне детализации этого вида ({0}); он отображается на уровне: {1}</sys:String>
+    <sys:String x:Key="code_view_type">Тип вида</sys:String>
+    <sys:String x:Key="code_detail_level">Уровень детализации</sys:String>
+    <sys:String x:Key="fix_set_detail_level">Установить уровень детализации: {}</sys:String>
+    <sys:String x:Key="detail_level_coarse">Низкая</sys:String>
+    <sys:String x:Key="detail_level_medium">Средняя</sys:String>
+    <sys:String x:Key="detail_level_fine">Высокая</sys:String>
+    <sys:String x:Key="add_nothing_new">Нет новых элементов для добавления.</sys:String>
+    <sys:String x:Key="added_elements">Добавлено элементов: {0}.</sys:String>
+    <sys:String x:Key="add_no_selection">В Revit ничего не выбрано.</sys:String>
+    <sys:String x:Key="add_views_button">Добавить в отчёт</sys:String>
+    <sys:String x:Key="added_views">Добавлено видов: {0}.</sys:String>
+    <sys:String x:Key="hide_nothing">Менять нечего: элементы уже в этом состоянии, их нельзя скрыть на этих видах или они принадлежат другому виду.</sys:String>
+    <sys:String x:Key="confirm_hide">Скрыть элементы ({0}) на видах ({1})?</sys:String>
+    <sys:String x:Key="confirm_unhide">Показать элементы ({0}) на видах ({1})?</sys:String>
+    <sys:String x:Key="transaction_hide">Скрыть на видах</sys:String>
+    <sys:String x:Key="transaction_unhide">Показать на видах</sys:String>
+    <sys:String x:Key="hidden_summary">Скрыто элементов: {0}, видов: {1}.</sys:String>
+    <sys:String x:Key="unhidden_summary">Показано элементов: {0}, видов: {1}.</sys:String>
+    <sys:String x:Key="ui_add_selection">Добавить выбранное</sys:String>
+    <sys:String x:Key="ui_add_selection_hint">Добавить в отчёт элементы, выбранные сейчас в Revit.</sys:String>
+    <sys:String x:Key="ui_pick_elements">Указать элементы</sys:String>
+    <sys:String x:Key="ui_add_views">Добавить виды</sys:String>
+    <sys:String x:Key="ui_remove_element">Убрать этот элемент из отчёта</sys:String>
+    <sys:String x:Key="ui_remove_view">Убрать этот вид из отчёта</sys:String>
+    <sys:String x:Key="ui_select_all">Выбрать все</sys:String>
+    <sys:String x:Key="ui_selected_count">Выбрано: {0}</sys:String>
+    <sys:String x:Key="ui_clear_selection">Снять выбор</sys:String>
+    <sys:String x:Key="ui_select_for_hide">Выбрать элемент, чтобы скрыть или показать его</sys:String>
+    <sys:String x:Key="ui_hide_in_views">Скрыть на видах...</sys:String>
+    <sys:String x:Key="ui_unhide_in_views">Показать на видах...</sys:String>
+    <sys:String x:Key="ui_hide_dialog_title">Скрыть элементы ({0}) на видах:</sys:String>
+    <sys:String x:Key="ui_unhide_dialog_title">Показать элементы ({0}) на видах:</sys:String>
+    <sys:String x:Key="ui_apply">Применить</sys:String>
+    <sys:String x:Key="ui_cancel">Отмена</sys:String>
+    <sys:String x:Key="ui_no_view_ticked">Отметьте хотя бы один вид.</sys:String>
+    <sys:String x:Key="ui_empty_state">Пока нечего диагностировать. Добавьте элементы и виды.</sys:String>
+    <sys:String x:Key="ui_reload_blocked">Перезагрузка сотрёт этот отчёт. Используйте вместо неё «Проверить снова».</sys:String>
 
 </ResourceDictionary>

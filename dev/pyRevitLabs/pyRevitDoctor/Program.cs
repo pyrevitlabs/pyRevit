@@ -65,7 +65,7 @@ Usage:
                 PrintCommands();
 
             else if (args.Length > 0) {
-                var commandName = args.FirstOrDefault(arg => !arg.StartsWith("-"));
+                var commandName = DoctorArguments.FindCommandName(args);
                 var requested = Commands.FirstOrDefault(x => x.Name == commandName);
                 if (requested.Name != null)
                     RunCommand(requested, options);

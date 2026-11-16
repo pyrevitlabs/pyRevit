@@ -2,7 +2,7 @@
 
 Adds footnote handling to Python-Markdown.
 
-See <https://pythonhosted.org/Markdown/extensions/footnotes.html>
+See <https://python-markdown.github.io/extensions/footnotes/>
 for documentation.
 
 Copyright The Python Markdown Project

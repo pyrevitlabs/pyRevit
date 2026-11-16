@@ -6,8 +6,8 @@
  * .payload(). When data.bridge is true, buttons post
  * {channel, action, payload, requestId} through chrome.webview.postMessage and
  * Python answers with {channel, event, payload} messages (events: view,
- * result, scene, error). Without the bridge the report is read-only and falls
- * back to pyRevit's revit:// links for selection.
+ * state, result, scene, error). Without the bridge the report is read-only and
+ * falls back to pyRevit's revit:// links for selection.
  */
 (function () {
   "use strict";
@@ -60,6 +60,8 @@
       this.activeCodes = new Set();
       this.showVisible = true;
       this.showContext = false;
+      this.elementCount = data.elementCount;
+      this.selected = new Set();
       this.requests = new Map();
       this.requestSeq = 0;
       this.viewers = new Map();
@@ -106,9 +108,49 @@
         this.applyFilters();
         this.syncViewer(payload);
         this.refreshScene(payload.id);
+      } else if (event === "state") {
+        this.applyState(payload);
       } else if (event === "scene") {
         this.showScene(payload);
       }
+    }
+
+    /**
+     * Adopt a new element/view list: drop sections and previews of removed
+     * views, keep open previews of the others, and prune selections and ghosts
+     * of removed elements.
+     */
+    applyState(state) {
+      this.elementCount = state.elementCount;
+      const kept = new Set(state.views.map((v) => v.id));
+      const previous = new Set(this.views.map((v) => v.id));
+      for (const id of previous) {
+        if (kept.has(id)) continue;
+        const viewer = this.viewers.get(id);
+        if (viewer) viewer.destroy();
+        this.viewers.delete(id);
+        this.sceneOpen.delete(id);
+        this.sceneLoading.delete(id);
+        this.sceneStale.delete(id);
+        const section = this.viewSection(id);
+        if (section) section.remove();
+      }
+      this.views = state.views;
+      const known = new Set(state.elementIds);
+      for (const id of [...this.selected]) if (!known.has(id)) this.selected.delete(id);
+      for (const id of [...this.ghosted]) if (!known.has(id)) this.ghosted.delete(id);
+      for (const view of this.views) {
+        this.renderView(view);
+        if (previous.has(view.id)) {
+          this.syncViewer(view);
+          this.refreshScene(view.id);
+        }
+      }
+      for (const view of this.views) this.viewsNode.append(this.viewSection(view.id));
+      this.renderHeader();
+      this.renderMatrix();
+      this.applyFilters();
+      this.syncSelection();
     }
 
     run(button, action, payload, successMessage) {
@@ -149,9 +191,22 @@
       setTimeout(() => node.remove(), 3600);
     }
 
+    /**
+     * The output window is a stock Chromium page: its context menu and F5 /
+     * Ctrl+R reload the empty skeleton and erase the report, so both are
+     * blocked here. Text selections and inputs keep their copy/paste menu.
+     */
     bindKeys() {
+      document.addEventListener("contextmenu", (e) => {
+        if (e.target.closest("input, textarea") || String(window.getSelection()).length) return;
+        e.preventDefault();
+      });
       document.addEventListener("keydown", (e) => {
-        if (e.key === "/" && document.activeElement !== this.searchInput) {
+        const reload = e.key === "F5" || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r");
+        if (reload) {
+          e.preventDefault();
+          this.toast(this.s.reloadBlocked, "error");
+        } else if (e.key === "/" && document.activeElement !== this.searchInput && !document.querySelector(".dvi-modal")) {
           e.preventDefault();
           this.searchInput.focus();
         } else if (e.key === "Escape" && document.activeElement === this.searchInput) {
@@ -181,26 +236,137 @@
     render() {
       this.headerNode = h("header", { class: "dvi-header" });
       this.toolbarNode = h("div", { class: "dvi-toolbar" });
+      this.selectionNode = h("div", { class: "dvi-selection", hidden: true });
       this.matrixNode = h("section", { class: "dvi-matrix" });
       this.viewsNode = h("div", { class: "dvi-views" });
+      this.emptyStateNode = h("p", { class: "dvi-empty-state", hidden: true }, this.s.emptyState);
       this.root.replaceChildren(
         ...[
           this.headerNode,
           this.toolbarNode,
+          this.selectionNode,
           this.data.bridge ? null : h("div", { class: "dvi-offline" }, this.s.bridgeOffline),
           this.matrixNode,
           this.viewsNode,
+          this.emptyStateNode,
         ].filter(Boolean)
       );
       this.renderHeader();
       this.renderToolbar();
       this.renderMatrix();
       for (const view of this.views) this.renderView(view);
+      this.syncSelection();
+    }
+
+    manageButtons() {
+      const action = (label, name, title) =>
+        h(
+          "button",
+          { class: "dvi-btn", title, onclick: (e) => this.run(e.currentTarget, name, {}, "{0}") },
+          label
+        );
+      return [
+        action(this.s.addSelection, "add_selection", this.s.addSelectionHint),
+        action(this.s.pickElements, "add_pick"),
+        action(this.s.addViews, "add_views"),
+      ];
+    }
+
+    syncSelection() {
+      for (const box of this.root.querySelectorAll("input.dvi-pick")) {
+        box.checked = this.selected.has(Number(box.dataset.pick));
+      }
+      this.syncSelectAll();
+      this.emptyStateNode.hidden = this.views.length > 0 && this.elementCount > 0;
+      const count = this.selected.size;
+      this.selectionNode.hidden = !this.data.bridge || count === 0;
+      this.selectionNode.replaceChildren(
+        h("span", { class: "dvi-selection-count" }, format(this.s.selectedCount, count)),
+        h(
+          "button",
+          { class: "dvi-btn small", disabled: !this.views.length, onclick: () => this.openHideDialog(true) },
+          this.s.hideInViews
+        ),
+        h(
+          "button",
+          { class: "dvi-btn small", disabled: !this.views.length, onclick: () => this.openHideDialog(false) },
+          this.s.unhideInViews
+        ),
+        h(
+          "button",
+          {
+            class: "dvi-btn small",
+            onclick: () => {
+              this.selected.clear();
+              this.syncSelection();
+            },
+          },
+          this.s.clearSelection
+        )
+      );
+    }
+
+    /**
+     * Ask which report views to hide or unhide the selected elements in. The
+     * request carries ids only; Python re-checks every element and view.
+     */
+    openHideDialog(hide) {
+      if (!this.views.length) return;
+      const ids = [...this.selected];
+      const boxes = this.views.map((view) => ({ view, input: h("input", { type: "checkbox", checked: true }) }));
+      const opener = document.activeElement;
+      const close = () => {
+        overlay.remove();
+        const target = opener && opener.isConnected ? opener : this.root.querySelector(".dvi-btn");
+        if (target) target.focus();
+      };
+      const apply = h(
+        "button",
+        {
+          class: "dvi-btn primary",
+          onclick: () => {
+            const viewIds = boxes.filter((box) => box.input.checked).map((box) => box.view.id);
+            if (!viewIds.length) {
+              this.toast(this.s.noViewTicked, "error");
+              return;
+            }
+            close();
+            this.run(null, "set_hidden", { hide, elementIds: ids, viewIds }, "{0}");
+          },
+        },
+        this.s.apply
+      );
+      const overlay = h(
+        "div",
+        {
+          class: "dvi-modal",
+          onclick: (e) => {
+            if (e.target === overlay) close();
+          },
+          onkeydown: (e) => {
+            if (e.key === "Escape") close();
+          },
+        },
+        h(
+          "div",
+          { class: "dvi-dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": "dvi-dialog-title" },
+          h("h3", { id: "dvi-dialog-title" }, format(hide ? this.s.hideDialogTitle : this.s.unhideDialogTitle, ids.length)),
+          h(
+            "ul",
+            { class: "dvi-dialog-views" },
+            boxes.map(({ view, input }) =>
+              h("li", null, h("label", null, input, view.name, h("span", { class: "dvi-badge" }, view.type)))
+            )
+          ),
+          h("div", { class: "dvi-dialog-actions" }, h("button", { class: "dvi-btn", onclick: close }, this.s.cancel), apply)
+        )
+      );
+      this.root.append(overlay);
+      boxes[0].input.focus();
     }
 
     renderHeader() {
       const { visible, hidden } = this.counts();
-      const elementCount = this.views.length ? this.views[0].elements.length : 0;
       this.headerNode.replaceChildren(
         h(
           "div",
@@ -209,7 +375,7 @@
           h(
             "span",
             { class: "dvi-subtitle" },
-            format(this.s.subtitle, elementCount, this.views.length),
+            format(this.s.subtitle, this.elementCount, this.views.length),
             " · ",
             this.data.document
           )
@@ -223,6 +389,7 @@
         h(
           "div",
           { class: "dvi-header-actions" },
+          this.data.bridge ? this.manageButtons() : null,
           this.data.bridge
             ? h(
                 "button",
@@ -263,6 +430,7 @@
         h(
           "div",
           { class: "dvi-toggles" },
+          this.data.bridge ? this.selectAllToggle() : null,
           toggle(this.s.showVisible, this.showVisible, (e) => {
             this.showVisible = e.target.checked;
             this.applyFilters();
@@ -271,6 +439,39 @@
         )
       );
       this.renderChips();
+    }
+
+    /**
+     * Ids of the elements shown by the current filters, so "Select all"
+     * never selects cards the user cannot see.
+     */
+    selectableIds() {
+      const shown = new Set();
+      for (const view of this.views) {
+        for (const element of view.elements) if (this.matches(element)) shown.add(element.id);
+      }
+      const first = this.views.length ? this.views[0].elements : [];
+      return first.filter((element) => shown.has(element.id)).map((element) => element.id);
+    }
+
+    syncSelectAll() {
+      if (!this.selectAllInput) return;
+      const selectable = this.selectableIds();
+      this.selectAllInput.checked = selectable.length > 0 && selectable.every((id) => this.selected.has(id));
+    }
+
+    selectAllToggle() {
+      this.selectAllInput = h("input", {
+        type: "checkbox",
+        onchange: (e) => {
+          this.selected.clear();
+          if (e.target.checked) {
+            for (const id of this.selectableIds()) this.selected.add(id);
+          }
+          this.syncSelection();
+        },
+      });
+      return h("label", { class: "dvi-toggle" }, this.selectAllInput, this.s.selectAll);
     }
 
     /**
@@ -349,6 +550,7 @@
     }
 
     applyFilters() {
+      this.syncSelectAll();
       for (const view of this.views) {
         const section = this.viewSection(view.id);
         if (!section) continue;
@@ -467,6 +669,17 @@
           ? h(
               "button",
               {
+                class: "dvi-btn danger",
+                title: this.s.removeView,
+                onclick: (e) => this.run(e.currentTarget, "remove_view", { viewId: view.id }),
+              },
+              "\u00d7"
+            )
+          : null,
+        this.data.bridge
+          ? h(
+              "button",
+              {
                 class: `dvi-btn${sceneOpen ? " active" : ""}`,
                 onclick: (e) => this.toggleScene(view, e.currentTarget),
               },
@@ -536,6 +749,20 @@
       const head = h(
         "div",
         { class: "dvi-card-head" },
+        bridge
+          ? h("input", {
+              type: "checkbox",
+              class: "dvi-pick",
+              title: this.s.selectForHide,
+              dataset: { pick: element.id },
+              checked: this.selected.has(element.id),
+              onchange: (e) => {
+                if (e.target.checked) this.selected.add(element.id);
+                else this.selected.delete(element.id);
+                this.syncSelection();
+              },
+            })
+          : null,
         h("span", { class: "dvi-dot" }),
         selectLink,
         h(
@@ -571,7 +798,18 @@
               onclick: () => this.focusInScene(view.id, element.id),
             },
             "3D"
-          )
+          ),
+          bridge
+            ? h(
+                "button",
+                {
+                  class: "dvi-btn small danger",
+                  title: this.s.removeElement,
+                  onclick: (e) => this.run(e.currentTarget, "remove_element", { elementId: element.id }),
+                },
+                "\u00d7"
+              )
+            : null
         )
       );
       const findings = element.findings.map((finding) =>
@@ -720,7 +958,7 @@
      * one more reload when it completes.
      */
     refreshScene(viewId) {
-      if (!this.viewers.has(viewId)) return;
+      if (!this.viewers.has(viewId) && !this.sceneOpen.has(viewId)) return;
       if (this.sceneLoading.has(viewId)) {
         this.sceneStale.add(viewId);
         return;

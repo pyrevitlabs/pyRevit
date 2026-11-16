@@ -155,15 +155,64 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (!activeDict.TryGetValue(engineTypeId, out depth))
                 return;
 
-            if (depth > 1)
+            if (depth > 1) {
                 activeDict[engineTypeId] = depth - 1;
-            else
-                activeDict.Remove(engineTypeId);
+                return;
+            }
+
+            activeDict.Remove(engineTypeId);
+            ShutdownRetiredEngines(engineTypeId);
         }
 
         /// <summary>
-        /// Shuts down every cached engine except <paramref name="excludeEngine"/> and engines that are
-        /// mid-execution, then replaces the cache with one holding only the excluded engine.
+        /// Engines dropped from the cache while mid-execution, keyed by engine type id, waiting
+        /// for their last <see cref="ExitEngine"/> to be shut down. Same threading invariant as
+        /// <see cref="ActiveEngineDict"/>.
+        /// </summary>
+        /// <remarks>
+        /// Limitation: the only cleanup path is the <see cref="ExitEngine"/> that brings the type
+        /// id's depth to zero. A newer engine entered under the same id delays the shutdown until
+        /// it exits too, and an <see cref="EnterEngine"/> whose exit is missed keeps the retired
+        /// engines for the rest of the process, which the pairing invariant already forbids.
+        /// Nothing shuts retired engines down at session teardown.
+        /// </remarks>
+        private static Dictionary<string, List<object>> RetiredEngineDict {
+            get {
+                var existing = AppDomain.CurrentDomain.GetData(DomainStorageKeys.RetiredEnginesDictKey);
+                if (existing != null)
+                    return (Dictionary<string, List<object>>)existing;
+
+                var retiredDict = new Dictionary<string, List<object>>();
+                AppDomain.CurrentDomain.SetData(DomainStorageKeys.RetiredEnginesDictKey, retiredDict);
+                return retiredDict;
+            }
+        }
+
+        private static void RetireEngine(string engineTypeId, object engine) {
+            List<object> retired;
+            if (!RetiredEngineDict.TryGetValue(engineTypeId, out retired)) {
+                retired = new List<object>();
+                RetiredEngineDict[engineTypeId] = retired;
+            }
+            if (!retired.Contains(engine))
+                retired.Add(engine);
+        }
+
+        private static void ShutdownRetiredEngines(string engineTypeId) {
+            List<object> retired;
+            if (!RetiredEngineDict.TryGetValue(engineTypeId, out retired))
+                return;
+
+            RetiredEngineDict.Remove(engineTypeId);
+            foreach (object engine in retired)
+                ShutdownEngine(engine);
+        }
+
+        /// <summary>
+        /// Shuts down every cached engine except <paramref name="excludeEngine"/>, then replaces the
+        /// cache with one holding only the excluded engine. An engine that is mid-execution is
+        /// dropped from the cache but shut down when its last execution ends, in
+        /// <see cref="ExitEngine"/>.
         /// </summary>
         /// <param name="excludeEngine">
         /// Type id of the caller's own engine. The session preload script passes its shared session
@@ -174,13 +223,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <remarks>
         /// Invariant: the excluded engine must remain in the returned cache. Dropping it makes every
         /// later caller with the same type id start a new engine and re-import its modules.
+        /// Also drops the call-site rules live IronPython contexts cached, which would otherwise keep
+        /// every earlier engine alive; see <see cref="IronPythonRuleCaches"/>.
         /// </remarks>
         public static Dictionary<string, object> ClearEngines(string excludeEngine = null) {
             object excludedEngine = null;
             foreach (KeyValuePair<string, object> engineRecord in EngineDict) {
                 if (engineRecord.Key == excludeEngine)
                     excludedEngine = engineRecord.Value;
-                else if (!IsEngineActive(engineRecord.Key))
+                else if (IsEngineActive(engineRecord.Key))
+                    RetireEngine(engineRecord.Key, engineRecord.Value);
+                else
                     ShutdownEngine(engineRecord.Value);
             }
 
@@ -188,6 +241,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (excludedEngine != null)
                 newEngineDict[excludeEngine] = excludedEngine;
             AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnginesDictKey, newEngineDict);
+            try {
+                IronPythonRuleCaches.Release();
+            }
+            catch (Exception ex) {
+                logger.Warn(ex, "Could not release the IronPython rule caches");
+            }
             return newEngineDict;
         }
 
