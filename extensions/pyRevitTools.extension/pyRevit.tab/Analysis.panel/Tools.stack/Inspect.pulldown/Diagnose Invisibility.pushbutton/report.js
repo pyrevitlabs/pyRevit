@@ -908,7 +908,7 @@
      */
     revealInspector(viewId, summary) {
       const filter = this.revealFilter(viewId);
-      const levels = [...new Set(summary.rows.map((row) => row.level).filter(Boolean))].sort();
+      const levels = [...new Set([...summary.rows.map((row) => row.level), filter.level].filter(Boolean))].sort();
       const refresh = () => {
         this.renderRevealList(viewId);
         this.scheduleFocus(viewId);

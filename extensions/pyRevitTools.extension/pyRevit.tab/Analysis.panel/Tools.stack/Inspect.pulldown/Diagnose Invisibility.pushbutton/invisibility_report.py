@@ -819,7 +819,8 @@ class DiagnosisSession(object):
         view_id = id_value(view.Id)
         previous = self.reveal.view_id
         if not payload.get("on", True):
-            self.reveal.close()
+            if previous is not None and id_value(previous) == view_id:
+                self.reveal.close()
             self._send("reveal", {"viewId": view_id, "active": False})
             self._reply(request_id, True)
             return
