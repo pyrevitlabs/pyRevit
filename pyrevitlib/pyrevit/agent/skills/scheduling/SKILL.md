@@ -32,7 +32,7 @@ mark = definition.AddField(fields["Mark"])
 width = definition.AddField(fields["Width"])
 ```
 
-- **Available fields:** `GetSchedulableFields()` lists what can be scheduled for that category. Its display names are localized, so discover them in the active Revit session instead of hardcoding English labels.
+- **Available fields:** `GetSchedulableFields()` lists what can be scheduled for that category. Its display names are localized, so discover them in the active Revit session instead of hardcoding English labels. Creating a schedule needs a transaction, so in `run_query` open one and roll it back: `t = DB.Transaction(doc, "probe"); t.Start(); ...; names = [sf.GetName(doc) for sf in definition.GetSchedulableFields()]; t.RollBack()`.
 - **Field ids:** `AddField` returns a `ScheduleField`. Its `FieldId` is what filters and sorting use.
 - **Order:** fields appear in the order they are added.
 - **Hiding a field:** set `field.IsHidden = True` to keep it for filtering or sorting but not show it.
@@ -74,9 +74,12 @@ DB.ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, DB.XYZ(x, y, 0))
 
 ## Exporting
 
-Write exports into the run's `export_dir`, for example
+To get data out, read the cells with `GetCellText` as above. To write a file, export it into the
+run's `export_dir`, for example
 `schedule.Export(export_dir, "Door Schedule.txt", DB.ViewScheduleExportOptions())`. The host
-doesn't check `ViewSchedule.Export`, so never point it at the user's folders. Files in
+doesn't check `ViewSchedule.Export`, so never point it at the user's folders, and the file it
+writes stays on disk even when the run later fails or is rolled back. Export only when the user
+asked for a file, and only after the change that produces the schedule has committed. Files in
 `export_dir` last at least 14 days, and after that any host start or later recorded run,
 including one in another Revit instance, may delete them, even while this Revit session stays
 open. Give the user the file's path, say it is temporary, and offer to copy it to a folder
@@ -86,5 +89,5 @@ they name, with your own file tools after the run or by asking the user to copy 
 
 - [ ] The schedule's rows, read back, match a direct element query of the same category and filters.
 - [ ] Its fields, filters, sorting and totals, read back from `schedule.Definition`, are the ones asked for.
-- [ ] `capture_view(view="Door Schedule")` shows how it looks.
+- [ ] `capture_view(view="Door Schedule")` shows how it looks; it renders the schedule on a temporary sheet that is rolled back.
 - [ ] You told the user the schedule's name and the path of any file you exported, and that the file is temporary.

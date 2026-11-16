@@ -471,7 +471,7 @@ namespace pyRevitCLI {
 
             JObject response;
             try {
-                response = JObject.Parse(responseLine);
+                response = JsonText.Parse(responseLine) as JObject ?? throw new JsonReaderException("The answer is not a JSON object.");
             }
             catch (JsonException) {
                 throw new AgentClientException(

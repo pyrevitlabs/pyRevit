@@ -163,23 +163,31 @@ namespace pyRevitAssemblyBuilder.UIManager
             // The OS file cache is already warm from bundle.yaml parsing in PASS 1.
 
             _currentExtension = extension;
+            _buildContext.CurrentExtension = extension;
 
-            // Clear per-build accumulators on shared collaborators so what we capture below
-            // attributes only to this extension's BuildUI window.
-            _buttonPostProcessor.ResetAndGetStats();
-            _buttonPostProcessor.ResetAndGetAddItemStats();
-            _buttonPostProcessor.IconManager?.ResetAndGetStats();
-
-            foreach (var component in extension.Children)
+            try
             {
-                if (component != null)
-                    RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
-            }
+                // Clear per-build accumulators on shared collaborators so what we capture below
+                // attributes only to this extension's BuildUI window.
+                _buttonPostProcessor.ResetAndGetStats();
+                _buttonPostProcessor.ResetAndGetAddItemStats();
+                _buttonPostProcessor.IconManager?.ResetAndGetStats();
 
-            _postProcessorStats = _buttonPostProcessor.ResetAndGetStats();
-            _addItemStats = _buttonPostProcessor.ResetAndGetAddItemStats();
-            _iconStats = _buttonPostProcessor.IconManager?.ResetAndGetStats() ?? (0, 0, 0L);
-            _currentExtension = null;
+                foreach (var component in extension.Children)
+                {
+                    if (component != null)
+                        RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
+                }
+
+                _postProcessorStats = _buttonPostProcessor.ResetAndGetStats();
+                _addItemStats = _buttonPostProcessor.ResetAndGetAddItemStats();
+                _iconStats = _buttonPostProcessor.IconManager?.ResetAndGetStats() ?? (0, 0, 0L);
+            }
+            finally
+            {
+                _currentExtension = null;
+                _buildContext.CurrentExtension = null;
+            }
         }
 
         /// <summary>
@@ -234,8 +242,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             ParsedComponent? parentComponent,
             RibbonPanel? parentPanel,
             string tabName,
-            ExtensionAssemblyInfo assemblyInfo,
-            string? renamedTabTitle = null)
+            ExtensionAssemblyInfo assemblyInfo)
         {
             if (component == null)
             {
@@ -269,7 +276,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     break;
 
                 case CommandComponentType.Panel:
-                    HandlePanel(component, tabName, assemblyInfo, renamedTabTitle);
+                    HandlePanel(component, tabName, assemblyInfo);
                     break;
 
                 default:
@@ -294,57 +301,43 @@ namespace pyRevitAssemblyBuilder.UIManager
             // script), or null if no rename detected.
             var renamedTabTitle = _tabBuilder.CreateTab(component);
 
-            // Get tab name for children using localized title
-            var tabText = ExtensionParser.GetComponentTitle(component);
+            var tabName = component.DisplayName;
 
             // Mark tab as touched in the registry (matching Python's set_dirty_flag behavior)
-            _ribbonScanner?.MarkElementTouched("tab", tabText);
+            _ribbonScanner?.MarkElementTouched("tab", tabName);
 
             // If CreateTab detected a rename, also mark the current (renamed) Title
             // so CleanupOrphanedElements() doesn't deactivate the tab (#3167).
             if (!string.IsNullOrEmpty(renamedTabTitle))
             {
                 _ribbonScanner?.MarkElementTouched("tab", renamedTabTitle!);
-                _logger.Debug($"Tab '{tabText}' has current Title '{renamedTabTitle}' — marked both as touched.");
+                _logger.Debug($"Tab '{tabName}' has current Title '{renamedTabTitle}' — marked both as touched.");
             }
 
-            // Recursively build children, passing the renamed title so panels can dual-mark too.
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
                 if (child == null)
                     continue;
 
-                RecursivelyBuildUI(child, component, null, tabText, assemblyInfo, renamedTabTitle);
+                RecursivelyBuildUI(child, component, null, tabName, assemblyInfo);
             }
         }
 
-        private void HandlePanel(ParsedComponent component, string tabName,
-            ExtensionAssemblyInfo assemblyInfo, string? renamedTabTitle = null)
+        private void HandlePanel(ParsedComponent component, string tabName, ExtensionAssemblyInfo assemblyInfo)
         {
             // Use PanelBuilder to create the panel
             var panel = _panelBuilder.CreatePanel(component, tabName);
 
-            // Get panel name for registry (using localized title)
-            var panelText = ExtensionParser.GetComponentTitle(component);
+            var panelName = component.DisplayName;
 
             // Mark panel as touched in the registry (matching Python's set_dirty_flag behavior)
-            _ribbonScanner?.MarkElementTouched("panel", panelText, tabName);
-
-            // If the parent tab was renamed (e.g. by a translation script), the scanner
-            // registered this panel under "panel:{renamedTab}:{panelText}". Mark that
-            // key as touched too so cleanup doesn't hide the panel.
-            if (!string.IsNullOrEmpty(renamedTabTitle))
-            {
-                _ribbonScanner?.MarkElementTouched("panel", panelText, renamedTabTitle);
-            }
+            _ribbonScanner?.MarkElementTouched("panel", panelName, tabName);
 
             // Apply background colors if specified
             _panelBuilder.ApplyPanelBackgroundColors(panel, component, tabName);
 
-            // Recursively build children — propagate renamedTabTitle so any nested
-            // components that depend on the tab name for registry keys stay consistent.
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo, renamedTabTitle);
+                RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
         }
 
         private void EnsureSlideOutApplied(ParsedComponent? parentComponent, RibbonPanel? parentPanel)

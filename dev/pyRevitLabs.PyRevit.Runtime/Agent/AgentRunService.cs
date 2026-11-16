@@ -9,6 +9,7 @@ using System.Text;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
+using pyRevitLabs.Common;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
@@ -120,14 +121,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case AgentRunVerdict.QueryModifiedModel:
                     guard.RollBack();
                     context.SetError("query_modified_model",
-                        "A query run changed the model. The changes were rolled back; use mode 'dry_run' or 'modify'.",
+                        guard.RollbackFailed
+                            ? "A query run changed the model and the host could not roll the changes back, so they may remain in the active document. "
+                                + "Ask the user to undo them in Revit or close the document without saving; use mode 'dry_run' or 'modify' for changes."
+                            : "A query run changed the model. The changes were rolled back; use mode 'dry_run' or 'modify'.",
                         null);
                     return verdict;
                 case AgentRunVerdict.PolicyReadOnly:
-                    context.SetError("policy_readonly",
-                        "The pyRevit agent policy changed to 'readonly' during the run; its changes were rolled back.",
-                        null);
-                    guard.RollBack();
+                    try {
+                        guard.RollBack();
+                    }
+                    finally {
+                        context.SetError("policy_readonly",
+                            guard.RollbackFailed
+                                ? "The pyRevit agent policy changed to 'readonly' during the run and the host could not roll its changes back, so they may remain in the active document. "
+                                    + "Ask the user to undo them in Revit or close the document without saving."
+                                : "The pyRevit agent policy changed to 'readonly' during the run; its changes were rolled back.",
+                            null);
+                    }
                     return verdict;
                 case AgentRunVerdict.AutoCommit:
                     Commit(guard, uidoc.Document, request, runId);
@@ -428,7 +439,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         response["result_path"] = resultPath;
                     }
                     else {
-                        response["result"] = JToken.Parse(context.ResultJson);
+                        response["result"] = JsonText.Parse(context.ResultJson);
                     }
                 }
                 catch (Exception ex) {
@@ -594,9 +605,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             try {
                 using (var transaction = new Transaction(doc, TransactionName)) {
-                    transaction.Start();
+                    if (transaction.Start() != TransactionStatus.Started)
+                        throw new InvalidOperationException("Revit did not start the approval preview's temporary isolation.");
                     view.IsolateElementsTemporary(visibleCandidates);
-                    transaction.Commit();
+                    if (transaction.Commit() != TransactionStatus.Committed)
+                        throw new InvalidOperationException("Revit did not commit the approval preview's temporary isolation.");
                 }
                 uidoc.RefreshActiveView();
                 return new AgentViewPreview(doc, view,

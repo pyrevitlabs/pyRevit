@@ -40,7 +40,6 @@ PARAM_VALUE_EVALUATORS = {
 }
 
 
-# http://www.revitapidocs.com/2018.1/5da8e3c5-9b49-f942-02fc-7e7783fe8f00.htm
 class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
     """Family loader options handler."""
 
@@ -312,6 +311,20 @@ def copy_viewtemplates(viewtemplates, src_doc, dest_doc):
 def create_sheet(
     sheet_num, sheet_name, titleblock_id=DB.ElementId.InvalidElementId, doc=None
 ):
+    """Create a sheet with a number and a name.
+
+    Must run inside a transaction. Raises if the sheet number is already used.
+
+    Args:
+        sheet_num (str): sheet number, unique in the document.
+        sheet_name (str): sheet name.
+        titleblock_id (DB.ElementId): title block type id; the default
+            creates a sheet without a title block.
+        doc (DB.Document): target document; defaults to the active one.
+
+    Returns:
+        DB.ViewSheet: the new sheet.
+    """
     doc = doc or DOCS.doc
     mlogger.debug("Creating sheet: %s - %s", sheet_num, sheet_name)
     mlogger.debug("Titleblock id is: %s", titleblock_id)
@@ -1585,13 +1598,13 @@ def create_section_view(
     direction = along.Normalize()
     transform = DB.Transform.Identity
     transform.Origin = DB.XYZ((start.X + end.X) / 2.0, (start.Y + end.Y) / 2.0, 0.0)
-    transform.BasisX = direction
+    transform.BasisX = direction.Negate()
     transform.BasisY = DB.XYZ.BasisZ
-    transform.BasisZ = direction.CrossProduct(DB.XYZ.BasisZ)
+    transform.BasisZ = DB.XYZ.BasisZ.CrossProduct(direction)
     box = DB.BoundingBoxXYZ()
     box.Transform = transform
-    box.Min = DB.XYZ(-half_length, bottom, -units.parse_length(depth))
-    box.Max = DB.XYZ(half_length, top, 0.0)
+    box.Min = DB.XYZ(-half_length, bottom, 0.0)
+    box.Max = DB.XYZ(half_length, top, units.parse_length(depth))
     view = DB.ViewSection.CreateSection(
         doc, _view_family_type(DB.ViewFamily.Section, doc).Id, box
     )
@@ -1938,7 +1951,9 @@ def _sheet_area(sheet, doc):
     )
 
 
-def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
+def place_on_sheet(
+    sheet, view, anchor="top_left", margin=0.1, doc=None, right_margin=0.0
+):
     """Place a view or schedule on a sheet, aligned to a corner of the title block.
 
     Args:
@@ -1951,14 +1966,19 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
         margin (float | str, optional): gap between the placed box and the
             title block edge, in sheet feet (0.1 ft is 1.2 in).
         doc (DB.Document, optional): document, defaults to the active one.
+        right_margin (float | str, optional): width of the title block's
+            right-hand information strip, in sheet feet, which right anchors
+            and center keep clear. The title block's bounding box includes
+            the strip and its width is not exposed by the API, so measure it
+            on the sheet.
 
     Returns:
         (DB.Viewport | DB.ScheduleSheetInstance): the placed viewport or
         schedule instance.
 
     Raises:
-        PyRevitException: when the view can't be added to the sheet, for
-            example because it is already on another sheet.
+        PyRevitException: when ``view`` is a sheet, or can't be added to the
+            sheet, for example because it is already on another sheet.
     """
     doc = doc or DOCS.doc
     _require_transaction(doc, "place views on sheets")
@@ -1967,10 +1987,17 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
             "anchor must be one of {}.".format(", ".join(SHEET_ANCHORS))
         )
     margin = units.parse_length(margin)
+    right_margin = units.parse_length(right_margin)
     is_schedule = isinstance(view, DB.ViewSchedule)
     if is_schedule:
         placed = DB.ScheduleSheetInstance.Create(doc, sheet.Id, view.Id, DB.XYZ.Zero)
     else:
+        if isinstance(view, DB.ViewSheet):
+            raise PyRevitException(
+                "{!r} is the sheet {}, not a view; pass the view to place.".format(
+                    view.Name, view.SheetNumber
+                )
+            )
         if not DB.Viewport.CanAddViewToSheet(doc, sheet.Id, view.Id):
             raise PyRevitException(
                 "View {!r} can't be placed on sheet {}; it may already be on a sheet.".format(
@@ -1986,6 +2013,7 @@ def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
         outline = placed.GetBoxOutline()
         low, high = outline.MinimumPoint, outline.MaximumPoint
     area_low, area_high = _sheet_area(sheet, doc)
+    area_high = DB.XYZ(area_high.X - right_margin, area_high.Y, area_high.Z)
     width, height = high.X - low.X, high.Y - low.Y
     if anchor == "center":
         target_x = (area_low.X + area_high.X - width) / 2.0

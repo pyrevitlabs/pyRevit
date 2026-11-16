@@ -92,10 +92,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             app.Application.Documents.Add(existing);
             var guard = new AgentRunGuard(app, null);
             guard.Arm("Test");
-            app.Application.Change(existing);
+            var added = new ElementId();
+            app.Application.Change(existing, added: new[] { added });
             Assert.False(app.Application.Save(existing));
             Assert.False(app.Application.SaveAs(existing));
             Assert.False(guard.DescribeOtherDocuments()[0].Value<bool>("rolled_back"));
+            existing.Deleted.Add(added);
             guard.RollBack();
             guard.Dispose();
             Assert.True(guard.DescribeOtherDocuments()[0].Value<bool>("rolled_back"));
@@ -131,8 +133,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             app.Application.Documents.Add(healthy);
             var guard = new AgentRunGuard(app, null);
             guard.Arm("Test");
+            var healthyAdded = new ElementId();
             app.Application.Change(failing);
-            app.Application.Change(healthy);
+            app.Application.Change(healthy, added: new[] { healthyAdded });
+            healthy.Deleted.Add(healthyAdded);
             Assert.Throws<AggregateException>(guard.RollBack);
             guard.Dispose();
             Assert.False(guard.DescribeOtherDocuments()[0].Value<bool>("rolled_back"));

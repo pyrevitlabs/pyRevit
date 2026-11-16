@@ -261,6 +261,34 @@ def policy(name):
         PyRevit.PyRevitConfigs.SetAgentPolicy(previous)
 
 
+def _policy_in_force():
+    return request("get_context")["agent"]["policy"]
+
+
+def _restore_policy_in_force(in_force_before):
+    """Make the policy the host enforces the one it enforced before the tests.
+
+    Note:
+        The host only tightens the policy it enforces. After a test ran under a
+        stricter policy, restoring the configured value leaves the stricter one
+        enforced until a modify run starts and the user confirms the looser
+        policy. The modify run therefore starts under ``in_force_before``
+        itself: a policy the user had refused stays refused, because the host
+        only asks about a policy looser than the enforced one. The caller must
+        have ``answer_prompts(POLICY_PROMPT, YES)`` active so that the
+        confirmation is pressed.
+
+    Raises:
+        AgentRequestError: for any host error other than ``policy_readonly``.
+    """
+    with policy(in_force_before):
+        try:
+            run("result = None", mode="modify", engine="ironpython")
+        except AgentRequestError as error:
+            if error.code != "policy_readonly":
+                raise
+
+
 def run_suites(modules):
     """Run test modules against fresh scratch documents and fail the button on any failure.
 
@@ -276,15 +304,22 @@ def run_suites(modules):
     problems = []
     try:
         _session.open()
-        with answer_prompts(POLICY_PROMPT, YES), policy("auto"):
-            for module in modules:
-                result = run_module_tests(module)
-                if result.failures or result.errors:
-                    problems.append(
-                        "{} (failures={}, errors={})".format(
-                            module.__name__, len(result.failures), len(result.errors)
-                        )
-                    )
+        in_force_before = _policy_in_force()
+        with answer_prompts(POLICY_PROMPT, YES):
+            try:
+                with policy("auto"):
+                    for module in modules:
+                        result = run_module_tests(module)
+                        if result.failures or result.errors:
+                            problems.append(
+                                "{} (failures={}, errors={})".format(
+                                    module.__name__,
+                                    len(result.failures),
+                                    len(result.errors),
+                                )
+                            )
+            finally:
+                _restore_policy_in_force(in_force_before)
     finally:
         _session.close()
         _session = None

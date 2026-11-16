@@ -16,10 +16,12 @@ public partial class McpServerTests {
         private readonly BlockingCollection<string> input = new BlockingCollection<string>();
         private readonly LineWriter output = new LineWriter();
         private readonly Task serving;
+        private readonly LineReader reader;
 
-        public LiveSession(string defaultRevit = null, ManualResetEventSlim writeGate = null) {
+        public LiveSession(string defaultRevit = null, ManualResetEventSlim writeGate = null, TimeSpan? inputClosedGracePeriod = null) {
             output.Gate = writeGate;
-            serving = Task.Run(() => PyRevitMcpServer.Serve(defaultRevit, new LineReader(input), output));
+            reader = new LineReader(input);
+            serving = Task.Run(() => PyRevitMcpServer.Serve(defaultRevit, reader, output, inputClosedGracePeriod));
         }
 
         public void Send(JObject message) => input.Add(message.ToString(Formatting.None));
@@ -34,9 +36,16 @@ public partial class McpServerTests {
 
         public ManualResetEventSlim Writing => output.Writing;
 
+        public ManualResetEventSlim InputEnded => reader.Ended;
+
         public JObject Next() {
             Assert.True(output.Lines.TryTake(out var line, Patience), "The server did not answer in time.");
             return JObject.Parse(line);
+        }
+
+        public bool CloseInputAndWait(TimeSpan timeout) {
+            input.CompleteAdding();
+            return serving.Wait(timeout);
         }
 
         public void Dispose() {
@@ -50,14 +59,18 @@ public partial class McpServerTests {
         private string current = string.Empty;
         private int position;
 
+        public ManualResetEventSlim Ended { get; } = new ManualResetEventSlim(false);
+
         public LineReader(BlockingCollection<string> lines) {
             this.lines = lines;
         }
 
         public override int Read() {
             if (position == current.Length) {
-                if (!lines.TryTake(out var line, Timeout.Infinite))
+                if (!lines.TryTake(out var line, Timeout.Infinite)) {
+                    Ended.Set();
                     return -1;
+                }
                 current = line + '\n';
                 position = 0;
             }
@@ -164,6 +177,59 @@ public partial class McpServerTests {
         session.Dispose();
 
         Assert.True(reachedHost, "The server stopped reading requests while an answer was written.");
+    }
+
+    /// <summary>Closing stdin while a call waits on Revit ends the server instead of holding the process open (#4050).</summary>
+    [Fact]
+    public void ClosingInputCancelsCallsStillWaitingOnRevit() {
+        using var release = new ManualResetEventSlim(false);
+        var runStarted = BlockRunsUntil(release);
+        using var session = new LiveSession(inputClosedGracePeriod: TimeSpan.FromMilliseconds(300));
+
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        Assert.True(runStarted.Wait(Patience));
+        var finished = session.CloseInputAndWait(Patience);
+        release.Set();
+
+        Assert.True(finished, "The server kept running after stdin ended.");
+    }
+
+    /// <summary>A call that reuses the id of an open call is cancelled too when stdin ends (#4050).</summary>
+    [Fact]
+    public void ClosingInputCancelsCallsThatReuseAnOpenRequestId() {
+        using var release = new ManualResetEventSlim(false);
+        var runStarted = BlockRunsUntil(release);
+        using var session = new LiveSession(inputClosedGracePeriod: TimeSpan.FromMilliseconds(300));
+
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        Assert.True(runStarted.Wait(Patience));
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 2" }));
+        var finished = session.CloseInputAndWait(Patience);
+        release.Set();
+
+        Assert.True(finished, "The server kept running after stdin ended.");
+    }
+
+    /// <summary>A call that finishes within the grace period after stdin ended is still answered (#4050).</summary>
+    [Fact]
+    public void ACallFinishingWithinTheGraceAfterInputEndsStillGetsItsAnswer() {
+        using var release = new ManualResetEventSlim(false);
+        var runStarted = BlockRunsUntil(release);
+        using var session = new LiveSession(inputClosedGracePeriod: Patience);
+
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        Assert.True(runStarted.Wait(Patience));
+        var closing = Task.Run(() => session.CloseInputAndWait(Patience));
+        Assert.True(session.InputEnded.Wait(Patience), "The server never read the end of input.");
+        Thread.Sleep(TimeSpan.FromMilliseconds(300));
+        Assert.False(closing.IsCompleted, "The server ended as soon as stdin did.");
+        Assert.Equal(0, session.Unread);
+        release.Set();
+        var run = session.Next();
+
+        Assert.True(closing.Result);
+        Assert.Equal(1, run.Value<int>("id"));
+        Assert.False(IsError(run));
     }
 
     [Fact]

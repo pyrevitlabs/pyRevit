@@ -22,6 +22,22 @@ CLOSED_PLAN_VIEW = (
     "    result = plans[0].Id.Value if hasattr(plans[0].Id, 'Value') else plans[0].Id.IntegerValue\n"
 )
 
+UNIQUELY_NAMED_MIXED_CASE_VIEW = (
+    "views = [v for v in DB.FilteredElementCollector(doc).OfClass(DB.View)"
+    " if not v.IsTemplate]\n"
+    "counts = {}\n"
+    "for v in views:\n"
+    "    counts[v.Name.lower()] = counts.get(v.Name.lower(), 0) + 1\n"
+    "candidates = [v for v in views if v.CanBePrinted and counts[v.Name.lower()] == 1"
+    " and v.Name != v.Name.lower() and v.Name.lower() not in ('3d', 'active')"
+    " and all(ord(c) < 128 for c in v.Name)]\n"
+    "result = None\n"
+    "if candidates:\n"
+    "    view_id = candidates[0].Id\n"
+    "    result = {'id': view_id.Value if hasattr(view_id, 'Value') else view_id.IntegerValue,"
+    " 'name': candidates[0].Name}\n"
+)
+
 
 def _code(method, **params):
     try:
@@ -161,13 +177,17 @@ class CaptureValidationTests(TestCase):
 
     def test_a_view_can_be_named_by_id_or_by_name_ignoring_case(self):
         """A view is found by its numeric id and by its name in any case."""
-        active = request("get_context")["active_view"]
-        by_id = request("capture", mode="export", view=str(active["id"]), width=320)
+        view = harness.run(UNIQUELY_NAMED_MIXED_CASE_VIEW)["result"]
+        if view is None:
+            self.skipTest(
+                "This Revit has no printable view with a unique mixed-case name."
+            )
+        by_id = request("capture", mode="export", view=str(view["id"]), width=320)
         by_name = request(
-            "capture", mode="export", view=active["name"].lower(), width=320
+            "capture", mode="export", view=view["name"].lower(), width=320
         )
-        self.assertEqual(active["id"], by_id["view"]["id"])
-        self.assertEqual(active["id"], by_name["view"]["id"])
+        self.assertEqual(view["id"], by_id["view"]["id"])
+        self.assertEqual(view["id"], by_name["view"]["id"])
 
     def test_a_view_that_cannot_be_exported_is_not_supported(self):
         """A view Revit can't print is refused in export mode."""

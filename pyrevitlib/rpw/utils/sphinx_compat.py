@@ -53,7 +53,6 @@ class MockObject(object):
 class MockImporter(object):
     # https://github.com/gtalarico/revitpythonwrapper/issues/3
     # http://dangerontheranger.blogspot.com/2012/07/how-to-use-sysmetapath-with-python.html
-    # http://blog.dowski.com/2008/07/31/customizing-the-python-import-system/
 
     dotnet_modules = ['clr',
                       'Autodesk',

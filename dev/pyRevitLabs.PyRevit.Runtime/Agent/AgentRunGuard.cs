@@ -56,6 +56,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly List<Document> documentsCreatedDuringRun = new List<Document>();
         private readonly List<Document> documentsOpenedFromDisk = new List<Document>();
         private TransactionGroup group;
+        private bool assimilationRequested;
         private bool documentEventsArmed;
         private AgentDialogCapture dialogCapture;
         private readonly AgentExportFolder exportFolder;
@@ -90,9 +91,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool Committed { get; private set; }
 
         /// <summary>
-        /// True when rolling back the active document's group threw or did not report it rolled
-        /// back, so the run's changes may still be in the model.
+        /// True when rolling back the active document's group threw, did not report it rolled
+        /// back, or left the model different from before the run (an element the run deleted is
+        /// still missing, or one it added is still there), so the run's changes may still be in
+        /// the model.
         /// </summary>
+        /// <remarks>
+        /// The model is checked even when the group already ended before the rollback was
+        /// requested, unless the run asked to keep its changes.
+        /// </remarks>
         public bool RollbackFailed { get; private set; }
 
         /// <summary>
@@ -158,7 +165,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private void RollBackGroup() {
             try {
-                if (HasOpenGroup && group.RollBack() != TransactionStatus.RolledBack)
+                if (HasOpenGroup) {
+                    if (group.RollBack() != TransactionStatus.RolledBack || changes.LeavesTracesAfterRollback(doc))
+                        RollbackFailed = true;
+                }
+                else if (group != null && !assimilationRequested && changes.LeavesTracesAfterRollback(doc))
                     RollbackFailed = true;
             }
             catch (Exception) {
@@ -170,9 +181,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public void Assimilate() {
             RollBackOtherDocuments();
             if (HasOpenGroup) {
-                group.Assimilate();
+                var status = group.Assimilate();
+                if (status != TransactionStatus.Committed)
+                    throw new InvalidOperationException(
+                        $"Revit did not commit the run's changes (status {status}), so they are not reported as kept.");
                 Committed = true;
             }
+            assimilationRequested = true;
         }
 
         /// <summary>
@@ -506,7 +521,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public void RollBack() {
             try {
                 if (HasOpenGroup)
-                    rolledBack = group.RollBack() == TransactionStatus.RolledBack;
+                    rolledBack = group.RollBack() == TransactionStatus.RolledBack && !Changes.LeavesTracesAfterRollback(Document);
             }
             catch (Exception) {
                 if (Document.IsValidObject)
@@ -556,6 +571,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public ICollection<ElementId> Touched =>
             added.Concat(modified).Distinct().ToList();
+
+        /// <summary>
+        /// True when, after a rollback, an element the run deleted is still missing from
+        /// <paramref name="document"/> or an element it added is still there.
+        /// </summary>
+        /// <remarks>
+        /// Warning: a group's <c>RollBack()</c> status cannot prove the rollback worked. A
+        /// committed transaction that borrows elements from a central model flushes Revit's
+        /// undo stack while the group is open; the group then still reports
+        /// <c>RolledBack</c> and the run's changes stay in the model. Call it only after the
+        /// rollback, and only for a document the change set was recorded from.
+        /// <para>
+        /// Warning: modified elements are not verified. The run records no state from before
+        /// it, so a modification that survives a flushed undo stack is invisible here unless
+        /// the run also added or deleted an element.
+        /// </para>
+        /// </remarks>
+        public bool LeavesTracesAfterRollback(Document document) {
+            return deleted.Any(id => document.GetElement(id) == null)
+                || added.Any(id => document.GetElement(id) != null);
+        }
 
         public void Record(DocumentChangedEventArgs e) {
             foreach (var id in e.GetAddedElementIds())

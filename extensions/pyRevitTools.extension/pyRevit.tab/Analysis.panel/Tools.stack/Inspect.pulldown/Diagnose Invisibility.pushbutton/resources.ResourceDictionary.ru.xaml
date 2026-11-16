@@ -51,6 +51,12 @@
     <sys:String x:Key="fix_error_view_range">Revit отклонил расширенный диапазон вида</sys:String>
     <sys:String x:Key="fix_error_missing">Цель больше не существует</sys:String>
     <sys:String x:Key="fix_error_rolled_back">Revit откатил изменение ({})</sys:String>
+    <sys:String x:Key="fix_stale">Это исправление больше неприменимо. Проверьте вид повторно.</sys:String>
+    <sys:String x:Key="fix_cancelled">Отменено.</sys:String>
+    <sys:String x:Key="fix_describe_failed">Не удалось описать исправление: {}</sys:String>
+    <sys:String x:Key="confirm_template_fix">Будет изменён шаблон вида '{}' и все виды, использующие его.</sys:String>
+    <sys:String x:Key="confirm_fix_all_templates">Будут изменены шаблоны видов для всех видов, использующих их: {}</sys:String>
+    <sys:String x:Key="confirm_fix_all">Применить исправления ({0}) к виду '{1}'?</sys:String>
     <sys:String x:Key="error_document_inactive">Сначала переключитесь на документ '{}'</sys:String>
     <sys:String x:Key="plane_top">Верх</sys:String>
     <sys:String x:Key="plane_cut">Секущая плоскость</sys:String>
