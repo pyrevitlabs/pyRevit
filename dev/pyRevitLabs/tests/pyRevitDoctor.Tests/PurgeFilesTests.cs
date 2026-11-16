@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using pyRevitDoctor;
 
 namespace pyRevitDoctor.Tests;
@@ -181,5 +182,81 @@ public sealed class PurgeFilesTests : IDisposable {
 
         Assert.False(File.Exists(localConfig));
         Assert.Single(Directory.GetFiles(locations.Documents, "pyRevit_config.install*.ini"));
+    }
+
+    /// <summary>
+    /// User-installed extensions live in the data folder, so they are zipped to Documents before the folder goes.
+    /// </summary>
+    [Fact]
+    public void ExtensionsAreZippedToDocumentsBeforeTheDataFolderIsDeleted() {
+        Create("Roaming", "pyRevit", "pyRevit_config.ini");
+        var script = Create("Roaming", "pyRevit", "Extensions", "My.extension", "script.py");
+
+        var (_, output, completed) = Purge(new PurgeOptions());
+
+        Assert.True(completed);
+        Assert.False(File.Exists(script));
+        var backup = Assert.Single(Directory.GetFiles(locations.Documents, "pyRevit_extensions.user.*.zip"));
+        using var archive = ZipFile.OpenRead(backup);
+        Assert.Contains(archive.Entries, entry => entry.FullName == "Extensions/My.extension/script.py");
+        Assert.Contains("Backed up", output.ToString());
+    }
+
+    [Fact]
+    public void KeepExtensionsPreservesTheFolderAndSkipsTheZip() {
+        Create("Roaming", "pyRevit", "pyRevit_config.ini");
+        var script = Create("Roaming", "pyRevit", "Extensions", "My.extension", "script.py");
+        var cache = Create("Roaming", "pyRevit", "2025", "cache.db");
+
+        var (_, output, _) = Purge(new PurgeOptions { KeepExtensions = true });
+
+        Assert.True(File.Exists(script));
+        Assert.False(File.Exists(cache));
+        Assert.Empty(Directory.GetFiles(locations.Documents, "*.zip"));
+        Assert.Contains("(--keep-extensions)", output.ToString());
+    }
+
+    [Fact]
+    public void DryRunReportsTheExtensionsBackupWithoutCreatingIt() {
+        Create("Roaming", "pyRevit", "pyRevit_config.ini");
+        var script = Create("Roaming", "pyRevit", "Extensions", "My.extension", "script.py");
+
+        var (_, output, _) = Purge(new PurgeOptions { DryRun = true });
+
+        Assert.True(File.Exists(script));
+        Assert.Empty(Directory.GetFiles(locations.Documents, "*.zip"));
+        Assert.Contains("Fake Backed up", output.ToString());
+        Assert.Contains("pyRevit_extensions.user.", output.ToString());
+    }
+
+    [Fact]
+    public void EmptyExtensionsFolderNeedsNoZip() {
+        Create("Roaming", "pyRevit", "pyRevit_config.ini");
+        Directory.CreateDirectory(Path.Combine(root, "Roaming", "pyRevit", "Extensions"));
+
+        Purge(new PurgeOptions());
+
+        Assert.Empty(Directory.GetFiles(locations.Documents, "*.zip"));
+        Assert.False(Directory.Exists(Path.Combine(root, "Roaming", "pyRevit")));
+    }
+
+    /// <summary>
+    /// Losing user extensions to a failed backup is the case the zip exists for, so nothing may be deleted.
+    /// </summary>
+    [Fact]
+    public void FailedExtensionsBackupDeletesNothing() {
+        var marker = Create("Roaming", "pyRevit", "pyRevitfile");
+        var script = Create("Roaming", "pyRevit", "Extensions", "My.extension", "script.py");
+        var clone = Create("Roaming", "pyRevit-Master", "pyRevitfile");
+        Directory.Delete(locations.Documents);
+        File.WriteAllText(locations.Documents, "not a folder");
+
+        var (session, _, completed) = Purge(new PurgeOptions());
+
+        Assert.False(completed);
+        Assert.Equal(1, session.FailedCount);
+        Assert.True(File.Exists(marker));
+        Assert.True(File.Exists(script));
+        Assert.True(File.Exists(clone));
     }
 }

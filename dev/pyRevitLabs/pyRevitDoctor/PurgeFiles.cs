@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -17,7 +18,9 @@ namespace pyRevitDoctor {
     /// <see cref="PurgeOptions.KeepConfig"/> is set, <c>pyRevit_config.ini</c> is first copied to the
     /// Documents folder, and when that copy fails nothing is deleted. That covers the clone-local config in
     /// an install folder, which takes precedence over the data folder configs, including a config left alone
-    /// by an earlier <see cref="PurgeOptions.KeepConfig"/> run.
+    /// by an earlier <see cref="PurgeOptions.KeepConfig"/> run. The same holds for the <c>Extensions</c> folder
+    /// of the data folders, which holds user-installed extensions: unless <see cref="PurgeOptions.KeepExtensions"/>
+    /// is set it is first zipped to the Documents folder.
     /// </remarks>
     public static class PurgeFiles {
         sealed record PathScope(string Name, RegistryHive Hive, string SubKey);
@@ -37,28 +40,29 @@ namespace pyRevitDoctor {
         }
 
         internal static bool PurgeFilesAndFolders(PurgeSession session, MachineLocations locations) {
-            if (!BackUpConfigs(session, locations))
+            var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+            if (!BackUpConfigs(session, locations, timestamp) || !BackUpExtensions(session, locations, timestamp))
                 return false;
 
-            var preservedConfig = session.Options.KeepConfig ? PurgeTargets.ConfigFileName : null;
+            var preservedConfig = session.Options.KeepConfig ? new[] { PurgeTargets.ConfigFileName } : Array.Empty<string>();
+            var preservedInDataDirectories = session.Options.KeepExtensions ? preservedConfig.Append(PurgeTargets.ExtensionsFolderName).ToArray() : preservedConfig;
             foreach (var directory in PurgeTargets.InstallDirectories(locations))
                 DeleteDirectory(session, directory, preservedConfig);
 
             foreach (var directory in PurgeTargets.DataDirectories(locations))
-                DeleteDirectory(session, directory, preservedConfig);
+                DeleteDirectory(session, directory, preservedInDataDirectories);
 
             foreach (var manifest in PurgeTargets.AddinManifests(locations, ListSubdirectories))
                 DeleteFile(session, manifest);
             return true;
         }
 
-        static bool BackUpConfigs(PurgeSession session, MachineLocations locations) {
+        static bool BackUpConfigs(PurgeSession session, MachineLocations locations, string timestamp) {
             if (session.Options.KeepConfig) {
                 session.Output.WriteLine($"Keeping {PurgeTargets.ConfigFileName} (--keep-config)");
                 return true;
             }
 
-            var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
             var dataConfigs = PurgeTargets.DataDirectories(locations)
                 .Select((directory, index) => (Source: Path.Combine(directory, PurgeTargets.ConfigFileName), Label: index == 0 ? "user" : "all-users"));
             var localConfigs = PurgeTargets.InstallDirectories(locations)
@@ -79,7 +83,40 @@ namespace pyRevitDoctor {
             return true;
         }
 
-        static void DeleteDirectory(PurgeSession session, string directory, string preservedFileName) {
+        static bool BackUpExtensions(PurgeSession session, MachineLocations locations, string timestamp) {
+            var extensionFolders = PurgeTargets.DataDirectories(locations)
+                .Select((directory, index) => (Source: Path.Combine(directory, PurgeTargets.ExtensionsFolderName), Label: index == 0 ? "user" : "all-users"))
+                .Where(folder => session.Exists(folder.Source));
+            foreach (var (source, label) in extensionFolders) {
+                if (session.Options.KeepExtensions) {
+                    session.Output.WriteLine($"Keeping {source} (--keep-extensions)");
+                    continue;
+                }
+
+                var backup = Path.Combine(locations.Documents, $"pyRevit_extensions.{label}.{timestamp}.zip");
+                try {
+                    if (!session.Options.DryRun && Directory.EnumerateFileSystemEntries(source).Any())
+                        ZipFile.CreateFromDirectory(source, backup, CompressionLevel.Optimal, includeBaseDirectory: true);
+                    session.Output.WriteLine($"{(session.Options.DryRun ? "Fake Backed up" : "Backed up")} {source} to {backup}");
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+                    DeleteIncompleteBackup(backup);
+                    session.ReportFailed($"{source} backup, nothing was deleted", ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        static void DeleteIncompleteBackup(string backup) {
+            try {
+                File.Delete(backup);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+            }
+        }
+
+        static void DeleteDirectory(PurgeSession session, string directory, IReadOnlyCollection<string> preservedNames) {
             if (!session.Exists(directory)) {
                 session.ReportSkipped("not found", directory);
                 return;
@@ -95,9 +132,9 @@ namespace pyRevitDoctor {
 
             try {
                 if (!session.Options.DryRun)
-                    DeleteContents(directory, preservedFileName);
-                session.ReportDeleted(directory, preservedFileName == null ? directory : null);
-                if (preservedFileName != null)
+                    DeleteContents(directory, preservedNames);
+                session.ReportDeleted(directory, preservedNames.Count == 0 ? directory : null);
+                if (preservedNames.Count > 0)
                     session.MarkCleared(directory);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException) {
@@ -105,13 +142,13 @@ namespace pyRevitDoctor {
             }
         }
 
-        static void DeleteContents(string directory, string preservedFileName) {
-            if (preservedFileName == null) {
+        static void DeleteContents(string directory, IReadOnlyCollection<string> preservedNames) {
+            if (preservedNames.Count == 0) {
                 DeleteTree(directory);
                 return;
             }
             foreach (var entry in Directory.EnumerateFileSystemEntries(directory)) {
-                if (Path.GetFileName(entry).Equals(preservedFileName, StringComparison.OrdinalIgnoreCase))
+                if (preservedNames.Contains(Path.GetFileName(entry), StringComparer.OrdinalIgnoreCase))
                     continue;
                 if (Directory.Exists(entry))
                     DeleteTree(entry);

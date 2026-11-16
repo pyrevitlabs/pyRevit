@@ -15,6 +15,8 @@ namespace pyRevitDoctor {
         public bool Force { get; init; }
         /// <summary>Keep <c>pyRevit_config.ini</c> instead of backing it up to Documents and deleting it.</summary>
         public bool KeepConfig { get; init; }
+        /// <summary>Keep the <c>Extensions</c> folder of the data folders instead of zipping it to Documents and deleting it.</summary>
+        public bool KeepExtensions { get; init; }
     }
 
     /// <summary>

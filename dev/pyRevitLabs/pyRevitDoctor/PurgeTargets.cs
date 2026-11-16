@@ -34,6 +34,7 @@ namespace pyRevitDoctor {
     public static class PurgeTargets {
         public const string ConfigFileName = "pyRevit_config.ini";
         public const string AddinFileName = "pyRevit.addin";
+        public const string ExtensionsFolderName = "Extensions";
         const int FirstProgramFilesManifestYear = 2027;
         static readonly string[] DirectoryMarkers = { "pyRevitfile", Path.Combine("bin", "pyrevit.exe"), ConfigFileName };
 

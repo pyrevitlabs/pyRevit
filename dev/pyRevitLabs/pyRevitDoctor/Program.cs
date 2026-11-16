@@ -16,7 +16,7 @@ Usage:
     pyrevit-doctor (-V | --version)
     pyrevit-doctor (-h | --help)
     pyrevit-doctor [--list]
-    pyrevit-doctor <doctor_command> [--dryrun] [--force] [--keep-config]
+    pyrevit-doctor <doctor_command> [--dryrun] [--force] [--keep-config] [--keep-extensions]
 
     Arguments & Options:
         <doctor_command>         Doctor command to run
@@ -25,6 +25,9 @@ Usage:
                                  (purge-installs, purge-all)
         --keep-config            Keep pyRevit_config.ini instead of backing it up to Documents
                                  and deleting it (purge-files, purge-all)
+        --keep-extensions        Keep the Extensions folder in the pyRevit data folders instead of
+                                 backing it up to a zip in Documents and deleting it
+                                 (purge-files, purge-all)
 
 ";
 
@@ -53,6 +56,7 @@ Usage:
                 DryRun = args.Contains("--dryrun"),
                 Force = args.Contains("--force"),
                 KeepConfig = args.Contains("--keep-config"),
+                KeepExtensions = args.Contains("--keep-extensions"),
             };
 
             if (args.Contains("--version") || args.Contains("-V"))
