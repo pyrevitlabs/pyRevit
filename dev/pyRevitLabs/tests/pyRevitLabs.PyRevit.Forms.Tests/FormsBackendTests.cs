@@ -63,6 +63,13 @@ public class FormsBackendTests(ITestOutputHelper output) {
         Assert.True(outcome.Succeeded, outcome.Detail);
     }
 
+    /// <summary>The session ran to completion, including class and module fixtures.</summary>
+    [Fact]
+    public void SessionCompletes() {
+        var error = Session.Value.SessionError;
+        Assert.True(error is null, error);
+    }
+
     /// <summary>Every case the interpreter ran has its own theory row.</summary>
     [Fact]
     public void EveryExecutedCaseIsDiscovered() {

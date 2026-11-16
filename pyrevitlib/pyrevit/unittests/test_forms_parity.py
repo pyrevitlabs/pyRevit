@@ -1669,12 +1669,12 @@ class EventParityTests(unittest.TestCase):
         base = sys.modules["pyrevit.forms.base"]
         browser = base.webbrowser
         base.webbrowser = _Plain(open_new_tab=opened.append)
-        window = LinkWindow(
-            '<TextBlock x:Name="links_tb"><Hyperlink NavigateUri="https://pyrevitlabs.io/" '
-            'RequestNavigate="handle_url_click">site</Hyperlink>'
-            '<Hyperlink Click="link_clicked">click</Hyperlink></TextBlock>'
-        )
         try:
+            window = LinkWindow(
+                '<TextBlock x:Name="links_tb"><Hyperlink NavigateUri="https://pyrevitlabs.io/" '
+                'RequestNavigate="handle_url_click">site</Hyperlink>'
+                '<Hyperlink Click="link_clicked">click</Hyperlink></TextBlock>'
+            )
             with _Shown(window):
                 links = [
                     inline
