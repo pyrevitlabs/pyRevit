@@ -212,8 +212,9 @@ namespace pyRevitCLI {
                 ["transaction"] = symbol.Automation.Transaction,
                 ["invocable"] = PyRevitAutomationOperations.IsInvocable(symbol),
             };
-            if (symbol.Automation.Inputs != null)
-                automation["inputs"] = new JArray(symbol.Automation.Inputs.Select(input => input.ToJson()));
+            var inputs = PyRevitAutomationOperations.InputsOf(symbol);
+            if (inputs != null)
+                automation["inputs"] = inputs;
             return automation;
         }
 

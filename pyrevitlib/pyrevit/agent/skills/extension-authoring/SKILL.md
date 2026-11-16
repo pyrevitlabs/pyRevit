@@ -12,6 +12,8 @@ A button outlives the conversation: it runs whenever the user clicks it, without
 1. **Prove the logic first.** Develop it with `run_query`, or `run_modify` with `dry_run=true`, until it does the job on the user's model.
 2. **Agree on the button.** Before writing anything to disk, tell the user the extension, tab, panel and button names, the folder you will write to, and what the button does. Write files only after they agree.
 3. **Write the bundle** in the layout below, with your own file tools. If you have none, write the files from a `run_query` script with `open()`; file writes aren't rolled back.
+
+Writing files, changing the search paths and reloading all happen outside the model. No run mode rolls them back or shows the user an approval prompt, not even `run_modify`, so the user's agreement in the conversation is the only check: get it for each of these steps before you run it.
 4. **Register the folder** if it isn't `%APPDATA%\pyRevit\Extensions` (see [Extension search paths](#extension-search-paths)).
 5. **Reload pyRevit** (see [Reload](#reload)).
 6. **Check it loaded** (see [Check the button](#check-the-button)), then ask the user to try it.
@@ -25,30 +27,32 @@ A button outlives the conversation: it runs whenever the user clicks it, without
 
 ## Extension search paths
 
-A search path is a folder that *contains* `*.extension` folders, not an extension folder itself. Changing the list changes the user's pyRevit config, so do it only when the user asked for it or agreed to it. Run this with `run_query`, passing `inputs={"path": ..., "action": "add"}` or `"remove"`:
+A search path is a folder that *contains* `*.extension` folders, not an extension folder itself. Changing the list changes the user's pyRevit config, so do it only when the user asked for it or agreed to it. With a shell, prefer `pyrevit extensions paths add <path>` and `pyrevit extensions paths forget <path>`. Otherwise run this with `run_query`, passing `inputs={"path": ..., "action": "add"}` or `"remove"`:
 
 ```python
 import os
 from pyrevit.userconfig import user_config
 
+action = inputs.get("action")
+if action not in ("add", "remove"):
+    raise ValueError("'action' must be 'add' or 'remove': {!r}".format(action))
 path = inputs.get("path") or ""
-if not os.path.isabs(path) or (inputs["action"] == "add" and not os.path.isdir(path)):
+if not os.path.isabs(path) or (action == "add" and not os.path.isdir(path)):
     raise ValueError("Extension search path must be an absolute, existing folder: {!r}".format(path))
 path = os.path.normpath(path)
 paths = user_config.get_thirdparty_ext_root_dirs(include_default=False)
 others = [p for p in paths if os.path.normcase(os.path.normpath(p)) != os.path.normcase(path)]
-user_config.set_thirdparty_ext_root_dirs(others + [path] if inputs["action"] == "add" else others)
+user_config.set_thirdparty_ext_root_dirs(others + [path] if action == "add" else others)
 user_config.save_changes()
 result = user_config.get_thirdparty_ext_root_dirs(include_default=False)
 ```
 
 - Always pass an absolute path. A relative or empty one would register Revit's working folder.
 - Removing a path takes its tabs off the ribbon after the reload; the folder stays on disk. Say so, and delete files only if the user asks.
-- With a shell, `pyrevit extensions paths add <path>` and `pyrevit extensions paths forget <path>` do the same.
 
 ## Reload
 
-Reload pyRevit with `run_query`, so the new or removed extensions take effect:
+Reload pyRevit with `run_query`, so the new or removed extensions take effect. Only after the user agreed to the reload:
 
 ```python
 from pyrevit.loader import sessionmgr

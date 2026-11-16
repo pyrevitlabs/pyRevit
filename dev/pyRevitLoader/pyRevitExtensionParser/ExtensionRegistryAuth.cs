@@ -14,6 +14,7 @@ namespace pyRevitExtensionParser
         internal const string RegistryFileName = "extensions.json";
 
         private static Dictionary<string, RegistryAuthEntry> _registryAuthByName;
+        private static HashSet<string> _loadedSourcePaths;
 
         internal sealed class RegistryAuthEntry
         {
@@ -24,6 +25,7 @@ namespace pyRevitExtensionParser
         internal static void ClearCache()
         {
             _registryAuthByName = null;
+            _loadedSourcePaths = null;
         }
 
         internal static void ApplyRegistryAuthorization(
@@ -58,25 +60,29 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Builds the registry auth cache into a local map and publishes it to
-        /// <see cref="_registryAuthByName"/> only once fully populated. Collecting
-        /// the source paths reads config, which can clear this cache re-entrantly
-        /// (e.g. a locale change during parsing), and that must not leave the field
-        /// null.
+        /// Builds the registry auth cache from every configured extension root and
+        /// lookup source, plus the registry next to <paramref name="extDir"/>, so the
+        /// result does not depend on which extension is parsed first. Sources not yet
+        /// loaded (such as the registry beside a later extension) are added on demand.
+        /// The cache is built into local maps and published only once fully populated.
+        /// Collecting the source paths reads config, which can clear this cache
+        /// re-entrantly (e.g. a locale change during parsing), and that must not leave
+        /// the fields null.
         /// </summary>
         private static void EnsureRegistryCache(string extDir)
         {
-            if (_registryAuthByName != null)
-                return;
+            var sourcePaths = CollectDefinitionSourcePaths(extDir);
+            var cache = _registryAuthByName ?? new Dictionary<string, RegistryAuthEntry>(StringComparer.OrdinalIgnoreCase);
+            var loaded = _loadedSourcePaths ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            var cache = new Dictionary<string, RegistryAuthEntry>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var sourcePath in CollectDefinitionSourcePaths(extDir))
+            foreach (var sourcePath in sourcePaths)
             {
-                LoadRegistryAuthFromFile(sourcePath, cache);
+                if (loaded.Add(sourcePath))
+                    LoadRegistryAuthFromFile(sourcePath, cache);
             }
 
             _registryAuthByName = cache;
+            _loadedSourcePaths = loaded;
         }
 
         internal static IEnumerable<string> CollectDefinitionSourcePaths(string extDir)
@@ -88,10 +94,7 @@ namespace pyRevitExtensionParser
                 var fullExtDir = Path.GetFullPath(extDir);
                 foreach (var root in ExtensionParser.GetExtensionRootsForAuthLookup())
                 {
-                    if (IsUnderRoot(fullExtDir, root))
-                    {
-                        paths.Add(Path.Combine(Path.GetFullPath(root), RegistryFileName));
-                    }
+                    paths.Add(Path.Combine(Path.GetFullPath(root), RegistryFileName));
                 }
 
                 var parentDir = Path.GetDirectoryName(fullExtDir);
@@ -217,15 +220,6 @@ namespace pyRevitExtensionParser
                 if (!target.Exists(x => string.Equals(x, value, StringComparison.OrdinalIgnoreCase)))
                     target.Add(value);
             }
-        }
-
-        private static bool IsUnderRoot(string fullPath, string root)
-        {
-            var fullRoot = Path.GetFullPath(root);
-            if (!fullRoot.EndsWith(Path.DirectorySeparatorChar.ToString()))
-                fullRoot += Path.DirectorySeparatorChar;
-
-            return fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

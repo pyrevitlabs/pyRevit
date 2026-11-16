@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -154,6 +155,100 @@ namespace pyRevitExtensionParserTester
 
             Assert.That(parsed.AuthorizedUsers, Is.EquivalentTo(new[] { "SomeoneElse" }));
             Assert.That(InvokeIsExtensionAllowed(service, parsed), Is.False);
+        }
+
+        [TestCase("{\"authusers\": [\"TestUser\"]")]
+        [TestCase("{\"authgroups\": [\"S-1-5-32-544\"], oops}")]
+        [TestCase("{\"authusers\": [\"\", \"  \"]}")]
+        [TestCase("{\"authgroups\": [\"\"]}")]
+        [TestCase("{\"authusers\": \"TestUser\"}")]
+        public void IsExtensionAllowed_RejectsExtensionWhenAuthDefinitionIsUnreadable(string manifest)
+        {
+            var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "UnreadableAuthExt");
+            File.WriteAllText(Path.Combine(extPath, "extension.json"), manifest);
+
+            ClearAllCaches();
+            var parsed = ParseInstalledExtensions(extPath).Single();
+            var service = new ExtensionManagerService();
+
+            Assert.That(parsed.AuthDefinitionUnreadable, Is.True);
+            Assert.That(InvokeIsExtensionAllowed(service, parsed), Is.False);
+        }
+
+        [TestCase("{\"name\": \"Plain\", \"author\": \"someone\"}")]
+        [TestCase("{\"authusers\": [], \"authgroups\": []}")]
+        [TestCase("{\"authusers\": null}")]
+        [TestCase("{\"name\": \"Plain\", ")]
+        [TestCase("")]
+        public void IsExtensionAllowed_AllowsExtensionWithoutAuthDefinition(string manifest)
+        {
+            var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "NoAuthExt");
+            File.WriteAllText(Path.Combine(extPath, "extension.json"), manifest);
+
+            ClearAllCaches();
+            var parsed = ParseInstalledExtensions(extPath).Single();
+            var service = new ExtensionManagerService();
+
+            Assert.That(parsed.AuthDefinitionUnreadable, Is.False);
+            Assert.That(InvokeIsExtensionAllowed(service, parsed), Is.True);
+        }
+
+        [Test]
+        public void IsExtensionAllowed_AllowsListedUserWhenOtherEntriesAreEmpty()
+        {
+            var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "MixedAuthExt");
+            var currentUser = typeof(ExtensionManagerService)
+                .GetMethod("GetRevitUsername", BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            Assert.That(currentUser, Is.Not.Null);
+            var user = (string)currentUser!.Invoke(currentUser.IsStatic ? null : new ExtensionManagerService(), null)!;
+            File.WriteAllText(
+                Path.Combine(extPath, "extension.json"),
+                "{\"authusers\": [\"\", \"" + user.Replace("\\", "\\\\") + "\"]}");
+
+            ClearAllCaches();
+            var parsed = ParseInstalledExtensions(extPath).Single();
+
+            Assert.That(parsed.AuthDefinitionUnreadable, Is.False);
+            Assert.That(parsed.AuthorizedUsers, Is.EquivalentTo(new[] { user }));
+            Assert.That(InvokeIsExtensionAllowed(new ExtensionManagerService(), parsed), Is.True);
+        }
+
+        [Test]
+        public void ApplyRegistryAuthorization_ReadsRegistriesOfAllConfiguredRoots_RegardlessOfOrder()
+        {
+            var rootA = Path.Combine(TestTempDir, "rootA");
+            var rootB = Path.Combine(TestTempDir, "rootB");
+            var extA = TestExtensionBuilder.CreateMinimalExtension(rootA, "FirstExt");
+            var extB = TestExtensionBuilder.CreateMinimalExtension(rootB, "SecondExt");
+            File.WriteAllText(
+                Path.Combine(rootB, "extensions.json"),
+                @"{
+  ""extensions"": [
+    {
+      ""name"": ""FirstExt"",
+      ""type"": ""extension"",
+      ""authusers"": [""FirstExtUser""]
+    },
+    {
+      ""name"": ""SecondExt"",
+      ""type"": ""extension"",
+      ""authusers"": [""SomeoneElse""]
+    }
+  ]
+}");
+            UseTestPyRevitConfig(
+                "[core]\n" +
+                "userextensions = [\"" + rootA.Replace("\\", "\\\\") + "\",\"" + rootB.Replace("\\", "\\\\") + "\"]\n");
+
+            List<string> usersA = null;
+            List<string> groupsA = null;
+            List<string> usersB = null;
+            List<string> groupsB = null;
+            ExtensionRegistryAuth.ApplyRegistryAuthorization(extA, "FirstExt", null, ref usersA, ref groupsA);
+            ExtensionRegistryAuth.ApplyRegistryAuthorization(extB, "SecondExt", null, ref usersB, ref groupsB);
+
+            Assert.That(usersA, Is.EquivalentTo(new[] { "FirstExtUser" }));
+            Assert.That(usersB, Is.EquivalentTo(new[] { "SomeoneElse" }));
         }
 
         private static bool InvokeIsExtensionAllowed(

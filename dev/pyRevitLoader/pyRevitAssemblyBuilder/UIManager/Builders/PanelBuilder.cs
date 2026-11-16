@@ -63,12 +63,14 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 return null!;
             }
 
-            // Use localized title which handles fallback to DisplayName
+            var panelName = component.DisplayName;
             var panelText = ExtensionParser.GetComponentTitle(component);
 
             var panel = _uiApp.GetRibbonPanels(tabName)
-                .FirstOrDefault(p => p.Name == panelText)
-                ?? _uiApp.CreateRibbonPanel(tabName, panelText);
+                .FirstOrDefault(p => p.Name == panelName)
+                ?? _uiApp.CreateRibbonPanel(tabName, panelName);
+
+            ApplyTitle(panel, panelText);
 
             try
             {
@@ -85,6 +87,21 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             }
 
             return panel;
+        }
+
+        private void ApplyTitle(RibbonPanel panel, string title)
+        {
+            if (string.IsNullOrEmpty(title) || panel.Title == title)
+                return;
+
+            try
+            {
+                panel.Title = title;
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to set title '{title}' on panel '{panel.Name}'. Exception: {ex.Message}");
+            }
         }
 
         /// <inheritdoc/>

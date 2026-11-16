@@ -17,6 +17,9 @@ public sealed class BuildOptions
 
     public string? NotifyUrl { get; set; }
 
+    /// <summary>WIP channel: last commit already notified. Only commits after it are notified.</summary>
+    public string? NotifyFromSha { get; set; }
+
     public string? CiRunId { get; set; }
 
     /// <summary>When true, validate installer tooling such as MSBuild (pack/sign/publish paths).</summary>
