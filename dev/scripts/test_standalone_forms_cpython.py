@@ -65,12 +65,16 @@ def _load_dialog():
     return lambda: dialog_class.__new__(dialog_class)
 
 
-def _load_usage_inventory():
+def _load_usage_module():
     script = Path(__file__).resolve().with_name("forms_usage.py")
     spec = importlib.util.spec_from_file_location("forms_usage", script)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.inventory(FORMS.parents[2])
+    return module
+
+
+def _load_usage_inventory():
+    return _load_usage_module().inventory(FORMS.parents[2])
 
 
 class XamlPreparationTests(unittest.TestCase):
@@ -150,6 +154,22 @@ class XamlPreparationTests(unittest.TestCase):
         self.assertEqual(set(), set(coverage["modal_only"]))
         self.assertEqual(set(), set(coverage["host_required"]))
         self.assertEqual(set(), set(coverage["unsupported"]))
+
+    def test_inventory_counts_every_forms_import_style(self):
+        """Aliased, qualified and imported forms names are all counted."""
+        references = _load_usage_module().forms_references(
+            ast.parse(
+                "import pyrevit.forms\n"
+                "import pyrevit.forms as pf\n"
+                "from pyrevit import forms\n"
+                "from pyrevit.forms import toast as notify\n"
+                "pyrevit.forms.alert('a')\n"
+                "pf.select_views()\n"
+                "forms.WPFWindow\n"
+                "notify('b')\n"
+            )
+        )
+        self.assertEqual({"alert", "select_views", "WPFWindow", "toast"}, references)
 
     def test_template_names_remain_in_their_own_namescope(self):
         """Template names are not exposed as window fields."""
@@ -551,6 +571,20 @@ class XamlPreparationTests(unittest.TestCase):
         self.assertEqual("accent", key)
         self.assertIn(owner, names)
         self.assertEqual((None, "menu"), resource_names[owner])
+
+    def test_names_in_inline_merged_dictionaries_keep_their_owner(self):
+        """Keyed entries of an inline merged dictionary resolve by key, not namescope."""
+        _, _, _, resource_names, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+            "<Window.Resources><ResourceDictionary>"
+            "<ResourceDictionary.MergedDictionaries><ResourceDictionary>"
+            '<Button x:Key="merged" x:Name="mergedButton"/>'
+            "</ResourceDictionary></ResourceDictionary.MergedDictionaries>"
+            "</ResourceDictionary></Window.Resources></Window>",
+            [],
+        )
+        self.assertEqual((None, "merged"), resource_names["mergedButton"])
 
 
 class _NotSupported(Exception):

@@ -171,7 +171,7 @@ def check_graphicalview(view, exitscript=False):
         ```
     """
     if not view.Category:
-        alert("Active view must be a grahical view.", exitscript=exitscript)
+        alert("Active view must be a graphical view.", exitscript=exitscript)
         return False
     return True
 

@@ -1152,6 +1152,81 @@ class BindingParityTests(unittest.TestCase):
         self.assertEqual(250, written)
         self.assertIsInstance(written, int)
 
+    def test_two_way_edit_shows_the_value_a_setter_stored(self):
+        """A setter that rejects an edit puts its stored value back in the control."""
+
+        class Counter(forms.Reactive):
+            def __init__(self):
+                super(Counter, self).__init__()
+                self._count = 0
+
+            @forms.reactive
+            def count(self):
+                return self._count
+
+            @count.setter
+            def count(self, value):
+                self._count = max(0, int(value))
+
+        counter = Counter()
+        window = _XamlWindow(
+            '<TextBox x:Name="count_tb" Text="{Binding count,'
+            ' UpdateSourceTrigger=PropertyChanged}"/>'
+        )
+        window.DataContext = counter
+        with _Shown(window):
+            _pump()
+            window.count_tb.Text = "-1"
+            _pump()
+            shown = window.count_tb.Text
+        self.assertEqual(0, counter.count)
+        self.assertEqual("0", shown)
+
+    def test_property_set_by_a_handler_during_an_update_reaches_its_control(self):
+        """A TextChanged handler that sets another property updates that control."""
+
+        class Echo(forms.Reactive):
+            def __init__(self):
+                super(Echo, self).__init__()
+                self._source = ""
+                self._echo = ""
+
+            @forms.reactive
+            def source(self):
+                return self._source
+
+            @source.setter
+            def source(self, value):
+                self._source = value
+
+            @forms.reactive
+            def echo(self):
+                return self._echo
+
+            @echo.setter
+            def echo(self, value):
+                self._echo = value
+
+        echo = Echo()
+
+        class EchoWindow(_XamlWindow):
+            def source_changed(self, sender, args):
+                echo.echo = sender.Text.upper()
+
+        window = EchoWindow(
+            '<StackPanel><TextBox x:Name="source_tb" Text="{Binding source}"'
+            ' TextChanged="source_changed"/>'
+            '<TextBox x:Name="echo_tb" Text="{Binding echo}"/></StackPanel>'
+        )
+        window.DataContext = echo
+        with _Shown(window):
+            _pump()
+            echo.source = "abc"
+            _pump()
+            shown = window.echo_tb.Text
+        self.assertEqual("ABC", echo.echo)
+        self.assertEqual("ABC", shown)
+
     def test_list_data_context_count_and_multibinding(self):
         """A Python list as a child DataContext exposes Count and feeds a MultiBinding.
 
@@ -1669,12 +1744,12 @@ class EventParityTests(unittest.TestCase):
         base = sys.modules["pyrevit.forms.base"]
         browser = base.webbrowser
         base.webbrowser = _Plain(open_new_tab=opened.append)
-        window = LinkWindow(
-            '<TextBlock x:Name="links_tb"><Hyperlink NavigateUri="https://pyrevitlabs.io/" '
-            'RequestNavigate="handle_url_click">site</Hyperlink>'
-            '<Hyperlink Click="link_clicked">click</Hyperlink></TextBlock>'
-        )
         try:
+            window = LinkWindow(
+                '<TextBlock x:Name="links_tb"><Hyperlink NavigateUri="https://pyrevitlabs.io/" '
+                'RequestNavigate="handle_url_click">site</Hyperlink>'
+                '<Hyperlink Click="link_clicked">click</Hyperlink></TextBlock>'
+            )
             with _Shown(window):
                 links = [
                     inline

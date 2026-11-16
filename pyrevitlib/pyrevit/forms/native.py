@@ -384,7 +384,7 @@ def pick_excel_file(save=False, title=None):
         (str): file path
     """
     if save:
-        return save_file(file_ext="xlsx")
+        return save_file(file_ext="xlsx", title=title)
     return pick_file(
         files_filter="Excel Workbook (*.xlsx)|*.xlsx|Excel 97-2003 Workbook|*.xls",
         title=title,

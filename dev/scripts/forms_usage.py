@@ -152,6 +152,59 @@ def _xaml_event_audit(root):
     }
 
 
+def _is_qualified_forms(node):
+    return (
+        isinstance(node, ast.Attribute)
+        and node.attr == "forms"
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "pyrevit"
+    )
+
+
+def forms_references(tree):
+    """Return the ``pyrevit.forms`` names a parsed module uses.
+
+    Counts ``forms.name`` through any alias of the module, ``pyrevit.forms.name``
+    after an unaliased ``import pyrevit.forms``, and names imported from it.
+    """
+    aliases = {"forms"}
+    direct = {}
+    qualified = False
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            if node.module == "pyrevit":
+                aliases.update(
+                    item.asname or item.name
+                    for item in node.names
+                    if item.name == "forms"
+                )
+            elif node.module == "pyrevit.forms":
+                direct.update(
+                    (item.asname or item.name, item.name)
+                    for item in node.names
+                    if item.name != "*"
+                )
+        elif isinstance(node, ast.Import):
+            for item in node.names:
+                if item.name != "pyrevit.forms":
+                    continue
+                if item.asname:
+                    aliases.add(item.asname)
+                else:
+                    qualified = True
+    names = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and (
+            (isinstance(node.value, ast.Name) and node.value.id in aliases)
+            or (qualified and _is_qualified_forms(node.value))
+        ):
+            names.add(node.attr)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+            if node.id in direct:
+                names.add(direct[node.id])
+    return names
+
+
 def inventory(root):
     """Return API-to-file references and files requiring manual syntax review."""
     references = defaultdict(set)
@@ -164,40 +217,8 @@ def inventory(root):
         except (SyntaxError, UnicodeError):
             skipped.append(str(path.relative_to(root)))
             continue
-        aliases = {"forms"}
-        direct = {}
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom):
-                if node.module == "pyrevit":
-                    aliases.update(
-                        item.asname or item.name
-                        for item in node.names
-                        if item.name == "forms"
-                    )
-                elif node.module == "pyrevit.forms":
-                    direct.update(
-                        (item.asname or item.name, item.name)
-                        for item in node.names
-                        if item.name != "*"
-                    )
-            elif isinstance(node, ast.Import):
-                aliases.update(
-                    item.asname
-                    for item in node.names
-                    if item.name == "pyrevit.forms" and item.asname
-                )
-        for node in ast.walk(tree):
-            name = None
-            if (
-                isinstance(node, ast.Attribute)
-                and isinstance(node.value, ast.Name)
-                and node.value.id in aliases
-            ):
-                name = node.attr
-            elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-                name = direct.get(node.id)
-            if name:
-                references[name].add(str(path.relative_to(root)))
+        for name in forms_references(tree):
+            references[name].add(str(path.relative_to(root)))
     references = {name: sorted(paths) for name, paths in sorted(references.items())}
     exports = _cpython_exports(root)
     modal_only = {

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace PyRevitLabs.PyRevit.Forms.Testing;
@@ -75,6 +76,8 @@ public sealed class ParitySession {
     public static readonly string[] RevitOnlyClasses = ["DocumentFormsParityTests"];
 
     readonly CaseLog _log = new();
+    IReadOnlyDictionary<string, CaseOutcome> _outcomes = new Dictionary<string, CaseOutcome>();
+    string? _running;
     string? _setupFailure;
     bool _timedOut;
 
@@ -83,22 +86,35 @@ public sealed class ParitySession {
     /// <summary>Results the session's Python code recorded.</summary>
     public CaseLog Log => _log;
 
+    /// <summary>Why the session as a whole failed, or null when it ran to completion.</summary>
+    /// <remarks>Covers errors outside any case, such as a failing <c>tearDownClass</c> or <c>tearDownModule</c>,
+    /// which leave every recorded case passing.</remarks>
+    public string? SessionError => _timedOut
+        ? "The session timed out while running " + (_running ?? "<none>") + "."
+        : _setupFailure;
+
     /// <summary>Run <paramref name="body"/> once on a background STA thread and wait up to <paramref name="timeout"/>.</summary>
     /// <param name="body">Initializes the engine and records every case through the given log.
     /// An exception it lets escape is reported as a setup failure for every case it did not record.</param>
+    /// <remarks>Outcomes are frozen when the wait ends, so a thread still running after a timeout
+    /// cannot change what later queries report.</remarks>
     public static ParitySession Run(Action<CaseLog> body, TimeSpan timeout) {
         var session = new ParitySession();
+        string? failure = null;
         var thread = new Thread(() => {
             try {
                 body(session._log);
             }
             catch (Exception ex) {
-                session._setupFailure = ex.ToString();
+                failure = ex.ToString();
             }
         }) { IsBackground = true };
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         session._timedOut = !thread.Join(timeout);
+        session._setupFailure = session._timedOut ? null : failure;
+        session._running = session._log.Running;
+        session._outcomes = session._log.Outcomes.ToDictionary(pair => pair.Key, pair => pair.Value);
         return session;
     }
 
@@ -116,7 +132,7 @@ public sealed class ParitySession {
 
     /// <summary>Returns a case's outcome, reporting cases still running as deadlocked or aborted and unrecorded ones as not reached.</summary>
     public CaseOutcome Outcome(string name) {
-        if (_log.Outcomes.TryGetValue(name, out var outcome)) {
+        if (_outcomes.TryGetValue(name, out var outcome)) {
             if (outcome.Status == "running") {
                 return new CaseOutcome("failed", _timedOut
                     ? "Deadlocked: the session timed out while this case was running."
@@ -128,7 +144,7 @@ public sealed class ParitySession {
             return new CaseOutcome("failed", "Not reached; session failed: " + _setupFailure);
         }
         return new CaseOutcome("failed", _timedOut
-            ? "Not reached: the session timed out while running " + (_log.Running ?? "<none>") + "."
+            ? "Not reached: the session timed out while running " + (_running ?? "<none>") + "."
             : "Not reached: the session never ran this case.");
     }
 

@@ -175,6 +175,19 @@ def _children(element):
     return [node for node in element.childNodes if node.nodeType == node.ELEMENT_NODE]
 
 
+def _resource_entries(node):
+    if node.localName != "ResourceDictionary":
+        return [node]
+    entries = []
+    for child in _children(node):
+        if child.localName == "ResourceDictionary.MergedDictionaries":
+            for merged in _children(child):
+                entries.extend(_resource_entries(merged))
+        else:
+            entries.append(child)
+    return entries
+
+
 def _serialize(document):
     """Write markup whose attribute line breaks survive WPF's XML parser.
 
@@ -435,12 +448,7 @@ def prepare_xaml(source, resource_sources, is_event=None, dynamic_keys=()):
             if owner is not None and resource is not None:
                 resource_names.setdefault(owner, resource)
             for nested in _children(child):
-                entries = (
-                    _children(nested)
-                    if nested.localName == "ResourceDictionary"
-                    else [nested]
-                )
-                for entry in entries:
+                for entry in _resource_entries(nested):
                     visit(entry, in_template, resource, owner, in_popup)
 
     visit(root)

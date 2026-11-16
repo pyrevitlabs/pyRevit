@@ -13,9 +13,13 @@ def _details(result):
 
 output = script.get_output()
 result = forms_acceptance.run()
-summary = "IronPython forms acceptance: {}/{} cases passed.".format(
-    result["run"] - len(result["failures"]) - len(result["errors"]),
+summary = "IronPython forms acceptance: {}/{} cases passed, {} skipped.".format(
+    result["run"]
+    - len(result["failures"])
+    - len(result["errors"])
+    - len(result["skipped"]),
     result["run"],
+    len(result["skipped"]),
 )
 print(summary)
 print("Engine: {}".format(result["python"]))
