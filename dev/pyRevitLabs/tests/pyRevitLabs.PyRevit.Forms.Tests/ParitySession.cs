@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace PyRevitLabs.PyRevit.Forms.Testing;
@@ -113,7 +114,7 @@ public sealed class ParitySession {
         session._timedOut = !thread.Join(timeout);
         session._setupFailure = session._timedOut ? null : failure;
         session._running = session._log.Running;
-        session._outcomes = new Dictionary<string, CaseOutcome>(session._log.Outcomes);
+        session._outcomes = session._log.Outcomes.ToDictionary(pair => pair.Key, pair => pair.Value);
         return session;
     }
 
