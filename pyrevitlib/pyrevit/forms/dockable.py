@@ -248,6 +248,8 @@ def _get_dockable_panel_id(panel_type_or_id):
         panel_id = panel_type_or_id.panel_id
     else:
         raise PyRevitException("Given type is not a forms.WPFPanel")
+    if not panel_id:
+        raise PyRevitException('"panel_id" class attribute is not set')
     try:
         return UI.DockablePaneId(coreutils.Guid.Parse(panel_id))
     except framework.System.FormatException:
