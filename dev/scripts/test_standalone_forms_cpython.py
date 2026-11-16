@@ -552,6 +552,20 @@ class XamlPreparationTests(unittest.TestCase):
         self.assertIn(owner, names)
         self.assertEqual((None, "menu"), resource_names[owner])
 
+    def test_names_in_inline_merged_dictionaries_keep_their_owner(self):
+        """Keyed entries of an inline merged dictionary resolve by key, not namescope."""
+        _, _, _, resource_names, _ = _load_xaml_helpers().prepare_xaml(
+            '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" '
+            'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'
+            "<Window.Resources><ResourceDictionary>"
+            "<ResourceDictionary.MergedDictionaries><ResourceDictionary>"
+            '<Button x:Key="merged" x:Name="mergedButton"/>'
+            "</ResourceDictionary></ResourceDictionary.MergedDictionaries>"
+            "</ResourceDictionary></Window.Resources></Window>",
+            [],
+        )
+        self.assertEqual((None, "merged"), resource_names["mergedButton"])
+
 
 class _NotSupported(Exception):
     def __init__(self, feature_name):
