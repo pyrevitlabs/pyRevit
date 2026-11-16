@@ -1196,6 +1196,7 @@ def run(context):
     workspace_folder = context.Workspace
     namespace = None
     left_open = 0
+    unresolved = []
     reckless = bool(getattr(context, "Reckless", False))
     timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
     state = {
@@ -1334,7 +1335,9 @@ def run(context):
                 finder for finder in sys.meta_path if finder is not workspace_guard
             ]
         if namespace is not None:
-            left_open = _roll_back_open_transactions(namespace, tracked_transactions)
+            left_open, unresolved = _roll_back_open_transactions(
+                namespace, tracked_transactions
+            )
         _TRANSACTION_RANKS.clear()
         _UNTRACKED_TYPES.clear()
         _TRACKED_TYPES.clear()
@@ -1347,6 +1350,9 @@ def run(context):
         context.SetOutput(captured.getvalue())
         phases.lap("cleanup")
 
+    if unresolved:
+        _report_unresolved_rollbacks(context, unresolved)
+        return
     if left_open and not failed:
         context.SetError(
             "transaction_left_open",
@@ -1409,21 +1415,75 @@ def _roll_back_open_transactions(namespace, tracked_transactions):
     ``pyrevit.revit.Transaction``. A reckless run records nothing while it
     executes, so only the globals are inspected.
 
+    Only a ``RollBack()`` that returns ``TransactionStatus.RolledBack`` counts
+    as rolled back. Revit returns ``Pending`` while failure handling for the
+    transaction is unfinished; the runner never waits for it.
+
     Returns:
-        int: how many transactions were rolled back.
+        tuple: how many transactions were rolled back, and a description of
+        each one that was not, with the status Revit returned or the error
+        ``RollBack()`` raised.
     """
     found = tracked_transactions
     for value in _reachable_values(namespace):
         _track_transaction(value, found)
     rolled_back = 0
+    unresolved = []
     for _, transaction in sorted(found.values(), key=lambda item: item[0]):
         try:
-            if transaction.HasStarted() and not transaction.HasEnded():
-                transaction.RollBack()
-                rolled_back += 1
+            if not transaction.HasStarted() or transaction.HasEnded():
+                continue
         except Exception:
-            pass
-    return rolled_back
+            continue
+        try:
+            status = transaction.RollBack()
+        except Exception as ex:
+            unresolved.append(
+                "{} raised {}".format(
+                    _describe_transaction(transaction), _safe_text(ex)
+                )
+            )
+            continue
+        if status == DB.TransactionStatus.RolledBack:
+            rolled_back += 1
+        else:
+            unresolved.append(
+                "{} returned {}".format(_describe_transaction(transaction), status)
+            )
+    return rolled_back, unresolved
+
+
+def _describe_transaction(transaction):
+    kind = type(transaction).__name__
+    try:
+        name = transaction.GetName()
+    except Exception:
+        return kind
+    return "{} '{}'".format(kind, _safe_text(name))
+
+
+def _report_unresolved_rollbacks(context, unresolved):
+    """Fail the run with the transactions Revit did not roll back.
+
+    Replaces any earlier error, because an unfinished rollback leaves the
+    model's state unknown, and keeps that error's type and message in the
+    new message.
+    """
+    message = (
+        "Revit did not roll back {} transaction(s) the script left open: {}. "
+        "The host still rolls back the run; its 'decision' says whether that "
+        "completed.".format(len(unresolved), "; ".join(unresolved))
+    )
+    earlier_type = getattr(context, "ErrorType", None)
+    if earlier_type:
+        message += " The script had already failed with {}: {}".format(
+            earlier_type, getattr(context, "ErrorMessage", None)
+        )
+    context.SetError(
+        "transaction_rollback_failed",
+        message,
+        getattr(context, "ErrorTraceback", None),
+    )
 
 
 def _track_frame_transactions(frame, transactions):
