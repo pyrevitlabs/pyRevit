@@ -65,13 +65,17 @@ def shown(content):
             ArrayList holder;
             using (Py.GIL()) {
                 using var scope = Py.CreateScope();
-                scope.Exec(Common + "holder = System.Collections.ArrayList()\nfor value in (5, 2 ** 40, 2 ** 80, True):\n    holder.Add(value)\nassert holder[0] == 5 and holder[2] == 2 ** 80\n");
+                scope.Exec(Common + "holder = System.Collections.ArrayList()\nfor value in (5, 2 ** 40, 2 ** 80, True, -2 ** 63, 2 ** 63 - 1, -2 ** 63 - 1, 2 ** 63):\n    holder.Add(value)\nassert holder[0] == 5 and holder[2] == 2 ** 80\n");
                 holder = (ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList));
             }
             Assert.IsType<int>(holder[0]);
             Assert.IsType<long>(holder[1]);
             Assert.IsNotType<long>(holder[2]);
             Assert.IsType<bool>(holder[3]);
+            Assert.Equal(long.MinValue, Assert.IsType<long>(holder[4]));
+            Assert.Equal(long.MaxValue, Assert.IsType<long>(holder[5]));
+            Assert.IsNotType<long>(holder[6]);
+            Assert.IsNotType<long>(holder[7]);
         });
         Python(@"
 class Model(object):
@@ -95,6 +99,18 @@ try:
     assert model.level == 1 and type(model.level) is int
 finally:
     window.Close()
+");
+    }
+
+    /// <summary>A mapping given as <c>ItemsSource</c> lists its keys, including integer keys.</summary>
+    [Fact]
+    public void MappingSourceListsItsKeys() {
+        Python(@"
+from collections import UserDict
+for mapping, keys in ((UserDict({'A': 1}), ['A']), (UserDict({0: 'x', 5: 'y'}), [0, 5])):
+    box = Controls.ListBox()
+    box.ItemsSource = mapping
+    assert [item for item in box.Items] == keys, [item for item in box.Items]
 ");
     }
 

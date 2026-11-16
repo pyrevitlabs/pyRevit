@@ -35,6 +35,8 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         internal const int IntegerKind = 4;
 
         private const string HelperSource = @"
+from collections.abc import Mapping as _Mapping
+
 _HEAPTYPE = 1 << 9
 _OPAQUE = (str, bytes, bytearray, int, float, complex, list, dict, set, frozenset, type, BaseException)
 
@@ -63,7 +65,7 @@ def classify(cls):
 def is_live_sequence(value):
     return isinstance(value, (list, tuple, range)) or (
         hasattr(type(value), '__len__') and hasattr(type(value), '__getitem__')
-        and not isinstance(value, dict)
+        and not isinstance(value, _Mapping)
     )
 
 
@@ -343,7 +345,8 @@ def names(value):
         /// <remarks>Requires the GIL. False when the value does not fit a <see cref="long"/>.</remarks>
         internal static bool TryToClrInteger(PyObject value, out object result) {
             using (var bits = value.InvokeMethod("bit_length")) {
-                if (bits.As<int>() > 63) {
+                var length = bits.As<int>();
+                if (length > 64 || length == 64 && !IsInt64MinValue(value)) {
                     result = null;
                     return false;
                 }
@@ -351,6 +354,12 @@ def names(value):
             var number = value.As<long>();
             result = number >= int.MinValue && number <= int.MaxValue ? (object)(int)number : number;
             return true;
+        }
+
+        private static bool IsInt64MinValue(PyObject value) {
+            using (var minimum = new PyInt(long.MinValue)) {
+                return value.Equals(minimum);
+            }
         }
 
         /// <summary>
