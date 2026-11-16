@@ -80,6 +80,8 @@ class Mesh(object):
                         int(material.Transparency / 100 * 255),
                     )
                 face_mesh = face.Triangulate()
+                if face_mesh is None:
+                    continue
                 triangle_count = face_mesh.NumTriangles
                 for idx in range(triangle_count):
                     mesh_triangle = face_mesh.get_Triangle(idx)
