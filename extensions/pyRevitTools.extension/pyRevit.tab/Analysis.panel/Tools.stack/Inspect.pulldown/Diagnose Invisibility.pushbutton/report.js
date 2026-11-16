@@ -1098,9 +1098,9 @@
         host.replaceChildren();
         return;
       }
-      const card = this.card(view, inspected.element);
-      delete card.dataset.element;
       const inReport = view.elements.some((e) => e.id === inspected.id);
+      const card = this.card(view, inspected.element, inReport);
+      delete card.dataset.element;
       host.replaceChildren(
         h(
           "div",
@@ -1154,7 +1154,12 @@
       if (summary.active && this.revealFilterActive(this.revealFilter(viewId))) this.scheduleFocus(viewId);
     }
 
-    card(view, element) {
+    /**
+     * The card of one element. ``inReport`` is false for an element only inspected from the
+     * reveal table: the report's 3D preview and element list do not hold it, so the buttons that
+     * act on them are left out.
+     */
+    card(view, element, inReport = true) {
       const bridge = this.data.bridge;
       const selectLink = h(
         "a",
@@ -1214,16 +1219,18 @@
                 this.s.zoom
               )
             : null,
-          h(
-            "button",
-            {
-              class: "dvi-btn small only-scene",
-              title: this.s.preview3d,
-              onclick: () => this.focusInScene(view.id, element.id),
-            },
-            "3D"
-          ),
-          bridge
+          inReport
+            ? h(
+                "button",
+                {
+                  class: "dvi-btn small only-scene",
+                  title: this.s.preview3d,
+                  onclick: () => this.focusInScene(view.id, element.id),
+                },
+                "3D"
+              )
+            : null,
+          bridge && inReport
             ? h(
                 "button",
                 {
