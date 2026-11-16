@@ -62,6 +62,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxResultChars = 256 * 1024;
         private const int MaxOutputChars = 64 * 1024;
         private const int MaxChangeSamples = 50;
+        private const string ExportDirName = "exports";
 
         private static AgentPolicy ReadPolicy() {
             var policy = PyRevitConfigs.GetAgentPolicy();
@@ -243,6 +244,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
                 var runDir = AgentPaths.CreateRunDir(runId);
                 WriteRequestRecord(runDir, request);
+                var exportDir = Directory.CreateDirectory(Path.Combine(runDir, ExportDirName)).FullName;
 
                 var warnings = new JArray();
                 var lostBefore = doc == null ? null : AgentCommitSentinel.Check(doc, afterRollback: false);
@@ -252,6 +254,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var stopwatch = Stopwatch.StartNew();
                 var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds, reckless) {
                     Timings = timings,
+                    ExportDir = exportDir + Path.DirectorySeparatorChar,
                 };
                 var response = new JObject {
                     ["run_id"] = runId,
@@ -262,7 +265,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 };
 
                 timings.Lap("prepare");
-                var guard = new AgentRunGuard(app, doc);
+                var guard = new AgentRunGuard(app, doc, exportDir);
                 using (guard) {
                     try {
                         guard.Arm("Agent: " + request.Title);
@@ -352,6 +355,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var finalOtherDocuments = guard.DescribeOtherDocuments();
                 foreach (var failure in guard.CleanupFailures)
                     warnings.Add("Guard cleanup failed: " + failure);
+                try {
+                    var exports = AgentExportCollector.Collect(exportDir);
+                    if (exports.Length > 0)
+                        response["exports"] = new JArray(exports);
+                }
+                catch (Exception ex) {
+                    warnings.Add("Listing the run's exports failed: " + ex.Message);
+                }
                 var blockedExplanation = guard.DescribeBlockedOperations();
                 if (blockedExplanation != null)
                     warnings.Add(blockedExplanation);

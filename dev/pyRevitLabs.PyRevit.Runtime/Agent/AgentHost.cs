@@ -403,28 +403,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static void PruneOldRecords(DateTime cutoff) {
-            var removed = 0;
-            try {
-                if (Directory.Exists(RunsDir)) {
-                    foreach (var runDir in Directory.GetDirectories(RunsDir)) {
-                        if (Directory.GetLastWriteTime(runDir) >= cutoff)
-                            continue;
-                        Directory.Delete(runDir, recursive: true);
-                        removed++;
-                    }
-                }
-                if (Directory.Exists(CapturesDir)) {
-                    foreach (var capture in Directory.GetFiles(CapturesDir)) {
-                        if (File.GetLastWriteTime(capture) >= cutoff)
-                            continue;
-                        File.Delete(capture);
-                        removed++;
-                    }
-                }
-            }
-            catch (Exception ex) {
-                pathsLogger.Debug("Could not prune agent records: {0}", ex.Message);
-            }
+            var failures = new List<string>();
+            var removed = AgentRecordPruner.Prune(RunsDir, CapturesDir, cutoff, failures);
+            foreach (var failure in failures)
+                pathsLogger.Debug("Could not prune agent records: {0}", failure);
             if (removed > 0)
                 pathsLogger.Debug("Pruned {0} agent run records and captures older than {1:yyyy-MM-dd}", removed, cutoff);
         }
