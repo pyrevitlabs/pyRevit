@@ -122,6 +122,8 @@ Nothing in CI runs this suite; it needs an installed Revit.
 python -m unittest discover -s dev/scripts -p 'test_standalone_*.py' -v
 ```
 
+`test_standalone_diagnose_invisibility_page.py` runs the real `report.js` of the Diagnose Invisibility report in a headless Edge or Chrome, through `dev/scripts/fixtures/diagnose_invisibility_page/harness.html`, with a stubbed WebView2 bridge. Set `PYREVIT_TEST_BROWSER` to a browser executable to override the lookup. A missing browser fails the module when `CI` is set and skips it otherwise.
+
 Two other host-free modules live beside them: `test_check_config_api.py` and `test_check_py3_compat.py`. They have separate `Pipfile` commands (`pipenv run test-config-api`, `pipenv run test-py3-compat`), and the CI discovery pattern above excludes them. To run every module in the folder locally:
 
 ```bash
