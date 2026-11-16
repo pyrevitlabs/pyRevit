@@ -176,7 +176,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public void Assimilate() {
             RollBackOtherDocuments();
             if (HasOpenGroup) {
-                group.Assimilate();
+                var status = group.Assimilate();
+                if (status != TransactionStatus.Committed)
+                    throw new InvalidOperationException(
+                        $"Revit did not commit the run's changes (status {status}), so they are not reported as kept.");
                 Committed = true;
             }
             assimilationRequested = true;

@@ -31,6 +31,7 @@
 
     <ItemGroup>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunGuard.cs" Link="Sources\AgentRunGuard.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentCaptureGroup.cs" Link="Sources\AgentCaptureGroup.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentDocuments.cs" Link="Sources\AgentDocuments.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentCommitSentinel.cs" Link="Sources\AgentCommitSentinel.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRunDecision.cs" Link="Sources\AgentRunDecision.cs"/>
@@ -51,7 +52,9 @@
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentConfigRefresh.cs" Link="Sources\AgentConfigRefresh.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentBinaryCommit.cs" Link="Sources\AgentBinaryCommit.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentPendingRecord.cs" Link="Sources\AgentPendingRecord.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\JournalTail.cs" Link="Sources\JournalTail.cs"/>
         <Compile Include="..\..\pyRevitLabs.Common\BoundedLineReader.cs" Link="Sources\BoundedLineReader.cs"/>
+        <Compile Include="..\..\pyRevitLabs.Common\JsonText.cs" Link="Sources\JsonText.cs"/>
     </ItemGroup>
 
 </Project>

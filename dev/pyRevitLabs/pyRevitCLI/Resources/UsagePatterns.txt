@@ -6,8 +6,9 @@ Usage:
 	pyrevit env [--json] [--redact] [(-h | --help)] [--log=<log_file>]
 	pyrevit env path [(-h | --help)]
 	pyrevit env path list [--scope=<scope>] [--log=<log_file>]
-	pyrevit env path ensure <dir> [--scope=<scope>] [--log=<log_file>]
+	pyrevit env path ensure <dir> [--scope=<scope>] [--first] [--log=<log_file>]
 	pyrevit env path remove <dir> [--scope=<scope>] [--log=<log_file>]
+	pyrevit env path which [--log=<log_file>]
 	pyrevit update [--help] [--log=<log_file>]
 	pyrevit clone (-h | --help)
 	pyrevit clone <clone_name> <deployment_name> [--dest=<dest_path>] [--branch=<branch_name>] [--skip-bin] [--log=<log_file>]
@@ -61,7 +62,10 @@ Usage:
 	pyrevit releases <search_pattern> [--pre] [--notes]
 	pyrevit releases open latest [--pre]
 	pyrevit releases open <search_pattern> [--pre]
-	pyrevit releases download (installer | archive) <search_pattern> [--dest=<dest_path>] [--pre]
+	pyrevit releases download installer latest [--dest=<dest_path>] [--pre] [--admin]
+	pyrevit releases download installer <search_pattern> [--dest=<dest_path>] [--pre] [--admin]
+	pyrevit releases download archive latest [--dest=<dest_path>] [--pre]
+	pyrevit releases download archive <search_pattern> [--dest=<dest_path>] [--pre]
 	pyrevit revits
 	pyrevit revits (-h | --help)
 	pyrevit revits [--installed] [--log=<log_file>]
