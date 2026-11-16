@@ -10,9 +10,12 @@ Page -> Python messages are ``{channel, action, payload, requestId}``; messages
 from other channels (e.g. a previous run printed into the same window) are
 ignored.
 Page -> Python actions: ``select``, ``zoom``, ``open_view``, ``fix``,
-``fix_all``, ``recheck``, ``scene``, ``ghost``.
-Python -> page events: ``view`` (refreshed view section), ``result``
-(outcome of a request), ``scene`` (3D preview data), ``error``.
+``fix_all``, ``recheck``, ``scene``, ``ghost``, ``add_selection``,
+``add_pick``, ``add_views``, ``remove_element``, ``remove_view``,
+``set_hidden``.
+Python -> page events: ``view`` (refreshed view section), ``state`` (the
+element and view lists changed), ``result`` (outcome of a request), ``scene``
+(3D preview data), ``error``.
 """
 
 import io
@@ -20,7 +23,7 @@ import json
 import os
 import uuid
 
-from pyrevit import DB, HOST_APP, forms, script
+from pyrevit import DB, HOST_APP, forms, revit, script
 from pyrevit.compat import get_elementid_from_value_func
 from pyrevit.framework import List
 from pyrevit.revit import events
@@ -100,6 +103,37 @@ _UI_STRINGS = {
         "ui_bridge_offline",
         "Interactive actions are unavailable in this window.",
     ),
+    "addSelection": ("ui_add_selection", "Add selection"),
+    "addSelectionHint": (
+        "ui_add_selection_hint",
+        "Add the elements currently selected in Revit to this report.",
+    ),
+    "pickElements": ("ui_pick_elements", "Pick elements"),
+    "addViews": ("ui_add_views", "Add views"),
+    "removeElement": ("ui_remove_element", "Remove this element from the report"),
+    "removeView": ("ui_remove_view", "Remove this view from the report"),
+    "selectAll": ("ui_select_all", "Select all"),
+    "selectedCount": ("ui_selected_count", "{0} selected"),
+    "clearSelection": ("ui_clear_selection", "Clear selection"),
+    "selectForHide": (
+        "ui_select_for_hide",
+        "Select this element for hiding or unhiding",
+    ),
+    "hideInViews": ("ui_hide_in_views", "Hide in views..."),
+    "unhideInViews": ("ui_unhide_in_views", "Unhide in views..."),
+    "hideDialogTitle": ("ui_hide_dialog_title", "Hide {0} element(s) in:"),
+    "unhideDialogTitle": ("ui_unhide_dialog_title", "Unhide {0} element(s) in:"),
+    "apply": ("ui_apply", "Apply"),
+    "cancel": ("ui_cancel", "Cancel"),
+    "noViewTicked": ("ui_no_view_ticked", "Tick at least one view."),
+    "emptyState": (
+        "ui_empty_state",
+        "Nothing to diagnose yet. Add elements and views.",
+    ),
+    "reloadBlocked": (
+        "ui_reload_blocked",
+        "Reloading would erase this report. Use Re-check instead.",
+    ),
     "inTemplate": (
         "ui_in_template_hint",
         "Changes the view template, which affects every view using it.",
@@ -128,6 +162,8 @@ _CODE_LABELS = {
     "view_specific": "View-specific",
     "view_template": "Template",
     "view_discipline": "Discipline",
+    "view_type": "View type",
+    "detail_level": "Detail level",
     "unknown": "Unknown",
 }
 
@@ -273,10 +309,18 @@ class DiagnosisSession(object):
             "elements": elements,
         }
 
-    def payload(self):
-        """Return the complete report state passed to the page's ``mount``."""
+    def state(self):
+        """Return the element count and the diagnosis of every report view."""
         views = [self.doc.GetElement(view_id) for view_id in self.view_ids]
         return {
+            "elementCount": len(self.element_ids),
+            "elementIds": [id_value(element_id) for element_id in self.element_ids],
+            "views": [self.view_payload(v) for v in views if v is not None],
+        }
+
+    def payload(self):
+        """Return the complete report state passed to the page's ``mount``."""
+        data = {
             "channel": self.channel,
             "bridge": self.interactive,
             "document": self.doc.Title,
@@ -287,8 +331,9 @@ class DiagnosisSession(object):
                 (code, t("code_" + code, default))
                 for code, default in _CODE_LABELS.items()
             ),
-            "views": [self.view_payload(v) for v in views if v is not None],
         }
+        data.update(self.state())
+        return data
 
     def show(self):
         """Render the report and start listening for page messages.
@@ -307,6 +352,12 @@ class DiagnosisSession(object):
                 ("recheck", self._on_recheck),
                 ("scene", self._on_scene),
                 ("ghost", self._on_ghost),
+                ("add_selection", self._on_add_selection),
+                ("add_pick", self._on_add_pick),
+                ("add_views", self._on_add_views),
+                ("remove_element", self._on_remove_element),
+                ("remove_view", self._on_remove_view),
+                ("set_hidden", self._on_set_hidden),
             ):
                 self._handlers[action] = handler
             self.output.window.Closed += self._on_window_closed
@@ -370,6 +421,9 @@ class DiagnosisSession(object):
             view = self.doc.GetElement(view_id)
             if view is not None:
                 self._send("view", self.view_payload(view))
+
+    def _push_state(self):
+        self._send("state", self.state())
 
     def _ids(self, payload):
         return List[DB.ElementId](
@@ -520,6 +574,151 @@ class DiagnosisSession(object):
             self._element(payload["elementId"]),
         )
         self._reply(request_id, True, "on" if shown else "off")
+
+    def _add_elements(self, elements, request_id):
+        known = set(id_value(element_id) for element_id in self.element_ids)
+        added = 0
+        for element in elements:
+            if (
+                element is None
+                or element.Category is None
+                or isinstance(element, DB.ElementType)
+                or id_value(element.Id) in known
+            ):
+                continue
+            known.add(id_value(element.Id))
+            self.element_ids.append(element.Id)
+            added += 1
+        if not added:
+            self._reply(
+                request_id, True, t("add_nothing_new", "No new elements to add.")
+            )
+            return
+        self._push_state()
+        self._reply(
+            request_id,
+            True,
+            t("added_elements", "Added {0} element(s).").format(added),
+        )
+
+    def _on_add_selection(self, payload, request_id):
+        selected = self._uidoc().Selection.GetElementIds()
+        if not selected.Count:
+            self._reply(
+                request_id,
+                True,
+                t("add_no_selection", "Nothing is selected in Revit."),
+            )
+            return
+        self._add_elements([self.doc.GetElement(i) for i in selected], request_id)
+
+    def _on_add_pick(self, payload, request_id):
+        self._uidoc()
+        picked = revit.pick_elements(
+            message=t("pick_prompt", "Select element(s) to diagnose")
+        )
+        self._add_elements(picked or [], request_id)
+
+    def _on_add_views(self, payload, request_id):
+        views = forms.select_views(
+            title=t("select_view_title", "Select View"),
+            button_name=t("add_views_button", "Add to report"),
+            doc=self.doc,
+            filterfunc=lambda view: view.Id not in self.view_ids,
+        )
+        if not views:
+            self._reply(request_id, True)
+            return
+        self.view_ids.extend(view.Id for view in views)
+        self._push_state()
+        self._reply(
+            request_id,
+            True,
+            t("added_views", "Added {0} view(s).").format(len(views)),
+        )
+
+    def _on_remove_element(self, payload, request_id):
+        value = int(payload["elementId"])
+        self.element_ids = [i for i in self.element_ids if id_value(i) != value]
+        self.ghost.forget(value)
+        self._push_state()
+        self._reply(request_id, True)
+
+    def _on_remove_view(self, payload, request_id):
+        value = int(payload["viewId"])
+        self.view_ids = [i for i in self.view_ids if id_value(i) != value]
+        self._push_state()
+        self._reply(request_id, True)
+
+    def _on_set_hidden(self, payload, request_id):
+        """Hide or unhide chosen elements in chosen report views.
+
+        Asks for confirmation with the exact counts first. Hiding is by
+        element only; elements Revit cannot hide in a view, and view-specific
+        elements owned by another view, are skipped silently.
+        """
+        hide = bool(payload.get("hide"))
+        elements = [
+            self.doc.GetElement(get_elementid_from_value(int(value)))
+            for value in payload.get("elementIds", [])
+        ]
+        views = [self._view(value) for value in payload.get("viewIds", [])]
+        plan = fixes.plan_visibility_change(
+            [element for element in elements if element is not None], views, hide
+        )
+        if not plan:
+            self._reply(
+                request_id,
+                True,
+                t(
+                    "hide_nothing",
+                    "Nothing to change: the elements are already in that state,"
+                    " cannot be hidden in these views, or belong to another view.",
+                ),
+            )
+            return
+        element_count = len(set(id_value(i) for _, ids in plan for i in ids))
+        confirm_key, confirm_default = (
+            ("confirm_hide", "Hide {0} element(s) in {1} view(s)?")
+            if hide
+            else ("confirm_unhide", "Unhide {0} element(s) in {1} view(s)?")
+        )
+        if not forms.alert(
+            t(confirm_key, confirm_default).format(element_count, len(plan)),
+            yes=True,
+            no=True,
+        ):
+            self._reply(request_id, True, t("fix_cancelled", "Cancelled."))
+            return
+        transaction_key, transaction_default = (
+            ("transaction_hide", "Hide in views")
+            if hide
+            else ("transaction_unhide", "Unhide in views")
+        )
+        applied, errors = fixes.apply_visibility_change(
+            self.doc,
+            plan,
+            hide,
+            "{}: {}".format(
+                t("report_title", "Visibility Diagnosis"),
+                t(transaction_key, transaction_default),
+            ),
+        )
+        self._push_views()
+        if not applied:
+            self._reply(request_id, False, "; ".join(errors))
+            return
+        done_key, done_default = (
+            ("hidden_summary", "Hid {0} element(s) in {1} view(s).")
+            if hide
+            else ("unhidden_summary", "Unhid {0} element(s) in {1} view(s).")
+        )
+        message = t(done_key, done_default).format(
+            len(set(id_value(i) for _, ids in applied for i in ids)), len(applied)
+        )
+        if errors:
+            message += " " + "; ".join(errors)
+        self._reply(request_id, True, message)
 
     def _close_ghosts(self):
         events.execute_in_revit_context(_close_ghost_preview, self.ghost)
