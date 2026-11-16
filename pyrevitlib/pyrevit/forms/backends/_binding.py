@@ -182,7 +182,9 @@ def _unchanged(previous, marker):
 def _refresh(controller, names=None, forced=()):
     """Copy changed values of ``names``, or of every property, to the native model.
 
-    Names in ``forced`` are copied and announced even when unchanged. Nested
+    Names in ``forced`` are copied and announced even when unchanged. Names
+    notified while it copies, for example by a WPF handler that sets another
+    property, are refreshed once it finishes. Nested
     models are kept strongly in ``_binding_children`` because their native
     models hold them only weakly.
     """
@@ -224,6 +226,15 @@ def _refresh(controller, names=None, forced=()):
                 values.Notify(name)
     finally:
         state["_binding_updating"] = False
+    deferred_all = state.pop("_binding_pending_all", False)
+    deferred = state.pop("_binding_pending", None)
+    deferred_forced = state.pop("_binding_forced", set())
+    if deferred_all or deferred:
+        _refresh(
+            controller,
+            None if deferred_all else sorted(deferred),
+            forced=deferred_forced,
+        )
 
 
 def binding_source(controller):
@@ -267,9 +278,11 @@ def binding_source(controller):
         if isinstance(prop, property) and prop.fset is None:
             return
         state = target.__dict__
+        edited = unwrap_item(state["_binding_values"][name])
+        state.setdefault("_binding_markers", {})[name] = _change_marker(edited)
         state["_binding_updating"] = True
         try:
-            setattr(target, name, unwrap_item(state["_binding_values"][name]))
+            setattr(target, name, edited)
         finally:
             state["_binding_updating"] = False
         notified = state.pop("_binding_pending", set())
