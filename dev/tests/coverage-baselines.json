@@ -1,4 +1,16 @@
 {
+  "dotnet-linked/pyRevitAssemblyBuilder.Tests/net48": {
+    "branch": 1.0,
+    "branches": 8,
+    "line": 1.0,
+    "lines": 28
+  },
+  "dotnet-linked/pyRevitAssemblyBuilder.Tests/net8.0-windows": {
+    "branch": 1.0,
+    "branches": 8,
+    "line": 1.0,
+    "lines": 28
+  },
   "dotnet-linked/pyRevitCLI.Tests/net10.0-windows": {
     "branch": 0.7842741935483871,
     "branches": 992,
