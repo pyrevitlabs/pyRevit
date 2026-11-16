@@ -19,7 +19,7 @@ pyRevit's build and release pipeline is split across workflows in [`.github/work
 
 | Workflow | File | What it does |
 |----------|------|--------------|
-| **`pyRevit CI`** | [`ci.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/ci.yml) | Runs the API-free Python tests, runs `dotnet run -- ci` to build unsigned DLLs, runs the API-free C# tests through `dev/tests/run_tests.py`, uploads `unsigned-bin-<sha>` (Actions artifact for WIP/release), and publishes the same zip to the public **`ci-binaries`** GitHub Release (for `pyrevit clone`). Runs on every push to `develop` / `master` / `v*` tag (with a path filter), on PRs targeting any branch, and on manual dispatch. Tag pushes also refresh `unsigned-bin-master-latest.zip`. |
+| **`pyRevit CI`** | [`ci.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/ci.yml) | Runs the API-free Python tests, runs `dotnet run -- ci` to build unsigned DLLs, runs the API-free C# tests through `dev/tests/run_tests.py`, uploads `unsigned-bin-<sha>` (Actions artifact for WIP/release), and publishes the same zip to the public **`ci-binaries`** GitHub Release (for `pyrevit clone`). Runs on every push to `develop` / `master` / `release/**` / `v*` tag (with a path filter), on PRs targeting any branch, and on manual dispatch. Tag pushes also refresh `unsigned-bin-master-latest.zip`. |
 | **`pyRevit WIP`** | [`wip.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/wip.yml) | **Reusable workflow** (`workflow_call`) — it has no trigger of its own. The **`wip` job** of `ci.yml` calls it on `develop` pushes to the main repo. It downloads the CI artifacts, runs `dotnet run -- pack sign` under the **`production`** environment, and uploads signed WIP installers. Because it runs as a job, WIP activity appears **inside the `pyRevit CI` run**, not as a separate workflow run. |
 | **`pyRevit Release`** | [`release.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/release.yml) | On `v*` tag pushes, waits for CI, runs `dotnet run -- release pack sign publish` under **`production`**, attaches signed `bin-v{version}.zip` to the draft GitHub Release, then notifies linked issues. |
 | **`Update Winget manifests`** | [`winget.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/winget.yml) | After a GitHub release is **published**, runs `dotnet run -- winget` to submit WinGet manifest PRs. Strips `ElevationRequirement: elevationProhibited` from generated user-scope installers before submit (see Troubleshooting). |
@@ -49,7 +49,7 @@ All tests using the Revit API or requiring installed/running Revit are excluded 
 
 It is triggered by:
 
-- **Push** to `develop`, `master`, or any `v*` tag (with the path filter above).
+- **Push** to `develop`, `master`, a `release/**` branch, or any `v*` tag (with the path filter above).
 - **Pull request** (`opened`, `reopened`, `synchronize`) targeting any branch, including a stacked PR's parent branch (with the path filter).
 - **`workflow_dispatch`** for manual runs.
 

@@ -6,27 +6,21 @@ namespace pyRevitLabs.PyRevit.Tests;
 ///     Verifies that <c>pyrevit launch</c> keeps the journals Revit wrote into its launch directory (#3949).
 /// </summary>
 [TestFixture]
-[FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 [Category("HostFree")]
 [Category("Integration")]
 public class LaunchJournalTests {
-    private readonly string temp = Path.Combine(Path.GetTempPath(), "pyRevit-journal-tests-" + Guid.NewGuid());
-    private readonly string launchDirectory;
-    private readonly string journalsDirectory;
-
-    /// <summary>
-    ///     Initializes a new instance of the <see cref="LaunchJournalTests"/> class with the folder locations of one launch.
-    /// </summary>
-    public LaunchJournalTests() {
-        launchDirectory = Path.Combine(temp, "launch", "0123abcd");
-        journalsDirectory = Path.Combine(temp, "Journals");
-    }
+    private string temp = string.Empty;
+    private string launchDirectory = string.Empty;
+    private string journalsDirectory = string.Empty;
 
     /// <summary>
     ///     Creates a launch directory as Revit leaves it.
     /// </summary>
     [SetUp]
     public void SetUp() {
+        temp = Path.Combine(Path.GetTempPath(), "pyRevit-journal-tests-" + Guid.NewGuid());
+        launchDirectory = Path.Combine(temp, "launch", "0123abcd");
+        journalsDirectory = Path.Combine(temp, "Journals");
         Directory.CreateDirectory(launchDirectory);
         File.WriteAllText(Path.Combine(launchDirectory, "journal.0001.txt"), "session");
         File.WriteAllText(Path.Combine(launchDirectory, "journal.0001.worker1.log"), "worker");
@@ -35,7 +29,7 @@ public class LaunchJournalTests {
     }
 
     /// <summary>
-    ///     Deletes the test folder.
+    ///     Deletes the test's folder.
     /// </summary>
     [TearDown]
     public void TearDown() {
@@ -53,7 +47,9 @@ public class LaunchJournalTests {
             Directory.GetFiles(journalsDirectory).Select(Path.GetFileName).OrderBy(name => name, StringComparer.Ordinal),
             Is.EqualTo(new[] { "journal.launch-0123abcd.0001.txt", "journal.launch-0123abcd.0001.worker1.log" }));
         Assert.That(File.ReadAllText(Path.Combine(journalsDirectory, "journal.launch-0123abcd.0001.txt")), Is.EqualTo("session"));
-        Assert.That(saved.Where(path => path.EndsWith(".txt")), Is.EqualTo(new[] { Path.Combine(journalsDirectory, "journal.launch-0123abcd.0001.txt") }));
+        Assert.That(
+            saved.Where(path => path.EndsWith(".txt")),
+            Is.EqualTo(new[] { Path.Combine(journalsDirectory, "journal.launch-0123abcd.0001.txt") }));
     }
 
     /// <summary>
@@ -65,7 +61,9 @@ public class LaunchJournalTests {
             PyRevitLauncher.SaveJournals(launchDirectory, journalsDirectory);
         }
 
-        Assert.That(Directory.GetFiles(journalsDirectory).Select(Path.GetFileName), Is.EqualTo(new[] { "journal.launch-0123abcd.0001.txt" }));
+        Assert.That(
+            Directory.GetFiles(journalsDirectory).Select(Path.GetFileName),
+            Is.EqualTo(new[] { "journal.launch-0123abcd.0001.txt" }));
     }
 
     /// <summary>

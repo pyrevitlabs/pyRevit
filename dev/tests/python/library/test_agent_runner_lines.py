@@ -1,7 +1,7 @@
 """Host-free regression tests for agent-script source locations and narrowing."""
 
 TEST_ENVIRONMENT = "HostFree"
-TEST_LEVEL = "Integration"
+TEST_LEVEL = "Unit"
 
 
 import ast
@@ -23,8 +23,6 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-TEST_ENVIRONMENT = "HostFree"
-TEST_LEVEL = "Unit"
 
 REPO_ROOT = str(Path(__file__).resolve().parents[4])
 RUNNER_PATH = os.path.join(REPO_ROOT, "pyrevitlib", "pyrevit", "agent", "_runner.py")

@@ -7,32 +7,26 @@ namespace pyRevitLabs.PyRevit.Tests;
 ///     Verifies the model that <c>pyrevit launch</c> opens when Revit starts (#3949).
 /// </summary>
 [TestFixture]
-[FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 [NonParallelizable]
 [Category("HostFree")]
 [Category("Integration")]
 public class LaunchModelTests {
-    private readonly string temp = Path.Combine(Path.GetTempPath(), "pyRevit-model-tests-" + Guid.NewGuid());
-    private readonly string model;
+    private string temp = string.Empty;
+    private string model = string.Empty;
 
     /// <summary>
-    ///     Initializes a new instance of the <see cref="LaunchModelTests"/> class with the model path inside its temporary folder.
-    /// </summary>
-    public LaunchModelTests() {
-        model = Path.Combine(temp, "Tower {A}.rvt");
-    }
-
-    /// <summary>
-    ///     Creates the model file in a temporary folder.
+    ///     Creates a model file in a temporary folder.
     /// </summary>
     [SetUp]
     public void SetUp() {
+        temp = Path.Combine(Path.GetTempPath(), "pyRevit-model-tests-" + Guid.NewGuid());
         Directory.CreateDirectory(temp);
+        model = Path.Combine(temp, "Tower {A}.rvt");
         File.WriteAllText(model, string.Empty);
     }
 
     /// <summary>
-    ///     Deletes the temporary folder.
+    ///     Deletes the test's folder.
     /// </summary>
     [TearDown]
     public void TearDown() {
@@ -40,7 +34,7 @@ public class LaunchModelTests {
     }
 
     /// <summary>
-    ///     Verifies that an existing model given relative to the working directory is returned as a full path and a blank one means no model.
+    ///     Verifies that an existing model is returned as a full path and a blank one means no model.
     /// </summary>
     [Test]
     public void AnExistingModelIsAFullPath() {

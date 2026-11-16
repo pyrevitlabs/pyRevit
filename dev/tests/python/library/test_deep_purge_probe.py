@@ -9,8 +9,7 @@ from pathlib import Path
 
 
 TEST_ENVIRONMENT = "HostFree"
-TEST_LEVEL = "Unit"
-
+TEST_LEVEL = "Integration"
 REPO_ROOT = str(Path(__file__).resolve().parents[4])
 PROBE_PATH = os.path.join(
     REPO_ROOT,

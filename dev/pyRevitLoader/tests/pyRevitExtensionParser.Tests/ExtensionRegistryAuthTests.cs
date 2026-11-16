@@ -29,7 +29,6 @@ namespace pyRevitExtensionParser.Tests
             Assert.That(paths, Does.Contain(Path.Combine(root, "nested", "extensions.json")));
         }
 
-        /// <summary>Each extension reads the registry of its own configured root, whatever the root order.</summary>
         [Test]
         public void ApplyRegistryAuthorization_ReadsRegistriesOfAllConfiguredRoots_RegardlessOfOrder()
         {
@@ -53,9 +52,9 @@ namespace pyRevitExtensionParser.Tests
     }
   ]
 }");
-            var config = CreateFile("lookup.ini",
-                "[core]\n" +
-                "userextensions = [\"" + rootA.Replace("\\", "\\\\") + "\",\"" + rootB.Replace("\\", "\\\\") + "\"]\n");
+            var config = CreateFile(
+                "pyRevit_config.ini",
+                "[core]\nuserextensions = [\"" + rootA.Replace("\\", "\\\\") + "\",\"" + rootB.Replace("\\", "\\\\") + "\"]\n");
             PyRevitConfigStore.SetFactory(() => new ConfigurationBuilder(false).AddIniConfiguration(config).Build());
             ExtensionParser.ClearAllCaches();
 

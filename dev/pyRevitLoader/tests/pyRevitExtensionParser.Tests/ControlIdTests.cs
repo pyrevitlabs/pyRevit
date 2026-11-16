@@ -14,7 +14,6 @@ namespace pyRevitExtensionParser.Tests
     /// </summary>
     [TestFixture]
     [Category("HostFree")]
-    [Category("Integration")]
     public class ControlIdTests : pyRevitLoader.Tests.TestSupport.TempFileTestBase
     {
         /// <summary>

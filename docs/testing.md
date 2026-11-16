@@ -144,7 +144,7 @@ pyrevit clones add dev <path-to-repo>
 pyrevit attach dev default --installed
 ```
 
-In Revit, use DevTools **Debug > Unit Tests > Run All Tests**, a specific library module, or Agent Tests. Record required models/elements, engine capabilities and actual skips. IronPython 3 needs a separate clone attachment.
+In Revit, use DevTools **Debug > Unit Tests > Run All Tests**, a specific library module, or Agent Tests. `Run All Tests` skips the opt-in `test_revit_api_catalog`; run it with **Revit API Catalog Tests**. Record required models/elements, engine capabilities and actual skips. IronPython 3 needs a separate clone attachment.
 
 Set `PYREVIT_TEST_JUNIT_PATH` before launching Revit for XML evidence. Use a fresh destination per year/engine/run. Module results aggregate; rerunning a module replaces its result. Requested report-write failures and unexpected successes must fail the command, including on IronPython 2.7. Record the commit, Revit year, engine, fixture, command and outcome.
 

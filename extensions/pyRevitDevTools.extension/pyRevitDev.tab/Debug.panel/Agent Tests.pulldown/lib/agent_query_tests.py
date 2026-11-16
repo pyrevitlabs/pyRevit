@@ -1,7 +1,7 @@
 """Agent query runs on both engines: results, errors, timeouts, workspaces and records."""
 
 TEST_ENVIRONMENT = "Revit"
-TEST_LEVEL = "Integration"
+TEST_LEVEL = "E2E"
 
 
 import json
@@ -10,9 +10,6 @@ import os.path as op
 
 import agent_harness as harness
 from agent_harness import ENGINES, TestCase, run
-
-TEST_ENVIRONMENT = "Revit"
-TEST_LEVEL = "E2E"
 
 
 def _script_lines(response):

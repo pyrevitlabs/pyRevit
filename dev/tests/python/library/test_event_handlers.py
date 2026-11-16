@@ -1,7 +1,7 @@
 """Host-free tests for shared event-handler registration and cleanup."""
 
 TEST_ENVIRONMENT = "HostFree"
-TEST_LEVEL = "Integration"
+TEST_LEVEL = "Unit"
 
 
 import importlib.util
@@ -531,47 +531,62 @@ class PreSelectionChangedHostTests(unittest.TestCase):
         self.assertIn(handler, self.host._uiapp.ViewActivated.handlers)
 
 
+class _FailingApiContextQueue(_ApiContextQueue):
+    def Schedule(self, callback):
+        raise RuntimeError("no API context queue")
+
+
 class ExecuteInRevitContextTests(unittest.TestCase):
-    """Callbacks go through the runtime queue shared by every engine."""
+    """Report whether a callback was queued and run it only when it was."""
 
     def setUp(self):
-        """Load the events module as the CPython engine sees it."""
+        """Load the events module against the runtime queue shared by engines."""
         self.logger = _Logger()
         self.queue = _ApiContextQueue()
         self.events = load_events_module(
-            _AppDomain(), _HostApplication(), "cpython-exec", self.logger, self.queue
+            _AppDomain(), _HostApplication(), "context-exec", self.logger, self.queue
         )
         self.calls = []
 
-    def test_callback_runs_when_revit_executes_the_event(self):
-        """The callback waits for the ExternalEvent and then runs once."""
-        calls = self.calls
+    def _callback(self, *args, **kwargs):
+        self.calls.append((args, kwargs))
 
-        def callback(value, key=None):
-            calls.append((value, key))
+    def test_accepted_request_queues_and_runs_callback(self):
+        """An accepted request returns True and runs the callback once."""
+        queued = self.events.execute_in_revit_context(self._callback, 1, key="value")
 
-        self.assertTrue(
-            self.events.execute_in_revit_context(callback, "value", key="option")
+        self.assertTrue(queued)
+        self.assertEqual(self.calls, [])
+        self.queue.execute()
+        self.queue.execute()
+        self.assertEqual(self.calls, [((1,), {"key": "value"})])
+        self.assertEqual(self.logger.errors, [])
+
+    def test_denied_request_discards_callback(self):
+        """A denied request returns False and never runs the callback."""
+        self.queue.response = "Denied"
+
+        queued = self.events.execute_in_revit_context(self._callback)
+
+        self.assertFalse(queued)
+        self.queue.execute()
+        self.assertEqual(self.calls, [])
+        self.assertTrue(self.logger.errors)
+
+    def test_schedule_failure_discards_callback(self):
+        """A queue that cannot schedule returns False and logs the reason."""
+        events = load_events_module(
+            _AppDomain(),
+            _HostApplication(),
+            "failing-exec",
+            self.logger,
+            _FailingApiContextQueue(),
         )
 
-        self.assertEqual([], calls)
-        self.queue.execute()
-        self.queue.execute()
-        self.assertEqual([("value", "option")], calls)
-        self.assertEqual([], self.logger.errors)
+        queued = events.execute_in_revit_context(self._callback)
 
-    def test_denied_request_discards_the_callback_and_logs(self):
-        """A refused ExternalEvent request never runs the callback later."""
-        calls = self.calls
-
-        def callback():
-            calls.append("ran")
-
-        self.queue.response = "Denied"
-        self.assertFalse(self.events.execute_in_revit_context(callback))
-        self.queue.execute()
-
-        self.assertEqual([], calls)
+        self.assertFalse(queued)
+        self.assertEqual(self.calls, [])
         self.assertTrue(self.logger.errors)
 
     def test_failing_callback_is_logged(self):

@@ -9,11 +9,10 @@ import ast
 import os.path as op
 import types
 import unittest
+from pathlib import Path
 
 
-ROOT_DIR = op.dirname(
-    op.dirname(op.dirname(op.dirname(op.dirname(op.abspath(__file__)))))
-)
+ROOT_DIR = str(Path(__file__).resolve().parents[4])
 GENERICCOMPS = op.join(
     ROOT_DIR, "pyrevitlib", "pyrevit", "extensions", "genericcomps.py"
 )
