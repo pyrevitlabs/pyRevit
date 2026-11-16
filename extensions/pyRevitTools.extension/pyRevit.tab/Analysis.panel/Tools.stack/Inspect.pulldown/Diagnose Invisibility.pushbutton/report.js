@@ -70,6 +70,7 @@
       this.focusTimers = new Map();
       this.inspected = null;
       this.pendingInspect = null;
+      this.inspectSeq = 0;
       this.requests = new Map();
       this.requestSeq = 0;
       this.viewers = new Map();
@@ -972,9 +973,9 @@
             filter.level = "";
             filter.categories.clear();
             clearTimeout(this.focusTimers.get(viewId));
-            this.pendingInspect = { viewId, id: null };
+            const token = this.newInspectToken(viewId);
             this.run(e.currentTarget, "reveal_focus", { viewId, ids: null })
-              .then(() => this.run(e.currentTarget, "reveal_add_selection", { viewId }, "{0}"));
+              .then(() => this.run(e.currentTarget, "reveal_add_selection", { viewId, token }, "{0}"));
           },
         },
         this.s.revealAddSelection
@@ -1118,10 +1119,10 @@
 
     inspectRow(viewId, elementId) {
       this.inspected = { viewId, id: elementId, element: null };
-      this.pendingInspect = { viewId, id: elementId };
+      const token = this.newInspectToken(viewId);
       this.renderRevealList(viewId);
       this.renderInspected(viewId);
-      this.request("reveal_inspect", { viewId, elementId }).catch((error) =>
+      this.request("reveal_inspect", { viewId, elementId, token }).catch((error) =>
         this.toast(String(error.message || error), "error")
       );
     }
@@ -1129,8 +1130,8 @@
     /** Refresh the open card after a fix changed the view, without moving Revit's camera. */
     reinspect(viewId) {
       if (!this.inspected || this.inspected.viewId !== viewId) return;
-      this.pendingInspect = { viewId, id: this.inspected.id };
-      this.request("reveal_inspect", { viewId, elementId: this.inspected.id, zoom: false }).catch(() => {});
+      const token = this.newInspectToken(viewId);
+      this.request("reveal_inspect", { viewId, elementId: this.inspected.id, zoom: false, token }).catch(() => {});
     }
 
     /** Forget the open card of a view, and any answer still on its way for it. */
@@ -1139,15 +1140,21 @@
       if (this.pendingInspect && this.pendingInspect.viewId === viewId) this.pendingInspect = null;
     }
 
+    /** Start an inspect request: only the answer carrying the newest token is shown. */
+    newInspectToken(viewId) {
+      const token = ++this.inspectSeq;
+      this.pendingInspect = { viewId, token };
+      return token;
+    }
+
     /**
-     * Show a card Python sent, but only one the page asked for and still wants: an answer for an
-     * earlier row, or for a card closed meanwhile, is dropped. Add Revit selection is answered
-     * without a request of its own, so it registers a pending inspect for any element.
+     * Show a card Python sent, but only the answer to the newest inspect request of the view that
+     * was not closed meanwhile. Python echoes the token of the request, which is sent with both
+     * a row click and Add Revit selection; an older or unrequested answer is dropped.
      */
-    showInspected({ viewId, element }) {
+    showInspected({ viewId, element, token }) {
       const wanted = this.pendingInspect;
-      if (!wanted || wanted.viewId !== viewId || (wanted.id !== null && wanted.id !== element.id)) return;
-      this.pendingInspect = { viewId, id: element.id };
+      if (!wanted || wanted.viewId !== viewId || wanted.token !== token) return;
       this.inspected = { viewId, id: element.id, element };
       this.renderInspected(viewId);
       this.renderRevealList(viewId);

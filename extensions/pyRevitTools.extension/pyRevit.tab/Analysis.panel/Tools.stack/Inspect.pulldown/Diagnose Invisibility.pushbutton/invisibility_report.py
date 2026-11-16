@@ -891,10 +891,16 @@ class DiagnosisSession(object):
             self._view(payload["viewId"]),
             self._element(payload["elementId"]),
             payload.get("zoom", True),
+            payload.get("token"),
         )
         self._reply(request_id, True)
 
-    def _send_inspect(self, view, element, zoom):
+    def _send_inspect(self, view, element, zoom, token):
+        """Send the diagnosis of ``element`` to the page, echoing ``token``.
+
+        The page numbers its inspect requests and shows only the answer to the
+        newest one, so a late answer cannot replace a newer card.
+        """
         uidoc = self._uidoc()
         if zoom and uidoc.ActiveView.Id == view.Id:
             zoom_to(uidoc, view, element)
@@ -902,6 +908,7 @@ class DiagnosisSession(object):
             "inspect",
             {
                 "viewId": id_value(view.Id),
+                "token": token,
                 "element": self.element_payload(
                     element, view, collect_visible_ids(view)
                 ),
@@ -934,7 +941,10 @@ class DiagnosisSession(object):
             ).format(already_visible)
         if added:
             self._send_inspect(
-                self._view(payload["viewId"]), self._element(added[0]), True
+                self._view(payload["viewId"]),
+                self._element(added[0]),
+                True,
+                payload.get("token"),
             )
         self._reply(request_id, True, message)
 
