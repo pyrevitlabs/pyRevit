@@ -20,8 +20,8 @@ already holds, and reports light for anything before 2024 so the reported theme 
 against what the ribbon actually paints. Every consumer goes through that gate: `IconManager`,
 `PanelBuilder` and `SmartButtonScriptInitializer` share one detector, and the loader's live refresh
 calls `RevitThemeDetector.IsDarkRibbonTheme`. The Python Shell keeps its own copy of the rule in
-`PyRevitLabs.PyRevit.Shell.RevitThemeDetector`, and `pyrevit.forms.is_dark_theme()` has applied the
-same bound since the first release.
+`PyRevitLabs.PyRevit.Shell.RevitThemeDetector`, and `pyrevit.forms.is_dark_theme()` applies the
+same bound.
 
 Two consumers sit on top of it:
 

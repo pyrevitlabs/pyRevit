@@ -18,6 +18,8 @@ public sealed class CPythonEngineCollection {
 /// handle.
 /// </summary>
 [Collection(CPythonEngineCollection.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class CPythonEventsTests {
     /// <summary>Starts the CPython engine with <c>events.py</c> loaded.</summary>
     public CPythonEventsTests() {
@@ -63,6 +65,31 @@ public class CPythonEventsTests {
 
         Assert.IsType<PythonException>(failure);
         Assert.Equal(1, source.SubscriberCount);
+    }
+
+    /// <summary>
+    /// <c>execute_in_revit_context</c> hands the queue a delegate pythonnet accepts for an
+    /// <see cref="Action"/> parameter, and the callback runs once with its arguments when the
+    /// queue drains; a raising callback is caught inside its own wrapper and does not stop the
+    /// next one.
+    /// </summary>
+    [Fact]
+    public void ExecuteInRevitContext_SchedulesThroughAnActionParameter() {
+        ApiContextQueueDouble.RunPending();
+        CPythonEventsHost.Exec(
+            "ran = []\n"
+            + "def failing():\n"
+            + "    raise ValueError('boom')\n"
+            + "queued = [events.execute_in_revit_context(failing),\n"
+            + "          events.execute_in_revit_context(lambda v, key=None: ran.append((v, key)), 1, key=2)]");
+
+        Assert.Equal(1, CPythonEventsHost.EvalInt("int(queued == [True, True])"));
+        Assert.Equal(0, CPythonEventsHost.EvalInt("len(ran)"));
+
+        Assert.Equal(0, ApiContextQueueDouble.RunPending());
+        Assert.Equal(0, ApiContextQueueDouble.RunPending());
+
+        Assert.Equal(1, CPythonEventsHost.EvalInt("int(ran == [(1, 2)])"));
     }
 
     /// <summary>

@@ -13,9 +13,9 @@ namespace Build.Modules;
 [DependsOn<BuildShellModule>]
 /// <summary>
 /// Runs configuration backend, CPython interpreter lifecycle, CPython env vars and event handler,
-/// agent runtime guard, renderer load-context, <c>pyrevit.forms</c> engine parity, and
-/// compatibility tests after their build outputs are available, plus the Python 3 compatibility
-/// checker's own unit tests.
+/// agent runtime guard, doctor product catalog, renderer load-context, <c>pyrevit.forms</c> engine
+/// parity, and compatibility tests after their build outputs are available, plus the Python 3
+/// compatibility checker's own unit tests.
 /// </summary>
 /// <remarks>
 /// The checker tests need Python 3.10 or newer on <c>PATH</c> as <c>python</c>, <c>python3</c> or
@@ -72,6 +72,13 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
 
         await RunTestsAsync(
             context,
+            PyRevitPaths.DoctorTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        await RunTestsAsync(
+            context,
             PyRevitPaths.RendererTestProject,
             configuration,
             [],
@@ -120,7 +127,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                     "-f",
                     framework,
                     "--filter",
-                    "FullyQualifiedName~PyRevitConfigsSeedTests|FullyQualifiedName~RevitProductDataTests|FullyQualifiedName~SharedHostVersionTests|FullyQualifiedName~BelowMinimumProductReportingTests|FullyQualifiedName~AttachableProductTests|FullyQualifiedName~AttachableProductFilterTests|FullyQualifiedName~PyRevitBuildVersionTests|FullyQualifiedName~DeployedVersionTests|FullyQualifiedName~SystemPathTests|FullyQualifiedName~PyRevitInstallScopeTests",
+                    "FullyQualifiedName~PyRevitConfigsSeedTests|FullyQualifiedName~RevitProductDataTests|FullyQualifiedName~SharedHostVersionTests|FullyQualifiedName~BelowMinimumProductReportingTests|FullyQualifiedName~AttachableProductTests|FullyQualifiedName~AttachableProductFilterTests|FullyQualifiedName~PyRevitBuildVersionTests|FullyQualifiedName~DeployedVersionTests|FullyQualifiedName~SystemPathTests|FullyQualifiedName~PyRevitInstallScopeTests|FullyQualifiedName~PyRevitRunnerCommandTests|FullyQualifiedName~PyRevitCloneIdentityTests|FullyQualifiedName~PathComparisonTests|FullyQualifiedName~PyRevitReleaseAssetsTests",
                 ],
                 cancellationToken);
 
@@ -133,7 +140,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                 "-f",
                 "net8.0-windows",
                 "--filter",
-                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests|FullyQualifiedName~DevToolsPanelButtonTests.TestPanelButtonWithBundle|FullyQualifiedName~DevToolsPanelButtonTests.TestBundleTestsPulldownFromDevToolsExtension|FullyQualifiedName~DynamoGraphSelectionTests",
+                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests|FullyQualifiedName~DevToolsPanelButtonTests.TestPanelButtonWithBundle|FullyQualifiedName~DevToolsPanelButtonTests.TestBundleTestsPulldownFromDevToolsExtension|FullyQualifiedName~DynamoGraphSelectionTests|FullyQualifiedName~ParsedExtensionHashTests|TestCategory=HostFree",
             ],
             cancellationToken);
 

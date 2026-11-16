@@ -18,8 +18,12 @@ Read `revit-scripting` first. Check API names with `lookup_revit_api`. To create
   try:
       t = DB.Transaction(fam_doc, "Edit family")
       t.Start()
-      fam_doc.FamilyManager.NewType("900 x 2100")
-      t.Commit()
+      try:
+          fam_doc.FamilyManager.NewType("900 x 2100")
+          t.Commit()
+      finally:
+          if t.HasStarted() and not t.HasEnded():
+              t.RollBack()
       from pyrevit.revit.db.create import FamilyLoaderOptionsHandler
       fam_doc.LoadFamily(doc, FamilyLoaderOptionsHandler())
   finally:
@@ -35,7 +39,7 @@ The run guard, and the dry-run rollback, cover the **project** document only.
 - **The project change is `LoadFamily`.** It's part of the guarded run, so it's rolled back by a dry run and needs approval under policy `ask`.
 - **Close without saving:** always call `fam_doc.Close(False)`, in a `finally`.
 - **Reloading replaces the `Family` object.** After `LoadFamily` brings an edited family back, the `Family` you edited is no longer valid (`IsValidObject` is false). Keep its name before editing, and look the family up again by name to read it afterwards.
-- **Save only on request:** don't call `fam_doc.Save()` or `SaveAs()` unless the user asked to change the family file on disk. A family from `EditFamily` or `NewFamilyDocument` can be saved; the project open when the run started, and any file you opened with `OpenDocumentFile`, can't.
+- **No saving from a run:** the guard blocks `Save` and `SaveAs` for every document that was open, created or opened during the run, including a family from `EditFamily` or `NewFamilyDocument`; the call fails with "Saving failed" and the response lists it in `blocked`. Load the family into the project instead, and ask the user to save a family file in Revit when they want one (see `revit-files`).
 
 ## Family parameters
 
@@ -70,4 +74,4 @@ Create a type with `fm.NewType` before `SetFormula`. To get the parameter and fo
 - [ ] The family's types and parameter values, queried after loading, are the ones asked for.
 - [ ] A geometry change was checked on a placed instance or in a view with `capture_view`.
 - [ ] Every family document you opened is closed: it's no longer in `app.Documents`.
-- [ ] The family file on disk is unchanged unless the user asked to save it.
+- [ ] The family file on disk is unchanged; any save is left to the user in Revit.

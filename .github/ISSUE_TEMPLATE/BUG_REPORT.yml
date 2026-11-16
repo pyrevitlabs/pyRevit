@@ -14,7 +14,7 @@ body:
         ## 🚧🚧 Revit 2025 🚧🚧
         pyRevit 4.8.x is not compatible with Revit 2025. 
         Use pyRevit 5.0.0+, it is backwards compatible.
-        Latest WIP version can be found at [this page](https://www.pyrevitlabs.io/)
+        Latest WIP version can be found at [this page](https://pyrevitlabs.io/)
         ## 🚧🚧 Revit <2021 🚧🚧
         Starting pyRevit 7.x, supporting Revit versions are reduced to 2021+. Don't expect bug fixes or features to be backwards ported.
         ## 🚧 Endpoint Protection / Antivirus Software 🚧

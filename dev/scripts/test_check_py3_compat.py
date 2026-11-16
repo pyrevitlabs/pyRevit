@@ -174,10 +174,6 @@ class NamespaceCompatibilityTests(unittest.TestCase):
                 "FuncAsEventHandler",
             ): "pyrevit.revit.events",
             (
-                "pyrevitlib/pyrevit/revit/events.py",
-                "_GenericExternalEventHandler",
-            ): "pyrevit.revit.events",
-            (
                 "pyrevitlib/pyrevit/revit/selection.py",
                 "PickByCategorySelectionFilter",
             ): "pyrevit.revit.selection",

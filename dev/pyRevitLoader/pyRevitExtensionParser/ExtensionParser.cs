@@ -57,6 +57,56 @@ namespace pyRevitExtensionParser
                 logger.Error(message);
         }
 
+        private static List<string> ReadAuthList(
+            JToken token,
+            string extensionJsonPath,
+            ref bool authDefinitionUnreadable)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+
+            var array = token as JArray;
+            if (array == null)
+            {
+                authDefinitionUnreadable = true;
+                LogAuthDefinitionUnreadable(extensionJsonPath);
+                return null;
+            }
+
+            if (array.Count == 0)
+                return null;
+
+            var values = new List<string>();
+            foreach (var item in array)
+            {
+                var value = item?.ToString();
+                if (!string.IsNullOrWhiteSpace(value))
+                    values.Add(value);
+            }
+
+            if (values.Count == 0)
+            {
+                authDefinitionUnreadable = true;
+                LogAuthDefinitionUnreadable(extensionJsonPath);
+                return null;
+            }
+
+            return values;
+        }
+
+        private static bool MentionsAuthDefinition(string jsonContent)
+        {
+            return jsonContent != null
+                && (jsonContent.IndexOf("authusers", StringComparison.OrdinalIgnoreCase) >= 0
+                    || jsonContent.IndexOf("authgroups", StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static void LogAuthDefinitionUnreadable(string extensionJsonPath)
+        {
+            LogError("Access list in " + extensionJsonPath +
+                " could not be read; the extension will not be loaded until it is fixed.");
+        }
+
         private static void LogParseException(string parsedFile, Exception ex)
         {
             if (ex == null)
@@ -273,7 +323,7 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Initializes the DefaultLocale from user configuration if not already set.
+        /// Sets DefaultLocale from user configuration, falling back to en_us when user_locale is empty.
         /// Should be called before parsing extensions to ensure locale-aware localization.
         /// If locale has changed since last initialization, all caches are cleared.
         /// </summary>
@@ -290,10 +340,7 @@ namespace pyRevitExtensionParser
                 ClearAllCaches();
             }
 
-            if (!string.IsNullOrEmpty(userLocale))
-            {
-                DefaultLocale = userLocale;
-            }
+            DefaultLocale = string.IsNullOrEmpty(userLocale) ? "en_us" : userLocale;
             _cachedLocale = userLocale;
             _localeInitialized = true;
         }
@@ -399,7 +446,11 @@ namespace pyRevitExtensionParser
         /// <returns>A single ParsedExtension if the path is valid and contains an extension, otherwise empty</returns>
         public static IEnumerable<ParsedExtension> ParseInstalledExtensions(string extensionPath, int revitYear = 0)
         {
-            if (string.IsNullOrWhiteSpace(extensionPath) || !Directory.Exists(extensionPath))
+            if (string.IsNullOrWhiteSpace(extensionPath))
+                yield break;
+
+            extensionPath = TrimTrailingSeparators(extensionPath);
+            if (!Directory.Exists(extensionPath))
                 yield break;
 
             // Ensure the directory has .extension or .lib suffix
@@ -425,18 +476,27 @@ namespace pyRevitExtensionParser
 
             foreach (var extensionPath in extensionPaths)
             {
-                if (string.IsNullOrWhiteSpace(extensionPath) || !Directory.Exists(extensionPath))
+                if (string.IsNullOrWhiteSpace(extensionPath))
+                    continue;
+
+                var trimmedPath = TrimTrailingSeparators(extensionPath);
+                if (!Directory.Exists(trimmedPath))
                     continue;
 
                 // Ensure the directory has .extension or .lib suffix
-                if (!extensionPath.EndsWith(".extension", StringComparison.OrdinalIgnoreCase) &&
-                    !extensionPath.EndsWith(".lib", StringComparison.OrdinalIgnoreCase))
+                if (!trimmedPath.EndsWith(".extension", StringComparison.OrdinalIgnoreCase) &&
+                    !trimmedPath.EndsWith(".lib", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                var parsed = ParseExtension(extensionPath, revitYear);
+                var parsed = ParseExtension(trimmedPath, revitYear);
                 if (parsed != null)
                     yield return parsed;
             }
+        }
+
+        private static string TrimTrailingSeparators(string path)
+        {
+            return path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
 
         // Config caching is now handled inside PyRevitConfig.Load() itself.
@@ -517,12 +577,14 @@ namespace pyRevitExtensionParser
             List<string> authUsers = null;
             List<string> authGroups = null;
             string manifestName = null;
+            bool authDefinitionUnreadable = false;
             var extensionJsonPath = Path.Combine(extDir, "extension.json");
             if (FileExists(extensionJsonPath))
             {
+                string jsonContent = null;
                 try
                 {
-                    var jsonContent = File.ReadAllText(extensionJsonPath);
+                    jsonContent = File.ReadAllText(extensionJsonPath);
                     var json = JObject.Parse(jsonContent);
 
                     manifestName = json["name"]?.ToString();
@@ -557,39 +619,17 @@ namespace pyRevitExtensionParser
                         rocketModeCompatible = rocketModeValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     }
 
-                    // Read authusers if present (list of authorized usernames)
-                    var authUsersArray = json["authusers"] as JArray;
-                    if (authUsersArray != null && authUsersArray.Count > 0)
-                    {
-                        authUsers = new List<string>();
-                        foreach (var item in authUsersArray)
-                        {
-                            var user = item?.ToString();
-                            if (!string.IsNullOrEmpty(user))
-                            {
-                                authUsers.Add(user);
-                            }
-                        }
-                    }
-
-                    // Read authgroups if present (list of authorized Windows security groups)
-                    var authGroupsArray = json["authgroups"] as JArray;
-                    if (authGroupsArray != null && authGroupsArray.Count > 0)
-                    {
-                        authGroups = new List<string>();
-                        foreach (var item in authGroupsArray)
-                        {
-                            var group = item?.ToString();
-                            if (!string.IsNullOrEmpty(group))
-                            {
-                                authGroups.Add(group);
-                            }
-                        }
-                    }
+                    authUsers = ReadAuthList(json["authusers"], extensionJsonPath, ref authDefinitionUnreadable);
+                    authGroups = ReadAuthList(json["authgroups"], extensionJsonPath, ref authDefinitionUnreadable);
                 }
                 catch (Exception ex)
                 {
                     LogParseException(extensionJsonPath, ex);
+                    if (MentionsAuthDefinition(jsonContent))
+                    {
+                        authDefinitionUnreadable = true;
+                        LogAuthDefinitionUnreadable(extensionJsonPath);
+                    }
                 }
             }
 
@@ -628,7 +668,8 @@ namespace pyRevitExtensionParser
                 RocketModeCompatible = rocketModeCompatible,
                 DeclaredPythonEngine = declaredPythonEngine,
                 AuthorizedUsers = authUsers,
-                AuthorizedGroups = authGroups
+                AuthorizedGroups = authGroups,
+                AuthDefinitionUnreadable = authDefinitionUnreadable
             };
 
             ReorderByLayout(parsedExtension, parsedExtension, null);
@@ -676,20 +717,47 @@ namespace pyRevitExtensionParser
 
             if (component.LayoutOrder != null && component.LayoutOrder.Count > 0)
             {
-                // Build reordered list (first pass: add matching components)
                 var reorderedChildren = new List<ParsedComponent>();
+                var lastLayoutIndex = component.LayoutOrder.Count - 1;
 
-                foreach (var layoutItem in component.LayoutOrder)
+                for (int idx = 0; idx < component.LayoutOrder.Count; idx++)
                 {
-                    // Skip separator and slideout markers in first pass
-                    if (layoutItem.Contains("---") || layoutItem.Contains(">>>"))
-                        continue;
+                    var layoutItem = component.LayoutOrder[idx];
 
-                    // Find matching component by DisplayName
+                    if (layoutItem.Contains("---"))
+                    {
+                        if (idx < lastLayoutIndex)
+                        {
+                            reorderedChildren.Add(new ParsedComponent
+                            {
+                                Name = "---",
+                                DisplayName = "---",
+                                Type = CommandComponentType.Separator,
+                                Directory = component.Directory
+                            });
+                        }
+                        continue;
+                    }
+
+                    if (layoutItem.Contains(">>>"))
+                    {
+                        if (idx < lastLayoutIndex)
+                        {
+                            reorderedChildren.Add(new ParsedComponent
+                            {
+                                Name = ">>>",
+                                DisplayName = ">>>",
+                                Type = CommandComponentType.Separator,
+                                HasSlideout = true,
+                                Directory = component.Directory
+                            });
+                        }
+                        continue;
+                    }
+
                     var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
                     if (matchingComponent != null && !reorderedChildren.Contains(matchingComponent))
                     {
-                        // Apply custom title if specified in LayoutItemTitles
                         if (component.LayoutItemTitles != null &&
                             component.LayoutItemTitles.ContainsKey(layoutItem))
                         {
@@ -697,40 +765,6 @@ namespace pyRevitExtensionParser
                         }
 
                         reorderedChildren.Add(matchingComponent);
-                    }
-                }
-
-                // Second pass: insert separators and slideouts at their positions
-                for (int idx = 0; idx < component.LayoutOrder.Count; idx++)
-                {
-                    var layoutItem = component.LayoutOrder[idx];
-                    var insertIndex = Math.Min(idx, reorderedChildren.Count);
-
-                    // Check if this is a separator or slideout marker
-                    if (layoutItem.Contains("---") && idx < component.LayoutOrder.Count - 1)
-                    {
-                        // Create a separator component and insert at position
-                        var separator = new ParsedComponent
-                        {
-                            Name = "---",
-                            DisplayName = "---",
-                            Type = CommandComponentType.Separator,
-                            Directory = component.Directory
-                        };
-                        reorderedChildren.Insert(insertIndex, separator);
-                    }
-                    else if (layoutItem.Contains(">>>") && idx < component.LayoutOrder.Count - 1)
-                    {
-                        // Create a slideout marker component and insert at position
-                        var slideout = new ParsedComponent
-                        {
-                            Name = ">>>",
-                            DisplayName = ">>>",
-                            Type = CommandComponentType.Separator,  // Slideout acts like a separator
-                            HasSlideout = true,  // Mark it as a slideout marker
-                            Directory = component.Directory
-                        };
-                        reorderedChildren.Insert(insertIndex, slideout);
                     }
                 }
 
@@ -1798,6 +1832,12 @@ namespace pyRevitExtensionParser
                             var listValue = ExtractPythonList(trimmedLine);
                             if (listValue != null && listValue.Count > 0)
                                 result.Author = string.Join("\n", listValue);
+                            else if (listValue == null && IsQuotedValue(trimmedLine))
+                            {
+                                var authorsText = ExtractPythonConstantValue(trimmedLine);
+                                if (!string.IsNullOrEmpty(authorsText))
+                                    result.Author = authorsText;
+                            }
                         }
                         else if (trimmedLine.StartsWith("__author__"))
                         {
@@ -1875,6 +1915,66 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Returns true when the value assigned on a <c>name = value</c> line starts with a string quote.
+        /// </summary>
+        private static bool IsQuotedValue(string line)
+        {
+            var separator = line.IndexOf('=');
+            if (separator < 0)
+                return false;
+            var value = line.Substring(separator + 1).TrimStart();
+            return value.StartsWith("\"") || value.StartsWith("'");
+        }
+
+        /// <summary>
+        /// Removes a trailing <c>#</c> comment that sits outside any quoted string and trims the result.
+        /// </summary>
+        private static string StripTrailingComment(string value)
+        {
+            var quoteChar = '\0';
+            var quoteLength = 0;
+            for (int i = 0; i < value.Length; i++)
+            {
+                var ch = value[i];
+                if (quoteChar != '\0')
+                {
+                    if (ch == '\\')
+                    {
+                        i++;
+                    }
+                    else if (ch == quoteChar && HasRun(value, i, quoteChar, quoteLength))
+                    {
+                        i += quoteLength - 1;
+                        quoteChar = '\0';
+                    }
+                }
+                else if (ch == '"' || ch == '\'')
+                {
+                    quoteChar = ch;
+                    quoteLength = HasRun(value, i, ch, 3) ? 3 : 1;
+                    i += quoteLength - 1;
+                }
+                else if (ch == '#')
+                {
+                    return value.Substring(0, i).Trim();
+                }
+            }
+            return value.Trim();
+        }
+
+        private static bool HasRun(string value, int index, char ch, int length)
+        {
+            if (index + length > value.Length)
+                return false;
+            for (int offset = 0; offset < length; offset++)
+            {
+                if (value[index + offset] != ch)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Extracts a Python list from a line like: __context__ = ['OST_Walls', 'OST_TextNotes']
         /// </summary>
         private static List<string> ExtractPythonList(string line)
@@ -1882,7 +1982,7 @@ namespace pyRevitExtensionParser
             var parts = line.Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 2)
             {
-                var value = parts[1].Trim();
+                var value = StripTrailingComment(parts[1]);
                 // Check if it's a list literal
                 if (value.StartsWith("[") && value.EndsWith("]"))
                 {
@@ -1978,7 +2078,7 @@ namespace pyRevitExtensionParser
                 if (line.Contains("\"\"\""))
                 {
                     var lastQuotePos = line.LastIndexOf("\"\"\"");
-                    if (lastQuotePos > 0)
+                    if (lastQuotePos >= 0)
                     {
                         // Strip the just-appended line + newline and replace with the
                         // content up to (but not including) the closing triple quote.
@@ -2022,10 +2122,7 @@ namespace pyRevitExtensionParser
                     return ProcessPythonEscapeSequences(quotedValue);
 
                 // If no quotes, return the value as-is (for unquoted numbers, etc.)
-                // Remove any trailing comments
-                var commentIndex = value.IndexOf('#');
-                if (commentIndex >= 0)
-                    value = value.Substring(0, commentIndex).Trim();
+                value = StripTrailingComment(value);
 
                 return string.IsNullOrEmpty(value) ? null : value;
             }
@@ -2040,7 +2137,7 @@ namespace pyRevitExtensionParser
             var parts = line.Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 2)
             {
-                var value = parts[1].Trim().ToLowerInvariant();
+                var value = StripTrailingComment(parts[1]).ToLowerInvariant();
                 if (value == "true")
                     return true;
                 if (value == "false")
@@ -2158,7 +2255,7 @@ namespace pyRevitExtensionParser
             var parts = line.Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 2)
             {
-                var value = parts[1].Trim();
+                var value = StripTrailingComment(parts[1]);
                 // Check if it's a dictionary literal
                 if (value.StartsWith("{") && value.EndsWith("}"))
                 {

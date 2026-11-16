@@ -42,6 +42,20 @@ public partial class McpServerTests {
     }
 
     [Fact]
+    public void AnAutomationForwardsTheDocumentItWasMeantFor() {
+        host.Handler = request => request.Value<string>("method") == "get_context" ? DocumentContext(request) : RunResponse(request);
+
+        Serve(ToolCall(1, "run_automation", new JObject {
+            ["id"] = "pyrevit.levels.resolve",
+            ["inputs"] = new JObject { ["name"] = "Level 1" },
+            ["document"] = "second",
+        }));
+
+        var sent = Assert.Single(host.RequestsFor("run"))["params"];
+        Assert.Equal("second", sent.Value<string>("document"));
+    }
+
+    [Fact]
     public void AnAutomationThatNeedsADocumentStopsBeforeRunningWhenNoneIsOpen() {
         host.Handler = request => NoDocumentContext(request);
 
@@ -270,6 +284,22 @@ public partial class McpServerTests {
         Assert.Empty(host.Requests);
     }
 
+    [Theory]
+    [InlineData("pyrevit.units.parse-length", "value")]
+    [InlineData("pyrevit.units.parse-slope", "value")]
+    [InlineData("pyrevit.levels.resolve", "name")]
+    [InlineData("pyrevit.elements.by-category", "categories,limit")]
+    public void TheListingShowsTheInputsOfAHandWiredOperation(string id, string names) {
+        var automation = Enumerable.Range(0, 10)
+            .SelectMany(page => Payload(Single(ToolCall(1, "list_automation", new JObject { ["offset"] = page * 50, ["limit"] = 50 })))["operations"])
+            .Select(operation => operation["automation"])
+            .Single(entry => entry.Value<string>("id") == id);
+
+        Assert.True(automation.Value<bool>("invocable"));
+        Assert.Equal(names.Split(','), automation["inputs"].Select(input => input.Value<string>("name")));
+        Assert.True(automation["inputs"][0].Value<bool>("required"));
+    }
+
     [Fact]
     public void AMarkedAutomationRunsTheFixedScriptAsAQuery() {
         host.Handler = request => request.Value<string>("method") == "get_context" ? DocumentContext(request) : RunResponse(request);
@@ -317,5 +347,16 @@ public partial class McpServerTests {
         Assert.Equal("pyrevit", core.Value<string>("source"));
         Assert.Matches("^[0-9a-f]{64}$", core.Value<string>("sha256"));
         Assert.All(skills, skill => Assert.False(string.IsNullOrWhiteSpace(skill.Value<string>("description"))));
+    }
+
+    [Fact]
+    public void GetRunKeepsDateLikeStringsOfTheRecordedResponseUnchanged() {
+        host.AddRun("abc123def456", response: "{\"result\":{\"day\":\"2024-05-01T10:00:00.50Z\"}}");
+
+        var response = Single(ToolCall(1, "get_run", new JObject { ["run_id"] = "abc123def456" }));
+
+        Assert.False(IsError(response));
+        Assert.Contains("\"2024-05-01T10:00:00.50Z\"", Text(response));
+        Assert.DoesNotContain("T10:00:00.5Z", Text(response));
     }
 }

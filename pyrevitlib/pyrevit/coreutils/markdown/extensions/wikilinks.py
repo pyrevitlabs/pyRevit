@@ -2,7 +2,7 @@
 
 Converts [[WikiLinks]] to relative links.
 
-See <https://pythonhosted.org/Markdown/extensions/wikilinks.html>
+See <https://python-markdown.github.io/extensions/wikilinks/>
 for documentation.
 
 Original code Copyright [Waylan Limberg](http://achinghead.com/).
