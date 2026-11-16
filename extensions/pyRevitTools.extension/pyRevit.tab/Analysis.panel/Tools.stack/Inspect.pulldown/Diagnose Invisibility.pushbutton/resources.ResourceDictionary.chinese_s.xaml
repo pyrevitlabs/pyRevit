@@ -184,7 +184,7 @@
     <sys:String x:Key="ui_reveal_select_shown">选择显示的元素</sys:String>
     <sys:String x:Key="ui_reveal_filtered">在 Revit 中绘制 {1} 个中的 {0} 个</sys:String>
     <sys:String x:Key="ui_reveal_more_rows">还有 {0} 个。缩小筛选范围即可列出。</sys:String>
-    <sys:String x:Key="ui_reveal_row_hint">在 Revit 中显示此元素并说明它不可见的原因。</sys:String>
+    <sys:String x:Key="ui_reveal_row_hint">在 Revit 中显示此元素并说明它不可见的原因。 按住 Ctrl 或 Shift 点击可选择多个。</sys:String>
     <sys:String x:Key="ui_reveal_add_selection">添加 Revit 选择</sys:String>
     <sys:String x:Key="ui_reveal_add_selection_hint">在此视图中诊断 Revit 中选中的元素并绘制它们，无论大小。请在可见之处（例如其他视图或明细表）选择缺失的元素。</sys:String>
     <sys:String x:Key="ui_reveal_add_to_report">添加到报告</sys:String>

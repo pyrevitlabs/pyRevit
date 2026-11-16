@@ -177,7 +177,8 @@ _UI_STRINGS = {
     ),
     "revealRowHint": (
         "ui_reveal_row_hint",
-        "Show this element in Revit and explain why it is not visible.",
+        "Show this element in Revit and explain why it is not visible."
+        " Ctrl-click or Shift-click to select several.",
     ),
     "revealAddSelection": ("ui_reveal_add_selection", "Add Revit selection"),
     "revealAddSelectionHint": (

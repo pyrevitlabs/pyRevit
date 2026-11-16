@@ -184,7 +184,7 @@
     <sys:String x:Key="ui_reveal_select_shown">Select shown</sys:String>
     <sys:String x:Key="ui_reveal_filtered">Drawing {0} of {1} in Revit</sys:String>
     <sys:String x:Key="ui_reveal_more_rows">{0} more. Narrow the filter to list them.</sys:String>
-    <sys:String x:Key="ui_reveal_row_hint">Show this element in Revit and explain why it is not visible.</sys:String>
+    <sys:String x:Key="ui_reveal_row_hint">Show this element in Revit and explain why it is not visible. Ctrl-click or Shift-click to select several.</sys:String>
     <sys:String x:Key="ui_reveal_add_selection">Add Revit selection</sys:String>
     <sys:String x:Key="ui_reveal_add_selection_hint">Diagnose the elements selected in Revit in this view and draw them, whatever their size. Select the missing element where it is visible, for example in another view or a schedule.</sys:String>
     <sys:String x:Key="ui_reveal_add_to_report">Add to report</sys:String>

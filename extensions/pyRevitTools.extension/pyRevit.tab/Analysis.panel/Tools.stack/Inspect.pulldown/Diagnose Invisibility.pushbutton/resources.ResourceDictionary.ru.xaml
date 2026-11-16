@@ -184,7 +184,7 @@
     <sys:String x:Key="ui_reveal_select_shown">Выбрать показанные</sys:String>
     <sys:String x:Key="ui_reveal_filtered">В Revit нарисовано {0} из {1}</sys:String>
     <sys:String x:Key="ui_reveal_more_rows">Ещё {0}. Сузьте фильтр, чтобы увидеть их.</sys:String>
-    <sys:String x:Key="ui_reveal_row_hint">Показать этот элемент в Revit и объяснить, почему он не виден.</sys:String>
+    <sys:String x:Key="ui_reveal_row_hint">Показать этот элемент в Revit и объяснить, почему он не виден. Ctrl или Shift + щелчок — выбрать несколько.</sys:String>
     <sys:String x:Key="ui_reveal_add_selection">Добавить выбор из Revit</sys:String>
     <sys:String x:Key="ui_reveal_add_selection_hint">Диагностировать выбранные в Revit элементы в этом виде и нарисовать их независимо от размера. Выберите пропавший элемент там, где он виден, например на другом виде или в спецификации.</sys:String>
     <sys:String x:Key="ui_reveal_add_to_report">Добавить в отчёт</sys:String>

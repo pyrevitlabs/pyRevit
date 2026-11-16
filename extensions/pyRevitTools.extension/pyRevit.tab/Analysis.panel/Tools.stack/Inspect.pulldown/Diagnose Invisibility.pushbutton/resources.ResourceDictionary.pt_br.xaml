@@ -184,7 +184,7 @@
     <sys:String x:Key="ui_reveal_select_shown">Selecionar exibidos</sys:String>
     <sys:String x:Key="ui_reveal_filtered">Desenhando {0} de {1} no Revit</sys:String>
     <sys:String x:Key="ui_reveal_more_rows">Mais {0}. Restrinja o filtro para listá-los.</sys:String>
-    <sys:String x:Key="ui_reveal_row_hint">Mostrar este elemento no Revit e explicar por que ele não está visível.</sys:String>
+    <sys:String x:Key="ui_reveal_row_hint">Mostrar este elemento no Revit e explicar por que ele não está visível. Ctrl ou Shift + clique para selecionar vários.</sys:String>
     <sys:String x:Key="ui_reveal_add_selection">Adicionar seleção do Revit</sys:String>
     <sys:String x:Key="ui_reveal_add_selection_hint">Diagnostica nesta vista os elementos selecionados no Revit e os desenha, independentemente do tamanho. Selecione o elemento ausente onde ele estiver visível, por exemplo em outra vista ou em uma tabela.</sys:String>
     <sys:String x:Key="ui_reveal_add_to_report">Adicionar ao relatório</sys:String>

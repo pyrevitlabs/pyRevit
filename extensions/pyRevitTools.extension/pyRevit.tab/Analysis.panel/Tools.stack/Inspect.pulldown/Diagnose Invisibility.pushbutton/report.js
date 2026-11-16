@@ -65,6 +65,8 @@
       this.revealed = new Map();
       this.revealOff = new Map();
       this.revealFilters = new Map();
+      this.revealPicks = new Map();
+      this.revealOrder = new Map();
       this.focusTimers = new Map();
       this.inspected = null;
       this.requests = new Map();
@@ -145,6 +147,8 @@
         this.revealed.delete(id);
         this.revealOff.delete(id);
         this.revealFilters.delete(id);
+        this.revealPicks.delete(id);
+        this.revealOrder.delete(id);
         if (this.inspected && this.inspected.viewId === id) this.inspected = null;
         const section = this.viewSection(id);
         if (section) section.remove();
@@ -839,6 +843,16 @@
       return filter;
     }
 
+    /** Rows picked in a view's reveal table, and the row a Shift-click range starts from. */
+    revealPick(viewId) {
+      let pick = this.revealPicks.get(viewId);
+      if (!pick) {
+        pick = { ids: new Set(), anchor: null };
+        this.revealPicks.set(viewId, pick);
+      }
+      return pick;
+    }
+
     revealFilterActive(filter) {
       return Boolean(filter.query.trim() || filter.categories.size || filter.level);
     }
@@ -1035,14 +1049,15 @@
       host.querySelector(".dvi-reveal-status").replaceChildren(...status);
 
       const limit = 200;
-      const open = this.inspected && this.inspected.viewId === viewId ? this.inspected.id : null;
+      const pick = this.revealPick(viewId);
+      this.revealOrder.set(viewId, shown.slice(0, limit).map((row) => row.id));
       const body = shown.slice(0, limit).map((row) =>
         h(
           "tr",
           {
-            class: `dvi-reveal-item${row.id === open ? " selected" : ""}`,
+            class: `dvi-reveal-item${pick.ids.has(row.id) ? " selected" : ""}`,
             title: this.s.revealRowHint,
-            onclick: () => this.inspectRow(viewId, row.id),
+            onclick: (e) => this.pickRow(viewId, row.id, e),
           },
           h(
             "td",
@@ -1067,9 +1082,41 @@
       );
     }
 
+    /**
+     * Click, Ctrl/Cmd-click (toggle) and Shift-click (range from the last clicked row) on the
+     * reveal table. One picked row opens its card; several show a bar to act on all of them.
+     */
+    pickRow(viewId, elementId, event) {
+      const pick = this.revealPick(viewId);
+      const order = this.revealOrder.get(viewId) || [];
+      const toggle = event.ctrlKey || event.metaKey;
+      if (event.shiftKey && pick.anchor !== null && order.includes(pick.anchor)) {
+        const from = order.indexOf(pick.anchor);
+        const to = order.indexOf(elementId);
+        if (!toggle) pick.ids.clear();
+        for (let i = Math.min(from, to); i <= Math.max(from, to); i++) pick.ids.add(order[i]);
+        window.getSelection().removeAllRanges();
+      } else if (toggle) {
+        if (pick.ids.has(elementId)) pick.ids.delete(elementId);
+        else pick.ids.add(elementId);
+        pick.anchor = elementId;
+      } else {
+        pick.ids = new Set([elementId]);
+        pick.anchor = elementId;
+      }
+      if (pick.ids.size === 1) {
+        this.inspectRow(viewId, [...pick.ids][0]);
+        return;
+      }
+      if (this.inspected && this.inspected.viewId === viewId) this.inspected = null;
+      this.renderRevealList(viewId);
+      this.renderInspected(viewId);
+    }
+
     inspectRow(viewId, elementId) {
       this.inspected = { viewId, id: elementId, element: null };
       this.renderRevealList(viewId);
+      this.renderInspected(viewId);
       this.request("reveal_inspect", { viewId, elementId }).catch((error) =>
         this.toast(String(error.message || error), "error")
       );
@@ -1093,6 +1140,11 @@
       if (!host) return;
       const inspected = this.inspected;
       const view = this.views.find((v) => v.id === viewId);
+      const pick = this.revealPick(viewId);
+      if (pick.ids.size > 1 && view) {
+        this.renderPicked(viewId, view, pick, host);
+        return;
+      }
       if (!inspected || inspected.viewId !== viewId || !inspected.element || !view) {
         host.hidden = true;
         host.replaceChildren();
@@ -1133,15 +1185,55 @@
       host.hidden = false;
     }
 
+    /** Bar for several picked rows: add them all to the report, select them in Revit, or clear. */
+    renderPicked(viewId, view, pick, host) {
+      const ids = [...pick.ids];
+      const missing = ids.filter((id) => !view.elements.some((e) => e.id === id));
+      const clear = () => {
+        pick.ids.clear();
+        pick.anchor = null;
+        this.renderRevealList(viewId);
+        this.renderInspected(viewId);
+      };
+      host.replaceChildren(
+        h(
+          "div",
+          { class: "dvi-inspect-bar multi" },
+          h("span", { class: "dvi-selection-count" }, format(this.s.selectedCount, ids.length)),
+          missing.length
+            ? h(
+                "button",
+                {
+                  class: "dvi-btn small",
+                  onclick: (e) => this.run(e.currentTarget, "add_ids", { elementIds: missing }, "{0}"),
+                },
+                `${this.s.revealAddToReport} (${missing.length})`
+              )
+            : null,
+          h(
+            "button",
+            { class: "dvi-btn small", onclick: (e) => this.run(e.currentTarget, "select", { elementIds: ids }) },
+            this.s.revealSelect
+          ),
+          h("button", { class: "dvi-btn small", onclick: clear }, this.s.clearSelection)
+        )
+      );
+      host.hidden = false;
+    }
+
     onReveal(summary) {
       const viewId = summary.viewId;
       this.revealFollow = summary.active ? Boolean(summary.follow) : false;
       if (summary.active) {
         this.revealed.set(viewId, summary);
+        const pick = this.revealPick(viewId);
+        const known = new Set(summary.rows.map((row) => row.id));
+        for (const id of [...pick.ids]) if (!known.has(id)) pick.ids.delete(id);
       } else {
         this.revealed.delete(viewId);
         this.revealOff.delete(viewId);
         this.revealFilters.delete(viewId);
+        this.revealPicks.delete(viewId);
         if (this.inspected && this.inspected.viewId === viewId) this.inspected = null;
       }
       const section = this.viewSection(viewId);
