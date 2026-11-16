@@ -433,6 +433,70 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ARollbackRevitRefusesKeepsItsReason() {
+            var document = new Document { ThrowOnRollback = true };
+            using (var guard = new AgentRunGuard(new UIApplication(), document)) {
+                guard.Arm("Test");
+
+                Assert.Throws<InvalidOperationException>(guard.RollBack);
+
+                Assert.True(guard.RollbackFailed);
+                Assert.Contains("Rollback failed.", guard.RollbackFailureReason);
+            }
+        }
+
+        [Fact]
+        public void ARollbackRevitLeavesPendingKeepsTheStatusAsItsReason() {
+            var document = new Document { RollbackStatus = TransactionStatus.Pending };
+            using (var guard = new AgentRunGuard(new UIApplication(), document)) {
+                guard.Arm("Test");
+
+                guard.RollBack();
+
+                Assert.True(guard.RollbackFailed);
+                Assert.Contains("Pending", guard.RollbackFailureReason);
+            }
+        }
+
+        [Fact]
+        public void ARollbackThatLeavesTracesSaysSo() {
+            var app = new UIApplication();
+            var document = new Document();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: new[] { new ElementId() });
+
+                guard.RollBack();
+
+                Assert.Contains("still shows the run's changes", guard.RollbackFailureReason);
+            }
+        }
+
+        [Fact]
+        public void TheFirstRollbackFailureReasonIsKept() {
+            var document = new Document { ThrowOnRollback = true };
+            var guard = new AgentRunGuard(new UIApplication(), document);
+            guard.Arm("Test");
+            Assert.Throws<InvalidOperationException>(guard.RollBack);
+            var first = guard.RollbackFailureReason;
+
+            guard.Dispose();
+
+            Assert.Equal(first, guard.RollbackFailureReason);
+        }
+
+        [Fact]
+        public void ACompletedRollbackHasNoFailureReason() {
+            using (var guard = new AgentRunGuard(new UIApplication(), new Document())) {
+                guard.Arm("Test");
+
+                guard.RollBack();
+
+                Assert.Null(guard.RollbackFailureReason);
+            }
+        }
+
+        [Fact]
         public void ARollbackThatRestoresTheModelDoesNotFailTheRun() {
             var app = new UIApplication();
             var document = new Document();

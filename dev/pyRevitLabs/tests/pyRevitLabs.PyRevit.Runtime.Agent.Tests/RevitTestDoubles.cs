@@ -5,7 +5,7 @@ using Autodesk.Revit.DB.Events;
 using pyRevitLabs.Json.Linq;
 
 namespace Autodesk.Revit.DB {
-    internal enum TransactionStatus { Uninitialized, Started, RolledBack, Committed }
+    internal enum TransactionStatus { Uninitialized, Started, RolledBack, Committed, Pending }
     internal enum FailureSeverity { Warning, Error }
     internal enum FailureProcessingResult { Continue, ProceedWithRollBack }
     internal sealed class ElementId { }

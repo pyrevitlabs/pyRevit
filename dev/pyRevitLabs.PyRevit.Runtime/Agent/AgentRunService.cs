@@ -102,6 +102,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case AgentRunVerdict.TransactionLeftOpen:
                     SetErrorIfMissing(context, "transaction_left_open",
                         "The script left a transaction open. Commit or roll back every transaction it starts.");
+                    RollBackLeftOpenRun(guard, context, runId);
                     return verdict;
                 case AgentRunVerdict.ScriptFailed:
                     SetErrorIfMissing(context, "engine_error",
@@ -157,6 +158,34 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     guard.RollBack();
                     return verdict;
             }
+        }
+
+        /// <summary>
+        /// Rolls back a run whose script left a transaction open, and adds the reason to the
+        /// run's error when the rollback fails.
+        /// </summary>
+        /// <remarks>
+        /// Revit may refuse to roll back the group while an inner transaction is still open or
+        /// pending. That refusal must not become a <c>host_error</c>: the error keeps its type and
+        /// gains the reason, and <c>decision</c> becomes <c>rollback_incomplete</c> from
+        /// <see cref="AgentRunGuard.RollbackFailed"/>. The host never holds or finishes the
+        /// script's own transactions.
+        /// </remarks>
+        private static void RollBackLeftOpenRun(AgentRunGuard guard, AgentScriptContext context, string runId) {
+            try {
+                guard.RollBack();
+            }
+            catch (Exception ex) {
+                logger.Error(ex, "Agent run {0}: rolling back a run that left a transaction open failed", runId);
+                if (!guard.RollbackFailed)
+                    guard.CleanupFailures.Add("Rolling back another document failed: " + ex.Message);
+            }
+            if (guard.RollbackFailed)
+                context.SetError(
+                    context.ErrorType,
+                    context.ErrorMessage + " The host could not roll back the run either, so its changes may remain "
+                        + "in the active document: " + guard.RollbackFailureReason,
+                    context.ErrorTraceback);
         }
 
         private static void Commit(AgentRunGuard guard, Document doc, AgentRunRequest request, string runId) {
@@ -294,6 +323,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 if (guard.RollbackFailed) {
                     response["status"] = "error";
                     response["decision"] = "rollback_incomplete";
+                    response["rollback_failure"] = guard.RollbackFailureReason;
                     SetErrorIfMissing(context, "rollback_incomplete",
                         "The host could not roll back the run, so its changes may remain in the active document. "
                         + "Ask the user to undo them in Revit or close the document without saving.");

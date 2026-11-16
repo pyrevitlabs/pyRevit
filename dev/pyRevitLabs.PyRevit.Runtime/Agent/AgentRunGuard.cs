@@ -98,6 +98,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool RollbackFailed { get; private set; }
 
         /// <summary>
+        /// Why the active document's rollback failed, the first time it did: the exception Revit
+        /// threw, the status it returned, or the element check that found the run's changes still
+        /// in the model. Null while <see cref="RollbackFailed"/> is false.
+        /// </summary>
+        public string RollbackFailureReason { get; private set; }
+
+        /// <summary>
         /// True when the script changed a document that was already open when the run started.
         /// Those changes are outside what the run may keep, so the run must fail.
         /// </summary>
@@ -161,16 +168,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private void RollBackGroup() {
             try {
                 if (HasOpenGroup) {
-                    if (group.RollBack() != TransactionStatus.RolledBack || changes.LeavesTracesAfterRollback(doc))
-                        RollbackFailed = true;
+                    var status = group.RollBack();
+                    if (status != TransactionStatus.RolledBack)
+                        FailRollback($"Revit returned {status} when rolling back the run's transaction group.");
+                    else if (changes.LeavesTracesAfterRollback(doc))
+                        FailRollback(TracesAfterRollback);
                 }
                 else if (group != null && !assimilationRequested && changes.LeavesTracesAfterRollback(doc))
-                    RollbackFailed = true;
+                    FailRollback(TracesAfterRollback);
             }
-            catch (Exception) {
-                RollbackFailed = true;
+            catch (Exception ex) {
+                FailRollback("Revit refused to roll back the run's transaction group: " + ex.Message);
                 throw;
             }
+        }
+
+        private const string TracesAfterRollback =
+            "The model still shows the run's changes after the rollback: an element it deleted is "
+            + "missing, or one it added is still there.";
+
+        private void FailRollback(string reason) {
+            RollbackFailed = true;
+            if (RollbackFailureReason == null)
+                RollbackFailureReason = reason;
         }
 
         public void Assimilate() {

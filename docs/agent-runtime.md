@@ -309,12 +309,11 @@ Rules the host enforces:
   "A managed exception was thrown".
 - When Revit rolls back one of the script's transactions because of an error-level
   failure, the run fails with `revit_failure`, even if the script itself didn't raise.
-- A transaction left open fails the run with `transaction_left_open`.
-- When Revit doesn't finish rolling back a transaction the script left open (`RollBack()`
-  returns `Pending` or any status other than `RolledBack`, or raises), the run fails with
-  `transaction_rollback_failed`, naming each transaction and what Revit returned. The host
-  doesn't keep or finish a pending transaction; it still rolls back the run's group, and
-  `decision: rollback_incomplete` means the changes may remain.
+- A transaction left open fails the run with `transaction_left_open`, and the host rolls
+  back the run's group right away. If Revit refuses that rollback, for example while an
+  inner transaction is still open or pending, the error keeps its type, its message gains
+  the reason, and the decision is `rollback_incomplete`. The host never holds or finishes
+  the script's own transactions.
 - A failure in the host itself reports `host_error` with decision `rolled_back`, or
   `not_run` when it failed before the script started (for example when Revit refused to start
   the run's transaction group, or the script engine failed to start), or
@@ -323,6 +322,9 @@ Rules the host enforces:
   run deleted is still missing, or one it added is still there), so its changes may remain
   in the active document. A script engine that reports a failure (`engine_error`) before the
   script's first statement ran is `not_run` too.
+- Every `rollback_incomplete` run, in any mode, carries `rollback_failure`: the exception
+  Revit threw, the status it returned, or the element check that found the changes still in
+  the model. The MCP tools return it with the compact result.
 - A script that runs past `timeout_s` (default 300 seconds, a finite number above 0, at
   most 3600) is stopped and fails with `timeout`. A watchdog thread flags the deadline, and
   the runner rewrites every loop header of the script (`for`, `while`, comprehensions) to
