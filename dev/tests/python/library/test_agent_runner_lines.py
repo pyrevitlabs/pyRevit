@@ -1326,12 +1326,17 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
         self.assertEqual([], errors)
 
     def test_non_string_sys_path_entries_do_not_break_imports(self):
-        """A None or bytes sys.path entry is skipped by the hook."""
+        """An empty or bytes sys.path entry is skipped by the hook.
+
+        Note:
+            A ``None`` entry takes the same falsy branch as the empty one, but
+            coverage.py raises on ``None`` in ``sys.path`` while measuring.
+        """
         folder = self._workspace({"quiet.py": "VALUE = 1\n"})
         saved_path = list(sys.path)
         self.addCleanup(lambda: sys.path.__setitem__(slice(None), saved_path))
         errors, _, _ = self._run(
-            "import sys\nsys.path.insert(0, None)\nsys.path.insert(0, b'x')\n"
+            "import sys\nsys.path.insert(0, '')\nsys.path.insert(0, b'x')\n"
             "import quiet, colorsys\n",
             workspace=folder,
         )
