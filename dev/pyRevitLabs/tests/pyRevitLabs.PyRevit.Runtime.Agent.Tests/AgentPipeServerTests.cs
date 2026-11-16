@@ -139,6 +139,54 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             }
         }
 
+        /// <summary>A client that disconnects while its request is still being handled cancels the token the handler received (#3994).</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void AClientThatDisconnectsMidRequestCancelsTheRequestToken() {
+            var pipeName = UniquePipeName();
+            using (var handling = new ManualResetEventSlim())
+            using (var callerGone = new ManualResetEventSlim())
+            using (var server = new AgentPipeServer(pipeName, (line, token) => {
+                handling.Set();
+                token.WaitHandle.WaitOne(Long);
+                if (token.IsCancellationRequested)
+                    callerGone.Set();
+                return line;
+            }, _ => { })) {
+                server.Start();
+                var client = Connect(pipeName, Long);
+                client.Send("block");
+                Assert.True(handling.Wait(Long));
+                Assert.False(callerGone.IsSet);
+
+                client.Dispose();
+
+                Assert.True(callerGone.Wait(Long));
+            }
+        }
+
+        /// <summary>A client that stays connected never cancels the token of its request.</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void AClientThatStaysConnectedDoesNotCancelTheRequestToken() {
+            var pipeName = UniquePipeName();
+            var cancelled = false;
+            using (var server = new AgentPipeServer(pipeName, (line, token) => {
+                Thread.Sleep(200);
+                cancelled = token.IsCancellationRequested;
+                return line;
+            }, _ => { })) {
+                server.Start();
+                using (var client = Connect(pipeName, Long)) {
+                    client.Send("one");
+                    Assert.Equal("one", client.Receive());
+                    client.Send("two");
+                    Assert.Equal("two", client.Receive());
+                }
+            }
+            Assert.False(cancelled);
+        }
+
         private static string BlockOn(string line, ManualResetEventSlim release) {
             if (line == "block" && !release.Wait(Long))
                 return "timed out";

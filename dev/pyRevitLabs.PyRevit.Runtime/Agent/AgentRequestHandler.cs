@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
@@ -27,7 +28,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
         private const double MaxStartTimeoutSeconds = 3600;
 
-        public static string Handle(string line) {
+        /// <param name="line">One JSON-RPC request line.</param>
+        /// <param name="callerGone">Cancelled when the client disconnects before the answer is sent.
+        /// Only a <c>run</c> request uses it, to discard a change set that waits for approval.</param>
+        public static string Handle(string line, CancellationToken callerGone = default) {
             JToken id = null;
             string method = null;
             var loadAtStart = AgentHost.SessionLoad;
@@ -43,7 +47,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 id = request["id"];
                 method = (request["method"] as JValue)?.Value as string ?? string.Empty;
                 var parameters = request["params"] as JObject ?? new JObject();
-                return Success(id, Dispatch(method, parameters, id));
+                return Success(id, Dispatch(method, parameters, id, callerGone));
             }
             catch (AgentException ex) {
                 return Failure(id, -32000, ex.Message, ex.Code, ex.Details);
@@ -63,7 +67,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        private static JToken Dispatch(string method, JObject parameters, JToken id) {
+        private static JToken Dispatch(string method, JObject parameters, JToken id, CancellationToken callerGone) {
             AgentHost.RefreshConfigIfChanged();
             if (method != "ping")
                 RequireEnabled();
@@ -89,6 +93,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
                     RefuseNestedCPython(runRequest);
                     runRequest.RequestId = RequestIdOf(id);
+                    runRequest.CallerGone = callerGone;
                     return InvokeRunOnMainThread(runRequest, parameters);
                 case "inspect_elements":
                     var ids = ParseParameters(() => AgentInspector.ParseIds(parameters));

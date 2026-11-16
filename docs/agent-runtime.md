@@ -623,6 +623,9 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
   `awaiting_approval`, which the final record replaces. A run folder that keeps it was interrupted at
   the prompt or before the final write (for example Revit exited), so its outcome is unknown: the user
   may have approved and the change committed. Check the model before repeating the run.
+  If the client that sent the run disconnects while the prompt is up, the host closes the prompt as if
+  the user had chosen No, rolls the run back and records `status` `rejected` with `decision`
+  `discarded_caller_gone`. Under policy `ask`, send the run again to get a new prompt.
 - `result.json`: present when the result was too large to return inline
 - `exports\`: present when the run exported files into its `export_dir`
 

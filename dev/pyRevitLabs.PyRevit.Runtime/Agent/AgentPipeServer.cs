@@ -39,6 +39,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// The wait between attempts doubles from half a second up to
     /// <see cref="MaxCreateRetryDelay"/>, so a fault has to last about two minutes to stop it.
     /// Stopping then calls the <c>stoppedListening</c> callback, so the host can stop advertising the pipe.
+    /// A handler receives a token that is cancelled when its client closes the connection before
+    /// the answer is written, so work that waits for a person, such as the approval prompt, can
+    /// stop waiting for a caller that is no longer there. The token is never cancelled for a
+    /// client that stays connected.
     /// Invariant: connections only receive and answer requests; the handler (through
     /// <see cref="AgentDispatcher"/>) is the only thing that orders work, so a connection whose
     /// request is still running, for example one its client cancelled, never keeps the next
@@ -55,7 +59,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int DefaultMaxConnections = 4;
 
         private readonly string pipeName;
-        private readonly Func<string, string> handleLine;
+        private readonly Func<string, CancellationToken, string> handleLine;
         private readonly Action<AgentPipeServer> stoppedListening;
         private readonly TimeSpan firstCreateRetryDelay;
         private readonly int maxConnections;
@@ -66,12 +70,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private Thread thread;
         private volatile bool listening = true;
 
-        public AgentPipeServer(string pipeName, Func<string, string> handleLine, Action<AgentPipeServer> stoppedListening)
+        public AgentPipeServer(string pipeName, Func<string, CancellationToken, string> handleLine, Action<AgentPipeServer> stoppedListening)
             : this(pipeName, handleLine, stoppedListening, FirstCreateRetryDelay) {
         }
 
         internal AgentPipeServer(
             string pipeName, Func<string, string> handleLine, Action<AgentPipeServer> stoppedListening, TimeSpan firstCreateRetryDelay,
+            int maxConnections = DefaultMaxConnections)
+            : this(pipeName, (line, _) => handleLine(line), stoppedListening, firstCreateRetryDelay, maxConnections) {
+        }
+
+        internal AgentPipeServer(
+            string pipeName, Func<string, string> handleLine, Action<AgentPipeServer> stoppedListening)
+            : this(pipeName, (line, _) => handleLine(line), stoppedListening, FirstCreateRetryDelay) {
+        }
+
+        internal AgentPipeServer(
+            string pipeName, Func<string, CancellationToken, string> handleLine, Action<AgentPipeServer> stoppedListening, TimeSpan firstCreateRetryDelay,
             int maxConnections = DefaultMaxConnections) {
             this.pipeName = pipeName;
             this.handleLine = handleLine;
@@ -202,25 +217,52 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private void Serve(NamedPipeServerStream pipe) {
             var reader = new BoundedLineReader(new StreamReader(pipe, Utf8));
             var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
+            var read = reader.ReadLineAsync();
             while (!stopping.IsCancellationRequested) {
                 string line;
                 try {
-                    line = ReadLineUnlessIdle(reader);
+                    line = ReadLineUnlessIdle(read);
                 }
                 catch (InvalidDataException ex) {
                     logger.Warn("Refusing an agent pipe request: {0}", ex.Message);
                     writer.WriteLine(AgentRequestLine.RefuseOversized(ex.Message));
+                    read = reader.ReadLineAsync();
                     continue;
                 }
                 if (line == null)
                     return;
-                if (!string.IsNullOrWhiteSpace(line))
-                    writer.WriteLine(handleLine(line));
+                if (string.IsNullOrWhiteSpace(line)) {
+                    read = reader.ReadLineAsync();
+                    continue;
+                }
+                read = reader.ReadLineAsync();
+                writer.WriteLine(HandleWhileWatching(line, read));
             }
         }
 
-        private string ReadLineUnlessIdle(BoundedLineReader reader) {
-            var read = reader.ReadLineAsync();
+        private string HandleWhileWatching(string line, Task<string> nextRead) {
+            using (var callerGone = new CancellationTokenSource()) {
+                nextRead.ContinueWith(
+                    finished => {
+                        if (finished.IsFaulted && finished.Exception.InnerException is InvalidDataException)
+                            return;
+                        if (finished.IsFaulted || finished.IsCanceled || finished.Result == null)
+                            TryCancel(callerGone);
+                    },
+                    TaskContinuationOptions.ExecuteSynchronously);
+                return handleLine(line, callerGone.Token);
+            }
+        }
+
+        private static void TryCancel(CancellationTokenSource source) {
+            try {
+                source.Cancel();
+            }
+            catch (ObjectDisposedException) {
+            }
+        }
+
+        private string ReadLineUnlessIdle(Task<string> read) {
             Task finished;
             using (var idle = CancellationTokenSource.CreateLinkedTokenSource(stopping.Token)) {
                 finished = Task.WhenAny(read, Task.Delay(IdleTimeout, idle.Token)).GetAwaiter().GetResult();
