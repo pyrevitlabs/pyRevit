@@ -109,7 +109,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </summary>
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
-        /// <param name="tabIconDecorator">Shows tab bundle icons before tab titles.</param>
+        /// <param name="tabIconDecorator">Must be the instance passed to <see cref="SessionManagerService"/>, which resets and refreshes it around each UI build.</param>
         /// <returns>A new ITabBuilder instance.</returns>
         public static ITabBuilder CreateTabBuilder(UIApplication uiApplication, ILogger logger, ITabIconDecorator tabIconDecorator)
         {
