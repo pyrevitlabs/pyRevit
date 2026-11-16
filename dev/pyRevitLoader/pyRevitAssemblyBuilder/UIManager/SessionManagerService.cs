@@ -100,6 +100,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
         ///    - Executes startup scripts if present
         ///    - Creates the UI
         ///
+        /// A load that finds no UI extensions still cleans up orphaned UI and runs the postload services,
+        /// so tabs left by a previous load are removed.
+        ///
         /// Each step is recorded on <see cref="LoadTimeline.Active"/>. When no load is active,
         /// this call begins and ends its own timeline.
         /// </remarks>
@@ -190,14 +193,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             // Get UI extensions
             step = timeline.StartSpan("GetUIExtensions");
-            var uiExtensions = _extensionManager?.GetInstalledUIExtensions()?.ToList();
-            LogStep(step, $"{uiExtensions?.Count ?? 0} extensions");
+            var uiExtensions = _extensionManager?.GetInstalledUIExtensions()?.ToList() ?? new List<ParsedExtension>();
+            LogStep(step, $"{uiExtensions.Count} extensions");
 
-            if (uiExtensions == null || uiExtensions.Count == 0)
+            if (uiExtensions.Count == 0)
             {
-                _logger.Warning("No UI extensions found or extension manager is null.");
-                _tabIconDecorator?.RefreshHeaders();
-                return;
+                _logger.Warning("No UI extensions found; previously loaded pyRevit UI will be cleaned up.");
             }
 
             // ── PASS 1: Build and load ALL assemblies ──────────────────────────
