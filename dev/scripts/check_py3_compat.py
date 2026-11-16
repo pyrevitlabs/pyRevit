@@ -199,6 +199,7 @@ PY3_LAZY_BUILTINS = {"map", "filter", "zip"}
 PYTHON_ENGINE_CPYTHON = "cpython"
 PYTHON_ENGINE_IRONPYTHON = "ironpython"
 CPYTHON_FIRST_LINE_MARKERS = ("python3", "cpython")
+CPYTHON_STARTUP_FILE_NAME = "startup.cpython.py"
 
 CLR_NAMED_INDEXERS = {"Parameter"}
 
@@ -474,21 +475,56 @@ def _is_clr_value(node):
     return isinstance(node, ast.Attribute) and node.attr[:1].isupper()
 
 
+def _scope_nodes(scope):
+    """Yield a scope's nodes without entering nested functions, lambdas or classes."""
+    pending = list(ast.iter_child_nodes(scope))
+    while pending:
+        node = pending.pop()
+        if isinstance(
+            node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
+        ):
+            continue
+        yield node
+        pending.extend(ast.iter_child_nodes(node))
+
+
+def _parameter_names(scope):
+    if not isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        return []
+    arguments = scope.args
+    names = [
+        argument.arg
+        for argument in arguments.posonlyargs + arguments.args + arguments.kwonlyargs
+    ]
+    names.extend(
+        argument.arg for argument in (arguments.vararg, arguments.kwarg) if argument
+    )
+    return names
+
+
 def _clr_value_names(scopes):
     """Return names whose every assignment in ``scopes`` is a CLR value or number.
 
-    Names that are never assigned there, such as parameters, are not included.
+    ``scopes`` runs from the innermost scope outwards, and each name follows the
+    innermost scope that binds it. A parameter binds its name, so it hides the
+    enclosing scopes' assignments; names bound only as parameters are not
+    included.
     """
-    verdicts = {}
+    decided = {}
     for scope in scopes:
-        for node in ast.walk(scope):
+        verdicts = {}
+        for node in _scope_nodes(scope):
             if not isinstance(node, ast.Assign):
                 continue
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     is_clr = _is_clr_value(node.value)
                     verdicts[target.id] = verdicts.get(target.id, True) and is_clr
-    return frozenset(name for name, is_clr in verdicts.items() if is_clr)
+        for name in _parameter_names(scope):
+            verdicts.setdefault(name, False)
+        for name, is_clr in verdicts.items():
+            decided.setdefault(name, is_clr)
+    return frozenset(name for name, is_clr in decided.items() if is_clr)
 
 
 CLR_NAMESPACE_INTERFACES = {
@@ -604,11 +640,11 @@ _BUNDLE_ENGINE_TYPE_PATTERNS = (
     re.compile(
         r"^engine[ \t]*:[ \t]*(?:#.*)?\r?\n"
         r"(?:(?:[ \t]+.*|[ \t]*)\r?\n)*?"
-        r"[ \t]+type[ \t]*:[ \t]*['\"]?([^'\"\s#,}]*)",
+        r"[ \t]+type[ \t]*:[ \t]*['\"]?[ \t]*([^'\"\s#,}]*)",
         re.IGNORECASE | re.MULTILINE,
     ),
     re.compile(
-        r"^engine[ \t]*:[ \t]*\{[^}]*?\btype[ \t]*:[ \t]*['\"]?([^'\"\s,}]*)",
+        r"^engine[ \t]*:[ \t]*\{[^}]*?\btype[ \t]*:[ \t]*['\"]?[ \t]*([^'\"\s,}]*)",
         re.IGNORECASE | re.MULTILINE,
     ),
 )
@@ -721,7 +757,7 @@ def _selects_cpython(bundle_engine_type, extension_engine_type, first_line):
         ``cpython`` declaration selects CPython, then the first-line rule.
     """
     if bundle_engine_type is not None and bundle_engine_type.strip():
-        bundle_engine = bundle_engine_type.lower()
+        bundle_engine = bundle_engine_type.strip().lower()
         if bundle_engine == PYTHON_ENGINE_CPYTHON:
             return True
         if bundle_engine == PYTHON_ENGINE_IRONPYTHON:
@@ -742,6 +778,10 @@ def _may_run_under_cpython(path, source):
         return True
     except ValueError:
         pass
+    if path.name.lower() == CPYTHON_STARTUP_FILE_NAME and path.parent.name.endswith(
+        ".extension"
+    ):
+        return True
     return _selects_cpython(
         _bundle_engine_type(path),
         _extension_engine_type(path),
@@ -1067,6 +1107,8 @@ def _form_native(ctx):
         if not isinstance(class_node, ast.ClassDef):
             continue
         for node, usage in _native_form_uses(class_node):
+            if _is_cpython_unreachable(node, ctx.parents):
+                continue
             yield (
                 node.lineno,
                 "FORM-NATIVE",

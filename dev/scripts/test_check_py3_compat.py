@@ -387,6 +387,28 @@ class NativeFormUseTests(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual(expected, _bundle_engine_type_from_regex(text))
 
+    def test_padded_bundle_engine_type_is_trimmed(self):
+        """Like the C# BundleParser, surrounding whitespace does not hide CPython."""
+        self.assertEqual(
+            "CPython", _bundle_engine_type_from_regex("engine:\n  type: ' CPython '\n")
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            script = self._bundle_script(
+                Path(directory), "engine:\n  type: ' CPython '\n"
+            )
+            self.assertTrue(_may_run_under_cpython(script, "import clr"))
+
+    def test_cpython_startup_script_is_checked(self):
+        """An extension's startup.cpython.py runs under CPython without markers."""
+        with tempfile.TemporaryDirectory() as directory:
+            extension = Path(directory) / "Ext.extension"
+            self.assertTrue(
+                _may_run_under_cpython(extension / "startup.cpython.py", "import clr")
+            )
+            self.assertFalse(
+                _may_run_under_cpython(extension / "startup.py", "import clr")
+            )
+
     def test_unknown_bundle_engine_type_replaces_the_extension_default(self):
         """Like the runtime, any non-blank bundle type drops the extension default."""
         with tempfile.TemporaryDirectory() as directory:
@@ -522,6 +544,39 @@ class ClrRuleScopeTests(unittest.TestCase):
                         List[DB.Curve](ordered),
                         List[DB.ElementId](element_ids),
                     )
+                """
+            ),
+        )
+
+    def test_assignments_in_other_functions_and_shadowing_parameters_are_ignored(self):
+        """Only lexically applicable assignments mark a name as a CLR value."""
+        self.assertEqual(
+            ["CLR-LIST", "CLR-LIST"],
+            self._codes(
+                """
+                count = 10
+
+                def unrelated():
+                    values = 10
+
+                def convert(values, count):
+                    return List[int](values), List[int](count)
+                """
+            ),
+        )
+
+    def test_ironpython_only_form_uses_are_not_flagged(self):
+        """``if IRONPY:`` keeps a native form use off CPython."""
+        self.assertEqual(
+            ["FORM-NATIVE"],
+            self._codes(
+                """\
+                #! python3
+                class Tool(forms.WPFWindow):
+                    def open(self, child):
+                        if IRONPY:
+                            child.Owner = self
+                        child.Owner = self
                 """
             ),
         )
