@@ -2,11 +2,11 @@
 
 This extension adds abbreviation handling to Python-Markdown.
 
-See <https://pythonhosted.org/Markdown/extensions/abbreviations.html>
+See <https://python-markdown.github.io/extensions/abbreviations/>
 for documentation.
 
 Oringinal code Copyright 2007-2008 [Waylan Limberg](http://achinghead.com/) and
- [Seemant Kulleen](http://www.kulleen.org/)
+ Seemant Kulleen
 
 All changes Copyright 2008-2014 The Python Markdown Project
 

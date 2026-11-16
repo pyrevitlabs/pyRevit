@@ -1,6 +1,6 @@
 """Table of Contents Extension for Python-Markdown.
 
-See <https://pythonhosted.org/Markdown/extensions/toc.html>
+See <https://python-markdown.github.io/extensions/toc/>
 for documentation.
 
 Original code Copyright 2008 [Jack Miller](http://codezen.org)

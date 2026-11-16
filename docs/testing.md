@@ -39,6 +39,7 @@ flowchart LR
 
     subgraph Labs["Labs tests"]
         CLI["pyRevitCLI.Tests"]
+        Doctor["pyRevitDoctor.Tests"]
         Common["pyRevitLabs.Common.Tests"]
         Emojis["pyRevitLabs.Emojis.Tests"]
         Config["pyRevitLabs.Configurations.Tests"]
@@ -57,7 +58,7 @@ flowchart LR
     Local --> Fixtures["Revit-tagged C# fixtures<br/>Fixture-specific host setup"]
 ```
 
-The implemented CI selection has **19 C# projects across 30 runs** (29 project/framework runs plus the shell suite's second IronPython engine) and the API-free Python suite. The legacy mixed suite is split by owner with its former MSTest cases converted to NUnit. Local validation on 2026-11-07: **2,379 C# cases and 453 Python cases, zero skips**. Counts include each framework and engine run. Local Revit results are separate; a general C# in-Revit runner is not implemented.
+The implemented CI selection has **20 C# projects across 31 runs** (30 project/framework runs plus the shell suite's second IronPython engine) and the API-free Python suite. The legacy mixed suite is split by owner with its former MSTest cases converted to NUnit. Local validation on 2026-11-07, before `pyRevitDoctor.Tests` and later develop suites were merged: **2,379 C# cases and 453 Python cases, zero skips**. Counts include each framework and engine run. Local Revit results are separate; a general C# in-Revit runner is not implemented.
 
 Level describes the test; Environment determines where it runs:
 
@@ -80,7 +81,7 @@ Keep C# tests in separate assemblies beside their owning area, normally `dev/<ar
 | Assembly builder, session services, hooks and ribbon | `dev/pyRevitLoader/tests/pyRevitAssemblyBuilder.Tests/` |
 | Parser-to-command integration | `dev/pyRevitLoader/tests/pyRevitLoader.Integration.Tests/` |
 | Shared scripting runtime | `dev/pyRevitLabs.PyRevit.Runtime/tests/pyRevitLabs.PyRevit.Runtime.Tests/` |
-| CLI, Common, Emojis, configuration, PyRevit facade, agent, CPython and env-var adapters | Named projects under `dev/pyRevitLabs/tests/` |
+| CLI, doctor, Common, Emojis, configuration, PyRevit facade, agent, CPython and env-var adapters | Named projects under `dev/pyRevitLabs/tests/` |
 | Deployment, config seeding and install-scope integration | `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Integration.Tests/` |
 | Product metadata, add-on paths and cache files | `dev/pyRevitLabs/tests/pyRevitLabs.TargetApps.Revit.Tests/` |
 | Dynamo interop and graph contracts | `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.Shared.Tests/` |
@@ -155,7 +156,7 @@ For load/signing smoke checks, launch the intended Revit year and inspect its jo
 
 ### Dynamo execution check (#2992)
 
-Use **DevTools > Debug > Unit Tests > Dynamo Tests** in a disposable project. The test starts Dynamo headlessly and requires a newly generated DesignScript token from the engine's evaluated output. A successful command return is insufficient. The graph has no Python nodes, external packages, or model geometry, and the test rolls back Dynamo's startup preview materials. An existing user Dynamo workspace is never replaced.
+Use **DevTools > Debug > Unit Tests > Dynamo Module Tests** in a disposable project. The test starts Dynamo headlessly and requires a newly generated DesignScript token from the engine's evaluated output. A successful command return is insufficient. The graph has no Python nodes, external packages, or model geometry, and the test rolls back Dynamo's startup preview materials. An existing user Dynamo workspace is never replaced.
 
 For a reproducible local matrix, use an absolute script path:
 
@@ -163,20 +164,6 @@ For a reproducible local matrix, use an absolute script path:
 pyrevit run C:/path/to/pyRevit/dev/tests/revit/run_dynamo.py --revit=2026 --purge
 ```
 
-The journal launches a separate Revit process, creates a disposable project, checks cold and repeat execution with different tokens, and exits. Evidence is written to `.test-results/dynamo/<year>/<run-id>/result.json`, including actual Revit/Dynamo versions and a test-source hash. Each invocation preserves earlier results. Project filenames also include the run ID. The project lives in the journal's working directory; `--purge` deletes that directory after Revit exits and releases file locks. Omit `--purge` only to retain the journal and model for diagnosis. These tests stay outside CI. Validate the installed Dynamo bundled with each supported Revit 2021–2027 host; this is not a claim about every independently installed Dynamo package or patch version.
+The journal launches a separate Revit process, creates a disposable project, checks cold and repeat execution with different tokens, and exits. Evidence is written to `.test-results/dynamo/<year>/<run-id>/result.json`, including actual Revit/Dynamo versions and a test-source hash. Each invocation preserves earlier results. Project filenames also include the run ID. The project lives in the journal's working directory; `--purge` deletes that directory after Revit exits and releases file locks. Omit `--purge` only to retain the journal and model for diagnosis. These tests stay outside CI. The test exercises the Dynamo bundled with the Revit host it runs in; independently installed Dynamo packages and patch versions are not covered.
 
-Invoke this entry point once per journal process; its cold/repeat checks share one project. Use a fresh `pyrevit run` process for retries. A separate Revit 2025 probe invoking it twice in one process saved distinct projects and preserved both reports, but the second invocation failed graph-output verification after activating a new document. Successful execution across document switches is not established by this harness.
-
-Local validation on 2026-10-19 used IronPython 2.7.12 and a fresh project in each journal process. Both cold startup and repeat execution passed with distinct, verified tokens:
-
-| Revit | Loaded DynamoCore | Cold / repeat |
-|---|---|---|
-| 2021 | 2.6.1.8786 | Passed / passed |
-| 2022 | 2.10.1.3976 | Passed / passed |
-| 2023 | 2.16.4.10216 | Passed / passed |
-| 2024 | 2.18.1.5096 | Passed / passed |
-| 2025 | 3.3.2.11986 | Passed / passed |
-| 2026 | 3.7.0.11777 | Passed / passed |
-| 2027 | 4.2.1.5887 | Passed / passed |
-
-Each report records the test-source SHA-256. Interactive ribbon verification also passed twice on Revit 2025 build `25.5.0.57` with Dynamo `3.3.2.11986`: each run returned matching token/output values, the tokens differed between runs, and Dynamo reported `StartedUIless`. The measured execution times were 2.546 seconds and 0.124 seconds. Other Python engines and independently installed Dynamo versions remain unverified; this ribbon evidence does not establish model-change isolation.
+Invoke this entry point once per journal process; its cold/repeat checks share one project. Use a fresh `pyrevit run` process for retries. Invoking it twice in one Revit process is not supported: the second invocation can fail graph-output verification after a new document is activated.

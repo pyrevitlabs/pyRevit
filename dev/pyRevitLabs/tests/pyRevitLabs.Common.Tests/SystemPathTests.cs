@@ -103,6 +103,110 @@ namespace pyRevitLabs.Common.Tests {
         }
 
         [Test]
+        public void PrependEntryPutsAbsentEntryInFrontOfUntouchedText() {
+            var current = @"C:\a; C:\b ;%USERPROFILE%\c;";
+            Assert.That(SystemPath.PrependEntry(current, TestDir), Is.EqualTo(TestDir + ";" + current));
+        }
+
+        [Test]
+        public void PrependEntryMovesEntryAheadOfTheOneShadowingIt() {
+            var olderInstall = @"C:\Users\me\AppData\Roaming\pyRevit-Master\bin";
+            var current = @"C:\a;" + olderInstall + ";" + TestDir;
+            Assert.That(SystemPath.PrependEntry(current, TestDir), Is.EqualTo(TestDir + @";C:\a;" + olderInstall));
+        }
+
+        [Test]
+        public void PrependEntryCollapsesEveryCopyIntoTheFirstPosition() {
+            var current = @"C:\a;" + TestDir + @"\;C:\b;" + TestDir.ToUpperInvariant();
+            Assert.That(SystemPath.PrependEntry(current, TestDir), Is.EqualTo(TestDir + @";C:\a;C:\b"));
+        }
+
+        [Test]
+        public void PrependEntryIsIdempotent() {
+            foreach (var current in new[] { TestDir, TestDir + @"\;C:\a", " " + TestDir + @" ; C:\a ;" })
+                Assert.That(SystemPath.PrependEntry(current, TestDir), Is.EqualTo(current), string.Format("unexpected result for input \"{0}\"", current));
+            var once = SystemPath.PrependEntry(@"C:\a;C:\b", TestDir);
+            Assert.That(SystemPath.PrependEntry(once, TestDir), Is.EqualTo(once));
+        }
+
+        [Test]
+        public void PrependEntryNeverProducesStraySeparators() {
+            foreach (var current in new[] { null, string.Empty, ";", " ; " })
+                Assert.That(SystemPath.PrependEntry(current, TestDir), Is.EqualTo(TestDir), string.Format("unexpected result for input \"{0}\"", current));
+            Assert.That(SystemPath.PrependEntry(@";;C:\a", TestDir), Is.EqualTo(TestDir + @";C:\a"));
+        }
+
+        [Test]
+        public void PrependEntryIgnoresEmptyEntry() {
+            Assert.That(SystemPath.PrependEntry(@"C:\a", string.Empty), Is.EqualTo(@"C:\a"));
+        }
+
+        [Test]
+        public void FindFileInPathValuesKeepsResolutionOrderAcrossValues() {
+            var machineInstall = @"C:\Program Files\pyRevit-Master\bin";
+            var userInstall = @"C:\Users\me\AppData\Local\Programs\pyRevit CLI\bin";
+            var pathValues = new[] { @"C:\Windows;" + machineInstall + @"\", userInstall };
+
+            var found = SystemPath.FindFileInPathValues(pathValues, "pyrevit.exe",
+                file => !file.StartsWith(@"C:\Windows", StringComparison.OrdinalIgnoreCase));
+
+            Assert.That(found, Is.EqualTo(new[] { machineInstall + @"\pyrevit.exe", userInstall + @"\pyrevit.exe" }));
+        }
+
+        [Test]
+        public void FindFileInPathValuesSkipsDirectoriesWithoutTheFile() {
+            var found = SystemPath.FindFileInPathValues(
+                new[] { @"C:\stale\bin;" + TestDir }, "pyrevit.exe",
+                file => file.StartsWith(TestDir, StringComparison.OrdinalIgnoreCase));
+            Assert.That(found.Count, Is.EqualTo(1));
+            Assert.That(found[0], Is.EqualTo(TestDir + @"\pyrevit.exe"));
+        }
+
+        [Test]
+        public void FindFileInPathValuesReportsRepeatedDirectoryOnce() {
+            var found = SystemPath.FindFileInPathValues(
+                new[] { TestDir + ";" + TestDir.ToUpperInvariant() + @"\;""" + TestDir + "\"" },
+                "pyrevit.exe", file => true);
+            Assert.That(found.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void FindFileInPathValuesExpandsEnvironmentVariables() {
+            var systemRoot = Environment.GetEnvironmentVariable("SystemRoot");
+            var found = SystemPath.FindFileInPathValues(
+                new[] { @"%SystemRoot%\System32" }, "cmd.exe", file => true);
+            Assert.That(found[0], Is.EqualTo(systemRoot + @"\System32\cmd.exe"));
+        }
+
+        [Test]
+        public void FindFileInPathValuesSplitsEntriesThatExpandToSeveralDirectories() {
+            const string variable = "PYREVIT_UNITTEST_CLI_PATHS";
+            var previousValue = Environment.GetEnvironmentVariable(variable);
+            Environment.SetEnvironmentVariable(variable, @"C:\old-cli;C:\tools");
+            try {
+                var found = SystemPath.FindFileInPathValues(
+                    new[] { "%" + variable + "%;" + TestDir }, "pyrevit.exe", file => true);
+
+                Assert.That(found, Is.EqualTo(new[] {
+                    @"C:\old-cli\pyrevit.exe",
+                    @"C:\tools\pyrevit.exe",
+                    TestDir + @"\pyrevit.exe",
+                }));
+            }
+            finally {
+                Environment.SetEnvironmentVariable(variable, previousValue);
+            }
+        }
+
+        [Test]
+        public void FindFileInPathValuesIgnoresUnusableEntries() {
+            var found = SystemPath.FindFileInPathValues(
+                new[] { null, string.Empty, ";;", "C:\\bad|dir", "\"\"" }, "pyrevit.exe",
+                file => true);
+            Assert.That(found.Count, Is.EqualTo(0));
+        }
+
+        [Test]
         public void RemoveEntryDropsEveryOccurrence() {
             var current = TestDir + ";C:\\a;" + TestDir.ToUpperInvariant() + ";" + TestDir;
             Assert.That(SystemPath.RemoveEntry(current, TestDir), Is.EqualTo("C:\\a"));

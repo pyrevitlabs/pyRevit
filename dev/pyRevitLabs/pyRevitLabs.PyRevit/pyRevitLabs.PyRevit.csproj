@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="pyRevitLabs.PyRevit.Tests" />
+    <InternalsVisibleTo Include="pyRevitLabs.PyRevit.Integration.Tests" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,7 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="Nett" Version="0.15.0" />
-    <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
+    <PackageReference Include="LibGit2Sharp" Version="0.32.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -32,6 +32,8 @@ namespace pyRevitCLI {
     /// can add its own standards without touching the clone; a user skill with the same name as a
     /// shipped skill is ignored, and an unreadable one is skipped. The entry text is <c>INSTRUCTIONS.md</c> with <c>{skills}</c> replaced by the
     /// generated skill list, so adding a skill folder needs no code change.
+    /// Important: the search for the clone stops below the drive root. Any local user can create
+    /// folders in <c>C:\</c>, so a skills folder there would hand them the agent's instructions.
     /// </remarks>
     internal static class PyRevitAgentSkills {
         public const string CoreSkill = "revit-scripting";
@@ -42,14 +44,14 @@ namespace pyRevitCLI {
         private const int MaxParentLevels = 8;
         private const int MaxSkillBytes = 128 * 1024;
         private const int MaxUserDescriptionChars = 240;
-        private static readonly Regex SkillName = new Regex("^[a-z0-9][a-z0-9-]{0,63}$", RegexOptions.Compiled);
+        private static readonly Regex SkillName = new Regex("^[a-z0-9][a-z0-9-]{0,63}\\z", RegexOptions.Compiled);
 
         public static string UserSkillsDir => Path.Combine(PyRevitAgentClient.AgentDir, "skills");
 
         public static string ShippedSkillsDir {
             get {
                 var directory = new DirectoryInfo(AppContext.BaseDirectory);
-                for (var level = 0; directory != null && level < MaxParentLevels; level++, directory = directory.Parent) {
+                for (var level = 0; directory?.Parent != null && level < MaxParentLevels; level++, directory = directory.Parent) {
                     var candidate = SkillsDirIn(directory.FullName);
                     if (System.IO.Directory.Exists(candidate))
                         return candidate;
@@ -166,7 +168,7 @@ namespace pyRevitCLI {
             return text;
         }
 
-        private static AgentSkill ReadSkill(string skillDir, string source) {
+        internal static AgentSkill ReadSkill(string skillDir, string source) {
             var path = Path.Combine(skillDir, SkillFile);
             if (IsReparsePoint(skillDir) || !File.Exists(path) || new FileInfo(path).Length > MaxSkillBytes)
                 return null;
@@ -193,7 +195,8 @@ namespace pyRevitCLI {
         /// </summary>
         /// <remarks>
         /// Only the flat one-line scalars skills use are understood. A value in single or double
-        /// quotes loses its quotes, with <c>''</c> and <c>\"</c> unescaped. A file whose front
+        /// quotes loses its quotes, with <c>''</c> (single quotes) and the escapes <c>\\</c>, <c>\"</c>, <c>\/</c>, <c>\n</c>,
+        /// <c>\t</c> and <c>\r</c> (double quotes) unescaped; other escapes are kept as written. A file whose front
         /// matter is never closed has none, so its body is never read as metadata.
         /// </remarks>
         internal static Dictionary<string, string> ParseFrontMatter(IReadOnlyList<string> lines) {
@@ -214,8 +217,29 @@ namespace pyRevitCLI {
             if (value.Length >= 2 && value[0] == '\'' && value[value.Length - 1] == '\'')
                 return value.Substring(1, value.Length - 2).Replace("''", "'");
             if (value.Length >= 2 && value[0] == '"' && value[value.Length - 1] == '"')
-                return value.Substring(1, value.Length - 2).Replace("\\\"", "\"");
+                return UnescapeDoubleQuoted(value.Substring(1, value.Length - 2));
             return value;
+        }
+
+        private static string UnescapeDoubleQuoted(string text) {
+            var result = new StringBuilder(text.Length);
+            for (var index = 0; index < text.Length; index++) {
+                if (text[index] != '\\' || index == text.Length - 1) {
+                    result.Append(text[index]);
+                    continue;
+                }
+                var escaped = text[++index];
+                switch (escaped) {
+                    case 'n': result.Append('\n'); break;
+                    case 't': result.Append('\t'); break;
+                    case 'r': result.Append('\r'); break;
+                    case '\\':
+                    case '"':
+                    case '/': result.Append(escaped); break;
+                    default: result.Append('\\').Append(escaped); break;
+                }
+            }
+            return result.ToString();
         }
 
         private static IEnumerable<(string Root, string Source)> SkillRoots() {

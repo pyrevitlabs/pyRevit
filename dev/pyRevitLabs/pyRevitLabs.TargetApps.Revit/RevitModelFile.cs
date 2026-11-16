@@ -111,7 +111,6 @@ namespace pyRevitLabs.TargetApps.Revit {
 
             // extract partatom (Revit Family Files) and prepare string
             // PartAtom is a Xml stream
-            // https://ein.sh/pyRevit/pyrevit/updates/2019/01/19/basicfileinfo.html
             var rawPartAtomData = CommonUtils.GetStructuredStorageStream(FilePath, "PartAtom");
             if (rawPartAtomData != null) {
                 IsFamily = true;

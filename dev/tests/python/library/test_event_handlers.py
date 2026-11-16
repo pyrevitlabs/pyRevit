@@ -20,6 +20,10 @@ class _ArrayList(list):
     def Add(self, value):
         self.append(value)
 
+    @property
+    def Count(self):
+        return len(self)
+
 
 class _Hashtable(dict):
     @property
@@ -123,19 +127,37 @@ class _HostApplication:
         return self.revit_year < version
 
 
-class _ExternalEvent:
-    def __init__(self, handler):
-        self.handler = handler
-        self.response = "Accepted"
+class _Action:
+    """Stands in for ``System.Action``."""
 
-    def Raise(self):
+    def __init__(self, func):
+        self.func = func
+
+    def __call__(self):
+        self.func()
+
+
+class _ApiContextQueue:
+    """Stands in for the runtime's ``ApiContextQueue``.
+
+    Like pythonnet, it refuses anything but an ``Action`` delegate.
+    """
+
+    def __init__(self, response="Accepted"):
+        self.response = response
+        self.pending = []
+
+    def Schedule(self, callback):
+        if not isinstance(callback, _Action):
+            raise TypeError("No method matches given arguments for Schedule")
+        if self.response not in ("Denied", "TimedOut"):
+            self.pending.append(callback)
         return self.response
 
-
-class _ExternalEventFactory:
-    @staticmethod
-    def Create(handler):
-        return _ExternalEvent(handler)
+    def execute(self):
+        pending, self.pending = self.pending, []
+        for callback in pending:
+            callback()
 
 
 class _Logger:
@@ -151,6 +173,17 @@ class _EventHandlerFactory:
         return lambda handler: handler
 
 
+class _ExternalEventFactory:
+    """Records every ``ExternalEvent.Create`` call."""
+
+    def __init__(self):
+        self.created = []
+
+    def Create(self, handler):
+        self.created.append(handler)
+        return types.SimpleNamespace(Raise=lambda: "Accepted")
+
+
 def _module(name, **values):
     result = types.ModuleType(name)
     for key, value in values.items():
@@ -163,8 +196,9 @@ def load_events_module(
     host,
     exec_id,
     logger,
-    external_event_response,
+    api_context_queue,
     has_selection_changed_args=True,
+    external_events=None,
 ):
     """Import the production events module with isolated host and CLR doubles."""
     ui_events = types.SimpleNamespace(
@@ -175,7 +209,7 @@ def load_events_module(
     system_collections = _module(
         "System.Collections", ArrayList=_ArrayList, Hashtable=_Hashtable
     )
-    system = _module("System")
+    system = _module("System", Action=_Action)
     system.Collections = system_collections
 
     pyrevit = _module(
@@ -192,7 +226,7 @@ def load_events_module(
         UI=types.SimpleNamespace(
             IExternalEventHandler=type("IExternalEventHandler", (), {}),
             Events=ui_events,
-            ExternalEvent=_ExternalEventFactory,
+            ExternalEvent=external_events or _ExternalEventFactory(),
             ExternalEventRequest=types.SimpleNamespace(
                 Denied="Denied", TimedOut="TimedOut"
             ),
@@ -210,7 +244,10 @@ def load_events_module(
         REGISTEREDEVENTHANDLERS_ENVVAR="PYREVIT_REGISTEREDEVENTHANDLERS",
     )
     logger_module = _module("pyrevit.coreutils.logger", get_logger=lambda name: logger)
+    runtime_types = _module("pyrevit.runtime.types", ApiContextQueue=api_context_queue)
+    runtime = _module("pyrevit.runtime", types=runtime_types)
     pyrevit.coreutils = coreutils
+    pyrevit.runtime = runtime
     coreutils.envvars = envvars
 
     replacements = {
@@ -220,6 +257,8 @@ def load_events_module(
         "pyrevit.coreutils": coreutils,
         "pyrevit.coreutils.envvars": envvars,
         "pyrevit.coreutils.logger": logger_module,
+        "pyrevit.runtime": runtime,
+        "pyrevit.runtime.types": runtime_types,
     }
     previous = {key: sys.modules.get(key) for key in replacements}
     sys.modules.update(replacements)
@@ -235,7 +274,6 @@ def load_events_module(
             else:
                 sys.modules[key] = old_module
 
-    events.HANDLER_UNREGISTERER_EXTEVENT.response = external_event_response
     return events
 
 
@@ -247,10 +285,12 @@ class EventHandlerCleanupTests(unittest.TestCase):
         self.app_domain = _AppDomain()
         self.host = _HostApplication()
         self.logger = _Logger()
+        self.queue = _ApiContextQueue()
 
     def _load(self, exec_id, response="Accepted"):
+        self.queue.response = response
         return load_events_module(
-            self.app_domain, self.host, exec_id, self.logger, response
+            self.app_domain, self.host, exec_id, self.logger, self.queue
         )
 
     def test_reload_removes_handlers_when_script_skipped_stop_events(self):
@@ -319,7 +359,7 @@ class EventHandlerCleanupTests(unittest.TestCase):
 
         self.assertIn(registered_handler, self.host._uiapp.ViewActivated.handlers)
         self.host._api_context = True
-        events.HANDLER_UNREGISTERER.Execute(None)
+        self.queue.execute()
         self.assertNotIn(registered_handler, self.host._uiapp.ViewActivated.handlers)
         self.assertIsNone(
             self.app_domain.GetData(events.envvars.REGISTEREDEVENTHANDLERS_ENVVAR)
@@ -346,6 +386,122 @@ class EventHandlerCleanupTests(unittest.TestCase):
         )
 
 
+class ReplaceHandlerTests(unittest.TestCase):
+    """A smart button reload swaps its subscription instead of adding one."""
+
+    def setUp(self):
+        """Load the events module with a fresh process-wide slot store."""
+        self.app_domain = _AppDomain()
+        self.host = _HostApplication()
+        self.logger = _Logger()
+        self.events = load_events_module(
+            self.app_domain, self.host, "selfinit", self.logger, _ApiContextQueue()
+        )
+
+    def test_replace_detaches_the_previous_load_subscription(self):
+        """Only the latest handler stays subscribed under the slot."""
+        source = self.host._uiapp
+        first = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+        second = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+
+        self.assertEqual([second], source.ViewActivated.handlers)
+        self.assertNotEqual(first, second)
+        self.assertIs(second, self.app_domain.GetData("slot"))
+
+    def test_release_detaches_and_clears_the_slot(self):
+        """Releasing leaves no subscription and no stored delegate."""
+        source = self.host._uiapp
+        self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+
+        self.events.release_handler("slot", source, "ViewActivated")
+        self.events.release_handler("slot", source, "ViewActivated")
+
+        self.assertEqual([], source.ViewActivated.handlers)
+        self.assertIsNone(self.app_domain.GetData("slot"))
+
+    def test_failing_detach_is_logged_and_does_not_block_the_next_load(self):
+        """A delegate Revit refuses to detach leaves the slot to the next load."""
+        source = self.host._uiapp
+        stale = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+        source.ViewActivated.fail_removals.add(stale)
+
+        fresh = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+
+        self.assertTrue(self.logger.errors)
+        self.assertIs(fresh, self.app_domain.GetData("slot"))
+        self.assertEqual([stale, fresh], source.ViewActivated.handlers)
+
+    def test_failed_detach_is_retried_until_it_succeeds(self):
+        """A later release detaches the delegate a previous release could not."""
+        source = self.host._uiapp
+        stale = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+        source.ViewActivated.fail_removals.add(stale)
+        self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+        source.ViewActivated.fail_removals.discard(stale)
+
+        self.events.release_handler("slot", source, "ViewActivated")
+
+        self.assertEqual([], source.ViewActivated.handlers)
+        self.assertIsNone(self.app_domain.GetData("slot"))
+        self.assertIsNone(self.app_domain.GetData("slot:stale"))
+
+    def test_detach_failing_again_stays_queued_for_the_next_release(self):
+        """A delegate that still refuses to detach is kept for another try."""
+        source = self.host._uiapp
+        stale = self.events.replace_handler(
+            "slot", source, "ViewActivated", lambda *_: None, object
+        )
+        source.ViewActivated.fail_removals.add(stale)
+
+        self.events.release_handler("slot", source, "ViewActivated")
+        self.events.release_handler("slot", source, "ViewActivated")
+
+        self.assertEqual([stale], source.ViewActivated.handlers)
+        self.assertEqual([stale], list(self.app_domain.GetData("slot:stale")))
+        self.assertIsNone(self.app_domain.GetData("slot"))
+
+
+class DeprecatedNamesTests(unittest.TestCase):
+    """Names public in 7.0 still import, without registering anything with Revit."""
+
+    def setUp(self):
+        """Load the events module with an ExternalEvent factory that records calls."""
+        self.external_events = _ExternalEventFactory()
+        self.events = load_events_module(
+            _AppDomain(),
+            _HostApplication(),
+            "third-party",
+            _Logger(),
+            _ApiContextQueue(),
+            external_events=self.external_events,
+        )
+
+    def test_handler_unregisterer_names_still_import(self):
+        """The 7.0 names exist with their documented replacement values."""
+        self.assertIsInstance(
+            self.events.HANDLER_UNREGISTERER, self.events.FuncAsEventHandler
+        )
+        self.assertIsNone(self.events.HANDLER_UNREGISTERER_EXTEVENT)
+
+    def test_import_creates_no_external_event(self):
+        """Importing the module hands no Python handler to Revit."""
+        self.assertEqual([], self.external_events.created)
+
+
 class PreSelectionChangedHostTests(unittest.TestCase):
     """Revit 2021/2022 lack ``UI.Events.SelectionChangedEventArgs``."""
 
@@ -358,7 +514,7 @@ class PreSelectionChangedHostTests(unittest.TestCase):
             self.host,
             "revit-2022",
             self.logger,
-            "Accepted",
+            _ApiContextQueue(),
             has_selection_changed_args=False,
         )
 
@@ -375,74 +531,59 @@ class PreSelectionChangedHostTests(unittest.TestCase):
         self.assertIn(handler, self.host._uiapp.ViewActivated.handlers)
 
 
-class _RaisingExternalEvent:
-    def Raise(self):
-        raise RuntimeError("raise failed")
-
-
 class ExecuteInRevitContextTests(unittest.TestCase):
-    """Report whether a callback was queued and run it only when it was."""
+    """Callbacks go through the runtime queue shared by every engine."""
 
     def setUp(self):
-        """Install the handler and event the IronPython import path creates."""
+        """Load the events module as the CPython engine sees it."""
         self.logger = _Logger()
+        self.queue = _ApiContextQueue()
         self.events = load_events_module(
-            _AppDomain(), _HostApplication(), "context-exec", self.logger, "Accepted"
+            _AppDomain(), _HostApplication(), "cpython-exec", self.logger, self.queue
         )
-        self.events._HANDLER = self.events._GenericExternalEventHandler()
-        self.external_event = _ExternalEvent(self.events._HANDLER)
-        self.events._EXTERNAL_EVENT = self.external_event
         self.calls = []
 
-    def _callback(self, *args, **kwargs):
-        self.calls.append((args, kwargs))
+    def test_callback_runs_when_revit_executes_the_event(self):
+        """The callback waits for the ExternalEvent and then runs once."""
+        calls = self.calls
 
-    def test_accepted_request_queues_and_runs_callback(self):
-        """An accepted request returns True and runs the callback on Execute."""
-        queued = self.events.execute_in_revit_context(self._callback, 1, key="value")
+        def callback(value, key=None):
+            calls.append((value, key))
 
-        self.assertTrue(queued)
-        self.assertEqual(self.calls, [])
-        self.events._HANDLER.Execute(None)
-        self.events._HANDLER.Execute(None)
-        self.assertEqual(self.calls, [((1,), {"key": "value"})])
-        self.assertEqual(self.logger.errors, [])
-
-    def test_denied_request_discards_callback(self):
-        """A denied request returns False and never runs the callback."""
-        self.external_event.response = "Denied"
-
-        queued = self.events.execute_in_revit_context(self._callback)
-
-        self.assertFalse(queued)
-        self.events._HANDLER.Execute(None)
-        self.assertEqual(self.calls, [])
-        self.assertTrue(self.logger.errors)
-
-    def test_raise_failure_discards_callback(self):
-        """A failing Raise returns False and never runs the callback."""
-        self.events._EXTERNAL_EVENT = _RaisingExternalEvent()
-
-        queued = self.events.execute_in_revit_context(self._callback)
-
-        self.assertFalse(queued)
-        self.events._HANDLER.Execute(None)
-        self.assertEqual(self.calls, [])
-        self.assertTrue(self.logger.errors)
-
-    def test_missing_external_event_returns_false(self):
-        """An ExternalEvent that cannot be created leaves nothing queued."""
-        self.events._EXTERNAL_EVENT = None
-        self.events.UI.ExternalEvent = types.SimpleNamespace(
-            Create=lambda handler: (_ for _ in ()).throw(RuntimeError("no context"))
+        self.assertTrue(
+            self.events.execute_in_revit_context(callback, "value", key="option")
         )
 
-        queued = self.events.execute_in_revit_context(self._callback)
+        self.assertEqual([], calls)
+        self.queue.execute()
+        self.queue.execute()
+        self.assertEqual([("value", "option")], calls)
+        self.assertEqual([], self.logger.errors)
 
-        self.assertFalse(queued)
-        self.events._HANDLER.Execute(None)
-        self.assertEqual(self.calls, [])
+    def test_denied_request_discards_the_callback_and_logs(self):
+        """A refused ExternalEvent request never runs the callback later."""
+        calls = self.calls
+
+        def callback():
+            calls.append("ran")
+
+        self.queue.response = "Denied"
+        self.assertFalse(self.events.execute_in_revit_context(callback))
+        self.queue.execute()
+
+        self.assertEqual([], calls)
         self.assertTrue(self.logger.errors)
+
+    def test_failing_callback_is_logged(self):
+        """An exception in the callback is logged instead of reaching Revit."""
+
+        def callback():
+            raise ValueError("boom")
+
+        self.events.execute_in_revit_context(callback)
+        self.queue.execute()
+
+        self.assertEqual(["ExternalEvent error: boom"], self.logger.errors)
 
 
 if __name__ == "__main__":

@@ -44,9 +44,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </remarks>
         private static JObject DescribeAgent() {
             var agent = new JObject {
-                ["policy"] = PyRevitConfigs.GetAgentPolicy(),
+                ["policy"] = AgentRunService.PolicyNameInForce(),
             };
-            if (PyRevitConfigs.GetAgentReckless())
+            if (AgentRunService.RecklessInForce())
                 agent["reckless"] = true;
             return agent;
         }
@@ -125,9 +125,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 #endif
         }
 
+        /// <remarks>
+        /// On Revit 2021-2023, whose ids are 32-bit, a value out of that range returns
+        /// <see cref="ElementId.InvalidElementId"/>, which matches no element, instead of throwing.
+        /// </remarks>
         public static ElementId FromValue(long value) {
 #if REVIT2021 || REVIT2022 || REVIT2023
-            return new ElementId(checked((int)value));
+            return value < int.MinValue || value > int.MaxValue
+                ? ElementId.InvalidElementId
+                : new ElementId((int)value);
 #else
             return new ElementId(value);
 #endif

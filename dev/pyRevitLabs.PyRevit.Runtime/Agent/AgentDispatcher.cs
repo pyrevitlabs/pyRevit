@@ -84,6 +84,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
+        /// Queues <paramref name="work"/> for the main thread without waiting for it. Work Revit
+        /// refuses to schedule is dropped.
+        /// </summary>
+        /// <remarks>
+        /// Nobody observes the result, so <paramref name="work"/> must handle its own failures.
+        /// </remarks>
+        public void Post(Func<UIApplication, JToken> work) {
+            var item = new AgentWorkItem(work);
+            lock (queueLock)
+                queue.Enqueue(item);
+
+            var response = externalEvent.Raise();
+            if (response == ExternalEventRequest.Denied || response == ExternalEventRequest.TimedOut)
+                TryRemove(item);
+        }
+
+        /// <summary>
         /// Marks the script of the work running now as due to end within
         /// <paramref name="timeLimit"/>, until the returned object is disposed.
         /// </summary>
@@ -222,41 +239,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             public ManualResetEventSlim Started { get; } = new ManualResetEventSlim(false);
             public TaskCompletionSource<JToken> Completion { get; } =
                 new TaskCompletionSource<JToken>(TaskCreationOptions.RunContinuationsAsynchronously);
-        }
-    }
-
-    /// <summary>
-    /// A failure reported to the agent with a stable machine-readable <see cref="Code"/>.
-    /// </summary>
-    public sealed class AgentException : Exception {
-        public const string NotRunCode = "revit_busy";
-
-        public AgentException(string code, string message) : base(message) {
-            Code = code;
-        }
-
-        public string Code { get; }
-
-        /// <summary>
-        /// Extra fields for the error's <c>data</c> object, next to <c>type</c>.
-        /// </summary>
-        public JObject Details { get; } = new JObject();
-
-        /// <summary>
-        /// A request the host refused before running any of it because Revit was busy.
-        /// </summary>
-        /// <remarks>
-        /// Invariant: every <c>revit_busy</c> the host raises goes through here. It means the
-        /// request was discarded and will never run later, so the caller may send it again.
-        /// The message says so and <c>data.outcome</c> is <c>not_run</c>.
-        /// </remarks>
-        public static AgentException NotRun(string message) {
-            var exception = new AgentException(
-                NotRunCode,
-                message + " The request was not run and has been discarded; it will not run later, "
-                + "so it is safe to send again once Revit is idle.");
-            exception.Details["outcome"] = "not_run";
-            return exception;
         }
     }
 }

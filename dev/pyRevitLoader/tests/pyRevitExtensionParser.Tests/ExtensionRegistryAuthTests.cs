@@ -28,5 +28,46 @@ namespace pyRevitExtensionParser.Tests
             Assert.That(paths, Does.Contain(Path.Combine(root, "extensions.json")));
             Assert.That(paths, Does.Contain(Path.Combine(root, "nested", "extensions.json")));
         }
+
+        /// <summary>Each extension reads the registry of its own configured root, whatever the root order.</summary>
+        [Test]
+        public void ApplyRegistryAuthorization_ReadsRegistriesOfAllConfiguredRoots_RegardlessOfOrder()
+        {
+            var rootA = Path.Combine(TestTempDir, "rootA");
+            var rootB = Path.Combine(TestTempDir, "rootB");
+            var extA = TestExtensionBuilder.CreateMinimalExtension(rootA, "FirstExt");
+            var extB = TestExtensionBuilder.CreateMinimalExtension(rootB, "SecondExt");
+            File.WriteAllText(
+                Path.Combine(rootB, "extensions.json"),
+                @"{
+  ""extensions"": [
+    {
+      ""name"": ""FirstExt"",
+      ""type"": ""extension"",
+      ""authusers"": [""FirstExtUser""]
+    },
+    {
+      ""name"": ""SecondExt"",
+      ""type"": ""extension"",
+      ""authusers"": [""SomeoneElse""]
+    }
+  ]
+}");
+            var config = CreateFile("lookup.ini",
+                "[core]\n" +
+                "userextensions = [\"" + rootA.Replace("\\", "\\\\") + "\",\"" + rootB.Replace("\\", "\\\\") + "\"]\n");
+            PyRevitConfigStore.SetFactory(() => new ConfigurationBuilder(false).AddIniConfiguration(config).Build());
+            ExtensionParser.ClearAllCaches();
+
+            List<string>? usersA = null;
+            List<string>? groupsA = null;
+            List<string>? usersB = null;
+            List<string>? groupsB = null;
+            ExtensionRegistryAuth.ApplyRegistryAuthorization(extA, "FirstExt", null, ref usersA, ref groupsA);
+            ExtensionRegistryAuth.ApplyRegistryAuthorization(extB, "SecondExt", null, ref usersB, ref groupsB);
+
+            Assert.That(usersA, Is.EquivalentTo(new[] { "FirstExtUser" }));
+            Assert.That(usersB, Is.EquivalentTo(new[] { "SomeoneElse" }));
+        }
     }
 }

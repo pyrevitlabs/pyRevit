@@ -62,4 +62,32 @@ public class CPythonInterpreterLifecycleTests {
             record.IsInitializedAfterShutdown,
             "expected the engine to still report as initialized after Shutdown threw");
     }
+
+    /// <summary>
+    /// Regression for pyRevit#4074. CPython moves the process-wide CRT <c>LC_CTYPE</c> off
+    /// <c>C</c> while initializing, and Revit then reports a healthy workshared central model as
+    /// corrupt on Synchronize with Central. Bringing the interpreter up under a
+    /// <see cref="CrtLocale"/> scope, as <c>CPythonEngine.Start</c> does, must leave the locale as
+    /// it was.
+    /// </summary>
+    [Fact]
+    public void Initializing_UnderACrtLocaleScope_LeavesLcCtypeUntouched() {
+        InterpreterLifecycleRecord record = InterpreterLifecycleProbe.Record;
+
+        Assert.NotNull(record.LcCtypeBeforeInitialize);
+        Assert.Equal(record.LcCtypeBeforeInitialize, record.LcCtypeAfterInitialize);
+    }
+
+    /// <summary>
+    /// The scope must undo a real CPython locale change, not just a no-op: the interpreter is
+    /// told to adopt the user locale, which differs from <c>C</c> on any Windows machine that has
+    /// a regional format, and disposing the scope has to put the captured value back.
+    /// </summary>
+    [Fact]
+    public void CrtLocaleScope_RestoresLcCtypeThatCPythonChanged() {
+        InterpreterLifecycleRecord record = InterpreterLifecycleProbe.Record;
+
+        Assert.NotEqual(record.LcCtypeBeforeUserLocaleAdoption, record.LcCtypeWhileAdoptingUserLocale);
+        Assert.Equal(record.LcCtypeBeforeUserLocaleAdoption, record.LcCtypeAfterScope);
+    }
 }
