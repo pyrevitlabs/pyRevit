@@ -131,11 +131,14 @@ pyrevit run commands                              # list the commands of every r
 pyrevit run list_views "C:\models\house.rvt"      # run a command by name on a model
 pyrevit run list_views --models=models.txt --revit=2026   # run it on every model listed in a text file, one path per line
 pyrevit run C:\scripts\one_off.py "house.rvt"     # a path to a .py file runs that script instead of looking up a command
+pyrevit run list_views --revit=2026 --inputs="{\"level\": \"L1\"}"   # hand the script a JSON object as __inputs__
+pyrevit run list_views --revit=2026 --inputs-file=inputs.json          # the same, read from a JSON file
 ```
 
 - The name lookup is case-insensitive. It searches the extensions of the clone attached to the target Revit first, then installed extensions. The first match wins; when a later extension defines the same command name, `pyrevit run` prints a warning to standard error naming the file that runs and the file it shadows.
 - The runner starts Revit from a generated journal with the attached pyRevit and quits Revit when the script ends. Without `--revit`, the Revit version comes from the model, or is the newest installed; the `--models` form always requires `--revit`.
 - The script runs in a full-frame engine with output windows suppressed; what the script prints and logs (`script.get_logger()`) goes to the run's log file. Besides the usual builtins it gets `__models__` (the model paths passed on the command line), `__batchexec__` (`True`) and `__logfile__` (the run's log file).
+- `--inputs=<json>` or `--inputs-file=<path>` hands the script structured input, like `pyrevit agent run --inputs`. The text must be a JSON object; the CLI refuses anything else before Revit starts. The script gets it as `__inputs__`, the JSON text (`"{}"` when neither option is passed), so `inputs = json.loads(__inputs__)` works the same on every engine. The text travels in the journal, so keep it small and pass larger data by path.
 - The script opens the models itself (`HOST_APP.app.OpenDocumentFile(path)`) and is responsible for saving and closing them. Error dialogs are dismissed automatically unless `--allowdialogs` is passed.
 
 `extensions/pyRevitDevTools.extension/commands/list_views_command.py` is the reference example.
