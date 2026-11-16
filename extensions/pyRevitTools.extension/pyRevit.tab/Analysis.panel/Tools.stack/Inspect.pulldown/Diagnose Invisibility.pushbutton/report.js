@@ -154,10 +154,12 @@
         const section = this.viewSection(id);
         if (section) section.remove();
       }
+      const members = new Set(this.views.flatMap((view) => view.elements.map((element) => element.id)));
       this.views = state.views;
       const known = new Set(state.elementIds);
-      for (const id of [...this.selected]) if (!known.has(id)) this.selected.delete(id);
-      for (const id of [...this.ghosted]) if (!known.has(id)) this.ghosted.delete(id);
+      const removed = (id) => members.has(id) && !known.has(id);
+      for (const id of [...this.selected]) if (removed(id)) this.selected.delete(id);
+      for (const id of [...this.ghosted]) if (removed(id)) this.ghosted.delete(id);
       for (const view of this.views) {
         this.renderView(view);
         if (previous.has(view.id)) {

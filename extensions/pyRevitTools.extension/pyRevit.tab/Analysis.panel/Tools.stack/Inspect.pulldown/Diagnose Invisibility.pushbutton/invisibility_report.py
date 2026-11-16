@@ -909,7 +909,14 @@ class DiagnosisSession(object):
         )
 
     def _on_reveal_add_selection(self, payload, request_id):
+        """Draw the Revit selection in the revealed view and open its first card.
+
+        A request for a view other than the revealed one is stale and ignored.
+        """
         uidoc = self._uidoc()
+        if self.reveal.view_id != self._view(payload["viewId"]).Id:
+            self._reply(request_id, True)
+            return
         selected = [self.doc.GetElement(i) for i in uidoc.Selection.GetElementIds()]
         if not selected:
             self._reply(
