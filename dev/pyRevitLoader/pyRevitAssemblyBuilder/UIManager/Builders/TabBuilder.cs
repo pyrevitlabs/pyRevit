@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.UI;
 using Autodesk.Windows;
@@ -113,8 +114,8 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
 
         private void ApplyTabIcon(RibbonTab tab, ParsedComponent component)
         {
-            var lightIconPath = component.Icons?.PrimaryIcon?.FilePath;
-            var darkIconPath = component.Icons?.PrimaryDarkIcon?.FilePath;
+            var lightIconPath = FirstRasterIconPath(component.Icons?.LightIcons);
+            var darkIconPath = FirstRasterIconPath(component.Icons?.DarkIcons);
             if (lightIconPath == null && darkIconPath == null)
                 return;
 
@@ -137,6 +138,10 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 _logger.Debug($"Failed to apply icon to tab '{tab.Title}'. Exception: {ex.Message}");
             }
         }
+
+        private static string? FirstRasterIconPath(IEnumerable<ComponentIcon>? icons) =>
+            icons?.FirstOrDefault(i =>
+                i.IsValid && !string.Equals(i.Extension, ".svg", StringComparison.OrdinalIgnoreCase))?.FilePath;
 
         private static bool ShouldApplyTitle(RibbonTab tab, string tabName, string tabTitle)
         {
