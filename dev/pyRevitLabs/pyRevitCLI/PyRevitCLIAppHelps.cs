@@ -70,8 +70,10 @@ namespace pyRevitCLI {
                             { "--json",                 "Switch output format to json" },
                             { "--redact",               "Mask user names, user profile folders, server names and Git URLs so the report can be shared publicly" },
                             { "list | ensure | remove", "Report the PATH entries, add a directory when missing, or drop every copy of it" },
+                            { "which",                  "List every pyrevit.exe on the machine and user PATH; a new terminal runs the first one" },
                             { "<dir>",                  "Directory to add to or remove from the PATH" },
                             { "--scope=<scope>",        "PATH to target: user (default) or machine" },
+                            { "--first",                "Make <dir> the first entry of that PATH, so it wins over the other entries of the same scope" },
                         });
                     break;
 
@@ -272,6 +274,7 @@ namespace pyRevitCLI {
                             { "<search_pattern>",       "Pattern to search releases" },
                             { "--dest=<dest_path>",     "Destination file or directory to download to" },
                             { "--pre",                  "Include pre-releases in the search" },
+                            { "--admin",                "Download the admin (all users) installer; installer only" },
                             { "--notes",                "Print release notes" }
                         });
                     break;
@@ -322,6 +325,7 @@ namespace pyRevitCLI {
                             { "<revit_year>",           "Revit version year e.g. 2026" },
                             { "<engine_version>",       "Engine version to be used e.g. 2712" },
                             { "DEFAULT",                "Use default engine" },
+                            { "<model_file>",           "Model file Revit opens once it has started" },
                             { "--isolated",             "Give the session its own pyRevit config folder, seeded with a copy of the current config" },
                             { "--language=<code>",      "Revit UI language code e.g. ENU" },
                         });

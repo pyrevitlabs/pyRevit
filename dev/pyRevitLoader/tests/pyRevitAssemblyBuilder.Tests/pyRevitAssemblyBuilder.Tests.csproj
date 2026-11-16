@@ -24,6 +24,7 @@
   <ItemGroup>
     <Compile Include="..\TestSupport\AssemblyBuilder\*.cs" Link="TestSupport\%(Filename)%(Extension)" />
     <Compile Include="..\TestSupport\*.cs" Link="TestSupport\%(Filename)%(Extension)" />
+    <Compile Include="..\..\Source\SessionResourceRegistry.cs" Link="Source\SessionResourceRegistry.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />

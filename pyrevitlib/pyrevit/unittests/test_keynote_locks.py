@@ -214,7 +214,7 @@ class RecordLockReleaseTests(_KeynoteFileTestCase):
 
 def _load_error_description():
     """Load the real error formatter without opening Keynote Manager."""
-    with open(op.join(KEYNOTES_BUNDLE_DIR, "script.py"), "r") as script_file:
+    with open(op.join(KEYNOTES_BUNDLE_DIR, "script.py"), "rb") as script_file:
         tree = ast.parse(script_file.read())
     names = {
         "describe_lock_error",

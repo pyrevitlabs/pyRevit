@@ -2,7 +2,7 @@
 
 Added parsing of tables to Python-Markdown.
 
-See <https://pythonhosted.org/Markdown/extensions/tables.html>
+See <https://python-markdown.github.io/extensions/tables/>
 for documentation.
 
 Original code Copyright 2009 [Waylan Limberg](http://achinghead.com)

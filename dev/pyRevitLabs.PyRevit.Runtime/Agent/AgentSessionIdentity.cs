@@ -35,6 +35,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["engine"] = engine == null ? null : Path.GetFileName(engine.Path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)),
                 ["engine_version"] = engine?.Version.ToString(),
                 ["commit"] = Read(() => clone?.ShortCommit),
+                ["branch"] = Read(() => clone?.Branch),
                 ["config_root"] = PyRevitLabsConsts.PyRevitPath,
                 ["per_launch"] = attachment?.AttachmentType == PyRevitAttachmentType.PerLaunch,
             };

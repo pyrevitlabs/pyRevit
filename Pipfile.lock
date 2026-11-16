@@ -555,12 +555,12 @@
         },
         "mkdocstrings": {
             "hashes": [
-                "sha256:2703708697487d1b6d6d7b412e176fa436edf120c1bf81dc9e126b12d00893c7",
-                "sha256:a0b8c2bdd29a6416c80d717aa369bbf7831946bd9f23c2a66db1b1dbe7693dbd"
+                "sha256:4b03ed2b863009f1153f0d04aacb22a85b92afc28a0636d85717c92eecca638c",
+                "sha256:b50fc326230906425c82ee9ec59b80e5db00892b2b593d4d0b841a0d4acf537b"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.10'",
-            "version": "==1.0.6"
+            "markers": "python_version >= '3.11'",
+            "version": "==1.0.8"
         },
         "mkdocstrings-python": {
             "hashes": [

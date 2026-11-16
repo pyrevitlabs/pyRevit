@@ -114,6 +114,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             AssertResponse(AgentRunVerdict.NoDocument, "ok", "no_document", null);
         }
 
+        /// <summary>A host failure before the script started, such as a refused transaction group, ran nothing (#3949).</summary>
+        [Fact]
+        public void AHostErrorBeforeTheScriptStartedIsNotRun() {
+            Assert.Equal("not_run", AgentRunDecision.AfterHostError(committed: false, scriptStarted: false));
+            Assert.Equal("rolled_back", AgentRunDecision.AfterHostError(committed: false, scriptStarted: true));
+            Assert.Equal("committed", AgentRunDecision.AfterHostError(committed: true, scriptStarted: true));
+        }
+
+        /// <summary>An engine that failed with an exit code before the script started ran nothing (#3949).</summary>
+        [Fact]
+        public void AnEngineFailureBeforeTheScriptStartedIsNotRun() {
+            Assert.Equal("not_run", AgentRunDecision.Decision(AgentRunVerdict.ScriptFailed, scriptStarted: false));
+            Assert.Equal("rolled_back", AgentRunDecision.Decision(AgentRunVerdict.ScriptFailed, scriptStarted: true));
+            Assert.Equal("committed", AgentRunDecision.Decision(AgentRunVerdict.AutoCommit, scriptStarted: true));
+        }
+
         private static void AssertResponse(AgentRunVerdict verdict, string status, string decision, string approval) {
             Assert.Equal(status, AgentRunDecision.Status(verdict));
             Assert.Equal(decision, AgentRunDecision.Decision(verdict));

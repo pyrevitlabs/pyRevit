@@ -27,9 +27,6 @@ DefaultDirName={autopf}\{#MyAppName}-Master
 UsePreviousAppDir=yes
 ;     mode
 PrivilegesRequired=admin
-#if Ver >= EncodeVer(6, 7, 0)
-RedirectionGuard=no
-#endif
 ; Build info
 OutputDir=..\dist
 ; Keep this list aligned with the installer assets staged by build/.
@@ -107,7 +104,7 @@ end;
 
 procedure RunAdminPostInstallCommands;
 begin
-  if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine', False) then
+  if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine --first', False) then
     SuppressibleMsgBox(
       'pyRevit was installed, but the installer could not register the install folder in the machine PATH environment variable.' + #13#10 + #13#10 +
       'You may need to manually add the following folder to the machine PATH:' + #13#10 +

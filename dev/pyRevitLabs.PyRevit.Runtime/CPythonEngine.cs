@@ -36,6 +36,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// behind the same guard, because pythonnet rejects those assignments once the runtime is up.
     /// </para>
     /// <para>
+    /// Invariant: <see cref="PythonEngine.Initialize"/> runs inside a <see cref="CrtLocale"/> scope
+    /// for <c>LC_CTYPE</c>. CPython switches that process-wide CRT category to the user locale while
+    /// initializing, and Revit's own code misbehaves once it has moved off <c>C</c> (pyRevit#4074).
+    /// </para>
+    /// <para>
     /// Consequence: the <c>clean</c> engine config yields a fresh engine object but not a fresh
     /// interpreter, so <c>sys.modules</c> entries imported before a Reload survive it, as do the
     /// CLR type wrappers the metatype holds for the pre-Reload runtime assembly.
@@ -72,7 +77,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     // initialize
                     PythonEngine.ProgramName = "pyrevit";
                     try {
-                        PythonEngine.Initialize();
+                        using (CrtLocale.Preserve(CrtLocale.LcCtype)) {
+                            PythonEngine.Initialize();
+                        }
                     }
                     catch (Exception ex) when (
                         ex.ToString().IndexOf("DesktopConnector", StringComparison.OrdinalIgnoreCase) >= 0) {

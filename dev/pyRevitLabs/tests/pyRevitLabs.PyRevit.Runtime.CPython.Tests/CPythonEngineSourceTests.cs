@@ -41,4 +41,21 @@ public class CPythonEngineSourceTests {
             CSharpSource.IsInBlockOf(body, guard, "PythonEngine.ProgramName ="),
             "PythonEngine.ProgramName must be assigned inside the !PythonEngine.IsInitialized guard");
     }
+
+    /// <summary>
+    /// <c>PythonEngine.Initialize</c> has to run inside the <c>CrtLocale</c> scope so the CPython
+    /// locale switch never reaches Revit (pyRevit#4074). The behaviour itself is covered by
+    /// <see cref="CPythonInterpreterLifecycleTests.Initializing_UnderACrtLocaleScope_LeavesLcCtypeUntouched"/>;
+    /// this keeps the engine from dropping the scope.
+    /// </summary>
+    [Fact]
+    public void InterpreterInitialize_RunsInsideACrtLocaleScope() {
+        string body = CSharpSource.MemberBody(
+            CSharpSource.CPythonEngine, "public override void Start(ref ScriptRuntime runtime)");
+
+        Assert.True(
+            CSharpSource.IsInBlockOf(
+                body, "using (CrtLocale.Preserve(CrtLocale.LcCtype))", "PythonEngine.Initialize()"),
+            "PythonEngine.Initialize() must run inside using (CrtLocale.Preserve(CrtLocale.LcCtype))");
+    }
 }

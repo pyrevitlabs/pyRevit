@@ -46,18 +46,27 @@ namespace pyRevitCLI {
                 return;
             }
 
-            foreach (var instance in instances) {
-                string state;
-                try {
-                    PyRevitAgentClient.Ping(instance);
-                    state = "responding";
-                }
-                catch (AgentClientException ex) {
-                    state = "not responding (" + ex.Code + ")";
-                }
-                Console.WriteLine(string.Format("Revit {0} (build {1}) pid {2}: {3}",
-                    instance.RevitVersion, instance.RevitBuild, instance.ProcessId, state));
+            foreach (var instance in instances)
+                Console.WriteLine(StatusLine(instance));
+        }
+
+        internal static string StatusLine(AgentInstance instance) {
+            string state;
+            try {
+                PyRevitAgentClient.Ping(instance);
+                state = "responding";
             }
+            catch (AgentClientException ex) when (ex.Code == "revit_busy" && PyRevitAgentClient.PipeExists(instance.Pipe)) {
+                state = "busy";
+            }
+            catch (AgentClientException ex) {
+                state = "not responding (" + ex.Code + ")";
+            }
+            var session = instance.Clone == null
+                ? string.Empty
+                : " on " + instance.Clone + (instance.Engine == null ? string.Empty : " " + instance.Engine);
+            return string.Format("Revit {0} (build {1}) pid {2}{3}: {4}",
+                instance.RevitVersion, instance.RevitBuild, instance.ProcessId, session, state);
         }
 
         public static void PrintContext(string revitSelector) {
@@ -77,7 +86,7 @@ namespace pyRevitCLI {
                 ["script"] = File.ReadAllText(scriptFile),
                 ["mode"] = mode ?? "query",
                 ["title"] = title ?? Path.GetFileName(scriptFile),
-                ["inputs"] = string.IsNullOrWhiteSpace(inputsJson) ? new JObject() : JToken.Parse(inputsJson),
+                ["inputs"] = string.IsNullOrWhiteSpace(inputsJson) ? new JObject() : JsonText.Parse(inputsJson),
             };
             if (engine != null)
                 parameters["engine"] = engine;
@@ -141,8 +150,9 @@ namespace pyRevitCLI {
         public static void ConfigureEnabled(bool? enable) {
             if (enable.HasValue) {
                 PyRevitConfigs.SetAgentEnabled(enable.Value);
-                Console.WriteLine("Agent host {0}. Reload pyRevit or restart Revit to apply.",
-                    enable.Value ? "enabled" : "disabled");
+                Console.WriteLine(enable.Value
+                    ? "Agent host enabled. A running host resumes on its next request; otherwise reload pyRevit or restart Revit to start it."
+                    : "Agent host disabled. Running Revit sessions refuse agent requests from now on.");
             }
             else
                 Console.WriteLine("Agent host is {0}", PyRevitConfigs.GetAgentEnabled() ? "Enabled" : "Disabled");
@@ -179,7 +189,7 @@ namespace pyRevitCLI {
             if (enable.HasValue) {
                 PyRevitConfigs.SetAgentReckless(enable.Value);
                 Console.WriteLine(enable.Value
-                    ? "Reckless agent runs enabled: scripts run without the timeout and per-line transaction checks. Applies to the next run."
+                    ? "Reckless agent runs enabled: scripts run without the timeout and per-line transaction checks. Applies to the next run once confirmed in Revit."
                     : "Reckless agent runs disabled. Applies to the next run.");
             }
             else
