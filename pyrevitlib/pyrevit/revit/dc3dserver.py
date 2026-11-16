@@ -37,7 +37,7 @@ class Mesh(object):
         return (c - a).CrossProduct(b - a)
 
     @classmethod
-    def from_solid(cls, doc, solid, color=None):
+    def from_solid(cls, doc, solid, color=None, edge_color=None):
         """
         Create a Mesh from a Revit Solid, optionally overriding per-face material colors.
 
@@ -51,6 +51,9 @@ class Mesh(object):
                 applied uniformly to all faces, overriding per-face material colors.
                 Faces with no material (<By Category>) still fall back to white when
                 color is None. Defaults to None.
+            edge_color (DB.ColorWithTransparency, optional): Color of all edges.
+                Wireframe display styles draw only edges, so pass the face color
+                to keep it visible there. Defaults to None, which gives black edges.
 
         Returns:
             Mesh: A new Mesh instance, or None if an exception occurs.
@@ -108,20 +111,18 @@ class Mesh(object):
                             face_color,
                         )
                     )
+            if edge_color is None:
+                edge_color = DB.ColorWithTransparency(0, 0, 0, 0)
             for edge in solid.Edges:
                 pts = edge.Tessellate()
                 for idx in range(len(pts) - 1):
-                    edges.append(
-                        Edge(
-                            pts[idx], pts[idx + 1], DB.ColorWithTransparency(0, 0, 0, 0)
-                        )
-                    )
+                    edges.append(Edge(pts[idx], pts[idx + 1], edge_color))
             return cls(edges, triangles)
         except:
             print(traceback.format_exc())
 
     @classmethod
-    def from_boundingbox(cls, bounding_box, color, black_edges=True):
+    def from_boundingbox(cls, bounding_box, color, black_edges=True, edge_color=None):
         """Generates a Mesh object from the input BoundigBoxXYZ.
 
         Args:
@@ -130,6 +131,9 @@ class Mesh(object):
             black_edges (bool, optional):
                 To have black edges instead of the provided color.
                 Defaults to True.
+            edge_color (DB.ColorWithTransparency, optional):
+                Color of all edges; takes precedence over black_edges.
+                Defaults to None.
 
         Returns:
             (Mesh): The resulting Mesh
@@ -156,10 +160,11 @@ class Mesh(object):
                 for idx in range(len(vertices))
             ]
 
-            if black_edges:
-                edge_color = DB.ColorWithTransparency(0, 0, 0, 0)
-            else:
-                edge_color = color
+            if edge_color is None:
+                if black_edges:
+                    edge_color = DB.ColorWithTransparency(0, 0, 0, 0)
+                else:
+                    edge_color = color
 
             edges = []
             # creating top and bottom face triangles

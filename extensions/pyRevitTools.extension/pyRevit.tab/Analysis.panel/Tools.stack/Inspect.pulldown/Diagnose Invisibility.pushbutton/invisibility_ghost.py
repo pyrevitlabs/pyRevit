@@ -35,8 +35,13 @@ def _solids(geometry):
                 pending.append(item)
 
 
-def element_meshes(element, color=GHOST_COLOR, detail_level=DB.ViewDetailLevel.Fine):
-    """Return meshes of an element's solids in ``color``, else of its bounding box."""
+def element_meshes(
+    element, color=GHOST_COLOR, detail_level=DB.ViewDetailLevel.Fine, edge_color=None
+):
+    """Return meshes of an element's solids in ``color``, else of its bounding box.
+
+    Edges are black unless ``edge_color`` is given.
+    """
     options = DB.Options()
     options.DetailLevel = detail_level
     meshes = []
@@ -44,7 +49,9 @@ def element_meshes(element, color=GHOST_COLOR, detail_level=DB.ViewDetailLevel.F
         geometry = element.get_Geometry(options)
         if geometry is not None:
             for solid in _solids(geometry):
-                mesh = dc3dserver.Mesh.from_solid(element.Document, solid, color)
+                mesh = dc3dserver.Mesh.from_solid(
+                    element.Document, solid, color, edge_color=edge_color
+                )
                 if mesh is not None:
                     meshes.append(mesh)
     except Exception:
@@ -52,7 +59,7 @@ def element_meshes(element, color=GHOST_COLOR, detail_level=DB.ViewDetailLevel.F
     if not meshes:
         bbox = element.get_BoundingBox(None)
         if bbox is not None:
-            mesh = dc3dserver.Mesh.from_boundingbox(bbox, color)
+            mesh = dc3dserver.Mesh.from_boundingbox(bbox, color, edge_color=edge_color)
             if mesh is not None:
                 meshes.append(mesh)
     return meshes

@@ -8,7 +8,8 @@ area of one view and draws the hidden ones through a DirectContext3D server
 model.
 
 Cost is bounded on purpose: candidates come from a bounding-box filter on the
-zoomed screen area, tiny elements are skipped, a time budget stops the
+zoomed screen area, tiny elements and categories a view can never draw are
+skipped, explicitly hidden elements are diagnosed first, a time budget stops the
 diagnosis, and only the largest elements are drawn as solids (the rest as
 boxes). The summary reports what was left out.
 
@@ -25,10 +26,22 @@ from pyrevit import DB, HOST_APP
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.revit import dc3dserver
 
-from invisibility_checks import collect_visible_ids, diagnose, id_value
+from invisibility_checks import (
+    NOT_IN_3D_CATEGORIES,
+    collect_visible_ids,
+    diagnose,
+    id_value,
+)
 from invisibility_ghost import element_meshes
 
 logger = get_logger(__name__)
+
+_NEVER_DRAWN_CATEGORY_NAMES = (
+    "OST_Sheets",
+    "OST_AreaSchemeLines",
+    "OST_CLines",
+    "OST_SketchLines",
+)
 
 SUPPORTED_VIEW_TYPES = (
     DB.ViewType.ThreeD,
@@ -40,6 +53,7 @@ SUPPORTED_VIEW_TYPES = (
 )
 
 REASON_COLORS = {
+    "view_type": (205, 220, 57),
     "element_hidden": (229, 57, 53),
     "temporary_hidden": (229, 57, 53),
     "category_hidden": (255, 152, 0),
@@ -63,6 +77,7 @@ REASON_COLORS = {
 }
 
 _REASON_PRIORITY = (
+    "view_type",
     "element_hidden",
     "temporary_hidden",
     "category_hidden",
@@ -86,6 +101,7 @@ _REASON_PRIORITY = (
 )
 
 _OVERLAY_ALPHA = 120
+_OPAQUE = 0
 _FAR_FT = 2000.0
 _CLIP_MARGIN_FACTOR = 1.0
 _MIN_SIZE_FRACTION = 0.004
@@ -102,9 +118,21 @@ def color_hex(code):
     return "#{:02x}{:02x}{:02x}".format(red, green, blue)
 
 
-def _overlay_color(code):
+def _overlay_color(code, transparency=_OVERLAY_ALPHA):
     red, green, blue = REASON_COLORS.get(code, REASON_COLORS["unknown"])
-    return DB.ColorWithTransparency(red, green, blue, _OVERLAY_ALPHA)
+    return DB.ColorWithTransparency(red, green, blue, transparency)
+
+
+def _never_drawn_category_ids(view):
+    names = list(_NEVER_DRAWN_CATEGORY_NAMES)
+    categories = [getattr(DB.BuiltInCategory, name, None) for name in names]
+    if view.ViewType == DB.ViewType.ThreeD:
+        categories.extend(NOT_IN_3D_CATEGORIES)
+    return set(
+        id_value(DB.ElementId(category))
+        for category in categories
+        if category is not None
+    )
 
 
 def zoom_corners(uidoc, view):
@@ -193,10 +221,14 @@ def _primary_reason(element, view, visible_ids):
     return codes[0]
 
 
-def _is_candidate(element, view):
+def _is_candidate(element, view, never_drawn):
     try:
         category = element.Category
-        if category is None or category.CategoryType == DB.CategoryType.Internal:
+        if (
+            category is None
+            or category.CategoryType == DB.CategoryType.Internal
+            or id_value(category.Id) in never_drawn
+        ):
             return None
         owner_id = element.OwnerViewId
         if owner_id != DB.ElementId.InvalidElementId and owner_id != view.Id:
@@ -211,21 +243,25 @@ def _is_candidate(element, view):
 
 
 def _candidates(view, outline, min_size, visible_ids):
-    """Return ``(entries, too_small)``, hidden elements first, then biggest first.
+    """Return ``(entries, too_small)``, in the order the time budget spends them.
 
-    Elements the view collector reports are kept, after the others: it still
-    lists elements that have no geometry at the view's detail level or sit
-    outside the crop, which only ``diagnose`` can tell.
+    Elements hidden with Hide/Isolate come first, then the other elements
+    the collector does not report, each biggest first. Elements the view
+    collector reports are kept, after those: it still lists elements that
+    have no geometry at the view's detail level or sit outside the crop,
+    which only ``diagnose`` can tell. Categories the view can never draw
+    (sheets, reference planes, sketches, rooms in 3D) are not candidates.
     """
     collector = DB.FilteredElementCollector(
         view.Document
     ).WhereElementIsNotElementType()
     if outline is not None:
         collector = collector.WherePasses(DB.BoundingBoxIntersectsFilter(outline))
+    never_drawn = _never_drawn_category_ids(view)
     found = []
     too_small = 0
     for element in collector:
-        measured = _is_candidate(element, view)
+        measured = _is_candidate(element, view, never_drawn)
         if measured is None:
             continue
         if measured[0] < min_size:
@@ -237,10 +273,19 @@ def _candidates(view, outline, min_size, visible_ids):
                 element,
                 measured[1],
                 id_value(element.Id) in visible_ids,
+                _is_explicitly_hidden(element, view),
             )
         )
-    found.sort(key=lambda entry: (entry[3], -entry[0]))
+    found.sort(key=lambda entry: (entry[3], not entry[4], -entry[0]))
     return found, too_small
+
+
+def _is_explicitly_hidden(element, view):
+    try:
+        return element.IsHidden(view)
+    except Exception as ex:
+        logger.debug("Cannot read the hidden state: %s", ex)
+        return False
 
 
 def _triangle_count(meshes):
@@ -267,7 +312,7 @@ def build_overlay(uidoc, view):
     started = time.time()
     by_code = {}
     evaluated = 0
-    for size, element, box, _ in candidates:
+    for size, element, box, _, _ in candidates:
         if evaluated >= _MAX_EVALUATED or time.time() - started > _TIME_BUDGET_S:
             break
         evaluated += 1
@@ -293,11 +338,14 @@ def build_overlay(uidoc, view):
     triangles = 0
     for rank, (size, code, element, box) in enumerate(ranked):
         color = _overlay_color(code)
+        edge_color = _overlay_color(code, _OPAQUE)
         meshes = []
         if rank < _MAX_SOLID_ELEMENTS:
-            meshes = element_meshes(element, color, DB.ViewDetailLevel.Coarse)
+            meshes = element_meshes(
+                element, color, DB.ViewDetailLevel.Coarse, edge_color=edge_color
+            )
         if not meshes or triangles + _triangle_count(meshes) > _MAX_TRIANGLES:
-            mesh = dc3dserver.Mesh.from_boundingbox(box, color, black_edges=False)
+            mesh = dc3dserver.Mesh.from_boundingbox(box, color, edge_color=edge_color)
             meshes = [mesh] if mesh is not None else []
         triangles += _triangle_count(meshes)
         meshes_by_code.setdefault(code, []).extend(meshes)
