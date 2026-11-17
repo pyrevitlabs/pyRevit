@@ -2,6 +2,7 @@
 
 from pyrevit.coreutils import logger
 from pyrevit.userconfig import user_config
+import pyrevit.extensions as exts
 import pyrevit.extensions.extpackages as extpkgs
 
 from pyrevit import runtime
@@ -70,6 +71,8 @@ def create_executor_type(extension, module_builder, cmd_component):
         clean=cmd_component.requires_clean_engine,
         full_frame=cmd_component.requires_fullframe_engine,
         persistent=cmd_component.requires_persistent_engine,
+        engine_type=extension.script_engine,
+        bundle_engine_type=exts.get_bundle_engine_type(cmd_component.meta),
     )
 
     bundletypemaker.create_executor_type(
