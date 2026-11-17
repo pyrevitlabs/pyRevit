@@ -56,6 +56,59 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void TheStopEventIsStoredEvenAfterTheEventCapIsReached() {
+            var store = NewStore(maxEvents: 1);
+            store.Append("mark", null);
+            store.Append("mark", null);
+
+            Assert.True(store.Append(AgentRecordingStore.StoppedKind, null));
+            var summary = store.Stop("user");
+
+            Assert.Equal(2, summary.Value<int>("event_count"));
+            Assert.Equal(1, summary.Value<int>("dropped_events"));
+        }
+
+        [Fact]
+        public void ALockFileThatCannotBeOpenedIsTreatedAsLive() {
+            var directory = Path.Combine(root, "20260101-000000-deadbeef");
+            Directory.CreateDirectory(directory);
+            var lockPath = Path.Combine(directory, AgentRecordingReader.LockFileName);
+            File.WriteAllText(lockPath, "");
+            File.SetAttributes(lockPath, FileAttributes.ReadOnly);
+            try {
+                Assert.True(AgentRecordingReader.IsLive(directory));
+            }
+            finally {
+                File.SetAttributes(lockPath, FileAttributes.Normal);
+            }
+        }
+
+        [Fact]
+        public void AListingSurvivesASummaryThatIsLockedByAWriter() {
+            var store = NewStore();
+            store.Append("mark", null);
+            store.Stop("user");
+            var summaryPath = Path.Combine(store.Directory, "recording.json");
+
+            using (new FileStream(summaryPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) {
+                var listed = AgentRecordingReader.List(root, 10);
+
+                Assert.Single(listed);
+                Assert.Equal(store.Id, listed[0].Value<string>("id"));
+            }
+        }
+
+        [Fact]
+        public void OutputBufferDiscardsUnreadTextOnDrain() {
+            var buffer = new AgentOutputBuffer();
+            buffer.Add("left over");
+
+            buffer.Drain();
+
+            Assert.Null(buffer.Drain());
+        }
+
+        [Fact]
         public void EventsAfterTheMaximumDurationAreDroppedEvenBeforeStop() {
             var store = Track(AgentRecordingStore.Create(root, new AgentRecordingOptions { MaxDurationSeconds = 1 }));
             Assert.True(store.Append("early", null));

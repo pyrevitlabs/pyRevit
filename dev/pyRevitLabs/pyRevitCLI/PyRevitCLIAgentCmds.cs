@@ -148,10 +148,10 @@ namespace pyRevitCLI {
             switch (normalizedAction) {
                 case "start":
                     var parameters = new JObject { ["screenshots"] = screenshots };
-                    AddNumber(parameters, "screenshot_interval_s", screenshotInterval, "--screenshot-interval");
-                    AddNumber(parameters, "max_screenshots", maxScreenshots, "--max-screenshots", whole: true);
-                    AddNumber(parameters, "max_events", maxEvents, "--max-events", whole: true);
-                    AddNumber(parameters, "max_duration_s", maxDuration, "--max-duration", whole: true);
+                    AddNumber(parameters, "screenshot_interval_s", screenshotInterval);
+                    AddNumber(parameters, "max_screenshots", maxScreenshots);
+                    AddNumber(parameters, "max_events", maxEvents);
+                    AddNumber(parameters, "max_duration_s", maxDuration);
                     Console.WriteLine(PyRevitAgentClient.Call(instance, "recording_start", parameters).ToString(Formatting.Indented));
                     break;
                 case "stop":
@@ -163,19 +163,17 @@ namespace pyRevitCLI {
             }
         }
 
-        private static void AddNumber(JObject parameters, string name, string value, string option, bool whole = false) {
+        private static void AddNumber(JObject parameters, string name, string value) {
             if (value == null)
                 return;
-            if (!double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsed)
-                || double.IsNaN(parsed) || double.IsInfinity(parsed))
-                throw new PyRevitException(option + " must be a number: " + value);
-            if (whole && parsed != Math.Floor(parsed))
-                throw new PyRevitException(option + " must be a whole number: " + value);
-            parameters[name] = parsed;
+            var parsed = double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number);
+            parameters[name] = parsed ? (JToken)number : value;
         }
 
         public static void PrintRecordings(string limit) {
-            var count = int.TryParse(limit, out var parsed) && parsed > 0 ? parsed : 20;
+            var count = 20;
+            if (limit != null && (!int.TryParse(limit, out count) || count < 1))
+                throw new PyRevitException("--limit must be a positive whole number: " + limit);
             var recordings = AgentRecordingReader.List(PyRevitAgentClient.RecordingsDir, count);
             if (recordings.Count == 0) {
                 Console.WriteLine("No session recordings.");

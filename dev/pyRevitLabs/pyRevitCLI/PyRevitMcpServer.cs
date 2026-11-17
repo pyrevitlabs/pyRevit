@@ -517,11 +517,20 @@ namespace pyRevitCLI {
             var recordingId = arguments.Value<string>("recording_id");
             if (string.IsNullOrWhiteSpace(recordingId))
                 return new JObject { ["recordings"] = new JArray(AgentRecordingReader.List(PyRevitAgentClient.RecordingsDir, 20)) };
+            var offset = Math.Max(0, OptionalInt(arguments, "offset") ?? 0);
+            var limit = Math.Min(MaxRecordingEvents, Math.Max(1, OptionalInt(arguments, "limit") ?? DefaultRecordingEvents));
             var directory = AgentRecordingReader.FindDirectory(PyRevitAgentClient.RecordingsDir, recordingId)
                 ?? throw new AgentClientException("recording_not_found", "No recording with id " + recordingId);
-            var offset = Math.Max(0, arguments.Value<int?>("offset") ?? 0);
-            var limit = Math.Min(MaxRecordingEvents, Math.Max(1, arguments.Value<int?>("limit") ?? DefaultRecordingEvents));
             return AgentRecordingReader.ReadRecording(directory, offset, limit);
+        }
+
+        private static int? OptionalInt(JObject arguments, string name) {
+            var token = arguments[name];
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+            if (token.Type != JTokenType.Integer || token.Value<long>() > int.MaxValue || token.Value<long>() < int.MinValue)
+                throw new AgentClientException("invalid_params", "'" + name + "' must be an integer.");
+            return token.Value<int>();
         }
 
         private static JObject ReadResultPage(string path, int offset, int length) {

@@ -16,10 +16,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// stay in <c>%APPDATA%\pyRevit\agent\recordings</c>; nothing leaves the machine unless the
     /// user shares the folder, or an agent reads it through <c>get_recording</c>.
     /// Invariant: at most one recording is active per Revit process.
-    /// Important: <see cref="Start"/> must run in a valid Revit API context. A stop requested off
-    /// the Revit main thread ends the recording but leaves unsubscribing to the session's next
-    /// <c>Idling</c>, so shutdown never touches Revit events from the wrong thread. Both must run in a valid Revit API
-    /// context, because they subscribe to and unsubscribe from Revit events.
+    /// Important: <see cref="Start"/> must run in a valid Revit API context because it subscribes
+    /// to Revit events. A stop requested off the Revit main thread ends the recording but leaves
+    /// unsubscribing to the session's next <c>Idling</c>, so shutdown never touches Revit events
+    /// from the wrong thread.
     /// </remarks>
     public static class AgentRecorder {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -85,14 +85,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             lock (sync) {
                 if (store != null)
                     throw new AgentException("recording_active", "A recording is already active: " + store.Id + ". Stop it first.");
-                var root = AgentPaths.RecordingsDir;
-                try {
-                    AgentRecordingStore.Prune(root, DateTime.Now, null);
-                }
-                catch (Exception ex) {
-                    logger.Debug("Could not prune old recordings: {0}", ex.Message);
-                }
-                var created = AgentRecordingStore.Create(root, options);
+                pendingOutput.Drain();
+                var created = AgentRecordingStore.Create(AgentPaths.RecordingsDir, options);
                 logger.Info("Session recording {0} started", created.Id);
                 var attaching = new AgentRecorderSession(app, created);
                 store = created;
@@ -116,8 +110,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var active = store;
                 if (active == null)
                     throw new AgentException("not_recording", "No recording is active.");
-                Append("recording_stopped", new JObject { ["reason"] = reason });
+                Append(AgentRecordingStore.StoppedKind, new JObject { ["reason"] = reason });
                 store = null;
+                pendingOutput.Drain();
                 var ending = session;
                 session = null;
                 JObject summary;

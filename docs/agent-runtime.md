@@ -687,11 +687,11 @@ Decisions:
   read for only the first 25 elements of each change, so there is no category filter yet.
 - **Limits.** `--max-events` stops storing events beyond the cap and counts them in `dropped_events`; output and
   log text is cut at 4000 characters, and a `mark` payload over 16000 characters is replaced by a preview and its
-  original length; events stop being stored at `--max-duration` even before the recording is stopped; a recording stops itself after `--max-duration`, when the host
+  original length; events stop being stored at `--max-duration` even before the recording is stopped (the final `recording_stopped` event is always stored); a recording stops itself after `--max-duration`, when the host
   stops or Revit closes.
 - **Storage** is local plaintext under `%APPDATA%\pyRevit\agent\recordings\<timestamp>-<id>\`
   (`events.jsonl`, `recording.json`, `screenshots\`). Recordings older than 7 days, and all but
-  the newest 20, are deleted when a recording starts and when the host starts; a recording another Revit is
+  the newest 20, are deleted when the host starts and at most once a day when a run is recorded; a recording another Revit is
   still writing is never deleted. The recorder uploads nothing itself; an
   agent reads a recording only through `get_recording`, and what that returns may be sent to the agent's model
   provider like any other tool result. Element names and screenshots can contain client data, so review a recording

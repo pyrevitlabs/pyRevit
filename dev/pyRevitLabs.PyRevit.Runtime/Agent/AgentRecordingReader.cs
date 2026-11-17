@@ -15,13 +15,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentRecordingReader {
         public const string LockFileName = ".active";
         public const int MaxPageChars = 200 * 1024;
-        private const int SharingViolation = 32;
-        private const int LockViolation = 33;
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 
         /// <summary>
         /// True while some process still holds the recording's lock file, that is while it is being written.
         /// </summary>
+        /// <remarks>
+        /// Conservative: a lock file that can't be opened for any reason other than being gone
+        /// counts as live, so a prune never deletes a recording that may still be written.
+        /// </remarks>
         public static bool IsLive(string directory) {
             var lockPath = Path.Combine(directory, LockFileName);
             if (!File.Exists(lockPath))
@@ -31,11 +33,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 }
                 return false;
             }
-            catch (IOException ex) when ((ex.HResult & 0xFFFF) == SharingViolation || (ex.HResult & 0xFFFF) == LockViolation) {
-                return true;
-            }
-            catch (IOException) {
+            catch (FileNotFoundException) {
                 return false;
+            }
+            catch (DirectoryNotFoundException) {
+                return false;
+            }
+            catch (Exception) {
+                return true;
             }
         }
 
@@ -51,7 +56,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return Directory.GetDirectories(root)
                 .OrderByDescending(Path.GetFileName, StringComparer.Ordinal)
                 .Take(limit)
-                .Select(directory => ReadSummary(directory))
+                .Select(TryReadSummary)
+                .Where(summary => summary != null)
                 .ToList();
         }
 
@@ -111,6 +117,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        private static string ReadSharedText(string path) {
+            try {
+                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+                using (var reader = new StreamReader(stream, Utf8)) {
+                    return reader.ReadToEnd();
+                }
+            }
+            catch (IOException) {
+                return null;
+            }
+        }
+
         private static JObject DescribeUnfinished(string directory) {
             var count = 0;
             JToken started = null;
@@ -126,11 +144,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
         }
 
+        private static JObject TryReadSummary(string directory) {
+            try {
+                return ReadSummary(directory);
+            }
+            catch (Exception) {
+                return null;
+            }
+        }
+
         private static JObject ReadSummary(string directory) {
             var path = Path.Combine(directory, "recording.json");
             JObject summary = null;
             if (File.Exists(path))
-                summary = TryParse(File.ReadAllText(path, Utf8));
+                summary = TryParse(ReadSharedText(path));
             if (summary == null)
                 summary = DescribeUnfinished(directory);
             summary["directory"] = directory;

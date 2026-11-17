@@ -23,6 +23,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Screenshots are never taken inside an event handler: a trigger only marks one as
     /// pending, and it is taken on the next <c>Idling</c> when the throttle allows, because
     /// Revit can't export an image while it is inside a transaction or a dialog.
+    /// A dialog's screenshot is therefore taken after the dialog closes, because <c>Idling</c> does not
+    /// fire while a modal dialog is open; its <c>reason</c> says what triggered it, not what it shows.
     /// Native Revit commands are visible only through their transaction names, since Revit
     /// offers no event for an arbitrary command; this is the best effort the recorder makes.
     /// Invariant: <see cref="Dispose"/> unsubscribes every handler.
@@ -190,14 +192,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JArray DescribeElements(Document doc, ICollection<ElementId> ids) {
             var described = new JArray();
-            var candidates = ids.Take(MaxElementsScanned).OrderBy(id => doc.GetElement(id)?.Category == null);
-            foreach (var id in candidates.Take(MaxElementsPerChange)) {
-                var element = doc.GetElement(id);
+            var candidates = ids.Take(MaxElementsScanned)
+                .Select(id => new { id, element = doc.GetElement(id) })
+                .OrderBy(candidate => candidate.element?.Category == null);
+            foreach (var candidate in candidates.Take(MaxElementsPerChange)) {
                 described.Add(new JObject {
-                    ["id"] = AgentIds.ToValue(id),
-                    ["category"] = element?.Category?.Name,
-                    ["name"] = DescribeName(element),
-                    ["location"] = DescribeLocation(element),
+                    ["id"] = AgentIds.ToValue(candidate.id),
+                    ["category"] = candidate.element?.Category?.Name,
+                    ["name"] = DescribeName(candidate.element),
+                    ["location"] = DescribeLocation(candidate.element),
                 });
             }
             return described;

@@ -367,6 +367,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <remarks>
+    /// Session recordings are pruned by the same pass, by their own retention policy
+    /// (<see cref="AgentRecordingStore.Retention"/> and <see cref="AgentRecordingStore.MaxRecordings"/>).
     /// Run records and captures older than <see cref="RecordRetention"/> are deleted when the
     /// host starts and again, at most once per <see cref="PruneInterval"/>, when a run record is
     /// created, so a busy agent doesn't fill the user's profile even in a Revit session left open

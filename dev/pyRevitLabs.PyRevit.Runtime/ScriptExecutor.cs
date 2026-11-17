@@ -259,8 +259,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private static int ExecuteScriptRecorded(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs, ref bool endRecorded) {
             // create runtime
-            var runtime = new ScriptRuntime(scriptData, scriptRuntimeCfg);
             Agent.AgentRecorder.RecordCommand("start", scriptData?.CommandName, scriptData?.CommandUniqueId, null, null);
+            var runtime = new ScriptRuntime(scriptData, scriptRuntimeCfg);
 
             // determine which engine to use, and execute
             if (EnsureTargetScript(ref runtime)) {

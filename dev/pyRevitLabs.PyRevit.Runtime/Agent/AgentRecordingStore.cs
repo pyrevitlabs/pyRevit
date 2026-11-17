@@ -100,7 +100,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <remarks>
     /// Invariant: events are appended as complete lines, so a recording interrupted by a Revit
     /// crash is still readable by <see cref="ReadRecording"/>. The event count is capped; once
-    /// the cap is reached further events are counted in <c>dropped_events</c> and not stored.
+    /// the cap or the maximum duration is reached further events are counted in <c>dropped_events</c>
+    /// and not stored, except the <see cref="StoppedKind"/> event that ends the timeline.
     /// Recordings are local plaintext and may contain client data; nothing here sends them anywhere.
     /// </remarks>
     internal sealed class AgentRecordingStore {
@@ -108,8 +109,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static readonly TimeSpan Retention = TimeSpan.FromDays(7);
         public const int MaxRecordings = 20;
         public const int MaxMarkLength = 16000;
-        private const int SharingViolation = 32;
-        private const int LockViolation = 33;
+        public const string StoppedKind = "recording_stopped";
 
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
         private readonly object sync = new object();
@@ -187,11 +187,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             lock (sync) {
                 if (stopped)
                     return false;
-                if (clock.Elapsed.TotalSeconds >= Options.MaxDurationSeconds) {
+                var terminal = kind == StoppedKind;
+                if (!terminal && clock.Elapsed.TotalSeconds >= Options.MaxDurationSeconds) {
                     dropped++;
                     return false;
                 }
-                if (sequence >= Options.MaxEvents) {
+                if (!terminal && sequence >= Options.MaxEvents) {
                     dropped++;
                     return false;
                 }

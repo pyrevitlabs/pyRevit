@@ -937,6 +937,17 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal("invalid_params", payload.Value<string>("error"));
     }
 
+    [Theory]
+    [InlineData("offset", "abc")]
+    [InlineData("limit", "abc")]
+    [InlineData("limit", 99999999999L)]
+    public void GetRecordingRejectsANonIntegerOffsetOrLimit(string name, object value) {
+        var arguments = new JObject { ["recording_id"] = "abc12345", [name] = JToken.FromObject(value) };
+        var payload = Payload(Single(ToolCall(1, "get_recording", arguments)));
+
+        Assert.Equal("invalid_params", payload.Value<string>("error"));
+    }
+
     [Fact]
     public void ARecordedRunIsReturnedWithItsScriptAndAPageOfItsResult() {
         host.AddRun("abc123def456", response: "{\"status\":\"ok\",\"run_id\":\"abc123def456\"}", script: "result = 1", result: "0123456789");
