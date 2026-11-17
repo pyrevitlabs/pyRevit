@@ -15,6 +15,7 @@ namespace pyRevitLabs.UnitTests {
         [DataRow("https://token@github.com/org/repo.git", "https://***@github.com/org/repo.git")]
         [DataRow("https://user:top secret@github.com/org/repo.git", "https://***@github.com/org/repo.git")]
         [DataRow("https://user:p@ss@github.com/org/repo.git", "https://***@github.com/org/repo.git")]
+        [DataRow("https://user:ab/cd@github.com/org/repo.git", "https://***@github.com/org/repo.git")]
         [DataRow("https://github.com/org/repo.git", "https://github.com/org/repo.git")]
         [DataRow(@"C:\repos\pyrevit", @"C:\repos\pyrevit")]
         [DataRow("https://github.com/org/repo.git/@mention", "https://github.com/org/repo.git/@mention")]

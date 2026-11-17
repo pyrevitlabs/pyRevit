@@ -266,7 +266,7 @@ namespace pyRevitLabs.Common.Extensions {
         public static string RedactUrlCredentials(this string sourceString) {
             return string.IsNullOrEmpty(sourceString)
                 ? sourceString
-                : Regex.Replace(sourceString, @"(?<=://)[^/]*@", "***@");
+                : Regex.Replace(sourceString, @"(?<=://)([^/]*@|[^/@]+:[^@]*@)", "***@");
         }
 
         public static List<string> GetLines(this string sourceString) {
