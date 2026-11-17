@@ -1,5 +1,6 @@
 """Apply repository classification to pytest and existing unittest cases."""
 
+import os
 from pathlib import Path
 
 import pytest
@@ -62,7 +63,13 @@ def pytest_collection_modifyitems(config, items):
 
 
 def pytest_sessionfinish(session, exitstatus):
-    """Require selected host-free cases to execute instead of silently skipping."""
+    """Require selected host-free cases to execute instead of silently skipping.
+
+    Only enforced when the shared runner sets ``PYREVIT_STRICT_SKIPS``; ad hoc
+    pytest runs keep pytest's normal skip semantics.
+    """
+    if not os.environ.get("PYREVIT_STRICT_SKIPS"):
+        return
     reporter = session.config.pluginmanager.get_plugin("terminalreporter")
     if reporter and any(
         reporter.stats.get(outcome) for outcome in ("skipped", "xfailed", "xpassed")

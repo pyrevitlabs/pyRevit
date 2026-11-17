@@ -11,13 +11,18 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import uuid
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 LEVELS = {"Unit", "Integration", "E2E", "Performance"}
 ENVIRONMENTS = {"HostFree", "Revit"}
-EXCLUDED = {"modules", "bin", "obj", ".git", ".venv", "site-packages"}
+VENDORED_NAMES = {".git", ".venv", "site-packages"}
+VENDORED_PATHS = {"dev/modules"}
+BUILD_OUTPUT_NAMES = {"bin", "obj"}
+PROJECT_PATTERNS = ("*.csproj", "*.vbproj")
+STRICT_SKIPS_ENV = "PYREVIT_STRICT_SKIPS"
 BASELINES = ROOT / "dev/tests/coverage-baselines.json"
 TRX_NS = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
 ENGINE_VARIANTS = {"pyRevitLabs.PyRevit.Shell.Tests": ("IPY2712PR", "IPY342")}
@@ -41,16 +46,38 @@ def python_metadata(path):
     return {"Environment": values["TEST_ENVIRONMENT"], "Level": values["TEST_LEVEL"]}
 
 
+def is_third_party(directory, name):
+    """Tell vendored or generated folders from first-party folders named alike.
+
+    Only ``VENDORED_NAMES``, the ``VENDORED_PATHS`` below the repository root,
+    and ``bin``/``obj`` beside a project file are skipped; any other folder,
+    for example ``lib/modules``, is first-party and must be discovered.
+    """
+    path = Path(directory) / name
+    if name in VENDORED_NAMES:
+        return True
+    if (
+        path.is_relative_to(ROOT)
+        and path.relative_to(ROOT).as_posix() in VENDORED_PATHS
+    ):
+        return True
+    return name in BUILD_OUTPUT_NAMES and any(
+        next(Path(directory).glob(pattern), None) for pattern in PROJECT_PATTERNS
+    )
+
+
 def first_party_files(root, pattern):
     """Walk source trees without descending into dependencies or build outputs."""
     for directory, children, files in os.walk(root):
-        children[:] = sorted(child for child in children if child not in EXCLUDED)
+        children[:] = sorted(
+            child for child in children if not is_third_party(directory, child)
+        )
         for name in sorted(files):
             if Path(name).match(pattern):
                 yield Path(directory) / name
 
 
-def command(arguments, capture=False, timeout=1200):
+def command(arguments, capture=False, timeout=1200, environment=None):
     """Propagate subprocess failures and bound potentially hanging test runs."""
     result = subprocess.run(
         [str(argument) for argument in arguments],
@@ -61,7 +88,7 @@ def command(arguments, capture=False, timeout=1200):
         timeout=timeout,
         stdout=subprocess.PIPE if capture else None,
         stderr=subprocess.STDOUT if capture else None,
-        env={**os.environ, "DOTNET_CLI_UI_LANGUAGE": "en"},
+        env={**os.environ, "DOTNET_CLI_UI_LANGUAGE": "en", **(environment or {})},
     )
     if result.returncode:
         raise RuntimeError(
@@ -178,14 +205,10 @@ def discover_dotnet(results):
 def discover_python():
     """Inventory named Python tests without importing hosted suites."""
     roots = (ROOT / "dev", ROOT / "pyrevitlib/pyrevit/unittests", ROOT / "extensions")
-    return [
-        {"path": str(path), **python_metadata(path)}
-        for root in roots
-        for path in first_party_files(root, "test_*.py")
-    ] + [
-        {"path": str(path), **python_metadata(path)}
-        for path in first_party_files(ROOT / "extensions", "*_tests.py")
-    ]
+    paths = {
+        path for root in roots for path in first_party_files(root, "test_*.py")
+    } | set(first_party_files(ROOT / "extensions", "*_tests.py"))
+    return [{"path": str(path), **python_metadata(path)} for path in sorted(paths)]
 
 
 def validate_trx(path):
@@ -208,6 +231,17 @@ def validate_trx(path):
             f"{path}: a selected test did not pass (including skipped cases)"
         )
     return dict(counters.attrib)
+
+
+def locked_requirements(lock):
+    """Render the lock file's develop section as hash-pinned pip requirements."""
+    packages = json.loads(Path(lock).read_text(encoding="utf-8"))["develop"]
+    lines = []
+    for name, package in packages.items():
+        marker = f" ; {package['markers']}" if package.get("markers") else ""
+        hashes = "".join(f" --hash={value}" for value in package["hashes"])
+        lines.append(f"{name}{package['version']}{marker}{hashes}\n")
+    return "".join(lines)
 
 
 def engine_variants(project):
@@ -402,21 +436,22 @@ def main():
     parser.add_argument("--results", type=Path, default=ROOT / ".test-results")
     options = parser.parse_args()
     if options.install_dependencies:
-        locked = json.loads((ROOT / "Pipfile.lock").read_text(encoding="utf-8"))[
-            "develop"
-        ]
-        command(
-            [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                *[
-                    name + locked[name]["version"]
-                    for name in ("pytest", "pytest-cov", "coverage")
-                ],
-            ]
-        )
+        with tempfile.TemporaryDirectory() as directory:
+            requirements = Path(directory) / "requirements.txt"
+            requirements.write_text(
+                locked_requirements(ROOT / "Pipfile.lock"), encoding="utf-8"
+            )
+            command(
+                [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "--require-hashes",
+                    "-r",
+                    requirements,
+                ]
+            )
         return
     results = options.results.resolve() / uuid.uuid4().hex
     results.mkdir(parents=True, exist_ok=True)
@@ -456,7 +491,8 @@ def main():
                 f"--cov-report=json:{directory / 'coverage.json'}",
                 f"--cov-report=xml:{directory / 'coverage.xml'}",
                 "--cov-report=term",
-            ]
+            ],
+            environment={STRICT_SKIPS_ENV: "1"},
         )
         root = ET.parse(directory / "results.xml").getroot()
         if sum(int(suite.get("tests", "0")) for suite in root.iter("testsuite")) == 0:

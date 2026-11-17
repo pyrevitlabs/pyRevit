@@ -294,3 +294,105 @@ class SelectionTests(unittest.TestCase):
                 encoding="utf-8",
             )
             self.assertEqual({}, run_tests.collect_coverage(Path(directory)))
+
+    def test_first_party_folders_named_like_dependencies_are_discovered(self):
+        """Only the vendored repository paths are skipped, not any folder named modules."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in (
+                "extensions/Tab/lib/modules/test_kept.py",
+                "extensions/Tab/lib/bin/test_kept_bin.py",
+                "dev/modules/vendor/test_vendored.py",
+                "extensions/.venv/test_env.py",
+                "dev/project/bin/test_built.py",
+            ):
+                (root / relative).parent.mkdir(parents=True, exist_ok=True)
+                (root / relative).write_text("", encoding="utf-8")
+            (root / "dev/project/project.csproj").write_text("", encoding="utf-8")
+            with patch.object(run_tests, "ROOT", root):
+                found = {
+                    path.relative_to(root).as_posix()
+                    for path in run_tests.first_party_files(root, "test_*.py")
+                }
+            self.assertEqual(
+                {
+                    "extensions/Tab/lib/modules/test_kept.py",
+                    "extensions/Tab/lib/bin/test_kept_bin.py",
+                },
+                found,
+            )
+
+    def test_python_inventory_lists_each_module_once(self):
+        """A module matching both naming patterns is inventoried and run once."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "extensions").mkdir()
+            (root / "dev").mkdir()
+            (root / "pyrevitlib/pyrevit/unittests").mkdir(parents=True)
+            metadata = 'TEST_ENVIRONMENT = "HostFree"\nTEST_LEVEL = "Unit"\n'
+            for name in ("test_both_tests.py", "other_tests.py", "test_plain.py"):
+                (root / "extensions" / name).write_text(metadata, encoding="utf-8")
+            with patch.object(run_tests, "ROOT", root):
+                paths = [
+                    Path(suite["path"]).name for suite in run_tests.discover_python()
+                ]
+            self.assertEqual(
+                ["other_tests.py", "test_both_tests.py", "test_plain.py"], sorted(paths)
+            )
+
+    def test_strict_skip_policy_applies_only_when_the_runner_requests_it(self):
+        """Ad hoc pytest runs may skip; the shared runner must reject skips."""
+        with tempfile.TemporaryDirectory() as directory:
+            tmp_path = Path(directory)
+            (tmp_path / "conftest.py").write_text(
+                Path(conftest.__file__).read_text(encoding="utf-8"), encoding="utf-8"
+            )
+            (tmp_path / "test_skips.py").write_text(
+                "import pytest\nTEST_ENVIRONMENT = 'HostFree'\nTEST_LEVEL = 'Unit'\n"
+                "@pytest.mark.skip\ndef test_skipped():\n    pass\n"
+                "def test_ran():\n    assert True\n",
+                encoding="utf-8",
+            )
+            environment = {
+                key: value
+                for key, value in os.environ.items()
+                if key != run_tests.STRICT_SKIPS_ENV
+            }
+            environment["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
+            statuses = []
+            for extra in ({}, {run_tests.STRICT_SKIPS_ENV: "1"}):
+                result = subprocess.run(
+                    [sys.executable, "-m", "pytest", "-q", "test_skips.py"],
+                    cwd=tmp_path,
+                    env={**environment, **extra},
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                statuses.append(result.returncode)
+            self.assertEqual([0, 1], statuses)
+
+    def test_locked_requirements_pin_every_hash_and_marker(self):
+        """Dependency installation is hash-verified from the lock file."""
+        with tempfile.TemporaryDirectory() as directory:
+            lock = Path(directory) / "Pipfile.lock"
+            lock.write_text(
+                json.dumps(
+                    {
+                        "develop": {
+                            "pytest": {
+                                "version": "==9.0.2",
+                                "hashes": ["sha256:aa", "sha256:bb"],
+                                "markers": "python_version >= '3.10'",
+                            },
+                            "pluggy": {"version": "==1.7.0", "hashes": ["sha256:cc"]},
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                "pytest==9.0.2 ; python_version >= '3.10' --hash=sha256:aa --hash=sha256:bb\n"
+                "pluggy==1.7.0 --hash=sha256:cc\n",
+                run_tests.locked_requirements(lock),
+            )

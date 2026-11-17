@@ -19,4 +19,4 @@ Tests use temporary files, local module doubles, or extracted helpers. Keep fixt
 
 See `docs/testing.md` for policy and `dev/tests/README.md` for baseline review.
 
-`pipenv run test-standalone` remains an alias for the library suites. Hosted Python tests remain under `pyrevitlib/pyrevit/unittests/` and are excluded from CI.
+`--install-dependencies` installs the `Pipfile.lock` develop set with `pip --require-hashes`. Hosted Python tests remain under `pyrevitlib/pyrevit/unittests/` and are excluded from CI.
