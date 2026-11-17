@@ -358,7 +358,7 @@ namespace pyRevitExtensionParser
                 switch (key)
                 {
                     case "type":
-                        parsed.Engine.Type = GetScalar(entry.Value);
+                        parsed.Engine.Type = GetScalar(entry.Value)?.Trim();
                         break;
                     case "clean":
                         parsed.Engine.Clean = ParseBool(entry.Value);
