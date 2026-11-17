@@ -21,8 +21,12 @@ internal static class TestMetadata {
         foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>()) {
             if (!method.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => TestAttributes.Contains(Name(attribute))))
                 continue;
-            var type = method.Ancestors().OfType<ClassDeclarationSyntax>().First();
-            var defaults = ReadTags(type.AttributeLists.SelectMany(list => list.Attributes), path);
+            var types = method.Ancestors().OfType<TypeDeclarationSyntax>().ToList();
+            var type = types[0];
+            var defaults = new Dictionary<string, string>();
+            foreach (var outer in Enumerable.Reverse(types))
+                foreach (var tag in ReadTags(outer.AttributeLists.SelectMany(list => list.Attributes), path))
+                    defaults[tag.Key] = tag.Value;
             var overrides = ReadTags(method.AttributeLists.SelectMany(list => list.Attributes), path);
             string environment = overrides.GetValueOrDefault("Environment") ?? defaults.GetValueOrDefault("Environment") ?? "";
             string level = overrides.GetValueOrDefault("Level") ?? defaults.GetValueOrDefault("Level") ?? "";
