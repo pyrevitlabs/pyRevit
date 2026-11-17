@@ -15,6 +15,7 @@ namespace Build.Modules;
 [SkipIfNoGitHubToken]
 [DependsOn<GenerateReleaseNotesModule>]
 [DependsOn<SignChocoPackageModule>]
+[DependsOn<StageStandaloneDoctorModule>]
 [DependsOn<SignBinariesModule>(Optional = true)]
 public sealed class PublishGithubReleaseModule(IOptions<PublishOptions> publishOptions) : Module<string>
 {

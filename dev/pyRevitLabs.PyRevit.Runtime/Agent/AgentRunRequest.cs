@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Json;
@@ -49,6 +50,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// the answer can find what became of its request. Set by the request handler.
         /// </summary>
         public string RequestId { get; set; }
+
+        /// <summary>
+        /// Cancelled when the client that sent the request disconnects before the run's answer is
+        /// sent. Set by the request handler; <c>default</c> (never cancelled) for in-process requests.
+        /// </summary>
+        public CancellationToken CallerGone { get; set; }
 
         /// <summary>
         /// Seconds the script may run before the runner stops it. Covers script execution

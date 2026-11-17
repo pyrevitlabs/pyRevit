@@ -98,7 +98,9 @@ nav:
     - Interactive Python shell: python-shell.md
     - Agent runtime: agent-runtime.md
     - CI/CD and releases: ci-cd.md
+    - Installers: installers.md
     - Testing: testing.md
+    - Release qualification: release-qualification.md
     - Adding support for new Revit version: adding-revit-version.md
     - Propose your own custom extension: custom_extension.md
     - Contributing: CONTRIBUTING.md
