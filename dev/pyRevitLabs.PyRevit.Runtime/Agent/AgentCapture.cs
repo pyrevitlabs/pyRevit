@@ -49,7 +49,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// A view name shared by several views fails with <c>view_ambiguous</c> listing their ids,
     /// types and, for sheets, numbers, unless <c>screen</c> mode can take the active view among
     /// them. The optional <c>view_type</c>, a <c>ViewType</c> name such as <c>FloorPlan</c>,
-    /// keeps only views of that type, so a name shared across types resolves in one call.
+    /// keeps only views of that type, so a name shared across types resolves in one call; it is
+    /// rejected with <c>invalid_params</c> for <c>active</c> and <c>3d</c>.
     /// Invariant: capturing never leaves a change in the model.
     /// </remarks>
     internal static class AgentCapture {
@@ -171,7 +172,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static string ParseViewType(JObject parameters) {
-            var names = Enum.GetNames(typeof(ViewType));
+            var names = Enum.GetNames(typeof(ViewType)).Where(name => name != "Undefined" && name != "Internal").ToList();
             var choice = ParseChoice(parameters, "view_type", names.Select(name => name.ToLowerInvariant()));
             return choice == null ? null : names.First(name => string.Equals(name, choice, StringComparison.OrdinalIgnoreCase));
         }
@@ -191,6 +192,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'eye' and 'target' must be given together.");
             if (request.Eye != null && request.Eye.DistanceTo(request.Target) < DirectionTolerance)
                 throw new AgentException("invalid_params", "'eye' and 'target' must be different points.");
+            if (request.ViewType != null && (string.Equals(request.View, "active", StringComparison.OrdinalIgnoreCase) || string.Equals(request.View, "3d", StringComparison.OrdinalIgnoreCase)))
+                throw new AgentException("invalid_params", "'view_type' needs a view name, sheet number or id, not 'active' or '3d'.");
             if (request.Eye != null && request.Section != null)
                 throw new AgentException("invalid_params", "'section' and 'eye'/'target' can't be combined; each defines the camera.");
             if ((request.Eye != null || request.Section != null) && !string.Equals(request.View, "3d", StringComparison.OrdinalIgnoreCase))

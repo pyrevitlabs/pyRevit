@@ -833,7 +833,7 @@ namespace pyRevitCLI {
                             },
                             ["view_type"] = new JObject {
                                 ["type"] = "string",
-                                ["description"] = "Optional Revit ViewType name such as FloorPlan, CeilingPlan, Section, ThreeD or DrawingSheet; keeps only views of that type when a name is shared.",
+                                ["description"] = "Optional Revit ViewType name such as FloorPlan, CeilingPlan, Section, ThreeD or DrawingSheet; keeps only views of that type when a name is shared. Not with view 'active' or '3d'.",
                             },
                             ["mode"] = new JObject {
                                 ["type"] = "string",
