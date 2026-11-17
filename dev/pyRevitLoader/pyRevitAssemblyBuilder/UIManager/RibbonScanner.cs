@@ -435,7 +435,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     if (tab?.Panels == null) continue;
 
                     // Only process pyRevit tabs (matching Python behavior)
-                    if (!IsPyRevitTabByTag(tab) && !IsPyRevitTab(tab))
+                    if (!IsPyRevitTabByTag(tab))
                         continue;
 
                     foreach (var panelObj in tab.Panels)
@@ -474,22 +474,6 @@ namespace pyRevitAssemblyBuilder.UIManager
             if (string.IsNullOrEmpty(parentId))
                 return $"{elementType}:{elementId}";
             return $"{elementType}:{parentId}:{elementId}";
-        }
-
-        /// <summary>
-        /// Checks if a tab is a pyRevit tab (not native Revit).
-        /// </summary>
-        private bool IsPyRevitTab(RibbonTab tab)
-        {
-            // Check if this tab is in our registry
-            var tabKey = BuildKey("tab", tab.Title ?? tab.Id, null);
-            if (_elementRegistry.ContainsKey(tabKey))
-                return true;
-
-            // Also check for tabs created by pyRevit based on naming or other heuristics
-            // In Python, pyRevit tabs are identified by having the pyRevit addin ID
-            // For now, we'll rely on the registry
-            return false;
         }
 
         /// <summary>

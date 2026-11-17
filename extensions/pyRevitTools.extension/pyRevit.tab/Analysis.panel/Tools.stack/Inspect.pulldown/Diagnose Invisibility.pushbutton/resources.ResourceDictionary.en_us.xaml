@@ -28,7 +28,7 @@
     <sys:String x:Key="reason_view_template">View template '{}' is applied - some visibility settings may be locked and must be changed in the template</sys:String>
     <sys:String x:Key="reason_view_specific">Element is view-specific and belongs to another view ('{}'), so it cannot appear here</sys:String>
     <sys:String x:Key="reason_view_discipline">View discipline is set to '{}' - some categories are shown or hidden automatically based on discipline, independent of Visibility/Graphics settings</sys:String>
-    <sys:String x:Key="reason_unknown">Element is not visible but no specific cause could be determined. Possible causes: view-specific element type (e.g. annotation from another view), linked model visibility, or detail level.</sys:String>
+    <sys:String x:Key="reason_unknown">Element is not visible but no specific cause could be determined. Possible causes: view-specific element type (e.g. annotation from another view) or linked model visibility.</sys:String>
 
     <sys:String x:Key="reason_temporary_hidden">Element is hidden by Temporary Hide/Isolate in this view</sys:String>
     <sys:String x:Key="reason_behind_cut_plane">Element is entirely behind the view's cut plane, so the section/elevation does not look at it</sys:String>
@@ -127,5 +127,46 @@
     <sys:String x:Key="ui_speculative_hint">Possible cause only: Revit could not tell which subcategories this element draws with here. Not included in Fix all.</sys:String>
     <sys:String x:Key="ui_ghost">Ghost in Revit</sys:String>
     <sys:String x:Key="ui_ghost_hint">Draw this element's geometry in Revit's views, even while it is hidden, and zoom the diagnosed view to it. Click again to remove.</sys:String>
+
+    <sys:String x:Key="reason_model_in_flat_view">'{}' is a model element, and views of type '{}' cannot show model elements. They only hold view-specific detail and annotation content.</sys:String>
+    <sys:String x:Key="reason_not_in_3d">Category '{}' is never displayed in 3D views</sys:String>
+    <sys:String x:Key="reason_detail_level">Element has no geometry at this view's detail level ({0}); it appears at {1}</sys:String>
+    <sys:String x:Key="code_view_type">View type</sys:String>
+    <sys:String x:Key="code_detail_level">Detail level</sys:String>
+    <sys:String x:Key="fix_set_detail_level">Set detail level to {}</sys:String>
+    <sys:String x:Key="detail_level_coarse">Coarse</sys:String>
+    <sys:String x:Key="detail_level_medium">Medium</sys:String>
+    <sys:String x:Key="detail_level_fine">Fine</sys:String>
+    <sys:String x:Key="add_nothing_new">No new elements to add.</sys:String>
+    <sys:String x:Key="added_elements">Added {0} element(s).</sys:String>
+    <sys:String x:Key="add_no_selection">Nothing is selected in Revit.</sys:String>
+    <sys:String x:Key="add_views_button">Add to report</sys:String>
+    <sys:String x:Key="added_views">Added {0} view(s).</sys:String>
+    <sys:String x:Key="hide_nothing">Nothing to change: the elements are already in that state, cannot be hidden in these views, or belong to another view.</sys:String>
+    <sys:String x:Key="confirm_hide">Hide {0} element(s) in {1} view(s)?</sys:String>
+    <sys:String x:Key="confirm_unhide">Unhide {0} element(s) in {1} view(s)?</sys:String>
+    <sys:String x:Key="transaction_hide">Hide in views</sys:String>
+    <sys:String x:Key="transaction_unhide">Unhide in views</sys:String>
+    <sys:String x:Key="hidden_summary">Hid {0} element(s) in {1} view(s).</sys:String>
+    <sys:String x:Key="unhidden_summary">Unhid {0} element(s) in {1} view(s).</sys:String>
+    <sys:String x:Key="ui_add_selection">Add selection</sys:String>
+    <sys:String x:Key="ui_add_selection_hint">Add the elements currently selected in Revit to this report.</sys:String>
+    <sys:String x:Key="ui_pick_elements">Pick elements</sys:String>
+    <sys:String x:Key="ui_add_views">Add views</sys:String>
+    <sys:String x:Key="ui_remove_element">Remove this element from the report</sys:String>
+    <sys:String x:Key="ui_remove_view">Remove this view from the report</sys:String>
+    <sys:String x:Key="ui_select_all">Select all</sys:String>
+    <sys:String x:Key="ui_selected_count">{0} selected</sys:String>
+    <sys:String x:Key="ui_clear_selection">Clear selection</sys:String>
+    <sys:String x:Key="ui_select_for_hide">Select this element for hiding or unhiding</sys:String>
+    <sys:String x:Key="ui_hide_in_views">Hide in views...</sys:String>
+    <sys:String x:Key="ui_unhide_in_views">Unhide in views...</sys:String>
+    <sys:String x:Key="ui_hide_dialog_title">Hide {0} element(s) in:</sys:String>
+    <sys:String x:Key="ui_unhide_dialog_title">Unhide {0} element(s) in:</sys:String>
+    <sys:String x:Key="ui_apply">Apply</sys:String>
+    <sys:String x:Key="ui_cancel">Cancel</sys:String>
+    <sys:String x:Key="ui_no_view_ticked">Tick at least one view.</sys:String>
+    <sys:String x:Key="ui_empty_state">Nothing to diagnose yet. Add elements and views.</sys:String>
+    <sys:String x:Key="ui_reload_blocked">Reloading would erase this report. Use Re-check instead.</sys:String>
 
 </ResourceDictionary>

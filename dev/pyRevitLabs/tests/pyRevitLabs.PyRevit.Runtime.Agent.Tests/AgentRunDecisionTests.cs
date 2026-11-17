@@ -110,6 +110,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             AssertResponse(AgentRunVerdict.AutoCommit, "ok", "committed", "auto");
             AssertResponse(AgentRunVerdict.UserApproved, "ok", "committed", "user");
             AssertResponse(AgentRunVerdict.UserDiscarded, "rejected", "discarded", "user");
+            AssertResponse(AgentRunVerdict.DiscardedCallerGone, "rejected", "discarded_caller_gone", null);
             AssertResponse(AgentRunVerdict.PolicyReadOnly, "rejected", "rolled_back", null);
             AssertResponse(AgentRunVerdict.NoDocument, "ok", "no_document", null);
         }

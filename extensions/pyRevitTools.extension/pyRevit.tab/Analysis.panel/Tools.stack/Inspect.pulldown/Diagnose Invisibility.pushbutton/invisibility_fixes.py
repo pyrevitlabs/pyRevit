@@ -3,6 +3,8 @@
 
 A fix descriptor is a dict with an ``action`` key plus id-valued arguments.
 ``describe`` turns one into a button label for a given view, ``apply`` runs it.
+``plan_visibility_change`` and ``apply_visibility_change`` hide or unhide chosen
+elements in chosen views independently of any finding.
 
 Important:
     Settings a view template controls cannot be changed on the view itself.
@@ -20,6 +22,8 @@ from pyrevit.compat import get_elementid_from_value_func
 from pyrevit.framework import List
 
 from invisibility_checks import (
+    DETAIL_LEVELS,
+    detail_level_label,
     get_view_range_bounds,
     id_value,
     local_extents,
@@ -48,6 +52,7 @@ _LABELS = {
         "Set discipline to Coordination",
     ),
     "open_view": ("fix_open_owner_view", "Open owner view"),
+    "set_detail_level": ("fix_set_detail_level", "Set detail level to {}"),
 }
 
 NAVIGATION_ACTIONS = frozenset(("open_view",))
@@ -91,6 +96,7 @@ def _template_parameter(view, fix):
         "raise_cut_plane": DB.BuiltInParameter.PLAN_VIEW_RANGE,
         "set_discipline_coordination": DB.BuiltInParameter.VIEW_DISCIPLINE,
         "disable_far_clip": DB.BuiltInParameter.VIEWER_BOUND_FAR_CLIPPING,
+        "set_detail_level": DB.BuiltInParameter.VIEW_DETAIL_LEVEL,
     }.get(action)
 
 
@@ -124,6 +130,8 @@ def describe(view, fix):
     """
     key, default = _LABELS.get(fix.get("action"), ("", fix.get("action")))
     label = t(key, default) if key else default
+    if fix.get("action") == "set_detail_level":
+        label = label.format(detail_level_label(_detail_level(fix)))
     owner = settings_owner(view, fix)
     template_name = owner.Name if owner.Id != view.Id else None
     if template_name:
@@ -135,6 +143,10 @@ def describe(view, fix):
         "template": template_name,
         "navigation": fix.get("action") in NAVIGATION_ACTIONS,
     }
+
+
+def _detail_level(fix):
+    return getattr(DB.ViewDetailLevel, fix["level"])
 
 
 def _show_workset(owner, view, element, fix):
@@ -304,6 +316,19 @@ def _raise_cut_plane(owner, view, element, fix):
         )
 
 
+def _set_detail_level(owner, view, element, fix):
+    """Set the detail level to one the element draws at.
+
+    Invariant:
+        A level at which the element already draws is kept (``fix["shown"]``
+        lists them), so "Fix all" does not move the level past a level an
+        earlier fix already made work for the next element.
+    """
+    if str(owner.DetailLevel) in fix["shown"]:
+        return
+    owner.DetailLevel = _detail_level(fix)
+
+
 def _set_discipline_coordination(owner, view, element, fix):
     owner.get_Parameter(DB.BuiltInParameter.VIEW_DISCIPLINE).Set(
         int(DB.ViewDiscipline.Coordination)
@@ -322,6 +347,7 @@ _MODEL_ACTIONS = {
     "extend_view_range": _extend_view_range,
     "raise_cut_plane": _raise_cut_plane,
     "set_discipline_coordination": _set_discipline_coordination,
+    "set_detail_level": _set_detail_level,
 }
 
 
@@ -378,3 +404,82 @@ def apply(uidoc, view, element, fix):
                 status
             )
         )
+
+
+def _can_change_visibility(element, view, hide):
+    try:
+        owner_id = element.OwnerViewId
+        if owner_id != DB.ElementId.InvalidElementId and owner_id != view.Id:
+            return False
+        if hide:
+            return element.CanBeHidden(view) and not element.IsHidden(view)
+        return element.IsHidden(view)
+    except Exception:
+        return False
+
+
+def plan_visibility_change(elements, views, hide):
+    """List what hiding or unhiding ``elements`` would change.
+
+    Returns:
+        (list[tuple]): ``(view, [ElementId])`` for every view where at least
+        one element is not yet in the requested state. Elements Revit cannot
+        hide there and view-specific elements owned by another view are left
+        out.
+    """
+    plan = []
+    for view in views:
+        ids = [
+            element.Id
+            for element in elements
+            if _can_change_visibility(element, view, hide)
+        ]
+        if ids:
+            plan.append((view, ids))
+    return plan
+
+
+def apply_visibility_change(doc, plan, hide, name):
+    """Hide or unhide the planned elements as one undo step.
+
+    A view Revit rejects is rolled back on its own and reported; the others
+    still apply. Nothing is committed when no view could be changed.
+
+    Returns:
+        (tuple[list[tuple], list[str]]): the ``(view, ids)`` entries of
+        ``plan`` that were applied, and one error message per rejected view.
+    """
+    applied = []
+    errors = []
+    transaction = DB.Transaction(doc, name)
+    transaction.Start()
+    try:
+        for view, ids in plan:
+            sub_transaction = DB.SubTransaction(doc)
+            sub_transaction.Start()
+            try:
+                collection = List[DB.ElementId](ids)
+                if hide:
+                    view.HideElements(collection)
+                else:
+                    view.UnhideElements(collection)
+                sub_transaction.Commit()
+                applied.append((view, ids))
+            except Exception as ex:
+                sub_transaction.RollBack()
+                errors.append("{}: {}".format(view.Name, ex))
+    except Exception:
+        transaction.RollBack()
+        raise
+    if not applied:
+        transaction.RollBack()
+        return applied, errors
+    status = transaction.Commit()
+    if status != DB.TransactionStatus.Committed:
+        errors.append(
+            t("fix_error_rolled_back", "Revit rolled the change back ({})").format(
+                status
+            )
+        )
+        return [], errors
+    return applied, errors
