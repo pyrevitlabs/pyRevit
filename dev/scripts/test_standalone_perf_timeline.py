@@ -7,6 +7,9 @@ import types
 import unittest
 
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
+
 ROOT_DIR = op.dirname(op.dirname(op.dirname(op.abspath(__file__))))
 PERF_PATH = op.join(ROOT_DIR, "pyrevitlib", "pyrevit", "_perf.py")
 
@@ -36,7 +39,10 @@ def _load_perf():
 
 
 class ElapsedLoadSecondsTests(unittest.TestCase):
-    """The load timeline type is resolved even if the first lookup fails."""
+    """The load timeline type is resolved even if the first lookup fails.
+
+    Regression coverage for pyrevitlabs/pyRevit#4108.
+    """
 
     def setUp(self):
         """Install a fake clr and timeline, then load a fresh _perf module."""
