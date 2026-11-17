@@ -14,9 +14,12 @@ says what the omitted ones cost in total.
 
 Self-contained on purpose: imports only sys at module load so it can be the first
 line of pyrevit/__init__.py without triggering circular loads. The timeline type
-is resolved on first use. The pyRevit logger is never imported from here, since
-importing it before pyrevit/__init__.py finishes fails and costs time inside the
-very checkpoints being measured; it is used once another import has loaded it.
+is resolved on first use. A failed lookup is remembered, so checkpoints stay
+cheap, but elapsed_load_seconds() looks again, since by the time it is called
+pyrevit.labs has referenced the assembly. The pyRevit
+logger is never imported from here, since importing it before
+pyrevit/__init__.py finishes fails and costs time inside the very checkpoints
+being measured; it is used once another import has loaded it.
 Lines recorded before then are held and logged, in order, ahead of the first
 line after it.
 """
@@ -36,17 +39,21 @@ _PENDING_LINES = []
 _ROLLUP = [None, 0, 0.0]
 
 
+def _resolve_timeline_type():
+    try:
+        import clr  # pylint: disable=E0401
+
+        clr.AddReference("pyRevitLabs.Common")
+        from pyRevitLabs.Common import LoadTimeline  # pylint: disable=E0401
+
+        return LoadTimeline
+    except Exception:
+        return None
+
+
 def _timeline_type():
     if _TIMELINE_TYPE[0] is _UNRESOLVED:
-        try:
-            import clr  # pylint: disable=E0401
-
-            clr.AddReference("pyRevitLabs.Common")
-            from pyRevitLabs.Common import LoadTimeline  # pylint: disable=E0401
-
-            _TIMELINE_TYPE[0] = LoadTimeline
-        except Exception:
-            _TIMELINE_TYPE[0] = None
+        _TIMELINE_TYPE[0] = _resolve_timeline_type()
     return _TIMELINE_TYPE[0]
 
 
@@ -127,7 +134,13 @@ def flush():
 
 
 def elapsed_load_seconds():
-    """Seconds since the current session load started, or None outside a load."""
+    """Seconds since the current session load started, or None outside a load.
+
+    Retries a timeline lookup that failed earlier, so a load that began before
+    the assembly could be referenced is still timed.
+    """
+    if _TIMELINE_TYPE[0] is None:
+        _TIMELINE_TYPE[0] = _resolve_timeline_type()
     timeline = _active_timeline()
     if timeline is None:
         return None

@@ -70,6 +70,7 @@ if (modes.Packages)
     builder.Services.AddModule<RestoreStampedMetadataModule>();
     builder.Services.AddModule<BuildInstallersModule>();
     builder.Services.AddModule<BuildChocoModule>();
+    builder.Services.AddModule<StageStandaloneDoctorModule>();
 }
 
 if (modes.Sign || modes.Publish)

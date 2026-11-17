@@ -100,6 +100,21 @@
     <system:String x:Key="SectionBoxAlignedFormat">Schnittbox mit Ansicht '{0}' ausgerichtet</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Zuschnittbox mit Ansicht '{0}' ausgerichtet</system:String>
     <system:String x:Key="ScopeBoxApplied">Bereichsbox auf Ansicht angewendet</system:String>
+    <system:String x:Key="NoSectionBoxPrompt">Diese Ansicht hat keine Schnittbox. Erstellen aus:</system:String>
+    <system:String x:Key="NoCropBoxPrompt">Diese Ansicht hat keine aktive Zuschnittbox. Erstellen aus:</system:String>
+    <system:String x:Key="SourceVisibleElements">In der Ansicht sichtbare Elemente</system:String>
+    <system:String x:Key="SourceScopeBoxList">Bereichsbox aus Liste</system:String>
+    <system:String x:Key="SourceScopeBoxPick">In der Ansicht gewählte Bereichsbox</system:String>
+    <system:String x:Key="NoScopeBoxes">Dieses Projekt hat keine Bereichsboxen.</system:String>
+    <system:String x:Key="SelectScopeBox">Bereichsbox auswählen</system:String>
+    <system:String x:Key="PickScopeBox">Bereichsbox wählen</system:String>
+    <system:String x:Key="NoVisibleElements">In dieser Ansicht sind keine Modellelemente sichtbar.</system:String>
+    <system:String x:Key="ScopeBoxNotSupported">Diese Ansicht kann keine Bereichsbox verwenden.</system:String>
+    <system:String x:Key="ScopeBoxHasNoGeometry">Die Bereichsbox hat keine Geometrie.</system:String>
+    <system:String x:Key="NoCropBoxActive">Keine aktive Zuschnittbox</system:String>
+    <system:String x:Key="CropBoxDrivenByScopeBox">Eine Bereichsbox steuert diese Zuschnittbox.</system:String>
+    <system:String x:Key="CropBoxHasCustomShape">Der Zuschnittbereich hat eine benutzerdefinierte Form.</system:String>
+    <system:String x:Key="BoxCreatedFormat">Box erstellt aus {0}</system:String>
     <system:String x:Key="UnsupportedViewType">Nicht unterstützter Ansichtstyp.</system:String>
     <system:String x:Key="Activated">aktiviert</system:String>
     <system:String x:Key="Deactivated">deaktiviert</system:String>
@@ -132,7 +147,5 @@
     <!-- Alert messages -->
     <system:String x:Key="StoredSectionBoxFound">Gespeicherte SectionBox für diese Ansicht gefunden! Wiederherstellen?</system:String>
     <system:String x:Key="RestoreSectionBox">Schnittbox wiederherstellen</system:String>
-    <system:String x:Key="NoSectionBoxMessage">Die aktuelle Ansicht hat keine aktive oder gespeicherte Schnittbox.</system:String>
-    <system:String x:Key="NoSectionBoxTitle">Keine Schnittbox</system:String>
     <system:String x:Key="ErrorTitle">Fehler</system:String>
 </ResourceDictionary>
