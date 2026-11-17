@@ -206,7 +206,7 @@ involved; add the missing record to the registry rather than relying on a guess.
 
 ---
 
-## Step 5: CI/CD Updates (New .NET Version Only)
+## Step 5: CI/CD Updates
 
 ### 5.1 Add the year to the Revit integration workflow
 
