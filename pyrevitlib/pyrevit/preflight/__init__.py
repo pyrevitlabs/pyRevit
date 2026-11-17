@@ -24,6 +24,7 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import COMP_CHECK_POSTFIX
 from pyrevit.extensions import extensionmgr
 from pyrevit.extensions import extpackages as extpkg
+from pyrevit.preflight import results
 from pyrevit.preflight.case import PreflightTestCase
 
 mlogger = get_logger(__name__)
@@ -151,19 +152,60 @@ class PreflightCheck(object):
         self.description = "\n".join(x.strip() for x in desc_lines[1:])
 
 
+def _check_id(check):
+    """Stable id of a check: extension, script name and class, never translated."""
+    return "%s/%s.%s" % (
+        check.extension,
+        _get_check_name(check.script_path),
+        check.check_case.__name__,
+    )
+
+
 def run_preflight_check(check, doc, output):
-    """Run a preflight check.
+    """Run a preflight check and collect its findings.
+
+    When `results.PATH_ENV_VAR` names a ``.json``, ``.jsonl`` or ``.csv`` file,
+    the result is also written there, see `results.write`. A failure to write is
+    logged and does not fail the run.
+
+    Note:
+        An exception raised by the check propagates as before, and nothing is
+        written for that run.
 
     Args:
         check (PreflightCheck): preflight test case object
         doc (Document): Revit document
         output (pyrevit.output.PyRevitOutputWindow): output window wrapper
+
+    Returns:
+        results.CheckResult: the findings the check reported. A check that
+        reports none has the status ``results.STATUS_NOT_REPORTED``.
     """
+    result = results.CheckResult(
+        check=check.name,
+        check_id=_check_id(check),
+        extension=check.extension,
+        document_title=getattr(doc, "Title", None),
+        document_path=getattr(doc, "PathName", None),
+    )
     check_case = check.check_case()
     check_case.setUp(doc=doc, output=output)
     check_case.startTest(doc=doc, output=output)
     check_case.tearDown(doc=doc, output=output)
     check_case.doCleanups(doc=doc, output=output)
+    result.finish(getattr(check_case, "findings", ()))
+    _write_result(result)
+    return result
+
+
+def _write_result(result):
+    try:
+        written_path = results.write(result)
+    except (IOError, OSError, ValueError) as write_error:
+        mlogger.error("Could not write preflight results: %s", write_error)
+        return
+    if written_path:
+        mlogger.debug("Preflight results written to %s", written_path)
 
 
 def get_all_preflight_checks():

@@ -156,6 +156,50 @@ Each class in a file that derives from `pyrevit.preflight.PreflightTestCase` bec
 
 Checks from all enabled UI extensions are merged into one list; a disabled extension, such as the default-disabled pyRevitDevTools, contributes none. `extensions/pyRevitDevTools.extension/checks/view_count_check.py` is the reference example, and the checks in `extensions/pyRevitTools.extension/checks/` show localized, multi-check files.
 
+### Reporting findings
+
+Besides printing to the output window, a check can record what it found with `self.report(...)`. Each finding has a stable rule id, a message, a status (`pass` or `fail`), a severity (`info`, `warning` or `error`), the ids of the elements involved and optional JSON data. Element ids can be integers, `ElementId` objects or elements, on any supported Revit version.
+
+```python
+from pyrevit import DB
+from pyrevit.preflight import PreflightTestCase, results
+
+
+class UnnamedReferencePlanes(PreflightTestCase):
+    """Reference planes without a name."""
+
+    def startTest(self, doc, output):
+        unnamed = [
+            plane
+            for plane in DB.FilteredElementCollector(doc).OfClass(DB.ReferencePlane)
+            if not plane.Name.strip()
+        ]
+        if unnamed:
+            self.report(
+                "refplanes.unnamed",
+                "%d reference planes have no name" % len(unnamed),
+                element_ids=unnamed,
+            )
+        else:
+            self.report(
+                "refplanes.unnamed",
+                "All reference planes are named",
+                status=results.STATUS_PASS,
+            )
+```
+
+Rule ids are not translated, so results stay comparable across locales. Report a `pass` finding when a rule finds nothing wrong: a run without findings has the status `not_reported`, so checks that don't report yet never read as clean.
+
+`pyrevit.preflight.run_preflight_check` returns the run as a `results.CheckResult`. When the environment variable `PYREVIT_PREFLIGHT_RESULTS_PATH` names a file, the result is also written there, in the format its extension selects:
+
+| Extension | Written as |
+|---|---|
+| `.json` | the result of this run, replacing the file |
+| `.jsonl` | one line per run, appended, to collect many runs or models in one file |
+| `.csv` | one row per finding and element, appended, with a header and a UTF-8 byte order mark for Excel when the file is new |
+
+Every result carries `schema_version`, the check name and stable `check_id` (`<extension>/<script>.<class>`), the document title and path, the UTC start time, the duration, the run status, a summary and the findings. A failure to write is logged and doesn't fail the check. Appending is not safe across processes, so give concurrent Revit sessions their own files.
+
 ## The `__revit__` host handle
 
 Every script pyRevit runs — commands, event hooks, smart buttons, combo boxes — gets a `__revit__` builtin. The contract is:
