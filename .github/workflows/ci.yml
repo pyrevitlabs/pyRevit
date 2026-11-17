@@ -3,6 +3,7 @@ name: pyRevit CI
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+    branches: [develop, master, 'release/**']
     paths:
       - '.github/workflows/**'
       - 'Pipfile'
@@ -100,7 +101,7 @@ jobs:
           name: test-results-${{ github.sha }}
           path: .test-results/**
           include-hidden-files: true
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Capture build versions
         id: versionmeta

@@ -66,10 +66,18 @@ public class McpRunResultsTests {
         }
 
         [Fact]
+        public void ARollbackFailureReasonIsKeptForEveryMode() {
+            var extra = new JObject { ["decision"] = "rollback_incomplete", ["rollback_failure"] = "Revit returned Pending." };
+
+            Assert.Equal("Revit returned Pending.", PyRevitMcpRunResults.Compact(Run("query", extra: extra))["rollback_failure"].Value<string>());
+            Assert.Null(PyRevitMcpRunResults.Compact(Run("modify"))["rollback_failure"]);
+        }
+
+        [Fact]
         public void EmptyBookkeepingIsDropped() {
             var compact = PyRevitMcpRunResults.Compact(Run());
 
-            foreach (var key in new[] { "changes", "warnings", "failures", "dialogs", "blocked", "output", "result", "approval" })
+            foreach (var key in new[] { "changes", "warnings", "failures", "dialogs", "blocked", "exports", "output", "result", "approval" })
                 Assert.Null(compact[key]);
         }
 
@@ -80,12 +88,24 @@ public class McpRunResultsTests {
                 ["failures"] = new JArray(new JObject { ["severity"] = "Warning" }),
                 ["dialogs"] = new JArray(new JObject { ["message"] = "hi" }),
                 ["blocked"] = new JArray(new JObject { ["operation"] = "save" }),
+                ["exports"] = new JArray(@"C:\runs\exports\A101.png"),
                 ["approval"] = "user",
             }));
 
-            foreach (var key in new[] { "warnings", "failures", "dialogs", "blocked" })
+            foreach (var key in new[] { "warnings", "failures", "dialogs", "blocked", "exports" })
                 Assert.Single((JArray)compact[key]);
             Assert.Equal("user", compact["approval"].Value<string>());
+        }
+
+        [Fact]
+        public void ExportsAreCappedAtTwentyAndPointToGetRun() {
+            var compact = PyRevitMcpRunResults.Compact(Run(extra: new JObject {
+                ["exports"] = new JArray(Enumerable.Range(0, 25).Select(index => $"sheet-{index}.png")),
+            }));
+
+            Assert.Equal(20, ((JArray)compact["exports"]).Count);
+            Assert.Contains("25", compact.Value<string>("exports_note"));
+            Assert.Contains("get_run", compact.Value<string>("exports_note"));
         }
 
         [Fact]

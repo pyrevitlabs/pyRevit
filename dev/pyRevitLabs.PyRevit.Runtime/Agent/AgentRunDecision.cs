@@ -31,6 +31,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         AskUser,
         UserApproved,
         UserDiscarded,
+        DiscardedCallerGone,
     }
 
     internal sealed class AgentRunFacts {
@@ -156,6 +157,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return "error";
                 case AgentRunVerdict.PolicyReadOnly:
                 case AgentRunVerdict.UserDiscarded:
+                case AgentRunVerdict.DiscardedCallerGone:
                     return "rejected";
                 default:
                     return "ok";
@@ -169,6 +171,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case AgentRunVerdict.AutoCommit:
                 case AgentRunVerdict.UserApproved: return "committed";
                 case AgentRunVerdict.UserDiscarded: return "discarded";
+                case AgentRunVerdict.DiscardedCallerGone: return "discarded_caller_gone";
                 default: return "rolled_back";
             }
         }

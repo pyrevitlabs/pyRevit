@@ -58,6 +58,8 @@ namespace pyRevitCLI {
 
             if (run.Value<string>("mode") != "query")
                 compact["decision"] = run["decision"];
+            if (run["rollback_failure"]?.Type == JTokenType.String)
+                compact["rollback_failure"] = run["rollback_failure"];
             if (run["approval"] != null)
                 compact["approval"] = run["approval"];
 
@@ -81,6 +83,11 @@ namespace pyRevitCLI {
             CopyIfNotEmpty(run, compact, "failures");
             CopyIfNotEmpty(run, compact, "dialogs");
             CopyIfNotEmpty(run, compact, "blocked");
+            if (run["exports"] is JArray exports && exports.Count > 0) {
+                compact["exports"] = new JArray(exports.Take(MaxChangeIds));
+                if (exports.Count > MaxChangeIds)
+                    compact["exports_note"] = $"The run exported {exports.Count} files; this list stops at {MaxChangeIds}. get_run(run_id) lists them all.";
+            }
 
             if (run["engine"] is JObject engine)
                 compact["engine"] = engine["implementation"] + " " + engine["python"];

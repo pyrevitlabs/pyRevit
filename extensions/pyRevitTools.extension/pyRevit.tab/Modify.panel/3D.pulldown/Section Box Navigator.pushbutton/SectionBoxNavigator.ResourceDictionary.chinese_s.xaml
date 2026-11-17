@@ -100,6 +100,21 @@
     <system:String x:Key="SectionBoxAlignedFormat">剖面框已与视图 '{0}' 对齐</system:String>
     <system:String x:Key="CropBoxAlignedFormat">裁剪框已与视图 '{0}' 对齐</system:String>
     <system:String x:Key="ScopeBoxApplied">范围框已应用于视图</system:String>
+    <system:String x:Key="NoSectionBoxPrompt">此视图没有剖面框。从以下来源创建：</system:String>
+    <system:String x:Key="NoCropBoxPrompt">此视图没有活动的裁剪框。从以下来源创建：</system:String>
+    <system:String x:Key="SourceVisibleElements">视图中可见的图元</system:String>
+    <system:String x:Key="SourceScopeBoxList">列表中的范围框</system:String>
+    <system:String x:Key="SourceScopeBoxPick">在视图中拾取的范围框</system:String>
+    <system:String x:Key="NoScopeBoxes">此项目没有范围框。</system:String>
+    <system:String x:Key="SelectScopeBox">选择范围框</system:String>
+    <system:String x:Key="PickScopeBox">拾取范围框</system:String>
+    <system:String x:Key="NoVisibleElements">此视图中没有可见的模型图元。</system:String>
+    <system:String x:Key="ScopeBoxNotSupported">此视图无法使用范围框。</system:String>
+    <system:String x:Key="ScopeBoxHasNoGeometry">范围框没有几何图形。</system:String>
+    <system:String x:Key="NoCropBoxActive">没有活动的裁剪框</system:String>
+    <system:String x:Key="CropBoxDrivenByScopeBox">范围框控制着此裁剪框。</system:String>
+    <system:String x:Key="CropBoxHasCustomShape">裁剪区域具有自定义形状。</system:String>
+    <system:String x:Key="BoxCreatedFormat">已根据 {0} 创建框</system:String>
     <system:String x:Key="UnsupportedViewType">不支持的视图类型。</system:String>
     <system:String x:Key="Activated">已激活</system:String>
     <system:String x:Key="Deactivated">已停用</system:String>
@@ -132,7 +147,5 @@
     <!-- Alert messages -->
     <system:String x:Key="StoredSectionBoxFound">找到此视图的已存储剖面框！是否恢复？</system:String>
     <system:String x:Key="RestoreSectionBox">恢复剖面框</system:String>
-    <system:String x:Key="NoSectionBoxMessage">当前视图没有活动或已存储的剖面框。</system:String>
-    <system:String x:Key="NoSectionBoxTitle">无剖面框</system:String>
     <system:String x:Key="ErrorTitle">错误</system:String>
 </ResourceDictionary>

@@ -17,6 +17,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Reads the session's own attachment, which for a session started by <c>pyrevit launch</c> is
         /// its per-launch manifest and not the shared per-year one. Every field is null when the
         /// session has no attachment or the clone can't be read; the record is still written.
+        /// <c>bin_commit</c> is the commit the runtime binaries were built from, and <c>bin_stale</c>
+        /// appears when it differs from <c>commit</c> (see <see cref="AgentBinaryCommit"/>).
         /// </remarks>
         public static JObject Describe(int revitYear) {
             PyRevitAttachment attachment = null;
@@ -28,17 +30,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             var clone = attachment?.Clone;
             var engine = attachment?.Engine;
-            return new JObject {
+            var cloneCommit = Read(() => clone?.ShortCommit);
+            var identity = new JObject {
                 ["attached"] = attachment != null,
                 ["clone"] = clone == null ? null : DisplayName(clone),
                 ["clone_path"] = clone?.ClonePath,
                 ["engine"] = engine == null ? null : Path.GetFileName(engine.Path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)),
                 ["engine_version"] = engine?.Version.ToString(),
-                ["commit"] = Read(() => clone?.ShortCommit),
+                ["commit"] = cloneCommit,
                 ["branch"] = Read(() => clone?.Branch),
                 ["config_root"] = PyRevitLabsConsts.PyRevitPath,
                 ["per_launch"] = attachment?.AttachmentType == PyRevitAttachmentType.PerLaunch,
             };
+            AgentBinaryCommit.Describe(
+                identity,
+                AgentBinaryCommit.ReadInformationalVersion(typeof(AgentSessionIdentity).Assembly),
+                cloneCommit);
+            return identity;
         }
 
         /// <summary>
