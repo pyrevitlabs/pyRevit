@@ -139,6 +139,161 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             }
         }
 
+        /// <summary>A client that disconnects while its request is still being handled cancels the token the handler received (#3994).</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void AClientThatDisconnectsMidRequestCancelsTheRequestToken() {
+            var pipeName = UniquePipeName();
+            using (var handling = new ManualResetEventSlim())
+            using (var callerGone = new ManualResetEventSlim())
+            using (var server = new AgentPipeServer(pipeName, (line, token) => {
+                handling.Set();
+                token.WaitHandle.WaitOne(Long);
+                if (token.IsCancellationRequested)
+                    callerGone.Set();
+                return line;
+            }, _ => { })) {
+                server.Start();
+                var client = Connect(pipeName, Long);
+                client.Send("block");
+                Assert.True(handling.Wait(Long));
+                Assert.False(callerGone.IsSet);
+
+                client.Dispose();
+
+                Assert.True(callerGone.Wait(Long));
+            }
+        }
+
+        /// <summary>A client that stays connected never cancels the token of its request.</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void AClientThatStaysConnectedDoesNotCancelTheRequestToken() {
+            var pipeName = UniquePipeName();
+            var cancelled = false;
+            using (var server = new AgentPipeServer(pipeName, (line, token) => {
+                Thread.Sleep(200);
+                cancelled = token.IsCancellationRequested;
+                return line;
+            }, _ => { })) {
+                server.Start();
+                using (var client = Connect(pipeName, Long)) {
+                    client.Send("one");
+                    Assert.Equal("one", client.Receive());
+                    client.Send("two");
+                    Assert.Equal("two", client.Receive());
+                }
+            }
+            Assert.False(cancelled);
+        }
+
+        /// <summary>A blank line or a queued request sent mid-request doesn't stop the server from noticing a later disconnect (#3994).</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void ADisconnectAfterAnotherLineMidRequestStillCancelsTheRequestToken() {
+            var pipeName = UniquePipeName();
+            using (var handling = new ManualResetEventSlim())
+            using (var callerGone = new ManualResetEventSlim())
+            using (var server = new AgentPipeServer(pipeName, (line, token) => {
+                if (line == "block") {
+                    handling.Set();
+                    token.WaitHandle.WaitOne(Long);
+                    if (token.IsCancellationRequested)
+                        callerGone.Set();
+                }
+                return line;
+            }, _ => { })) {
+                server.Start();
+                var client = Connect(pipeName, Long);
+                client.Send("block");
+                Assert.True(handling.Wait(Long));
+                client.Send("");
+                client.Send("queued");
+                Assert.False(callerGone.Wait(300));
+
+                client.Dispose();
+
+                Assert.True(callerGone.Wait(Long));
+            }
+        }
+
+        /// <summary>A request sent while another is being handled is kept and answered after it (#3994).</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void ARequestQueuedMidRequestIsStillAnswered() {
+            var pipeName = UniquePipeName();
+            using (var release = new ManualResetEventSlim())
+            using (var server = new AgentPipeServer(pipeName, (line, token) => BlockOn(line, release), _ => { })) {
+                server.Start();
+                using (var client = Connect(pipeName, Long)) {
+                    client.Send("block");
+                    client.Send("");
+                    client.Send("second");
+                    Thread.Sleep(300);
+
+                    release.Set();
+
+                    Assert.Equal("block", client.Receive());
+                    Assert.Equal("second", client.Receive());
+                }
+            }
+        }
+
+        /// <summary>A client that queues more lines than the budget during a request is treated as gone: the token is cancelled and the connection closes.</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void AClientThatQueuesTooManyLinesMidRequestIsTreatedAsGone() {
+            var pipeName = UniquePipeName();
+            using (var handling = new ManualResetEventSlim())
+            using (var callerGone = new ManualResetEventSlim())
+            using (var server = new AgentPipeServer(pipeName, (line, token) => {
+                if (line == "block") {
+                    handling.Set();
+                    token.WaitHandle.WaitOne(Long);
+                    if (token.IsCancellationRequested)
+                        callerGone.Set();
+                }
+                return line;
+            }, _ => { }, TimeSpan.FromMilliseconds(10), maxQueuedLines: 3)) {
+                server.Start();
+                using (var client = Connect(pipeName, Long)) {
+                    client.Send("block");
+                    Assert.True(handling.Wait(Long));
+                    for (var i = 0; i < 4; i++)
+                        client.Send("queued" + i);
+
+                    Assert.True(callerGone.Wait(Long));
+                    Assert.Equal("block", client.Receive());
+                    Assert.Null(client.Receive());
+                }
+            }
+        }
+
+        /// <summary>A backlog within the budget is neither dropped nor treated as a disconnect.</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void AQueueWithinTheBudgetIsKept() {
+            var pipeName = UniquePipeName();
+            using (var release = new ManualResetEventSlim())
+            using (var server = new AgentPipeServer(pipeName, (line, token) => BlockOn(line, release), _ => { }, TimeSpan.FromMilliseconds(10), maxQueuedLines: 3)) {
+                server.Start();
+                using (var client = Connect(pipeName, Long)) {
+                    client.Send("block");
+                    client.Send("a");
+                    client.Send("b");
+                    client.Send("c");
+                    Thread.Sleep(300);
+
+                    release.Set();
+
+                    Assert.Equal("block", client.Receive());
+                    Assert.Equal("a", client.Receive());
+                    Assert.Equal("b", client.Receive());
+                    Assert.Equal("c", client.Receive());
+                }
+            }
+        }
+
         private static string BlockOn(string line, ManualResetEventSlim release) {
             if (line == "block" && !release.Wait(Long))
                 return "timed out";
