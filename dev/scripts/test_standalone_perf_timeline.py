@@ -63,18 +63,20 @@ class ElapsedLoadSecondsTests(unittest.TestCase):
             else:
                 sys.modules[name] = module
 
-    def test_timeline_resolved_after_early_failure_once_labs_loaded(self):
-        """A failed lookup is retried once pyrevit.labs has been imported."""
+    def test_timeline_resolved_at_use_after_labs_entry_checkpoint(self):
+        """A checkpoint taken while pyrevit.labs is importing does not end retries."""
         self.assertIsNone(self.perf.elapsed_load_seconds())
-        self.clr.resolvable = True
         sys.modules["pyrevit.labs"] = types.ModuleType("pyrevit.labs")
+        self.perf.mark("pyrevit.labs:entry")
+        self.clr.resolvable = True
         self.assertEqual(1.5, self.perf.elapsed_load_seconds())
 
-    def test_failure_is_not_retried_before_labs_loaded(self):
-        """Without pyrevit.labs imported, a failed lookup stays failed."""
+    def test_checkpoints_do_not_retry_a_failed_lookup(self):
+        """Checkpoints stay cheap: only elapsed_load_seconds retries."""
         self.assertIsNone(self.perf.elapsed_load_seconds())
         self.clr.resolvable = True
-        self.assertIsNone(self.perf.elapsed_load_seconds())
+        self.perf.mark("any")
+        self.assertIsNone(self.perf._active_timeline())
 
     def test_timeline_resolved_when_reference_works_first_time(self):
         """A lookup that succeeds at once reports the elapsed seconds."""

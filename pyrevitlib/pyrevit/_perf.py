@@ -14,8 +14,9 @@ says what the omitted ones cost in total.
 
 Self-contained on purpose: imports only sys at module load so it can be the first
 line of pyrevit/__init__.py without triggering circular loads. The timeline type
-is resolved on first use; if that fails before pyrevit.labs has loaded the
-assembly, the lookup is retried once after pyrevit.labs is imported. The pyRevit
+is resolved on first use. A failed lookup is remembered, so checkpoints stay
+cheap, but elapsed_load_seconds() looks again, since by the time it is called
+pyrevit.labs has referenced the assembly. The pyRevit
 logger is never imported from here, since importing it before
 pyrevit/__init__.py finishes fails and costs time inside the very checkpoints
 being measured; it is used once another import has loaded it.
@@ -30,8 +31,6 @@ _ROLLUP_THRESHOLD_MS = 10.0
 _UNRESOLVED = object()
 
 _TIMELINE_TYPE = [_UNRESOLVED]
-
-_TIMELINE_RETRIED = [False]
 
 _LOGGER = [None]
 
@@ -54,14 +53,6 @@ def _resolve_timeline_type():
 
 def _timeline_type():
     if _TIMELINE_TYPE[0] is _UNRESOLVED:
-        _TIMELINE_TYPE[0] = _resolve_timeline_type()
-        _TIMELINE_RETRIED[0] = _TIMELINE_TYPE[0] is not None
-    elif (
-        _TIMELINE_TYPE[0] is None
-        and not _TIMELINE_RETRIED[0]
-        and "pyrevit.labs" in sys.modules
-    ):
-        _TIMELINE_RETRIED[0] = True
         _TIMELINE_TYPE[0] = _resolve_timeline_type()
     return _TIMELINE_TYPE[0]
 
@@ -143,7 +134,13 @@ def flush():
 
 
 def elapsed_load_seconds():
-    """Seconds since the current session load started, or None outside a load."""
+    """Seconds since the current session load started, or None outside a load.
+
+    Retries a timeline lookup that failed earlier, so a load that began before
+    the assembly could be referenced is still timed.
+    """
+    if _TIMELINE_TYPE[0] is None:
+        _TIMELINE_TYPE[0] = _resolve_timeline_type()
     timeline = _active_timeline()
     if timeline is None:
         return None
