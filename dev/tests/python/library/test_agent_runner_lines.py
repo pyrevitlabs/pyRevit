@@ -54,6 +54,9 @@ def _load_runner():
         SubTransaction=type("SubTransaction", (), {}),
         Transaction=type("Transaction", (), {}),
         TransactionGroup=type("TransactionGroup", (), {}),
+        TransactionStatus=types.SimpleNamespace(
+            Started="Started", RolledBack="RolledBack", Pending="Pending"
+        ),
     )
     api.UI = types.SimpleNamespace()
     compat = types.ModuleType("pyrevit.compat")
@@ -983,6 +986,7 @@ class AgentRunnerRecklessTests(unittest.TestCase):
 
             def RollBack(self):
                 self.rolled_back = True
+                return "RolledBack"
 
         doubles = types.ModuleType("reckless_doubles")
         doubles.OpenTransaction = OpenTransaction
@@ -1078,6 +1082,7 @@ def _transaction_double(runner, created):
 
         def RollBack(self):
             self.rolled_back = True
+            return "RolledBack"
 
     return OpenTransaction
 

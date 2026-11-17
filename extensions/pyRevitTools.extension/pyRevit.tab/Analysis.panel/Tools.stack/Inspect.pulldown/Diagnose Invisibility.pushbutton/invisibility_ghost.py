@@ -118,6 +118,14 @@ class GhostPreview(object):
             uidoc.RequestViewChange(view)
         return True
 
+    def forget(self, element_id_value):
+        """Remove the ghost of an element that left the report, if it has one."""
+        if self._meshes.pop(element_id_value, None) is None:
+            return
+        uidoc = HOST_APP.uiapp.ActiveUIDocument
+        if uidoc is not None and self._server is not None:
+            self._refresh(uidoc)
+
     def close(self):
         """Remove all ghosts and unregister the server."""
         self._meshes = {}

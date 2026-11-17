@@ -28,7 +28,7 @@
     <sys:String x:Key="reason_view_template">已应用视图样板“{}”——部分可见性设置可能被锁定，需要在样板中修改</sys:String>
     <sys:String x:Key="reason_view_specific">该图元为视图专属图元，属于另一个视图（“{}”），因此无法在此显示</sys:String>
     <sys:String x:Key="reason_view_discipline">视图专业已设置为“{}”——部分类别会根据专业自动显示或隐藏，与可见性/图形设置无关</sys:String>
-    <sys:String x:Key="reason_unknown">图元不可见，但无法确定具体原因。可能原因：视图专属图元类型（例如来自另一视图的注释）、链接模型中的可见性，或详细程度设置。</sys:String>
+    <sys:String x:Key="reason_unknown">图元不可见，但无法确定具体原因。可能原因：视图专属图元类型（例如来自另一视图的注释）或链接模型中的可见性。</sys:String>
 
     <sys:String x:Key="reason_temporary_hidden">图元在此视图中被临时隐藏/隔离</sys:String>
     <sys:String x:Key="reason_behind_cut_plane">图元完全位于视图剖切面之后，剖面/立面不会看到它</sys:String>
@@ -127,5 +127,46 @@
     <sys:String x:Key="ui_speculative_hint">仅为可能原因：Revit 无法判断该图元在此使用哪些子类别。不包含在“全部修复”中。</sys:String>
     <sys:String x:Key="ui_ghost">在 Revit 中显示虚影</sys:String>
     <sys:String x:Key="ui_ghost_hint">即使图元被隐藏，也在 Revit 视图中绘制其几何图形，并将诊断视图缩放到该图元。再次单击可移除。</sys:String>
+
+    <sys:String x:Key="reason_model_in_flat_view">“{}”是模型图元，而“{}”类型的视图无法显示模型图元。此类视图只包含视图专属的详图和注释内容。</sys:String>
+    <sys:String x:Key="reason_not_in_3d">类别“{}”从不显示在三维视图中</sys:String>
+    <sys:String x:Key="reason_detail_level">图元在此视图的详细程度（{0}）下没有几何图形；在以下详细程度下可见：{1}</sys:String>
+    <sys:String x:Key="code_view_type">视图类型</sys:String>
+    <sys:String x:Key="code_detail_level">详细程度</sys:String>
+    <sys:String x:Key="fix_set_detail_level">将详细程度设为{}</sys:String>
+    <sys:String x:Key="detail_level_coarse">粗略</sys:String>
+    <sys:String x:Key="detail_level_medium">中等</sys:String>
+    <sys:String x:Key="detail_level_fine">精细</sys:String>
+    <sys:String x:Key="add_nothing_new">没有可添加的新图元。</sys:String>
+    <sys:String x:Key="added_elements">已添加 {0} 个图元。</sys:String>
+    <sys:String x:Key="add_no_selection">Revit 中未选择任何内容。</sys:String>
+    <sys:String x:Key="add_views_button">添加到报告</sys:String>
+    <sys:String x:Key="added_views">已添加 {0} 个视图。</sys:String>
+    <sys:String x:Key="hide_nothing">没有可更改的内容：图元已处于该状态、无法在这些视图中隐藏，或属于另一个视图。</sys:String>
+    <sys:String x:Key="confirm_hide">在 {1} 个视图中隐藏 {0} 个图元？</sys:String>
+    <sys:String x:Key="confirm_unhide">在 {1} 个视图中取消隐藏 {0} 个图元？</sys:String>
+    <sys:String x:Key="transaction_hide">在视图中隐藏</sys:String>
+    <sys:String x:Key="transaction_unhide">在视图中取消隐藏</sys:String>
+    <sys:String x:Key="hidden_summary">已在 {1} 个视图中隐藏 {0} 个图元。</sys:String>
+    <sys:String x:Key="unhidden_summary">已在 {1} 个视图中取消隐藏 {0} 个图元。</sys:String>
+    <sys:String x:Key="ui_add_selection">添加所选</sys:String>
+    <sys:String x:Key="ui_add_selection_hint">将 Revit 中当前选中的图元添加到此报告。</sys:String>
+    <sys:String x:Key="ui_pick_elements">拾取图元</sys:String>
+    <sys:String x:Key="ui_add_views">添加视图</sys:String>
+    <sys:String x:Key="ui_remove_element">从报告中移除此图元</sys:String>
+    <sys:String x:Key="ui_remove_view">从报告中移除此视图</sys:String>
+    <sys:String x:Key="ui_select_all">全选</sys:String>
+    <sys:String x:Key="ui_selected_count">已选择 {0} 项</sys:String>
+    <sys:String x:Key="ui_clear_selection">清除选择</sys:String>
+    <sys:String x:Key="ui_select_for_hide">选择此图元以隐藏或取消隐藏</sys:String>
+    <sys:String x:Key="ui_hide_in_views">在视图中隐藏...</sys:String>
+    <sys:String x:Key="ui_unhide_in_views">在视图中取消隐藏...</sys:String>
+    <sys:String x:Key="ui_hide_dialog_title">在以下视图中隐藏 {0} 个图元：</sys:String>
+    <sys:String x:Key="ui_unhide_dialog_title">在以下视图中取消隐藏 {0} 个图元：</sys:String>
+    <sys:String x:Key="ui_apply">应用</sys:String>
+    <sys:String x:Key="ui_cancel">取消</sys:String>
+    <sys:String x:Key="ui_no_view_ticked">请至少勾选一个视图。</sys:String>
+    <sys:String x:Key="ui_empty_state">尚无可诊断的内容。请添加图元和视图。</sys:String>
+    <sys:String x:Key="ui_reload_blocked">重新加载会清除此报告。请改用“重新检查”。</sys:String>
 
 </ResourceDictionary>

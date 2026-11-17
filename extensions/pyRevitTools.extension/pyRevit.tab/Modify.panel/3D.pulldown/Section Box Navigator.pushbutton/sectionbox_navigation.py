@@ -66,6 +66,13 @@ def get_all_grids(doc, include_linked=False):
     return grids
 
 
+def _get_view_relative_direction(base_vec, view):
+    """Map north/south/east/west onto the view's up and right directions."""
+    return view.RightDirection.Multiply(base_vec.X) + view.UpDirection.Multiply(
+        base_vec.Y
+    )
+
+
 def get_cardinal_direction(direction_name, view=None):
     """
     Get the world direction vector for a cardinal direction.
@@ -73,7 +80,8 @@ def get_cardinal_direction(direction_name, view=None):
 
     Args:
         direction_name (str): 'north', 'south', 'east', 'west'
-        view (DB.View3D, optional): the 3D view whose orientation to use.
+        view (DB.View, optional): the view whose orientation to use. In 2D
+            views north is the view's up and east its right direction.
 
     Returns:
         DB.XYZ: direction vector in world coordinates
@@ -90,8 +98,10 @@ def get_cardinal_direction(direction_name, view=None):
     if not base_vec:
         raise ValueError("Invalid direction: {}".format(direction_name))
 
-    # If no 3D view is passed, behave as before
-    if not view or not isinstance(view, DB.View3D):
+    if view and not isinstance(view, DB.View3D):
+        return _get_view_relative_direction(base_vec, view)
+
+    if not view:
         return base_vec
 
     # Use the view orientation vectors

@@ -14,11 +14,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             public long Id;
             public string Name;
             public string Number;
+            public string Type;
         }
 
         private static readonly List<View> Views = new List<View> {
-            new View { Id = 100, Name = "Level 1" },
-            new View { Id = 101, Name = "Level 1" },
+            new View { Id = 100, Name = "Level 1", Type = "FloorPlan" },
+            new View { Id = 101, Name = "Level 1", Type = "CeilingPlan" },
             new View { Id = 102, Name = "12345" },
             new View { Id = 103, Name = "Site" },
             new View { Id = 104, Name = "Roof Plan", Number = "A101" },
@@ -26,6 +27,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
         private static List<View> Find(string selector) =>
             AgentSelectors.FindView(selector, id => Views.FirstOrDefault(view => view.Id == id), Views, view => view.Name, view => view.Number);
+
+        private static List<View> Find(string selector, string viewType) =>
+            AgentSelectors.FindView(selector, id => Views.FirstOrDefault(view => view.Id == id), Views, view => view.Name, view => view.Number, view => view.Type, viewType);
+
+        [Fact]
+        public void AViewTypeNarrowsASharedNameToThatType() {
+            Assert.Equal(new long[] { 101 }, Find("Level 1", "ceilingplan").Select(view => view.Id));
+        }
+
+        [Fact]
+        public void AViewTypeNarrowsAnIdMatchToo() {
+            Assert.Empty(Find("100", "CeilingPlan"));
+        }
+
+        [Fact]
+        public void NoViewTypeKeepsEveryMatch() {
+            Assert.Equal(new long[] { 100, 101 }, Find("Level 1", null).Select(view => view.Id));
+        }
 
         [Fact]
         public void AnIdFindsThatView() {
