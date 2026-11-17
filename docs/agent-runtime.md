@@ -646,8 +646,7 @@ even while the session that made it is still open.
 
 ### Session recorder
 
-An agent only sees a bug through what the user says afterwards. The session recorder
-([#3892](https://github.com/pyrevitlabs/pyRevit/issues/3892)) records what happens in Revit between two
+An agent only sees a bug through what the user says afterwards. The session recorder records what happens in Revit between two
 explicit user actions, so the agent can read the sequence that led to a bug.
 
 ```shell

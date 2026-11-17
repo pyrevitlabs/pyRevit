@@ -508,7 +508,12 @@ namespace pyRevitCLI {
             return run;
         }
 
+        private static readonly string[] RecordingArguments = { "recording_id", "offset", "limit" };
+
         private static JToken GetRecording(JObject arguments) {
+            var unknown = arguments.Properties().Select(property => property.Name).FirstOrDefault(name => !RecordingArguments.Contains(name));
+            if (unknown != null)
+                throw new AgentClientException("invalid_params", "Unknown argument '" + unknown + "'. Use recording_id, offset and limit.");
             var recordingId = arguments.Value<string>("recording_id");
             if (string.IsNullOrWhiteSpace(recordingId))
                 return new JObject { ["recordings"] = new JArray(AgentRecordingReader.List(PyRevitAgentClient.RecordingsDir, 20)) };

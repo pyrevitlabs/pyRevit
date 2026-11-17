@@ -931,6 +931,13 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void GetRecordingRejectsUnknownArguments() {
+        var payload = Payload(Single(ToolCall(1, "get_recording", new JObject { ["id"] = "abc12345" })));
+
+        Assert.Equal("invalid_params", payload.Value<string>("error"));
+    }
+
+    [Fact]
     public void ARecordedRunIsReturnedWithItsScriptAndAPageOfItsResult() {
         host.AddRun("abc123def456", response: "{\"status\":\"ok\",\"run_id\":\"abc123def456\"}", script: "result = 1", result: "0123456789");
 

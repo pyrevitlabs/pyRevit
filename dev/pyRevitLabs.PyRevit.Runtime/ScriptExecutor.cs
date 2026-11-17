@@ -244,18 +244,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private static int ExecuteScriptNow(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
+            var endRecorded = false;
             try {
-                return ExecuteScriptRecorded(scriptData, scriptRuntimeCfg, scriptExecConfigs);
+                return ExecuteScriptRecorded(scriptData, scriptRuntimeCfg, scriptExecConfigs, ref endRecorded);
             }
             catch (System.Exception ex) {
-                Agent.AgentRecorder.RecordCommand(
-                    "end", scriptData?.CommandName, scriptData?.CommandUniqueId,
-                    ScriptExecutorResultCodes.UnknownException, ex.ToString());
+                if (!endRecorded)
+                    Agent.AgentRecorder.RecordCommand(
+                        "end", scriptData?.CommandName, scriptData?.CommandUniqueId,
+                        ScriptExecutorResultCodes.UnknownException, ex.ToString());
                 throw;
             }
         }
 
-        private static int ExecuteScriptRecorded(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
+        private static int ExecuteScriptRecorded(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs, ref bool endRecorded) {
             // create runtime
             var runtime = new ScriptRuntime(scriptData, scriptRuntimeCfg);
             Agent.AgentRecorder.RecordCommand("start", scriptData?.CommandName, scriptData?.CommandUniqueId, null, null);
@@ -316,6 +318,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (scriptExecConfigs.SendTelemetry)
                 ScriptTelemetry.LogScriptTelemetryRecord(ref runtime);
             Agent.AgentRecorder.RecordCommand("end", scriptData?.CommandName, scriptData?.CommandUniqueId, result, runtime.TraceMessage);
+            endRecorded = true;
 
             // Drain any output still buffered by the engine (trailing prints,
             // logger records, uncaught tracebacks) to the live window before the
