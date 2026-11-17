@@ -109,6 +109,11 @@ namespace PyRevitLoader
         /// <param name="comboBox">The Revit ComboBox to wire event handlers to.</param>
         /// <param name="additionalSearchPaths">Additional search paths for imports.</param>
         /// <returns>True if setup succeeded.</returns>
+        /// <remarks>
+        /// Note: all ComboBoxes share one engine, whose <c>sys.path</c> holds the paths of the script
+        /// that ran last. Each wired handler therefore restores the paths captured right after this
+        /// ComboBox's script ran, so imports inside a handler find this bundle's <c>lib</c> folder.
+        /// </remarks>
         public bool ExecuteEventHandlerSetup(
             string scriptPath,
             ComboBoxContext context,
@@ -207,6 +212,7 @@ namespace PyRevitLoader
                 // by session cleanup, so we restore it before each invocation.
                 var engine = _engine;
                 var outStream = _outputStream;
+                var searchPaths = new List<string>(engine.GetSearchPaths());
 
                 // Wire up __cmb_on_change__ handler
                 if (hasOnChange)
@@ -221,6 +227,7 @@ namespace PyRevitLoader
                             {
                                 // Restore stdout in case session cleanup set it to None
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
+                                engine.SetSearchPaths(searchPaths);
                                 ops.Invoke(handler, sender, args, context);
                             }
                             catch (Exception ex)
@@ -247,6 +254,7 @@ namespace PyRevitLoader
                             try
                             {
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
+                                engine.SetSearchPaths(searchPaths);
                                 ops.Invoke(handler, sender, args, context);
                             }
                             catch (Exception ex)
@@ -273,6 +281,7 @@ namespace PyRevitLoader
                             try
                             {
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
+                                engine.SetSearchPaths(searchPaths);
                                 ops.Invoke(handler, sender, args, context);
                             }
                             catch (Exception ex)
