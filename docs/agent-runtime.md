@@ -698,7 +698,7 @@ Decisions:
   read for only the first 25 elements of each change, so there is no category filter yet.
 - **Limits.** `--max-events` stops storing events beyond the cap and counts them in `dropped_events`; output and
   log text is cut at 4000 characters, and a `mark` payload over 16000 characters is replaced by a preview and its
-  original length; events stop being stored at `--max-duration` even before the recording is stopped (the final `recording_stopped` event is always stored); a recording stops itself after `--max-duration`, when the host
+  original length; events stop being stored at `--max-duration` even before the recording is stopped (the final `recording_stopped` event is always stored); a recording stops itself at the first Revit idle moment after `--max-duration` (until then `status` still reports it as recording), when the host
   stops or Revit closes.
 - **Storage** is local plaintext under `%APPDATA%\pyRevit\agent\recordings\<timestamp>-<id>\`
   (`events.jsonl`, `recording.json`, `screenshots\`). Recordings older than 7 days, and all but

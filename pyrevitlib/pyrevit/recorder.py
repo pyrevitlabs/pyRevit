@@ -32,7 +32,7 @@ def _resolve():
 
 def _serialize(data):
     try:
-        return json.dumps(data, default=str)
+        return json.dumps(data, default=str, ensure_ascii=False)
     except Exception:
         return json.dumps(repr(data))
 
