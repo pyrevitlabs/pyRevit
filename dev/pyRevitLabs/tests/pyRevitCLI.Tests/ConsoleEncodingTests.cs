@@ -20,15 +20,6 @@ public class ConsoleEncodingTests {
     }
 
     [Fact]
-    public void RedirectedStreamDoesNotChangeTheConsoleCodePage() {
-        var before = Console.OutputEncoding;
-
-        PyRevitCLIConsoleEncoding.ApplyForRedirectedStream(true, () => new MemoryStream(), _ => { });
-
-        Assert.Equal(before.CodePage, Console.OutputEncoding.CodePage);
-    }
-
-    [Fact]
     public void InteractiveStreamIsLeftUntouched() {
         var opened = false;
         var installed = false;

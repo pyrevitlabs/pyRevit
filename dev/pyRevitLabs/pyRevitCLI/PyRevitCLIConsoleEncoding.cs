@@ -19,6 +19,12 @@ namespace pyRevitCLI {
         /// (<c>Console.OutputEncoding</c>) is deliberately left alone, because changing it would
         /// persist in the parent terminal after the process exits. A stream that is not redirected
         /// is left untouched.
+        /// <para>
+        /// Invariant: nothing may reset the <c>Console</c> writers after this runs. In particular
+        /// <c>pyRevitLabs.CommonCLI.ConsoleProvider.InvalidateOutAndError</c> (reached through
+        /// <c>ConsoleProvider.Show</c> and <c>Toggle</c>) clears them by reflection, which would bring
+        /// back U+FFFD. No code reachable from this CLI calls it today.
+        /// </para>
         /// </remarks>
         internal static void ApplyForRedirectedStream(bool isRedirected, Func<Stream> openStream, Action<TextWriter> setWriter) {
             if (!isRedirected)
