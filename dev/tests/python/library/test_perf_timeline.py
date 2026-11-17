@@ -10,7 +10,7 @@ import unittest
 TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
 
-ROOT_DIR = op.dirname(op.dirname(op.dirname(op.abspath(__file__))))
+ROOT_DIR = str(Path(__file__).resolve().parents[4])
 PERF_PATH = op.join(ROOT_DIR, "pyrevitlib", "pyrevit", "_perf.py")
 
 
