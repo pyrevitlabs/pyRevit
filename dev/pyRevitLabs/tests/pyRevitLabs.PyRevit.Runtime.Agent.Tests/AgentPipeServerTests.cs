@@ -239,6 +239,61 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             }
         }
 
+        /// <summary>A client that queues more lines than the budget during a request is treated as gone: the token is cancelled and the connection closes.</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void AClientThatQueuesTooManyLinesMidRequestIsTreatedAsGone() {
+            var pipeName = UniquePipeName();
+            using (var handling = new ManualResetEventSlim())
+            using (var callerGone = new ManualResetEventSlim())
+            using (var server = new AgentPipeServer(pipeName, (line, token) => {
+                if (line == "block") {
+                    handling.Set();
+                    token.WaitHandle.WaitOne(Long);
+                    if (token.IsCancellationRequested)
+                        callerGone.Set();
+                }
+                return line;
+            }, _ => { }, TimeSpan.FromMilliseconds(10), maxQueuedLines: 3)) {
+                server.Start();
+                using (var client = Connect(pipeName, Long)) {
+                    client.Send("block");
+                    Assert.True(handling.Wait(Long));
+                    for (var i = 0; i < 4; i++)
+                        client.Send("queued" + i);
+
+                    Assert.True(callerGone.Wait(Long));
+                    Assert.Equal("block", client.Receive());
+                    Assert.Null(client.Receive());
+                }
+            }
+        }
+
+        /// <summary>A backlog within the budget is neither dropped nor treated as a disconnect.</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void AQueueWithinTheBudgetIsKept() {
+            var pipeName = UniquePipeName();
+            using (var release = new ManualResetEventSlim())
+            using (var server = new AgentPipeServer(pipeName, (line, token) => BlockOn(line, release), _ => { }, TimeSpan.FromMilliseconds(10), maxQueuedLines: 3)) {
+                server.Start();
+                using (var client = Connect(pipeName, Long)) {
+                    client.Send("block");
+                    client.Send("a");
+                    client.Send("b");
+                    client.Send("c");
+                    Thread.Sleep(300);
+
+                    release.Set();
+
+                    Assert.Equal("block", client.Receive());
+                    Assert.Equal("a", client.Receive());
+                    Assert.Equal("b", client.Receive());
+                    Assert.Equal("c", client.Receive());
+                }
+            }
+        }
+
         private static string BlockOn(string line, ManualResetEventSlim release) {
             if (line == "block" && !release.Wait(Long))
                 return "timed out";

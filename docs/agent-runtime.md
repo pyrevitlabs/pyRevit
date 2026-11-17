@@ -170,7 +170,7 @@ other clients (such as `pyrevit agent run`) hold all its connections. The host a
 pipe thread, so a Revit that is only running another client's request still answers it. A Revit whose pipe is not listening, or that gets no answer within
 5 seconds, reports `responding: false` (`pyrevit agent status` uses the same ping, prints `busy` for a Revit that is only serving another client, and shows each session's clone and engine). A client's `notifications/cancelled` frees the call's
 turn. A call cancelled while it waited for its turn was not sent; one cancelled while waiting for
-Revit's answer keeps running in Revit, so its outcome is `unknown`; the exception is a modify run waiting at the approval prompt, which the host closes as No and records as `discarded_caller_gone`. The server sends no response to a cancelled `tools/call`, as the MCP specification asks; the server does not reveal its own request id (it is not the MCP call id), so look for a run record with `pyrevit agent runs` (newest first) and open it with `pyrevit agent show <run_id>`. A call cancelled before it was sent, or while it still waited for an earlier call, left no run record.
+Revit's answer keeps running in Revit, so its outcome is `unknown`; the exception is a modify run waiting at the approval prompt: when the client disconnects, the host tries to close the prompt as No and, if the rollback succeeds, records `discarded_caller_gone` (see the run record notes for the cases where the prompt stays up or the rollback fails). The server sends no response to a cancelled `tools/call`, as the MCP specification asks; the server does not reveal its own request id (it is not the MCP call id), so look for a run record with `pyrevit agent runs` (newest first) and open it with `pyrevit agent show <run_id>`. A call cancelled before it was sent, or while it still waited for an earlier call, left no run record.
 
 ### Automation operations
 
@@ -623,9 +623,17 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
   `awaiting_approval`, which the final record replaces. A run folder that keeps it was interrupted at
   the prompt or before the final write (for example Revit exited), so its outcome is unknown: the user
   may have approved and the change committed. Check the model before repeating the run.
-  If the client that sent the run disconnects while the prompt is up, the host closes the prompt as if
-  the user had chosen No, rolls the run back and records `status` `rejected` with `decision`
-  `discarded_caller_gone`. Under policy `ask`, send the run again to get a new prompt.
+  If the client that sent the run disconnects while the prompt is up, the host makes a best-effort
+  attempt to close the prompt as if the user had chosen No. If it finds the prompt within about two
+  seconds, it rolls the run back and records `status` `rejected` with `decision`
+  `discarded_caller_gone`. If the rollback fails, the record is `status` `error` with `decision`
+  `rollback_incomplete` and changes may remain in the model: check the model, then have the user undo
+  them in Revit or close the document without saving. If the host does not find the prompt, it logs a
+  warning and leaves the prompt open; the user can still approve it and the run then commits, and the
+  open prompt keeps blocking other requests until it is answered. Check the model before sending the run
+  again. Under policy `ask`, sending it again gets a new prompt. Only a disconnect counts: a client that
+  stays connected but stops reading keeps the prompt up. A client that sends more than 16 lines or 32
+  million characters while the prompt is up is treated as disconnected.
 - `result.json`: present when the result was too large to return inline
 - `exports\`: present when the run exported files into its `export_dir`
 
@@ -974,8 +982,9 @@ Honest limits:
   last until its `timeout_s` (plus 30 seconds before a stuck run fails with `run_hung`), a
   second request connects at once, waits up to its `start_timeout_s` (30 seconds by default)
   and then gets `revit_busy` (`not_run`), which says how long an earlier request has run. A call
-  whose client cancelled it or stopped waiting keeps running too, except a modify run waiting at the approval prompt, which is discarded; it no longer blocks the
-  next connection. Four connections can be open at once; a fifth client waits for one to
+  whose client cancelled it or stopped waiting keeps running too, except a modify run waiting at the approval prompt whose client disconnected, which the host makes a
+  best-effort attempt to discard; if the prompt is not found it stays open and the run can still commit
+  and block other requests. Four connections can be open at once; a fifth client waits for one to
   close, up to the CLI's 10-second connect timeout. Keep runs short, and run one agent per Revit.
 - ExternalEvents only fire while Revit is idle, so a busy Revit returns `revit_busy`
   after 30 seconds. The error names Revit's open windows and whether an earlier agent

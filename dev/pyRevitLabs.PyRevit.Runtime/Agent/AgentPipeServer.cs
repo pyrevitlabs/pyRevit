@@ -41,8 +41,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Stopping then calls the <c>stoppedListening</c> callback, so the host can stop advertising the pipe.
     /// A handler receives a token that is cancelled when its client closes the connection before
     /// the answer is written, so work that waits for a person, such as the approval prompt, can
-    /// stop waiting for a caller that is no longer there. The token is never cancelled for a
-    /// client that stays connected.
+    /// stop waiting for a caller that is no longer there. The token is cancelled for a client
+    /// that disconnects, never for one that stays connected and within its queue budget.
+    /// Invariant: while a request is handled, the lines its client sends meanwhile are queued up
+    /// to <see cref="DefaultMaxQueuedLines"/> lines and 32 million characters; a client that
+    /// exceeds either is treated as gone: its queue is dropped, its token is cancelled and its
+    /// connection closes once the handler returns.
     /// Invariant: connections only receive and answer requests; the handler (through
     /// <see cref="AgentDispatcher"/>) is the only thing that orders work, so a connection whose
     /// request is still running, for example one its client cancelled, never keeps the next
@@ -57,12 +61,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static readonly TimeSpan FirstCreateRetryDelay = TimeSpan.FromMilliseconds(500);
         private static readonly TimeSpan MaxCreateRetryDelay = TimeSpan.FromSeconds(30);
         private const int DefaultMaxConnections = 4;
+        private const int DefaultMaxQueuedLines = 16;
+        private const int MaxQueuedChars = 32 * 1024 * 1024;
 
         private readonly string pipeName;
         private readonly Func<string, CancellationToken, string> handleLine;
         private readonly Action<AgentPipeServer> stoppedListening;
         private readonly TimeSpan firstCreateRetryDelay;
         private readonly int maxConnections;
+        private readonly int maxQueuedLines;
         private readonly SemaphoreSlim connectionSlots;
         private readonly CancellationTokenSource stopping = new CancellationTokenSource();
         private readonly object pipeLock = new object();
@@ -87,12 +94,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         internal AgentPipeServer(
             string pipeName, Func<string, CancellationToken, string> handleLine, Action<AgentPipeServer> stoppedListening, TimeSpan firstCreateRetryDelay,
-            int maxConnections = DefaultMaxConnections) {
+            int maxConnections = DefaultMaxConnections, int maxQueuedLines = DefaultMaxQueuedLines) {
             this.pipeName = pipeName;
             this.handleLine = handleLine;
             this.stoppedListening = stoppedListening;
             this.firstCreateRetryDelay = firstCreateRetryDelay;
             this.maxConnections = maxConnections;
+            this.maxQueuedLines = maxQueuedLines;
             connectionSlots = new SemaphoreSlim(maxConnections, maxConnections);
         }
 
@@ -217,7 +225,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private void Serve(NamedPipeServerStream pipe) {
             var reader = new BoundedLineReader(new StreamReader(pipe, Utf8));
             var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
-            var lookahead = new LineLookahead(reader);
+            var lookahead = new LineLookahead(reader, maxQueuedLines, MaxQueuedChars);
             while (!stopping.IsCancellationRequested) {
                 string line;
                 try {
@@ -271,24 +279,38 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <remarks>
         /// Invariant: at most one read is in flight. While watching, a line that arrives (blank,
         /// oversized or a queued request) is kept for the connection loop and reading continues;
-        /// only end of stream or a pipe failure cancels the caller-gone token.
+        /// only end of stream, a pipe failure or an exceeded backlog budget cancels the caller-gone
+        /// token. The backlog is bounded by line count and total characters, so a client can't
+        /// exhaust memory while a request waits for the approval prompt; past the budget the
+        /// backlog is dropped, reading stops and <see cref="Take"/> reports end of stream.
         /// </remarks>
         private sealed class LineLookahead {
             private readonly BoundedLineReader reader;
             private readonly Queue<Task<string>> arrived = new Queue<Task<string>>();
             private readonly object gate = new object();
+            private readonly int maxQueuedLines;
+            private readonly int maxQueuedChars;
             private Task<string> outstanding;
             private CancellationTokenSource callerGone;
+            private int queuedChars;
+            private bool overflowed;
 
-            public LineLookahead(BoundedLineReader reader) {
+            public LineLookahead(BoundedLineReader reader, int maxQueuedLines, int maxQueuedChars) {
                 this.reader = reader;
+                this.maxQueuedLines = maxQueuedLines;
+                this.maxQueuedChars = maxQueuedChars;
                 outstanding = reader.ReadLineAsync();
             }
 
             public Task<string> Take() {
                 lock (gate) {
-                    if (arrived.Count > 0)
-                        return arrived.Dequeue();
+                    if (overflowed)
+                        return Task.FromResult<string>(null);
+                    if (arrived.Count > 0) {
+                        var queued = arrived.Dequeue();
+                        queuedChars -= CharsOf(queued);
+                        return queued;
+                    }
                     var next = outstanding;
                     outstanding = null;
                     return next;
@@ -297,7 +319,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             public void Resume() {
                 lock (gate) {
-                    if (outstanding == null)
+                    if (outstanding == null && !overflowed)
                         outstanding = reader.ReadLineAsync();
                 }
             }
@@ -325,10 +347,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     if (callerGone == null || !ReferenceEquals(read, outstanding))
                         return;
                     arrived.Enqueue(read);
+                    queuedChars += CharsOf(read);
                     var ended = read.IsCanceled || (read.IsFaulted && !(read.Exception.InnerException is InvalidDataException))
                         || (read.Status == TaskStatus.RanToCompletion && read.Result == null);
                     if (ended) {
                         outstanding = null;
+                        gone = callerGone;
+                    }
+                    else if (arrived.Count > maxQueuedLines || queuedChars > maxQueuedChars) {
+                        logger.Warn("Closing an agent pipe connection whose client queued more than {0} lines or {1} characters during a request", maxQueuedLines, maxQueuedChars);
+                        arrived.Clear();
+                        queuedChars = 0;
+                        outstanding = null;
+                        overflowed = true;
                         gone = callerGone;
                     }
                     else {
@@ -339,6 +370,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 if (gone != null)
                     TryCancel(gone);
             }
+
+            private static int CharsOf(Task<string> read) =>
+                read.Status == TaskStatus.RanToCompletion && read.Result != null ? read.Result.Length : 0;
 
             private static void TryCancel(CancellationTokenSource source) {
                 try {
