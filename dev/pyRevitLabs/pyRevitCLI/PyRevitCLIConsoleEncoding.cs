@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Text;
 
 namespace pyRevitCLI {
@@ -7,21 +8,27 @@ namespace pyRevitCLI {
     /// </summary>
     internal static class PyRevitCLIConsoleEncoding {
         /// <summary>
-        /// Switches the console output encoding to BOM-less UTF-8 when stdout is redirected.
+        /// Replaces a redirected standard stream writer with an auto-flushing BOM-less UTF-8 writer.
         /// </summary>
-        /// <param name="isOutputRedirected">Whether stdout is a pipe or file rather than a console.</param>
-        /// <param name="setOutputEncoding">Applies the encoding to the console.</param>
+        /// <param name="isRedirected">Whether the stream is a pipe or file rather than a console.</param>
+        /// <param name="openStream">Opens the raw standard stream.</param>
+        /// <param name="setWriter">Installs the replacement writer (for example <c>Console.SetOut</c>).</param>
         /// <remarks>
         /// Without this, a redirected stdout uses the console code page and non-ASCII text such as
-        /// agent run output reaches the reader as U+FFFD. An interactive console is left untouched.
+        /// agent run output reaches the reader as U+FFFD. The shared console's code page
+        /// (<c>Console.OutputEncoding</c>) is deliberately left alone, because changing it would
+        /// persist in the parent terminal after the process exits. A stream that is not redirected
+        /// is left untouched.
         /// </remarks>
-        internal static void ApplyForRedirectedOutput(bool isOutputRedirected, Action<Encoding> setOutputEncoding) {
-            if (isOutputRedirected)
-                setOutputEncoding(new UTF8Encoding(false));
+        internal static void ApplyForRedirectedStream(bool isRedirected, Func<Stream> openStream, Action<TextWriter> setWriter) {
+            if (!isRedirected)
+                return;
+            setWriter(new StreamWriter(openStream(), new UTF8Encoding(false)) { AutoFlush = true });
         }
 
         internal static void Apply() {
-            ApplyForRedirectedOutput(Console.IsOutputRedirected, encoding => Console.OutputEncoding = encoding);
+            ApplyForRedirectedStream(Console.IsOutputRedirected, Console.OpenStandardOutput, Console.SetOut);
+            ApplyForRedirectedStream(Console.IsErrorRedirected, Console.OpenStandardError, Console.SetError);
         }
     }
 }

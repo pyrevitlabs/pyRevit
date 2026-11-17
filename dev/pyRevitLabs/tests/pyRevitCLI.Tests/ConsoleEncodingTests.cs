@@ -9,23 +9,33 @@ namespace pyRevitCLI.Tests;
 [Trait("Environment", "HostFree")]
 public class ConsoleEncodingTests {
     [Fact]
-    public void RedirectedOutputIsSwitchedToUtf8WithoutBom() {
-        Encoding chosen = null;
+    public void RedirectedStreamReceivesUtf8BytesWithoutBom() {
+        var stream = new MemoryStream();
+        TextWriter installed = null;
 
-        PyRevitCLIConsoleEncoding.ApplyForRedirectedOutput(true, encoding => chosen = encoding);
+        PyRevitCLIConsoleEncoding.ApplyForRedirectedStream(true, () => stream, writer => installed = writer);
+        installed.Write("äöü");
 
-        Assert.NotNull(chosen);
-        Assert.Equal(65001, chosen.CodePage);
-        Assert.Empty(chosen.GetPreamble());
-        Assert.Equal("äöü", chosen.GetString(chosen.GetBytes("äöü")));
+        Assert.Equal(new byte[] { 0xC3, 0xA4, 0xC3, 0xB6, 0xC3, 0xBC }, stream.ToArray());
     }
 
     [Fact]
-    public void InteractiveOutputKeepsTheConsoleEncoding() {
-        var changed = false;
+    public void RedirectedStreamDoesNotChangeTheConsoleCodePage() {
+        var before = Console.OutputEncoding;
 
-        PyRevitCLIConsoleEncoding.ApplyForRedirectedOutput(false, _ => changed = true);
+        PyRevitCLIConsoleEncoding.ApplyForRedirectedStream(true, () => new MemoryStream(), _ => { });
 
-        Assert.False(changed);
+        Assert.Equal(before.CodePage, Console.OutputEncoding.CodePage);
+    }
+
+    [Fact]
+    public void InteractiveStreamIsLeftUntouched() {
+        var opened = false;
+        var installed = false;
+
+        PyRevitCLIConsoleEncoding.ApplyForRedirectedStream(false, () => { opened = true; return new MemoryStream(); }, _ => installed = true);
+
+        Assert.False(opened);
+        Assert.False(installed);
     }
 }
