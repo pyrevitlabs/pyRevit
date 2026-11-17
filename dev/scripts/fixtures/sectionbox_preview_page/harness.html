@@ -8,6 +8,7 @@
 <div id="app" style="width:800px;height:500px"></div>
 <pre id="out">PENDING</pre>
 <script>
+  if (new URLSearchParams(location.search).get("gl") !== "1") HTMLCanvasElement.prototype.getContext = () => null;
   window.__errors = [];
   window.addEventListener("error", (e) => window.__errors.push(String(e.message) + " @" + e.lineno));
   window.__sent = [];
@@ -125,8 +126,7 @@
         view: { kind: "3d", name: "3D", box: box(), editable: ["x0", "x1", "y0", "y1", "z0", "z1"], blocker: null, camera: null, bookmarks: [{ id: "b1", name: "Уровень «1»" }] },
       });
       const p = app.instance;
-      if (!p.gl) return { gl: false };
-      const R = { gl: true };
+        const R = {};
       p.setGuides({ levels: [{ name: "L1", z: 0 }, { name: "Этаж 2", z: 10 }], grids: [{ name: "A", segs: [[7, -20, 7, 20]] }], scopeBoxes: [] });
       const positions = new Float32Array([0, 0, 0, 4, 0, 0, 0, 4, 0]);
       const indices = new Uint32Array([0, 1, 2]);
@@ -157,11 +157,10 @@
       view: { kind: "3d", name: "3D", box: box({ min: [-5, -5, 10], max: [5, 5, 30] }), editable: ["x0", "x1", "y0", "y1", "z0", "z1"], blocker: null, camera: null, bookmarks: [] },
     });
     const p = app.instance;
-    if (!p.gl) return { gl: false };
     const levels = [-20, 0, 8, 12, 20, 28, 35, 60].map((z, i) => ({ name: "L" + i, z, elevation: z + 100 }));
     const grids = [{ name: "A", segs: [[-30, -40, -30, 40]] }, { name: "B", segs: [[-40, 0, 40, 0]] }, { name: "C", segs: [[10, -40, 10, 40]] }];
     p.setGuides({ levels, grids, scopeBoxes: [] });
-    const R = { gl: true };
+    const R = {};
     R.shown_levels = p._visibleLevelIndexes().map((i) => levels[i].name);
     p.flags.allLevels = true;
     R.all_levels = p._visibleLevelIndexes().length;
@@ -204,7 +203,6 @@
       view: { kind: "3d", name: "3D", box: box({ min: [-20, -20, -2], max: [20, 20, 12] }), editable: ["x0", "x1", "y0", "y1", "z0", "z1"], blocker: null, camera: null, bookmarks: [] },
     });
     const p = app.instance;
-    if (!p.gl) return { gl: false };
     p.setGuides({ levels: [], grids: [{ name: "G1", segs: [[-30, 0, 30, 0]] }], scopeBoxes: [] });
     const wall = new Float32Array([0, 0, 0, 6, 0, 0, 6, 0, 8, 0, 0, 0, 6, 0, 8, 0, 0, 8]);
     const slab = new Float32Array([-15, -15, 0, 15, -15, 0, 15, 15, 0, -15, -15, 0, 15, 15, 0, -15, 15, 0]);
@@ -216,7 +214,7 @@
     p._render();
     const rect = p.canvas.getBoundingClientRect();
     const eventAt = (w) => { const s = p._project(p.viewProj, w); return { clientX: rect.left + s.x, clientY: rect.top + s.y }; };
-    const R = { gl: true };
+    const R = {};
     p.setMode("element");
     const onWall = p._hoverAt(eventAt([3, 0, 4]));
     R.wall = onWall && { label: onWall.label, boxContainsElement: [[0, 0, 0], [6, 0, 8]].every((q) => A.insideBox(onWall.box, q, 1e-6)), zmin: onWall.box.min[2] };
@@ -250,9 +248,8 @@
     });
     app.mount("app", payload());
     const p = app.instance;
-    if (!p.gl) return { gl: false };
     p._render();
-    const R = { gl: true };
+    const R = {};
 
     p.commitRequest("bookmark_save", { name: "x", box: p.view.box });
     const id = window.__sent[window.__sent.length - 1].requestId;
@@ -298,6 +295,30 @@
     window.addEventListener = add;
     window.removeEventListener = remove;
     return R;
+  };
+
+  scenarios.gl_smoke = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box({ min: [-20, -20, -2], max: [20, 20, 12] }), editable: ["x0", "x1", "y0", "y1", "z0", "z1"], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    if (!p.gl) return { gl: false };
+    p.setGuides({ levels: [{ name: "L1", z: 0 }], grids: [{ name: "G1", segs: [[-30, 0, 30, 0]] }], scopeBoxes: [] });
+    const wall = new Float32Array([0, 0, 0, 6, 0, 0, 6, 0, 8, 0, 0, 0, 6, 0, 8, 0, 0, 8]);
+    p._onEvent("scene", { progress: [1, 1], meshes: [{ id: 12, source: 0, group: "Walls", approx: false, positions: packed(wall), indices: packed(new Uint32Array([0, 1, 2, 3, 4, 5])) }] });
+    p.setMode("element");
+    p.setCameraPreset("iso");
+    p.frameBounds({ min: [-20, -20, 0], max: [20, 20, 10] });
+    p._render();
+    const rect = p.canvas.getBoundingClientRect();
+    const s = p._project(p.viewProj, [3, 0, 4]);
+    p.hover = p._hoverAt({ clientX: rect.left + s.x, clientY: rect.top + s.y });
+    p._render();
+    p.setMode("grid");
+    p._render();
+    return { gl: true, error: p.gl.getError(), hovered: p.groups.has("Walls"), elements: p.elements.size };
   };
 
   (async () => {

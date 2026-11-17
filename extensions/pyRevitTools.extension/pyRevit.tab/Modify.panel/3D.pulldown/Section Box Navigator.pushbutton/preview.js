@@ -489,14 +489,13 @@ void main() { outColor = uColor; }`;
       root.append(this.toolbar, this.main, this.statusBar);
 
       const gl = this.canvas.getContext("webgl2", { antialias: true, alpha: false });
-      if (!gl) {
-        this.setStatus("WebGL2 is not available", "error");
-        return;
+      this.glMissing = !gl;
+      if (gl) {
+        this.gl = gl;
+        this.meshProgram = compile(gl, MESH_VS, MESH_FS);
+        this.flatProgram = compile(gl, FLAT_VS, FLAT_FS);
+        this.dynamic = { lines: gl.createBuffer(), fill: gl.createBuffer() };
       }
-      this.gl = gl;
-      this.meshProgram = compile(gl, MESH_VS, MESH_FS);
-      this.flatProgram = compile(gl, FLAT_VS, FLAT_FS);
-      this.dynamic = { lines: gl.createBuffer(), fill: gl.createBuffer() };
       this.dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 
       this._buildToolbar();
@@ -733,7 +732,8 @@ void main() { outColor = uColor; }`;
     }
 
     _resetStatus() {
-      if (!this.view.box) this.setStatus(this.t("PreviewNoBox"), "warn");
+      if (this.glMissing) this.setStatus("WebGL2 is not available", "error");
+      else if (!this.view.box) this.setStatus(this.t("PreviewNoBox"), "warn");
       else if (this.view.blocker === "scope_box") this.setStatus(this.t("PreviewBlockedScopeBox"), "warn");
       else if (this.view.blocker === "crop_shape") this.setStatus(this.t("PreviewBlockedCropShape"), "warn");
       else if (!this.loading) this.setStatus(this.t("PreviewHelp"), "info");
@@ -866,7 +866,6 @@ void main() { outColor = uColor; }`;
     }
 
     _addBatch(name, entry) {
-      const gl = this.gl;
       const pos = new Float32Array(entry.triangles * 9);
       const nrm = new Float32Array(entry.triangles * 9);
       let offset = 0;
@@ -892,14 +891,14 @@ void main() { outColor = uColor; }`;
         }
         ranges.push({ key: part.key, start: rangeStart, end: offset });
       }
-      const vao = this._vao(this.meshProgram, this._buffer(pos), this._buffer(nrm));
+      const vao = this.gl ? this._vao(this.meshProgram, this._buffer(pos), this._buffer(nrm)) : null;
       const batch = { group: name, source: entry.source, vao, count: entry.triangles * 3, pos };
       this.batches.push(batch);
       for (const range of ranges) {
         const element = this.elements.get(range.key);
         if (element) Object.assign(element, { batch, start: range.start, end: range.end });
       }
-      gl.bindVertexArray(null);
+      if (this.gl) this.gl.bindVertexArray(null);
     }
 
     _guideExtent() {
@@ -921,12 +920,13 @@ void main() { outColor = uColor; }`;
     }
 
     _buildGuideBuffers() {
-      if (!this.gl) return;
-      const gl = this.gl;
       const ext = this._guideExtent();
       const pad = Math.max(8, 0.15 * Math.max(ext.max[0] - ext.min[0], ext.max[1] - ext.min[1]));
       const x0 = ext.min[0] - pad, x1 = ext.max[0] + pad, y0 = ext.min[1] - pad, y1 = ext.max[1] + pad;
       this.guideRect = { x0, x1, y0, y1 };
+      this.gridZ = ext.min[2];
+      if (!this.gl) return;
+      const gl = this.gl;
       const fill = [], lines = [];
       for (const level of this.guides.levels) {
         const z = level.z;
@@ -944,7 +944,6 @@ void main() { outColor = uColor; }`;
       this.levelFillVao = this._vao(this.flatProgram, this._buffer(new Float32Array(fill)));
       this.levelLineVao = this._vao(this.flatProgram, this._buffer(new Float32Array(lines)));
       this.gridVao = this._vao(this.flatProgram, this._buffer(new Float32Array(gridLines)));
-      this.gridZ = zBase;
       gl.bindVertexArray(null);
     }
 
@@ -1336,7 +1335,7 @@ void main() { outColor = uColor; }`;
     }
 
     requestRender() {
-      if (this.pendingFrame || !this.gl) return;
+      if (this.pendingFrame) return;
       this.pendingFrame = requestAnimationFrame(() => {
         this.pendingFrame = 0;
         this._render();
@@ -1379,9 +1378,20 @@ void main() { outColor = uColor; }`;
     }
 
     _render() {
-      const gl = this.gl;
       const { eye, viewProj } = this._matrices();
       this.viewProj = viewProj;
+      if (this.gl) this._drawScene(eye, viewProj);
+      this._renderHover(viewProj);
+      this._renderLabels(viewProj);
+      this._placeHandles(viewProj);
+      if (this._pendingFrame && this.modelBounds && !this.view.box) {
+        this._pendingFrame = false;
+        this.frameModel();
+      }
+    }
+
+    _drawScene(eye, viewProj) {
+      const gl = this.gl;
       gl.viewport(0, 0, this.canvas.width, this.canvas.height);
       const bg = this.dark ? [0.11, 0.12, 0.14] : [0.972, 0.976, 0.98];
       gl.clearColor(bg[0], bg[1], bg[2], 1);
@@ -1416,13 +1426,6 @@ void main() { outColor = uColor; }`;
       }
       this._renderGuides(gl, viewProj);
       gl.bindVertexArray(null);
-      this._renderHover(viewProj);
-      this._renderLabels(viewProj);
-      this._placeHandles(viewProj);
-      if (this._pendingFrame && this.modelBounds && !this.view.box) {
-        this._pendingFrame = false;
-        this.frameModel();
-      }
     }
 
     _drawHoverElement(gl, mp) {

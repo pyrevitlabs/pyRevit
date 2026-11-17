@@ -66,12 +66,17 @@ def run_browser(browser, url):
         )
 
 
-def run_scenario(browser, name):
-    url = "{}?scenario={}".format(HARNESS.as_uri(), name)
-    try:
-        completed = run_browser(browser, url)
-    except subprocess.TimeoutExpired:
-        completed = run_browser(browser, url)
+def run_scenario(browser, name, gl=False, attempts=2):
+    url = "{}?scenario={}{}".format(HARNESS.as_uri(), name, "&gl=1" if gl else "")
+    completed = None
+    for _ in range(attempts):
+        try:
+            completed = run_browser(browser, url)
+            break
+        except subprocess.TimeoutExpired:
+            continue
+    if completed is None:
+        raise subprocess.TimeoutExpired(url, SCENARIO_TIMEOUT_SECONDS)
     dom = completed.stdout.decode("utf-8", "replace")
     match = RESULT.search(dom)
     if match is None:
@@ -159,8 +164,6 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
 
     def test_mounting_builds_handles_streams_chunks_and_posts_boxes(self):
         result = self.scenario("mount")
-        if not result["gl"]:
-            self.skipTest("the browser has no WebGL2")
         self.assertEqual(result["elements"], 1)
         self.assertEqual(result["groups"], ["Walls"])
         self.assertEqual(result["bounds"], {"min": [0, 0, 0], "max": [4, 4, 0]})
@@ -175,8 +178,6 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
 
     def test_guides_show_relevant_levels_and_do_not_pile_up_labels(self):
         result = self.scenario("guides_and_presets")
-        if not result["gl"]:
-            self.skipTest("the browser has no WebGL2")
         self.assertEqual(sorted(result["shown_levels"]), ["L2", "L3", "L4", "L5", "L6"])
         self.assertEqual(result["all_levels"], 8)
         self.assertFalse(result["rooms_visible"])
@@ -187,8 +188,6 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
 
     def test_front_and_side_presets_face_the_box_axes(self):
         result = self.scenario("guides_and_presets")
-        if not result["gl"]:
-            self.skipTest("the browser has no WebGL2")
         self.assertEqual(result["front"], {"pitch": 0, "ortho": True, "yawDeg": -90})
         self.assertEqual(result["side"], {"pitch": 0, "yawDeg": 0})
         self.assertEqual(result["rotated_front_yawDeg"], -60)
@@ -201,8 +200,6 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
 
     def test_pick_modes_preview_what_a_click_would_apply(self):
         result = self.scenario("pick_hover")
-        if not result["gl"]:
-            self.skipTest("the browser has no WebGL2")
         self.assertEqual(result["wall"]["label"], "Walls · 12")
         self.assertTrue(result["wall"]["boxContainsElement"])
         self.assertEqual(result["wall"]["zmin"], -1)
@@ -216,8 +213,6 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
 
     def test_failed_requests_cancelled_drags_and_remounts_leave_no_state_behind(self):
         result = self.scenario("review_fixes")
-        if not result["gl"]:
-            self.skipTest("the browser has no WebGL2")
         self.assertEqual(result["pending_before_error"], 1)
         self.assertEqual(result["pending_after_error"], 0)
         self.assertTrue(result["request_cleared"])
@@ -231,6 +226,17 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
         self.assertEqual(result["restore_sent"], result["live_sent"] + 1)
         self.assertEqual(result["restored_max_z"], result["page_max_z"])
         self.assertEqual(result["keydown"], {"added": 2, "removed": 1})
+
+    def test_webgl_context_draws_guides_and_the_hovered_element(self):
+        try:
+            result = run_scenario(self.browser, "gl_smoke", gl=True, attempts=3)
+        except subprocess.TimeoutExpired:
+            self.skipTest("headless browser did not start a WebGL context in time")
+        if not result["gl"]:
+            self.skipTest("the browser has no WebGL2")
+        self.assertEqual(result["error"], 0)
+        self.assertEqual(result["elements"], 1)
+        self.assertEqual(result["errors"], [])
 
 
 if __name__ == "__main__":
