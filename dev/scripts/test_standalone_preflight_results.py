@@ -117,8 +117,10 @@ class ElementIdValueTests(unittest.TestCase):
             results.element_id_value(True)
 
     def test_text_is_rejected_even_when_numeric(self):
-        with self.assertRaises(TypeError):
-            results.element_id_value("123")
+        for text in ("123", b"123"):
+            with self.subTest(text=text):
+                with self.assertRaises(TypeError):
+                    results.element_id_value(text)
 
     def test_unreadable_object_is_rejected(self):
         with self.assertRaises(TypeError):
@@ -168,6 +170,12 @@ class FindingTests(unittest.TestCase):
         data["count"] = 2
         self.assertEqual(finding.data, {"count": 1})
 
+    def test_nested_data_is_copied(self):
+        data = {"values": [1]}
+        finding = results.Finding("r", "m", data=data)
+        data["values"].append(2)
+        self.assertEqual(finding.data, {"values": [1]})
+
     def test_invalid_values_are_rejected(self):
         invalid = [
             dict(rule="", message="m"),
@@ -179,6 +187,9 @@ class FindingTests(unittest.TestCase):
             dict(rule="r", message="m", data=["not", "a", "dict"]),
             dict(rule="r", message="m", data={"value": object()}),
             dict(rule="r", message="m", data={1: "a", "label": "b"}),
+            dict(rule="r", message="m", data={"value": float("nan")}),
+            dict(rule="r", message="m", data={"value": float("inf")}),
+            dict(rule="r", message="m", data={"value": float("-inf")}),
         ]
         for kwargs in invalid:
             with self.subTest(kwargs=kwargs):
@@ -332,7 +343,7 @@ class WriteTests(unittest.TestCase):
         self.assertEqual([row[10] for row in rows[1:]], ["-1", "7"])
 
     def test_csv_formula_prefixes_are_neutralized(self):
-        for text in ("=A1", "+A1", "-A1", "@A1", "\tA1", "\rA1"):
+        for text in ("=A1", "+A1", "-A1", "@A1", "\tA1", "\rA1", "\n=1+1"):
             with self.subTest(text=text):
                 self.assertTrue(results._csv_field(text).lstrip('"').startswith("'"))
         self.assertEqual(results._csv_field("-12"), "-12")

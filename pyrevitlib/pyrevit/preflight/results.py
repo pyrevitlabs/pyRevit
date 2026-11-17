@@ -11,6 +11,7 @@ without a Revit host. Targets IronPython 2.7 as well as CPython 3, since 2.7 is 
 default engine.
 """
 
+import copy
 import io
 import json
 import os
@@ -47,9 +48,12 @@ CSV_COLUMNS = (
 
 _CSV_SPECIAL_CHARS = (",", '"', "\r", "\n")
 
-_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r", "\n")
 
-_TEXT_TYPES = (type(""), type(b""), type(""))
+try:
+    _TEXT_TYPES = (basestring, bytes)  # noqa: F821  (IronPython 2 / Python 2)
+except NameError:
+    _TEXT_TYPES = (str, bytes)
 
 
 def _to_text(value):
@@ -173,7 +177,7 @@ class Finding(object):
             if not isinstance(data, dict):
                 raise ValueError("Preflight finding data must be a dict.")
             try:
-                json.dumps(data, sort_keys=True)
+                json.dumps(data, sort_keys=True, allow_nan=False)
             except (TypeError, ValueError) as serialize_error:
                 raise ValueError(
                     "Preflight finding data is not JSON serializable: %s"
@@ -184,7 +188,7 @@ class Finding(object):
         self.status = status
         self.severity = severity
         self.element_ids = _element_id_values(element_ids)
-        self.data = dict(data) if data else {}
+        self.data = copy.deepcopy(data) if data else {}
 
     @property
     def failed(self):
@@ -329,6 +333,7 @@ class CheckResult(object):
                 separators=separators,
                 sort_keys=True,
                 ensure_ascii=True,
+                allow_nan=False,
             )
         )
 
@@ -414,7 +419,7 @@ def write(result, path=None):
     - ``.csv`` appends one row per finding and element, writing the header and a
       UTF-8 byte order mark first when the file is new or empty, so Excel reads
       non-ASCII names correctly. Text starting with ``=``, ``+``, ``-``, ``@``,
-      a tab or a carriage return gets a leading apostrophe, so a spreadsheet
+      a tab, a carriage return or a line feed gets a leading apostrophe, so a spreadsheet
       shows it as text instead of running it as a formula.
 
     Parent folders are created as needed. The output is built before the file
