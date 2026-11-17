@@ -217,48 +217,35 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private void Serve(NamedPipeServerStream pipe) {
             var reader = new BoundedLineReader(new StreamReader(pipe, Utf8));
             var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
-            var read = reader.ReadLineAsync();
+            var lookahead = new LineLookahead(reader);
             while (!stopping.IsCancellationRequested) {
                 string line;
                 try {
-                    line = ReadLineUnlessIdle(read);
+                    line = ReadLineUnlessIdle(lookahead.Take());
                 }
                 catch (InvalidDataException ex) {
                     logger.Warn("Refusing an agent pipe request: {0}", ex.Message);
                     writer.WriteLine(AgentRequestLine.RefuseOversized(ex.Message));
-                    read = reader.ReadLineAsync();
+                    lookahead.Resume();
                     continue;
                 }
                 if (line == null)
                     return;
-                if (string.IsNullOrWhiteSpace(line)) {
-                    read = reader.ReadLineAsync();
-                    continue;
-                }
-                read = reader.ReadLineAsync();
-                writer.WriteLine(HandleWhileWatching(line, read));
+                lookahead.Resume();
+                if (!string.IsNullOrWhiteSpace(line))
+                    writer.WriteLine(HandleWhileWatching(line, lookahead));
             }
         }
 
-        private string HandleWhileWatching(string line, Task<string> nextRead) {
+        private string HandleWhileWatching(string line, LineLookahead lookahead) {
             using (var callerGone = new CancellationTokenSource()) {
-                nextRead.ContinueWith(
-                    finished => {
-                        if (finished.IsFaulted && finished.Exception.InnerException is InvalidDataException)
-                            return;
-                        if (finished.IsFaulted || finished.IsCanceled || finished.Result == null)
-                            TryCancel(callerGone);
-                    },
-                    TaskContinuationOptions.ExecuteSynchronously);
-                return handleLine(line, callerGone.Token);
-            }
-        }
-
-        private static void TryCancel(CancellationTokenSource source) {
-            try {
-                source.Cancel();
-            }
-            catch (ObjectDisposedException) {
+                lookahead.Watch(callerGone);
+                try {
+                    return handleLine(line, callerGone.Token);
+                }
+                finally {
+                    lookahead.Unwatch();
+                }
             }
         }
 
@@ -275,6 +262,91 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (!stopping.IsCancellationRequested)
                 logger.Debug("Closing an agent pipe connection idle for {0} seconds", IdleTimeout.TotalSeconds);
             return null;
+        }
+
+        /// <summary>
+        /// Reads the next lines of a connection while a request is being handled, so a client that
+        /// disconnects mid-request is noticed, without losing lines it sent meanwhile.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: at most one read is in flight. While watching, a line that arrives (blank,
+        /// oversized or a queued request) is kept for the connection loop and reading continues;
+        /// only end of stream or a pipe failure cancels the caller-gone token.
+        /// </remarks>
+        private sealed class LineLookahead {
+            private readonly BoundedLineReader reader;
+            private readonly Queue<Task<string>> arrived = new Queue<Task<string>>();
+            private readonly object gate = new object();
+            private Task<string> outstanding;
+            private CancellationTokenSource callerGone;
+
+            public LineLookahead(BoundedLineReader reader) {
+                this.reader = reader;
+                outstanding = reader.ReadLineAsync();
+            }
+
+            public Task<string> Take() {
+                lock (gate) {
+                    if (arrived.Count > 0)
+                        return arrived.Dequeue();
+                    var next = outstanding;
+                    outstanding = null;
+                    return next;
+                }
+            }
+
+            public void Resume() {
+                lock (gate) {
+                    if (outstanding == null)
+                        outstanding = reader.ReadLineAsync();
+                }
+            }
+
+            public void Watch(CancellationTokenSource gone) {
+                lock (gate) {
+                    callerGone = gone;
+                    if (outstanding != null)
+                        Observe(outstanding);
+                }
+            }
+
+            public void Unwatch() {
+                lock (gate)
+                    callerGone = null;
+            }
+
+            private void Observe(Task<string> read) {
+                read.ContinueWith(Arrived, TaskContinuationOptions.ExecuteSynchronously);
+            }
+
+            private void Arrived(Task<string> read) {
+                CancellationTokenSource gone = null;
+                lock (gate) {
+                    if (callerGone == null || !ReferenceEquals(read, outstanding))
+                        return;
+                    arrived.Enqueue(read);
+                    var ended = read.IsCanceled || (read.IsFaulted && !(read.Exception.InnerException is InvalidDataException))
+                        || (read.Status == TaskStatus.RanToCompletion && read.Result == null);
+                    if (ended) {
+                        outstanding = null;
+                        gone = callerGone;
+                    }
+                    else {
+                        outstanding = reader.ReadLineAsync();
+                        Observe(outstanding);
+                    }
+                }
+                if (gone != null)
+                    TryCancel(gone);
+            }
+
+            private static void TryCancel(CancellationTokenSource source) {
+                try {
+                    source.Cancel();
+                }
+                catch (ObjectDisposedException) {
+                }
+            }
         }
 
         private NamedPipeServerStream CreateInstance() {

@@ -610,6 +610,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return dismissal.Sent ? AgentApprovalAnswer.CallerGone : AgentApprovalAnswer.Declined;
         }
 
+        /// <summary>
+        /// Closes the approval prompt for a caller that is gone and reports whether it did.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: <see cref="Sent"/> is set before the close command is posted and cleared only
+        /// if posting fails. Posting wakes the main thread, which reads <see cref="Sent"/> as soon
+        /// as the prompt returns, so setting it afterwards could record <c>discarded</c> for a
+        /// prompt this closed.
+        /// </remarks>
         private sealed class PromptDismissal {
             private const int Attempts = 50;
             private const int AttemptDelayMilliseconds = 40;
@@ -633,7 +642,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 for (var attempt = 0; attempt < Attempts && !closed; attempt++) {
                     var prompt = FindPrompt();
                     if (prompt != IntPtr.Zero) {
-                        sent = PostMessage(prompt, WmCommand, (IntPtr)IdNo, IntPtr.Zero);
+                        sent = true;
+                        if (!PostMessage(prompt, WmCommand, (IntPtr)IdNo, IntPtr.Zero))
+                            sent = false;
                         return;
                     }
                     Thread.Sleep(AttemptDelayMilliseconds);

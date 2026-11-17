@@ -187,6 +187,58 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.False(cancelled);
         }
 
+        /// <summary>A blank line or a queued request sent mid-request doesn't stop the server from noticing a later disconnect (#3994).</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void ADisconnectAfterAnotherLineMidRequestStillCancelsTheRequestToken() {
+            var pipeName = UniquePipeName();
+            using (var handling = new ManualResetEventSlim())
+            using (var callerGone = new ManualResetEventSlim())
+            using (var server = new AgentPipeServer(pipeName, (line, token) => {
+                if (line == "block") {
+                    handling.Set();
+                    token.WaitHandle.WaitOne(Long);
+                    if (token.IsCancellationRequested)
+                        callerGone.Set();
+                }
+                return line;
+            }, _ => { })) {
+                server.Start();
+                var client = Connect(pipeName, Long);
+                client.Send("block");
+                Assert.True(handling.Wait(Long));
+                client.Send("");
+                client.Send("queued");
+                Assert.False(callerGone.Wait(300));
+
+                client.Dispose();
+
+                Assert.True(callerGone.Wait(Long));
+            }
+        }
+
+        /// <summary>A request sent while another is being handled is kept and answered after it (#3994).</summary>
+        [Fact]
+        [Trait("Level", "Integration")]
+        public void ARequestQueuedMidRequestIsStillAnswered() {
+            var pipeName = UniquePipeName();
+            using (var release = new ManualResetEventSlim())
+            using (var server = new AgentPipeServer(pipeName, (line, token) => BlockOn(line, release), _ => { })) {
+                server.Start();
+                using (var client = Connect(pipeName, Long)) {
+                    client.Send("block");
+                    client.Send("");
+                    client.Send("second");
+                    Thread.Sleep(300);
+
+                    release.Set();
+
+                    Assert.Equal("block", client.Receive());
+                    Assert.Equal("second", client.Receive());
+                }
+            }
+        }
+
         private static string BlockOn(string line, ManualResetEventSlim release) {
             if (line == "block" && !release.Wait(Long))
                 return "timed out";
