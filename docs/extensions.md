@@ -196,7 +196,7 @@ Rule ids are not translated, so results stay comparable across locales. Report a
 |---|---|
 | `.json` | the result of this run, replacing the file |
 | `.jsonl` | one line per run, appended, to collect many runs or models in one file |
-| `.csv` | one row per finding and element, appended, with a header and a UTF-8 byte order mark for Excel when the file is new |
+| `.csv` | one row per finding and element, appended, with a header and a UTF-8 byte order mark for Excel when the file is new; text starting with `=`, `+`, `-` or `@` gets a leading `'` so spreadsheets don't run it as a formula |
 
 Every result carries `schema_version`, the check name and stable `check_id` (`<extension>/<script>.<class>`), the document title and path, the UTC start time, the duration, the run status, a summary and the findings. A failure to write is logged and doesn't fail the check. Appending is not safe across processes, so give concurrent Revit sessions their own files.
 

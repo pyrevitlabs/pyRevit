@@ -47,6 +47,8 @@ CSV_COLUMNS = (
 
 _CSV_SPECIAL_CHARS = (",", '"', "\r", "\n")
 
+_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
 _TEXT_TYPES = (type(""), type(b""), type(""))
 
 
@@ -113,9 +115,11 @@ def element_id_value(element_id):
 
 def _element_id_values(element_ids):
     values = []
+    seen = set()
     for element_id in element_ids or ():
         value = element_id_value(element_id)
-        if value not in values:
+        if value not in seen:
+            seen.add(value)
             values.append(value)
     return values
 
@@ -169,7 +173,7 @@ class Finding(object):
             if not isinstance(data, dict):
                 raise ValueError("Preflight finding data must be a dict.")
             try:
-                json.dumps(data)
+                json.dumps(data, sort_keys=True)
             except (TypeError, ValueError) as serialize_error:
                 raise ValueError(
                     "Preflight finding data is not JSON serializable: %s"
@@ -371,8 +375,18 @@ def report_path():
     return path.strip()
 
 
+def _is_integer_text(text):
+    try:
+        int(text)
+    except ValueError:
+        return False
+    return True
+
+
 def _csv_field(value):
     text = _to_text(value)
+    if text.startswith(_CSV_FORMULA_PREFIXES) and not _is_integer_text(text):
+        text = "'" + text
     if any(char in text for char in _CSV_SPECIAL_CHARS):
         return '"' + text.replace('"', '""') + '"'
     return text
@@ -399,9 +413,13 @@ def write(result, path=None):
     - ``.jsonl`` appends this result as one line, so a file can collect many runs.
     - ``.csv`` appends one row per finding and element, writing the header and a
       UTF-8 byte order mark first when the file is new or empty, so Excel reads
-      non-ASCII names correctly.
+      non-ASCII names correctly. Text starting with ``=``, ``+``, ``-``, ``@``,
+      a tab or a carriage return gets a leading apostrophe, so a spreadsheet
+      shows it as text instead of running it as a formula.
 
-    Parent folders are created as needed.
+    Parent folders are created as needed. The output is built before the file
+    is opened, so a result that cannot be serialized leaves an existing file
+    untouched.
 
     Warning:
         Appending is not safe across processes. Give concurrent runs, such as
@@ -429,23 +447,22 @@ def write(result, path=None):
             "Preflight results path must end in .json, .jsonl or .csv: %s" % path
         )
 
-    _ensure_parent(path)
-
+    mode = "a"
+    encoding = "utf-8"
     if extension == ".json":
-        with io.open(path, "w", encoding="utf-8", newline="") as results_file:
-            results_file.write(result.to_json(indent=2))
-            results_file.write(_to_text("\n"))
+        mode = "w"
+        content = result.to_json(indent=2) + _to_text("\n")
     elif extension == ".jsonl":
-        with io.open(path, "a", encoding="utf-8", newline="") as results_file:
-            results_file.write(result.to_json())
-            results_file.write(_to_text("\n"))
+        content = result.to_json() + _to_text("\n")
     else:
-        is_new = _is_empty_file(path)
-        encoding = "utf-8-sig" if is_new else "utf-8"
-        with io.open(path, "a", encoding=encoding, newline="") as results_file:
-            if is_new:
-                results_file.write(_csv_line(CSV_COLUMNS))
-            for row in result.csv_rows():
-                results_file.write(_csv_line(row))
+        lines = [_csv_line(row) for row in result.csv_rows()]
+        if _is_empty_file(path):
+            encoding = "utf-8-sig"
+            lines.insert(0, _csv_line(CSV_COLUMNS))
+        content = _to_text("").join(lines)
+
+    _ensure_parent(path)
+    with io.open(path, mode, encoding=encoding, newline="") as results_file:
+        results_file.write(content)
 
     return path

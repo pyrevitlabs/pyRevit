@@ -201,7 +201,7 @@ def run_preflight_check(check, doc, output):
 def _write_result(result):
     try:
         written_path = results.write(result)
-    except (IOError, OSError, ValueError) as write_error:
+    except (IOError, OSError, TypeError, ValueError) as write_error:
         mlogger.error("Could not write preflight results: %s", write_error)
         return
     if written_path:

@@ -178,6 +178,7 @@ class FindingTests(unittest.TestCase):
             dict(rule="r", message="m", severity="critical"),
             dict(rule="r", message="m", data=["not", "a", "dict"]),
             dict(rule="r", message="m", data={"value": object()}),
+            dict(rule="r", message="m", data={1: "a", "label": "b"}),
         ]
         for kwargs in invalid:
             with self.subTest(kwargs=kwargs):
@@ -320,6 +321,34 @@ class WriteTests(unittest.TestCase):
         self.assertEqual(rows[1][9], tricky)
         self.assertEqual([row[10] for row in rows[1:]], ["1", "2", ""])
 
+    def test_csv_text_cannot_become_a_formula(self):
+        path = self._path("results.csv")
+        finding = results.Finding("r", "+SUM(A1:A9)", element_ids=[-1, 7])
+        results.write(_result(finding, document_title="=1+1"), path)
+        with io.open(path, encoding="utf-8-sig", newline="") as results_file:
+            rows = list(csv.reader(results_file))
+        self.assertEqual(rows[1][1], "'=1+1")
+        self.assertEqual(rows[1][9], "'+SUM(A1:A9)")
+        self.assertEqual([row[10] for row in rows[1:]], ["-1", "7"])
+
+    def test_csv_formula_prefixes_are_neutralized(self):
+        for text in ("=A1", "+A1", "-A1", "@A1", "\tA1", "\rA1"):
+            with self.subTest(text=text):
+                self.assertTrue(results._csv_field(text).lstrip('"').startswith("'"))
+        self.assertEqual(results._csv_field("-12"), "-12")
+        self.assertEqual(results._csv_field("Wall A1"), "Wall A1")
+
+    def test_json_file_is_kept_when_the_result_cannot_be_serialized(self):
+        path = self._path("result.json")
+        results.write(_result(results.Finding("first", "m")), path)
+        broken = _result(results.Finding("second", "m"))
+        broken.to_json = MagicMock(side_effect=TypeError("not serializable"))
+        with self.assertRaises(TypeError):
+            results.write(broken, path)
+        with io.open(path, encoding="utf-8") as results_file:
+            data = json.load(results_file)
+        self.assertEqual([f["rule"] for f in data["findings"]], ["first"])
+
     def test_unknown_extension_is_rejected(self):
         with self.assertRaises(ValueError):
             results.write(_result(), self._path("results.xlsx"))
@@ -452,6 +481,16 @@ class RunPreflightCheckTests(unittest.TestCase):
             result = self.preflight.run_preflight_check(
                 self._check(check_type), FakeDocument(), MagicMock()
             )
+        self.assertEqual(result.status, results.STATUS_FAIL)
+
+    def test_serialization_failure_is_logged_and_the_result_still_returned(self):
+        os.environ[results.PATH_ENV_VAR] = os.path.join(self.folder, "results.json")
+        check_type, _ = self._reporting_check_type()
+        with patch.object(results, "write", side_effect=TypeError("bad data")):
+            with self.assertLogs(level="ERROR"):
+                result = self.preflight.run_preflight_check(
+                    self._check(check_type), FakeDocument(), MagicMock()
+                )
         self.assertEqual(result.status, results.STATUS_FAIL)
 
     def test_check_exception_propagates_and_nothing_is_written(self):
