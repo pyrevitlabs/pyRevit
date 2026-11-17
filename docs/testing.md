@@ -92,6 +92,17 @@ Each suite's README owns its fixtures, maintainer, frameworks/engines and focuse
 
 Reorganized C# suites appear in area solutions for navigation, without default solution-build selection. The shared runner builds them explicitly; product builds must not build tests for every interpreter configuration.
 
+## Test levels and regression coverage
+
+| Level | Contract | Execution |
+|---|---|---|
+| Unit | Isolated behavior without external services or user configuration | CI when API-free; local when using the Revit API |
+| Integration | Real boundaries such as files, configuration backends, subprocesses, or interpreter interoperability | CI when API-free; local when using the Revit API |
+| E2E | Built product completes a user workflow with objective assertions | CI for API-free workflows, such as an isolated CLI workflow; local for Revit workflows |
+| Performance | Repeatable workload with explicit measurements and a comparison baseline | CI when API-free; local when using the Revit API |
+
+Regression describes a test's purpose and can apply at any level. A bug fix must include a reproducer at the lowest effective level, with the issue reference recorded in test metadata or its contract documentation. A source-inspection assertion may guard a structural contract but does not replace execution of changed behavior.
+
 ## Tags and discovery
 
 Every automated test needs literal Environment and Level metadata. Class/module defaults and method overrides are supported:
