@@ -31,6 +31,10 @@ Usage:
 
 ";
 
+        const string standaloneDownloadNote = @"    Standalone download, for when pyRevit is broken or not installed (needs the .NET 8 runtime or newer):
+        https://github.com/pyrevitlabs/pyRevit/releases
+";
+
         static DoctorCommand[] Commands = new DoctorCommand[] {
             new DoctorCommand {
                 Name = "purge-installs",
@@ -62,9 +66,9 @@ Usage:
             if (args.Contains("--version") || args.Contains("-V"))
                 Console.WriteLine(DoctorVersion);
             else if (args.Contains("--help") || args.Contains("-h"))
-                Console.WriteLine(helpMessage);
+                Console.WriteLine(helpMessage + standaloneDownloadNote);
             else if (args.Contains("--wrappedhelp"))
-                Console.WriteLine(WrappedHelp.From(helpMessage));
+                Console.WriteLine(WrappedHelp.From(helpMessage) + standaloneDownloadNote);
             else if (args.Contains("--list"))
                 PrintCommands();
 

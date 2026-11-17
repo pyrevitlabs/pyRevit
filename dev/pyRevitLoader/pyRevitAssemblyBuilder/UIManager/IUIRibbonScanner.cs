@@ -38,7 +38,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         void CleanupOrphanedElements();
 
         /// <summary>
-        /// Resets panel backgrounds on all pyRevit panels.
+        /// Resets panel backgrounds on all pyRevit panels, identified by the tab tag set when the tab was built.
         /// Called before loading extensions to clear previous background colors.
         /// </summary>
         void ResetPanelBackgrounds();
