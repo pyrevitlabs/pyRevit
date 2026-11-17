@@ -208,7 +208,11 @@ involved; add the missing record to the registry rather than relying on a guess.
 
 ## Step 5: CI/CD Updates
 
-### 5.1 Add .NET SDK setup (New .NET Version Only)
+### 5.1 Add the year to the Revit integration workflow
+
+`.github/workflows/revit-integration.yml` lists the Revit years it launches and rejects any other year. Add the new year to the `revit_years` default, to the list of accepted years, and to the range check and its error message.
+
+### 5.2 Add .NET SDK setup (New .NET Version Only)
 
 If the new Revit requires a new .NET version, update the GitHub Actions workflow.
 
@@ -366,6 +370,7 @@ For Release stamping on the new Revit version, run with `Build__Channel=release`
 | `dev/libs/Revit/YYYY/` | Version-specific DLLs (Xceed.Wpf.AvalonDock) |
 | `release/pyrevit-hosts.json` | Revit build registry for version detection (staged to `bin/` by CI) |
 | `.github/workflows/ci.yml`, `wip.yml`, `release.yml` | CI/CD pipeline configuration |
+| `.github/workflows/revit-integration.yml` | Revit years launched by the integration job |
 | `release/CodeDependencies.iss` | .NET runtime installer procedures |
 | `release/pyrevit.iss` | Main pyRevit installer script |
 

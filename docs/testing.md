@@ -1,6 +1,6 @@
 # Testing
 
-**All first-party automated tests run in CI unless they use the Revit API or require installed/running Revit.** This includes dependencies and fixtures. Revit-dependent tests run locally; vendored tests are outside this policy.
+**All first-party automated tests run in CI unless they use the Revit API or require installed/running Revit.** This includes dependencies and fixtures. Revit-dependent tests run locally; vendored tests are outside this policy. The self-hosted [`revit-integration.yml`](ci-cd.md#revit-integration-tests) workflow is a separate release-gate load check, not part of the shared test runner.
 
 To run a change locally, see the workflow in [`dev-guide.md`](dev-guide.md). For how CI/CD is wired, see [`ci-cd.md`](ci-cd.md). For the checks that gate a release, see [`release-qualification.md`](release-qualification.md).
 
@@ -135,7 +135,7 @@ Python scope is explicit in `pyproject.toml`, including unexecuted files. C# cov
 
 ## Revit integration tests
 
-Revit-dependent tests and load/signing smoke checks are local only. Attach a development clone:
+Revit-dependent tests run locally, outside the shared test runner. Attach a development clone:
 
 ```powershell
 pyrevit clones add dev <path-to-repo>
@@ -148,7 +148,9 @@ Set `PYREVIT_TEST_JUNIT_PATH` before launching Revit for XML evidence. Use a fre
 
 **C# host setup remains fixture-specific:** installing Revit does not make `dotnet test` a Revit host. API-dependent fixtures need suitable assembly resolution; live document/UI scenarios need execution inside Revit. There is no C# in-Revit runner yet. Document a validated invocation before claiming a fixture passed.
 
-For load/signing smoke checks, launch the intended Revit year and inspect its journal and dialogs. Loading successfully does not prove functional correctness or contribute to CI coverage. Never publish locally test-signed binaries.
+For local load/signing smoke checks, launch the intended Revit year and inspect its journal and dialogs. Loading successfully does not prove functional correctness or contribute to CI coverage. Never publish locally test-signed binaries.
+
+[`revit-integration.yml`](ci-cd.md#revit-integration-tests) signs `bin/` with a throwaway certificate, launches Revit 2022–2027 by default on a self-hosted runner, and fails if any session shows the unsigned add-in dialog. Its accepted year range excludes supported Revit 2021. It answers whether Revit loads the build cleanly; it does not run the Python unit tests.
 
 **Remaining coverage gaps:** assemblies outside the instrumented scope need dedicated tests; no general performance budget has been established. Suite READMEs should record fixture-specific gaps as they are found.
 
