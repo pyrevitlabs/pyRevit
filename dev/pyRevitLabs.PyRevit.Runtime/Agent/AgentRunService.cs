@@ -503,6 +503,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
     }
 
+    internal enum AgentApprovalAnswer {
+        Approved,
+        Declined,
+        CallerGone,
+    }
+
     /// <summary>
     /// Asks the user, inside Revit, whether to keep the changes of a modify run.
     /// </summary>
@@ -515,17 +521,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Revit raises <c>DialogBoxShowing</c> for a <c>TaskDialog</c>, so a handler the script
     /// subscribed could answer the prompt for the user.
     /// </remarks>
-    internal enum AgentApprovalAnswer {
-        Approved,
-        Declined,
-        CallerGone,
-    }
-
     internal static class AgentApproval {
         private const int MaxListedCategories = 15;
         private const uint YesNoQuestionDefaultNo = 0x4 | 0x20 | 0x100;
         private const int Yes = 6;
 
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private const string PromptCaption = "pyRevit Agent";
 
         private delegate bool EnumThreadWindowsProc(IntPtr window, IntPtr parameter);
@@ -637,6 +638,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     }
                     Thread.Sleep(AttemptDelayMilliseconds);
                 }
+                if (!closed && !sent)
+                    logger.Warn("The approval prompt window was not found, so it stays up for a caller that is gone");
             }
 
             private IntPtr FindPrompt() {

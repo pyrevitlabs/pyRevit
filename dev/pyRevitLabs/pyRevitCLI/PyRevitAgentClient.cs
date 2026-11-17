@@ -407,6 +407,8 @@ namespace pyRevitCLI {
         /// Important: giving up on the answer, through <paramref name="cancellation"/> or
         /// <paramref name="answerTimeoutMs"/>, only closes the connection. A request already sent
         /// keeps running in Revit, so its outcome is <see cref="AgentOutcome.Unknown"/>.
+        /// The exception is a modify run waiting at the approval prompt: the host closes the prompt
+        /// as No and records <c>discarded_caller_gone</c>.
         /// A caller that must name the request in its own errors passes <paramref name="requestId"/>.
         /// </remarks>
         /// <exception cref="AgentClientException">

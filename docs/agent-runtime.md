@@ -170,7 +170,7 @@ other clients (such as `pyrevit agent run`) hold all its connections. The host a
 pipe thread, so a Revit that is only running another client's request still answers it. A Revit whose pipe is not listening, or that gets no answer within
 5 seconds, reports `responding: false` (`pyrevit agent status` uses the same ping, prints `busy` for a Revit that is only serving another client, and shows each session's clone and engine). A client's `notifications/cancelled` frees the call's
 turn. A call cancelled while it waited for its turn was not sent; one cancelled while waiting for
-Revit's answer keeps running in Revit, so its outcome is `unknown`. The server sends no response to a cancelled `tools/call`, as the MCP specification asks; the server does not reveal its own request id (it is not the MCP call id), so look for a run record with `pyrevit agent runs` (newest first) and open it with `pyrevit agent show <run_id>`. A call cancelled before it was sent, or while it still waited for an earlier call, left no run record.
+Revit's answer keeps running in Revit, so its outcome is `unknown`; the exception is a modify run waiting at the approval prompt, which the host closes as No and records as `discarded_caller_gone`. The server sends no response to a cancelled `tools/call`, as the MCP specification asks; the server does not reveal its own request id (it is not the MCP call id), so look for a run record with `pyrevit agent runs` (newest first) and open it with `pyrevit agent show <run_id>`. A call cancelled before it was sent, or while it still waited for an earlier call, left no run record.
 
 ### Automation operations
 
@@ -974,7 +974,7 @@ Honest limits:
   last until its `timeout_s` (plus 30 seconds before a stuck run fails with `run_hung`), a
   second request connects at once, waits up to its `start_timeout_s` (30 seconds by default)
   and then gets `revit_busy` (`not_run`), which says how long an earlier request has run. A call
-  whose client cancelled it or stopped waiting keeps running too, but no longer blocks the
+  whose client cancelled it or stopped waiting keeps running too, except a modify run waiting at the approval prompt, which is discarded; it no longer blocks the
   next connection. Four connections can be open at once; a fifth client waits for one to
   close, up to the CLI's 10-second connect timeout. Keep runs short, and run one agent per Revit.
 - ExternalEvents only fire while Revit is idle, so a busy Revit returns `revit_busy`
