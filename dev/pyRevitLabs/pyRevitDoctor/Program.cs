@@ -22,8 +22,8 @@ Usage:
 
 ";
 
-        const string standaloneDownloadNote = @"    Standalone download, for when pyRevit is broken or not installed (needs the .NET 8 runtime):
-        https://github.com/pyrevitlabs/pyRevit/releases/latest/download/pyrevit-doctor.exe
+        const string standaloneDownloadNote = @"    Standalone download, for when pyRevit is broken or not installed (needs the .NET 8 runtime or newer):
+        https://github.com/pyrevitlabs/pyRevit/releases
 ";
 
         static DoctorCommand[] Commands = new DoctorCommand[] {

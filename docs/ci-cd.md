@@ -249,9 +249,9 @@ Same as above, but cut the release commit from **`master`** (or a `hotfix/*` bra
 https://github.com/pyrevitlabs/pyRevit/releases/latest/download/pyrevit-doctor.exe
 ```
 
-The doctor help prints this URL, so these rules keep it working:
+The README and the doctor help link to the [releases page](https://github.com/pyrevitlabs/pyRevit/releases) until the first release that carries the asset (7.2.0) is published, because `releases/latest/download/` redirects to the newest release and 404s while that release has no such asset. Switch them to the URL above after that release. These rules keep the URL working:
 
-- **Single file.** `pyRevitDoctor.csproj` publishes with `PublishSingleFile`, so the executable runs without the rest of `bin/`. It is framework-dependent and needs the .NET 8 runtime, which the pyRevit installers add. `BuildLabsModule` fails the `ci` build when the publish output is not a single file.
+- **Single file.** `pyRevitDoctor.csproj` publishes with `PublishSingleFile`, so the executable runs without the rest of `bin/`. It is framework-dependent with `RollForward` set to `LatestMajor`, so it needs the .NET 8 runtime or newer, which the pyRevit installers add. `BuildLabsModule` fails the `ci` build when the publish output is not a single file.
 - **Same binary as the installers.** `StageStandaloneDoctorModule` (`pack`) copies `bin/pyrevit-doctor.exe` to `dist/` after `bin/` is signed, and `publish` uploads every `dist/*.exe`. The WIP artifact `pyrevit-wip-installers-<install-version>` contains it too.
 - **Unversioned asset name.** `releases/latest/download/` resolves by file name against the newest published release that is not a pre-release, so renaming the asset breaks the link. A draft release does not serve it yet.
 

@@ -20,8 +20,8 @@ public static class PyRevitPaths
     /// Gets the file name of the doctor executable, in <c>bin/</c> and as a release asset.
     /// </summary>
     /// <remarks>
-    /// Invariant: the release asset keeps this unversioned name. The doctor help and the docs link to
-    /// <c>releases/latest/download/pyrevit-doctor.exe</c>, which only resolves while every release carries
+    /// Invariant: the release asset keeps this unversioned name. The docs name
+    /// <c>releases/latest/download/pyrevit-doctor.exe</c> as the permanent link, which only resolves while every release carries
     /// an asset with exactly this name.
     /// </remarks>
     public static string DoctorExeName => "pyrevit-doctor.exe";
