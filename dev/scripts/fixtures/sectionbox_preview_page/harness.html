@@ -238,6 +238,68 @@
     return R;
   };
 
+  scenarios.review_fixes = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    const keydown = { added: 0, removed: 0 };
+    const add = window.addEventListener.bind(window), remove = window.removeEventListener.bind(window);
+    window.addEventListener = (type, ...rest) => { if (type === "keydown") keydown.added++; return add(type, ...rest); };
+    window.removeEventListener = (type, ...rest) => { if (type === "keydown") keydown.removed++; return remove(type, ...rest); };
+    const payload = () => ({
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box({ min: [-5, -5, 0], max: [5, 5, 10] }), editable: ["x0", "x1", "y0", "y1", "z0", "z1"], blocker: null, camera: null, bookmarks: [] },
+    });
+    app.mount("app", payload());
+    const p = app.instance;
+    if (!p.gl) return { gl: false };
+    p._render();
+    const R = { gl: true };
+
+    p.commitRequest("bookmark_save", { name: "x", box: p.view.box });
+    const id = window.__sent[window.__sent.length - 1].requestId;
+    R.pending_before_error = p.pending;
+    p._onEvent("error", { action: "bookmark_save", requestId: id, message: "boom" });
+    R.pending_after_error = p.pending;
+    R.request_cleared = !p.requests.has(id);
+    R.error_status = document.querySelector(".sbp-status-text").className;
+    p._onEvent("result", { requestId: "unknown", ok: true });
+    R.pending_after_unknown = p.pending;
+    p._onEvent("error", { message: "stream failed" });
+    R.pending_after_stream_error = p.pending;
+
+    const fire = (target, type, x, y, extra) => target.dispatchEvent(new PointerEvent(type, Object.assign({ clientX: x, clientY: y, bubbles: true, pointerId: 4 }, extra || {})));
+    const rect = p.canvas.getBoundingClientRect();
+    const screenOf = (w) => { const s = p._project(p.viewProj, w); return [rect.left + s.x, rect.top + s.y]; };
+
+    const top = A.faceCenter(p.view.box, 2, 1);
+    const [tx, ty] = screenOf(top);
+    fire(p.rotateHandle, "pointerdown", tx, ty - 10);
+    R.rotate_started = p.drag && p.drag.kind;
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    R.drag_after_escape = p.drag;
+    fire(p.rotateHandle, "pointermove", tx + 25, ty - 10);
+    fire(p.rotateHandle, "pointerup", tx + 25, ty - 10);
+
+    p.flags.live = true;
+    const sentBefore = window.__sent.filter((m) => m.action === "apply_box").length;
+    const original = A.cloneBox(p.view.box);
+    fire(p.handles.z1, "pointerdown", tx, ty);
+    p.drag.lastSend = -1e6;
+    fire(p.handles.z1, "pointermove", tx, ty - 25);
+    R.live_box_moved = p.view.box.max[2] !== original.max[2];
+    R.live_sent = window.__sent.filter((m) => m.action === "apply_box").length - sentBefore;
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    const applies = window.__sent.filter((m) => m.action === "apply_box");
+    R.restore_sent = applies.length - sentBefore;
+    R.restored_max_z = applies[applies.length - 1].payload.box.max[2];
+    R.page_max_z = p.view.box.max[2];
+
+    app.mount("app", payload());
+    R.keydown = keydown;
+    window.addEventListener = add;
+    window.removeEventListener = remove;
+    return R;
+  };
+
   (async () => {
     const name = new URLSearchParams(location.search).get("scenario");
     let result = {};

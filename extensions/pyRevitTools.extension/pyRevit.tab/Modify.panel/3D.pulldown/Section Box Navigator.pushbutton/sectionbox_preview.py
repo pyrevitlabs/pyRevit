@@ -165,7 +165,8 @@ class PreviewSession(object):
         self.doc = None
         self.view_id = None
         self.origin = DB.XYZ.Zero
-        self._stream = None
+        self._streams = []
+        self._ready = False
         self._generation = 0
         self._linked = False
         for action, handler in (
@@ -261,11 +262,12 @@ class PreviewSession(object):
             self._send("view" if changed_view else "box", self._view_payload(view))
             self._send("guides", self._guides_payload())
             self._linked_changed()
-            self._resume_stream()
+            self._resume_streams()
             return
         self.origin = scene_origin(self.doc, info["box"] if info else None)
         self._loaded_doc = self.doc
-        self._stream = None
+        self._streams = []
+        self._ready = False
         self._send("reset", self._mount_payload(view))
 
     def _same_document(self):
@@ -291,7 +293,7 @@ class PreviewSession(object):
         self._shutting_down = True
         self.is_open = False
         self._generation += 1
-        self._stream = None
+        self._streams = []
         try:
             self.navigator.LocationChanged -= self._on_navigator_moved
             self.navigator.SizeChanged -= self._on_navigator_moved
@@ -356,35 +358,40 @@ class PreviewSession(object):
         self.bridge.send(event, payload)
 
     def _on_ready(self, payload, request_id):
+        self._ready = True
         self._send("guides", self._guides_payload())
-        self._start_stream(links_only=False)
-
-    def _resume_stream(self):
-        if self._stream is not None and not self._stream.done:
-            self._generation += 1
-            self._stream_next(self._generation)
-
-    def _start_stream(self, links_only):
-        self._generation += 1
         self._linked = self.include_links()
-        self._stream = ModelStream(
-            self.doc, self.origin, self._linked, links_only=links_only
-        )
+        self._streams = [ModelStream(self.doc, self.origin, False)]
+        if self._linked:
+            self._streams.append(self._link_stream())
+        self._stream_all()
+
+    def _link_stream(self):
+        return ModelStream(self.doc, self.origin, True, links_only=True)
+
+    def _stream_all(self):
+        self._generation += 1
         self._stream_next(self._generation)
+
+    def _resume_streams(self):
+        if any(not stream.done for stream in self._streams):
+            self._stream_all()
 
     def _stream_next(self, generation):
         if not self.is_open or generation != self._generation:
             return
+        stream = next((s for s in self._streams if not s.done), None)
+        if stream is None:
+            self._send("sources", {"done": True})
+            return
         try:
-            chunk = self._stream.next_chunk(CHUNK_SECONDS)
+            chunk = stream.next_chunk(CHUNK_SECONDS)
         except Exception as ex:
             logger.exception("Streaming the model failed: {}".format(ex))
             self._send("error", {"message": str(ex)})
             return
-        if chunk is None:
-            self._send("sources", {"done": True})
-            return
-        self.bridge.send("scene", raw_payload=scene_to_json(chunk))
+        if chunk is not None:
+            self.bridge.send("scene", raw_payload=scene_to_json(chunk))
         events.execute_in_revit_context(self._stream_next, generation)
 
     def sync_links(self):
@@ -393,15 +400,17 @@ class PreviewSession(object):
             self._linked_changed()
 
     def _linked_changed(self):
-        if self._linked == self.include_links():
+        if not self._ready or self._linked == self.include_links():
             return
+        self._linked = self.include_links()
         self._send("guides", self._guides_payload())
-        if self.include_links():
-            self._start_stream(links_only=True)
+        if self._linked:
+            self._streams.append(self._link_stream())
+            self._send("sources", {"loading": True})
         else:
-            self._generation += 1
-            self._linked = False
+            self._streams = [s for s in self._streams if not s.links_only]
             self._send("sources", {"dropLinks": True})
+        self._stream_all()
 
     def sync_view(self, view):
         """Show another view's box, or rebuild everything for another document.
@@ -422,7 +431,8 @@ class PreviewSession(object):
             info = get_box_info(view, self.datafilename)
             self.origin = scene_origin(self.doc, info["box"] if info else None)
             self._loaded_doc = self.doc
-            self._stream = None
+            self._streams = []
+            self._ready = False
             self._send("reset", self._mount_payload(view))
             return
         event = "box" if view.Id == self.view_id else "view"

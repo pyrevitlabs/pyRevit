@@ -421,6 +421,7 @@ void main() { outColor = uColor; }`;
       this.disposed = true;
       if (this.resizeObserver) this.resizeObserver.disconnect();
       if (this.pendingFrame) cancelAnimationFrame(this.pendingFrame);
+      if (this._onKeyDown) window.removeEventListener("keydown", this._onKeyDown);
       if (this._onMessage && window.chrome.webview.removeEventListener) {
         window.chrome.webview.removeEventListener("message", this._onMessage);
       }
@@ -437,14 +438,15 @@ void main() { outColor = uColor; }`;
       else if (event === "view" || event === "box") this.setView(payload, event === "view");
       else if (event === "sources") this.onSources(payload);
       else if (event === "result") this.onResult(payload);
+      else if (event === "error" && payload.requestId) this.onResult({ requestId: payload.requestId, ok: false, message: payload.message });
       else if (event === "error") this.setStatus(payload.message, "error");
     }
 
     onResult(payload) {
-      this.pending = Math.max(0, this.pending - 1);
       const resolve = this.requests.get(payload.requestId);
       if (resolve) {
         this.requests.delete(payload.requestId);
+        this.pending = Math.max(0, this.pending - 1);
         resolve(payload);
       }
       if (payload.ok) this.setStatus(this.t("PreviewApplied"), "ok");
@@ -455,6 +457,10 @@ void main() { outColor = uColor; }`;
       if (payload.done) {
         this.loading = false;
         this.setStatus(format(this.t("PreviewLoaded"), this.elements.size), "info");
+        this._updateProgress();
+      }
+      if (payload.loading) {
+        this.loading = true;
         this._updateProgress();
       }
       if (payload.dropLinks) this.dropLinks();
@@ -943,18 +949,22 @@ void main() { outColor = uColor; }`;
     }
 
     _bindKeys() {
-      window.addEventListener("keydown", (e) => {
+      this._onKeyDown = (e) => {
         if (e.key === "Escape") {
           if (this.drag) this._cancelDrag();
           else this.setMode(null);
         }
-      });
+      };
+      window.addEventListener("keydown", this._onKeyDown);
     }
 
     _cancelDrag() {
-      if (!this.drag) return;
-      this.view.box = this.drag.box0;
+      const d = this.drag;
+      if (!d) return;
+      if (d.detach) d.detach();
       this.drag = null;
+      this.view.box = d.box0;
+      if (d.sent) this._commitBox(d.box0);
       this.snapHighlight = null;
       this.snapLabel.style.display = "none";
       this._updateSize();
@@ -1148,12 +1158,16 @@ void main() { outColor = uColor; }`;
         p0: faceCenter(box0, axis, side), n: faceNormal(box0, axis, side), t: 0, lastSend: 0,
       };
       const move = (ev) => this._moveFaceDrag(ev);
-      const up = (ev) => {
+      const detach = () => {
         target.removeEventListener("pointermove", move);
         target.removeEventListener("pointerup", up);
-        capture(target, ev.pointerId, false);
+        capture(target, e.pointerId, false);
+      };
+      const up = () => {
+        detach();
         this._endDrag();
       };
+      this.drag.detach = detach;
       target.addEventListener("pointermove", move);
       target.addEventListener("pointerup", up);
     }
@@ -1208,26 +1222,32 @@ void main() { outColor = uColor; }`;
       };
       this.drag = { kind: "rotate", box0, a0: angleAt(e), yaw0: yawOf(box0), lastSend: 0 };
       const move = (ev) => {
+        const d = this.drag;
+        if (!d || d.kind !== "rotate") return;
         const a = angleAt(ev);
-        if (a === null || this.drag.a0 === null) return;
-        let yaw = this.drag.yaw0 + wrapAngle(a - this.drag.a0);
+        if (a === null || d.a0 === null) return;
+        let yaw = d.yaw0 + wrapAngle(a - d.a0);
         let snap = null;
         if (this.flags.snap && !ev.altKey) {
           const res = snapYaw(yaw, this.guides.grids, YAW_SNAP_RAD);
           yaw = res.yaw;
           snap = res.snap;
         }
-        this.view.box = setYaw(this.drag.box0, yaw);
-        this._setSnapHighlight(snap, this.drag);
+        this.view.box = setYaw(d.box0, yaw);
+        this._setSnapHighlight(snap, d);
         this.requestRender();
         this._liveCommit();
       };
-      const up = (ev) => {
+      const detach = () => {
         target.removeEventListener("pointermove", move);
         target.removeEventListener("pointerup", up);
-        capture(target, ev.pointerId, false);
+        capture(target, e.pointerId, false);
+      };
+      const up = () => {
+        detach();
         this._endDrag();
       };
+      this.drag.detach = detach;
       target.addEventListener("pointermove", move);
       target.addEventListener("pointerup", up);
     }
@@ -1238,6 +1258,7 @@ void main() { outColor = uColor; }`;
       const now = performance.now();
       if (now - d.lastSend < LIVE_INTERVAL_MS) return;
       d.lastSend = now;
+      d.sent = true;
       this._commitBox(this.view.box, true);
     }
 

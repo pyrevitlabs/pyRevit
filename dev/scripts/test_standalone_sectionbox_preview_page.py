@@ -214,6 +214,24 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
         self.assertEqual(result["cleared"]["lines"], 0)
         self.assertIsNone(result["cleared"]["hover"])
 
+    def test_failed_requests_cancelled_drags_and_remounts_leave_no_state_behind(self):
+        result = self.scenario("review_fixes")
+        if not result["gl"]:
+            self.skipTest("the browser has no WebGL2")
+        self.assertEqual(result["pending_before_error"], 1)
+        self.assertEqual(result["pending_after_error"], 0)
+        self.assertTrue(result["request_cleared"])
+        self.assertIn("sbp-error", result["error_status"])
+        self.assertEqual(result["pending_after_unknown"], 0)
+        self.assertEqual(result["pending_after_stream_error"], 0)
+        self.assertEqual(result["rotate_started"], "rotate")
+        self.assertIsNone(result["drag_after_escape"])
+        self.assertTrue(result["live_box_moved"])
+        self.assertGreaterEqual(result["live_sent"], 1)
+        self.assertEqual(result["restore_sent"], result["live_sent"] + 1)
+        self.assertEqual(result["restored_max_z"], result["page_max_z"])
+        self.assertEqual(result["keydown"], {"added": 2, "removed": 1})
+
 
 if __name__ == "__main__":
     unittest.main()
