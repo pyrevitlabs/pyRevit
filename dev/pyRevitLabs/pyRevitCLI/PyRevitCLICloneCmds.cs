@@ -157,14 +157,12 @@ namespace pyRevitCLI {
                     }
                     else {
                         throw new PyRevitException("Version finder not yet implemented for git clones.");
-                        // TODO: grab version from repo (last tag?)
                     }
                 }
                 // get version for other clones
                 else {
                     if (tagName != null) {
                         throw new PyRevitException("Version setter not yet implemented for clones.");
-                        // TODO: set version for archive clones?
                     }
                     else {
                         Console.WriteLine(clone.ModuleVersion);

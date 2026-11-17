@@ -633,8 +633,8 @@ namespace pyRevitLabs.TargetApps.Revit {
                                 continue;
                             }
                             logger.Debug("Revit Product is : {0}", revitProduct);
-                            // grab the registry name if it doesn't have a name
-                            if (revitProduct.Name is null || revitProduct.Name == string.Empty)
+                            var hasNoName = revitProduct.Name is null || revitProduct.Name == string.Empty;
+                            if ((hasNoName || !revitProduct.IsListedInHostsDatabase) && !string.IsNullOrEmpty(regName))
                                 revitProduct.Name = regName;
 
                             // build from a registry version if it doesn't already have one
