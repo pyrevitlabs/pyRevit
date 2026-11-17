@@ -52,7 +52,12 @@ class ElementSelection:
         Revit selection is read.
 
     Args:
-        element_list (list[DB.Element]): list of selected elements
+        element_list (list | object | None): items to track, split the same
+            way as in `set_to`: host elements, element ids, elements from
+            linked documents (e.g. from `pick_linkeds`) and ``DB.Reference``
+            objects, in any mix. ``None`` entries are ignored. The Revit
+            selection is not changed and no Revit version is required, unlike
+            `set_to`. ``None`` reads the current host selection instead.
     """
 
     def __init__(self, element_list=None):
@@ -63,7 +68,7 @@ class ElementSelection:
             else:
                 self._refs = []
         else:
-            self._refs = ElementSelection.get_element_ids(element_list)
+            self._refs, self._link_refs = ElementSelection._resolve(element_list)
 
     def __len__(self):
         return len(self._refs) + len(self._link_refs)
@@ -147,6 +152,11 @@ class ElementSelection:
             link_refs.append(link_ref)
         return host_items, link_refs
 
+    @staticmethod
+    def _resolve(element_list):
+        host_items, link_refs = ElementSelection._split_host_and_linked(element_list)
+        return ElementSelection.get_element_ids(host_items), link_refs
+
     @property
     def is_empty(self):
         return len(self) == 0
@@ -220,8 +230,7 @@ class ElementSelection:
                 older, which cannot select elements inside links. The
                 selection is left unchanged in that case.
         """
-        host_items, link_refs = ElementSelection._split_host_and_linked(element_list)
-        host_ids = ElementSelection.get_element_ids(host_items)
+        host_ids, link_refs = ElementSelection._resolve(element_list)
 
         if not link_refs:
             self._refs = host_ids
