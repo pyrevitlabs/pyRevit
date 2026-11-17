@@ -101,9 +101,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     panelSource.Items.Add(rowPanel);
                 }
 
+                var shownIds = new HashSet<string>();
                 foreach (var component in checkBoxComponents.Take(MaxStackRows))
                 {
                     var controlId = BuildControlId(tabName, parentPanel.Name, component.DisplayName);
+                    shownIds.Add(controlId);
                     var checkBox = AdWindowsHelper.FindRibbonItemByName(rowPanel.Items, controlId) as AdwRibbonCheckBox;
                     if (checkBox == null)
                     {
@@ -116,6 +118,8 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
 
                     RefreshCheckBox(checkBox, component);
                 }
+
+                HideCheckBoxesNotIn(rowPanel, shownIds);
             }
             catch (Exception ex)
             {
@@ -131,6 +135,18 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         private static string BuildStackId(string tabName, string panelName, string stackDisplayName)
         {
             return $"{StackIdPrefix}%{tabName}%{panelName}%{stackDisplayName}";
+        }
+
+        private static void HideCheckBoxesNotIn(AdwRibbonRowPanel rowPanel, ISet<string> shownIds)
+        {
+            foreach (var checkBox in rowPanel.Items.OfType<AdwRibbonCheckBox>())
+            {
+                if (shownIds.Contains(checkBox.Id))
+                    continue;
+
+                checkBox.IsVisible = false;
+                checkBox.IsEnabled = false;
+            }
         }
 
         private static AdwRibbonCheckBox CreateCheckBox(string controlId, ParsedComponent component)

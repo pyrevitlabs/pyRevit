@@ -21,7 +21,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// the rows a previous load added.
         /// </summary>
         /// <param name="stackComponent">The .stack bundle; its display name identifies the row panel across reloads.</param>
-        /// <param name="checkBoxComponents">The stack's visible children, all checkboxes, in layout order. Only the first three fit.</param>
+        /// <param name="checkBoxComponents">The stack's visible children, all checkboxes, in layout order. Only the first three are shown; any other checkbox a previous load left in the stack is hidden.</param>
         /// <param name="tabName">The tab that contains the panel, used to find the panel's AdWindows counterpart.</param>
         void CreateOrUpdateCheckBoxStack(
             ParsedComponent stackComponent,

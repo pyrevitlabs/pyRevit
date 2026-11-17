@@ -109,12 +109,13 @@ namespace PyRevitLoader
                 if (runResult != ScriptRunResult.Completed)
                     return runResult == ScriptRunResult.Exited;
 
+                var searchPaths = new List<string>(_engine.GetSearchPaths());
                 var ops = _engine.Operations;
                 if (scope.ContainsVariable(InitHandlerName))
-                    InvokeHandler(ops, InitHandlerName, scope.GetVariable(InitHandlerName), context);
+                    InvokeHandler(ops, searchPaths, InitHandlerName, scope.GetVariable(InitHandlerName), context);
 
                 if (scope.ContainsVariable(ChangeHandlerName))
-                    WireChangeHandler(checkBox, ops, scope, context);
+                    WireChangeHandler(checkBox, ops, searchPaths, scope, context);
 
                 return true;
             }
@@ -203,13 +204,13 @@ namespace PyRevitLoader
             }
         }
 
-        private void WireChangeHandler(INotifyPropertyChanged checkBox, ObjectOperations ops, ScriptScope scope, CheckBoxContext context)
+        private void WireChangeHandler(INotifyPropertyChanged checkBox, ObjectOperations ops, List<string> searchPaths, ScriptScope scope, CheckBoxContext context)
         {
             object handler = scope.GetVariable(ChangeHandlerName);
             PropertyChangedEventHandler onChange = (sender, args) =>
             {
                 if (args.PropertyName == CheckedPropertyName)
-                    InvokeHandler(ops, ChangeHandlerName, handler, sender, args, context);
+                    InvokeHandler(ops, searchPaths, ChangeHandlerName, handler, sender, args, context);
             };
             checkBox.PropertyChanged += onChange;
 
@@ -223,11 +224,20 @@ namespace PyRevitLoader
             Log($"Wired {ChangeHandlerName} for CheckBox '{context.name}'.");
         }
 
-        private void InvokeHandler(ObjectOperations ops, string handlerName, object handler, params object[] args)
+        /// <summary>
+        /// Calls a handler with the engine's output and search paths set for its checkbox.
+        /// </summary>
+        /// <remarks>
+        /// Note: all checkboxes share one engine, whose <c>sys.path</c> holds the paths of the script
+        /// that ran last. Each call therefore restores the paths captured right after its own
+        /// checkbox's script ran, so imports inside a handler find that bundle's <c>lib</c> folder.
+        /// </remarks>
+        private void InvokeHandler(ObjectOperations ops, ICollection<string> searchPaths, string handlerName, object handler, params object[] args)
         {
             try
             {
                 RedirectOutput();
+                _engine?.SetSearchPaths(searchPaths);
                 ops.Invoke(handler, args);
             }
             catch (Exception ex)
