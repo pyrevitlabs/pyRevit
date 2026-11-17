@@ -31,6 +31,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private readonly IHookManager _hookManager;
         private readonly IUIManagerService _uiManager;
         private readonly IUIRibbonScanner _ribbonScanner;
+        private readonly ITabIconDecorator? _tabIconDecorator;
         private readonly UIApplication _uiApp;
         private readonly ILogger _logger;
 
@@ -62,6 +63,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="uiManager">Service for building UI elements.</param>
         /// <param name="ribbonScanner">Service for scanning and cleaning up ribbon elements.</param>
         /// <param name="logger">Logger instance for logging.</param>
+        /// <param name="tabIconDecorator">Optional decorator that shows tab bundle icons; reset before and refreshed after each UI build.</param>
         /// <exception cref="ArgumentNullException">Thrown when uiManager is null or does not have a valid UIApplication.</exception>
         public SessionManagerService(
             IAssemblyBuilderService assemblyBuilder,
@@ -69,7 +71,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             IHookManager hookManager,
             IUIManagerService uiManager,
             IUIRibbonScanner ribbonScanner,
-            ILogger logger)
+            ILogger logger,
+            ITabIconDecorator? tabIconDecorator = null)
         {
             _assemblyBuilder = assemblyBuilder ?? throw new ArgumentNullException(nameof(assemblyBuilder));
             _extensionManager = extensionManager ?? throw new ArgumentNullException(nameof(extensionManager));
@@ -77,6 +80,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _uiManager = uiManager ?? throw new ArgumentNullException(nameof(uiManager));
             _ribbonScanner = ribbonScanner ?? throw new ArgumentNullException(nameof(ribbonScanner));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _tabIconDecorator = tabIconDecorator;
 
             // Get UIApplication from UIManagerService via public property
             _uiApp = uiManager.UIApplication
@@ -122,6 +126,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var stepsBeforeSession = timeline.Root.Children.Count;
 
             RibbonThemeRegistry.Clear();
+            _tabIconDecorator?.Reset();
 
             // STEP 1: Reset panel backgrounds before creating new UI
             // This matches Python's reset_backgrounds() behavior
@@ -191,6 +196,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (uiExtensions == null || uiExtensions.Count == 0)
             {
                 _logger.Warning("No UI extensions found or extension manager is null.");
+                _tabIconDecorator?.RefreshHeaders();
                 return;
             }
 
@@ -282,6 +288,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             step = timeline.StartSpan("CleanupOrphanedElements");
             _ribbonScanner.CleanupOrphanedElements();
             LogStep(step);
+
+            _tabIconDecorator?.RefreshHeaders();
 
             QueueBackgroundCleanup(firstLoad);
 

@@ -168,6 +168,7 @@ Merging into `master` does not trigger a release. A maintainer runs through the 
 
 ### Pre-flight
 
+- Confirm the [release qualification](release-qualification.md) issue of this version is signed off, and that the candidate commit it names is the one you release from. The release commit of step 1 adds only the version stamp on top of it. Step 3 checks that nothing else reached `master`.
 - Confirm **`develop`** is green: the latest `pyRevit CI` run on `develop` succeeded and its **`wip` job** produced the signed artifact (`pyrevit-wip-installers-<install-version>`). The WIP job is part of that run, not a workflow of its own — check it in the run's job list.
 - Confirm `pyrevitlib/pyrevit/version` and `release/version` reflect the version you intend to publish. `release.yml` hard-fails if the tag name does not match `pyrevitlib/pyrevit/version`.
 - On **tag** pushes, CI preserves the committed build version (including the `+HHMM` suffix) from git. **`develop`** and **`master`** branch pushes re-stamp the build number.
@@ -198,11 +199,17 @@ Merging into `master` does not trigger a release. A maintainer runs through the 
     git push
     ```
 
-3. Tag the release commit on **`master`**. The tag name must exactly match `pyrevitlib/pyrevit/version` prefixed with `v`:
+3. Tag the release commit on **`master`**. The tag name must exactly match `pyrevitlib/pyrevit/version` prefixed with `v`. Pull first, then check the commit you are about to tag against the qualified candidate commit:
 
     ```bash
     git checkout master
     git pull
+    git diff <candidate-sha> HEAD
+    ```
+
+    The diff must contain exactly the changes you reviewed in step 1 (version, copyright and product metadata) and nothing else. Any other change on `master` was not qualified: requalify it or leave it out of the release before tagging.
+
+    ```bash
     git tag "v$(cat pyrevitlib/pyrevit/version)"
     git push origin "v$(cat pyrevitlib/pyrevit/version)"
     ```
@@ -212,7 +219,7 @@ Merging into `master` does not trigger a release. A maintainer runs through the 
     - **`ci.yml`** rebuilds DLLs on the tagged commit and uploads `unsigned-bin-<sha>` (DLLs only; the `release` job builds the installers).
     - **`release.yml`** starts immediately and polls for the matching CI run (via `gh run watch`). The **`release`** job downloads CI artifacts, runs `dotnet run -- release pack sign publish` under **`production`** (sign via `sign code trusted-signing`, draft GitHub Release including signed `bin-v{version}.zip` for `pyrevit clone --branch=v*`, Chocolatey push). **`notify`** then posts to linked issues. After you publish the draft release, **`winget.yml`** submits WinGet manifest PRs.
 
-5. Open the draft release on GitHub, review the auto-generated notes, then publish it.
+5. Open the draft release on GitHub, run the [draft release checks](release-qualification.md#draft-release-and-after-publishing), review the auto-generated notes, then publish it.
 
 !!! tip "Manual re-run"
 

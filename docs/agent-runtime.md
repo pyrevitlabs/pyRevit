@@ -69,8 +69,8 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
     Whatever the agent reads (element names, parameter values, results) is sent to
     the agent's model provider. Check this against your project's confidentiality rules
     before enabling the agent runtime. The runtime also stores each run's script, request,
-    response, large result, and captured images in plaintext under `%APPDATA%\pyRevit\agent`
-    for up to 14 days.
+    response, large result, captured images and exported files in plaintext under
+    `%APPDATA%\pyRevit\agent` for at least 14 days; see [Run records](#run-records).
 
 ## Reference
 
@@ -140,15 +140,17 @@ things. Because they change view state or write files, `show_elements`,
 read-only nor destructive.
 
 `run_query` and `run_modify` return a compact result for the agent: `status`, then
-`error` (when present), `decision`, `result`, `output`, and only the non-empty change
-set, failures, dialogs and blocked operations. The change set starts with `summary`, one
-line the host builds from every change, for example `added 1 family (Door) with 3 types and 2
-other elements (Legend Components), modified 1 element (Project Information), deleted 1
-element`: it names up to 3 families and the 3 most frequent categories, then `+N more`, and
-reads `no changes` for an empty set. It then keeps counts, `by_category`,
-`added_ids`, `added_families` (id, category, name and class of every added family and
-type, system types included), `modified` (the same fields) and `deleted_ids`, each
-capped at 20 entries. The full record, with up to 50 of each, stays available through
+`error` (when present), `decision`, `result` and `output`. The non-empty change set,
+failures, dialogs and blocked operations follow, and `exports` lists the files the run
+exported (the first 20, with `exports_note` when there are more).
+
+The change set starts with `summary`, one line the host builds from every change, for example
+`added 1 family (Door) with 3 types and 2 other elements (Legend Components), modified 1
+element (Project Information), deleted 1 element`. It names up to 3 families and the 3 most
+frequent categories, then `+N more`, and reads `no changes` for an empty set. Then come
+counts, `by_category`, `added_ids`, `added_families` (id, category, name and class of every
+added family and type, system types included), `modified` (the same fields) and
+`deleted_ids`, each capped at 20 entries. The full record, with up to 50 of each, stays available through
 `get_run`. `AttributeError` and `TypeError` failures carry a `hint` that names the
 `lookup_revit_api` call to make, for example `'Collector' does not exist in
 Autodesk.Revit.DB` or `check the overloads of 'FilteredElementCollector.OfCategory'`.
@@ -242,8 +244,10 @@ operation and never executes a command or changes model elements.
 
 Scripts are Python, executed inside Revit by the regular pyRevit engines. The runner
 injects `doc`, `uidoc`, `app`, `uiapp`, `DB` (`Autodesk.Revit.DB`), `UI`
-(`Autodesk.Revit.UI`) and `inputs` (the `inputs` argument as a dict). Assign `result`
-to return data. It is serialized to JSON:
+(`Autodesk.Revit.UI`), `inputs` (the `inputs` argument as a dict) and `export_dir` (the
+folder Revit exports from the run may write into, ending with a path separator so that
+`ImageExportOptions.FilePath = export_dir` writes inside it; see the rules below). Assign
+`result` to return data. It is serialized to JSON:
 
 - `ElementId` becomes an integer.
 - `Element` becomes `{id, category, name, class}`.
@@ -288,10 +292,33 @@ Rules the host enforces:
   active.
   `get_context.open_documents` lists every open document and marks the background ones.
 - While a run is active, the host cancels Revit operations exposed through cancellable save,
-  save-as, synchronize-with-central, file-export, view-export and printing events. The response
-  lists a cancelled operation in `blocked`. APIs that write files without raising one of these
+  save-as, synchronize-with-central, file-export (except exports into the run's `export_dir`,
+  see the next rule), view-export and printing events. The response lists a cancelled
+  operation in `blocked`. APIs that write files without raising one of these
   events, such as `ViewSchedule.Export`, shared parameter file edits and
   `TransmissionData.WriteTransmissionData`, are not blocked.
+- A file export (`Document.Export`, `Document.ExportImage`) whose target is the run's
+  `export_dir` or lies inside it is allowed in every mode, including queries and dry runs. The
+  host creates that folder as `exports` in the run record before the script runs, lists the
+  files left in it and its subfolders in the response's `exports`, and removes it when the run
+  leaves it empty. The target is the path Revit reports for the export: a file, a file name
+  prefix or a folder. It must be a fully qualified drive or UNC path; the host compares its
+  final location, with links and short names resolved, against the folder as it was resolved
+  before the script ran. Any other target, or one the host can't resolve, is cancelled, and its
+  `blocked` entry carries the `path`. A background export, such as a PDF export with
+  `PDFExportOptions.SetExportInBackground(true)` (Revit 2025 and later), is cancelled as
+  `background_export` whatever its target, because Revit writes its files after the run ends,
+  when the run can no longer report them; its entry adds `outside_export_dir: true` when the
+  target is also outside `export_dir`, and the warning then names both fixes. Exported files
+  are not rolled back. They are deleted with the run record by the cleanup that runs when an
+  agent host starts and, at most once a day, when a run is recorded (see
+  [Run records](#run-records)): they last at least 14 days, and after that any host start or
+  later recorded run, including one in another Revit instance, may delete them, so copy
+  deliverables out. Only
+  `Document.Export` and `Document.ExportImage` go through this check; the other APIs that
+  write files, listed above, are not checked. This keeps a run's mistakes
+  away from the user's files; it is not a sandbox, since the script can still write files by
+  other means.
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
@@ -300,8 +327,8 @@ Rules the host enforces:
   it is reported there with a `scope` statement and without a `rolled_back` field, doesn't fail
   the run, and isn't rolled back; it is discarded when closed.
 - When `blocked` isn't empty, `warnings` gains an `operation_blocked` entry
-  naming each cancelled operation, because the script itself only sees Revit's generic
-  exception.
+  naming each cancelled operation, and the target of a cancelled export, because the script
+  itself only sees Revit's generic exception.
 - A script error rolls back everything, and the traceback points at the script's own lines.
   Decorated functions, context-manager yields and rewritten exception handlers retain
   their original script line numbers, including on IronPython.
@@ -310,7 +337,11 @@ Rules the host enforces:
   "A managed exception was thrown".
 - When Revit rolls back one of the script's transactions because of an error-level
   failure, the run fails with `revit_failure`, even if the script itself didn't raise.
-- A transaction left open fails the run with `transaction_left_open`.
+- A transaction left open fails the run with `transaction_left_open`, and the host rolls
+  back the run's group right away. If Revit refuses that rollback, for example while an
+  inner transaction is still open or pending, the error keeps its type, its message gains
+  the reason, and the decision is `rollback_incomplete`. The host never holds or finishes
+  the script's own transactions.
 - A failure in the host itself reports `host_error` with decision `rolled_back`, or
   `not_run` when it failed before the script started (for example when Revit refused to start
   the run's transaction group, or the script engine failed to start), or
@@ -319,6 +350,9 @@ Rules the host enforces:
   run deleted is still missing, or one it added is still there), so its changes may remain
   in the active document. A script engine that reports a failure (`engine_error`) before the
   script's first statement ran is `not_run` too.
+- Every `rollback_incomplete` run, in any mode, carries `rollback_failure`: the exception
+  Revit threw, the status it returned, or the element check that found the changes still in
+  the model. The MCP tools return it with the compact result.
 - A script that runs past `timeout_s` (default 300 seconds, a finite number above 0, at
   most 3600) is stopped and fails with `timeout`. A watchdog thread flags the deadline, and
   the runner rewrites every loop header of the script (`for`, `while`, comprehensions) to
@@ -498,6 +532,14 @@ clone the session was loaded from. When that clone has no CPython engine, CPytho
 reports `attached`, and `clone` and the IronPython `python` are null when the session
 doesn't know them, instead of `Unknown` or `0`.
 
+`pyrevitlib/` loads live from the clone's working tree, but the runtime DLLs only change on a rebuild.
+`get_context.pyrevit.bin_commit` is the commit the binaries were built from. When it differs from
+`commit`, `bin_stale: true` and a `bin_hint` ask for a rebuild (`dotnet run -c Release -- local`), and
+`pyrevit agent status` shows the same fields. Nothing is flagged when the clone's commit is unknown.
+The instance record is written when the session starts, so `pyrevit agent status` asks the live host
+for `commit`, `bin_commit` and `bin_stale` when it pings it, and a checkout with Revit open shows up at
+once. A host that cannot be reached, or an older one that does not send them, falls back to the startup values.
+
 Syntax measured in Revit on IronPython 3.4.2:
 
 | Syntax | IronPython 3.4.2 |
@@ -577,8 +619,13 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 
 - `script.py`: the submitted source
 - `request.json`: title, mode, engine and inputs
-- `response.json`: status, decision, changes, failures, dialogs, output and result
+- `response.json`: status, decision, changes, failures, dialogs, output and result. While a run waits
+  for the user's approval it holds a provisional record with `status` `pending` and `decision`
+  `awaiting_approval`, which the final record replaces. A run folder that keeps it was interrupted at
+  the prompt or before the final write (for example Revit exited), so its outcome is unknown: the user
+  may have approved and the change committed. Check the model before repeating the run.
 - `result.json`: present when the result was too large to return inline
+- `exports\`: present when the run exported files into its `export_dir`
 
 For runs that start, `response.json` (and `get_run`) also carries `timings_ms`, the run's
 wall-clock breakdown in milliseconds. Host phases, in order: `queue_wait` (request parsed to
@@ -590,8 +637,12 @@ Revit main thread),
 engine startup and runner import. The same breakdown is logged as a `[PERF] agent run` debug
 line.
 
-Run records and `capture_view` images older than 14 days are deleted when the host starts, and
-again at most once a day when a run is recorded.
+Run records, with their exported files, and `capture_view` images older than 14 days are
+deleted whenever an agent host starts, for example when Revit starts, and again at most once a
+day when a run is recorded. A run record's age is the last time its folder changed. Every Revit
+instance, including per-launch sessions, shares this folder, so a host start or a later
+recorded run, in the same Revit session or another one, can delete a record older than 14 days
+even while the session that made it is still open.
 
 ### Session recorder
 

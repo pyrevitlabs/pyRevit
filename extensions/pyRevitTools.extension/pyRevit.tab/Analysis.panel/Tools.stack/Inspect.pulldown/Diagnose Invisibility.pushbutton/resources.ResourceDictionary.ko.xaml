@@ -28,7 +28,7 @@
     <sys:String x:Key="reason_view_template">뷰 템플릿 '{}'이(가) 적용되어 있습니다 - 일부 표시 설정이 잠겨 있을 수 있으며 템플릿에서 변경해야 합니다</sys:String>
     <sys:String x:Key="reason_view_specific">요소가 뷰 전용이며 다른 뷰('{}')에 속해 있어 여기에 나타날 수 없습니다</sys:String>
     <sys:String x:Key="reason_view_discipline">뷰 분야가 '{}'(으)로 설정되어 있습니다 - 일부 카테고리는 표시/그래픽 설정과 무관하게 분야에 따라 자동으로 표시되거나 숨겨집니다</sys:String>
-    <sys:String x:Key="reason_unknown">요소가 보이지 않지만 정확한 원인을 확인할 수 없습니다. 가능한 원인: 다른 뷰의 주석과 같은 뷰 전용 요소 유형, 링크 모델의 가시성, 또는 상세 수준입니다.</sys:String>
+    <sys:String x:Key="reason_unknown">요소가 보이지 않지만 정확한 원인을 확인할 수 없습니다. 가능한 원인: 다른 뷰의 주석과 같은 뷰 전용 요소 유형 또는 링크 모델의 가시성입니다.</sys:String>
 
     <sys:String x:Key="reason_temporary_hidden">이 뷰에서 임시 숨기기/분리로 요소가 숨겨져 있습니다</sys:String>
     <sys:String x:Key="reason_behind_cut_plane">요소가 뷰의 절단 평면 뒤에 완전히 있어 단면/입면이 이를 바라보지 않습니다</sys:String>
@@ -127,5 +127,46 @@
     <sys:String x:Key="ui_speculative_hint">가능한 원인일 뿐입니다. Revit이 이 요소가 여기서 사용하는 하위 카테고리를 확인할 수 없습니다. 모두 수정에 포함되지 않습니다.</sys:String>
     <sys:String x:Key="ui_ghost">Revit에 고스트 표시</sys:String>
     <sys:String x:Key="ui_ghost_hint">요소가 숨겨져 있어도 Revit 뷰에 형상을 그리고 진단한 뷰를 해당 요소로 확대합니다. 다시 클릭하면 제거됩니다.</sys:String>
+
+    <sys:String x:Key="reason_model_in_flat_view">'{}'은(는) 모델 요소이며, '{}' 유형의 뷰에는 모델 요소를 표시할 수 없습니다. 이 뷰에는 뷰 전용 디테일과 주석 내용만 들어갈 수 있습니다.</sys:String>
+    <sys:String x:Key="reason_not_in_3d">'{}' 카테고리는 3D 뷰에 표시되지 않습니다</sys:String>
+    <sys:String x:Key="reason_detail_level">이 뷰의 상세 수준({0})에서는 요소에 형상이 없습니다. 다음 수준에서 표시됩니다: {1}</sys:String>
+    <sys:String x:Key="code_view_type">뷰 유형</sys:String>
+    <sys:String x:Key="code_detail_level">상세 수준</sys:String>
+    <sys:String x:Key="fix_set_detail_level">상세 수준을 {}(으)로 설정</sys:String>
+    <sys:String x:Key="detail_level_coarse">낮음</sys:String>
+    <sys:String x:Key="detail_level_medium">중간</sys:String>
+    <sys:String x:Key="detail_level_fine">높음</sys:String>
+    <sys:String x:Key="add_nothing_new">추가할 새 요소가 없습니다.</sys:String>
+    <sys:String x:Key="added_elements">요소 {0}개를 추가했습니다.</sys:String>
+    <sys:String x:Key="add_no_selection">Revit에서 선택한 항목이 없습니다.</sys:String>
+    <sys:String x:Key="add_views_button">보고서에 추가</sys:String>
+    <sys:String x:Key="added_views">뷰 {0}개를 추가했습니다.</sys:String>
+    <sys:String x:Key="hide_nothing">변경할 내용이 없습니다. 요소가 이미 해당 상태이거나, 이 뷰들에서 숨길 수 없거나, 다른 뷰에 속해 있습니다.</sys:String>
+    <sys:String x:Key="confirm_hide">요소 {0}개를 뷰 {1}개에서 숨길까요?</sys:String>
+    <sys:String x:Key="confirm_unhide">요소 {0}개를 뷰 {1}개에서 숨김 해제할까요?</sys:String>
+    <sys:String x:Key="transaction_hide">뷰에서 숨기기</sys:String>
+    <sys:String x:Key="transaction_unhide">뷰에서 숨김 해제</sys:String>
+    <sys:String x:Key="hidden_summary">요소 {0}개를 뷰 {1}개에서 숨겼습니다.</sys:String>
+    <sys:String x:Key="unhidden_summary">요소 {0}개를 뷰 {1}개에서 숨김 해제했습니다.</sys:String>
+    <sys:String x:Key="ui_add_selection">선택 항목 추가</sys:String>
+    <sys:String x:Key="ui_add_selection_hint">Revit에서 현재 선택한 요소를 이 보고서에 추가합니다.</sys:String>
+    <sys:String x:Key="ui_pick_elements">요소 선택</sys:String>
+    <sys:String x:Key="ui_add_views">뷰 추가</sys:String>
+    <sys:String x:Key="ui_remove_element">이 요소를 보고서에서 제거</sys:String>
+    <sys:String x:Key="ui_remove_view">이 뷰를 보고서에서 제거</sys:String>
+    <sys:String x:Key="ui_select_all">모두 선택</sys:String>
+    <sys:String x:Key="ui_selected_count">{0}개 선택됨</sys:String>
+    <sys:String x:Key="ui_clear_selection">선택 해제</sys:String>
+    <sys:String x:Key="ui_select_for_hide">숨기기 또는 숨김 해제할 이 요소 선택</sys:String>
+    <sys:String x:Key="ui_hide_in_views">뷰에서 숨기기...</sys:String>
+    <sys:String x:Key="ui_unhide_in_views">뷰에서 숨김 해제...</sys:String>
+    <sys:String x:Key="ui_hide_dialog_title">요소 {0}개를 숨길 뷰:</sys:String>
+    <sys:String x:Key="ui_unhide_dialog_title">요소 {0}개의 숨김을 해제할 뷰:</sys:String>
+    <sys:String x:Key="ui_apply">적용</sys:String>
+    <sys:String x:Key="ui_cancel">취소</sys:String>
+    <sys:String x:Key="ui_no_view_ticked">뷰를 하나 이상 선택하세요.</sys:String>
+    <sys:String x:Key="ui_empty_state">아직 진단할 항목이 없습니다. 요소와 뷰를 추가하세요.</sys:String>
+    <sys:String x:Key="ui_reload_blocked">새로 고침하면 이 보고서가 지워집니다. 대신 '다시 확인'을(를) 사용하세요.</sys:String>
 
 </ResourceDictionary>

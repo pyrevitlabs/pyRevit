@@ -38,6 +38,50 @@ def get_section_box_info(view, datafilename):
     }
 
 
+def get_crop_box_info(view):
+    """Get crop box information in the same shape as get_section_box_info."""
+    if isinstance(view, DB.View3D) or not view.CropBoxActive:
+        return None
+    crop_box = view.CropBox
+    transform = crop_box.Transform
+    return {
+        "box": crop_box,
+        "transform": transform,
+        "min_point": crop_box.Min,
+        "max_point": crop_box.Max,
+        "transformed_min": transform.OfPoint(crop_box.Min),
+        "transformed_max": transform.OfPoint(crop_box.Max),
+    }
+
+
+def get_box_info(view, datafilename):
+    """Get section box info for 3D views and crop box info for 2D views."""
+    if isinstance(view, DB.View3D):
+        return get_section_box_info(view, datafilename)
+    return get_crop_box_info(view)
+
+
+def get_crop_edit_blocker(view):
+    """Return why a view's crop box cannot be resized, or None if it can.
+
+    Returns:
+        str | None: "scope_box" when a scope box drives the crop,
+            "crop_shape" when the crop has a non-rectangular shape.
+    """
+    scope_box_param = view.get_Parameter(
+        DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP
+    )
+    if (
+        scope_box_param is not None
+        and scope_box_param.AsElementId() != DB.ElementId.InvalidElementId
+    ):
+        return "scope_box"
+    shape_manager = view.GetCropRegionShapeManager()
+    if shape_manager is not None and shape_manager.ShapeSet:
+        return "crop_shape"
+    return None
+
+
 def get_section_box_face_info(info):
     """
     Get information about the 4 vertical faces of the section box.

@@ -673,6 +673,8 @@ namespace pyRevitCLI {
                 else if (all("commands"))
                     PyRevitCLIRevitCmds.ListAvailableCommands();
                 else {
+                    var inputsJson = PyRevitRunner.ReadInputs(
+                        TryGetValue("--inputs"), TryGetValue("--inputs-file"));
                     var modelList = TryGetValue("--models");
                     if (modelList != null) {
                         PyRevitCLIRevitCmds.RunExtensionCommand(
@@ -682,7 +684,8 @@ namespace pyRevitCLI {
                             runOptions: new PyRevitRunnerOptions() {
                                 PurgeTempFiles = arguments["--purge"].IsTrue,
                                 ImportPath = TryGetValue("--import", null),
-                                AllowDialogs = arguments["--allowdialogs"].IsTrue
+                                AllowDialogs = arguments["--allowdialogs"].IsTrue,
+                                InputsJson = inputsJson
                             },
                             targetIsFileList: true
                         );
@@ -695,7 +698,8 @@ namespace pyRevitCLI {
                             runOptions: new PyRevitRunnerOptions() {
                                 PurgeTempFiles = arguments["--purge"].IsTrue,
                                 ImportPath = TryGetValue("--import", null),
-                                AllowDialogs = arguments["--allowdialogs"].IsTrue
+                                AllowDialogs = arguments["--allowdialogs"].IsTrue,
+                                InputsJson = inputsJson
                             }
                         );
                 }

@@ -100,6 +100,21 @@
     <system:String x:Key="SectionBoxAlignedFormat">Бокс сечения выровнен с видом '{0}'</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Рамка обрезки выровнена с видом '{0}'</system:String>
     <system:String x:Key="ScopeBoxApplied">Область видимости применена к виду</system:String>
+    <system:String x:Key="NoSectionBoxPrompt">У этого вида нет бокса сечения. Создать из:</system:String>
+    <system:String x:Key="NoCropBoxPrompt">У этого вида нет активной рамки обрезки. Создать из:</system:String>
+    <system:String x:Key="SourceVisibleElements">Элементы, видимые на виде</system:String>
+    <system:String x:Key="SourceScopeBoxList">Область видимости из списка</system:String>
+    <system:String x:Key="SourceScopeBoxPick">Область видимости, выбранная на виде</system:String>
+    <system:String x:Key="NoScopeBoxes">В этом проекте нет областей видимости.</system:String>
+    <system:String x:Key="SelectScopeBox">Выбрать область видимости</system:String>
+    <system:String x:Key="PickScopeBox">Выберите область видимости</system:String>
+    <system:String x:Key="NoVisibleElements">На этом виде нет видимых элементов модели.</system:String>
+    <system:String x:Key="ScopeBoxNotSupported">Этот вид не может использовать область видимости.</system:String>
+    <system:String x:Key="ScopeBoxHasNoGeometry">У области видимости нет геометрии.</system:String>
+    <system:String x:Key="NoCropBoxActive">Нет активной рамки обрезки</system:String>
+    <system:String x:Key="CropBoxDrivenByScopeBox">Эта рамка обрезки управляется областью видимости.</system:String>
+    <system:String x:Key="CropBoxHasCustomShape">У области обрезки произвольная форма.</system:String>
+    <system:String x:Key="BoxCreatedFormat">Бокс создан из {0}</system:String>
     <system:String x:Key="UnsupportedViewType">Неподдерживаемый тип вида.</system:String>
     <system:String x:Key="Activated">активирован</system:String>
     <system:String x:Key="Deactivated">деактивирован</system:String>
@@ -132,7 +147,5 @@
     <!-- Alert messages -->
     <system:String x:Key="StoredSectionBoxFound">Найден сохраненный SectionBox для этого вида! Восстановить?</system:String>
     <system:String x:Key="RestoreSectionBox">Восстановить Бокс Сечения</system:String>
-    <system:String x:Key="NoSectionBoxMessage">Текущий вид не имеет активного или сохраненного бокса сечения.</system:String>
-    <system:String x:Key="NoSectionBoxTitle">Нет Бокса Сечения</system:String>
     <system:String x:Key="ErrorTitle">Ошибка</system:String>
 </ResourceDictionary>
