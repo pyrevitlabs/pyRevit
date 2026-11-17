@@ -114,7 +114,7 @@ The `ci` pipeline also runs the configuration core, INI backend, parser parity, 
 | Args | Purpose |
 |------|---------|
 | `ci` (default) | Stamp versions, build products, verify LibGit2, stage release metadata (tag builds preserve the committed version; branch builds re-stamp) |
-| `pack` | Restore CI-stamped metadata (if present), build Inno/MSI installers and Chocolatey package (requires `bin/`) |
+| `pack` | Restore CI-stamped metadata (if present), build Inno/MSI installers and Chocolatey package, and stage `dist/pyrevit-doctor.exe` as the standalone doctor download (requires `bin/`) |
 | `sign` | Sign binaries, installers, and `.nupkg` via `sign code trusted-signing` |
 | `local` | Run `ci`, then sign `bin/` with a per-machine developer certificate so Revit loads it without the unsigned add-in dialog. Local only; refuses when `CI` is set or the channel is `wip`/`release` |
 | `sign-test` | Sign `bin/` with the certificate whose SHA-256 fingerprint is in `TestSigning__Fingerprint` (CI test runners). The certificate must be in `CurrentUser\My` and its subject must start with `CN=pyRevit CI Test` so packaging can detect it. Refuses `wip`/`release` and cannot be combined with `pack`, `sign` or `publish` |
