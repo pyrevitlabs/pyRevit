@@ -641,6 +641,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <c>summary</c> is one line built from every change, not only the samples, for
         /// example <c>added 1 family (Door) with 3 types and 2 other elements (Legend
         /// Components), modified 1 element (Project Information), deleted 1 element</c>.
+        /// Modified elements without a category, such as bookkeeping elements Revit updates on
+        /// its own, are counted apart (<c>modified 1 element (Walls) and 2 without a category</c>)
+        /// and add no category name.
         /// </para>
         /// </remarks>
         public JObject Describe(Document doc, int maxSamples) {
@@ -724,10 +727,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (added.Count > 0)
                 parts.Add("added " + DescribeAdded(doc));
             if (modified.Count > 0)
-                parts.Add("modified " + Count(modified.Count, "element") + (doc == null ? string.Empty : CategoryNames(modified.Select(id => doc.GetElement(id)))));
+                parts.Add("modified " + DescribeModified(doc));
             if (deleted.Count > 0)
                 parts.Add("deleted " + Count(deleted.Count, "element"));
             return parts.Count > 0 ? string.Join(", ", parts) : "no changes";
+        }
+
+        private string DescribeModified(Document doc) {
+            if (doc == null)
+                return Count(modified.Count, "element");
+            var categorized = modified.Select(id => doc.GetElement(id)).Where(element => element?.Category != null).ToList();
+            var uncategorized = modified.Count - categorized.Count;
+            if (categorized.Count == 0)
+                return Count(uncategorized, "element") + " without a category";
+            var phrase = Count(categorized.Count, "element") + CategoryNames(categorized);
+            return uncategorized > 0 ? phrase + " and " + uncategorized + " without a category" : phrase;
         }
 
         private string DescribeAdded(Document doc) {
