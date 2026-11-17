@@ -650,8 +650,9 @@ class RevealPreview(object):
 
         They are drawn whatever their size, and pinned: later rebuilds
         diagnose them again, even when they sit outside the screen area. When
-        the revealed view is not the active one, the elements are only pinned
-        and the view is opened; the rebuild after its activation draws them.
+        the revealed view is not the active one, the elements are pinned and
+        the view is opened; the rebuild after its activation draws the hidden
+        ones, which are the ones returned.
 
         Returns:
             (tuple[list[int], int]): the id values added to the overlay and
@@ -661,36 +662,33 @@ class RevealPreview(object):
         view = self.doc.GetElement(self.view_id) if self.view_id is not None else None
         if view is None:
             return [], 0
-        if uidoc.ActiveView.Id != view.Id:
-            pinned = [
-                id_value(element.Id)
-                for element in elements
-                if element is not None and element.Category is not None
-            ]
-            self._pinned_ids.update(pinned)
-            self.show(uidoc, view, self._on_built)
-            return pinned, 0
         visible_ids = collect_visible_ids(view)
         names = {"types": {}, "levels": {}}
         added = []
+        categorized = []
         for element in elements:
             if element is None or element.Category is None:
                 continue
+            categorized.append(element)
             size, box = _measure(element)
             found = _evaluate(element, view, visible_ids, size, box, names)
-            if found is None:
-                continue
-            self._pinned_ids.add(found[0].id)
-            self._hits = [hit for hit in self._hits if hit.id != found[0].id]
-            self._hits.append(found[0])
-            self._rows[found[0].id] = found[1]
-            added.append(found[0])
+            if found is not None:
+                added.append(found)
+        if uidoc.ActiveView.Id != view.Id:
+            self._pinned_ids.update(id_value(element.Id) for element in categorized)
+            self.show(uidoc, view, self._on_built)
+            return [hit.id for hit, _ in added], len(elements) - len(added)
+        for hit, row in added:
+            self._pinned_ids.add(hit.id)
+            self._hits = [existing for existing in self._hits if existing.id != hit.id]
+            self._hits.append(hit)
+            self._rows[hit.id] = row
         self._base_meshes = mesh_hits(self.doc, self._hits, None, self._pinned_ids)
         self._mesh_focus()
         self._apply_meshes(uidoc)
         if self._on_built is not None:
             self._on_built(self.summary())
-        return [hit.id for hit in added], len(elements) - len(added)
+        return [hit.id for hit, _ in added], len(elements) - len(added)
 
     def summary(self):
         """Return what the page lists: counts per reason, rows and stats."""
