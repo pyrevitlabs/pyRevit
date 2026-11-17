@@ -192,13 +192,18 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Creates the checkbox builder and the script initializer that wires checkbox handlers.
         /// </summary>
         /// <param name="panelStyleManager">Resolves the AdWindows panel that hosts each checkbox.</param>
+        /// <param name="libraryPathsProvider">Supplies the installed library extensions' search paths, so checkbox scripts can import from them like commands.</param>
         /// <remarks>
         /// Important: creating the initializer releases the checkbox handlers and engine of the
         /// previous session load, so call this once per load.
         /// </remarks>
-        public static ICheckBoxBuilder CreateCheckBoxBuilder(UIApplication uiApplication, ILogger logger, IPanelStyleManager panelStyleManager)
+        public static ICheckBoxBuilder CreateCheckBoxBuilder(
+            UIApplication uiApplication,
+            ILogger logger,
+            IPanelStyleManager panelStyleManager,
+            Func<IEnumerable<string>>? libraryPathsProvider = null)
         {
-            var checkBoxScriptInitializer = new CheckBoxScriptInitializer(uiApplication, logger);
+            var checkBoxScriptInitializer = new CheckBoxScriptInitializer(uiApplication, logger, libraryPathsProvider);
             return new CheckBoxBuilder(logger, panelStyleManager, checkBoxScriptInitializer);
         }
 
@@ -295,7 +300,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var buttonBuilderFactory = CreateButtonBuilderFactory(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var stackBuilder = CreateStackBuilder(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var comboBoxBuilder = CreateComboBoxBuilder(uiApplication, logger, buttonPostProcessor);
-            var checkBoxBuilder = CreateCheckBoxBuilder(uiApplication, logger, panelStyleManager);
+            var checkBoxBuilder = CreateCheckBoxBuilder(
+                uiApplication,
+                logger,
+                panelStyleManager,
+                () => LibraryExtensionSearchPaths.Collect(extensionManager.GetInstalledLibraryExtensions()));
 
             // Create ribbon scanner for UI cleanup
             var ribbonScanner = CreateUIRibbonScanner(logger);

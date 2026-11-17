@@ -82,6 +82,9 @@ namespace PyRevitLoader
         /// Runs <paramref name="scriptPath"/>, calls its <c>__chk_init__</c>, then subscribes its
         /// <c>__chk_on_change__</c> to <paramref name="checkBox"/>.
         /// </summary>
+        /// <param name="scopeVariables">Values set in the script's own module scope before it runs, such as
+        /// <c>__commandname__</c>, so <c>EXEC_PARAMS</c> resolves this checkbox's identity without touching
+        /// other checkboxes.</param>
         /// <returns>False when the script fails to compile or run; true otherwise, including when it defines no handlers.</returns>
         /// <remarks>
         /// Invariant: called by reflection from <c>CheckBoxScriptInitializer</c>; keep the name and signature.
@@ -92,7 +95,8 @@ namespace PyRevitLoader
             string scriptPath,
             CheckBoxContext context,
             INotifyPropertyChanged checkBox,
-            IEnumerable<string> additionalSearchPaths = null)
+            IEnumerable<string> additionalSearchPaths = null,
+            IDictionary<string, object> scopeVariables = null)
         {
             if (_released || !IsPythonScript(scriptPath))
                 return true;
@@ -104,6 +108,11 @@ namespace PyRevitLoader
                 RedirectOutput();
                 SetupSearchPathsForComponent(context.directory, additionalSearchPaths);
                 scope.SetVariable("__file__", scriptPath);
+                if (scopeVariables != null)
+                {
+                    foreach (var variable in scopeVariables)
+                        scope.SetVariable(variable.Key, variable.Value);
+                }
 
                 var runResult = RunScript(scriptPath, scope);
                 if (runResult != ScriptRunResult.Completed)
@@ -309,6 +318,12 @@ namespace PyRevitLoader
                     AddPath(libPath);
             }
 
+            if (additionalSearchPaths != null)
+            {
+                foreach (var path in additionalSearchPaths)
+                    AddPath(path);
+            }
+
             if (_pyrevitLibPath == null)
                 _pyrevitLibPath = FindPyRevitLib(componentDirectory) ?? string.Empty;
 
@@ -319,12 +334,6 @@ namespace PyRevitLoader
                 var sitePackages = string.IsNullOrEmpty(pyrevitRoot) ? null : Path.Combine(pyrevitRoot, "site-packages");
                 if (sitePackages != null && Directory.Exists(sitePackages))
                     AddPath(sitePackages);
-            }
-
-            if (additionalSearchPaths != null)
-            {
-                foreach (var path in additionalSearchPaths)
-                    AddPath(path);
             }
 
             _engine.SetSearchPaths(paths);

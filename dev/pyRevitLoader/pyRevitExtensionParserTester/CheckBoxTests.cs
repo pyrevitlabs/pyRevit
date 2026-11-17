@@ -59,10 +59,11 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
-        public void ParsedExtension_StackKeepsCheckBoxChildrenInOrder()
+        public void ParsedExtension_StackOrdersCheckBoxChildrenByLayout()
         {
             var extensionDir = CreateSubDirectory("CheckBoxTest.extension");
             var stackDir = Path.Combine("CheckBoxTest.extension", "Test.tab", "Graphics.panel", "Leader Options.stack");
+            CreateFile(Path.Combine(stackDir, "bundle.yaml"), "layout:\n- Shoulder\n- Leader\n");
             CreateFile(Path.Combine(stackDir, "Leader.checkbox", "script.py"), HandlerScript);
             CreateFile(Path.Combine(stackDir, "Shoulder.checkbox", "script.py"), HandlerScript);
 
@@ -71,7 +72,7 @@ namespace pyRevitExtensionParserTest
 
             Assert.That(stack, Is.Not.Null);
             Assert.That(stack!.Type, Is.EqualTo(CommandComponentType.Stack));
-            Assert.That(stack.Children!.Select(child => child.DisplayName), Is.EqualTo(new[] { "Leader", "Shoulder" }));
+            Assert.That(stack.Children!.Select(child => child.DisplayName), Is.EqualTo(new[] { "Shoulder", "Leader" }));
             Assert.That(stack.Children!.Select(child => child.Type), Is.All.EqualTo(CommandComponentType.CheckBox));
         }
 

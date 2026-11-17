@@ -19,11 +19,12 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
     /// <remarks>
     /// Important: the Revit API has no ribbon checkbox, so the checkbox exists only in the AdWindows
     /// panel behind the Revit <see cref="RibbonPanel"/>, and <see cref="RibbonPanel.GetItems"/> never
-    /// returns it. Reloads therefore find it by its AdWindows id, and a stack can hold checkboxes only
-    /// when it holds nothing else, because Revit API stacks cannot take AdWindows items.
+    /// returns it. Reloads therefore find it by its AdWindows id, and checkboxes stack only with other
+    /// checkboxes, because Revit API stacks cannot take AdWindows items.
     /// Invariant: the id must end in <c>%</c> followed by the bundle's display name, because
     /// <see cref="RibbonScanner"/> takes an item's name from the last id segment when it hides the
-    /// items of bundles removed before a reload.
+    /// items of bundles removed before a reload. A stacked checkbox's id also names its stack, so it
+    /// never matches a standalone checkbox with the same name in the same panel.
     /// Note: reloads refresh checkboxes where they are and never move them, so moving a checkbox into
     /// or out of a stack needs a Revit restart.
     /// </remarks>
@@ -104,7 +105,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 var shownIds = new HashSet<string>();
                 foreach (var component in checkBoxComponents.Take(MaxStackRows))
                 {
-                    var controlId = BuildControlId(tabName, parentPanel.Name, component.DisplayName);
+                    var controlId = BuildStackedControlId(tabName, parentPanel.Name, stackComponent.DisplayName, component.DisplayName);
                     shownIds.Add(controlId);
                     var checkBox = AdWindowsHelper.FindRibbonItemByName(rowPanel.Items, controlId) as AdwRibbonCheckBox;
                     if (checkBox == null)
@@ -135,6 +136,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         private static string BuildStackId(string tabName, string panelName, string stackDisplayName)
         {
             return $"{StackIdPrefix}%{tabName}%{panelName}%{stackDisplayName}";
+        }
+
+        private static string BuildStackedControlId(string tabName, string panelName, string stackDisplayName, string displayName)
+        {
+            return $"{ControlIdPrefix}%{tabName}%{panelName}%{stackDisplayName}%{displayName}";
         }
 
         private static void HideCheckBoxesNotIn(AdwRibbonRowPanel rowPanel, ISet<string> shownIds)

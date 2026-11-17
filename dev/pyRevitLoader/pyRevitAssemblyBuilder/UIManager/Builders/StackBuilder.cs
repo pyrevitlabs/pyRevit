@@ -67,6 +67,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             var children = new List<ParsedComponent>();
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
+                if (child.Type == CommandComponentType.CheckBox)
+                    continue;
+
                 if (ComponentSupportUtils.IsStackChildVisible(
                         child,
                         settings.CurrentVersion,
@@ -139,10 +142,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     var splitData = new SplitButtonData(child.DisplayName, splitButtonText);
                     itemDataList.Add(splitData);
                     originalItems.Add(child);
-                }
-                else if (child.Type == CommandComponentType.CheckBox)
-                {
-                    _logger.Warning($"CheckBox '{child.DisplayName}' left out of stack '{component.DisplayName}': a checkbox can only be stacked with other checkboxes.");
                 }
             }
 

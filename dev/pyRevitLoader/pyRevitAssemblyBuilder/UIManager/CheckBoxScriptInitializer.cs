@@ -95,20 +95,27 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly SessionManager.ILogger _logger;
         private readonly UIApplication _uiApp;
         private readonly Type? _executorType;
+        private readonly Lazy<List<string>> _libraryExtensionPaths;
         private object? _executor;
         private MethodInfo? _executeMethod;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CheckBoxScriptInitializer"/> class.
         /// </summary>
+        /// <param name="libraryPathsProvider">Supplies the search paths of the installed library extensions; read once, on first use.</param>
         /// <remarks>
         /// Important: construct exactly one per session load. Construction releases the handlers
         /// and engine of the previous load, even when this load has no checkboxes.
         /// </remarks>
-        public CheckBoxScriptInitializer(UIApplication uiApp, SessionManager.ILogger logger)
+        public CheckBoxScriptInitializer(
+            UIApplication uiApp,
+            SessionManager.ILogger logger,
+            Func<IEnumerable<string>>? libraryPathsProvider = null)
         {
             _uiApp = uiApp;
             _logger = logger;
+            _libraryExtensionPaths = new Lazy<List<string>>(
+                () => new List<string>(libraryPathsProvider?.Invoke() ?? Array.Empty<string>()));
             _executorType = SessionManager.AssemblyCache.GetByPrefix("pyRevitLoader")?.GetType(ExecutorTypeName);
             ReleasePreviousSessionExecutor();
         }
@@ -117,6 +124,12 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// Runs the bundle's script and wires its handlers to <paramref name="checkBox"/>.
         /// </summary>
         /// <returns>False when the executor is unavailable or the script fails; true otherwise, including when the bundle has no script.</returns>
+        /// <remarks>
+        /// The script can import from the bundle's ancestor <c>lib</c> folders and from installed library
+        /// extensions, and it gets the identity values a command gets (<c>__commandname__</c> and the rest)
+        /// in its own module scope, so <c>EXEC_PARAMS</c> resolves each checkbox separately.
+        /// <c>__scriptruntime__</c> is None there because a handler call is not a command run.
+        /// </remarks>
         public bool ExecuteEventHandlerSetup(ParsedComponent component, AdwRibbonCheckBox checkBox)
         {
             var scriptPath = FindScriptPath(component);
@@ -130,9 +143,13 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return false;
 
             var context = new CheckBoxContext(checkBox, component, _uiApp);
+            var searchPaths = CollectLibPaths(component);
+            searchPaths.AddRange(_libraryExtensionPaths.Value);
             try
             {
-                var result = _executeMethod!.Invoke(_executor, new object[] { scriptPath, context, checkBox, CollectLibPaths(component) });
+                var result = _executeMethod!.Invoke(
+                    _executor,
+                    new object[] { scriptPath, context, checkBox, searchPaths, BuildExecutionScope(component) });
                 return result is bool succeeded ? succeeded : true;
             }
             catch (TargetInvocationException ex)
@@ -197,6 +214,33 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return componentScript;
 
             return null;
+        }
+
+        private static Dictionary<string, object?> BuildExecutionScope(ParsedComponent component)
+        {
+            var bundleDirectory = component.Directory ?? string.Empty;
+            return new Dictionary<string, object?>
+            {
+                ["__scriptruntime__"] = null,
+                ["__commandpath__"] = bundleDirectory,
+                ["__commandname__"] = component.DisplayName,
+                ["__commandbundle__"] = Path.GetFileName(bundleDirectory),
+                ["__commandextension__"] = FindExtensionName(bundleDirectory),
+                ["__commanduniqueid__"] = component.UniqueId,
+            };
+        }
+
+        private static string FindExtensionName(string bundleDirectory)
+        {
+            var current = string.IsNullOrEmpty(bundleDirectory) ? null : new DirectoryInfo(bundleDirectory);
+            while (current != null)
+            {
+                if (current.Name.EndsWith(".extension", StringComparison.OrdinalIgnoreCase))
+                    return Path.GetFileNameWithoutExtension(current.Name);
+                current = current.Parent;
+            }
+
+            return string.Empty;
         }
 
         private static List<string> CollectLibPaths(ParsedComponent component)

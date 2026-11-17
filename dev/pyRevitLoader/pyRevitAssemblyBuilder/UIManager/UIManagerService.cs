@@ -389,14 +389,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                         break;
                     }
 
-                    if (IsCheckBoxStack(itemChildren))
-                    {
-                        _checkBoxBuilder.CreateOrUpdateCheckBoxStack(component, itemChildren, parentPanel!, tabName);
-                    }
-                    else
-                    {
-                        _stackBuilder.BuildStack(component, parentPanel!, assemblyInfo);
-                    }
+                    BuildStackItems(component, itemChildren, parentPanel, tabName, assemblyInfo);
                     // Mark all children in the stack as touched
                     foreach (var child in visibleChildren)
                         _ribbonScanner?.MarkElementTouched("button", child.DisplayName, panelName);
@@ -486,10 +479,40 @@ namespace pyRevitAssemblyBuilder.UIManager
                 _logger);
         }
 
-        private static bool IsCheckBoxStack(List<ParsedComponent> itemChildren)
+        /// <summary>
+        /// Builds the items of a stack that has two or more of them.
+        /// </summary>
+        /// <remarks>
+        /// Note: checkboxes stack only with other checkboxes, because Revit API stacks cannot hold
+        /// AdWindows items. A mixed stack therefore becomes its other items plus its checkboxes beside
+        /// them, and each group is built as a stack when it has two or more items.
+        /// </remarks>
+        private void BuildStackItems(
+            ParsedComponent stack,
+            List<ParsedComponent> itemChildren,
+            RibbonPanel? parentPanel,
+            string tabName,
+            ExtensionAssemblyInfo assemblyInfo)
         {
-            return itemChildren.Count > 0
-                && itemChildren.All(child => child.Type == CommandComponentType.CheckBox);
+            var checkBoxes = itemChildren.Where(IsCheckBox).ToList();
+            var otherItems = itemChildren.Where(child => !IsCheckBox(child)).ToList();
+            if (checkBoxes.Count > 0 && otherItems.Count > 0)
+                _logger.Warning($"Stack '{stack.DisplayName}' mixes checkboxes with other items; its checkboxes are placed beside the stack because they can only be stacked with other checkboxes.");
+
+            if (otherItems.Count == 1)
+                HandleComponentBuilding(otherItems[0], parentPanel, tabName, assemblyInfo);
+            else if (otherItems.Count > 1)
+                _stackBuilder.BuildStack(stack, parentPanel!, assemblyInfo);
+
+            if (checkBoxes.Count == 1)
+                HandleComponentBuilding(checkBoxes[0], parentPanel, tabName, assemblyInfo);
+            else if (checkBoxes.Count > 1)
+                _checkBoxBuilder.CreateOrUpdateCheckBoxStack(stack, checkBoxes, parentPanel!, tabName);
+        }
+
+        private static bool IsCheckBox(ParsedComponent component)
+        {
+            return component.Type == CommandComponentType.CheckBox;
         }
     }
 }

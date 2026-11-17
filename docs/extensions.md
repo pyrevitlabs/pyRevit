@@ -31,7 +31,7 @@ Supported bundle types (folder postfix): `pushbutton`, `smartbutton`, `pulldown`
 
     Postfixes and every other constant on this page are defined in [pyrevit.extensions][] (`pyrevitlib/pyrevit/extensions/__init__.py`).
 
-A `checkbox` bundle adds a ribbon checkbox. Its `script.py` can define `__chk_init__(ctx)`, which runs when the ribbon loads, and `__chk_on_change__(sender, args, ctx)`, which runs on every change of `ctx.is_checked`. Both run outside Revit API context, so they must not start transactions. A `stack` can hold checkboxes only when all of its items are checkboxes.
+A `checkbox` bundle adds a ribbon checkbox. Its `script.py` can define `__chk_init__(ctx)`, which runs when the ribbon loads, and `__chk_on_change__(sender, args, ctx)`, which runs on every change of `ctx.is_checked`. Both run outside Revit API context, so they must not start transactions. Checkboxes stack only with other checkboxes: in a `stack` that also holds other items, the checkboxes are placed beside the stack and a warning is logged.
 
 ## Bundle files
 
