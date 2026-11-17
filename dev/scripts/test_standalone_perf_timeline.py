@@ -36,7 +36,10 @@ def _load_perf():
 
 
 class ElapsedLoadSecondsTests(unittest.TestCase):
+    """The load timeline type is resolved even if the first lookup fails."""
+
     def setUp(self):
+        """Install a fake clr and timeline, then load a fresh _perf module."""
         self.clr = _FakeClr()
         common = types.ModuleType("pyRevitLabs.Common")
         common.LoadTimeline = _FakeLoadTimeline
@@ -53,6 +56,7 @@ class ElapsedLoadSecondsTests(unittest.TestCase):
         self.perf = _load_perf()
 
     def tearDown(self):
+        """Restore the modules replaced in setUp."""
         for name, module in self._saved.items():
             if module is None:
                 sys.modules.pop(name, None)
@@ -60,17 +64,20 @@ class ElapsedLoadSecondsTests(unittest.TestCase):
                 sys.modules[name] = module
 
     def test_timeline_resolved_after_early_failure_once_labs_loaded(self):
+        """A failed lookup is retried once pyrevit.labs has been imported."""
         self.assertIsNone(self.perf.elapsed_load_seconds())
         self.clr.resolvable = True
         sys.modules["pyrevit.labs"] = types.ModuleType("pyrevit.labs")
         self.assertEqual(1.5, self.perf.elapsed_load_seconds())
 
     def test_failure_is_not_retried_before_labs_loaded(self):
+        """Without pyrevit.labs imported, a failed lookup stays failed."""
         self.assertIsNone(self.perf.elapsed_load_seconds())
         self.clr.resolvable = True
         self.assertIsNone(self.perf.elapsed_load_seconds())
 
     def test_timeline_resolved_when_reference_works_first_time(self):
+        """A lookup that succeeds at once reports the elapsed seconds."""
         self.clr.resolvable = True
         self.assertEqual(1.5, self.perf.elapsed_load_seconds())
 
