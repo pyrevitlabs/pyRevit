@@ -5,6 +5,7 @@ import os.path as op
 import sys
 import types
 import unittest
+from pathlib import Path
 
 
 TEST_ENVIRONMENT = "HostFree"
