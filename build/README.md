@@ -104,10 +104,10 @@ CI publishes `unsigned-bin-<sha>.zip` to the **`ci-binaries`** release and mirro
 Run unit tests:
 
 ```powershell
-dotnet test tests/Build.Tests.csproj -c Release
+python dev/tests/run_tests.py --language dotnet
 ```
 
-Product builds do not execute tests. From the repository root, run `python dev/tests/run_tests.py` for shared C#/Python discovery, reports, and per-module coverage gates. CI runs the same language selections. Revit API tests remain local; see `docs/testing.md`.
+Product builds do not execute tests. The runner, run from the repository root, provides shared C#/Python discovery, reports, and per-module coverage gates; CI runs the same language selections. Revit API tests remain local; see `docs/testing.md`.
 
 ### Pipeline modes
 

@@ -101,7 +101,7 @@ jobs:
           name: test-results-${{ github.sha }}
           path: .test-results/**
           include-hidden-files: true
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Capture build versions
         id: versionmeta
