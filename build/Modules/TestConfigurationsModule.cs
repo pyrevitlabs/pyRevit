@@ -14,8 +14,13 @@ namespace Build.Modules;
 /// <summary>
 /// Runs configuration backend, CPython interpreter lifecycle, CPython env vars and event handler,
 /// agent runtime guard, doctor product catalog, renderer load-context, and compatibility tests
-/// after their build outputs are available.
+/// after their build outputs are available, plus the Python 3 compatibility checker's own unit
+/// tests.
 /// </summary>
+/// <remarks>
+/// The checker tests need Python 3.10 or newer on <c>PATH</c> as <c>python</c>, <c>python3</c> or
+/// <c>py</c>, found by <see cref="ToolResolutionHelper.ResolvePythonExecutable"/>.
+/// </remarks>
 public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions) : Module
 {
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
@@ -115,6 +120,25 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                 "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests|FullyQualifiedName~DevToolsPanelButtonTests.TestPanelButtonWithBundle|FullyQualifiedName~DevToolsPanelButtonTests.TestBundleTestsPulldownFromDevToolsExtension|FullyQualifiedName~DynamoGraphSelectionTests|FullyQualifiedName~ParsedExtensionHashTests|FullyQualifiedName~ExtensionAuthUsersTests|FullyQualifiedName~ScriptMetadataParsingTest|FullyQualifiedName~ScriptLoggerServiceTests|FullyQualifiedName~MachineConfigIsolationTests|TestCategory=HostFree",
             ],
             cancellationToken);
+
+        await RunPythonTestsAsync(context, "test_check_py3_compat.py", cancellationToken);
+    }
+
+    private static async Task RunPythonTestsAsync(
+        IModuleContext context,
+        string pattern,
+        CancellationToken cancellationToken)
+    {
+        await context.Shell.Command.ExecuteCommandLineTool(
+            new GenericCommandLineToolOptions(ToolResolutionHelper.ResolvePythonExecutable())
+            {
+                Arguments = ["-m", "unittest", "discover", "-s", Path.Combine("dev", "scripts"), "-p", pattern],
+            },
+            new CommandExecutionOptions
+            {
+                WorkingDirectory = PyRevitPaths.Root,
+            },
+            cancellationToken: cancellationToken);
     }
 
     private static async Task RunTestsAsync(

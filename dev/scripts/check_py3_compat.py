@@ -42,6 +42,12 @@ Checks:
                 escapes local scope - indexed, returned, yielded, or stored
                 to an attribute; these are non-indexable lazy views in
                 Python 3 but were lists in Python 2 (wrap in list())
+    CLR-LIST    `List[T](python_iterable)` relies on IronPython collection
+                coercion; build the list through the shared Add-based helper
+
+Findings in bundled extensions under ``extensions/`` are tracked, not blocking,
+while those extensions migrate; the run still fails if their count exceeds
+``TRACKED_EXTENSION_FINDINGS_LIMIT``.
 
 A finding is not flagged when its branch is unreachable on IronPython 3,
 its enclosing test is skipped on that engine, or it is inside a try/except
@@ -383,6 +389,317 @@ def _bare_py3_view(node):
     return isinstance(func, ast.Name) and func.id in PY3_LAZY_BUILTINS
 
 
+PYTHON_ITERABLE_BUILTINS = {
+    "list",
+    "tuple",
+    "set",
+    "sorted",
+    "reversed",
+    "map",
+    "filter",
+}
+
+
+def _is_generic_list_type(node):
+    if not isinstance(node, ast.Subscript):
+        return False
+    target = node.value
+    if isinstance(target, ast.Name):
+        return target.id == "List"
+    return isinstance(target, ast.Attribute) and target.attr == "List"
+
+
+def _is_python_iterable(node, clr_names=frozenset()):
+    """Return whether node is clearly a Python iterable rather than a CLR value.
+
+    Literal containers, comprehensions, generators, calls to the iterable
+    builtins and bare names count; int capacities, attributes and other call
+    results (e.g. ``uidoc.Selection.GetElementIds()``) are left alone, and so
+    are bare names listed in ``clr_names``.
+    """
+    if isinstance(
+        node,
+        (ast.List, ast.Tuple, ast.Set, ast.ListComp, ast.SetComp, ast.GeneratorExp),
+    ):
+        return True
+    if isinstance(node, ast.Call):
+        return (
+            isinstance(node.func, ast.Name) and node.func.id in PYTHON_ITERABLE_BUILTINS
+        )
+    return isinstance(node, ast.Name) and node.id not in clr_names
+
+
+def _is_generic_list_constructor(node, clr_names=frozenset()):
+    """Return whether node constructs a CLR List from a Python iterable.
+
+    Matches ``List[T](...)`` and attribute-qualified forms such as
+    ``framework.List[T](...)`` or ``Generic.List[T](...)``. A bare-name
+    argument in ``clr_names`` is taken to be a CLR value or a capacity.
+    """
+    return (
+        isinstance(node, ast.Call)
+        and len(node.args) == 1
+        and not node.keywords
+        and _is_generic_list_type(node.func)
+        and _is_python_iterable(node.args[0], clr_names)
+    )
+
+
+def _is_clr_value(node):
+    """Return whether an assigned value is surely a CLR member's result or a capacity.
+
+    Numbers, ``len(...)`` and PascalCase members such as ``sel.GetElementIds()``
+    or ``view.Elements`` count; Python helpers may return lists, so they do not.
+    """
+    if isinstance(node, ast.Constant):
+        return isinstance(node.value, int) and not isinstance(node.value, bool)
+    if isinstance(node, ast.Call):
+        if isinstance(node.func, ast.Name):
+            return node.func.id == "len"
+        node = node.func
+    return isinstance(node, ast.Attribute) and node.attr[:1].isupper()
+
+
+def _scope_nodes(scope):
+    """Yield a scope's nodes without entering nested functions, lambdas or classes."""
+    pending = list(ast.iter_child_nodes(scope))
+    while pending:
+        node = pending.pop()
+        if isinstance(
+            node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
+        ):
+            continue
+        yield node
+        pending.extend(ast.iter_child_nodes(node))
+
+
+def _parameter_names(scope):
+    if not isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        return []
+    arguments = scope.args
+    names = [
+        argument.arg
+        for argument in arguments.posonlyargs + arguments.args + arguments.kwonlyargs
+    ]
+    names.extend(
+        argument.arg for argument in (arguments.vararg, arguments.kwarg) if argument
+    )
+    return names
+
+
+def _clr_value_names(scopes):
+    """Return names whose every assignment in ``scopes`` is a CLR value or number.
+
+    ``scopes`` runs from the innermost scope outwards, and each name follows the
+    innermost scope that binds it. A parameter binds its name, so it hides the
+    enclosing scopes' assignments; names bound only as parameters are not
+    included.
+    """
+    decided = {}
+    for scope in scopes:
+        verdicts = {}
+        for node in _scope_nodes(scope):
+            if not isinstance(node, ast.Assign):
+                continue
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    is_clr = _is_clr_value(node.value)
+                    verdicts[target.id] = verdicts.get(target.id, True) and is_clr
+        for name in _parameter_names(scope):
+            verdicts.setdefault(name, False)
+        for name, is_clr in verdicts.items():
+            decided.setdefault(name, is_clr)
+    return frozenset(name for name, is_clr in decided.items() if is_clr)
+
+
+class _FileContext:
+    """Per-file facts the rules share, computed once per checked file."""
+
+    def __init__(self, path, source, tree):
+        self.path = path
+        self.source = source
+        self.tree = tree
+        self.parents = {}
+        for node in ast.walk(tree):
+            for child in ast.iter_child_nodes(node):
+                self.parents[child] = node
+        self.local_names = _locally_defined_names(tree)
+        self.clr_exempt = _is_listed(path, IPY_CLR_EXEMPT)
+        self.clr_ref_exempt = _is_listed(path, CLR_REF_EXEMPT)
+
+    def is_engine_guarded(self, node):
+        return _is_engine_guarded(node, self.parents)
+
+    def clr_value_names(self, node):
+        """Return names assigned only CLR values or numbers in node's enclosing scopes."""
+        scopes = []
+        current = node
+        while current in self.parents:
+            current = self.parents[current]
+            if isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                scopes.append(current)
+        scopes.append(self.tree)
+        return _clr_value_names(scopes)
+
+
+def _is_listed(path, repo_paths):
+    return any(path == REPO_ROOT.joinpath(*entry.split("/")) for entry in repo_paths)
+
+
+def _py2_iter_attribute(node, ctx):
+    if node.attr in PY2_ONLY_ITER_METHODS:
+        yield "PY2-ITER", ".{}() does not exist in Python 3".format(node.attr)
+    elif node.attr in PY2_ONLY_ITERTOOLS and _receiver_name(node.value) == "itertools":
+        yield "PY2-ITER", "itertools.{} does not exist in Python 3".format(node.attr)
+
+
+def _py2_has_key(node, ctx):
+    if node.attr == "has_key":
+        yield "PY2-HASKEY", ".has_key() does not exist in Python 3 (use `in`)"
+
+
+def _ipy_clr_file_reference(node, ctx):
+    if node.attr == "AddReferenceToFileAndPath" and not ctx.clr_exempt:
+        yield (
+            "IPY-CLR",
+            "IronPython-only CLR API; route through the pyrevit.framework shim",
+        )
+
+
+def _clr_reference(node, ctx):
+    if (
+        node.attr == "Reference"
+        and _receiver_name(node.value) == "clr"
+        and not ctx.clr_ref_exempt
+    ):
+        yield (
+            "CLR-REF",
+            "IronPython-only out-param marshaling; use "
+            "geom.intersect_curves / create.load_family or an "
+            "engine-dispatched wrapper",
+        )
+
+
+def _py2_name(node, ctx):
+    if (
+        isinstance(node.ctx, ast.Load)
+        and node.id in PY2_ONLY_NAMES
+        and node.id not in ctx.local_names
+        and not ctx.is_engine_guarded(node)
+    ):
+        yield "PY2-NAME", "`{}` does not exist in Python 3".format(node.id)
+
+
+def _class_member_names(node):
+    method_names = {
+        item.name
+        for item in node.body
+        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    assigned_names = {
+        target.id
+        for item in node.body
+        if isinstance(item, ast.Assign)
+        for target in item.targets
+        if isinstance(target, ast.Name)
+    }
+    return method_names, method_names | assigned_names
+
+
+def _py2_bool(node, ctx):
+    method_names, member_names = _class_member_names(node)
+    if "__nonzero__" in method_names and "__bool__" not in member_names:
+        yield (
+            "PY2-BOOL",
+            "class {} defines __nonzero__ but no __bool__; "
+            "Python 3 ignores __nonzero__".format(node.name),
+        )
+
+
+def _py2_next(node, ctx):
+    method_names, member_names = _class_member_names(node)
+    if (
+        "next" in method_names
+        and "__iter__" in method_names
+        and "__next__" not in member_names
+    ):
+        yield (
+            "PY2-NEXT",
+            "iterator class {} defines next() but no __next__; "
+            "Python 3 uses __next__".format(node.name),
+        )
+
+
+def _is_off_cpython(node, ctx):
+    """Return whether node is guarded off IronPython 3 or off CPython.
+
+    The pythonnet-specific CLR rules skip both kinds of engine branch.
+    """
+    return ctx.is_engine_guarded(node) or _is_cpython_unreachable(node, ctx.parents)
+
+
+def _py2_module_import(node, ctx):
+    if ctx.is_engine_guarded(node):
+        return
+    for alias in node.names:
+        if alias.name.split(".")[0] in PY2_ONLY_MODULES:
+            yield (
+                "PY2-MODULE",
+                "module `{}` was renamed/removed in Python 3".format(alias.name),
+            )
+
+
+def _py2_from_import(node, ctx):
+    if ctx.is_engine_guarded(node):
+        return
+    if node.module == "itertools":
+        for alias in node.names:
+            if alias.name in PY2_ONLY_ITERTOOLS:
+                yield (
+                    "PY2-ITER",
+                    "itertools.{} does not exist in Python 3".format(alias.name),
+                )
+    if (
+        node.level == 0
+        and node.module
+        and node.module.split(".")[0] in PY2_ONLY_MODULES
+    ):
+        yield (
+            "PY2-MODULE",
+            "module `{}` was renamed/removed in Python 3".format(node.module),
+        )
+
+
+def _py2_builtin_call(node, ctx):
+    if (
+        isinstance(node.func, ast.Name)
+        and node.func.id in PY2_REMOVED_BUILTIN_CALLS
+        and node.func.id not in ctx.local_names
+        and not ctx.is_engine_guarded(node)
+    ):
+        yield "PY2-BUILTIN", "{}() was removed in Python 3".format(node.func.id)
+
+
+def _sort_key(node, ctx):
+    if _keyless_sorted_over_dict_view(node):
+        yield (
+            "SORT-KEY",
+            "sorted() over dict view without key=; tuple comparison "
+            "can fall through to unorderable values in Python 3",
+        )
+
+
+def _clr_list(node, ctx):
+    if not _is_generic_list_constructor(node) or _is_off_cpython(node, ctx):
+        return
+    if _is_generic_list_constructor(node, ctx.clr_value_names(node)):
+        yield (
+            "CLR-LIST",
+            "List[T](python_iterable) relies on IronPython coercion; "
+            "build the list through an Add-based helper",
+        )
+
+
 def _is_named_indexer(node):
     """Return True if node is a CLR named indexed property such as ``.Parameter``.
 
@@ -393,311 +710,112 @@ def _is_named_indexer(node):
     return isinstance(node, ast.Attribute) and node.attr in CLR_NAMED_INDEXERS
 
 
-def check_file(path):
-    """Return compatibility findings for one Python source file."""
-    findings = []
+def _clr_named_indexer(node, ctx):
+    if _is_named_indexer(node.value) and not _is_cpython_unreachable(node, ctx.parents):
+        yield (
+            "CLR-NAMED-INDEXER",
+            ".{0}[...] is an IronPython-only named indexer; use .get_{0}(...)".format(
+                node.value.attr
+            ),
+        )
+
+
+def _indexed_view(node, ctx):
+    if _bare_py3_view(node.value):
+        yield (
+            "PY3-VIEW",
+            "indexing a Python-3 view/iterator (keys/values/items/"
+            "map/filter/zip); wrap in list()",
+        )
+
+
+def _returned_view(node, ctx):
+    if node.value is not None and _bare_py3_view(node.value):
+        yield (
+            "PY3-VIEW",
+            "returning a bare Python-3 view/iterator (was a list in "
+            "Python 2); callers that index it break - wrap in list()",
+        )
+
+
+def _yielded_view(node, ctx):
+    if node.value is not None and _bare_py3_view(node.value):
+        yield "PY3-VIEW", "yielding a bare Python-3 view/iterator; wrap in list()"
+
+
+def _attribute_stored_view(node, ctx):
+    if _bare_py3_view(node.value) and any(
+        isinstance(target, ast.Attribute) for target in node.targets
+    ):
+        yield (
+            "PY3-VIEW",
+            "storing a bare Python-3 view/iterator to an attribute "
+            "(escapes to object state, later use unknown); wrap in "
+            "list()",
+        )
+
+
+NODE_RULES = {
+    ast.Attribute: (
+        _py2_iter_attribute,
+        _py2_has_key,
+        _ipy_clr_file_reference,
+        _clr_reference,
+    ),
+    ast.Name: (_py2_name,),
+    ast.ClassDef: (_py2_bool, _py2_next),
+    ast.Import: (_py2_module_import,),
+    ast.ImportFrom: (_py2_from_import,),
+    ast.Call: (_py2_builtin_call, _sort_key, _clr_list),
+    ast.Subscript: (_clr_named_indexer, _indexed_view),
+    ast.Return: (_returned_view,),
+    ast.Yield: (_yielded_view,),
+    ast.Assign: (_attribute_stored_view,),
+}
+
+
+def _parse(path):
+    """Return ``(source, tree, findings)``; ``tree`` is None when unparsable."""
     try:
         with tokenize.open(path) as fp:
             source = fp.read()
     except (OSError, SyntaxError, UnicodeDecodeError) as err:
-        findings.append(Finding(path, 0, "SYNTAX", "cannot read: {}".format(err)))
-        return findings
+        return None, None, [Finding(path, 0, "SYNTAX", "cannot read: {}".format(err))]
 
+    findings = []
     try:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", SyntaxWarning)
             tree = ast.parse(source, filename=str(path))
-        for warning in caught:
-            if issubclass(warning.category, SyntaxWarning):
-                findings.append(
-                    Finding(
-                        path,
-                        warning.lineno,
-                        "SYNTAX-WARN",
-                        str(warning.message),
-                    )
-                )
     except SyntaxError as err:
-        findings.append(
-            Finding(
-                path,
-                err.lineno or 0,
-                "SYNTAX",
-                "does not parse as Python 3: {}".format(err.msg),
+        message = "does not parse as Python 3: {}".format(err.msg)
+        return source, None, [Finding(path, err.lineno or 0, "SYNTAX", message)]
+    for warning in caught:
+        if issubclass(warning.category, SyntaxWarning):
+            findings.append(
+                Finding(path, warning.lineno, "SYNTAX-WARN", str(warning.message))
             )
-        )
+    return source, tree, findings
+
+
+def check_file(path):
+    """Return compatibility findings for one Python source file.
+
+    Every AST node is passed to the ``NODE_RULES`` registered for its exact
+    type, in order. A node rule takes ``(node, ctx)`` and yields ``(code, message)`` pairs
+    reported at the node's line.
+    """
+    source, tree, findings = _parse(path)
+    if tree is None:
         return findings
 
-    parents = {}
+    ctx = _FileContext(path, source, tree)
     for node in ast.walk(tree):
-        for child in ast.iter_child_nodes(node):
-            parents[child] = node
-
-    local_names = _locally_defined_names(tree)
-    clr_exempt = any(
-        path == REPO_ROOT.joinpath(*exempt.split("/")) for exempt in IPY_CLR_EXEMPT
-    )
-    clr_ref_exempt = any(
-        path == REPO_ROOT.joinpath(*exempt.split("/")) for exempt in CLR_REF_EXEMPT
-    )
-
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Attribute):
-            if node.attr in PY2_ONLY_ITER_METHODS:
-                findings.append(
-                    Finding(
-                        path,
-                        node.lineno,
-                        "PY2-ITER",
-                        ".{}() does not exist in Python 3".format(node.attr),
-                    )
-                )
-            elif (
-                node.attr in PY2_ONLY_ITERTOOLS
-                and _receiver_name(node.value) == "itertools"
-            ):
-                findings.append(
-                    Finding(
-                        path,
-                        node.lineno,
-                        "PY2-ITER",
-                        "itertools.{} does not exist in Python 3".format(node.attr),
-                    )
-                )
-            elif node.attr == "has_key":
-                findings.append(
-                    Finding(
-                        path,
-                        node.lineno,
-                        "PY2-HASKEY",
-                        ".has_key() does not exist in Python 3 (use `in`)",
-                    )
-                )
-            elif node.attr == "AddReferenceToFileAndPath" and not clr_exempt:
-                findings.append(
-                    Finding(
-                        path,
-                        node.lineno,
-                        "IPY-CLR",
-                        "IronPython-only CLR API; route through the "
-                        "pyrevit.framework shim",
-                    )
-                )
-            elif (
-                node.attr == "Reference"
-                and _receiver_name(node.value) == "clr"
-                and not clr_ref_exempt
-            ):
-                findings.append(
-                    Finding(
-                        path,
-                        node.lineno,
-                        "CLR-REF",
-                        "IronPython-only out-param marshaling; use "
-                        "geom.intersect_curves / create.load_family or an "
-                        "engine-dispatched wrapper",
-                    )
-                )
-
-        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-            if (
-                node.id in PY2_ONLY_NAMES
-                and node.id not in local_names
-                and not _is_engine_guarded(node, parents)
-            ):
-                findings.append(
-                    Finding(
-                        path,
-                        node.lineno,
-                        "PY2-NAME",
-                        "`{}` does not exist in Python 3".format(node.id),
-                    )
-                )
-
-        elif isinstance(node, ast.ClassDef):
-            method_names = {
-                item.name
-                for item in node.body
-                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
-            }
-            assigned_names = {
-                target.id
-                for item in node.body
-                if isinstance(item, ast.Assign)
-                for target in item.targets
-                if isinstance(target, ast.Name)
-            }
-            if "__nonzero__" in method_names and "__bool__" not in (
-                method_names | assigned_names
-            ):
-                findings.append(
-                    Finding(
-                        path,
-                        node.lineno,
-                        "PY2-BOOL",
-                        "class {} defines __nonzero__ but no __bool__; "
-                        "Python 3 ignores __nonzero__".format(node.name),
-                    )
-                )
-            if (
-                "next" in method_names
-                and "__iter__" in method_names
-                and "__next__" not in (method_names | assigned_names)
-            ):
-                findings.append(
-                    Finding(
-                        path,
-                        node.lineno,
-                        "PY2-NEXT",
-                        "iterator class {} defines next() but no __next__; "
-                        "Python 3 uses __next__".format(node.name),
-                    )
-                )
-
-        elif isinstance(node, ast.Import):
-            if not _is_engine_guarded(node, parents):
-                for alias in node.names:
-                    if alias.name.split(".")[0] in PY2_ONLY_MODULES:
-                        findings.append(
-                            Finding(
-                                path,
-                                node.lineno,
-                                "PY2-MODULE",
-                                "module `{}` was renamed/removed in Python 3".format(
-                                    alias.name
-                                ),
-                            )
-                        )
-
-        elif isinstance(node, ast.ImportFrom):
-            if not _is_engine_guarded(node, parents):
-                if node.module == "itertools":
-                    for alias in node.names:
-                        if alias.name in PY2_ONLY_ITERTOOLS:
-                            findings.append(
-                                Finding(
-                                    path,
-                                    node.lineno,
-                                    "PY2-ITER",
-                                    "itertools.{} does not exist in Python 3".format(
-                                        alias.name
-                                    ),
-                                )
-                            )
-                if (
-                    node.level == 0
-                    and node.module
-                    and node.module.split(".")[0] in PY2_ONLY_MODULES
-                ):
-                    findings.append(
-                        Finding(
-                            path,
-                            node.lineno,
-                            "PY2-MODULE",
-                            "module `{}` was renamed/removed in Python 3".format(
-                                node.module
-                            ),
-                        )
-                    )
-
-        elif (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Name)
-            and node.func.id in PY2_REMOVED_BUILTIN_CALLS
-            and node.func.id not in local_names
-            and not _is_engine_guarded(node, parents)
-        ):
-            findings.append(
-                Finding(
-                    path,
-                    node.lineno,
-                    "PY2-BUILTIN",
-                    "{}() was removed in Python 3".format(node.func.id),
-                )
+        for rule in NODE_RULES.get(type(node), ()):
+            findings.extend(
+                Finding(path, node.lineno, code, message)
+                for code, message in rule(node, ctx)
             )
-
-        elif isinstance(node, ast.Call) and _keyless_sorted_over_dict_view(node):
-            findings.append(
-                Finding(
-                    path,
-                    node.lineno,
-                    "SORT-KEY",
-                    "sorted() over dict view without key=; tuple comparison "
-                    "can fall through to unorderable values in Python 3",
-                )
-            )
-
-        elif (
-            isinstance(node, ast.Subscript)
-            and _is_named_indexer(node.value)
-            and not _is_cpython_unreachable(node, parents)
-        ):
-            findings.append(
-                Finding(
-                    path,
-                    node.lineno,
-                    "CLR-NAMED-INDEXER",
-                    ".{0}[...] is an IronPython-only named indexer; "
-                    "use .get_{0}(...)".format(node.value.attr),
-                )
-            )
-
-        elif isinstance(node, ast.Subscript) and _bare_py3_view(node.value):
-            findings.append(
-                Finding(
-                    path,
-                    node.lineno,
-                    "PY3-VIEW",
-                    "indexing a Python-3 view/iterator (keys/values/items/"
-                    "map/filter/zip); wrap in list()",
-                )
-            )
-
-        elif (
-            isinstance(node, ast.Return)
-            and node.value is not None
-            and _bare_py3_view(node.value)
-        ):
-            findings.append(
-                Finding(
-                    path,
-                    node.lineno,
-                    "PY3-VIEW",
-                    "returning a bare Python-3 view/iterator (was a list in "
-                    "Python 2); callers that index it break - wrap in list()",
-                )
-            )
-
-        elif (
-            isinstance(node, ast.Yield)
-            and node.value is not None
-            and _bare_py3_view(node.value)
-        ):
-            findings.append(
-                Finding(
-                    path,
-                    node.lineno,
-                    "PY3-VIEW",
-                    "yielding a bare Python-3 view/iterator; wrap in list()",
-                )
-            )
-
-        elif (
-            isinstance(node, ast.Assign)
-            and _bare_py3_view(node.value)
-            and any(isinstance(t, ast.Attribute) for t in node.targets)
-        ):
-            findings.append(
-                Finding(
-                    path,
-                    node.lineno,
-                    "PY3-VIEW",
-                    "storing a bare Python-3 view/iterator to an attribute "
-                    "(escapes to object state, later use unknown); wrap in "
-                    "list()",
-                )
-            )
-
     return findings
 
 
@@ -718,6 +836,18 @@ def iter_python_files(roots, resolve_against):
             if any(exc in path.parents or exc == path for exc in excluded):
                 continue
             yield path
+
+
+TRACKED_EXTENSION_FINDINGS_LIMIT = 39
+
+
+def _is_tracked_extension_finding(finding):
+    """Return whether a phased first-party extension finding is non-blocking."""
+    try:
+        finding.path.relative_to(REPO_ROOT / "extensions")
+    except ValueError:
+        return False
+    return finding.code in {"CLR-LIST"}
 
 
 def main():
@@ -762,20 +892,39 @@ def main():
     for finding in all_findings:
         print(finding)
 
+    blocking_findings = [
+        finding
+        for finding in all_findings
+        if not _is_tracked_extension_finding(finding)
+    ]
+    tracked_findings = [
+        finding for finding in all_findings if _is_tracked_extension_finding(finding)
+    ]
     counts = {}
-    for finding in all_findings:
+    for finding in blocking_findings:
         counts[finding.code] = counts.get(finding.code, 0) + 1
     summary = ", ".join(
         "{}: {}".format(code, count) for code, count in sorted(counts.items())
     )
     print(
-        "\nscanned {} files; {} finding(s){}".format(
+        "\nscanned {} files; {} blocking finding(s){}{}".format(
             file_count,
-            len(all_findings),
+            len(blocking_findings),
             " ({})".format(summary) if summary else "",
+            "; {} tracked extension finding(s)".format(len(tracked_findings))
+            if tracked_findings
+            else "",
         )
     )
-    return 1 if all_findings else 0
+    if len(tracked_findings) > TRACKED_EXTENSION_FINDINGS_LIMIT:
+        print(
+            "tracked extension findings rose to {} (limit {}); fix the new ones "
+            "rather than raising the limit".format(
+                len(tracked_findings), TRACKED_EXTENSION_FINDINGS_LIMIT
+            )
+        )
+        return 1
+    return 1 if blocking_findings else 0
 
 
 if __name__ == "__main__":
