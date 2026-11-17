@@ -98,7 +98,8 @@ namespace pyRevitExtensionParser
             ".invokebutton",
             ".panelbutton",
             ".content",
-            ".combobox"
+            ".combobox",
+            ".checkbox"
         };
 
         private static readonly HashSet<string> _hashDirNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)

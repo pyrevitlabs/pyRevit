@@ -140,6 +140,10 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     itemDataList.Add(splitData);
                     originalItems.Add(child);
                 }
+                else if (child.Type == CommandComponentType.CheckBox)
+                {
+                    _logger.Warning($"CheckBox '{child.DisplayName}' left out of stack '{component.DisplayName}': a checkbox can only be stacked with other checkboxes.");
+                }
             }
 
             if (itemDataList.Count >= 2)

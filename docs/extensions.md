@@ -25,11 +25,13 @@ MyExtension.extension/
         icon.png             # button icon
 ```
 
-Supported bundle types (folder postfix): `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, `splitpushbutton`, `panelbutton`, `stack`, `linkbutton`, `invokebutton`, `nobutton`, `content`, `urlbutton`, `combobox`.
+Supported bundle types (folder postfix): `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, `splitpushbutton`, `panelbutton`, `stack`, `linkbutton`, `invokebutton`, `nobutton`, `content`, `urlbutton`, `combobox`, `checkbox`.
 
 ???+ info
 
     Postfixes and every other constant on this page are defined in [pyrevit.extensions][] (`pyrevitlib/pyrevit/extensions/__init__.py`).
+
+A `checkbox` bundle adds a ribbon checkbox. Its `script.py` can define `__chk_init__(ctx)`, which runs when the ribbon loads, and `__chk_on_change__(sender, args, ctx)`, which runs on every change of `ctx.is_checked`. Both run outside Revit API context, so they must not start transactions. A `stack` can hold checkboxes only when all of its items are checkboxes.
 
 ## Bundle files
 
@@ -60,7 +62,7 @@ Common keys:
 - `layout` — reorders/nests child buttons instead of relying on folder order; use `---` for a separator and `>>>` to start a slideout.
 - `background` / `background_dark` — panel bundles only; see [Panel background colors](#panel-background-colors).
 
-Bundle-type-specific keys: `modules` (link buttons), `assembly` / `command_class` / `availability_class` (invoke/link buttons), `hyperlink` (URL buttons).
+Bundle-type-specific keys: `modules` (link buttons), `assembly` / `command_class` / `availability_class` (invoke/link buttons), `hyperlink` (URL buttons), `checked` (checkboxes; the starting state, `false` by default).
 
 ???+ info
 

@@ -25,6 +25,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly IButtonBuilderFactory _buttonBuilderFactory;
         private readonly IStackBuilder _stackBuilder;
         private readonly IComboBoxBuilder _comboBoxBuilder;
+        private readonly ICheckBoxBuilder _checkBoxBuilder;
         private readonly IUIRibbonScanner? _ribbonScanner;
         private readonly UIApplication _uiApp;
         private readonly BuildContext _buildContext;
@@ -87,6 +88,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             IButtonBuilderFactory buttonBuilderFactory,
             IStackBuilder stackBuilder,
             IComboBoxBuilder comboBoxBuilder,
+            ICheckBoxBuilder checkBoxBuilder,
             BuildContext buildContext,
             IUIRibbonScanner? ribbonScanner = null)
         {
@@ -98,6 +100,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             _buttonBuilderFactory = buttonBuilderFactory ?? throw new ArgumentNullException(nameof(buttonBuilderFactory));
             _stackBuilder = stackBuilder ?? throw new ArgumentNullException(nameof(stackBuilder));
             _comboBoxBuilder = comboBoxBuilder ?? throw new ArgumentNullException(nameof(comboBoxBuilder));
+            _checkBoxBuilder = checkBoxBuilder ?? throw new ArgumentNullException(nameof(checkBoxBuilder));
             _buildContext = buildContext ?? throw new ArgumentNullException(nameof(buildContext));
             _ribbonScanner = ribbonScanner;
 
@@ -386,7 +389,14 @@ namespace pyRevitAssemblyBuilder.UIManager
                         break;
                     }
 
-                    _stackBuilder.BuildStack(component, parentPanel!, assemblyInfo);
+                    if (IsCheckBoxStack(itemChildren))
+                    {
+                        _checkBoxBuilder.CreateOrUpdateCheckBoxStack(component, itemChildren, parentPanel!, tabName);
+                    }
+                    else
+                    {
+                        _stackBuilder.BuildStack(component, parentPanel!, assemblyInfo);
+                    }
                     // Mark all children in the stack as touched
                     foreach (var child in visibleChildren)
                         _ribbonScanner?.MarkElementTouched("button", child.DisplayName, panelName);
@@ -401,6 +411,11 @@ namespace pyRevitAssemblyBuilder.UIManager
                     {
                         _comboBoxBuilder.CreateComboBox(component, parentPanel!);
                     }
+                    _ribbonScanner?.MarkElementTouched("button", component.DisplayName, panelName);
+                    break;
+
+                case CommandComponentType.CheckBox:
+                    _checkBoxBuilder.CreateOrUpdateCheckBox(component, parentPanel!, tabName);
                     _ribbonScanner?.MarkElementTouched("button", component.DisplayName, panelName);
                     break;
 
@@ -469,6 +484,12 @@ namespace pyRevitAssemblyBuilder.UIManager
                 settings.CurrentVersion,
                 settings.LoadBeta,
                 _logger);
+        }
+
+        private static bool IsCheckBoxStack(List<ParsedComponent> itemChildren)
+        {
+            return itemChildren.Count > 0
+                && itemChildren.All(child => child.Type == CommandComponentType.CheckBox);
         }
     }
 }
