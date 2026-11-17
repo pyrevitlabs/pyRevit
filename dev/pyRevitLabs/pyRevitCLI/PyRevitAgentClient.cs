@@ -409,6 +409,11 @@ namespace pyRevitCLI {
         /// Important: giving up on the answer, through <paramref name="cancellation"/> or
         /// <paramref name="answerTimeoutMs"/>, only closes the connection. A request already sent
         /// keeps running in Revit, so its outcome is <see cref="AgentOutcome.Unknown"/>.
+        /// The exception is a modify run waiting at the approval prompt: after the disconnect the host
+        /// tries to close the prompt as No and records <c>discarded_caller_gone</c> when it found the
+        /// prompt and the rollback succeeded. If it did not find the prompt within about two seconds the
+        /// prompt stays up and the user may still approve; if the rollback failed the record is
+        /// <c>rollback_incomplete</c> and changes may remain.
         /// A caller that must name the request in its own errors passes <paramref name="requestId"/>.
         /// </remarks>
         /// <exception cref="AgentClientException">

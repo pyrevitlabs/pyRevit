@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -148,14 +150,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     timings.Lap("decide");
                     AgentPendingRecord.Write(request, runId, runDir);
                     AgentHost.AwaitTabApproval(highlight);
-                    var approved = AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures);
+                    var answer = AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures, request.CallerGone);
                     timings.Lap("approval");
-                    if (approved) {
+                    if (answer == AgentApprovalAnswer.Approved) {
                         Commit(guard, uidoc.Document, request, runId);
                         return AgentRunVerdict.UserApproved;
                     }
                     guard.RollBack();
-                    return AgentRunVerdict.UserDiscarded;
+                    return answer == AgentApprovalAnswer.CallerGone
+                        ? AgentRunVerdict.DiscardedCallerGone
+                        : AgentRunVerdict.UserDiscarded;
                 default:
                     guard.RollBack();
                     return verdict;
@@ -500,6 +504,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
     }
 
+    internal enum AgentApprovalAnswer {
+        Approved,
+        Declined,
+        CallerGone,
+    }
+
     /// <summary>
     /// Asks the user, inside Revit, whether to keep the changes of a modify run.
     /// </summary>
@@ -516,6 +526,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxListedCategories = 15;
         private const uint YesNoQuestionDefaultNo = 0x4 | 0x20 | 0x100;
         private const int Yes = 6;
+
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private const string PromptCaption = "pyRevit Agent";
+
+        private delegate bool EnumThreadWindowsProc(IntPtr window, IntPtr parameter);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        [DllImport("user32.dll")]
+        private static extern bool EnumThreadWindows(uint threadId, EnumThreadWindowsProc callback, IntPtr parameter);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int GetWindowText(IntPtr window, StringBuilder text, int maxCount);
+
+        [DllImport("user32.dll")]
+        private static extern bool IsWindowVisible(IntPtr window);
+
+        [DllImport("user32.dll")]
+        private static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern int MessageBox(IntPtr owner, string text, string caption, uint type);
@@ -537,7 +567,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         internal static string Name(AgentPolicy policy) => policy.ToString().ToLowerInvariant();
 
-        public static bool Ask(UIDocument uidoc, string title, AgentChangeSet changeSet, JObject changes, JArray failures) {
+        /// <summary>
+        /// Shows the approval prompt and returns the user's answer, or
+        /// <see cref="AgentApprovalAnswer.CallerGone"/> when <paramref name="callerGone"/> is
+        /// cancelled first.
+        /// </summary>
+        /// <remarks>
+        /// Cancelling the token before the prompt opens skips it; cancelling it while the prompt is
+        /// up closes the prompt as if the user had chosen No. An answer the user gave before the
+        /// prompt closed still counts.
+        /// </remarks>
+        public static AgentApprovalAnswer Ask(
+            UIDocument uidoc, string title, AgentChangeSet changeSet, JObject changes, JArray failures, CancellationToken callerGone) {
+            if (callerGone.IsCancellationRequested)
+                return AgentApprovalAnswer.CallerGone;
             var previousSelection = uidoc.Selection.GetElementIds();
             var preview = AgentViewPreview.Show(uidoc, changeSet.Touched);
 
@@ -545,7 +588,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 + BuildSummary(uidoc.Document.Title, title, changes, failures, preview.Description) + Environment.NewLine + Environment.NewLine
                 + "Keep these changes? Yes commits them as a single undoable operation. "
                 + "No rolls the model back to its state before the run.";
-            var approved = MessageBox(uidoc.Application.MainWindowHandle, text, "pyRevit Agent", YesNoQuestionDefaultNo) == Yes;
+            var dismissal = new PromptDismissal(GetCurrentThreadId());
+            bool approved;
+            using (callerGone.Register(() => Task.Run(dismissal.Run))) {
+                approved = MessageBox(uidoc.Application.MainWindowHandle, text, PromptCaption, YesNoQuestionDefaultNo) == Yes;
+                dismissal.PromptClosed();
+            }
             try {
                 preview.End();
             }
@@ -558,7 +606,67 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 catch (Exception) {
                 }
             }
-            return approved;
+            if (approved)
+                return AgentApprovalAnswer.Approved;
+            return dismissal.Sent ? AgentApprovalAnswer.CallerGone : AgentApprovalAnswer.Declined;
+        }
+
+        /// <summary>
+        /// Closes the approval prompt for a caller that is gone and reports whether it did.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: <see cref="Sent"/> is set before the close command is posted and cleared only
+        /// if posting fails. Posting wakes the main thread, which reads <see cref="Sent"/> as soon
+        /// as the prompt returns, so setting it afterwards could record <c>discarded</c> for a
+        /// prompt this closed.
+        /// </remarks>
+        private sealed class PromptDismissal {
+            private const int Attempts = 50;
+            private const int AttemptDelayMilliseconds = 40;
+            private const uint WmCommand = 0x0111;
+            private const int IdNo = 7;
+            private readonly uint threadId;
+            private volatile bool closed;
+            private volatile bool sent;
+
+            public PromptDismissal(uint threadId) {
+                this.threadId = threadId;
+            }
+
+            public bool Sent => sent;
+
+            public void PromptClosed() {
+                closed = true;
+            }
+
+            public void Run() {
+                for (var attempt = 0; attempt < Attempts && !closed; attempt++) {
+                    var prompt = FindPrompt();
+                    if (prompt != IntPtr.Zero) {
+                        sent = true;
+                        if (!PostMessage(prompt, WmCommand, (IntPtr)IdNo, IntPtr.Zero))
+                            sent = false;
+                        return;
+                    }
+                    Thread.Sleep(AttemptDelayMilliseconds);
+                }
+                if (!closed && !sent)
+                    logger.Warn("The approval prompt window was not found, so it stays up for a caller that is gone");
+            }
+
+            private IntPtr FindPrompt() {
+                var found = IntPtr.Zero;
+                var caption = new StringBuilder(PromptCaption.Length + 2);
+                EnumThreadWindows(threadId, (window, _) => {
+                    caption.Clear();
+                    if (GetWindowText(window, caption, caption.Capacity) > 0 && caption.ToString() == PromptCaption && IsWindowVisible(window)) {
+                        found = window;
+                        return false;
+                    }
+                    return true;
+                }, IntPtr.Zero);
+                return found;
+            }
         }
 
         private static string BuildSummary(string documentTitle, string title, JObject changes, JArray failures, string previewDescription) {
