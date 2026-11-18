@@ -25,7 +25,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
     /// <see cref="UIManagerService"/> marks the ids these methods return, so a checkbox removed before
     /// a reload is hidden even when another one in the panel has the same name. A stacked checkbox's
     /// id also names its stack, so it never matches a standalone checkbox with the same name in the
-    /// same panel.
+    /// same panel. A stack row whose build fails is logged and still returned, as a button whose build
+    /// fails is still marked, so the rows after it are still built and none of them is hidden as an
+    /// orphan.
     /// Note: reloads refresh checkboxes where they are and never move them, so moving a checkbox into
     /// or out of a stack needs a Revit restart.
     /// </remarks>
@@ -110,17 +112,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 {
                     var controlId = BuildStackedControlId(tabName, parentPanel.Name, stackComponent.DisplayName, component.DisplayName);
                     shownIds.Add(controlId);
-                    var checkBox = AdWindowsHelper.FindRibbonItemByName(rowPanel.Items, controlId) as AdwRibbonCheckBox;
-                    if (checkBox == null)
-                    {
-                        if (rowPanel.Items.Count > 0)
-                            rowPanel.Items.Add(new AdwRibbonRowBreak());
-
-                        checkBox = CreateCheckBox(controlId, component);
-                        rowPanel.Items.Add(checkBox);
-                    }
-
-                    RefreshCheckBox(checkBox, component);
+                    BuildStackRow(rowPanel, controlId, component, stackComponent);
                 }
 
                 HideCheckBoxesNotIn(rowPanel, shownIds);
@@ -131,6 +123,28 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             }
 
             return shownIds;
+        }
+
+        private void BuildStackRow(AdwRibbonRowPanel rowPanel, string controlId, ParsedComponent component, ParsedComponent stackComponent)
+        {
+            try
+            {
+                var checkBox = AdWindowsHelper.FindRibbonItemByName(rowPanel.Items, controlId) as AdwRibbonCheckBox;
+                if (checkBox == null)
+                {
+                    checkBox = CreateCheckBox(controlId, component);
+                    if (rowPanel.Items.Count > 0)
+                        rowPanel.Items.Add(new AdwRibbonRowBreak());
+
+                    rowPanel.Items.Add(checkBox);
+                }
+
+                RefreshCheckBox(checkBox, component);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to build CheckBox '{component.DisplayName}' in stack '{stackComponent.DisplayName}'. Exception: {ex.Message}");
+            }
         }
 
         private static string BuildControlId(string tabName, string panelName, string displayName)
