@@ -421,6 +421,37 @@ assert box.Items[1] == 'b'
 ");
     }
 
+    /// <summary>Sets, generators and dict views read through a binding path reach WPF as list proxies, never as raw Python objects.</summary>
+    [Fact]
+    public void IterablesReadThroughAPathBecomeListSources() {
+        host.Run(() => {
+            using (Py.GIL()) {
+                using var scope = Py.CreateScope();
+                scope.Exec(Common + @"
+class Holder(object):
+    def __init__(self):
+        self.tags = {'one', 'two'}
+        self.counts = {'a': 1, 'b': 2, 'c': 3}.values()
+        self.lazy = (x for x in range(4))
+
+holder = System.Collections.ArrayList()
+for path in ('tags', 'counts', 'lazy'):
+    box = Controls.ListBox()
+    box.DataContext = Holder()
+    box.SetBinding(Controls.ItemsControl.ItemsSourceProperty, Data.Binding(path)).UpdateTarget()
+    holder.Add(box)
+");
+                var boxes = (ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList));
+                var expected = new[] { 2, 3, 4 };
+                for (var index = 0; index < expected.Length; index++) {
+                    var box = (System.Windows.Controls.ListBox)boxes[index]!;
+                    var source = Assert.IsType<PythonListProxy>(box.ItemsSource);
+                    Assert.Equal(expected[index], source.Count);
+                }
+            }
+        });
+    }
+
     /// <summary>Proxies take the GIL themselves when WPF calls them from code that released it.</summary>
     [Fact]
     public void ProxiesTakeTheGilForCallersThatReleasedIt() {

@@ -312,16 +312,20 @@ def names(value):
         /// Requires the GIL. Takes ownership of <paramref name="value"/>. <c>bool</c> becomes
         /// <see cref="bool"/>, <c>int</c> becomes <see cref="int"/> or, outside its range,
         /// <see cref="long"/>, <c>float</c> becomes <see cref="double"/>, <c>str</c> becomes
-        /// <see cref="string"/>, <c>None</c> becomes null, lists and tuples become
+        /// <see cref="string"/>, <c>None</c> becomes null, lists, tuples and other iterables
+        /// that are not plain objects (sets, generators, dict views) become
         /// <see cref="PythonListProxy"/>, dicts become a <see cref="PythonObjectProxy"/> over
         /// their string keys, and everything else converts as a CLR
-        /// <see cref="object"/> argument would.
+        /// <see cref="object"/> argument would. No raw <see cref="PyObject"/> reaches WPF for
+        /// an iterable, because WPF would enumerate or hash it without the GIL.
         /// </remarks>
         internal static object ToClr(PyObject value) {
             if ((PyList.IsListType(value) || PyTuple.IsTupleType(value)) && !value.HasAttr("_fields"))
                 return PythonListProxy.For(value);
             if (PyDict.IsDictType(value))
                 return PythonObjectProxy.For(value);
+            if (IsPlainIterable(value))
+                return PythonListProxy.For(value);
             using (value) {
                 if (value.IsNone())
                     return null;
@@ -335,6 +339,11 @@ def names(value):
                     return value.As<string>();
                 return value.AsManagedObject(typeof(object));
             }
+        }
+
+        private static bool IsPlainIterable(PyObject value) {
+            using (var type = value.GetPythonType())
+                return Classify(type) == ItemsKind;
         }
 
         private static object ToClrInteger(PyObject value) {
