@@ -790,7 +790,15 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private void ExecuteExtensionStartupScript(ParsedExtension extension, List<ParsedExtension> libraryExtensions)
         {
             foreach (var startupScript in extension.StartupScripts)
+            {
+                if (!System.IO.File.Exists(startupScript))
+                {
+                    _logger.Warning($"Skipping startup script that no longer exists for extension: {extension.Name} ({startupScript})");
+                    continue;
+                }
+
                 ExecuteExtensionStartupScript(extension, startupScript);
+            }
         }
 
         private void ExecuteExtensionStartupScript(ParsedExtension extension, string startupScript)
