@@ -87,7 +87,7 @@
     <sys:String x:Key="ui_no_match">No elements match the current filter.</sys:String>
     <sys:String x:Key="ui_loading_scene">Building 3D preview...</sys:String>
     <sys:String x:Key="ui_scene_empty">None of these elements has geometry to preview.</sys:String>
-    <sys:String x:Key="ui_scene_help">Drag to orbit, Shift+drag or right-drag to pan, wheel to zoom, double-click to frame. Click an element to find its card.</sys:String>
+    <sys:String x:Key="ui_scene_help">Drag to orbit, Shift+drag or right-drag to pan, wheel to zoom, double-click to frame. Click an element to find its card. Right-click an element for more actions.</sys:String>
     <sys:String x:Key="ui_layer_hidden">Not visible</sys:String>
     <sys:String x:Key="ui_layer_visible">Visible</sys:String>
     <sys:String x:Key="ui_layer_clip">Crop / section box</sys:String>
@@ -168,5 +168,39 @@
     <sys:String x:Key="ui_no_view_ticked">Tick at least one view.</sys:String>
     <sys:String x:Key="ui_empty_state">Nothing to diagnose yet. Add elements and views.</sys:String>
     <sys:String x:Key="ui_reload_blocked">Reloading would erase this report. Use Re-check instead.</sys:String>
+
+    <sys:String x:Key="ui_reveal">Reveal hidden</sys:String>
+    <sys:String x:Key="ui_reveal_hint">Draw every element that is hidden in this view's screen area in Revit, in one color per reason. Click again to remove.</sys:String>
+    <sys:String x:Key="ui_reveal_refresh">Refresh overlay</sys:String>
+    <sys:String x:Key="ui_reveal_follow">Follow viewport</sys:String>
+    <sys:String x:Key="ui_reveal_select">Select</sys:String>
+    <sys:String x:Key="ui_reveal_summary">{0} hidden element(s) drawn</sys:String>
+    <sys:String x:Key="ui_reveal_left_out">{0} more not drawn. Zoom in to see them.</sys:String>
+    <sys:String x:Key="ui_reveal_skipped">{0} tiny element(s) skipped.</sys:String>
+    <sys:String x:Key="ui_reveal_none">Nothing is hidden in the visible area.</sys:String>
+    <sys:String x:Key="ui_reveal_search">Filter by name, category, level, mark or id</sys:String>
+    <sys:String x:Key="ui_reveal_all_levels">All levels</sys:String>
+    <sys:String x:Key="ui_reveal_clear_filter">Clear filter</sys:String>
+    <sys:String x:Key="ui_reveal_select_shown">Select shown</sys:String>
+    <sys:String x:Key="ui_reveal_filtered">Drawing {0} of {1} in Revit</sys:String>
+    <sys:String x:Key="ui_reveal_more_rows">{0} more. Narrow the filter to list them.</sys:String>
+    <sys:String x:Key="ui_reveal_row_hint">Show this element in Revit and explain why it is not visible. Ctrl-click or Shift-click to select several.</sys:String>
+    <sys:String x:Key="ui_reveal_add_selection">Add Revit selection</sys:String>
+    <sys:String x:Key="ui_reveal_add_selection_hint">Diagnose the elements selected in Revit in this view and draw them, whatever their size. Select the missing element where it is visible, for example in another view or a schedule.</sys:String>
+    <sys:String x:Key="ui_reveal_add_to_report">Add to report</sys:String>
+    <sys:String x:Key="ui_reveal_columns">Reason|Category|Type|Level|Mark|Id</sys:String>
+    <sys:String x:Key="ui_reveal_search_all">Evaluate matching elements</sys:String>
+    <sys:String x:Key="ui_reveal_search_all_hint">Diagnose every element that matches the filter, not only the biggest ones the time budget reached. Searches category, type, level, mark and id.</sys:String>
+    <sys:String x:Key="ui_reveal_scoped">Only elements matching the filter were evaluated. Refresh the overlay to evaluate all.</sys:String>
+    <sys:String x:Key="ui_menu_show_card">Go to card</sys:String>
+    <sys:String x:Key="ui_menu_frame">Frame in 3D</sys:String>
+    <sys:String x:Key="ui_menu_zoom">Show in Revit</sys:String>
+    <sys:String x:Key="ui_menu_select">Select in Revit</sys:String>
+    <sys:String x:Key="ui_menu_remove">Remove from report</sys:String>
+    <sys:String x:Key="reveal_added">Drew {0} selected element(s).</sys:String>
+    <sys:String x:Key="reveal_added_visible">{0} already visible in this view.</sys:String>
+    <sys:String x:Key="reveal_unsupported">The reveal overlay is not available in {} views.</sys:String>
+    <sys:String x:Key="reveal_needs_webview2">Reveal hidden needs the WebView2 output window and IronPython.</sys:String>
+    <sys:String x:Key="reveal_unsupported_active">Open a plan, section, elevation or 3D view first.</sys:String>
 
 </ResourceDictionary>

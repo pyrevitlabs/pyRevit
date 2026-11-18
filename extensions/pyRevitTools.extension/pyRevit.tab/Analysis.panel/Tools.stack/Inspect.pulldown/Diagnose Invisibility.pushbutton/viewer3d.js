@@ -247,7 +247,9 @@ void main() { outColor = uColor; }`;
     /**
      * @param {HTMLElement} host - container; the viewer fills it.
      * @param {object} scene - scene from invisibility_scene.build_scene.
-     * @param {object} options - {strings, onPick(id), onHover(id)}.
+     * @param {object} options - {strings, onPick(id), onHover(id), onContextMenu(id, x, y)}.
+     *     onContextMenu runs on a right-button release that did not drag, with the element under
+     *     the cursor and the client coordinates; a right-drag still pans.
      */
     constructor(host, scene, options) {
       this.host = host;
@@ -414,11 +416,18 @@ void main() { outColor = uColor; }`;
       canvas.addEventListener("pointerup", (e) => {
         canvas.releasePointerCapture(e.pointerId);
         const clicked = drag && !drag.moved && e.button === 0;
+        const menu = drag && !drag.moved && e.button === 2;
         drag = null;
         if (clicked) {
           const id = this.pick(e);
           this.highlight(id);
           if (id !== null && this.options.onPick) this.options.onPick(id);
+        } else if (menu) {
+          const id = this.pick(e);
+          if (id !== null && this.options.onContextMenu) {
+            this.highlight(id);
+            this.options.onContextMenu(id, e.clientX, e.clientY);
+          }
         }
       });
       canvas.addEventListener("pointerleave", () => {

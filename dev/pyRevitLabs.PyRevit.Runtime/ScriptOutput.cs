@@ -345,7 +345,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 mark_error();
 
             if (ScriptOutputUi.MayCreateOutputUi) {
-                write_line(content);
+                using (Agent.AgentRecorder.SuppressOutput())
+                    write_line(content);
                 return;
             }
 
@@ -394,6 +395,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void release_held_records() {
+            using (Agent.AgentRecorder.SuppressOutput())
+                release_held_records_unrecorded();
+        }
+
+        private void release_held_records_unrecorded() {
             while (true) {
                 int dropped;
                 var released = _heldRecords.DrainOrOpen(out dropped);

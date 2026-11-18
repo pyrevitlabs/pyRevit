@@ -1513,6 +1513,7 @@ namespace pyRevitExtensionParser
                     Directory = dir,
                     Engine = finalEngine,
                     Members = bundleInComponent?.Members ?? new List<ComboBoxMember>(),
+                    IsChecked = bundleInComponent?.IsChecked ?? false,
                     OnIconPath = onIconPath,
                     OnIconDarkPath = onIconDarkPath,
                     OffIconPath = offIconPath,
@@ -2585,7 +2586,8 @@ namespace pyRevitExtensionParser
             ContentButton,
             NoButton,
             Separator,
-            ComboBox
+            ComboBox,
+            CheckBox
         }
 
         public static class CommandComponentTypeExtensions
@@ -2609,6 +2611,7 @@ namespace pyRevitExtensionParser
                     case ".content": return CommandComponentType.ContentButton;
                     case ".nobutton": return CommandComponentType.NoButton;
                     case ".combobox": return CommandComponentType.ComboBox;
+                    case ".checkbox": return CommandComponentType.CheckBox;
                     default: return CommandComponentType.Unknown;
                 }
             }
@@ -2632,6 +2635,7 @@ namespace pyRevitExtensionParser
                 case CommandComponentType.ContentButton: return ".content";
                 case CommandComponentType.NoButton: return ".nobutton";
                 case CommandComponentType.ComboBox: return ".combobox";
+                case CommandComponentType.CheckBox: return ".checkbox";
                 default: return string.Empty;
             }
         }

@@ -26,11 +26,33 @@ MyExtension.extension/
         icon.png             # button icon
 ```
 
-Supported bundle types (folder postfix): `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, `splitpushbutton`, `panelbutton`, `stack`, `linkbutton`, `invokebutton`, `nobutton`, `content`, `urlbutton`, `combobox`.
+Supported bundle types (folder postfix): `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, `splitpushbutton`, `panelbutton`, `stack`, `linkbutton`, `invokebutton`, `nobutton`, `content`, `urlbutton`, `combobox`, `checkbox`.
 
 ???+ info
 
     Postfixes and every other constant on this page are defined in [pyrevit.extensions][] (`pyrevitlib/pyrevit/extensions/__init__.py`).
+
+A `checkbox` bundle adds a ribbon checkbox. Its `script.py` can define `__chk_init__(ctx)`, which runs when the ribbon loads, and `__chk_on_change__(sender, args, ctx)`, which runs each time `ctx.is_checked` changes after `__chk_init__` returns. Both run outside Revit API context, so they must not start transactions. All checkboxes run in one IronPython engine, but each keeps its own copy of the modules it imports from its bundle's `lib` folders and from library extensions, so two checkboxes can ship modules with the same name; pyRevit and the standard library are shared. Checkboxes stack only with other checkboxes: in a `stack` that also holds other items, the checkboxes are placed beside the stack and a warning is logged.
+
+A handler can also come from another module, as in `from chk_handlers import on_change as __chk_on_change__`, so several checkboxes can share one. `EXEC_PARAMS`, and with it `script.get_config()`, still resolves the checkbox the handler runs for.
+
+Module isolation has three gaps:
+
+- `sys.path` is a new list each time a checkbox's code starts to run, so a reference kept to an earlier list, such as `from sys import path` at the top of the script, does not change the live path in later calls. Use `sys.path` itself.
+- A module from `site-packages` or `pyrevitlib` stays shared, so a checkbox whose `lib` has a module with the same name gets the shared one when another checkbox imported it first.
+- A submodule that a checkbox loads into a shared package, by extending the package's `__path__`, stays bound to that package for every checkbox.
+
+The `ctx` that both handlers receive has these members:
+
+| Member | What it is |
+|---|---|
+| `is_checked` | The checked state. Setting a new value raises `__chk_on_change__` again, the same way a click does, except inside `__chk_init__`: the change handler is attached only after `__chk_init__` returns, so restoring a saved state there does not raise it. |
+| `text`, `enabled`, `visible` | The checkbox's label, and whether it is enabled and shown. All three can be set. |
+| `checkbox` | The AdWindows `RibbonCheckBox` itself. |
+| `uiapp` | Revit's `UIApplication`. |
+| `directory` | The bundle folder. |
+| `name`, `display_name` | The bundle folder name without its suffix, without spaces (`TestCheckBox`) and with them (`Test CheckBox`). |
+| `user_data` | A .NET `Dictionary[str, object]` that keeps data between calls until the next pyRevit reload. On IronPython 2.7 it has no `get` or `setdefault`, so check keys with `ctx.user_data.ContainsKey(key)` and read them with `ctx.user_data[key]`. |
 
 ## Bundle files
 
@@ -61,7 +83,7 @@ Common keys:
 - `layout` — reorders/nests child buttons instead of relying on folder order; use `---` for a separator and `>>>` to start a slideout.
 - `background` / `background_dark` — panel bundles only; see [Panel background colors](#panel-background-colors).
 
-Bundle-type-specific keys: `modules` (link buttons), `assembly` / `command_class` / `availability_class` (invoke/link buttons), `hyperlink` (URL buttons).
+Bundle-type-specific keys: `modules` (link buttons), `assembly` / `command_class` / `availability_class` (invoke/link buttons), `hyperlink` (URL buttons), `checked` (checkboxes; the starting state, `false` by default).
 
 ???+ info
 

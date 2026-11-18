@@ -1,12 +1,14 @@
 using Build.Helpers;
 using Build.Options;
 using Microsoft.Extensions.Options;
+using ModularPipelines.Attributes;
 using ModularPipelines.Configuration;
 using ModularPipelines.Context;
 using ModularPipelines.Modules;
 
 namespace Build.Modules;
 
+[DependsOn<StampVersionModule>]
 public sealed class SetCopyrightYearModule(IOptions<BuildOptions> buildOptions) : Module
 {
     protected override ModuleConfiguration Configure()

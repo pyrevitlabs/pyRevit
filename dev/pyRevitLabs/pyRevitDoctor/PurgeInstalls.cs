@@ -52,7 +52,7 @@ namespace pyRevitDoctor {
                 if (target.TestFunc != null) {
                     RegistryKey key;
                     try {
-                        key = RegistryKey.OpenBaseKey(target.BaseKey, RegistryView.Default).OpenSubKey(target.SubKeyName, writable: true);
+                        key = RegistryKey.OpenBaseKey(target.BaseKey, RegistryView.Default).OpenSubKey(target.SubKeyName, writable: !dryrun);
                     }
                     catch {
                         Console.WriteLine($"Can not open \"({target.BaseKey})\\{target.SubKeyName}\". Run this command as admin");
@@ -105,8 +105,8 @@ namespace pyRevitDoctor {
                     return false;
 
                 using var baseKey = RegistryKey.OpenBaseKey(searchTarget.BaseKey, RegistryView.Default);
-                using var featuresKey = baseKey.OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\Features"), writable: true);
-                using var upgradeInfoKey = baseKey.OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\UpgradeCodes"), writable: true);
+                using var featuresKey = baseKey.OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\Features"), writable: !dryrun);
+                using var upgradeInfoKey = baseKey.OpenSubKey(searchTarget.SubKeyName.Replace(@"\Products", @"\UpgradeCodes"), writable: !dryrun);
 
                 if (featuresKey != null && featuresKey.GetSubKeyNames().Contains(subKeyName)) {
                     if (!dryrun)
@@ -115,7 +115,7 @@ namespace pyRevitDoctor {
                 }
 
                 foreach (var upgradeInfoSubKeyName in upgradeInfoKey?.GetSubKeyNames() ?? Array.Empty<string>()) {
-                    using var subUpgradeInfoKey = upgradeInfoKey.OpenSubKey(upgradeInfoSubKeyName, writable: true);
+                    using var subUpgradeInfoKey = upgradeInfoKey.OpenSubKey(upgradeInfoSubKeyName, writable: !dryrun);
                     if (subUpgradeInfoKey != null && subUpgradeInfoKey.GetValueNames().Contains(subKeyName)) {
                         if (!dryrun)
                             subUpgradeInfoKey.DeleteValue(subKeyName);
