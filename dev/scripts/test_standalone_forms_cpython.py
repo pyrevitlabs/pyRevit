@@ -998,6 +998,12 @@ class _FrameworkElement(object):
         self.Unloaded = _Event()
 
 
+class _StrongReference(object):
+    def __init__(self, target):
+        self.Target = target
+        self.IsAlive = True
+
+
 def _load_events():
     hooks = {}
     windows = SimpleNamespace(
@@ -1007,6 +1013,7 @@ def _load_events():
         FrameworkContentElement=type("FrameworkContentElement", (), {}),
     )
     system = SimpleNamespace(
+        WeakReference=_StrongReference,
         Object=SimpleNamespace(ReferenceEquals=lambda left, right: left is right),
         Runtime=SimpleNamespace(
             CompilerServices=SimpleNamespace(
@@ -1088,6 +1095,20 @@ class TemplateHookTests(unittest.TestCase):
         self.assertEqual([], parked.Click.handlers)
         self.assertTrue(self.registry.is_released)
 
+    def test_release_unsubscribes_unloaded_instances(self):
+        """An instance that unloaded before release keeps no subscription.
+
+        Its ``Loaded``/``Unloaded`` handlers reach the form's controller, so
+        one left on an element the closed window still references would keep
+        that window alive.
+        """
+        parked = _FrameworkElement()
+        self.hooks["k"](parked)
+        parked.Loaded.raise_(parked)
+        parked.Unloaded.raise_(parked)
+        self.registry.release()
+        self.assertEqual([], parked.Loaded.handlers + parked.Unloaded.handlers)
+
 
 class _RoutedRoot(object):
     def __init__(self):
@@ -1145,6 +1166,56 @@ class RootAttachedTemplateEventTests(unittest.TestCase):
         added = self.root.added[0]
         self.registry.release()
         self.assertEqual([added[:2]], self.root.removed)
+
+
+class PreviewDiscoveredTemplateEventTests(unittest.TestCase):
+    """Template events with a preview counterpart attach on first preview."""
+
+    def _discover(self, handled_too):
+        events, _ = _load_events()
+        root = _RoutedRoot()
+        element = _RoutedRoot()
+        events._attach_on_preview(
+            events._EventRegistry(),
+            root,
+            "MouseDown",
+            "PreviewMouseDown",
+            lambda args: [element],
+            lambda sender, args: None,
+            handled_too,
+        )
+        ((_, discover, _),) = root.added
+        discover(root, SimpleNamespace())
+        return element.added
+
+    def test_double_clicks_also_receive_handled_mouse_downs(self):
+        """A rebuilt double click runs after a control handled the mouse-down."""
+        ((event, _, handled_too),) = self._discover(True)
+        self.assertEqual("MouseDown", event)
+        self.assertTrue(handled_too)
+
+    def test_other_events_keep_skipping_handled_ones(self):
+        """Ordinary bubbling events keep WPF's handled semantics."""
+        ((_, _, handled_too),) = self._discover(False)
+        self.assertFalse(handled_too)
+
+
+class TemplateControlTypeTests(unittest.TestCase):
+    """Template tags resolve to WPF types across the WPF namespaces."""
+
+    def test_shapes_and_animation_types_resolve(self):
+        """Shapes and Animation types are found, so their events are adapted."""
+        events, _ = _load_events()
+        rectangle, storyboard = object(), object()
+        events.framework.Controls = SimpleNamespace(Primitives=SimpleNamespace())
+        events.framework.Documents = SimpleNamespace()
+        events.framework.Windows.Shapes = SimpleNamespace(Rectangle=rectangle)
+        events.framework.Media = SimpleNamespace(
+            Animation=SimpleNamespace(Storyboard=storyboard)
+        )
+        self.assertIs(rectangle, events._control_type("Rectangle"))
+        self.assertIs(storyboard, events._control_type("Storyboard"))
+        self.assertIsNone(events._control_type("NoSuchType"))
 
 
 class FormsExportsTests(unittest.TestCase):
