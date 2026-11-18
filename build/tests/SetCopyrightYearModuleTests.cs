@@ -23,4 +23,16 @@ public sealed class SetCopyrightYearModuleTests
 
         Assert.HasCount(1, dependsOn);
     }
+
+    /// <summary>
+    /// <see cref="BuildLabsModule"/> must declare a dependency on <see cref="SetCopyrightYearModule"/> so MSBuild never reads <c>Directory.Build.props</c> while the copyright stamp rewrites it.
+    /// </summary>
+    [TestMethod]
+    public void BuildLabsModule_depends_on_SetCopyrightYearModule_because_msbuild_imports_the_stamped_Directory_Build_props()
+    {
+        var dependsOn = typeof(BuildLabsModule)
+            .GetCustomAttributes(typeof(DependsOnAttribute<>).MakeGenericType(typeof(SetCopyrightYearModule)), inherit: false);
+
+        Assert.HasCount(1, dependsOn);
+    }
 }
