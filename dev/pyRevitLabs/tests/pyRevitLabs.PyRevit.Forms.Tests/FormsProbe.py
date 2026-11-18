@@ -654,4 +654,138 @@ try:
 except Unsupported as error:
     assert "PlainPythonView" in str(error)
 
+
+def routed_handler_count(element, routed_event):
+    """Count the instance handlers attached to a routed event on an element."""
+    flags = (
+        System.Reflection.BindingFlags.NonPublic
+        | System.Reflection.BindingFlags.Instance
+    )
+    store = (
+        clr.GetClrType(Windows.UIElement)
+        .GetProperty("EventHandlersStore", flags)
+        .GetValue(element)
+    )
+    if store is None:
+        return 0
+    handlers = (
+        store.GetType()
+        .GetMethod("GetRoutedEventHandlers")
+        .Invoke(store, [routed_event])
+    )
+    return 0 if handlers is None else len(handlers)
+
+
+leak_window = TemplateMenuWindow()
+leak_window.rows.ItemsSource = forms._backend.items_source(["a"])
+leak_window.Show()
+leak_window.UpdateLayout()
+leak_item = template_menus(_backend.unwrap(leak_window))[0].Items[0]
+leak_item.RaiseEvent(Windows.RoutedEventArgs(Windows.FrameworkElement.LoadedEvent))
+leak_item.RaiseEvent(Windows.RoutedEventArgs(Windows.FrameworkElement.UnloadedEvent))
+leak_window.Close()
+assert routed_handler_count(leak_item, Windows.FrameworkElement.LoadedEvent) == 0
+assert routed_handler_count(leak_item, Windows.FrameworkElement.UnloadedEvent) == 0
+
+
+class TemplateDoubleClickWindow(forms.WPFWindow):
+    """Declare MouseDoubleClick on a TextBox inside an item template."""
+
+    def __init__(self):
+        self.edits = 0
+        forms.WPFWindow.__init__(
+            self,
+            "<Window {}><ItemsControl x:Name='rows'><ItemsControl.ItemTemplate>"
+            "<DataTemplate><TextBox MouseDoubleClick='edit'/></DataTemplate>"
+            "</ItemsControl.ItemTemplate></ItemsControl></Window>".format(
+                xaml_namespaces
+            ),
+            literal_string=True,
+        )
+
+    def edit(self, sender, args):
+        """Count double clicks that reach the template TextBox."""
+        self.edits += 1
+
+
+def find_text_box(element):
+    """Return the first TextBox instantiated from the item template."""
+    if isinstance(element, Controls.TextBox):
+        return element
+    for index in range(Media.VisualTreeHelper.GetChildrenCount(element)):
+        found = find_text_box(Media.VisualTreeHelper.GetChild(element, index))
+        if found is not None:
+            return found
+    return None
+
+
+def swallow(sender, args):
+    """Mark the press handled the way a TextBox does."""
+    args.Handled = True
+
+
+double_window = TemplateDoubleClickWindow()
+double_window.rows.ItemsSource = forms._backend.items_source(["row"])
+double_window.Show()
+double_window.UpdateLayout()
+double_box = find_text_box(_backend.unwrap(double_window))
+double_box.MouseDown += swallow
+for routed_event in (Input.Mouse.PreviewMouseDownEvent, Input.Mouse.MouseDownEvent):
+    args = Input.MouseButtonEventArgs(
+        Input.Mouse.PrimaryDevice, 0, Input.MouseButton.Left
+    )
+    args.GetType().GetProperty("ClickCount").GetSetMethod(True).Invoke(args, [2])
+    args.RoutedEvent = routed_event
+    double_box.RaiseEvent(args)
+assert double_window.edits == 1, double_window.edits
+double_window.Close()
+
+
+class ShapeEventWindow(forms.WPFWindow):
+    """Declare events on elements outside the control namespaces."""
+
+    def __init__(self):
+        self.moves = 0
+        forms.WPFWindow.__init__(
+            self,
+            "<Window {}><Rectangle x:Name='shape' Width='10' Height='10' "
+            "MouseMove='moved'/></Window>".format(xaml_namespaces),
+            literal_string=True,
+        )
+
+    def moved(self, sender, args):
+        """Count mouse moves raised on the rectangle."""
+        self.moves += 1
+
+
+shape_window = ShapeEventWindow()
+shape_move = Input.MouseEventArgs(Input.Mouse.PrimaryDevice, 0)
+shape_move.RoutedEvent = Input.Mouse.MouseMoveEvent
+shape_window.shape.RaiseEvent(shape_move)
+assert shape_window.moves == 1
+shape_window.Close()
+
+
+class StoryboardEventWindow(forms.WPFWindow):
+    """Declare Completed on a Storyboard resource."""
+
+    def __init__(self):
+        self.completed = 0
+        forms.WPFWindow.__init__(
+            self,
+            "<Window {}><Window.Resources><Storyboard x:Key='sb' "
+            "Completed='done'/></Window.Resources><Grid/></Window>".format(
+                xaml_namespaces
+            ),
+            literal_string=True,
+        )
+
+    def done(self, sender, args):
+        """Count completions of the resource storyboard."""
+        self.completed += 1
+
+
+storyboard_window = StoryboardEventWindow()
+storyboard_window.Close()
+
 print("CPython WPF forms probe passed")

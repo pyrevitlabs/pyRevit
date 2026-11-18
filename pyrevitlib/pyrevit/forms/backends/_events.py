@@ -163,10 +163,11 @@ def hook_template_events(registry, key, handlers):
     guarded like any other form callback, and ``release`` stops delivery and
     detaches them.
 
-    Instances are tracked only while loaded: an instance that unloads drops
-    its handlers and is forgotten, and gets them back if it loads again, so
-    forms that are never released, such as dockable panels, do not retain
-    every instance a virtualized list or popup ever created.
+    An instance is tracked from creation until it unloads: it then drops its
+    handlers and is forgotten, and gets them back if it loads again. Its
+    ``Loaded``/``Unloaded`` subscriptions stay, and are removed from every
+    instance still alive by ``release``, which reaches them through weak
+    references. An instance that never loads stays tracked until ``release``.
 
     Args:
         registry (_EventRegistry): The form's registry.
@@ -179,7 +180,8 @@ def hook_template_events(registry, key, handlers):
     """
     callbacks = [(name, registry.guard(handler)) for name, handler in handlers]
     attached = {}
-    state = {"released": False}
+    observed = []
+    state = {"released": False, "prune_at": 64}
 
     def find(element):
         for entry in attached.get(_identity(element), ()):
@@ -229,12 +231,23 @@ def hook_template_events(registry, key, handlers):
             element, (Windows.FrameworkElement, Windows.FrameworkContentElement)
         )
 
+    def observe(element):
+        if len(observed) >= state["prune_at"]:
+            observed[:] = [reference for reference in observed if reference.IsAlive]
+            state["prune_at"] = max(64, 2 * len(observed))
+        observed.append(System.WeakReference(element))
+
+    def stop_observing(element):
+        element.Loaded -= loaded
+        element.Unloaded -= unloaded
+
     def attach(element):
         bind(element)
         if is_loadable(element):
             try:
                 element.Loaded += loaded
                 element.Unloaded += unloaded
+                observe(element)
             except Exception as error:
                 _report(error)
 
@@ -246,10 +259,12 @@ def hook_template_events(registry, key, handlers):
         for bucket in list(attached.values()):
             for entry in bucket:
                 unbind(entry)
-                if is_loadable(entry[0]):
-                    entry[0].Loaded -= loaded
-                    entry[0].Unloaded -= unloaded
         attached.clear()
+        for reference in observed:
+            element = reference.Target
+            if element is not None:
+                _attempt(stop_observing, element)
+        del observed[:]
 
     PythonEvents.Attach(key, attach)
     registry.on_release(detach)
@@ -317,7 +332,8 @@ def bind_template_event(registry, root, tag, uid, event_name, handler):
     from a handler on ``root``. Direct mouse-button events are rebuilt from
     ``MouseDown``/``MouseUp`` filtered by button and click count; double
     clicks accept the left or right button with ``ClickCount == 2``, as
-    ``Control.MouseDoubleClick`` does. An element that unloads drops its
+    ``Control.MouseDoubleClick`` does, and a double click handler also runs
+    after the press was marked handled, as that control's own event does. An element that unloads drops its
     direct handler and is rediscovered if it loads again. ``tag`` is
     the element's WPF type name, or ``{namespace}Name`` for a type outside the
     WPF namespace, which is then matched by ``Uid`` alone.
@@ -361,7 +377,9 @@ def bind_template_event(registry, root, tag, uid, event_name, handler):
 
     preview = _routed_event(owner, "Preview" + routed_name)
     if event.RoutingStrategy == Windows.RoutingStrategy.Bubble and preview:
-        _attach_on_preview(registry, root, event, preview, sources, callback)
+        _attach_on_preview(
+            registry, root, event, preview, sources, callback, clicks == 2
+        )
         return
     _attach_at_root(registry, root, event, sources, callback)
 
@@ -388,6 +406,8 @@ def _control_type(tag):
         framework.Controls.Primitives,
         framework.Documents,
         framework.Windows,
+        framework.Windows.Shapes,
+        framework.Media.Animation,
     )
     return next(
         (
@@ -451,7 +471,9 @@ def _identity(element):
     return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(element)
 
 
-def _attach_on_preview(registry, root, event, preview, sources, callback):
+def _attach_on_preview(
+    registry, root, event, preview, sources, callback, handled_too=False
+):
     direct = Windows.RoutedEventHandler(callback)
     attached = {}
 
@@ -489,7 +511,7 @@ def _attach_on_preview(registry, root, event, preview, sources, callback):
     def discover(sender, args):
         for element in sources(args):
             if find(element) is None:
-                element.AddHandler(event, direct)
+                element.AddHandler(event, direct, handled_too)
                 if isinstance(
                     element, (Windows.FrameworkElement, Windows.FrameworkContentElement)
                 ):
