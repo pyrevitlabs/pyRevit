@@ -24,22 +24,23 @@ namespace PyRevitLoader
     /// them. A module stays with its bundle even after the bundle's code removes the folder it came
     /// from from <c>sys.path</c>. A shared module that a bundle's code replaces with one of its own,
     /// such as by deleting it from <c>sys.modules</c> and importing the bundle's module of that name,
-    /// goes back into <c>sys.modules</c> when the bundle is left.
+    /// goes back into <c>sys.modules</c> when the bundle is left. A bundle that adds its own package to
+    /// a shared package, by extending the shared package's <c>__path__</c>, keeps that folder and its
+    /// submodule's binding on the shared package to itself: both are in place only while it is active.
     /// Invariant: a module loaded from a shared root moves only as a submodule of a package the bundle
-    /// owns, and <c>__main__</c> never moves.
+    /// owns, a folder under a shared root never leaves a <c>__path__</c>, and <c>__main__</c> never
+    /// moves.
     /// Note: only code that runs while its bundle is entered is kept apart. Callbacks a script subscribes
     /// itself, such as Revit event handlers, run with whatever the engine holds when they fire, so an
     /// import inside them can load a module again from the current <c>sys.path</c> instead of reusing
-    /// the copy its bundle loaded.
-    /// Warning: three cases are not kept apart. <c>sys.path</c> is a new list each time a bundle is
+    /// the copy its bundle loaded. Such a module, when it comes from outside the shared roots, is set
+    /// aside while a bundle is active, so it does not reach that bundle.
+    /// Warning: two cases are not kept apart. <c>sys.path</c> is a new list each time a bundle is
     /// entered or brought back after a nested bundle, so a reference kept to an earlier list, such as
-    /// <c>from sys import path</c>, no longer changes the live path. A module loaded from a shared root,
-    /// other than a submodule of a package the bundle owns, stays shared, so a bundle whose <c>lib</c>
-    /// has a module with the same name gets the shared one when another bundle imported it first. And a
-    /// submodule that a bundle loads into a shared package, by extending the package's <c>__path__</c>,
-    /// leaves <c>sys.modules</c> with its bundle but stays bound as an attribute of the package, which
-    /// also keeps the extended <c>__path__</c>, so <c>from pkg import sub</c> in another bundle can
-    /// return it.
+    /// <c>from sys import path</c>, no longer changes the live path. And a module loaded from a shared
+    /// root, other than a submodule of a package the bundle owns, stays shared, so a bundle whose
+    /// <c>lib</c> has a module with the same name gets the shared one when another bundle imported it
+    /// first.
     /// Important: not thread-safe. Use it only on the thread that runs the engine's scripts.
     /// </remarks>
     internal sealed class BundleModuleIsolation
@@ -69,8 +70,9 @@ namespace PyRevitLoader
         }
 
         /// <summary>
-        /// One bundle's share of the engine: the <c>sys.path</c> its code runs with and the modules it
-        /// owns, which stay out of <c>sys.modules</c> while it is not the active bundle.
+        /// One bundle's share of the engine: the <c>sys.path</c> its code runs with, the modules it
+        /// owns and the folders it added to shared packages' <c>__path__</c>, which stay out of
+        /// <c>sys.modules</c> and out of those packages while it is not the active bundle.
         /// </summary>
         internal sealed class Bundle
         {
@@ -89,6 +91,10 @@ namespace PyRevitLoader
             internal Dictionary<string, object> HiddenModules { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
 
             internal Dictionary<string, object> ModulesWhenEntered { get; set; }
+
+            internal Dictionary<string, List<string>> PackagePathFolders { get; } = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+
+            internal Dictionary<string, HashSet<string>> PackagePathsWhenEntered { get; set; }
         }
 
         /// <summary>
@@ -226,29 +232,52 @@ namespace PyRevitLoader
         }
 
         /// <summary>
-        /// Points <c>sys.path</c> at the bundle's saved paths and puts its own modules into
-        /// <c>sys.modules</c>, keeping the modules they hide for <see cref="Deactivate"/>. Then records
-        /// what <c>sys.modules</c> holds, so <see cref="Deactivate"/> can tell which modules appeared
-        /// while the bundle was active.
+        /// Points <c>sys.path</c> at the bundle's saved paths, sets aside the modules of other bundles
+        /// that are still in <c>sys.modules</c>, and puts the bundle's own modules in, keeping what they
+        /// hide for <see cref="Deactivate"/>. Binds its submodules of shared packages to those packages
+        /// and puts the folders it added back into their <c>__path__</c>. Then records what
+        /// <c>sys.modules</c> and the shared packages' <c>__path__</c> hold, so <see cref="Deactivate"/>
+        /// can tell what changed while the bundle was active.
         /// </summary>
-        private static void Activate(ScriptEngine engine, Bundle bundle)
+        /// <remarks>
+        /// Note: another bundle's module is in <c>sys.modules</c> here only when code outside any
+        /// bundle, such as a callback a script subscribed, imported it. Without setting it aside, the
+        /// entering bundle would get that cached module instead of loading its own.
+        /// </remarks>
+        private void Activate(ScriptEngine engine, Bundle bundle)
         {
             bundle.ModulesWhenEntered = null;
+            bundle.PackagePathsWhenEntered = null;
             engine.SetSearchPaths(bundle.SearchPaths);
             var modules = GetSysModules(engine);
+            var modulesBefore = new Dictionary<string, object>(StringComparer.Ordinal);
             bundle.HiddenModules.Clear();
+            foreach (var name in FindModulesOfOtherBundles(modules, bundle))
+            {
+                modulesBefore[name] = modules[name];
+                bundle.HiddenModules[name] = modules[name];
+                modules.Remove(name);
+            }
+
             foreach (var module in bundle.Modules)
             {
                 if (modules.TryGetValue(module.Key, out var hiddenModule))
                     bundle.HiddenModules[module.Key] = hiddenModule;
+                modulesBefore[module.Key] = hiddenModule;
                 modules[module.Key] = module.Value;
             }
+
+            BindToSharedPackages(modules, modulesBefore);
+            AddPackagePathFolders(modules, bundle);
             bundle.ModulesWhenEntered = CopyModules(modules);
+            bundle.PackagePathsWhenEntered = CopyPackagePaths(modules, bundle);
         }
 
         /// <summary>
         /// Saves <c>sys.path</c> into the bundle, moves the modules it owns out of <c>sys.modules</c>
         /// and into the bundle, and puts back the modules they hid and the shared modules they replaced.
+        /// Unbinds its submodules from shared packages and takes the folders it added to their
+        /// <c>__path__</c> with it.
         /// </summary>
         /// <remarks>
         /// Invariant: only call it for the active bundle. Its saved modules are rebuilt from
@@ -263,9 +292,11 @@ namespace PyRevitLoader
             var modules = GetSysModules(engine);
             var ownNames = FindOwnModuleNames(modules, bundle);
             var replacedSharedModules = FindReplacedSharedModules(bundle, ownNames);
+            var modulesBefore = new Dictionary<string, object>(StringComparer.Ordinal);
             bundle.Modules.Clear();
             foreach (var name in ownNames)
             {
+                modulesBefore[name] = modules[name];
                 bundle.Modules[name] = modules[name];
                 modules.Remove(name);
             }
@@ -275,11 +306,19 @@ namespace PyRevitLoader
 
             foreach (var module in bundle.HiddenModules)
             {
-                if (!modules.ContainsKey(module.Key))
-                    modules[module.Key] = module.Value;
+                if (modules.ContainsKey(module.Key))
+                    continue;
+
+                modules[module.Key] = module.Value;
+                if (!modulesBefore.ContainsKey(module.Key))
+                    modulesBefore[module.Key] = null;
             }
+
+            BindToSharedPackages(modules, modulesBefore);
+            MovePackagePathFolders(modules, bundle, modulesBefore);
             bundle.HiddenModules.Clear();
             bundle.ModulesWhenEntered = null;
+            bundle.PackagePathsWhenEntered = null;
         }
 
         /// <summary>
@@ -334,10 +373,169 @@ namespace PyRevitLoader
             var names = new List<string>();
             foreach (var name in moduleNames)
             {
-                if (owned.Contains(name) || IsInsideOwnedPackage(name, owned))
+                if (owned.Contains(name) || IsInsideAnyPackage(name, owned))
                     names.Add(name);
             }
             return names;
+        }
+
+        /// <summary>
+        /// Lists the <c>sys.modules</c> entries that belong to a bundle other than
+        /// <paramref name="bundle"/>: the modules loaded from a file outside the shared roots that it
+        /// does not own, and every entry inside such a package, however deeply nested.
+        /// </summary>
+        private List<string> FindModulesOfOtherBundles(IDictionary<object, object> modules, Bundle bundle)
+        {
+            var moduleNames = new List<string>();
+            var bundleModules = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in modules)
+            {
+                if (!(entry.Key is string name) || name == MainModuleName || bundle.Modules.ContainsKey(name))
+                    continue;
+
+                moduleNames.Add(name);
+                if (!IsShared(entry.Value))
+                    bundleModules.Add(name);
+            }
+
+            var names = new List<string>();
+            foreach (var name in moduleNames)
+            {
+                if (bundleModules.Contains(name) || IsInsideAnyPackage(name, bundleModules))
+                    names.Add(name);
+            }
+            return names;
+        }
+
+        /// <summary>
+        /// Makes each package that stays in <c>sys.modules</c> bind the submodules whose entries just
+        /// changed to what <c>sys.modules</c> now holds for them, as the import system binds a submodule
+        /// it loads.
+        /// </summary>
+        /// <param name="modulesBefore">The names whose entries changed, each with the module the entry
+        /// held before, or null when there was none.</param>
+        /// <remarks>
+        /// Note: <c>from pkg import sub</c> reads the package's <c>sub</c> attribute before it looks in
+        /// <c>sys.modules</c>. A bundle's submodule left bound to a shared package would reach the next
+        /// bundle, and one put back without its binding would be missing from the package.
+        /// Invariant: an attribute is set only when it is unset or holds a module, and removed only when
+        /// it still holds the module that left, so a value the package set itself stays.
+        /// </remarks>
+        private static void BindToSharedPackages(IDictionary<object, object> modules, Dictionary<string, object> modulesBefore)
+        {
+            foreach (var change in modulesBefore)
+            {
+                var dot = change.Key.LastIndexOf('.');
+                if (dot < 0 || modulesBefore.ContainsKey(change.Key.Substring(0, dot)))
+                    continue;
+
+                if (!modules.TryGetValue(change.Key.Substring(0, dot), out var parent)
+                    || !(parent is IronPython.Runtime.PythonModule package))
+                    continue;
+
+                var childName = change.Key.Substring(dot + 1);
+                var attributes = package.Get__dict__();
+                var isBound = attributes.TryGetValue(childName, out var bound);
+                if (modules.TryGetValue(change.Key, out var module) && module != null)
+                {
+                    if (!isBound || bound is IronPython.Runtime.PythonModule)
+                        attributes[childName] = module;
+                }
+                else if (isBound && ReferenceEquals(bound, change.Value))
+                {
+                    attributes.Remove(childName);
+                }
+            }
+        }
+
+        private static void AddPackagePathFolders(IDictionary<object, object> modules, Bundle bundle)
+        {
+            foreach (var package in bundle.PackagePathFolders)
+            {
+                if (!modules.TryGetValue(package.Key, out var module) || !(GetPackagePath(module) is System.Collections.IList packagePath))
+                    continue;
+
+                foreach (var folder in package.Value)
+                {
+                    if (!packagePath.Contains(folder))
+                        packagePath.Add(folder);
+                }
+            }
+        }
+
+        private static Dictionary<string, HashSet<string>> CopyPackagePaths(IDictionary<object, object> modules, Bundle bundle)
+        {
+            var copy = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+            foreach (var entry in modules)
+            {
+                if (!(entry.Key is string name) || bundle.Modules.ContainsKey(name) || !(GetPackagePath(entry.Value) is System.Collections.IList packagePath))
+                    continue;
+
+                var folders = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var folder in packagePath)
+                {
+                    if (folder is string path)
+                        folders.Add(path);
+                }
+                copy[name] = folders;
+            }
+            return copy;
+        }
+
+        /// <summary>
+        /// Takes the folders the active bundle added to the <c>__path__</c> of packages that stay in
+        /// <c>sys.modules</c> out of those lists and into the bundle: the folders outside the shared
+        /// roots that were not there when it was entered, and the ones <see cref="Activate"/> put back.
+        /// </summary>
+        /// <param name="modulesBefore">The names whose <c>sys.modules</c> entries <see cref="Deactivate"/>
+        /// just changed. Their packages are skipped, because they were not in <c>sys.modules</c> while
+        /// the bundle was active.</param>
+        /// <remarks>
+        /// Note: a bundle that extends a shared package's <c>__path__</c> with its own folder would
+        /// otherwise leave that folder in the package, and another bundle that imports a submodule of
+        /// the same name would load the first bundle's file.
+        /// Invariant: a folder under a shared root never moves. A package that appeared while the bundle
+        /// was active is looked at only when it was loaded from a shared root, so a package without a
+        /// file keeps its <c>__path__</c>.
+        /// </remarks>
+        private void MovePackagePathFolders(IDictionary<object, object> modules, Bundle bundle, Dictionary<string, object> modulesBefore)
+        {
+            var pathsWhenEntered = bundle.PackagePathsWhenEntered;
+            var takenFolders = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+            if (pathsWhenEntered != null)
+            {
+                foreach (var entry in modules)
+                {
+                    if (!(entry.Key is string name)
+                        || modulesBefore.ContainsKey(name)
+                        || !(GetPackagePath(entry.Value) is System.Collections.IList packagePath))
+                        continue;
+
+                    var wasThere = pathsWhenEntered.TryGetValue(name, out var foldersWhenEntered);
+                    if (!wasThere && !IsLoadedFromSharedRoot(entry.Value))
+                        continue;
+
+                    bundle.PackagePathFolders.TryGetValue(name, out var foldersPutBack);
+                    var folders = new List<string>();
+                    for (var i = packagePath.Count - 1; i >= 0; i--)
+                    {
+                        if (packagePath[i] is string folder
+                            && IsOutsideSharedRoots(folder)
+                            && (!wasThere || !foldersWhenEntered.Contains(folder) || (foldersPutBack != null && foldersPutBack.Contains(folder))))
+                        {
+                            folders.Insert(0, folder);
+                            packagePath.RemoveAt(i);
+                        }
+                    }
+
+                    if (folders.Count > 0)
+                        takenFolders[name] = folders;
+                }
+            }
+
+            bundle.PackagePathFolders.Clear();
+            foreach (var folders in takenFolders)
+                bundle.PackagePathFolders[folders.Key] = folders.Value;
         }
 
         /// <summary>
@@ -374,11 +572,23 @@ namespace PyRevitLoader
             return file == null || IsUnderAny(file, _sharedRoots);
         }
 
-        private static bool IsInsideOwnedPackage(string moduleName, HashSet<string> ownedNames)
+        private bool IsLoadedFromSharedRoot(object module)
+        {
+            var file = NormalizeModuleFile(GetModuleFile(module));
+            return file != null && IsUnderAny(file, _sharedRoots);
+        }
+
+        private bool IsOutsideSharedRoots(string folder)
+        {
+            var path = NormalizeModuleFile(folder);
+            return path != null && !_sharedRoots.Contains(path) && !IsUnderAny(path, _sharedRoots);
+        }
+
+        private static bool IsInsideAnyPackage(string moduleName, HashSet<string> packageNames)
         {
             for (var dot = moduleName.IndexOf('.'); dot >= 0; dot = moduleName.IndexOf('.', dot + 1))
             {
-                if (ownedNames.Contains(moduleName.Substring(0, dot)))
+                if (packageNames.Contains(moduleName.Substring(0, dot)))
                     return true;
             }
             return false;
@@ -413,6 +623,14 @@ namespace PyRevitLoader
             if (module is IronPython.Runtime.PythonModule pythonModule
                 && pythonModule.Get__dict__().TryGetValue("__file__", out var file))
                 return file as string;
+            return null;
+        }
+
+        private static System.Collections.IList GetPackagePath(object module)
+        {
+            if (module is IronPython.Runtime.PythonModule pythonModule
+                && pythonModule.Get__dict__().TryGetValue("__path__", out var packagePath))
+                return packagePath as System.Collections.IList;
             return null;
         }
 

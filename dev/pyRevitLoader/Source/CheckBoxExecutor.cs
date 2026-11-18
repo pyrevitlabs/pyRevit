@@ -29,7 +29,7 @@ namespace PyRevitLoader
     /// <see cref="BundleModuleIsolation"/>: it starts from that checkbox's own search paths and modules
     /// and hands them back when it ends. Two bundles can therefore ship <c>lib</c> modules with the same
     /// name, while pyRevit and the standard library are still imported once for all checkboxes.
-    /// Warning: <see cref="BundleModuleIsolation"/> lists three cases it does not keep apart, such as a
+    /// Warning: <see cref="BundleModuleIsolation"/> lists two cases it does not keep apart, such as a
     /// reference kept to an earlier <c>sys.path</c> list.
     /// </remarks>
     public class CheckBoxExecutor
