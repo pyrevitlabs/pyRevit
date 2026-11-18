@@ -383,7 +383,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                         .Where(child => child.Type != CommandComponentType.Separator)
                         .ToList();
 
-                    if (itemChildren.Count == 1)
+                    if (itemChildren.Count == 1 && !IsCheckBox(itemChildren[0]))
                     {
                         HandleComponentBuilding(itemChildren[0], parentPanel, tabName, assemblyInfo);
                         break;
@@ -480,12 +480,13 @@ namespace pyRevitAssemblyBuilder.UIManager
         }
 
         /// <summary>
-        /// Builds the items of a stack that has two or more of them.
+        /// Builds a stack's items. The caller builds a stack's only item itself unless it is a checkbox.
         /// </summary>
         /// <remarks>
         /// Note: checkboxes stack only with other checkboxes, because Revit API stacks cannot hold
         /// AdWindows items. A mixed stack therefore becomes its other items plus its checkboxes beside
-        /// them, and each group is built as a stack when it has two or more items.
+        /// them. The other items form a stack when there are two or more. The checkboxes always go
+        /// through the checkbox stack builder, even when there is only one, so their ids name the stack.
         /// </remarks>
         private void BuildStackItems(
             ParsedComponent stack,
@@ -504,9 +505,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             else if (otherItems.Count > 1)
                 _stackBuilder.BuildStack(stack, parentPanel!, assemblyInfo);
 
-            if (checkBoxes.Count == 1)
-                HandleComponentBuilding(checkBoxes[0], parentPanel, tabName, assemblyInfo);
-            else if (checkBoxes.Count > 1)
+            if (checkBoxes.Count > 0)
                 _checkBoxBuilder.CreateOrUpdateCheckBoxStack(stack, checkBoxes, parentPanel!, tabName);
         }
 

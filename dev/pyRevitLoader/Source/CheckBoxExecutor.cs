@@ -238,8 +238,10 @@ namespace PyRevitLoader
         /// </summary>
         /// <remarks>
         /// Note: all checkboxes share one engine, whose <c>sys.path</c> holds the paths of the script
-        /// that ran last. Each call therefore restores the paths captured right after its own
-        /// checkbox's script ran, so imports inside a handler find that bundle's <c>lib</c> folder.
+        /// that ran last. Each call therefore restores its checkbox's saved paths first, so imports
+        /// inside a handler find that bundle's <c>lib</c> folder, and saves <c>sys.path</c> again
+        /// afterwards, so changes a handler makes, including in <c>__chk_init__</c>, stay for that
+        /// checkbox's later calls.
         /// </remarks>
         private void InvokeHandler(ObjectOperations ops, ICollection<string> searchPaths, string handlerName, object handler, params object[] args)
         {
@@ -253,6 +255,22 @@ namespace PyRevitLoader
             {
                 Log($"Error in {handlerName}: {ex.Message}");
             }
+            finally
+            {
+                SaveSearchPaths(searchPaths);
+            }
+        }
+
+        private void SaveSearchPaths(ICollection<string> searchPaths)
+        {
+            var engine = _engine;
+            if (engine == null)
+                return;
+
+            var currentPaths = new List<string>(engine.GetSearchPaths());
+            searchPaths.Clear();
+            foreach (var path in currentPaths)
+                searchPaths.Add(path);
         }
 
         /// <summary>
