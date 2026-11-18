@@ -210,6 +210,7 @@ namespace PyRevitLabs.PyRevit.WebView2 {
                         core.NavigationStarting -= OnNavigationStarting;
                         core.NavigationCompleted -= OnNavigationCompleted;
                         core.WebMessageReceived -= OnWebMessageReceived;
+                        core.ContextMenuRequested -= OnContextMenuRequested;
                     }
                     _control.Dispose();
                 });
@@ -355,8 +356,10 @@ namespace PyRevitLabs.PyRevit.WebView2 {
                 _control.CoreWebView2.NavigationStarting += OnNavigationStarting;
                 _control.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
                 _control.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
+                _control.CoreWebView2.ContextMenuRequested += OnContextMenuRequested;
                 _control.CoreWebView2.Settings.AreDevToolsEnabled = false;
                 _control.CoreWebView2.Settings.IsStatusBarEnabled = false;
+                _control.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
 
                 _coreReady = true;
 
@@ -530,6 +533,23 @@ namespace PyRevitLabs.PyRevit.WebView2 {
             var args = new RendererNavigationStartingEventArgs(e.Uri);
             NavigationStartingRequested?.Invoke(this, args);
             e.Cancel = args.Cancel;
+        }
+
+        /// <summary>
+        /// Drops the navigation commands from the context menu.
+        ///
+        /// Warning: the page is injected content over an empty skeleton and is
+        /// never replayed, so a reload, back or forward blanks the output
+        /// window for good. The matching accelerator keys (F5, Ctrl+R, Alt+Left)
+        /// are disabled through the WebView2 settings.
+        /// </summary>
+        private void OnContextMenuRequested(object sender, CoreWebView2ContextMenuRequestedEventArgs e) {
+            var items = e.MenuItems;
+            for (var i = items.Count - 1; i >= 0; i--) {
+                var name = items[i].Name;
+                if (name == "back" || name == "forward" || name == "reload")
+                    items.RemoveAt(i);
+            }
         }
 
         private void OnNavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e) {
