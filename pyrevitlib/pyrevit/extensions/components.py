@@ -608,11 +608,16 @@ class Extension(GenericUIContainer):
                     manifest_cfg = json.load(mfile)
                     return manifest_cfg
                 except Exception as manfload_err:
-                    print(
-                        "Can not parse ext manifest file: {} | {}".format(
-                            manifest_file, manfload_err
-                        )
+                    reported = self.__dict__.setdefault(
+                        "_reported_manifest_errors", set()
                     )
+                    if manifest_file not in reported:
+                        reported.add(manifest_file)
+                        print(
+                            "Can not parse ext manifest file: {} | {}".format(
+                                manifest_file, manfload_err
+                            )
+                        )
                     return
 
     def configure(self):
