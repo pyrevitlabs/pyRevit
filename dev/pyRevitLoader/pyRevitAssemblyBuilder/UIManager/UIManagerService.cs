@@ -389,10 +389,12 @@ namespace pyRevitAssemblyBuilder.UIManager
                         break;
                     }
 
-                    BuildStackItems(component, itemChildren, parentPanel, tabName, assemblyInfo);
+                    var stackedCheckBoxIds = BuildStackItems(component, itemChildren, parentPanel, tabName, assemblyInfo);
                     // Mark all children in the stack as touched
-                    foreach (var child in visibleChildren)
+                    foreach (var child in visibleChildren.Where(child => !IsCheckBox(child)))
                         _ribbonScanner?.MarkElementTouched("button", child.DisplayName, panelName);
+                    foreach (var stackedCheckBoxId in stackedCheckBoxIds)
+                        _ribbonScanner?.MarkElementTouched("button", stackedCheckBoxId, panelName);
                     break;
 
                 case CommandComponentType.ComboBox:
@@ -408,8 +410,9 @@ namespace pyRevitAssemblyBuilder.UIManager
                     break;
 
                 case CommandComponentType.CheckBox:
-                    _checkBoxBuilder.CreateOrUpdateCheckBox(component, parentPanel!, tabName);
-                    _ribbonScanner?.MarkElementTouched("button", component.DisplayName, panelName);
+                    var checkBoxId = _checkBoxBuilder.CreateOrUpdateCheckBox(component, parentPanel!, tabName);
+                    if (checkBoxId != null)
+                        _ribbonScanner?.MarkElementTouched("button", checkBoxId, panelName);
                     break;
 
                 default:
@@ -488,7 +491,9 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// them. The other items form a stack when there are two or more. The checkboxes always go
         /// through the checkbox stack builder, even when there is only one, so their ids name the stack.
         /// </remarks>
-        private void BuildStackItems(
+        /// <returns>The ids of the stacked checkboxes it shows, which the ribbon scanner tracks instead
+        /// of their names, because a standalone checkbox in the same panel can share a name.</returns>
+        private IReadOnlyCollection<string> BuildStackItems(
             ParsedComponent stack,
             List<ParsedComponent> itemChildren,
             RibbonPanel? parentPanel,
@@ -505,8 +510,10 @@ namespace pyRevitAssemblyBuilder.UIManager
             else if (otherItems.Count > 1)
                 _stackBuilder.BuildStack(stack, parentPanel!, assemblyInfo);
 
-            if (checkBoxes.Count > 0)
-                _checkBoxBuilder.CreateOrUpdateCheckBoxStack(stack, checkBoxes, parentPanel!, tabName);
+            if (checkBoxes.Count == 0)
+                return Array.Empty<string>();
+
+            return _checkBoxBuilder.CreateOrUpdateCheckBoxStack(stack, checkBoxes, parentPanel!, tabName);
         }
 
         private static bool IsCheckBox(ParsedComponent component)
