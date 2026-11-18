@@ -125,6 +125,11 @@ namespace pyRevitLabs.Common {
             out bool usedBranchFallback) {
             usedBranchFallback = false;
 
+            if (BinArtifactSupport.IsVersionTagRef(branchName)
+                && TryDownloadVersionTagBin(repoId, branchName, destPath)) {
+                return true;
+            }
+
             var shaAsset = GithubReleaseBinAPI.BuildShaAssetName(normalizedSha);
             foreach (var releaseRepoId in BinArtifactSupport.GetReleaseDownloadRepos(repoId)) {
                 if (GithubReleaseBinAPI.TryDownloadReleaseAsset(releaseRepoId, shaAsset, destPath)) {
@@ -134,12 +139,6 @@ namespace pyRevitLabs.Common {
                     }
                     return true;
                 }
-            }
-
-            // Published v* releases attach a durable signed bin zip; try it when SHA assets are absent.
-            if (BinArtifactSupport.IsVersionTagRef(branchName)
-                && TryDownloadVersionTagBin(repoId, branchName, destPath)) {
-                return true;
             }
 
             if (!allowBranchFallback || !BinArtifactSupport.IsSupportedCiBinBranch(branchName))

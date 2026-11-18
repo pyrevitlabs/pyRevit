@@ -138,9 +138,9 @@ https://github.com/pyrevitlabs/pyRevit/releases/download/v{version}/bin-v{versio
 
 CLI download order:
 
-1. Release asset for clone remote + commit SHA (`ci-binaries`)
-2. Release asset for upstream (`pyrevitlabs/pyRevit`) + same SHA (synced forks)
-3. Signed `bin-v{version}.zip` on the version GitHub Release when `--branch` is not `develop`/`master`
+1. Signed `bin-v{version}.zip` on the version GitHub Release when `--branch` is a `v*` tag, so a tag clone gets the same signed binaries as the installer rather than the unsigned CI zip of the same commit
+2. Release asset for clone remote + commit SHA (`ci-binaries`)
+3. Release asset for upstream (`pyrevitlabs/pyRevit`) + same SHA (synced forks)
 4. Release branch-latest on clone remote, then upstream (`develop` / `master` only)
 5. NuGet `PyRevit.UnsignedBin` (when `GITHUBTOKEN` is set)
 6. Actions artifacts (when `GITHUBTOKEN` is set)
