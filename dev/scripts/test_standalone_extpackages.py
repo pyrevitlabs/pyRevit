@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+import tempfile
 import types
 import unittest
 from unittest.mock import patch
@@ -106,6 +107,7 @@ class ExtensionPackageLoadStateTests(unittest.TestCase):
                 json.loads(json.dumps(self.backend.sections))
             ),
             get_ext_root_dirs=lambda: [],
+            get_thirdparty_ext_root_dirs=lambda: [],
         )
         self.config_patch = patch.object(self.extpackages, "user_config", user_config)
         self.config_patch.start()
@@ -113,6 +115,23 @@ class ExtensionPackageLoadStateTests(unittest.TestCase):
         self.package = self.extpackages.ExtensionPackage(
             {"name": "Example", "url": "https://example.com/example.git"}
         )
+
+    def test_same_named_extension_resolves_to_user_root_before_shipped(self):
+        """Removal of a package without a definition path spares the shipped copy."""
+        with tempfile.TemporaryDirectory() as tmp:
+            shipped = os.path.join(tmp, "shipped")
+            thirdparty = os.path.join(tmp, "thirdparty")
+            for root in (shipped, thirdparty):
+                os.makedirs(os.path.join(root, "Example.extension"))
+            user_config = types.SimpleNamespace(
+                get_ext_root_dirs=lambda: [shipped, thirdparty],
+                get_thirdparty_ext_root_dirs=lambda: [thirdparty],
+            )
+            with patch.object(self.extpackages, "user_config", user_config):
+                self.assertEqual(
+                    os.path.join(thirdparty, "Example.extension"),
+                    self.package.is_installed,
+                )
 
     def _assert_nothing_written(self, before):
         self.assertEqual([], self.saved)

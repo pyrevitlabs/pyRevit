@@ -191,6 +191,10 @@ class ExtensionPackage:
     def is_installed(self):
         """Installation directory.
 
+        A package without a definition path of its own matches by directory
+        name; user extension roots are searched before the shipped one so that
+        removal never targets the shipped copy of a same-named extension.
+
         Returns:
             (str): Installed directory path or empty string if not installed.
         """
@@ -201,7 +205,10 @@ class ExtensionPackage:
                 if any(op.basename(parent).endswith(p) for p in EXTENSION_POSTFIXES):
                     return parent
         # Fallback: match by ext_dirname (name from manifest + postfix)
-        for ext_dir in user_config.get_ext_root_dirs():
+        search_dirs = user_config.get_thirdparty_ext_root_dirs() + (
+            user_config.get_ext_root_dirs()
+        )
+        for ext_dir in search_dirs:
             if op.exists(ext_dir):
                 for sub_dir in os.listdir(ext_dir):
                     if (
