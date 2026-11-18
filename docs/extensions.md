@@ -37,7 +37,7 @@ The `ctx` that both handlers receive has these members:
 
 | Member | What it is |
 |---|---|
-| `is_checked` | The checked state. Setting a new value raises `__chk_on_change__` again, the same way a click does. |
+| `is_checked` | The checked state. Setting a new value raises `__chk_on_change__` again, the same way a click does, except inside `__chk_init__`: the change handler is attached only after `__chk_init__` returns, so restoring a saved state there does not raise it. |
 | `text`, `enabled`, `visible` | The checkbox's label, and whether it is enabled and shown. All three can be set. |
 | `checkbox` | The AdWindows `RibbonCheckBox` itself. |
 | `uiapp` | Revit's `UIApplication`. |
@@ -46,6 +46,8 @@ The `ctx` that both handlers receive has these members:
 | `user_data` | A .NET `Dictionary[str, object]` that keeps data between calls until the next pyRevit reload. On IronPython 2.7 it has no `get` or `setdefault`, so check keys with `ctx.user_data.ContainsKey(key)` and read them with `ctx.user_data[key]`. |
 
 Smart buttons and combo boxes keep their modules apart the same way: all smart buttons share one IronPython engine and all combo boxes share another, but each bundle keeps its own copy of the modules it imports from its `lib` folders and from library extensions. This covers the bundle's script and the functions pyRevit calls: `__selfinit__`, the `__cmb_*__` handlers and the `__chk_*__` handlers. A handler that a script subscribes itself, such as a Revit event handler added in `__selfinit__`, runs outside its bundle, so import what it needs at the top of the script rather than inside the handler.
+
+Every checkbox, smart button and combo box also keeps its own copy of the modules it imports from its extension's `lib` folder, so a cache or other state kept in such a module is not shared between bundles.
 
 ## Bundle files
 

@@ -15,7 +15,10 @@ namespace pyRevitExtensionParserTester
     /// <c>lib</c> module with the same name as another bundle's imports its own copy, modules under a
     /// shared root stay one module for all bundles, and a nested bundle hands the outer bundle's
     /// modules back. Reproduces the shared-engine finding from the review of pyrevitlabs/pyRevit#4133,
-    /// which smart buttons, ComboBoxes and checkboxes all had.
+    /// which smart buttons, ComboBoxes and checkboxes all had, and two findings from the review of
+    /// pyrevitlabs/pyRevit#4136: a module imported from a folder the bundle removed from
+    /// <c>sys.path</c> again reached the next bundle, and a submodule kept shared between two
+    /// bundles' copies of a package was missing from the second bundle's package.
     /// </summary>
     /// <remarks>
     /// Drives <c>PyRevitLoader.BundleModuleIsolation</c> from the IronPython 3 <c>pyRevitLoader.dll</c>
@@ -28,6 +31,7 @@ namespace pyRevitExtensionParserTester
     public class BundleModuleIsolationTests
     {
         private const string LibModuleName = "shared_name";
+        private const string TemporaryModuleName = "tmp_mod";
 
         private string _root = string.Empty;
         private object _engine = null!;
@@ -101,21 +105,78 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
-        public void Enter_SubmoduleOfAnOwnedPackageUnderASharedRoot_StaysShared()
+        public void Enter_SubmoduleOfAnOwnedPackageUnderASharedRoot_MovesWithItsPackage()
         {
             string sharedRoot = CreateDirectory("site-packages");
-            string sharedPart = CreateDirectory(Path.Combine("site-packages", "pkg_ext"));
-            File.WriteAllText(Path.Combine(sharedPart, "sub.py"), "VALUE = 'shared'");
-            Call(_isolation, "AddSharedRoot", sharedRoot);
-            string package = CreateDirectory(Path.Combine("Owner", "lib", "pkg"));
-            File.WriteAllText(Path.Combine(package, "__init__.py"), $"__path__.append({PythonString(sharedPart)})");
-            object owner = CreateBundle("Owner", sharedRoot);
+            string sharedPart = CreateSharedPackagePart(sharedRoot);
+            object owner = CreateBundleWithPackage("Owner", sharedPart, sharedRoot);
 
             using (Enter(owner))
                 Execute("import pkg.sub");
 
             Assert.That(Execute("import sys\nresult = 'pkg' in sys.modules"), Is.False);
-            Assert.That(Execute("import sys\nresult = 'pkg.sub' in sys.modules"), Is.True);
+            Assert.That(Execute("import sys\nresult = 'pkg.sub' in sys.modules"), Is.False);
+        }
+
+        [Test]
+        public void Enter_TwoBundlesWhosePackagesExtendIntoTheSameSharedFolder_EachGetsTheSubmoduleOnItsOwnPackage()
+        {
+            string sharedRoot = CreateDirectory("site-packages");
+            string sharedPart = CreateSharedPackagePart(sharedRoot);
+            object first = CreateBundleWithPackage("First", sharedPart, sharedRoot);
+            object second = CreateBundleWithPackage("Second", sharedPart, sharedRoot);
+
+            using (Enter(first))
+                Assert.That(Execute("import pkg.sub\nresult = pkg.sub.VALUE"), Is.EqualTo("shared"));
+            using (Enter(second))
+                Assert.That(Execute("import pkg.sub\nresult = pkg.sub.VALUE"), Is.EqualTo("shared"));
+            using (Enter(first))
+                Assert.That(Execute("import pkg.sub\nresult = pkg.sub.VALUE"), Is.EqualTo("shared"));
+        }
+
+        [Test]
+        public void Enter_ModuleImportedFromAFolderTheBundleRemovedAgain_StaysWithThatBundle()
+        {
+            object first = CreateBundle("First");
+            object second = CreateBundle("Second");
+            string firstFolder = CreateModuleFolder("first_tmp", "VALUE = 'first'");
+            string secondFolder = CreateModuleFolder("second_tmp", "VALUE = 'second'");
+
+            Assert.That(ImportFromFolderRemovedAfterwards(first, firstFolder), Is.EqualTo("first"));
+            Assert.That(ImportFromFolderRemovedAfterwards(second, secondFolder), Is.EqualTo("second"));
+            using (Enter(first))
+                Assert.That(Execute($"import {TemporaryModuleName}\nresult = {TemporaryModuleName}.VALUE"), Is.EqualTo("first"));
+        }
+
+        [Test]
+        public void Enter_BundleThatRemovedOneOfItsSearchPaths_KeepsTheModulesItLoadedFromThere()
+        {
+            string library = CreateDirectory("RemoverLibrary");
+            File.WriteAllText(Path.Combine(library, LibModuleName + ".py"), "VALUE = 'remover'");
+            object remover = CreateBundle("Remover", library);
+            object other = CreateBundleWithLibModule("Other", "VALUE = 'other'");
+            ImportLibValue(remover);
+
+            using (Enter(remover))
+                Execute($"import sys\nsys.path.remove({PythonString(library)})");
+
+            Assert.That(ImportLibValue(other), Is.EqualTo("other"));
+            using (Enter(remover))
+                Assert.That(Execute($"import {LibModuleName}\nresult = {LibModuleName}.VALUE"), Is.EqualTo("remover"));
+        }
+
+        [Test]
+        public void Enter_ModuleFromTheEmbeddedStandardLibrary_StaysOneModuleForAllBundles()
+        {
+            RegisterEmbeddedStandardLibrary();
+            object first = CreateBundle("First");
+            object second = CreateBundle("Second");
+
+            using (Enter(first))
+                Execute("import colorsys\ncolorsys.loaded_by = 'first'");
+
+            using (Enter(second))
+                Assert.That(Execute("import colorsys\nresult = getattr(colorsys, 'loaded_by', None)"), Is.EqualTo("first"));
         }
 
         [Test]
@@ -200,6 +261,63 @@ namespace pyRevitExtensionParserTester
         {
             using (Enter(bundle))
                 return Execute($"import {LibModuleName}\nresult = {LibModuleName}.VALUE");
+        }
+
+        private string CreateSharedPackagePart(string sharedRoot)
+        {
+            string sharedPart = CreateDirectory(Path.Combine(Path.GetFileName(sharedRoot), "pkg_ext"));
+            File.WriteAllText(Path.Combine(sharedPart, "sub.py"), "VALUE = 'shared'");
+            Call(_isolation, "AddSharedRoot", sharedRoot);
+            return sharedPart;
+        }
+
+        private object CreateBundleWithPackage(string name, string extraPackagePath, string sharedRoot)
+        {
+            string package = CreateDirectory(Path.Combine(name, "lib", "pkg"));
+            File.WriteAllText(Path.Combine(package, "__init__.py"), $"__path__.append({PythonString(extraPackagePath)})");
+            return CreateBundle(name, sharedRoot);
+        }
+
+        private string CreateModuleFolder(string name, string moduleSource)
+        {
+            string folder = CreateDirectory(name);
+            File.WriteAllText(Path.Combine(folder, TemporaryModuleName + ".py"), moduleSource);
+            return folder;
+        }
+
+        private object? ImportFromFolderRemovedAfterwards(object bundle, string folder)
+        {
+            using (Enter(bundle))
+                return Execute(
+                    $"import sys\nsys.path.append({PythonString(folder)})\nimport {TemporaryModuleName}\n"
+                    + $"sys.path.remove({PythonString(folder)})\nresult = {TemporaryModuleName}.VALUE");
+        }
+
+        /// <summary>
+        /// Adds the standard library embedded in the loader to the engine, first in
+        /// <c>sys.meta_path</c>, the way <c>ScriptExecutor.AddEmbeddedLib</c> adds it for pyRevit's
+        /// engines. Its modules get a relative <c>__file__</c>, such as <c>colorsys.py</c>.
+        /// </summary>
+        private void RegisterEmbeddedStandardLibrary()
+        {
+            Assembly loader = LoaderAssembly();
+            string resource = loader.GetManifestResourceNames()
+                .Single(name => name.EndsWith("_lib.zip", StringComparison.OrdinalIgnoreCase));
+            Type importerType = LoadReferencedAssembly(loader, "IronPython.Modules")
+                .GetType("IronPython.Modules.ResourceMetaPathImporter", throwOnError: true)!;
+            object importer = Activator.CreateInstance(importerType, loader, resource)!;
+
+            Type python = IronPythonAssembly().GetType("IronPython.Hosting.Python", throwOnError: true)!;
+            object sys = python.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                .Single(method => method.Name == "GetSysModule"
+                    && method.GetParameters().Length == 1
+                    && method.GetParameters()[0].ParameterType.IsInstanceOfType(_engine))
+                .Invoke(null, new[] { _engine })!;
+            object metaPath = Call(sys, "GetVariable", "meta_path")!;
+            metaPath.GetType()
+                .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .First(method => method.Name == "insert" && method.GetParameters().Length == 2)
+                .Invoke(metaPath, new object[] { 0, importer });
         }
 
         private IDisposable? Enter(object bundle)
