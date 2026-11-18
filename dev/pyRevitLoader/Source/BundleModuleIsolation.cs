@@ -17,11 +17,14 @@ namespace PyRevitLoader
     /// A bundle owns the modules that appear in <c>sys.modules</c> while it is the active bundle and
     /// the modules loaded from its own search paths, except those loaded from a shared root: the
     /// engine's base paths and the roots added with <see cref="AddSharedRoot"/>, such as
-    /// <c>pyrevitlib</c> and <c>site-packages</c>. A package's submodules go with the package, even
-    /// ones loaded from a shared root. A bundle's modules stay out of <c>sys.modules</c> while it is
-    /// not the active bundle, so two bundles can ship <c>lib</c> modules with the same name while
-    /// pyRevit and the standard library are still imported once for all of them. A module stays with
-    /// its bundle even after the bundle's code removes the folder it came from from <c>sys.path</c>.
+    /// <c>pyrevitlib</c> and <c>site-packages</c>. A package's submodules go with the package, however
+    /// deeply nested and even when loaded from a shared root. A bundle's modules stay out of
+    /// <c>sys.modules</c> while it is not the active bundle, so two bundles can ship <c>lib</c> modules
+    /// with the same name while pyRevit and the standard library are still imported once for all of
+    /// them. A module stays with its bundle even after the bundle's code removes the folder it came
+    /// from from <c>sys.path</c>. A shared module that a bundle's code replaces with one of its own,
+    /// such as by deleting it from <c>sys.modules</c> and importing the bundle's module of that name,
+    /// goes back into <c>sys.modules</c> when the bundle is left.
     /// Invariant: a module loaded from a shared root moves only as a submodule of a package the bundle
     /// owns, and <c>__main__</c> never moves.
     /// Note: only code that runs while its bundle is entered is kept apart. Callbacks a script subscribes
@@ -244,7 +247,7 @@ namespace PyRevitLoader
 
         /// <summary>
         /// Saves <c>sys.path</c> into the bundle, moves the modules it owns out of <c>sys.modules</c>
-        /// and into the bundle, and puts back the modules they hid.
+        /// and into the bundle, and puts back the modules they hid and the shared modules they replaced.
         /// </summary>
         /// <remarks>
         /// Invariant: only call it for the active bundle. Its saved modules are rebuilt from
@@ -258,12 +261,16 @@ namespace PyRevitLoader
 
             var modules = GetSysModules(engine);
             var ownNames = FindOwnModuleNames(modules, bundle);
+            var replacedSharedModules = FindReplacedSharedModules(bundle, ownNames);
             bundle.Modules.Clear();
             foreach (var name in ownNames)
             {
                 bundle.Modules[name] = modules[name];
                 modules.Remove(name);
             }
+
+            foreach (var module in replacedSharedModules)
+                modules[module.Key] = module.Value;
 
             foreach (var module in bundle.HiddenModules)
             {
@@ -277,9 +284,9 @@ namespace PyRevitLoader
         /// <summary>
         /// Lists the <c>sys.modules</c> entries the active bundle owns: the entries it owned when it
         /// was entered, the modules that appeared or were replaced since then, the modules whose file
-        /// lies under one of its search paths that is not shared, and every other entry inside such a
-        /// package, including the <c>None</c> entries IronPython 2 records for failed implicit relative
-        /// imports.
+        /// lies under one of its search paths that is not shared, and every entry inside a package it
+        /// owns, however deeply nested, including the <c>None</c> entries IronPython 2 records for
+        /// failed implicit relative imports.
         /// </summary>
         /// <remarks>
         /// Note: ownership does not depend on the bundle's final <c>sys.path</c>, so a module imported
@@ -290,7 +297,9 @@ namespace PyRevitLoader
         /// Note: a submodule goes with its package even when its file lies under a shared root, as in a
         /// package that extends its <c>__path__</c> into <c>site-packages</c>. It cannot stay shared
         /// between two bundles' copies of the package: <c>import pkg.sub</c> in the second bundle would
-        /// find the cached submodule and leave that bundle's <c>pkg</c> without it.
+        /// find the cached submodule and leave that bundle's <c>pkg</c> without it. The same holds for a
+        /// package the bundle adds to a shared package, such as its own <c>pkg.plugins</c> inside a shared
+        /// <c>pkg</c>: its submodules go with it, while <c>pkg</c> and its other submodules stay shared.
         /// Invariant: call it before <see cref="Bundle.Modules"/> is cleared, because those are the
         /// entries the bundle owned when it was entered.
         /// </remarks>
@@ -324,10 +333,54 @@ namespace PyRevitLoader
             var names = new List<string>();
             foreach (var name in moduleNames)
             {
-                if (owned.Contains(name) || owned.Contains(TopLevelName(name)))
+                if (owned.Contains(name) || IsInsideOwnedPackage(name, owned))
                     names.Add(name);
             }
             return names;
+        }
+
+        /// <summary>
+        /// Lists the shared modules that the names in <paramref name="ownNames"/> held when the active
+        /// bundle was entered, for the names it did not own then, such as a shared module its code
+        /// replaced with a <c>lib</c> module of the same name.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: never lists a module the bundle owned when it was entered, or one loaded from a
+        /// file outside the shared roots, which belongs to a bundle: putting either back would hand it to
+        /// the next bundle. Call it before <see cref="Bundle.Modules"/> is cleared.
+        /// </remarks>
+        private Dictionary<string, object> FindReplacedSharedModules(Bundle bundle, List<string> ownNames)
+        {
+            var sharedModules = new Dictionary<string, object>(StringComparer.Ordinal);
+            var modulesWhenEntered = bundle.ModulesWhenEntered;
+            if (modulesWhenEntered == null)
+                return sharedModules;
+
+            foreach (var name in ownNames)
+            {
+                if (!bundle.Modules.ContainsKey(name)
+                    && modulesWhenEntered.TryGetValue(name, out var moduleWhenEntered)
+                    && moduleWhenEntered != null
+                    && IsShared(moduleWhenEntered))
+                    sharedModules[name] = moduleWhenEntered;
+            }
+            return sharedModules;
+        }
+
+        private bool IsShared(object module)
+        {
+            var file = NormalizeModuleFile(GetModuleFile(module));
+            return file == null || IsUnderAny(file, _sharedRoots);
+        }
+
+        private static bool IsInsideOwnedPackage(string moduleName, HashSet<string> ownedNames)
+        {
+            for (var dot = moduleName.IndexOf('.'); dot >= 0; dot = moduleName.IndexOf('.', dot + 1))
+            {
+                if (ownedNames.Contains(moduleName.Substring(0, dot)))
+                    return true;
+            }
+            return false;
         }
 
         private static bool AppearedWhileActive(Bundle bundle, string name, object module)
@@ -360,12 +413,6 @@ namespace PyRevitLoader
                 && pythonModule.Get__dict__().TryGetValue("__file__", out var file))
                 return file as string;
             return null;
-        }
-
-        private static string TopLevelName(string moduleName)
-        {
-            var dot = moduleName.IndexOf('.');
-            return dot < 0 ? moduleName : moduleName.Substring(0, dot);
         }
 
         private string NormalizeModuleFile(string file)
