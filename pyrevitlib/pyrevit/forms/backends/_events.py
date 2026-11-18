@@ -324,8 +324,10 @@ def bind_template_event(registry, root, tag, uid, event_name, handler):
 
     Note:
         An event with no preview counterpart (``Button.Click``) is observed at
-        ``root`` after the template element's ancestors, so an ancestor that
-        marks it handled keeps the template callback from running.
+        ``root`` and also when an ancestor already marked it handled, as
+        IronPython's element-level handler always runs. The callback then runs
+        after the ancestor's handlers instead of before them, which matters
+        only if it depends on their side effects.
 
     Raises:
         PyRevitException: The event is unknown, or is a direct routed event
@@ -511,10 +513,11 @@ def _attach_at_root(registry, root, event, sources, callback):
         matches = sources(args)
         if tunnels:
             matches.reverse()
+        handled_before = args.Handled
         for element in matches:
             callback(element, args)
-            if args.Handled:
+            if args.Handled and not handled_before:
                 break
 
     _DISPATCH_CODES.add(routed.__code__)
-    registry.add_routed(root, event, Windows.RoutedEventHandler(routed))
+    registry.add_routed(root, event, Windows.RoutedEventHandler(routed), not tunnels)

@@ -1002,6 +1002,7 @@ def _load_events():
     hooks = {}
     windows = SimpleNamespace(
         RoutedEventHandler=lambda callback: callback,
+        RoutingStrategy=SimpleNamespace(Tunnel="Tunnel", Bubble="Bubble"),
         FrameworkElement=_FrameworkElement,
         FrameworkContentElement=type("FrameworkContentElement", (), {}),
     )
@@ -1086,6 +1087,64 @@ class TemplateHookTests(unittest.TestCase):
         parked.Loaded.raise_(parked)
         self.assertEqual([], parked.Click.handlers)
         self.assertTrue(self.registry.is_released)
+
+
+class _RoutedRoot(object):
+    def __init__(self):
+        self.added = []
+        self.removed = []
+
+    def AddHandler(self, event, handler, handled_events_too=False):
+        self.added.append((event, handler, handled_events_too))
+
+    def RemoveHandler(self, event, handler):
+        self.removed.append((event, handler))
+
+
+class RootAttachedTemplateEventTests(unittest.TestCase):
+    """Events without a preview counterpart are observed at the window root."""
+
+    def setUp(self):
+        """Attach one Bubble event at a fake root."""
+        events, _ = _load_events()
+        self.registry = events._EventRegistry()
+        self.root = _RoutedRoot()
+        self.event = SimpleNamespace(RoutingStrategy="Bubble")
+        self.calls = []
+        events._attach_at_root(
+            self.registry,
+            self.root,
+            self.event,
+            lambda args: [args.source],
+            lambda sender, args: self.calls.append(sender),
+        )
+
+    def test_handler_also_receives_events_an_ancestor_handled(self):
+        """The callback must run when an ancestor already marked Click handled."""
+        ((event, handler, handled_too),) = self.root.added
+        self.assertIs(self.event, event)
+        self.assertTrue(handled_too)
+        handler(self.root, SimpleNamespace(source="button", Handled=True))
+        self.assertEqual(["button"], self.calls)
+
+    def test_tunnelling_events_keep_skipping_handled_ones(self):
+        """Only bubbling events are observed after an ancestor handled them."""
+        events, _ = _load_events()
+        root = _RoutedRoot()
+        events._attach_at_root(
+            events._EventRegistry(),
+            root,
+            SimpleNamespace(RoutingStrategy="Tunnel"),
+            lambda args: [],
+            lambda sender, args: None,
+        )
+        self.assertFalse(root.added[0][2])
+
+    def test_release_removes_the_same_handler(self):
+        """Release detaches the delegate that was added."""
+        added = self.root.added[0]
+        self.registry.release()
+        self.assertEqual([added[:2]], self.root.removed)
 
 
 class FormsExportsTests(unittest.TestCase):
