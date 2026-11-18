@@ -58,6 +58,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private const string FormsBindingAssemblyName = "pyRevitLabs.PyRevit.Forms.Binding";
 
         private static bool _pythonConversionsRegistered;
+        private static bool _pythonConversionFailureLogged;
 
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
@@ -129,7 +130,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <remarks>
         /// Uses the forms binding assembly already loaded in the process if there is one, as
         /// <c>clr.AddReference</c> would, so scripts and the engine share the same registration.
-        /// Registered once per runtime assembly. A failure is logged with its exception and retried on
+        /// Registered once per runtime assembly. A failure is logged once with its exception and retried on
         /// the next engine start; until then <c>pyrevit.forms</c> registers them on import.
         /// </remarks>
         private static void RegisterPythonConversions() {
@@ -148,7 +149,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _pythonConversionsRegistered = true;
             }
             catch (Exception ex) {
-                logger.Warn(ex, "CPython engine could not register the forms binding conversions.");
+                if (!_pythonConversionFailureLogged) {
+                    _pythonConversionFailureLogged = true;
+                    logger.Warn(ex, "CPython engine could not register the forms binding conversions.");
+                }
             }
         }
 
