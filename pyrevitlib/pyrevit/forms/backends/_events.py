@@ -322,6 +322,11 @@ def bind_template_event(registry, root, tag, uid, event_name, handler):
     the element's WPF type name, or ``{namespace}Name`` for a type outside the
     WPF namespace, which is then matched by ``Uid`` alone.
 
+    Note:
+        An event with no preview counterpart (``Button.Click``) is observed at
+        ``root`` after the template element's ancestors, so an ancestor that
+        marks it handled keeps the template callback from running.
+
     Raises:
         PyRevitException: The event is unknown, or is a direct routed event
             such as ``Loaded`` or ``MouseEnter`` that never reaches an
