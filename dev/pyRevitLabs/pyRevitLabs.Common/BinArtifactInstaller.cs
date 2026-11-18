@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 
 using pyRevitLabs.NLog;
 
@@ -125,13 +127,14 @@ namespace pyRevitLabs.Common {
             out bool usedBranchFallback) {
             usedBranchFallback = false;
 
-            if (BinArtifactSupport.IsVersionTagRef(branchName)
-                && TryDownloadVersionTagBin(repoId, branchName, destPath)) {
+            var releaseRepos = BinArtifactSupport.GetReleaseDownloadRepos(repoId);
+            var isVersionTag = BinArtifactSupport.IsVersionTagRef(branchName);
+
+            if (isVersionTag && TryDownloadVersionTagBin(releaseRepos.Take(1), branchName, destPath))
                 return true;
-            }
 
             var shaAsset = GithubReleaseBinAPI.BuildShaAssetName(normalizedSha);
-            foreach (var releaseRepoId in BinArtifactSupport.GetReleaseDownloadRepos(repoId)) {
+            foreach (var releaseRepoId in releaseRepos) {
                 if (GithubReleaseBinAPI.TryDownloadReleaseAsset(releaseRepoId, shaAsset, destPath)) {
                     if (BinArtifactSupport.IsForkRepo(repoId)
                         && string.Equals(releaseRepoId, PyRevitLabsConsts.OriginalRepoId, StringComparison.OrdinalIgnoreCase)) {
@@ -140,6 +143,9 @@ namespace pyRevitLabs.Common {
                     return true;
                 }
             }
+
+            if (isVersionTag && TryDownloadVersionTagBin(releaseRepos.Skip(1), branchName, destPath))
+                return true;
 
             if (!allowBranchFallback || !BinArtifactSupport.IsSupportedCiBinBranch(branchName))
                 return false;
@@ -171,9 +177,12 @@ namespace pyRevitLabs.Common {
             return false;
         }
 
-        private static bool TryDownloadVersionTagBin(string repoId, string tagName, string destPath) {
+        private static bool TryDownloadVersionTagBin(
+            IEnumerable<string> releaseRepoIds,
+            string tagName,
+            string destPath) {
             var tagAsset = GithubReleaseBinAPI.BuildVersionTagBinAssetName(tagName);
-            foreach (var releaseRepoId in BinArtifactSupport.GetReleaseDownloadRepos(repoId)) {
+            foreach (var releaseRepoId in releaseRepoIds) {
                 if (GithubReleaseBinAPI.TryDownloadReleaseAsset(
                     releaseRepoId,
                     tagAsset,
