@@ -144,7 +144,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
             ],
             cancellationToken);
 
-        await RunPythonTestsAsync(context, "test_check_py3_compat.py", cancellationToken);
+        await RunPythonTestsAsync(context, "test_check_*.py", cancellationToken);
     }
 
     private static async Task RunPythonTestsAsync(
