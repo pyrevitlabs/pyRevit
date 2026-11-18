@@ -122,7 +122,7 @@ Nothing in CI runs this suite; it needs an installed Revit.
 python -m unittest discover -s dev/scripts -p 'test_standalone_*.py' -v
 ```
 
-Two other host-free modules live beside them: `test_check_config_api.py` and `test_check_py3_compat.py`. They have separate `Pipfile` commands (`pipenv run test-config-api`, `pipenv run test-py3-compat`), and the CI discovery pattern above excludes them. To run every module in the folder locally:
+Two other host-free modules live beside them: `test_check_config_api.py` and `test_check_py3_compat.py`. They have separate `Pipfile` commands (`pipenv run test-config-api`, `pipenv run test-py3-compat`), and the `dotnet run -- ci` test step discovers every `test_check_*.py` module. To run every module in the folder locally:
 
 ```bash
 python -m unittest discover -s dev/scripts -p 'test_*.py' -v
