@@ -132,6 +132,6 @@ engines, installer, config or CLI attach/clone (targeted regression).
 - [ ] Draft release installers are signed, install on a clean machine and load without the Unsigned Add-In dialog
 - [ ] Draft release notes reviewed
 - [ ] `pyrevit clone --branch=v<version>` gets its binaries
-- [ ] Winget workflow ran and the Chocolatey package is listed
+- [ ] Winget and Chocolatey workflows ran and both Chocolatey packages (`pyrevit`, `pyrevit-cli`) are listed
 - [ ] Documentation site shows the released state
 - [ ] `develop` carries the next version; milestone closed
