@@ -53,9 +53,10 @@ Checks:
                 pyrevitlib and in scripts with a CPython shebang, since the
                 same code is correct under IronPython
 
-Findings in bundled extensions under ``extensions/`` are tracked, not blocking,
-while those extensions migrate; the run still fails if their count exceeds
-``TRACKED_EXTENSION_FINDINGS_LIMIT``.
+Only CLR-LIST, CLR-NAMESPACE and FORM-NATIVE findings in bundled extensions
+under ``extensions/`` are tracked, not blocking, while those extensions
+migrate; the run still fails if their count exceeds
+``TRACKED_EXTENSION_FINDINGS_LIMIT``. Every other code stays blocking there.
 
 A finding is not flagged when its branch is unreachable on IronPython 3,
 its enclosing test is skipped on that engine, or it is inside a try/except
@@ -306,12 +307,24 @@ def _is_branch_skipped(parent, child, flag_values):
     return False
 
 
+def _unshadowed_flags(flag_values, node, parents):
+    """Drop the flags an enclosing function rebinds as a parameter or local."""
+    shadowed = set()
+    current = node
+    while current in parents:
+        current = parents[current]
+        if isinstance(current, FUNCTION_SCOPES):
+            shadowed |= _bound_names(current)
+    return {name: value for name, value in flag_values.items() if name not in shadowed}
+
+
 def _is_engine_guarded(node, parents):
     """Return True when a branch cannot execute on IronPython 3."""
+    flag_values = _unshadowed_flags(IPY3_FLAG_VALUES, node, parents)
     current = node
     while current in parents:
         parent = parents[current]
-        if _is_branch_skipped(parent, current, IPY3_FLAG_VALUES):
+        if _is_branch_skipped(parent, current, flag_values):
             return True
         if isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for decorator in parent.decorator_list:
@@ -339,10 +352,11 @@ def _is_cpython_unreachable(node, parents):
     Separate from the IronPython 3 guard: ``if IRONPY:`` is reachable on
     IronPython 3 but never on CPython, so CPython-only rules must not reuse it.
     """
+    flag_values = _unshadowed_flags(CPYTHON_FLAG_VALUES, node, parents)
     current = node
     while current in parents:
         parent = parents[current]
-        if _is_branch_skipped(parent, current, CPYTHON_FLAG_VALUES):
+        if _is_branch_skipped(parent, current, flag_values):
             return True
         current = parent
     return False
@@ -412,6 +426,8 @@ PYTHON_ITERABLE_BUILTINS = {
     "reversed",
     "map",
     "filter",
+    "range",
+    "zip",
 }
 
 
@@ -423,7 +439,8 @@ def _clr_list_names(tree, local_names):
     """Return the bare names that denote the CLR ``List`` in a module.
 
     A name imported as ``List`` from any module other than ``typing`` and
-    ``builtins`` counts under whatever alias it was bound to. An unbound
+    ``builtins`` counts under whatever alias it was bound to, and so does a name
+    assigned a qualified ``<module>.List`` such as ``Generic.List``. An unbound
     ``List`` counts too, since star imports and shims cannot be resolved; a
     ``List`` bound to anything else does not.
     """
@@ -434,6 +451,15 @@ def _clr_list_names(tree, local_names):
                 alias.asname or alias.name
                 for alias in node.names
                 if alias.name == "List"
+            )
+        elif (
+            isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Attribute)
+            and node.value.attr == "List"
+            and _receiver_name(node.value.value) not in NON_CLR_LIST_MODULES
+        ):
+            names.update(
+                target.id for target in node.targets if isinstance(target, ast.Name)
             )
     if "List" not in local_names:
         names.add("List")
@@ -492,14 +518,25 @@ def _is_clr_value(node):
 
     Numbers, ``len(...)`` and PascalCase members such as ``sel.GetElementIds()``
     or ``view.Elements`` count; Python helpers may return lists, so they do not.
+    That includes methods called directly on ``self`` or ``cls``, however they
+    are spelled.
     """
     if isinstance(node, ast.Constant):
         return isinstance(node.value, int) and not isinstance(node.value, bool)
     if isinstance(node, ast.Call):
         if isinstance(node.func, ast.Name):
             return node.func.id == "len"
+        if isinstance(node.func, ast.Attribute) and _is_self_or_cls(node.func.value):
+            return False
         node = node.func
     return isinstance(node, ast.Attribute) and node.attr[:1].isupper()
+
+
+def _is_self_or_cls(node):
+    return isinstance(node, ast.Name) and node.id in ("self", "cls")
+
+
+FUNCTION_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
 
 
 def _scope_nodes(scope):
@@ -516,7 +553,7 @@ def _scope_nodes(scope):
 
 
 def _parameter_names(scope):
-    if not isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+    if not isinstance(scope, FUNCTION_SCOPES):
         return []
     arguments = scope.args
     names = [
@@ -533,30 +570,69 @@ def _ends_before(node, call):
     return (node.end_lineno, node.end_col_offset) <= (call.lineno, call.col_offset)
 
 
+def _contains(outer, inner):
+    return (outer.lineno, outer.col_offset) <= (inner.lineno, inner.col_offset) and (
+        inner.end_lineno,
+        inner.end_col_offset,
+    ) <= (outer.end_lineno, outer.end_col_offset)
+
+
+def _loops_around(scope, call):
+    return [
+        node
+        for node in _scope_nodes(scope)
+        if isinstance(node, (ast.For, ast.AsyncFor, ast.While))
+        and _contains(node, call)
+    ]
+
+
+def _assigned_names(node):
+    """Return the bare names a simple or initialised annotated assignment binds."""
+    if isinstance(node, ast.Assign):
+        targets = node.targets
+    elif isinstance(node, ast.AnnAssign) and node.value is not None:
+        targets = [node.target]
+    else:
+        return []
+    return [target.id for target in targets if isinstance(target, ast.Name)]
+
+
+def _bound_names(scope):
+    """Return the names a function scope binds as parameters or assignments."""
+    names = set(_parameter_names(scope))
+    for node in _scope_nodes(scope):
+        names.update(_assigned_names(node))
+    return names
+
+
 def _clr_value_names(scopes, call=None):
     """Return names whose every assignment in ``scopes`` is a CLR value or number.
 
     ``scopes`` runs from the innermost scope outwards, and each name follows the
     innermost scope that binds it. A parameter binds its name, so it hides the
     enclosing scopes' assignments; names bound only as parameters are not
-    included. In the innermost scope only assignments that end before ``call``
-    can reach it; later assignments bind the name without deciding its value.
+    included. In the innermost scope only assignments that end before ``call``,
+    or that share a loop with it and so reach it on a later iteration, can
+    decide its value; other later assignments bind the name without deciding it.
     """
     decided = {}
     for depth, scope in enumerate(scopes):
         verdicts = {}
         later = []
+        loops = _loops_around(scope, call) if call is not None and depth == 0 else []
         for node in _scope_nodes(scope):
-            if not isinstance(node, ast.Assign):
-                continue
-            for target in node.targets:
-                if not isinstance(target, ast.Name):
-                    continue
-                if call is not None and depth == 0 and not _ends_before(node, call):
-                    later.append(target.id)
+            for name in _assigned_names(node):
+                reaches = (
+                    call is None
+                    or depth != 0
+                    or _ends_before(node, call)
+                    or any(_contains(loop, node) for loop in loops)
+                )
+                if not reaches:
+                    later.append(name)
                     continue
                 is_clr = _is_clr_value(node.value)
-                verdicts[target.id] = verdicts.get(target.id, True) and is_clr
+                verdicts[name] = verdicts.get(name, True) and is_clr
         for name in later:
             verdicts.setdefault(name, False)
         for name in _parameter_names(scope):
@@ -889,10 +965,20 @@ class _FileContext:
         current = node
         while current in self.parents:
             current = self.parents[current]
-            if isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if isinstance(current, FUNCTION_SCOPES):
                 scopes.append(current)
         scopes.append(self.tree)
         return _clr_value_names(scopes, node)
+
+    def visible_clr_list_names(self, node):
+        """Return the CLR ``List`` names no enclosing function rebinds around node."""
+        names = set(self.clr_list_names)
+        current = node
+        while current in self.parents:
+            current = self.parents[current]
+            if isinstance(current, FUNCTION_SCOPES):
+                names -= _bound_names(current)
+        return names
 
 
 def _is_listed(path, repo_paths):
@@ -1048,13 +1134,12 @@ def _sort_key(node, ctx):
 
 
 def _clr_list(node, ctx):
+    list_names = ctx.visible_clr_list_names(node)
     if not _is_generic_list_constructor(
-        node, list_names=ctx.clr_list_names
+        node, list_names=list_names
     ) or _is_cpython_unreachable(node, ctx.parents):
         return
-    if _is_generic_list_constructor(
-        node, ctx.clr_value_names(node), ctx.clr_list_names
-    ):
+    if _is_generic_list_constructor(node, ctx.clr_value_names(node), list_names):
         yield (
             "CLR-LIST",
             "List[T](python_iterable) relies on IronPython coercion; "
@@ -1209,6 +1294,7 @@ def check_file(path):
 def iter_python_files(roots, resolve_against):
     """Yield source files under the requested roots, excluding unsupported trees."""
     excluded = [REPO_ROOT.joinpath(*d.split("/")) for d in EXCLUDED_DIRS]
+    seen = set()
     for root in roots:
         root_path = root if root.is_absolute() else resolve_against / root
         # A missing path must not silently scan nothing and pass green -
@@ -1222,6 +1308,10 @@ def iter_python_files(roots, resolve_against):
         for path in candidates:
             if any(exc in path.parents or exc == path for exc in excluded):
                 continue
+            canonical = path.resolve()
+            if canonical in seen:
+                continue
+            seen.add(canonical)
             yield path
 
 
@@ -1231,7 +1321,7 @@ TRACKED_EXTENSION_FINDINGS_LIMIT = 54
 def _is_tracked_extension_finding(finding):
     """Return whether a phased first-party extension finding is non-blocking."""
     try:
-        finding.path.relative_to(REPO_ROOT / "extensions")
+        finding.path.resolve().relative_to(REPO_ROOT / "extensions")
     except ValueError:
         return False
     return finding.code in {"CLR-LIST", "CLR-NAMESPACE", "FORM-NATIVE"}

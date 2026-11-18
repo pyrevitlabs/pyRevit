@@ -9,6 +9,8 @@ from pathlib import Path
 
 try:
     from .check_py3_compat import (
+        REPO_ROOT,
+        iter_python_files,
         FORM_BASES,
         Finding,
         _bundle_engine_type,
@@ -24,6 +26,8 @@ try:
     )
 except ImportError:
     from check_py3_compat import (
+        REPO_ROOT,
+        iter_python_files,
         FORM_BASES,
         Finding,
         _bundle_engine_type,
@@ -155,6 +159,29 @@ class GenericCollectionTests(unittest.TestCase):
         """Known extension migrations stay visible without blocking the library gate."""
         path = Path(__file__).resolve().parents[2] / "extensions" / "Tool.py"
         self.assertTrue(_is_tracked_extension_finding(Finding(path, 1, "CLR-LIST", "")))
+
+    def test_extension_path_is_resolved_before_classification(self):
+        """Parent-directory segments do not change which tree a finding is in."""
+        bundled = REPO_ROOT / "dev" / ".." / "extensions" / "Tool.py"
+        external = REPO_ROOT / "extensions" / ".." / ".." / "third_party" / "Tool.py"
+        self.assertTrue(
+            _is_tracked_extension_finding(Finding(bundled, 1, "CLR-LIST", ""))
+        )
+        self.assertFalse(
+            _is_tracked_extension_finding(Finding(external, 1, "CLR-LIST", ""))
+        )
+
+    def test_overlapping_scan_roots_yield_each_file_once(self):
+        """A file passed both directly and through its directory is scanned once."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "tool.py").write_text("x = 1\n", encoding="utf-8")
+            files = list(
+                iter_python_files(
+                    [root, root / "tool.py", root / "." / "tool.py"], root
+                )
+            )
+        self.assertEqual(1, len(files))
 
     def test_external_extension_list_finding_blocks(self):
         """Third-party extension checks still report CLR collection incompatibility."""
@@ -607,6 +634,21 @@ class ClrRuleScopeTests(unittest.TestCase):
             self._codes("from builtins import list as List\nList[int]([1])\n"),
         )
 
+    def test_clr_list_assigned_from_a_qualified_type_is_flagged(self):
+        """``List = Generic.List`` keeps the name pointing at the CLR type."""
+        self.assertEqual(
+            ["CLR-LIST"],
+            self._codes(
+                "from System.Collections import Generic\n"
+                "List = Generic.List\n"
+                "List[int]([1])\n"
+            ),
+        )
+        self.assertEqual(
+            [],
+            self._codes("import typing\nList = typing.List\nList[int]([1])\n"),
+        )
+
     def test_assignment_after_the_call_does_not_suppress_it(self):
         """Only assignments that precede the call can reach its argument."""
         self.assertEqual(
@@ -627,6 +669,125 @@ class ClrRuleScopeTests(unittest.TestCase):
                 def f():
                     values = 10
                     return List[int](values)
+                """
+            ),
+        )
+
+    def test_direct_iterable_builtin_calls_are_flagged(self):
+        """``range()`` and ``zip()`` are Python iterables like ``list()``."""
+        for call in ("range(3)", "zip(a, b)"):
+            with self.subTest(call=call):
+                self.assertEqual(
+                    ["CLR-LIST"], self._codes("List[int]({})\n".format(call))
+                )
+        self.assertEqual([], self._codes("List[int](len(items))\n"))
+
+    def test_local_annotated_binding_shadows_the_module_value(self):
+        """An initialised annotation binds a local name like an assignment."""
+        self.assertEqual(
+            ["CLR-LIST"],
+            self._codes(
+                """
+                values = 10
+
+                def f():
+                    values: list = [1]
+                    return List[int](values)
+                """
+            ),
+        )
+
+    def test_lambda_parameters_shadow_the_module_value(self):
+        """A lambda argument is a local binding, not the module capacity."""
+        self.assertEqual(
+            ["CLR-LIST"],
+            self._codes(
+                """
+                values = 10
+                convert = lambda values: List[int](values)
+                """
+            ),
+        )
+
+    def test_loop_carried_reassignment_reaches_the_call(self):
+        """A later assignment in the call's loop reaches the next iteration."""
+        self.assertEqual(
+            ["CLR-LIST"],
+            self._codes(
+                """
+                def f(rows):
+                    values = 10
+                    for row in rows:
+                        List[int](values)
+                        values = [row]
+                """
+            ),
+        )
+        self.assertEqual(
+            [],
+            self._codes(
+                """
+                def f(rows):
+                    values = 10
+                    for row in rows:
+                        List[int](values)
+                    values = [1]
+                """
+            ),
+        )
+
+    def test_parameter_shadowing_the_clr_alias_is_not_flagged(self):
+        """A callee name a function binds locally is not the imported CLR List."""
+        header = "from System.Collections.Generic import List as ClrList\n"
+        self.assertEqual(
+            [],
+            self._codes(header + "def build(ClrList):\n    return ClrList[int]([1])\n"),
+        )
+        self.assertEqual(
+            [],
+            self._codes(
+                header
+                + "def build():\n    ClrList = dict\n    return ClrList[int]([1])\n"
+            ),
+        )
+        self.assertEqual(
+            ["CLR-LIST"],
+            self._codes(header + "def build():\n    return ClrList[int]([1])\n"),
+        )
+
+    def test_parameter_shadowing_the_engine_flag_is_unknown(self):
+        """A parameter named IRONPY is not pyRevit's engine flag."""
+        self.assertEqual(
+            ["CLR-LIST"],
+            self._codes(
+                """
+                def f(IRONPY):
+                    if IRONPY:
+                        return List[int]([1])
+                """
+            ),
+        )
+
+    def test_python_method_results_are_not_clr_values(self):
+        """A PascalCase method called on ``self`` is Python code returning a list."""
+        self.assertEqual(
+            ["CLR-LIST"],
+            self._codes(
+                """
+                class Tool(object):
+                    def run(self):
+                        values = self.BuildValues()
+                        return List[int](values)
+                """
+            ),
+        )
+        self.assertEqual(
+            [],
+            self._codes(
+                """
+                def run(uidoc):
+                    ids = uidoc.Selection.GetElementIds()
+                    return List[int](ids)
                 """
             ),
         )
