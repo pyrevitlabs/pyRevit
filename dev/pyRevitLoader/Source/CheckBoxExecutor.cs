@@ -17,7 +17,7 @@ namespace PyRevitLoader
     /// <summary>
     /// Runs .checkbox bundle scripts in a shared IronPython engine and wires their handlers:
     /// <c>__chk_init__(ctx)</c> once per load, and <c>__chk_on_change__(sender, args, ctx)</c>
-    /// whenever the checkbox's <c>IsChecked</c> changes.
+    /// whenever the checkbox's <c>IsChecked</c> changes after <c>__chk_init__</c> returns.
     /// </summary>
     /// <remarks>
     /// Important: handlers run on the UI thread from WPF property-change notifications, outside
