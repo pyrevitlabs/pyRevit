@@ -18,6 +18,8 @@ namespace PyRevitLabs.PyRevit.Forms.IronPython.Tests;
 /// dotnet test ... -p:SkipPyRevitDeploy=true -p:IronPythonVersion=IPY2712PR
 /// </code>
 /// </remarks>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class IronPythonFormsTests(ITestOutputHelper output) {
     static readonly string[] Probes = ["probe:SelectionProbe", "probe:IronPythonDockableProbe"];
 

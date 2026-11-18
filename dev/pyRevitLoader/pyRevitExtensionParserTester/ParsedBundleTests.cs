@@ -682,6 +682,8 @@ is_beta: true
             }
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
         [Test]
         public void TestPaddedEngineTypeIsTrimmed()
         {
@@ -708,6 +710,8 @@ is_beta: true
             }
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
         [TestCase("{ \"engine\": \"CPython\" }", "cpython")]
         [TestCase("{ \"engine\": { \"type\": \"cpython\", \"clean\": true } }", "cpython")]
         [TestCase("{ \"engine\": \"IronPython\" }", "ironpython")]
@@ -726,6 +730,8 @@ is_beta: true
             }
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
         [Test]
         public void TestDeclaredCPythonEngineIsADefaultForPythonCommands()
         {
@@ -745,6 +751,8 @@ is_beta: true
             }
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
         [Test]
         public void TestBundleEngineTypeOverridesExtensionDeclaration()
         {
@@ -765,6 +773,8 @@ is_beta: true
             }
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
         [Test]
         public void TestNoExtensionDeclarationLeavesEngineTypeUnset()
         {
@@ -785,6 +795,8 @@ is_beta: true
             }
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
         [Test]
         [NonParallelizable]
         public void TestUnsupportedExtensionDeclarationWarnsAndIsIgnored()
@@ -820,6 +832,8 @@ is_beta: true
             }
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
         [TestCase(false, null, "{\"clean\":true,\"full_frame\":true,\"persistent\":true}")]
         [TestCase(true, null, "{\"clean\":false,\"full_frame\":true,\"persistent\":true}")]
         [TestCase(false, "CPython", "{\"clean\":true,\"full_frame\":true,\"persistent\":true,\"type\":\"CPython\"}")]

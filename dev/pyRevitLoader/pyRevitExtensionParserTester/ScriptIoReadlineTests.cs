@@ -297,6 +297,8 @@ namespace pyRevitExtensionParserTester
             Assert.That(io.read(), Is.EqualTo("input()"));
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
         [Test]
         public void Flush_LowercaseFileObjectAliasDoesNotThrow()
         {

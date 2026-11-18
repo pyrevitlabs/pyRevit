@@ -11,6 +11,8 @@ namespace PyRevitLabs.PyRevit.Forms.Tests;
 /// One CPython interpreter runs every probe and parity test once per process; each case is a
 /// separate theory row so one failure does not hide the others.
 /// </remarks>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class FormsBackendTests(ITestOutputHelper output) {
     const string UnownedCallbackProbe = "probe:UnownedCallbackProbe";
 

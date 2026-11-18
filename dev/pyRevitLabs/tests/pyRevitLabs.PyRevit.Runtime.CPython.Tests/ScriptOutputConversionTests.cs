@@ -5,6 +5,8 @@ namespace PyRevitLabs.PyRevit.Runtime.CPython.Tests;
 /// Python objects reach C# as pythonnet wrappers rather than CLR enumerables, so these run the
 /// shipped <c>PythonTableData</c> conversions against real pythonnet objects.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class ScriptOutputConversionTests {
     private static string Observed(string observation) =>
         InterpreterLifecycleProbe.Record.ScriptOutputConversions[observation];

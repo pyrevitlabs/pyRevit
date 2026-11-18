@@ -209,6 +209,8 @@ namespace pyRevitExtensionParserTest
             }
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
         [Test]
         public void StartupScripts_IncludesCPythonStartupWithoutPrimaryScript()
         {
@@ -225,6 +227,8 @@ namespace pyRevitExtensionParserTest
             }
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
         [Test]
         public void StartupScripts_RunsPrimaryScriptBeforeCPythonStartup()
         {
@@ -240,6 +244,8 @@ namespace pyRevitExtensionParserTest
             }
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
         [Test]
         public void StartupScripts_IsEmptyWithoutStartupFiles()
         {
