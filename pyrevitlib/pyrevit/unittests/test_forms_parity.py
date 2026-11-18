@@ -23,6 +23,9 @@ from pyrevit.compat import IRONPY
 from pyrevit.forms import _backend
 
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
 FIXTURE = {}
 
 _MODAL_WATCHDOG_SECONDS = 15

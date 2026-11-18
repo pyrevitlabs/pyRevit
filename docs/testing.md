@@ -104,9 +104,9 @@ The suite only runs inside a Revit session, through the DevTools **Unit Tests** 
 
 | Buttons backed by `pyrevit.unittests` | Other module buttons (assertions or manual probes) |
 |---|---|
-| Run All Tests, Config Module Tests, Credentials Module Tests, Dynamo Module Tests, Output Window Tests, Query get_name Tests, Revit API Catalog Tests, Revit Module Tests, Routes Module Tests, Script Module Tests, Py3 Compat Tests, Py3 Compat Tests (CPython) | CoreUtils Module Tests (increment/decrement parsing), pyRevitLabs Module Tests, Appdata Module Tests, Forms Module Tests |
+| Run All Tests, Config Module Tests, Credentials Module Tests, Dynamo Module Tests, Output Window Tests, Query get_name Tests, Revit API Catalog Tests, Revit Module Tests, Routes Module Tests, Script Module Tests, Py3 Compat Tests, Py3 Compat Tests (CPython) | CoreUtils Module Tests (increment/decrement parsing), pyRevitLabs Module Tests, Appdata Module Tests |
 
-`Run All Tests` discovers every `test_` module in the package except the opt-in `test_revit_api_catalog` (it resolves hundreds of types; run it with its own **Revit API Catalog Tests** button). Modules without a dedicated button (`test_context_conditions`, `test_coreutils_escape`, `test_keynote_locks`, `test_revit_handle_contract`, `test_sys_path`, `test_versionmgr`) are only reached through `Run All Tests`.
+`Run All Tests` discovers every `test_` module in the package except the opt-in `test_revit_api_catalog` (it resolves hundreds of types; run it with its own **Revit API Catalog Tests** button). `test_forms_parity` declares `TEST_LEVEL = "Integration"`, so `Run All Tests` skips it; the DevTools **Debug → Forms Tests** pulldown and the forms C# test projects run it. Modules without a dedicated button (`test_context_conditions`, `test_coreutils_escape`, `test_keynote_locks`, `test_revit_handle_contract`, `test_sys_path`, `test_versionmgr`) are only reached through `Run All Tests`.
 
 An open project does not guarantee that every case runs. Some cases require particular model content or family fixtures injected by the individual compatibility buttons. CoreUtils prints comparisons without failing the command on a mismatch, and Forms opens interactive dialogs; neither provides an automated suite result.
 
