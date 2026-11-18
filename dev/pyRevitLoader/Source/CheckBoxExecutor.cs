@@ -29,7 +29,7 @@ namespace PyRevitLoader
     /// <see cref="BundleModuleIsolation"/>: it starts from that checkbox's own search paths and modules
     /// and hands them back when it ends. Two bundles can therefore ship <c>lib</c> modules with the same
     /// name, while pyRevit and the standard library are still imported once for all checkboxes.
-    /// Warning: <see cref="BundleModuleIsolation"/> lists three cases it does not keep apart, such as a
+    /// Warning: <see cref="BundleModuleIsolation"/> lists two cases it does not keep apart, such as a
     /// reference kept to an earlier <c>sys.path</c> list.
     /// </remarks>
     public class CheckBoxExecutor
@@ -96,15 +96,18 @@ namespace PyRevitLoader
         /// <c>__commandname__</c>, so <c>EXEC_PARAMS</c> resolves this checkbox's identity without touching
         /// other checkboxes. The handlers are called through a function defined in a module that holds the
         /// same values, so a handler imported from another module resolves this identity too.</param>
-        /// <returns>False when the script fails to compile or run; true otherwise, including when it defines no handlers.</returns>
+        /// <returns>False when the script fails to compile or run, or its <c>__chk_init__</c> raises; true
+        /// otherwise, including when it defines no handlers.</returns>
         /// <remarks>
         /// Invariant: called by reflection from <c>CheckBoxScriptInitializer</c>; keep the name and signature.
         /// It is also called with a null <paramref name="scriptPath"/> for a bundle without a script, and
         /// first drops the handler this executor wired on the same control for an earlier bundle.
         /// Note: <c>__chk_init__</c> runs before the change handler is subscribed, so restoring a saved
-        /// state there does not raise <c>__chk_on_change__</c>. A script or <c>__chk_init__</c> that
-        /// reloads pyRevit releases this executor before it returns; setup then stops without wiring,
-        /// so no handler outlives its session.
+        /// state there does not raise <c>__chk_on_change__</c>. When <c>__chk_init__</c> raises or calls
+        /// <c>sys.exit()</c>, setup stops without subscribing, as it does when the script itself exits,
+        /// so the change handler never runs after an init that did not finish. A script or
+        /// <c>__chk_init__</c> that reloads pyRevit releases this executor before it returns; setup then
+        /// stops without wiring, so no handler outlives its session.
         /// </remarks>
         public bool ExecuteEventHandlerSetup(
             string scriptPath,
@@ -149,7 +152,15 @@ namespace PyRevitLoader
                 var ops = _engine.Operations;
                 var caller = CreateHandlerCaller(scopeVariables);
                 if (scope.ContainsVariable(InitHandlerName))
-                    InvokeHandler(ops, bundle, caller, InitHandlerName, scope.GetVariable(InitHandlerName), context);
+                {
+                    var initResult = InvokeHandler(ops, bundle, caller, InitHandlerName, scope.GetVariable(InitHandlerName), context);
+                    if (initResult != ScriptRunResult.Completed)
+                    {
+                        if (initResult == ScriptRunResult.Failed && scope.ContainsVariable(ChangeHandlerName))
+                            Log($"{ChangeHandlerName} was not wired for CheckBox '{context.name}' because {InitHandlerName} raised.");
+                        return initResult == ScriptRunResult.Exited;
+                    }
+                }
 
                 if (scope.ContainsVariable(ChangeHandlerName))
                     WireChangeHandler(checkBox, ops, bundle, caller, scope, context);
@@ -335,7 +346,9 @@ namespace PyRevitLoader
         /// and B unticks A; <see cref="BundleModuleIsolation.Enter"/> gives every nested call its own
         /// checkbox's paths and modules and brings back the outer checkbox's afterwards.
         /// </remarks>
-        private void InvokeHandler(ObjectOperations ops, BundleModuleIsolation.Bundle bundle, object caller, string handlerName, object handler, params object[] args)
+        /// <returns>Completed when the handler returns, Exited when it calls <c>sys.exit()</c>, and Failed
+        /// when it raises; only a failure is logged.</returns>
+        private ScriptRunResult InvokeHandler(ObjectOperations ops, BundleModuleIsolation.Bundle bundle, object caller, string handlerName, object handler, params object[] args)
         {
             try
             {
@@ -346,11 +359,17 @@ namespace PyRevitLoader
                     callerArgs[0] = handler;
                     args.CopyTo(callerArgs, 1);
                     ops.Invoke(caller, callerArgs);
+                    return ScriptRunResult.Completed;
                 }
+            }
+            catch (SystemExitException)
+            {
+                return ScriptRunResult.Exited;
             }
             catch (Exception ex)
             {
                 Log($"Error in {handlerName}: {ex.Message}");
+                return ScriptRunResult.Failed;
             }
         }
 

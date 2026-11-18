@@ -15,12 +15,19 @@ namespace pyRevitExtensionParserTester
     /// <c>lib</c> module with the same name as another bundle's imports its own copy, modules under a
     /// shared root stay one module for all bundles, and a nested bundle hands the outer bundle's
     /// modules back. Reproduces the shared-engine finding from the review of pyrevitlabs/pyRevit#4133,
-    /// which smart buttons, ComboBoxes and checkboxes all had, and four findings from the review of
-    /// pyrevitlabs/pyRevit#4136: a module imported from a folder the bundle removed from
-    /// <c>sys.path</c> again reached the next bundle, a submodule kept shared between two bundles'
-    /// copies of a package was missing from the second bundle's package, the same held for a package
-    /// a bundle adds to a shared package, and a shared module a bundle replaced with its own was gone
-    /// for the next bundle.
+    /// which smart buttons, ComboBoxes and checkboxes all had, and these findings from the review of
+    /// pyrevitlabs/pyRevit#4136:
+    /// <list type="bullet">
+    /// <item>a module imported from a folder the bundle removed from <c>sys.path</c> again reached the
+    /// next bundle;</item>
+    /// <item>a submodule kept shared between two bundles' copies of a package was missing from the
+    /// second bundle's package, and the same held for a package a bundle adds to a shared package;</item>
+    /// <item>a shared module a bundle replaced with its own was gone for the next bundle;</item>
+    /// <item>a module or package that code outside any bundle imported from a bundle's folder reached
+    /// the next bundle;</item>
+    /// <item>a package a bundle adds to a shared package stayed bound to it, and in its <c>__path__</c>,
+    /// for the next bundle.</item>
+    /// </list>
     /// </summary>
     /// <remarks>
     /// Drives <c>PyRevitLoader.BundleModuleIsolation</c> from the IronPython 3 <c>pyRevitLoader.dll</c>
@@ -194,6 +201,55 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        public void Enter_TwoBundlesThatAddAPackageToASharedPackage_EachGetsItsOwnFromTheSharedPackage()
+        {
+            string sharedRoot = CreateDirectory("site-packages");
+            string sharedPackage = CreateDirectory(Path.Combine("site-packages", "spkg"));
+            File.WriteAllText(Path.Combine(sharedPackage, "__init__.py"), string.Empty);
+            string sharedPart = CreateSharedPackagePart(sharedRoot);
+            object first = CreateBundleWithPackageForSharedPackage("First", sharedPart, sharedRoot);
+            object second = CreateBundleWithPackageForSharedPackage("Second", sharedPart, sharedRoot);
+
+            using (Enter(first))
+                Assert.That(Execute(ImportPackageFromSharedPackage("First")), Is.EqualTo("First"));
+            using (Enter(second))
+                Assert.That(Execute(ImportPackageFromSharedPackage("Second")), Is.EqualTo("Second"));
+            using (Enter(first))
+                Assert.That(Execute("from spkg import plugins\nresult = plugins.VALUE"), Is.EqualTo("First"));
+
+            Assert.That(Execute("import spkg\nresult = '%s %d' % (hasattr(spkg, 'plugins'), len(spkg.__path__))"), Is.EqualTo("False 1"));
+        }
+
+        [Test]
+        public void Enter_AfterAnImportOutsideAnyBundle_TheNextBundleStillImportsItsOwnModule()
+        {
+            object second = CreateBundleWithLibModule("Second", "VALUE = 'second'");
+            CreateBundleWithLibModule("First", "VALUE = 'first'");
+            string readValue = $"import {LibModuleName}\nresult = {LibModuleName}.VALUE";
+
+            Assert.That(Execute(readValue), Is.EqualTo("first"));
+
+            Assert.That(ImportLibValue(second), Is.EqualTo("second"));
+            Assert.That(Execute(readValue), Is.EqualTo("first"));
+        }
+
+        [Test]
+        public void Enter_AfterAPackageWasImportedOutsideAnyBundle_TheNextBundleImportsItsOwnPackage()
+        {
+            string sharedRoot = CreateDirectory("site-packages");
+            string sharedPart = CreateSharedPackagePart(sharedRoot);
+            object isolated = CreateBundleWithPackage("Isolated", sharedPart, sharedRoot);
+            CreateBundleWithPackage("Unscoped", sharedPart, sharedRoot);
+
+            Execute("import pkg.sub");
+
+            using (Enter(isolated))
+                Assert.That(
+                    Execute("import pkg.sub\nresult = pkg.sub.VALUE if 'Isolated' in pkg.__file__ else 'other package: ' + pkg.__file__"),
+                    Is.EqualTo("shared"));
+        }
+
+        [Test]
         public void Enter_ModuleImportedFromAFolderTheBundleRemovedAgain_StaysWithThatBundle()
         {
             object first = CreateBundle("First");
@@ -340,14 +396,26 @@ namespace pyRevitExtensionParserTester
         private object CreateBundleWithPackageForSharedPackage(string name, string extraPackagePath, string sharedRoot)
         {
             string package = CreateDirectory(Path.Combine(name, "lib", "spkg_ext", "plugins"));
-            File.WriteAllText(Path.Combine(package, "__init__.py"), $"__path__.append({PythonString(extraPackagePath)})");
+            File.WriteAllText(
+                Path.Combine(package, "__init__.py"),
+                $"__path__.append({PythonString(extraPackagePath)})\nVALUE = {PythonString(name)}");
             return CreateBundle(name, sharedRoot);
         }
 
         private string ImportSubmoduleThroughSharedPackage(string bundleName)
         {
+            return ExtendSharedPackage(bundleName) + "import spkg.plugins.sub\nresult = spkg.plugins.sub.VALUE";
+        }
+
+        private string ImportPackageFromSharedPackage(string bundleName)
+        {
+            return ExtendSharedPackage(bundleName) + "from spkg import plugins\nresult = plugins.VALUE";
+        }
+
+        private string ExtendSharedPackage(string bundleName)
+        {
             string packageParent = Path.Combine(_root, bundleName, "lib", "spkg_ext");
-            return $"import spkg\nspkg.__path__.append({PythonString(packageParent)})\nimport spkg.plugins.sub\nresult = spkg.plugins.sub.VALUE";
+            return $"import spkg\nspkg.__path__.append({PythonString(packageParent)})\n";
         }
 
         private string CreateModuleFolder(string name, string moduleSource)
