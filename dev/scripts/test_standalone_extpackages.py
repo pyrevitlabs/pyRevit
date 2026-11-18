@@ -151,6 +151,41 @@ class ExtensionPackageLoadStateTests(unittest.TestCase):
                 self._installed_with_roots(shipped, [shipped + os.sep, thirdparty]),
             )
 
+    def _installed_from_definitions(self, shipped, definitions):
+        self.package.def_file_path = definitions
+        return self._installed_with_roots(shipped, [])
+
+    def test_definition_files_resolve_to_user_copy_in_any_order(self):
+        """A same-named user copy beats the shipped one however the definitions arrive."""
+        with tempfile.TemporaryDirectory() as tmp:
+            shipped = os.path.join(tmp, "shipped")
+            thirdparty = os.path.join(tmp, "thirdparty")
+            definitions = []
+            for root in (shipped, thirdparty):
+                directory = os.path.join(root, "Example.extension")
+                os.makedirs(directory)
+                definitions.append(os.path.join(directory, "extension.json"))
+                with open(definitions[-1], "w") as handle:
+                    handle.write("{}")
+            for ordered in (definitions, definitions[::-1]):
+                self.assertEqual(
+                    os.path.join(thirdparty, "Example.extension"),
+                    self._installed_from_definitions(shipped, list(ordered)),
+                )
+
+    @unittest.skipUnless(os.path.normcase("A") == "a", "case-insensitive paths only")
+    def test_shipped_root_matches_regardless_of_letter_case(self):
+        """A shipped root listed in other letter case is still the last fallback."""
+        with tempfile.TemporaryDirectory() as tmp:
+            shipped = os.path.join(tmp, "shipped")
+            thirdparty = os.path.join(tmp, "thirdparty")
+            for root in (shipped, thirdparty):
+                os.makedirs(os.path.join(root, "Example.extension"))
+            self.assertEqual(
+                os.path.join(thirdparty, "Example.extension"),
+                self._installed_with_roots(shipped, [shipped.upper(), thirdparty]),
+            )
+
     def test_shipped_extension_is_found_when_no_user_copy_exists(self):
         """A package only the shipped root has still resolves."""
         with tempfile.TemporaryDirectory() as tmp:
