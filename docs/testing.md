@@ -104,11 +104,13 @@ The suite only runs inside a Revit session, through the DevTools **Unit Tests** 
 
 | Buttons backed by `pyrevit.unittests` | Other module buttons (assertions or manual probes) |
 |---|---|
-| Run All Tests, Config Module Tests, Credentials Module Tests, Dynamo Module Tests, Output Window Tests, Query get_name Tests, Revit API Catalog Tests, Revit Module Tests, Routes Module Tests, Script Module Tests, Py3 Compat Tests, Py3 Compat Tests (CPython) | CoreUtils Module Tests (increment/decrement parsing), pyRevitLabs Module Tests, Appdata Module Tests, Forms Module Tests |
+| Run All Tests, Config Module Tests, Credentials Module Tests, Dynamo Module Tests, Output Window Tests, Query get_name Tests, Revit API Catalog Tests, Revit Module Tests, Routes Module Tests, Script Module Tests, Py3 Compat Tests, Py3 Compat Tests (CPython) | CoreUtils Module Tests (increment/decrement parsing), pyRevitLabs Module Tests, Appdata Module Tests |
 
 `Run All Tests` discovers every `test_` module in the package except the opt-in `test_revit_api_catalog` (it resolves hundreds of types; run it with its own **Revit API Catalog Tests** button). Modules without a dedicated button (`test_context_conditions`, `test_coreutils_escape`, `test_keynote_locks`, `test_revit_handle_contract`, `test_sys_path`, `test_versionmgr`) are only reached through `Run All Tests`.
 
-An open project does not guarantee that every case runs. Some cases require particular model content or family fixtures injected by the individual compatibility buttons. CoreUtils prints comparisons without failing the command on a mismatch, and Forms opens interactive dialogs; neither provides an automated suite result.
+Forms buttons live in the separate **Debug → Forms Tests** pulldown. **Test IronPython Forms** and **Test CPython Forms** run `forms_acceptance`, which drives `test_forms_parity` against a rollback-only fixture. The **Manual** buttons open the dialogs for a person to check. `Run All Tests` also runs `test_forms_parity`, without the fixture: its dialogs close themselves, and the fixture-dependent cases skip.
+
+An open project does not guarantee that every case runs. Some cases require particular model content or family fixtures injected by the individual compatibility buttons. CoreUtils prints comparisons without failing the command on a mismatch, so it provides no automated suite result.
 
 `Py3 Compat Tests` runs `test_py3_compat` on whichever IronPython engine the clone is attached with; `Py3 Compat Tests (CPython)` runs it on the CPython engine. A bundle cannot select an engine *version* — engine identity is only `ironpython` or `cpython` — so the `IRONPY3`-gated cases in `test_py3_compat.py` are only reachable by attaching the clone with the IronPython 3 engine.
 
