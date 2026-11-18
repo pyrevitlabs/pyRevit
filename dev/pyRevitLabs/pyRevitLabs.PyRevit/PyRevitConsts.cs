@@ -168,7 +168,6 @@ namespace pyRevitLabs.PyRevit {
         public const string EnvConfigsExtensionDBFileName = "PyRevitExtensionsDB.json";
         // extensions
         public const string DefaultExtensionRemoteName = PyRevitLabsConsts.DefaultRemoteName;
-        public const string DefaultExtensionRepoDefaultBranch = "master";
         public const string ExtensionsDefaultDirName = "Extensions";
         public const string ExtensionDisabledKey = "disabled";
         /// <summary>

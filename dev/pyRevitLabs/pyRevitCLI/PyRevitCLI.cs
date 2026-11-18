@@ -859,7 +859,7 @@ namespace pyRevitCLI {
                     if (any("enable", "disable"))
                         PyRevitConfigs.SetAppendTooltipEx(arguments["enable"].IsTrue);
                     else
-                        Console.WriteLine(string.Format("Doc Colorizer is {0}",
+                        Console.WriteLine(string.Format("Tooltip debug info is {0}",
                                                         PyRevitConfigs.GetAppendTooltipEx() ? "Enabled" : "Disabled"));
                 }
 
@@ -936,16 +936,23 @@ namespace pyRevitCLI {
                         var destPath = TryGetValue("<dest_path>");
                         if (destPath is null)
                             Console.WriteLine(string.Format("Telemetry File Path: {0}", PyRevitConfigs.GetTelemetryFilePath()));
-                        else
-                            PyRevitConfigs.EnableTelemetry(telemetryFileDir: destPath);
+                        else {
+                            PyRevitConfigs.EnableTelemetry(
+                                telemetryFileDir: PyRevitCLIArguments.ExistingDirectory(destPath, "telemetry folder"));
+                            Console.WriteLine(string.Format("Telemetry is Enabled. File Path: {0}",
+                                                            PyRevitConfigs.GetTelemetryFilePath()));
+                        }
                     }
 
                     else if (all("server")) {
                         var serverUrl = TryGetValue("<dest_path>");
                         if (serverUrl is null)
                             Console.WriteLine(string.Format("Telemetry Server Url: {0}", PyRevitConfigs.GetTelemetryServerUrl()));
-                        else
+                        else {
                             PyRevitConfigs.EnableTelemetry(telemetryServerUrl: serverUrl);
+                            Console.WriteLine(string.Format("Telemetry is Enabled. Server Url: {0}",
+                                                            PyRevitConfigs.GetTelemetryServerUrl()));
+                        }
 
                     }
 
@@ -1009,7 +1016,8 @@ namespace pyRevitCLI {
                         Console.WriteLine(string.Format("Output Style Sheet is set to: {0}",
                                                         PyRevitConfigs.GetOutputStyleSheet()));
                     else
-                        PyRevitConfigs.SetOutputStyleSheet(cssPath);
+                        PyRevitConfigs.SetOutputStyleSheet(
+                            cssPath == string.Empty ? cssPath : PyRevitCLIArguments.ExistingFile(cssPath, "style sheet"));
                 }
 
                 else if (all("seed")) {

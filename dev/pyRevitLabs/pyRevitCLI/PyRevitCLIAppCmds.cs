@@ -61,21 +61,15 @@ namespace pyRevitCLI {
                 case TargetCacheType.PyRevitCache:
                     if (allCaches)
                         PyRevitCaches.ClearAllCaches();
-                    else {
-                        int revitYearNumber = 0;
-                        if (int.TryParse(revitYear, out revitYearNumber))
-                            PyRevitCaches.ClearCache(revitYearNumber);
-                    }
+                    else
+                        PyRevitCaches.ClearCache(PyRevitCLIArguments.RevitYear(revitYear));
                     break;
 
                 case TargetCacheType.BIM360Cache:
                     if (allCaches)
                         RevitCaches.ClearAllCaches(RevitCacheType.BIM360Cache);
-                    else {
-                        int revitYearNumber = 0;
-                        if (int.TryParse(revitYear, out revitYearNumber))
-                            RevitCaches.ClearCache(revitYearNumber, RevitCacheType.BIM360Cache);
-                    }
+                    else
+                        RevitCaches.ClearCache(PyRevitCLIArguments.RevitYear(revitYear), RevitCacheType.BIM360Cache);
                     break;
             }
         }

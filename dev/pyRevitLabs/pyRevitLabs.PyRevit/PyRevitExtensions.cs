@@ -182,10 +182,7 @@ namespace pyRevitLabs.PyRevit {
             destPath = destPath ?? PyRevitConsts.DefaultExtensionsPath;
             string finalExtRepoPath = Path.Combine(destPath, extDestDirName).NormalizeAsPath();
 
-            // determine branch name
-            branchName = branchName ?? PyRevitConsts.DefaultExtensionRepoDefaultBranch;
-
-            _logger.Debug("Extension branch name determined as \"{0}\"", branchName);
+            _logger.Debug("Extension branch name determined as \"{0}\"", branchName ?? "(default branch of the repository)");
             _logger.Debug("Installing extension into \"{0}\"", finalExtRepoPath);
 
             // start the clone process
