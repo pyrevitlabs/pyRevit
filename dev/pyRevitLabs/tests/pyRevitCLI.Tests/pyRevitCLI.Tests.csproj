@@ -48,6 +48,7 @@
         <Compile Include="..\..\pyRevitCLI\PyRevitLibraryParser.cs" Link="Sources\PyRevitLibraryParser.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitAutomationOperations.cs" Link="Sources\PyRevitAutomationOperations.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitCLIArguments.cs" Link="Sources\PyRevitCLIArguments.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitCLIConsoleEncoding.cs" Link="Sources\PyRevitCLIConsoleEncoding.cs"/>
     </ItemGroup>
 
     <ItemGroup>

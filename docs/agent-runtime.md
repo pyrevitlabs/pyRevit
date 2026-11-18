@@ -606,6 +606,8 @@ pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --ow
 `--timeout` defaults to 300 and is capped at 3600; [reckless mode](#reckless-mode) ignores it.
 `--workspace` must be an existing local folder; network (UNC) paths are refused.
 
+When its output is redirected to a pipe or file, the CLI writes UTF-8 without a BOM for every command. Readers must decode it as UTF-8; in PowerShell, set `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` first, or a legacy code page shows non-ASCII text as mojibake. In Windows PowerShell 5.1, `>` is equivalent to `Out-File` with no parameters, which writes UTF-16LE, so to keep the CLI's UTF-8 bytes redirect in `cmd` (`cmd /c "pyrevit ... > out.json"`) or pipe to `Out-File -Encoding utf8`. Read a BOM-less UTF-8 file with `Get-Content -Encoding UTF8`, because Windows PowerShell 5.1 otherwise decodes it with the system's active (ANSI) code page, which `[Console]::OutputEncoding` does not change.
+
 The `agent` and `mcp` commands ship with the pyRevit CLI of the same build. An older `pyrevit`
 on `PATH` doesn't know them and prints the global usage; upgrade the CLI or call the one from
 the build that provides the agent runtime. If that still happens after an upgrade, another

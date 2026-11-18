@@ -98,6 +98,7 @@ namespace pyRevitCLI {
         /// as a failure, matching pre-refactor CLI behavior.
         /// </summary>
         static void Main(string[] args) {
+            PyRevitCLIConsoleEncoding.Apply();
             AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => {
                 if (args.Name.StartsWith("Newtonsoft.Json,")) {
                     var assemblyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pyRevitLabs.Json.dll");
