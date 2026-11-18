@@ -21,10 +21,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
     /// panel behind the Revit <see cref="RibbonPanel"/>, and <see cref="RibbonPanel.GetItems"/> never
     /// returns it. Reloads therefore find it by its AdWindows id, and checkboxes stack only with other
     /// checkboxes, because Revit API stacks cannot take AdWindows items.
-    /// Invariant: the id must end in <c>%</c> followed by the bundle's display name, because
-    /// <see cref="RibbonScanner"/> takes an item's name from the last id segment when it hides the
-    /// items of bundles removed before a reload. A stacked checkbox's id also names its stack, so it
-    /// never matches a standalone checkbox with the same name in the same panel.
+    /// Invariant: <see cref="RibbonScanner"/> tracks checkboxes by their full id, and
+    /// <see cref="UIManagerService"/> marks the ids these methods return, so a checkbox removed before
+    /// a reload is hidden even when another one in the panel has the same name. A stacked checkbox's
+    /// id also names its stack, so it never matches a standalone checkbox with the same name in the
+    /// same panel.
     /// Note: reloads refresh checkboxes where they are and never move them, so moving a checkbox into
     /// or out of a stack needs a Revit restart.
     /// </remarks>
@@ -54,11 +55,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         }
 
         /// <inheritdoc/>
-        public void CreateOrUpdateCheckBox(ParsedComponent component, RibbonPanel parentPanel, string tabName)
+        public string? CreateOrUpdateCheckBox(ParsedComponent component, RibbonPanel parentPanel, string tabName)
         {
             var panelSource = GetPanelSource(component, parentPanel, tabName);
             if (panelSource == null)
-                return;
+                return null;
 
             try
             {
@@ -71,23 +72,26 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 }
 
                 RefreshCheckBox(checkBox, component);
+                return controlId;
             }
             catch (Exception ex)
             {
                 _logger.Error($"Failed to build CheckBox '{component.DisplayName}'. Exception: {ex.Message}");
+                return null;
             }
         }
 
         /// <inheritdoc/>
-        public void CreateOrUpdateCheckBoxStack(
+        public IReadOnlyCollection<string> CreateOrUpdateCheckBoxStack(
             ParsedComponent stackComponent,
             IReadOnlyList<ParsedComponent> checkBoxComponents,
             RibbonPanel parentPanel,
             string tabName)
         {
+            var shownIds = new HashSet<string>();
             var panelSource = GetPanelSource(stackComponent, parentPanel, tabName);
             if (panelSource == null)
-                return;
+                return shownIds;
 
             if (checkBoxComponents.Count > MaxStackRows)
                 _logger.Warning($"Stack '{stackComponent.DisplayName}' has {checkBoxComponents.Count} checkboxes; only the first {MaxStackRows} are shown.");
@@ -102,7 +106,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     panelSource.Items.Add(rowPanel);
                 }
 
-                var shownIds = new HashSet<string>();
                 foreach (var component in checkBoxComponents.Take(MaxStackRows))
                 {
                     var controlId = BuildStackedControlId(tabName, parentPanel.Name, stackComponent.DisplayName, component.DisplayName);
@@ -126,6 +129,8 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             {
                 _logger.Error($"Failed to build CheckBox stack '{stackComponent.DisplayName}'. Exception: {ex.Message}");
             }
+
+            return shownIds;
         }
 
         private static string BuildControlId(string tabName, string panelName, string displayName)

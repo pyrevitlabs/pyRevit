@@ -74,7 +74,12 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <summary>Gets the bundle folder name without its suffix, such as <c>Test CheckBox</c>.</summary>
         public string display_name => _component?.DisplayName ?? string.Empty;
 
-        /// <summary>Gets a dictionary handlers can use to keep data between calls.</summary>
+        /// <summary>Gets a dictionary handlers can use to keep data between calls until the next reload.</summary>
+        /// <remarks>
+        /// Note: it is a .NET dictionary, as on <see cref="ComboBoxContext"/>, not a Python dict. On
+        /// IronPython 2.7 it has no <c>get</c> or <c>setdefault</c>, so handlers check keys with
+        /// <c>ContainsKey</c> and read them by index.
+        /// </remarks>
         public Dictionary<string, object> user_data { get; } = new Dictionary<string, object>();
     }
 
@@ -123,24 +128,23 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <summary>
         /// Runs the bundle's script and wires its handlers to <paramref name="checkBox"/>.
         /// </summary>
-        /// <returns>False when the executor is unavailable or the script fails; true otherwise, including when the bundle has no script.</returns>
+        /// <returns>False when the bundle has a script and the executor is unavailable or the script fails; true otherwise, including when the bundle has no script.</returns>
         /// <remarks>
         /// The script can import from the bundle's ancestor <c>lib</c> folders and from installed library
         /// extensions, and it gets the identity values a command gets (<c>__commandname__</c> and the rest)
         /// in its own module scope, so <c>EXEC_PARAMS</c> resolves each checkbox separately.
         /// <c>__scriptruntime__</c> is None there because a handler call is not a command run.
+        /// Note: the executor is called even for a bundle without a script, so it can drop the handler an
+        /// earlier bundle wired on the same control.
         /// </remarks>
         public bool ExecuteEventHandlerSetup(ParsedComponent component, AdwRibbonCheckBox checkBox)
         {
             var scriptPath = FindScriptPath(component);
             if (scriptPath == null)
-            {
                 _logger.Debug($"No script.py found for CheckBox '{component.DisplayName}'.");
-                return true;
-            }
 
             if (!EnsureExecutor())
-                return false;
+                return scriptPath == null;
 
             var context = new CheckBoxContext(checkBox, component, _uiApp);
             var searchPaths = CollectLibPaths(component);
@@ -149,7 +153,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             {
                 var result = _executeMethod!.Invoke(
                     _executor,
-                    new object[] { scriptPath, context, checkBox, searchPaths, BuildExecutionScope(component) });
+                    new object?[] { scriptPath, context, checkBox, searchPaths, BuildExecutionScope(component) });
                 return result is bool succeeded ? succeeded : true;
             }
             catch (TargetInvocationException ex)

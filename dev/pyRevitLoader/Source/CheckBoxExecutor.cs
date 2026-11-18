@@ -43,8 +43,8 @@ namespace PyRevitLoader
 
         private readonly UIApplication _revit;
         private readonly Action<string> _logger;
-        private readonly List<Action> _handlerDetachers = new List<Action>();
-        private readonly List<INotifyPropertyChanged> _wiredCheckBoxes = new List<INotifyPropertyChanged>();
+        private readonly List<KeyValuePair<INotifyPropertyChanged, PropertyChangedEventHandler>> _wiredHandlers =
+            new List<KeyValuePair<INotifyPropertyChanged, PropertyChangedEventHandler>>();
         private ScriptEngine _engine;
         private ScriptExecutor _scriptExecutor;
         private LoggerStream _outputStream;
@@ -94,8 +94,12 @@ namespace PyRevitLoader
         /// <returns>False when the script fails to compile or run; true otherwise, including when it defines no handlers.</returns>
         /// <remarks>
         /// Invariant: called by reflection from <c>CheckBoxScriptInitializer</c>; keep the name and signature.
+        /// It is also called with a null <paramref name="scriptPath"/> for a bundle without a script, and
+        /// first drops the handler this executor wired on the same control for an earlier bundle.
         /// Note: <c>__chk_init__</c> runs before the change handler is subscribed, so restoring a saved
-        /// state there does not raise <c>__chk_on_change__</c>.
+        /// state there does not raise <c>__chk_on_change__</c>. A script or <c>__chk_init__</c> that
+        /// reloads pyRevit releases this executor before it returns; setup then stops without wiring,
+        /// so no handler outlives its session.
         /// </remarks>
         public bool ExecuteEventHandlerSetup(
             string scriptPath,
@@ -104,7 +108,11 @@ namespace PyRevitLoader
             IEnumerable<string> additionalSearchPaths = null,
             IDictionary<string, object> scopeVariables = null)
         {
-            if (_released || !IsPythonScript(scriptPath))
+            if (_released)
+                return true;
+
+            DetachEarlierHandler(checkBox, context);
+            if (!IsPythonScript(scriptPath))
                 return true;
 
             try
@@ -129,6 +137,9 @@ namespace PyRevitLoader
 
                 if (runResult != ScriptRunResult.Completed)
                     return runResult == ScriptRunResult.Exited;
+
+                if (_released)
+                    return true;
 
                 var ops = _engine.Operations;
                 if (scope.ContainsVariable(InitHandlerName))
@@ -225,6 +236,37 @@ namespace PyRevitLoader
             }
         }
 
+        /// <summary>
+        /// Removes the change handler this executor wired on the same control for a bundle loaded earlier.
+        /// </summary>
+        /// <remarks>
+        /// Note: two extensions that put a same-named checkbox into the same tab and panel share one
+        /// control, and the last bundle owns it, as with same-named buttons. The earlier handler goes
+        /// before the later bundle's script and <c>__chk_init__</c> run, so a state that init restores
+        /// does not reach it, and it goes even when the later bundle has no script or no change handler.
+        /// </remarks>
+        private void DetachEarlierHandler(INotifyPropertyChanged checkBox, CheckBoxContext context)
+        {
+            lock (_aliveReferencesLock)
+            {
+                var earlier = _wiredHandlers.FindIndex(wired => ReferenceEquals(wired.Key, checkBox));
+                if (earlier < 0)
+                    return;
+
+                checkBox.PropertyChanged -= _wiredHandlers[earlier].Value;
+                _wiredHandlers.RemoveAt(earlier);
+                _aliveReferences.Remove(checkBox);
+            }
+            Log($"CheckBox '{context?.name}' shares its control with a bundle loaded earlier; that bundle's change handler was removed.");
+        }
+
+        /// <summary>
+        /// Subscribes the script's change handler to the checkbox.
+        /// </summary>
+        /// <remarks>
+        /// Note: nothing is subscribed once the executor is released, which happens when
+        /// <c>__chk_init__</c> reloads pyRevit.
+        /// </remarks>
         private void WireChangeHandler(INotifyPropertyChanged checkBox, ObjectOperations ops, BundleModuleIsolation.Bundle bundle, ScriptScope scope, CheckBoxContext context)
         {
             object handler = scope.GetVariable(ChangeHandlerName);
@@ -233,14 +275,17 @@ namespace PyRevitLoader
                 if (args.PropertyName == CheckedPropertyName)
                     InvokeHandler(ops, bundle, ChangeHandlerName, handler, sender, args, context);
             };
-            checkBox.PropertyChanged += onChange;
 
             lock (_aliveReferencesLock)
             {
-                _handlerDetachers.Add(() => checkBox.PropertyChanged -= onChange);
-                _wiredCheckBoxes.Add(checkBox);
-                _aliveReferences.GetOrCreateValue(checkBox).AddRange(
-                    new object[] { _engine, ops, _outputStream, scope, context, handler, onChange });
+                if (_released)
+                    return;
+
+                checkBox.PropertyChanged += onChange;
+                _wiredHandlers.Add(new KeyValuePair<INotifyPropertyChanged, PropertyChangedEventHandler>(checkBox, onChange));
+                var aliveReferences = _aliveReferences.GetOrCreateValue(checkBox);
+                aliveReferences.Clear();
+                aliveReferences.AddRange(new object[] { _engine, ops, _outputStream, scope, context, handler, onChange });
             }
             Log($"Wired {ChangeHandlerName} for CheckBox '{context.name}'.");
         }
@@ -284,22 +329,19 @@ namespace PyRevitLoader
             {
                 _released = true;
 
-                foreach (var detach in _handlerDetachers)
+                foreach (var wired in _wiredHandlers)
                 {
                     try
                     {
-                        detach();
+                        wired.Key.PropertyChanged -= wired.Value;
                     }
                     catch (Exception ex)
                     {
                         Log($"Failed to detach CheckBox handler: {ex.Message}");
                     }
+                    _aliveReferences.Remove(wired.Key);
                 }
-                _handlerDetachers.Clear();
-
-                foreach (var checkBox in _wiredCheckBoxes)
-                    _aliveReferences.Remove(checkBox);
-                _wiredCheckBoxes.Clear();
+                _wiredHandlers.Clear();
             }
 
             var engine = _engine;

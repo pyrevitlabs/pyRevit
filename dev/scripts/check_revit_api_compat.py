@@ -120,6 +120,7 @@ COMPONENT_POSTFIXES = (
     ".content",
     ".urlbutton",
     ".combobox",
+    ".checkbox",
 )
 BUNDLE_FILE = "bundle.yaml"
 SCRIPT_STEM_ENDINGS = ("script",)

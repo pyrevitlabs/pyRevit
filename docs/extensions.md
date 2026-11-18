@@ -33,6 +33,18 @@ Supported bundle types (folder postfix): `pushbutton`, `smartbutton`, `pulldown`
 
 A `checkbox` bundle adds a ribbon checkbox. Its `script.py` can define `__chk_init__(ctx)`, which runs when the ribbon loads, and `__chk_on_change__(sender, args, ctx)`, which runs on every change of `ctx.is_checked`. Both run outside Revit API context, so they must not start transactions. All checkboxes run in one IronPython engine, but each keeps its own copy of the modules it imports from its bundle's `lib` folders and from library extensions, so two checkboxes can ship modules with the same name; pyRevit and the standard library are shared. Checkboxes stack only with other checkboxes: in a `stack` that also holds other items, the checkboxes are placed beside the stack and a warning is logged.
 
+The `ctx` that both handlers receive has these members:
+
+| Member | What it is |
+|---|---|
+| `is_checked` | The checked state. Setting a new value raises `__chk_on_change__` again, the same way a click does. |
+| `text`, `enabled`, `visible` | The checkbox's label, and whether it is enabled and shown. All three can be set. |
+| `checkbox` | The AdWindows `RibbonCheckBox` itself. |
+| `uiapp` | Revit's `UIApplication`. |
+| `directory` | The bundle folder. |
+| `name`, `display_name` | The bundle folder name without its suffix, without spaces (`TestCheckBox`) and with them (`Test CheckBox`). |
+| `user_data` | A .NET `Dictionary[str, object]` that keeps data between calls until the next pyRevit reload. On IronPython 2.7 it has no `get` or `setdefault`, so check keys with `ctx.user_data.ContainsKey(key)` and read them with `ctx.user_data[key]`. |
+
 Smart buttons and combo boxes keep their modules apart the same way: all smart buttons share one IronPython engine and all combo boxes share another, but each bundle keeps its own copy of the modules it imports from its `lib` folders and from library extensions. This covers the bundle's script and the functions pyRevit calls: `__selfinit__`, the `__cmb_*__` handlers and the `__chk_*__` handlers. A handler that a script subscribes itself, such as a Revit event handler added in `__selfinit__`, runs outside its bundle, so import what it needs at the top of the script rather than inside the handler.
 
 ## Bundle files
