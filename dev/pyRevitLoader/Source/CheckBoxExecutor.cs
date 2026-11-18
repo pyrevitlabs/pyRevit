@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 using Autodesk.Revit.UI;
 using IronPython.Compiler;
@@ -41,21 +40,15 @@ namespace PyRevitLoader
         private const string HandlerCallerName = "__chk_call__";
         private const string HandlerCallerSource = "def " + HandlerCallerName + "(handler, *args):\n    return handler(*args)\n";
 
-        private static readonly object _aliveReferencesLock = new object();
-        private static readonly ConditionalWeakTable<INotifyPropertyChanged, List<object>> _aliveReferences =
-            new ConditionalWeakTable<INotifyPropertyChanged, List<object>>();
-
         private readonly UIApplication _revit;
         private readonly Action<string> _logger;
-        private readonly List<KeyValuePair<INotifyPropertyChanged, PropertyChangedEventHandler>> _wiredHandlers =
-            new List<KeyValuePair<INotifyPropertyChanged, PropertyChangedEventHandler>>();
+        private readonly CheckBoxHandlerRegistry _handlers = new CheckBoxHandlerRegistry();
         private ScriptEngine _engine;
         private ScriptExecutor _scriptExecutor;
         private LoggerStream _outputStream;
         private HashSet<string> _baseSearchPaths;
         private BundleModuleIsolation _isolation;
         private string _pyrevitLibPath;
-        private bool _released;
         private bool _sessionSlotClaimed;
 
         private enum ScriptRunResult
@@ -116,7 +109,7 @@ namespace PyRevitLoader
             IEnumerable<string> additionalSearchPaths = null,
             IDictionary<string, object> scopeVariables = null)
         {
-            if (_released)
+            if (_handlers.IsReleased)
                 return true;
 
             DetachEarlierHandler(checkBox, context);
@@ -146,7 +139,7 @@ namespace PyRevitLoader
                 if (runResult != ScriptRunResult.Completed)
                     return runResult == ScriptRunResult.Exited;
 
-                if (_released)
+                if (_handlers.IsReleased)
                     return true;
 
                 var ops = _engine.Operations;
@@ -264,17 +257,8 @@ namespace PyRevitLoader
         /// </remarks>
         private void DetachEarlierHandler(INotifyPropertyChanged checkBox, CheckBoxContext context)
         {
-            lock (_aliveReferencesLock)
-            {
-                var earlier = _wiredHandlers.FindIndex(wired => ReferenceEquals(wired.Key, checkBox));
-                if (earlier < 0)
-                    return;
-
-                checkBox.PropertyChanged -= _wiredHandlers[earlier].Value;
-                _wiredHandlers.RemoveAt(earlier);
-                _aliveReferences.Remove(checkBox);
-            }
-            Log($"CheckBox '{context?.name}' shares its control with a bundle loaded earlier; that bundle's change handler was removed.");
+            if (_handlers.DetachEarlier(checkBox))
+                Log($"CheckBox '{context?.name}' shares its control with a bundle loaded earlier; that bundle's change handler was removed.");
         }
 
         /// <summary>
@@ -290,21 +274,13 @@ namespace PyRevitLoader
             object handler = scope.GetVariable(ChangeHandlerName);
             PropertyChangedEventHandler onChange = (sender, args) =>
             {
-                if (!_released && args.PropertyName == CheckedPropertyName)
+                if (!_handlers.IsReleased && args.PropertyName == CheckedPropertyName)
                     InvokeHandler(ops, bundle, caller, ChangeHandlerName, handler, sender, args, context);
             };
 
-            lock (_aliveReferencesLock)
-            {
-                if (_released)
-                    return;
+            if (!_handlers.Wire(checkBox, onChange, _engine, ops, _outputStream, scope, context, caller, handler))
+                return;
 
-                checkBox.PropertyChanged += onChange;
-                _wiredHandlers.Add(new KeyValuePair<INotifyPropertyChanged, PropertyChangedEventHandler>(checkBox, onChange));
-                var aliveReferences = _aliveReferences.GetOrCreateValue(checkBox);
-                aliveReferences.Clear();
-                aliveReferences.AddRange(new object[] { _engine, ops, _outputStream, scope, context, caller, handler, onChange });
-            }
             Log($"Wired {ChangeHandlerName} for CheckBox '{context.name}'.");
         }
 
@@ -380,24 +356,7 @@ namespace PyRevitLoader
         private void ReleaseSessionResources()
         {
             Log("Releasing CheckBox engine of the previous session");
-            lock (_aliveReferencesLock)
-            {
-                _released = true;
-
-                foreach (var wired in _wiredHandlers)
-                {
-                    try
-                    {
-                        wired.Key.PropertyChanged -= wired.Value;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"Failed to detach CheckBox handler: {ex.Message}");
-                    }
-                    _aliveReferences.Remove(wired.Key);
-                }
-                _wiredHandlers.Clear();
-            }
+            _handlers.Release(Log);
 
             var engine = _engine;
             _engine = null;

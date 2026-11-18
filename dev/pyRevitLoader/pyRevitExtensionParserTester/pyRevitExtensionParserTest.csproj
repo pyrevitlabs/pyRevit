@@ -101,8 +101,10 @@
     <Compile Include="ScriptRequestTests.cs" />
     <Compile Include="SessionResourceRegistryTests.cs" />
     <Compile Include="BundleModuleIsolationTests.cs" />
+    <Compile Include="CheckBoxHandlerRegistryTests.cs" />
     <Compile Include="IronPythonRuleCachesTests.cs" />
     <Compile Include="..\Source\SessionResourceRegistry.cs" Link="Source\SessionResourceRegistry.cs" />
+    <Compile Include="..\Source\CheckBoxHandlerRegistry.cs" Link="Source\CheckBoxHandlerRegistry.cs" />
     <Compile Include="ScriptBuiltinsTests.cs" />
   </ItemGroup>
 
