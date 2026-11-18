@@ -118,16 +118,53 @@ begin
     Log('Elevated install: pyrevit configs seedshippeddefaults failed for original user');
 end;
 
+function FindShadowingPyRevitExe: String;
+var
+  ResultCode: Integer;
+  Output: TExecOutput;
+  PyRevitExe: String;
+begin
+  Result := '';
+  PyRevitExe := ExpandConstant('{app}\bin\pyrevit.exe');
+  if not ExecAndCaptureOutput(PyRevitExe, 'env path which', ExpandConstant('{app}\bin'), SW_HIDE, ewWaitUntilTerminated, ResultCode, Output) then
+  begin
+    Log('Failed to execute pyrevit env path which');
+    Exit;
+  end;
+  if (ResultCode <> 0) or (GetArrayLength(Output.StdOut) = 0) then
+    Exit;
+  if CompareText(Trim(Output.StdOut[0]), PyRevitExe) <> 0 then
+    Result := Trim(Output.StdOut[0]);
+end;
+
+procedure WarnIfShadowedOnPath;
+var
+  ShadowingExe: String;
+begin
+  ShadowingExe := FindShadowingPyRevitExe;
+  if ShadowingExe = '' then
+    Exit;
+  Log('Another pyrevit.exe precedes this install on PATH: ' + ShadowingExe);
+  SuppressibleMsgBox(
+    'pyRevit was installed, but another pyrevit.exe comes earlier in the PATH environment variable. The "pyrevit" command keeps running that one:' + #13#10 +
+    '  ' + ShadowingExe + #13#10 + #13#10 +
+    'Update or uninstall that installation, or run this one by its full path:' + #13#10 +
+    '  ' + ExpandConstant('{app}\bin\pyrevit.exe'),
+    mbError, MB_OK, MB_OK);
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
-    if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=user') then
+    if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=user --first') then
       SuppressibleMsgBox(
         'pyRevit was installed, but the installer could not register the install folder in your user PATH environment variable.' + #13#10 + #13#10 +
         'You may need to manually add the following folder to your user PATH:' + #13#10 +
         '  ' + ExpandConstant('{app}\bin'),
-        mbError, MB_OK, MB_OK);
+        mbError, MB_OK, MB_OK)
+    else
+      WarnIfShadowedOnPath;
     if IsAdmin then
       RunElevatedUserPostInstallCommands;
   end;

@@ -9,6 +9,17 @@
 - [Code of Conduct](https://docs.pyrevitlabs.io/CODE_OF_CONDUCT/): A guide for maintaining a respectful and inclusive community.
 - [pyRevit Repository Structure](https://docs.pyrevitlabs.io/repo-organization/): Overview of pyRevit repository structure and organization.
 - [pyRevit Developer Guide](https://docs.pyrevitlabs.io/dev-guide/): Guide for setting up pyRevit development environment and contributions.
+- [Extensions](https://docs.pyrevitlabs.io/extensions/): Bundle structure, bundle.yaml keys, script engines, hooks and the __revit__ handle.
+- [Propose an external extension](https://docs.pyrevitlabs.io/custom_extension/): How to list an extension in the catalog and the acceptance criteria.
+- [Writing pyRevit-style code](https://docs.pyrevitlabs.io/pyrevit-style/): Conventions for Python scripts: use pyrevit first, transactions, forms, output, button metadata.
+- [Python config API](https://docs.pyrevitlabs.io/config-api/): Typed config sections, flat snake_case aliases and raw option access.
+- [Revit API compatibility lint](https://docs.pyrevitlabs.io/revit-api-compat/): Static checker for Revit API uses that are missing in some Revit years.
+- [Theming and dark mode](https://docs.pyrevitlabs.io/theming/): Light and dark ribbon icons, panel backgrounds and WPF form palette.
+- [Interactive Python shell](https://docs.pyrevitlabs.io/python-shell/): Opening modes, engine, interrupting and closing the IronPython shell.
+- [Agent runtime](https://docs.pyrevitlabs.io/agent-runtime/): MCP server and in-Revit host that let coding agents run Python against a live model.
+- [CI/CD and releases](https://docs.pyrevitlabs.io/ci-cd/): GitHub Actions workflows, prebuilt binaries and the release procedure.
+- [Testing](https://docs.pyrevitlabs.io/testing/): Test surfaces, how each runs, what CI covers and the testing policy.
+- [Adding support for a new Revit version](https://docs.pyrevitlabs.io/adding-revit-version/): Runtime project, build constants, host registry, CI and installer steps.
 - [pyRevit Configuration Guide](https://docs.pyrevitlabs.io/reference/pyrevit/): Comprehensive guide to pyRevit's configuration and classes.
 - [PyRevit Extensions Module](https://docs.pyrevitlabs.io/reference/pyrevit/extensions/): Module for managing and parsing pyRevit extensions.
 - [Revit API Reference](https://docs.pyrevitlabs.io/reference/pyrevit/api/): Access Revit API functions and utilities for developers.

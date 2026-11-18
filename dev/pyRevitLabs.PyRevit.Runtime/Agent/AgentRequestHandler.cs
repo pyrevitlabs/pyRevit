@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
@@ -27,7 +28,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
         private const double MaxStartTimeoutSeconds = 3600;
 
-        public static string Handle(string line) {
+        /// <param name="line">One JSON-RPC request line.</param>
+        /// <param name="callerGone">Cancelled when the client disconnects before the answer is sent.
+        /// Only a <c>run</c> request uses it, to discard a change set that waits for approval.</param>
+        public static string Handle(string line, CancellationToken callerGone = default) {
             JToken id = null;
             string method = null;
             var loadAtStart = AgentHost.SessionLoad;
@@ -43,15 +47,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 id = request["id"];
                 method = (request["method"] as JValue)?.Value as string ?? string.Empty;
                 var parameters = request["params"] as JObject ?? new JObject();
-                return Success(id, Dispatch(method, parameters, id));
+                return Success(id, Dispatch(method, parameters, id, callerGone));
             }
             catch (AgentException ex) {
                 return Failure(id, -32000, ex.Message, ex.Code, ex.Details);
             }
             catch (Exception ex) {
                 logger.Error(ex, "Agent request failed");
+                var details = new JObject { ["outcome"] = "unknown" };
+                var rollbackFailure = AgentCaptureGroup.RollbackFailureOf(ex);
+                if (rollbackFailure != null)
+                    details["rollback_failure"] = rollbackFailure;
                 return Failure(id, -32603, "The agent request failed inside Revit; the pyRevit log has the details.",
-                    "internal_error", new JObject { ["outcome"] = "unknown" });
+                    "internal_error", details);
             }
             finally {
                 if (method != null)
@@ -59,18 +67,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        private static JToken Dispatch(string method, JObject parameters, JToken id) {
+        private static JToken Dispatch(string method, JObject parameters, JToken id, CancellationToken callerGone) {
             AgentHost.RefreshConfigIfChanged();
             if (method != "ping")
                 RequireEnabled();
             switch (method) {
                 case "ping":
-                    return new JObject {
+                    var pong = new JObject {
                         ["pong"] = true,
                         ["pid"] = AgentHost.ProcessId,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
                     };
+                    if (AgentParams.Get<bool?>(parameters, "identity") == true && int.TryParse(AgentHost.RevitVersion, out var pingYear)) {
+                        var identity = AgentSessionIdentity.Describe(pingYear);
+                        foreach (var key in new[] { "commit", "bin_commit", "bin_stale", "bin_hint" })
+                            if (identity.TryGetValue(key, out var value))
+                                pong[key] = value;
+                    }
+                    return pong;
                 case "get_context":
                     return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
                 case "run":
@@ -78,6 +93,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
                     RefuseNestedCPython(runRequest);
                     runRequest.RequestId = RequestIdOf(id);
+                    runRequest.CallerGone = callerGone;
                     return InvokeRunOnMainThread(runRequest, parameters);
                 case "inspect_elements":
                     var ids = ParseParameters(() => AgentInspector.ParseIds(parameters));
@@ -89,6 +105,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case "capture":
                     var captureRequest = ParseParameters(() => AgentCapture.Parse(parameters));
                     return InvokeCapturingDialogs((app, _) => AgentCapture.Capture(app, captureRequest), parameters);
+                case "recording_start":
+                    var recordingOptions = ParseParameters(() => AgentRecordingOptions.FromJson(parameters));
+                    return InvokeOnMainThread(app => AgentRecorder.Start(app, recordingOptions), parameters);
+                case "recording_stop":
+                    return InvokeOnMainThread(_ => AgentRecorder.Stop("user"), parameters);
+                case "recording_status":
+                    return AgentRecorder.Status();
                 case "lookup_api":
                     var query = AgentParams.Get<string>(parameters, "name");
                     return AgentApiLookup.Lookup(query);

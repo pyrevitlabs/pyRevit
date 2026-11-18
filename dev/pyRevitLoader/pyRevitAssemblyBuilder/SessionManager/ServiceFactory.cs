@@ -109,10 +109,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </summary>
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
+        /// <param name="tabIconDecorator">Must be the instance passed to <see cref="SessionManagerService"/>, which resets and refreshes it around each UI build.</param>
         /// <returns>A new ITabBuilder instance.</returns>
-        public static ITabBuilder CreateTabBuilder(UIApplication uiApplication, ILogger logger)
+        public static ITabBuilder CreateTabBuilder(UIApplication uiApplication, ILogger logger, ITabIconDecorator tabIconDecorator)
         {
-            return new TabBuilder(uiApplication, logger);
+            return new TabBuilder(uiApplication, logger, tabIconDecorator);
         }
 
         /// <summary>
@@ -138,7 +139,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         public static IButtonBuilderFactory CreateButtonBuilderFactory(ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext, SmartButtonScriptInitializer smartButtonScriptInitializer)
         {
             // Create individual button builders
-            var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
+            var linkButtonBuilder = new LinkButtonBuilder(buildContext, logger, buttonPostProcessor);
             var pushButtonBuilder = new PushButtonBuilder(logger, buttonPostProcessor, smartButtonScriptInitializer);
             var panelButtonBuilder = new PanelButtonBuilder(logger, buttonPostProcessor);
             var pulldownButtonBuilder = new PulldownButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
@@ -167,7 +168,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <returns>A new IStackBuilder instance.</returns>
         public static IStackBuilder CreateStackBuilder(ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext, SmartButtonScriptInitializer smartButtonScriptInitializer)
         {
-            var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
+            var linkButtonBuilder = new LinkButtonBuilder(buildContext, logger, buttonPostProcessor);
             var pulldownButtonBuilder = new PulldownButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
             var splitButtonBuilder = new SplitButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
 
@@ -270,7 +271,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // so all readers observe the same value within a single BuildUI call.
             var buildContext = new BuildContext();
             var panelStyleManager = CreatePanelStyleManager(logger);
-            var tabBuilder = CreateTabBuilder(uiApplication, logger);
+            var themeDetector = new RevitThemeDetector(logger);
+            var tabIconDecorator = new TabIconDecorator(path => iconManager.LoadBitmapSource(path), themeDetector.IsDarkTheme);
+            var tabBuilder = CreateTabBuilder(uiApplication, logger, tabIconDecorator);
             var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager);
             var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
             var buttonBuilderFactory = CreateButtonBuilderFactory(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
@@ -299,7 +302,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 hookManager,
                 uiManager,
                 ribbonScanner,
-                logger);
+                logger,
+                tabIconDecorator);
         }
 
         /// <summary>

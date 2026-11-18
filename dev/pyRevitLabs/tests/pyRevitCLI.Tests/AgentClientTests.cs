@@ -370,6 +370,16 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
+    public void ACallKeepsDateLikeStringsOfTheResultUnchanged() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["day"] = "2024-05-01T10:00:00.50Z" });
+
+        var result = PyRevitAgentClient.Call(ThisHost(), "run", new JObject());
+
+        Assert.Equal(JTokenType.String, result["day"].Type);
+        Assert.Equal("2024-05-01T10:00:00.50Z", result.Value<string>("day"));
+    }
+
+    [Fact]
     public void AHostErrorBecomesAnExceptionWithItsTypeAndMessage() {
         host.Handler = request => FakeAgentHost.Failure(request, "revit_busy", "Revit did not become idle");
 
@@ -611,6 +621,49 @@ public class AgentClientTests : IDisposable {
         var line = PyRevitCLIAgentCmds.StatusLine(PyRevitAgentClient.Resolve("2091"));
 
         Assert.Equal("Revit 2091 (build build-2091) pid " + Environment.ProcessId + " on dev CPython: responding", line);
+    }
+
+    [Fact]
+    public void StatusShowsTheBinaryCommitAndFlagsStaleBinaries() {
+        var instance = ThisHost();
+        instance.BinCommit = "23266b3";
+        instance.BinStale = true;
+        PyRevitAgentClient.PingConnectTimeoutMs = 200;
+
+        var line = PyRevitCLIAgentCmds.StatusLine(instance);
+
+        Assert.EndsWith(", binaries 23266b3 (stale)", line);
+    }
+
+    [Fact]
+    public void StatusTakesTheBinaryFieldsFromTheLiveHostInsteadOfTheStartupRecord() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject {
+            ["pong"] = true,
+            ["commit"] = "8c0fbdf",
+            ["bin_commit"] = "23266b3",
+            ["bin_stale"] = true,
+        });
+        var instance = ThisHost();
+        instance.Commit = "23266b3";
+        instance.BinCommit = "23266b3";
+        instance.BinStale = false;
+
+        var line = PyRevitCLIAgentCmds.StatusLine(instance);
+
+        Assert.EndsWith(": responding, binaries 23266b3 (stale)", line);
+        Assert.Equal("8c0fbdf", instance.Commit);
+    }
+
+    [Fact]
+    public void StatusKeepsTheStartupBinaryFieldsWhenTheHostDoesNotSendThem() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["pong"] = true });
+        var instance = ThisHost();
+        instance.BinCommit = "23266b3";
+        instance.BinStale = true;
+
+        var line = PyRevitCLIAgentCmds.StatusLine(instance);
+
+        Assert.EndsWith(": responding, binaries 23266b3 (stale)", line);
     }
 
     [Fact]

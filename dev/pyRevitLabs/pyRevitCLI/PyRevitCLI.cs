@@ -98,6 +98,7 @@ namespace pyRevitCLI {
         /// as a failure, matching pre-refactor CLI behavior.
         /// </summary>
         static void Main(string[] args) {
+            PyRevitCLIConsoleEncoding.Apply();
             AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => {
                 if (args.Name.StartsWith("Newtonsoft.Json,")) {
                     var assemblyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pyRevitLabs.Json.dll");
@@ -217,7 +218,10 @@ namespace pyRevitCLI {
                                                       TryGetValue("--scope", "user"));
                 else if (all("path", "ensure"))
                     PyRevitCLIAppCmds.EnsurePathEntry(arguments["<dir>"].Value as string,
-                                                      TryGetValue("--scope", "user"));
+                                                      TryGetValue("--scope", "user"),
+                                                      first: arguments["--first"].IsTrue);
+                else if (all("path", "which"))
+                    PyRevitCLIAppCmds.ListCliCopiesOnPath();
                 else
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Env);
             }
@@ -539,7 +543,8 @@ namespace pyRevitCLI {
                         destPath: TryGetValue("--dest"),
                         searchPattern: TryGetValue("<search_pattern>"),
                         latest: arguments["latest"].IsTrue,
-                        listPreReleases: arguments["--pre"].IsTrue
+                        listPreReleases: arguments["--pre"].IsTrue,
+                        admin: arguments["--admin"].IsTrue
                         );
 
                 else
@@ -607,6 +612,20 @@ namespace pyRevitCLI {
                 else if (all("show"))
                     PyRevitCLIAgentCmds.ShowRun(TryGetValue("<run_id>"));
 
+                else if (all("record"))
+                    PyRevitCLIAgentCmds.Record(
+                        action: TryGetValue("<action>"),
+                        screenshots: arguments["--no-screenshots"].IsFalse,
+                        screenshotInterval: TryGetValue("--screenshot-interval"),
+                        maxScreenshots: TryGetValue("--max-screenshots"),
+                        maxEvents: TryGetValue("--max-events"),
+                        maxDuration: TryGetValue("--max-duration"),
+                        revitSelector: TryGetValue("--revit")
+                        );
+
+                else if (all("recordings"))
+                    PyRevitCLIAgentCmds.PrintRecordings(TryGetValue("--limit"));
+
                 else
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Agent);
             }
@@ -655,6 +674,8 @@ namespace pyRevitCLI {
                 else if (all("commands"))
                     PyRevitCLIRevitCmds.ListAvailableCommands();
                 else {
+                    var inputsJson = PyRevitRunner.ReadInputs(
+                        TryGetValue("--inputs"), TryGetValue("--inputs-file"));
                     var modelList = TryGetValue("--models");
                     if (modelList != null) {
                         PyRevitCLIRevitCmds.RunExtensionCommand(
@@ -664,7 +685,8 @@ namespace pyRevitCLI {
                             runOptions: new PyRevitRunnerOptions() {
                                 PurgeTempFiles = arguments["--purge"].IsTrue,
                                 ImportPath = TryGetValue("--import", null),
-                                AllowDialogs = arguments["--allowdialogs"].IsTrue
+                                AllowDialogs = arguments["--allowdialogs"].IsTrue,
+                                InputsJson = inputsJson
                             },
                             targetIsFileList: true
                         );
@@ -677,7 +699,8 @@ namespace pyRevitCLI {
                             runOptions: new PyRevitRunnerOptions() {
                                 PurgeTempFiles = arguments["--purge"].IsTrue,
                                 ImportPath = TryGetValue("--import", null),
-                                AllowDialogs = arguments["--allowdialogs"].IsTrue
+                                AllowDialogs = arguments["--allowdialogs"].IsTrue,
+                                InputsJson = inputsJson
                             }
                         );
                 }
@@ -1092,7 +1115,7 @@ namespace pyRevitCLI {
         }
 
         internal static string TryGetValue(string key, string defaultValue = null) {
-            return arguments[key] != null ? arguments[key].Value as string : defaultValue;
+            return PyRevitCLIArguments.Value(arguments, key, defaultValue);
         }
 
         /// <summary>

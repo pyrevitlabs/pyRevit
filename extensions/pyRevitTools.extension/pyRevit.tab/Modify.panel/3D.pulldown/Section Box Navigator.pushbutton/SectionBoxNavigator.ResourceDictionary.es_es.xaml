@@ -100,6 +100,21 @@
     <system:String x:Key="SectionBoxAlignedFormat">Caja de sección alineada con la vista '{0}'</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Caja de recorte alineada con la vista '{0}'</system:String>
     <system:String x:Key="ScopeBoxApplied">Caja de alcance aplicada a la vista</system:String>
+    <system:String x:Key="NoSectionBoxPrompt">Esta vista no tiene caja de sección. Crear a partir de:</system:String>
+    <system:String x:Key="NoCropBoxPrompt">Esta vista no tiene caja de recorte activa. Crear a partir de:</system:String>
+    <system:String x:Key="SourceVisibleElements">Elementos visibles en la vista</system:String>
+    <system:String x:Key="SourceScopeBoxList">Caja de alcance de la lista</system:String>
+    <system:String x:Key="SourceScopeBoxPick">Caja de alcance elegida en la vista</system:String>
+    <system:String x:Key="NoScopeBoxes">Este proyecto no tiene cajas de alcance.</system:String>
+    <system:String x:Key="SelectScopeBox">Seleccionar caja de alcance</system:String>
+    <system:String x:Key="PickScopeBox">Elija una caja de alcance</system:String>
+    <system:String x:Key="NoVisibleElements">No hay elementos de modelo visibles en esta vista.</system:String>
+    <system:String x:Key="ScopeBoxNotSupported">Esta vista no puede usar una caja de alcance.</system:String>
+    <system:String x:Key="ScopeBoxHasNoGeometry">La caja de alcance no tiene geometría.</system:String>
+    <system:String x:Key="NoCropBoxActive">No hay caja de recorte activa</system:String>
+    <system:String x:Key="CropBoxDrivenByScopeBox">Una caja de alcance controla esta caja de recorte.</system:String>
+    <system:String x:Key="CropBoxHasCustomShape">La región de recorte tiene una forma personalizada.</system:String>
+    <system:String x:Key="BoxCreatedFormat">Caja creada a partir de {0}</system:String>
     <system:String x:Key="UnsupportedViewType">Tipo de vista no soportado.</system:String>
     <system:String x:Key="Activated">activado</system:String>
     <system:String x:Key="Deactivated">desactivado</system:String>
@@ -132,7 +147,5 @@
     <!-- Alert messages -->
     <system:String x:Key="StoredSectionBoxFound">¡Se encontró SectionBox almacenada para esta vista! ¿Restaurar?</system:String>
     <system:String x:Key="RestoreSectionBox">Restaurar Caja de Sección</system:String>
-    <system:String x:Key="NoSectionBoxMessage">La vista actual no tiene una caja de sección activa o almacenada.</system:String>
-    <system:String x:Key="NoSectionBoxTitle">Sin Caja de Sección</system:String>
     <system:String x:Key="ErrorTitle">Error</system:String>
 </ResourceDictionary>

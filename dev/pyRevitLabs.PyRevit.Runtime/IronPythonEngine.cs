@@ -91,6 +91,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 Engine = CreateEngineWithUtf8Streams(flags);
+                IronPythonRuleCaches.Track(Engine);
 
                 // also, allow access to the PyRevitLoader internals
                 Engine.Runtime.LoadAssembly(typeof(PyRevitLoader.ScriptExecutor).Assembly);

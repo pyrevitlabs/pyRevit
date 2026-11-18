@@ -191,7 +191,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 app.Application.Save(document);
 
                 Assert.Equal(
-                    "operation_blocked: file_export, save of 'Model' not allowed in agent runs; the user must do it in Revit.",
+                    "operation_blocked: file_export, save of 'Model' not allowed in agent runs; the user must do it in Revit. "
+                    + "Revit exports may only write into the run's export_dir.",
                     guard.DescribeBlockedOperations());
             }
         }
@@ -363,6 +364,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(0, document.RollbackCalls);
         }
 
+        /// <summary>
+        /// An assimilation Revit does not confirm throws and leaves Committed false, so the guard-level
+        /// host-error decision is rolled_back. That is not a confirmed rollback: when cleanup finds the
+        /// model still shows changes, the run service reports rollback_incomplete instead, which
+        /// AnAssimilationRevitRolledBackStillReportsTracesTheModelShows covers.
+        /// </summary>
+        [Fact]
+        public void AnAssimilationRevitDoesNotConfirmIsNotCommitted() {
+            var document = new Document { AssimilateStatus = TransactionStatus.RolledBack };
+            using (var guard = new AgentRunGuard(new UIApplication(), document)) {
+                guard.Arm("Test");
+
+                Assert.Throws<InvalidOperationException>(() => guard.Assimilate());
+
+                Assert.False(guard.Committed);
+            }
+        }
+
         [Fact]
         public void LinkedDocumentsAreNotTrackedAsChangedOtherDocuments() {
             var app = new UIApplication();
@@ -411,6 +430,70 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 guard.RollBack();
 
                 Assert.True(guard.RollbackFailed);
+            }
+        }
+
+        [Fact]
+        public void ARollbackRevitRefusesKeepsItsReason() {
+            var document = new Document { ThrowOnRollback = true };
+            using (var guard = new AgentRunGuard(new UIApplication(), document)) {
+                guard.Arm("Test");
+
+                Assert.Throws<InvalidOperationException>(guard.RollBack);
+
+                Assert.True(guard.RollbackFailed);
+                Assert.Contains("Rollback failed.", guard.RollbackFailureReason);
+            }
+        }
+
+        [Fact]
+        public void ARollbackRevitLeavesPendingKeepsTheStatusAsItsReason() {
+            var document = new Document { RollbackStatus = TransactionStatus.Pending };
+            using (var guard = new AgentRunGuard(new UIApplication(), document)) {
+                guard.Arm("Test");
+
+                guard.RollBack();
+
+                Assert.True(guard.RollbackFailed);
+                Assert.Contains("Pending", guard.RollbackFailureReason);
+            }
+        }
+
+        [Fact]
+        public void ARollbackThatLeavesTracesSaysSo() {
+            var app = new UIApplication();
+            var document = new Document();
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: new[] { new ElementId() });
+
+                guard.RollBack();
+
+                Assert.Contains("still shows the run's changes", guard.RollbackFailureReason);
+            }
+        }
+
+        [Fact]
+        public void TheFirstRollbackFailureReasonIsKept() {
+            var document = new Document { ThrowOnRollback = true };
+            var guard = new AgentRunGuard(new UIApplication(), document);
+            guard.Arm("Test");
+            Assert.Throws<InvalidOperationException>(guard.RollBack);
+            var first = guard.RollbackFailureReason;
+
+            guard.Dispose();
+
+            Assert.Equal(first, guard.RollbackFailureReason);
+        }
+
+        [Fact]
+        public void ACompletedRollbackHasNoFailureReason() {
+            using (var guard = new AgentRunGuard(new UIApplication(), new Document())) {
+                guard.Arm("Test");
+
+                guard.RollBack();
+
+                Assert.Null(guard.RollbackFailureReason);
             }
         }
 
@@ -503,6 +586,38 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             guard.Dispose();
 
+            Assert.True(guard.RollbackFailed);
+        }
+
+        [Fact]
+        public void AnAssimilationRevitRolledBackIsNeitherCommittedNorIncompleteWhenTheModelIsClean() {
+            var app = new UIApplication();
+            var document = new Document { AssimilateStatus = TransactionStatus.RolledBack };
+            var guard = new AgentRunGuard(app, document);
+            guard.Arm("Test");
+            Assert.Throws<InvalidOperationException>(() => guard.Assimilate());
+
+            guard.Dispose();
+
+            Assert.False(guard.Committed);
+            Assert.False(guard.RollbackFailed);
+            Assert.Equal(0, document.RollbackCalls);
+        }
+
+        [Fact]
+        public void AnAssimilationRevitRolledBackStillReportsTracesTheModelShows() {
+            var app = new UIApplication();
+            var document = new Document { AssimilateStatus = TransactionStatus.RolledBack };
+            var deleted = new ElementId();
+            var guard = new AgentRunGuard(app, document);
+            guard.Arm("Test");
+            app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+            document.Deleted.Add(deleted);
+            Assert.Throws<InvalidOperationException>(() => guard.Assimilate());
+
+            guard.Dispose();
+
+            Assert.False(guard.Committed);
             Assert.True(guard.RollbackFailed);
         }
 
@@ -704,6 +819,38 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
                 Assert.Equal(
                     "added 1 family (Door) with 3 types and 1 other element (Legend Components), modified 2 elements (Walls), deleted 1 element",
                     guard.Changes.Describe(document, 50).Value<string>("summary"));
+            }
+        }
+
+        [Fact]
+        public void TheSummaryCountsModifiedElementsWithoutACategoryApartAndKeepsThemInTheSamples() {
+            var app = new UIApplication();
+            var document = new Document();
+            var tracker = Add(document, new Element { Name = "AutoJoin Tracker Element" });
+            var wall = Add(document, new Element { Category = new Category { Name = "Walls" } });
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: new ElementId[0], modified: new[] { tracker, wall });
+
+                var description = guard.Changes.Describe(document, 50);
+                Assert.Equal("modified 1 element (Walls) and 1 without a category", description.Value<string>("summary"));
+                Assert.Equal(2, description.Value<int>("modified_count"));
+                Assert.Equal(2, description["modified"].Count());
+            }
+        }
+
+        [Fact]
+        public void TheSummaryStillStatesModifiedElementsWhenNoneHasACategory() {
+            var app = new UIApplication();
+            var document = new Document();
+            var tracker = Add(document, new Element { Name = "AutoJoin Tracker Element" });
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+
+                app.Application.Change(document, added: new ElementId[0], modified: new[] { tracker });
+
+                Assert.Equal("modified 1 element without a category", guard.Changes.Describe(document, 50).Value<string>("summary"));
             }
         }
 

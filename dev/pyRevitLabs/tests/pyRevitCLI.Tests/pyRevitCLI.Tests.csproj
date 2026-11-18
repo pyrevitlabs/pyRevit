@@ -17,6 +17,7 @@
         <PackageReference Include="xunit" Version="2.5.3"/>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
         <PackageReference Include="Colorful.Console" Version="1.2.15"/>
+        <PackageReference Include="docopt.net" Version="0.8.3"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -35,15 +36,23 @@
 
     <ItemGroup>
         <Compile Include="..\..\pyRevitCLI\PyRevitMcpRunResults.cs" Link="Sources\PyRevitMcpRunResults.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitCloneLocation.cs" Link="Sources\PyRevitCloneLocation.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitEnvRedactor.cs" Link="Sources\PyRevitEnvRedactor.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitCLIAgentCmds.cs" Link="Sources\PyRevitCLIAgentCmds.cs"/>
         <Compile Include="..\..\pyRevitCLI\McpClients.cs" Link="Sources\McpClients.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitAgentClient.cs" Link="Sources\PyRevitAgentClient.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitMcpServer.cs" Link="Sources\PyRevitMcpServer.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitAgentSkills.cs" Link="Sources\PyRevitAgentSkills.cs"/>
+        <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRecordingReader.cs" Link="Sources\AgentRecordingReader.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitLibraryIndex.cs" Link="Sources\PyRevitLibraryIndex.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitLibraryParser.cs" Link="Sources\PyRevitLibraryParser.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitAutomationOperations.cs" Link="Sources\PyRevitAutomationOperations.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitCLIArguments.cs" Link="Sources\PyRevitCLIArguments.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitCLIConsoleEncoding.cs" Link="Sources\PyRevitCLIConsoleEncoding.cs"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\..\pyRevitCLI\Resources\UsagePatterns.txt" Link="UsagePatterns.txt" CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
 </Project>

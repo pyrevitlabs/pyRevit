@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using pyRevitLabs.Common;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
+using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.PyRevit;
 
 using Console = Colorful.Console;
@@ -30,6 +31,8 @@ namespace pyRevitCLI {
         public static void PrintStatus(bool json) {
             var instances = PyRevitAgentClient.GetInstances();
             if (json) {
+                foreach (var instance in instances)
+                    TryRefreshIdentity(instance);
                 Console.WriteLine(new JArray(instances.Select(instance => instance.ToJson())).ToString(Formatting.Indented));
                 return;
             }
@@ -50,10 +53,18 @@ namespace pyRevitCLI {
                 Console.WriteLine(StatusLine(instance));
         }
 
+        internal static void TryRefreshIdentity(AgentInstance instance) {
+            try {
+                instance.Refresh(PyRevitAgentClient.Ping(instance, identity: true));
+            }
+            catch (AgentClientException) {
+            }
+        }
+
         internal static string StatusLine(AgentInstance instance) {
             string state;
             try {
-                PyRevitAgentClient.Ping(instance);
+                instance.Refresh(PyRevitAgentClient.Ping(instance, identity: true));
                 state = "responding";
             }
             catch (AgentClientException ex) when (ex.Code == "revit_busy" && PyRevitAgentClient.PipeExists(instance.Pipe)) {
@@ -65,8 +76,11 @@ namespace pyRevitCLI {
             var session = instance.Clone == null
                 ? string.Empty
                 : " on " + instance.Clone + (instance.Engine == null ? string.Empty : " " + instance.Engine);
-            return string.Format("Revit {0} (build {1}) pid {2}{3}: {4}",
-                instance.RevitVersion, instance.RevitBuild, instance.ProcessId, session, state);
+            var binaries = instance.BinCommit == null
+                ? string.Empty
+                : ", binaries " + instance.BinCommit + (instance.BinStale ? " (stale)" : string.Empty);
+            return string.Format("Revit {0} (build {1}) pid {2}{3}: {4}{5}",
+                instance.RevitVersion, instance.RevitBuild, instance.ProcessId, session, state, binaries);
         }
 
         public static void PrintContext(string revitSelector) {
@@ -86,7 +100,7 @@ namespace pyRevitCLI {
                 ["script"] = File.ReadAllText(scriptFile),
                 ["mode"] = mode ?? "query",
                 ["title"] = title ?? Path.GetFileName(scriptFile),
-                ["inputs"] = string.IsNullOrWhiteSpace(inputsJson) ? new JObject() : JToken.Parse(inputsJson),
+                ["inputs"] = string.IsNullOrWhiteSpace(inputsJson) ? new JObject() : JsonText.Parse(inputsJson),
             };
             if (engine != null)
                 parameters["engine"] = engine;
@@ -124,6 +138,53 @@ namespace pyRevitCLI {
                     response?.Value<string>("decision") ?? string.Empty,
                     request?.Value<string>("title") ?? string.Empty));
             }
+        }
+
+        public static void Record(string action, bool screenshots, string screenshotInterval, string maxScreenshots, string maxEvents, string maxDuration, string revitSelector) {
+            var normalizedAction = (action ?? string.Empty).ToLowerInvariant();
+            if (normalizedAction != "start" && normalizedAction != "stop" && normalizedAction != "status")
+                throw new PyRevitException("The record action must be start, stop or status: " + action);
+            var instance = PyRevitAgentClient.Resolve(revitSelector);
+            switch (normalizedAction) {
+                case "start":
+                    var parameters = new JObject { ["screenshots"] = screenshots };
+                    AddNumber(parameters, "screenshot_interval_s", screenshotInterval);
+                    AddNumber(parameters, "max_screenshots", maxScreenshots);
+                    AddNumber(parameters, "max_events", maxEvents);
+                    AddNumber(parameters, "max_duration_s", maxDuration);
+                    Console.WriteLine(PyRevitAgentClient.Call(instance, "recording_start", parameters).ToString(Formatting.Indented));
+                    break;
+                case "stop":
+                    Console.WriteLine(PyRevitAgentClient.Call(instance, "recording_stop").ToString(Formatting.Indented));
+                    break;
+                case "status":
+                    Console.WriteLine(PyRevitAgentClient.Call(instance, "recording_status").ToString(Formatting.Indented));
+                    break;
+            }
+        }
+
+        private static void AddNumber(JObject parameters, string name, string value) {
+            if (value == null)
+                return;
+            var parsed = double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number);
+            parameters[name] = parsed ? (JToken)number : value;
+        }
+
+        public static void PrintRecordings(string limit) {
+            var count = 20;
+            if (limit != null && (!int.TryParse(limit, out count) || count < 1))
+                throw new PyRevitException("--limit must be a positive whole number: " + limit);
+            var recordings = AgentRecordingReader.List(PyRevitAgentClient.RecordingsDir, count);
+            if (recordings.Count == 0) {
+                Console.WriteLine("No session recordings.");
+                return;
+            }
+            foreach (var recording in recordings)
+                Console.WriteLine(string.Format("{0}  {1,-12} {2,6} events  {3}",
+                    recording.Value<string>("id"),
+                    recording.Value<string>("status"),
+                    recording.Value<int?>("event_count") ?? 0,
+                    recording.Value<string>("directory")));
         }
 
         private static string NoRunMessage(string runId) {

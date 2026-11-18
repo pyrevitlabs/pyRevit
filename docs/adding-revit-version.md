@@ -7,11 +7,23 @@ This guide explains the step-by-step process to add support for a new Revit vers
 Before starting, gather the following information:
 
 1. **Revit Version Year** (e.g., 2028)
-2. **Target .NET Framework**:
+2. **Target .NET Framework** of the runtime project (see [Revit versions and .NET](#revit-versions-and-net)):
    - Revit 2021-2024: `net48`
    - Revit 2025-2026: `net8.0-windows`
    - Revit 2027+: `net10.0-windows`
-3. **Check if a new .NET version is required** - If the new Revit uses a different .NET version than previous releases, additional steps are needed (see sections 4 and 5)
+3. **Check if a new .NET version is required** - If the new Revit uses a different .NET version than the existing runtime projects target, additional steps are needed (see Steps 5 and 6)
+
+### Revit versions and .NET
+
+The target framework is a build property of pyRevit's assemblies. The runtime a Revit host provides can be newer:
+
+| Revit | pyRevit runtime project | Loader (`pyRevitLoader.dll`) | Host runtime |
+|---|---|---|---|
+| 2021-2024 | `net48` | `net48` | .NET Framework 4.8 |
+| 2025, 2026 | `net8.0-windows` | `net8.0-windows` | .NET 8; .NET 10 from the 2025.5 and 2026.5 updates |
+| 2027+ | `net10.0-windows` | `net8.0-windows` | .NET 10 |
+
+Autodesk moves Revit 2025 and 2026 to .NET 10 with their `.5` updates and states that most existing add-ins keep working ([Autodesk Developer blog: Autodesk desktop products 2025/2026 .NET 10 updates](https://blog.autodesk.io/autodesk-desktop-products-2025-2026-net-10-updates/)). The `net8.0-windows` assemblies keep their target framework; `pyrevitlib/pyrevit/compat.py` treats every host on .NET 8 or newer as `NETCORE`.
 
 ---
 
@@ -133,8 +145,8 @@ to 2023.0 and `Update` from 2023.1 on — so the file reproduces that rather tha
 it. The `2021 First Customer Ship` and `2027 Preview Release` names describe a
 distribution channel, not a version, and are kept verbatim.
 
-Identity comes from `version` and `build`. `FindProductInfo` does compare `release`
-(`RevitProduct.cs:165`), but the identifier it receives on the installed-products path is
+Identity comes from `version` and `build`. `RevitProductData.FindProductInfo` does compare `release`
+but the identifier it receives on the installed-products path is
 the registry `DisplayVersion`, which for Revit 2021 and later is a four-part number such
 as `25.5.0.57` — so `version` satisfies that match and `release` is close to inert there.
 What `release` drives is display: `pyrevit revits`, `revits --csv`, `pyrevit env --json`,
@@ -150,8 +162,8 @@ Two consequences for anyone editing this file:
   cannot be told apart. The same applies to a shared `version`, which is why these pairs are
   also expected to differ there.
 - **Do not put whitespace immediately before a four-digit run.** Names contain spaces
-  (`2021.1 Update`) and that is fine; what matters is the gap before the year. `GetProductYear`
-  (`RevitProduct.cs:223`) matches `.*\s+(?<product_year>\d{4}).*`, so a name like
+  (`2021.1 Update`) and that is fine; what matters is the gap before the year.
+  `RevitProductData.GetProductYear` matches `.*\s+(?<product_year>\d{4}).*`, so a name like
   `Revit 2028` starts resolving the product year from `release` instead of falling through
   to `version`, which changes what `IsSupported` and the attachment code paths do. No name in
   the file has whitespace directly before a year for this reason — a title ending in a bare
@@ -161,9 +173,8 @@ Two consequences for anyone editing this file:
 
 The host registry lists exactly the Revits the current pyRevit line supports, and
 that floor is **Revit 2021** (`RevitProductData.MinimumSupportedProductYear`).
-The C# loader replaced the legacy pure-Python loader, which was the only runtime
-that ran on Revit 2020 and earlier, so those releases are not supported and are
-deliberately absent from the file — the 6.5 line was the last to carry them.
+The C# loader runs on Revit 2021 and newer only, so earlier releases are not
+supported and are deliberately absent from the file.
 
 Do not add a record below that floor to "fix" an install reporting the wrong
 product. An older install is still detected, and reported as unsupported, so it
@@ -173,15 +184,12 @@ instead of silently standing in for a supported Revit.
 ### Build numbers are not unique
 
 Autodesk reuses a build number across product years, so `build` alone does not
-identify a host. Both of these ship build `20220517_1515`:
+identify a host. Both of these ship build `20260629_1515`:
 
 | release | version | build |
 |---|---|---|
-| 2020.2.9 | 20.2.90.12 | 20220517_1515 |
-| 2021.1.7 Hotfix | 21.1.70.21 | 20220517_1515 |
-
-(`2020.2.9` is shown as it was when that section was written; it predates the 2021 floor
-described above and is no longer in the file.)
+| 2025.4.6 Update | 25.4.60.9 | 20260629_1515 |
+| 2026.4.2 Update | 26.4.20.9 | 20260629_1515 |
 
 `RevitProductData.FindProductInfo` therefore treats a build match as a candidate
 set and narrows it with the host's own identity — full file version first, then
@@ -198,11 +206,15 @@ involved; add the missing record to the registry rather than relying on a guess.
 
 ---
 
-## Step 5: CI/CD Updates (New .NET Version Only)
+## Step 5: CI/CD Updates
+
+### 5.1 Add the year to the Revit integration workflow
+
+`.github/workflows/revit-integration.yml` lists the Revit years it launches and rejects any other year. Add the new year to the `revit_years` default, to the list of accepted years, and to the range check and its error message.
+
+### 5.2 Add .NET SDK setup (New .NET Version Only)
 
 If the new Revit requires a new .NET version, update the GitHub Actions workflow.
-
-### 5.1 Add .NET SDK setup
 
 Edit `.github/workflows/ci.yml` (and `wip.yml` / `release.yml` if they install their own SDKs) and add a new setup step:
 
@@ -358,6 +370,7 @@ For Release stamping on the new Revit version, run with `Build__Channel=release`
 | `dev/libs/Revit/YYYY/` | Version-specific DLLs (Xceed.Wpf.AvalonDock) |
 | `release/pyrevit-hosts.json` | Revit build registry for version detection (staged to `bin/` by CI) |
 | `.github/workflows/ci.yml`, `wip.yml`, `release.yml` | CI/CD pipeline configuration |
+| `.github/workflows/revit-integration.yml` | Revit years launched by the integration job |
 | `release/CodeDependencies.iss` | .NET runtime installer procedures |
 | `release/pyrevit.iss` | Main pyRevit installer script |
 

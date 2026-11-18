@@ -44,6 +44,14 @@ namespace pyRevitExtensionParser
         /// </summary>
         public List<string> AuthorizedGroups { get; set; }
 
+        /// <summary>
+        /// True when the extension declares an access list that could not be read
+        /// (unparsable extension.json mentioning one, a non-list value, or a list with only
+        /// blank entries). The extension is then treated as restricted for everyone, so a
+        /// broken definition never widens access. Absent or empty lists leave this false.
+        /// </summary>
+        public bool AuthDefinitionUnreadable { get; set; }
+
         // Cache directory existence checks to avoid repeated file system calls
         private Dictionary<string, bool> _dirExistsCache = new Dictionary<string, bool>();
 
@@ -68,7 +76,7 @@ namespace pyRevitExtensionParser
         // Static HashSet for O(1) extension lookup - much faster than string comparisons
         private static readonly HashSet<string> _scriptExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx", ".xaml", ".yaml", ".json"
+            ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx", ".xaml", ".yaml", ".json", ".rfa"
         };
 
         // Cached hash value to avoid recalculation
@@ -86,6 +94,8 @@ namespace pyRevitExtensionParser
             ".smartbutton",
             ".linkbutton",
             ".nobutton",
+            ".urlbutton",
+            ".invokebutton",
             ".panelbutton",
             ".content",
             ".combobox"
@@ -94,7 +104,8 @@ namespace pyRevitExtensionParser
         private static readonly HashSet<string> _hashDirNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "lib",
-            "hooks"
+            "hooks",
+            "checks"
         };
 
         /// <summary>
@@ -165,7 +176,7 @@ namespace pyRevitExtensionParser
                     }
 
                     var dirName = dirInfo.Name;
-                    var includeDir = IsHashDirectory(dirName);
+                    var includeDir = pendingDirectory.isExtensionRoot || IsHashDirectory(dirName);
 
                     if (includeDir)
                     {
@@ -336,10 +347,13 @@ namespace pyRevitExtensionParser
                     // Top-level (tab): "CustomCtrl_%CustomCtrl_%{name}"
                     currentControlId = $"CustomCtrl_%CustomCtrl_%{displayName}";
                 }
+                else if (comp.Type == CommandComponentType.Stack)
+                {
+                    currentControlId = parentControlId;
+                }
                 else if (comp.Type == CommandComponentType.PullDown ||
                          comp.Type == CommandComponentType.SplitButton ||
-                         comp.Type == CommandComponentType.SplitPushButton ||
-                         comp.Type == CommandComponentType.Stack)
+                         comp.Type == CommandComponentType.SplitPushButton)
                 {
                     // Command groups inside containers need to deepen the hierarchy
                     // This matches Python's GenericUICommandGroup.control_id behavior

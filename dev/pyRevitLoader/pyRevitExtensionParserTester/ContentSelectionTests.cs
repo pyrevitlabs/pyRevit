@@ -296,7 +296,7 @@ namespace pyRevitExtensionParserTest
                 Is.Not.EqualTo(builder.GetAssemblyFileName(second, null, false)));
         }
 
-        /// <summary>Relocated content keeps its parser hash and gets its own cached assembly.</summary>
+        /// <summary>Identical tracked inputs keep their parser hash after relocation and get distinct cached assemblies.</summary>
         [Test]
         public void IdenticalExtensionsUseDistinctAssemblyFileNames()
         {
@@ -314,6 +314,8 @@ namespace pyRevitExtensionParserTest
                 File.SetLastWriteTimeUtc(sharedMetadata, timestamp);
 
                 var root = Path.Combine(TestTempDir, parent, Extension);
+                foreach (var family in Directory.EnumerateFiles(root, "*.rfa", SearchOption.AllDirectories))
+                    File.SetLastWriteTimeUtc(family, timestamp);
                 foreach (var directory in Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories))
                     Directory.SetLastWriteTimeUtc(directory, timestamp);
                 Directory.SetLastWriteTimeUtc(root, timestamp);
