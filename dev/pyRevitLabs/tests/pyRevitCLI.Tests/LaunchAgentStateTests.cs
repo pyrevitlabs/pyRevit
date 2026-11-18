@@ -55,6 +55,59 @@ public class LaunchAgentStateTests : IDisposable {
     }
 
     /// <summary>
+    ///     Verifies that a read-only machine config takes precedence over the seeded copy, so its agent setting is the one reported.
+    /// </summary>
+    [Fact]
+    public void AReadOnlyMachineConfigIsReadInsteadOfTheSeededCopy() {
+        var machineConfig = Path.Combine(directory, "machine_config.ini");
+        File.WriteAllText(configFile, "[agent]\nenabled = false\n");
+        File.WriteAllText(machineConfig, "[agent]\nenabled = true\n");
+        File.SetAttributes(machineConfig, FileAttributes.ReadOnly);
+        try {
+            var resolved = PyRevitLauncher.ResolveSessionConfig(configFile, machineConfig, isAllUsers: false, isElevated: false);
+
+            Assert.Equal(machineConfig, resolved);
+            Assert.True(PyRevitLauncher.ReadAgentEnabled(resolved));
+        }
+        finally {
+            File.SetAttributes(machineConfig, FileAttributes.Normal);
+        }
+    }
+
+    /// <summary>
+    ///     Verifies that a writable machine config does not replace an existing seeded copy.
+    /// </summary>
+    [Fact]
+    public void AWritableMachineConfigDoesNotReplaceTheSeededCopy() {
+        var machineConfig = Path.Combine(directory, "machine_config.ini");
+        File.WriteAllText(configFile, "[agent]\nenabled = false\n");
+        File.WriteAllText(machineConfig, "[agent]\nenabled = true\n");
+
+        Assert.Equal(configFile, PyRevitLauncher.ResolveSessionConfig(configFile, machineConfig, isAllUsers: false, isElevated: false));
+    }
+
+    /// <summary>
+    ///     Verifies that a session with no seeded copy loads the machine config, which is then seeded from it.
+    /// </summary>
+    [Fact]
+    public void AMachineConfigIsReadWhenNothingWasSeeded() {
+        var machineConfig = Path.Combine(directory, "machine_config.ini");
+        File.WriteAllText(machineConfig, "[agent]\nenabled = true\n");
+
+        Assert.Equal(machineConfig, PyRevitLauncher.ResolveSessionConfig(configFile, machineConfig, isAllUsers: false, isElevated: false));
+    }
+
+    /// <summary>
+    ///     Verifies that the seeded copy is read when there is no machine config.
+    /// </summary>
+    [Fact]
+    public void TheSeededCopyIsReadWhenThereIsNoMachineConfig() {
+        File.WriteAllText(configFile, "[agent]\nenabled = true\n");
+
+        Assert.Equal(configFile, PyRevitLauncher.ResolveSessionConfig(configFile, Path.Combine(directory, "missing.ini"), isAllUsers: false, isElevated: false));
+    }
+
+    /// <summary>
     ///     Verifies that a session seeded with no config at all reports the agent as disabled.
     /// </summary>
     [Fact]

@@ -828,9 +828,9 @@ engine is `default`, a version such as `342` or `2712`, or an engine id.
   so config changes, caches and logs of the session don't reach the others. A config stored in the
   clone is ignored by such a session (`PYREVIT_IGNORE_LOCAL_CONFIG`). Instance records, run records and captures stay under
   `%APPDATA%\pyRevit\agent` (`PYREVIT_AGENT_DIR`), because clients look for sessions there.
-  The seeded config decides whether the agent host starts: a config without `[agent] enabled = true`
-  leaves the session unregistered for MCP, and the launch summary prints an `Agent Host:` line
-  saying so.
+  The config the session loads decides whether the agent host starts, the seeded copy unless a
+  read-only machine config takes precedence: without `[agent] enabled = true` the session stays
+  unregistered for MCP, and the launch summary prints an `Agent Host:` line saying so.
 - **Model.** An optional model path after the year, such as
   `pyrevit launch dev default 2026 C:\Models\Tower.rvt`, is checked before anything is prepared
   and opened when Revit starts: the launch journal opens it the way Revit records a model passed
