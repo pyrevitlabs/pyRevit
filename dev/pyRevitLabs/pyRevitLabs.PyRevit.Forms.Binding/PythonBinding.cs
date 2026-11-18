@@ -313,7 +313,8 @@ def names(value):
         /// <see cref="bool"/>, <c>int</c> becomes <see cref="int"/> or, outside its range,
         /// <see cref="long"/>, <c>float</c> becomes <see cref="double"/>, <c>str</c> becomes
         /// <see cref="string"/>, <c>None</c> becomes null, lists and tuples become
-        /// <see cref="PythonListProxy"/>, dicts become a <see cref="PythonObjectProxy"/> over
+        /// <see cref="PythonListProxy"/>, as do other plain iterables (sets, ranges, generators,
+        /// instances defining <c>__iter__</c>) copied, dicts become a <see cref="PythonObjectProxy"/> over
         /// their string keys, and everything else converts as a CLR
         /// <see cref="object"/> argument would.
         /// </remarks>
@@ -322,6 +323,8 @@ def names(value):
                 return PythonListProxy.For(value);
             if (PyDict.IsDictType(value))
                 return PythonObjectProxy.For(value);
+            if (IsPlainIterable(value))
+                return PythonListProxy.For(value);
             using (value) {
                 if (value.IsNone())
                     return null;
@@ -335,6 +338,11 @@ def names(value):
                     return value.As<string>();
                 return value.AsManagedObject(typeof(object));
             }
+        }
+
+        private static bool IsPlainIterable(PyObject value) {
+            using (var type = value.GetPythonType())
+                return (Classify(type) & (ItemsKind | ObjectKind)) == ItemsKind;
         }
 
         private static object ToClrInteger(PyObject value) {

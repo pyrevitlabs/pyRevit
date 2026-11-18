@@ -421,6 +421,54 @@ assert box.Items[1] == 'b'
 ");
     }
 
+    /// <summary>Iterables read through a property path reach WPF as snapshot lists, never as raw Python objects.</summary>
+    [Fact]
+    public void IterablesReadThroughPropertyPathsBecomeLists() {
+        Python(@"
+class Bag(object):
+    def __iter__(self):
+        return iter(['p', 'q', 'r'])
+
+class Model(object):
+    def __init__(self):
+        self.tags = {'a', 'b'}
+        self.span = range(4)
+        self.view = {'x': 1, 'y': 2}.values()
+        self.bag = Bag()
+
+model = Model()
+assert read(model, 'tags.Count') == '2'
+assert read(model, 'span.Count') == '4'
+assert read(model, 'view.Count') == '2'
+assert read(model, 'bag.Count') == '3'
+
+box = Controls.ListBox()
+box.DataContext = model
+box.SetBinding(Controls.ItemsControl.ItemsSourceProperty, Data.Binding('tags')).UpdateTarget()
+assert box.Items.Count == 2
+");
+    }
+
+    /// <summary>Insert follows the IList contract: indexes from 0 to Count are valid, anything else throws.</summary>
+    [Fact]
+    public void InsertRejectsIndexesOutsideTheList() {
+        host.Run(() => {
+            IList list;
+            using (Py.GIL()) {
+                using var scope = Py.CreateScope();
+                scope.Exec(Common + "holder = System.Collections.ArrayList()\nholder.Add(Controls.ListBox())\nholder[0].ItemsSource = ['a', 'b']\n");
+                var box = (System.Windows.Controls.ListBox)((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+                list = (IList)box.ItemsSource;
+            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(-1, "x"));
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(list.Count + 1, "x"));
+            Assert.Equal(2, list.Count);
+            list.Insert(2, "c");
+            list.Insert(0, "z");
+            Assert.Equal(new object[] { "z", "a", "b", "c" }, list.Cast<object>().ToArray());
+        });
+    }
+
     /// <summary>Proxies take the GIL themselves when WPF calls them from code that released it.</summary>
     [Fact]
     public void ProxiesTakeTheGilForCallersThatReleasedIt() {

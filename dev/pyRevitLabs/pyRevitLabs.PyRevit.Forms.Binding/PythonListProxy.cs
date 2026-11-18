@@ -91,6 +91,8 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         public void Insert(int index, object value) {
             RequireWritable();
             using (Py.GIL()) {
+                if (index < 0 || index > Length())
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 using (var position = new PyInt(index))
                     items.InvokeMethod("insert", position, PythonBinding.ToPython(value)).Dispose();
             }
