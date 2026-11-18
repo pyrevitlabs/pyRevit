@@ -21,35 +21,46 @@ namespace PyRevitLoader
     /// deeply nested and even when loaded from a shared root. A bundle's modules stay out of
     /// <c>sys.modules</c> while it is not the active bundle, so two bundles can ship <c>lib</c> modules
     /// with the same name while pyRevit and the standard library are still imported once for all of
-    /// them. A module stays with its bundle even after the bundle's code removes the folder it came
+    /// them. A shared module steps aside while a bundle is active when one of the bundle's own search
+    /// paths ahead of the module's shared root has a module or package of that name, so the bundle
+    /// imports its own, as a fresh import would, and the shared module comes back when the bundle is
+    /// left. A module stays with its bundle even after the bundle's code removes the folder it came
     /// from from <c>sys.path</c>. A shared module that a bundle's code replaces with one of its own,
     /// such as by deleting it from <c>sys.modules</c> and importing the bundle's module of that name,
     /// goes back into <c>sys.modules</c> when the bundle is left. A bundle that adds its own package to
     /// a shared package, by extending the shared package's <c>__path__</c>, keeps that folder and its
-    /// submodule's binding on the shared package to itself: both are in place only while it is active.
+    /// submodule's binding on the shared package to itself: both are in place only while it is active,
+    /// and the folder goes back to its place in the <c>__path__</c>.
     /// Invariant: a module loaded from a shared root moves only as a submodule of a package the bundle
-    /// owns, a folder under a shared root never leaves a <c>__path__</c>, and <c>__main__</c> never
-    /// moves.
+    /// owns, a folder under a shared root never leaves a <c>__path__</c>, a <c>__path__</c> that cannot
+    /// change size, such as a .NET array, is never changed, and <c>__main__</c> never moves.
     /// Note: only code that runs while its bundle is entered is kept apart. Callbacks a script subscribes
-    /// itself, such as Revit event handlers, run with whatever the engine holds when they fire, so an
-    /// import inside them can load a module again from the current <c>sys.path</c> instead of reusing
-    /// the copy its bundle loaded. Such a module, when it comes from outside the shared roots, is set
-    /// aside while a bundle is active, so it does not reach that bundle.
+    /// itself, such as Revit event handlers, run with whatever the engine holds when they fire, without
+    /// the folders the script added to <c>sys.path</c>, so an import inside them can fail, or load a
+    /// module again from the current <c>sys.path</c> instead of reusing the copy its bundle loaded. Such
+    /// a module, when it comes from outside the shared roots, is set aside while a bundle is active, so
+    /// it does not reach that bundle, and it comes back when the bundle is left, even when the bundle
+    /// loaded a shared module of that name. That shared module is kept for the next bundle that has no
+    /// module of its own by that name.
     /// Warning: two cases are not kept apart. <c>sys.path</c> is a new list each time a bundle is
     /// entered or brought back after a nested bundle, so a reference kept to an earlier list, such as
-    /// <c>from sys import path</c>, no longer changes the live path. And a module loaded from a shared
-    /// root, other than a submodule of a package the bundle owns, stays shared, so a bundle whose
-    /// <c>lib</c> has a module with the same name gets the shared one when another bundle imported it
-    /// first.
+    /// <c>from sys import path</c>, no longer changes the live path. And a submodule that a bundle adds
+    /// to a shared package, by putting its own folder in that package's <c>__path__</c>, is found only
+    /// while the shared package has no submodule of that name loaded: once a bundle loaded the shared
+    /// one, every bundle gets it.
     /// Important: not thread-safe. Use it only on the thread that runs the engine's scripts.
     /// </remarks>
     internal sealed class BundleModuleIsolation
     {
         private const string MainModuleName = "__main__";
 
+        private static readonly HashSet<string> NoModuleNames = new HashSet<string>(StringComparer.Ordinal);
+
         private readonly Action<string> _logger;
         private readonly HashSet<string> _sharedRoots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> _normalizedModuleFiles = new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, ListedFolder> _listedFolders = new Dictionary<string, ListedFolder>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Dictionary<string, object>> _sharedModulesKeptAside = new Dictionary<string, Dictionary<string, object>>(StringComparer.Ordinal);
         private ScriptEngine _engine;
         private Bundle _activeBundle;
 
@@ -92,9 +103,58 @@ namespace PyRevitLoader
 
             internal Dictionary<string, object> ModulesWhenEntered { get; set; }
 
-            internal Dictionary<string, List<string>> PackagePathFolders { get; } = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+            internal Dictionary<string, List<PackagePathFolder>> PackagePathFolders { get; } = new Dictionary<string, List<PackagePathFolder>>(StringComparer.Ordinal);
+
+            internal Dictionary<string, HashSet<string>> PackagePathFoldersPutBack { get; } = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
 
             internal Dictionary<string, HashSet<string>> PackagePathsWhenEntered { get; set; }
+        }
+
+        /// <summary>
+        /// A folder a bundle keeps in a shared package's <c>__path__</c>, with its position in that list,
+        /// so the folder goes back in front of the same folders as before.
+        /// </summary>
+        internal sealed class PackagePathFolder
+        {
+            internal PackagePathFolder(string folder, int position)
+            {
+                Folder = folder;
+                Position = position;
+            }
+
+            internal string Folder { get; }
+
+            internal int Position { get; }
+        }
+
+        /// <summary>
+        /// Where a bundle's search paths and its own top-level modules sit on its <c>sys.path</c>, to tell
+        /// which shared modules a fresh import in that bundle would not reach.
+        /// </summary>
+        private sealed class OwnModules
+        {
+            internal OwnModules(Dictionary<string, int> searchPathIndexes, Dictionary<string, int> moduleIndexes)
+            {
+                SearchPathIndexes = searchPathIndexes;
+                ModuleIndexes = moduleIndexes;
+            }
+
+            internal Dictionary<string, int> SearchPathIndexes { get; }
+
+            internal Dictionary<string, int> ModuleIndexes { get; }
+        }
+
+        private sealed class ListedFolder
+        {
+            internal ListedFolder(DateTime stamp, HashSet<string> moduleNames)
+            {
+                Stamp = stamp;
+                ModuleNames = moduleNames;
+            }
+
+            internal DateTime Stamp { get; }
+
+            internal HashSet<string> ModuleNames { get; }
         }
 
         /// <summary>
@@ -171,7 +231,9 @@ namespace PyRevitLoader
         /// later calls.
         /// Warning: dispose the returned objects in the reverse order of entering, as nested
         /// <c>using</c> statements do. Disposing never throws; failures go to the logger, because it
-        /// runs in <c>finally</c> blocks inside ribbon event handlers.
+        /// runs in <c>finally</c> blocks inside ribbon event handlers. A bundle that fails to be set
+        /// aside does not keep the next one out: the bundle being entered, or the one being brought
+        /// back, still gets its own paths and modules.
         /// </remarks>
         public IDisposable Enter(Bundle bundle)
         {
@@ -181,16 +243,9 @@ namespace PyRevitLoader
 
             var activation = new Activation(this, bundle, _activeBundle, new List<string>(engine.GetSearchPaths()));
             _activeBundle = bundle;
-            try
-            {
-                if (activation.PreviousBundle != null)
-                    Deactivate(engine, activation.PreviousBundle);
-                Activate(engine, bundle);
-            }
-            catch (Exception ex)
-            {
-                Log($"Failed to bring back the modules of '{bundle.Name}': {ex.Message}");
-            }
+            if (activation.PreviousBundle != null)
+                SetAside(engine, activation.PreviousBundle);
+            BringBack(engine, bundle);
             return activation;
         }
 
@@ -205,6 +260,8 @@ namespace PyRevitLoader
         {
             _engine = null;
             _activeBundle = null;
+            _sharedModulesKeptAside.Clear();
+            _listedFolders.Clear();
         }
 
         private void Leave(Activation activation)
@@ -215,15 +272,11 @@ namespace PyRevitLoader
                 if (engine == null)
                     return;
 
-                Deactivate(engine, activation.Bundle);
+                SetAside(engine, activation.Bundle);
                 if (activation.PreviousBundle != null)
-                    Activate(engine, activation.PreviousBundle);
+                    BringBack(engine, activation.PreviousBundle);
                 else
-                    engine.SetSearchPaths(activation.PreviousSearchPaths);
-            }
-            catch (Exception ex)
-            {
-                Log($"Failed to set aside the modules of '{activation.Bundle.Name}': {ex.Message}");
+                    PutBackSearchPaths(engine, activation.PreviousSearchPaths);
             }
             finally
             {
@@ -231,13 +284,51 @@ namespace PyRevitLoader
             }
         }
 
+        private void SetAside(ScriptEngine engine, Bundle bundle)
+        {
+            try
+            {
+                Deactivate(engine, bundle);
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to set aside the modules of '{bundle.Name}': {ex.Message}");
+            }
+        }
+
+        private void BringBack(ScriptEngine engine, Bundle bundle)
+        {
+            try
+            {
+                Activate(engine, bundle);
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to bring back the modules of '{bundle.Name}': {ex.Message}");
+            }
+        }
+
+        private void PutBackSearchPaths(ScriptEngine engine, List<string> searchPaths)
+        {
+            try
+            {
+                engine.SetSearchPaths(searchPaths);
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to put back the engine's search paths: {ex.Message}");
+            }
+        }
+
         /// <summary>
         /// Points <c>sys.path</c> at the bundle's saved paths, sets aside the modules of other bundles
-        /// that are still in <c>sys.modules</c>, and puts the bundle's own modules in, keeping what they
-        /// hide for <see cref="Deactivate"/>. Binds its submodules of shared packages to those packages
-        /// and puts the folders it added back into their <c>__path__</c>. Then records what
-        /// <c>sys.modules</c> and the shared packages' <c>__path__</c> hold, so <see cref="Deactivate"/>
-        /// can tell what changed while the bundle was active.
+        /// that are still in <c>sys.modules</c> and the shared modules the bundle's own modules shadow,
+        /// and puts the bundle's own modules in, keeping what they hide for <see cref="Deactivate"/>.
+        /// Puts back the shared modules kept aside for names the bundle has no module of its own for.
+        /// Binds its submodules of shared packages to those packages and puts the folders it added back
+        /// to their places in their <c>__path__</c>. Then records what <c>sys.modules</c> and the shared
+        /// packages' <c>__path__</c> hold, so <see cref="Deactivate"/> can tell what changed while the
+        /// bundle was active.
         /// </summary>
         /// <remarks>
         /// Note: another bundle's module is in <c>sys.modules</c> here only when code outside any
@@ -251,13 +342,12 @@ namespace PyRevitLoader
             engine.SetSearchPaths(bundle.SearchPaths);
             var modules = GetSysModules(engine);
             var modulesBefore = new Dictionary<string, object>(StringComparer.Ordinal);
+            var ownModules = FindOwnModules(bundle);
             bundle.HiddenModules.Clear();
             foreach (var name in FindModulesOfOtherBundles(modules, bundle))
-            {
-                modulesBefore[name] = modules[name];
-                bundle.HiddenModules[name] = modules[name];
-                modules.Remove(name);
-            }
+                Hide(modules, bundle, name, modulesBefore);
+            foreach (var name in FindSharedModulesShadowedByOwnModules(modules, bundle, ownModules))
+                Hide(modules, bundle, name, modulesBefore);
 
             foreach (var module in bundle.Modules)
             {
@@ -267,17 +357,26 @@ namespace PyRevitLoader
                 modules[module.Key] = module.Value;
             }
 
+            PutBackSharedModulesKeptAside(modules, ownModules, modulesBefore);
             BindToSharedPackages(modules, modulesBefore);
             AddPackagePathFolders(modules, bundle);
             bundle.ModulesWhenEntered = CopyModules(modules);
             bundle.PackagePathsWhenEntered = CopyPackagePaths(modules, bundle);
         }
 
+        private static void Hide(IDictionary<object, object> modules, Bundle bundle, string name, Dictionary<string, object> modulesBefore)
+        {
+            modulesBefore[name] = modules[name];
+            bundle.HiddenModules[name] = modules[name];
+            modules.Remove(name);
+        }
+
         /// <summary>
         /// Saves <c>sys.path</c> into the bundle, moves the modules it owns out of <c>sys.modules</c>
-        /// and into the bundle, and puts back the modules they hid and the shared modules they replaced.
-        /// Unbinds its submodules from shared packages and takes the folders it added to their
-        /// <c>__path__</c> with it.
+        /// and into the bundle, and puts back the modules they hid, the shared modules they replaced and
+        /// the modules set aside when it was entered, keeping aside a shared module that took one of
+        /// those names meanwhile. Unbinds its submodules from shared packages and takes the folders it
+        /// added to their <c>__path__</c> with it.
         /// </summary>
         /// <remarks>
         /// Invariant: only call it for the active bundle. Its saved modules are rebuilt from
@@ -304,6 +403,7 @@ namespace PyRevitLoader
             foreach (var module in replacedSharedModules)
                 modules[module.Key] = module.Value;
 
+            TakeOutModulesThatTookHiddenNames(modules, bundle, modulesBefore);
             foreach (var module in bundle.HiddenModules)
             {
                 if (modules.ContainsKey(module.Key))
@@ -408,6 +508,260 @@ namespace PyRevitLoader
         }
 
         /// <summary>
+        /// Lists the shared modules that a fresh import in <paramref name="bundle"/> would not reach,
+        /// with everything inside them: the top-level modules loaded from a shared root that comes after
+        /// one of the bundle's own search paths with a module or package of the same name, and the
+        /// shared submodules of the top-level packages the bundle owns.
+        /// </summary>
+        /// <remarks>
+        /// Note: <c>import</c> looks in <c>sys.modules</c> before <c>sys.path</c>, so without setting them
+        /// aside a bundle whose <c>lib</c> has a module with the name of a shared one would get the shared
+        /// one once another bundle loaded it, and a bundle's own package would get another bundle's shared
+        /// submodule. A module without a file, such as a built-in one or one from the embedded standard
+        /// library, and one whose root comes before the bundle's own paths, such as the standard library's,
+        /// stay, as they would for a fresh import. The bundle's own modules are left to <see cref="Activate"/>.
+        /// </remarks>
+        private List<string> FindSharedModulesShadowedByOwnModules(IDictionary<object, object> modules, Bundle bundle, OwnModules ownModules)
+        {
+            var names = new List<string>();
+            if (ownModules.ModuleIndexes.Count == 0 && bundle.Modules.Count == 0)
+                return names;
+
+            var shadowed = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in modules)
+            {
+                if (entry.Key is string name
+                    && name.IndexOf('.') < 0
+                    && name != MainModuleName
+                    && (bundle.Modules.ContainsKey(name) || IsShadowedByOwnModule(ownModules, name, entry.Value)))
+                    shadowed.Add(name);
+            }
+
+            if (shadowed.Count == 0)
+                return names;
+
+            foreach (var entry in modules)
+            {
+                if (entry.Key is string name
+                    && !bundle.Modules.ContainsKey(name)
+                    && (shadowed.Contains(name) || IsInsideAnyPackage(name, shadowed)))
+                    names.Add(name);
+            }
+            return names;
+        }
+
+        private bool IsShadowedByOwnModule(OwnModules ownModules, string name, object module)
+        {
+            if (!ownModules.ModuleIndexes.TryGetValue(name, out var ownIndex))
+                return false;
+
+            var file = NormalizeModuleFile(GetModuleFile(module));
+            return file != null && IsUnderAny(file, _sharedRoots) && ownIndex < GetSearchPathIndex(ownModules, file, name);
+        }
+
+        private static int GetSearchPathIndex(OwnModules ownModules, string moduleFile, string name)
+        {
+            var folder = Path.GetDirectoryName(moduleFile);
+            if (folder != null
+                && string.Equals(Path.GetFileNameWithoutExtension(moduleFile), "__init__", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(Path.GetFileName(folder), name, StringComparison.OrdinalIgnoreCase))
+                folder = Path.GetDirectoryName(folder);
+            return folder != null && ownModules.SearchPathIndexes.TryGetValue(folder, out var index) ? index : int.MaxValue;
+        }
+
+        /// <summary>
+        /// Maps the bundle's search paths to their positions, and the top-level modules and packages in
+        /// its own search paths, the ones outside the shared roots, to the position of the first path
+        /// that has them.
+        /// </summary>
+        private OwnModules FindOwnModules(Bundle bundle)
+        {
+            var searchPathIndexes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var moduleIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (var i = 0; i < bundle.SearchPaths.Count; i++)
+            {
+                var path = NormalizeModuleFile(bundle.SearchPaths[i]);
+                if (path == null || searchPathIndexes.ContainsKey(path))
+                    continue;
+
+                searchPathIndexes[path] = i;
+                if (!IsOutsideSharedRoots(path))
+                    continue;
+
+                foreach (var name in ListModuleNames(path))
+                {
+                    if (!moduleIndexes.ContainsKey(name))
+                        moduleIndexes[name] = i;
+                }
+            }
+            return new OwnModules(searchPathIndexes, moduleIndexes);
+        }
+
+        /// <summary>
+        /// Lists the modules and regular packages directly in <paramref name="folder"/>: its <c>.py</c>
+        /// files and its folders that have an <c>__init__.py</c>.
+        /// </summary>
+        /// <remarks>
+        /// Note: the list is kept until the folder's last write time changes, so entering a bundle does
+        /// not read its folders again on every call.
+        /// </remarks>
+        private HashSet<string> ListModuleNames(string folder)
+        {
+            DateTime stamp;
+            try
+            {
+                if (!Directory.Exists(folder))
+                    return NoModuleNames;
+                stamp = Directory.GetLastWriteTimeUtc(folder);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is ArgumentException || ex is NotSupportedException)
+            {
+                return NoModuleNames;
+            }
+
+            if (_listedFolders.TryGetValue(folder, out var listed) && listed.Stamp == stamp)
+                return listed.ModuleNames;
+
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(folder))
+                {
+                    if (string.Equals(Path.GetExtension(file), ".py", StringComparison.OrdinalIgnoreCase))
+                        names.Add(Path.GetFileNameWithoutExtension(file));
+                }
+
+                foreach (var directory in Directory.EnumerateDirectories(folder))
+                {
+                    if (File.Exists(Path.Combine(directory, "__init__.py")))
+                        names.Add(Path.GetFileName(directory));
+                }
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                Log($"Failed to list the modules in '{folder}': {ex.Message}");
+            }
+
+            _listedFolders[folder] = new ListedFolder(stamp, names);
+            return names;
+        }
+
+        /// <summary>
+        /// Takes out of <c>sys.modules</c> the modules that took the names of the modules set aside when
+        /// the bundle was entered, with everything inside them, so the set-aside ones can go back. A
+        /// shared module that took the name of another bundle's module or of a module that code outside
+        /// any bundle loaded is kept aside for later bundles. One that took the name of a shared module
+        /// is dropped, because that shared module goes back.
+        /// </summary>
+        /// <remarks>
+        /// Note: such a shared module is one the bundle loaded because it has no module of that name of
+        /// its own, such as one from <c>site-packages</c>, while a callback outside any bundle had loaded
+        /// a <c>lib</c> module of that name. Leaving it in <c>sys.modules</c> would hand that callback a
+        /// different module, without the state it kept on its own.
+        /// Invariant: call it after the bundle's own modules left <c>sys.modules</c>, so every module
+        /// left there is shared.
+        /// </remarks>
+        private void TakeOutModulesThatTookHiddenNames(IDictionary<object, object> modules, Bundle bundle, Dictionary<string, object> modulesBefore)
+        {
+            var takenNames = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var hidden in bundle.HiddenModules)
+            {
+                if (modules.TryGetValue(hidden.Key, out var module) && !ReferenceEquals(module, hidden.Value))
+                    takenNames.Add(hidden.Key);
+            }
+
+            if (takenNames.Count == 0)
+                return;
+
+            var names = new List<string>();
+            foreach (var entry in modules)
+            {
+                if (entry.Key is string name && (takenNames.Contains(name) || IsInsideAnyPackage(name, takenNames)))
+                    names.Add(name);
+            }
+
+            var keptAside = new Dictionary<string, Dictionary<string, object>>(StringComparer.Ordinal);
+            foreach (var name in names)
+            {
+                var module = modules[name];
+                var takenName = FindOutermostName(name, takenNames);
+                if (!IsShared(bundle.HiddenModules[takenName]))
+                {
+                    if (!keptAside.TryGetValue(takenName, out var group))
+                    {
+                        group = new Dictionary<string, object>(StringComparer.Ordinal);
+                        keptAside[takenName] = group;
+                    }
+                    group[name] = module;
+                }
+
+                modulesBefore[name] = module;
+                modules.Remove(name);
+            }
+
+            foreach (var group in keptAside)
+                _sharedModulesKeptAside[group.Key] = group.Value;
+        }
+
+        /// <summary>
+        /// Puts back the shared modules that <see cref="TakeOutModulesThatTookHiddenNames"/> kept aside,
+        /// each group under a name that is free while the bundle is active and that the bundle's own
+        /// modules do not shadow, so every bundle that loads one of them keeps using the same copy.
+        /// </summary>
+        private void PutBackSharedModulesKeptAside(IDictionary<object, object> modules, OwnModules ownModules, Dictionary<string, object> modulesBefore)
+        {
+            var namesPutBack = new List<string>();
+            foreach (var group in _sharedModulesKeptAside)
+            {
+                if (!IsFree(modules, group.Value.Keys) || !IsParentLoaded(modules, group.Key))
+                    continue;
+
+                if (group.Key.IndexOf('.') < 0
+                    && group.Value.TryGetValue(group.Key, out var groupModule)
+                    && IsShadowedByOwnModule(ownModules, group.Key, groupModule))
+                    continue;
+
+                foreach (var module in group.Value)
+                {
+                    modules[module.Key] = module.Value;
+                    if (!modulesBefore.ContainsKey(module.Key))
+                        modulesBefore[module.Key] = null;
+                }
+                namesPutBack.Add(group.Key);
+            }
+
+            foreach (var name in namesPutBack)
+                _sharedModulesKeptAside.Remove(name);
+        }
+
+        private static bool IsFree(IDictionary<object, object> modules, IEnumerable<string> names)
+        {
+            foreach (var name in names)
+            {
+                if (modules.ContainsKey(name))
+                    return false;
+            }
+            return true;
+        }
+
+        private static bool IsParentLoaded(IDictionary<object, object> modules, string name)
+        {
+            var dot = name.LastIndexOf('.');
+            return dot < 0 || modules.ContainsKey(name.Substring(0, dot));
+        }
+
+        private static string FindOutermostName(string moduleName, HashSet<string> names)
+        {
+            for (var dot = moduleName.IndexOf('.'); dot >= 0; dot = moduleName.IndexOf('.', dot + 1))
+            {
+                var prefix = moduleName.Substring(0, dot);
+                if (names.Contains(prefix))
+                    return prefix;
+            }
+            return moduleName;
+        }
+
+        /// <summary>
         /// Makes each package that stays in <c>sys.modules</c> bind the submodules whose entries just
         /// changed to what <c>sys.modules</c> now holds for them, as the import system binds a submodule
         /// it loads.
@@ -448,18 +802,34 @@ namespace PyRevitLoader
             }
         }
 
+        /// <summary>
+        /// Puts the folders the bundle keeps in shared packages' <c>__path__</c> that are missing there
+        /// back to their positions, and records which ones it put back.
+        /// </summary>
+        /// <remarks>
+        /// Note: a folder that is already in the list, such as one a callback outside any bundle added
+        /// again, is not recorded, so <see cref="MovePackagePathFolders"/> leaves it there for that code.
+        /// Invariant: <see cref="Bundle.PackagePathFolders"/> lists each package's folders by position,
+        /// lowest first, so each one goes back in front of the same folders as before.
+        /// </remarks>
         private static void AddPackagePathFolders(IDictionary<object, object> modules, Bundle bundle)
         {
+            bundle.PackagePathFoldersPutBack.Clear();
             foreach (var package in bundle.PackagePathFolders)
             {
-                if (!modules.TryGetValue(package.Key, out var module) || !(GetPackagePath(module) is System.Collections.IList packagePath))
+                if (!modules.TryGetValue(package.Key, out var module) || !(GetResizablePackagePath(module) is System.Collections.IList packagePath))
                     continue;
 
+                var foldersPutBack = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var folder in package.Value)
                 {
-                    if (!packagePath.Contains(folder))
-                        packagePath.Add(folder);
+                    if (packagePath.Contains(folder.Folder))
+                        continue;
+
+                    packagePath.Insert(Math.Min(folder.Position, packagePath.Count), folder.Folder);
+                    foldersPutBack.Add(folder.Folder);
                 }
+                bundle.PackagePathFoldersPutBack[package.Key] = foldersPutBack;
             }
         }
 
@@ -484,8 +854,10 @@ namespace PyRevitLoader
 
         /// <summary>
         /// Takes the folders the active bundle added to the <c>__path__</c> of packages that stay in
-        /// <c>sys.modules</c> out of those lists and into the bundle: the folders outside the shared
-        /// roots that were not there when it was entered, and the ones <see cref="Activate"/> put back.
+        /// <c>sys.modules</c> out of those lists and into the bundle, with their positions: the folders
+        /// outside the shared roots that were not there when it was entered, and the ones
+        /// <see cref="Activate"/> put back. A folder the bundle keeps that was already there when it
+        /// was entered stays in place and stays with the bundle.
         /// </summary>
         /// <param name="modulesBefore">The names whose <c>sys.modules</c> entries <see cref="Deactivate"/>
         /// just changed. Their packages are skipped, because they were not in <c>sys.modules</c> while
@@ -493,49 +865,74 @@ namespace PyRevitLoader
         /// <remarks>
         /// Note: a bundle that extends a shared package's <c>__path__</c> with its own folder would
         /// otherwise leave that folder in the package, and another bundle that imports a submodule of
-        /// the same name would load the first bundle's file.
-        /// Invariant: a folder under a shared root never moves. A package that appeared while the bundle
-        /// was active is looked at only when it was loaded from a shared root, so a package without a
-        /// file keeps its <c>__path__</c>.
+        /// the same name would load the first bundle's file. A folder that code outside the bundle added
+        /// again is left for that code, and the bundle still gets it back on a later call if it is gone
+        /// by then.
+        /// Invariant: a folder under a shared root never moves, and a <c>__path__</c> that cannot change
+        /// size is left as it is. A package that appeared while the bundle was active is looked at only
+        /// when it was loaded from a shared root, so a package without a file keeps its <c>__path__</c>.
+        /// Without a record of what the bundle was entered with, as after a failed
+        /// <see cref="Activate"/>, the bundle keeps the folders it had.
         /// </remarks>
         private void MovePackagePathFolders(IDictionary<object, object> modules, Bundle bundle, Dictionary<string, object> modulesBefore)
         {
             var pathsWhenEntered = bundle.PackagePathsWhenEntered;
-            var takenFolders = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-            if (pathsWhenEntered != null)
+            if (pathsWhenEntered == null)
+                return;
+
+            var keptFolders = new Dictionary<string, List<PackagePathFolder>>(StringComparer.Ordinal);
+            foreach (var entry in modules)
             {
-                foreach (var entry in modules)
+                if (!(entry.Key is string name)
+                    || modulesBefore.ContainsKey(name)
+                    || !(GetResizablePackagePath(entry.Value) is System.Collections.IList packagePath))
+                    continue;
+
+                var wasThere = pathsWhenEntered.TryGetValue(name, out var foldersWhenEntered);
+                if (!wasThere && !IsLoadedFromSharedRoot(entry.Value))
+                    continue;
+
+                bundle.PackagePathFoldersPutBack.TryGetValue(name, out var foldersPutBack);
+                var foldersLeftInPlace = FindFoldersLeftInPlace(bundle, name, foldersPutBack);
+                var folders = new List<PackagePathFolder>();
+                for (var i = packagePath.Count - 1; i >= 0; i--)
                 {
-                    if (!(entry.Key is string name)
-                        || modulesBefore.ContainsKey(name)
-                        || !(GetPackagePath(entry.Value) is System.Collections.IList packagePath))
+                    if (!(packagePath[i] is string folder) || !IsOutsideSharedRoots(folder))
                         continue;
 
-                    var wasThere = pathsWhenEntered.TryGetValue(name, out var foldersWhenEntered);
-                    if (!wasThere && !IsLoadedFromSharedRoot(entry.Value))
-                        continue;
-
-                    bundle.PackagePathFolders.TryGetValue(name, out var foldersPutBack);
-                    var folders = new List<string>();
-                    for (var i = packagePath.Count - 1; i >= 0; i--)
+                    if (!wasThere || !foldersWhenEntered.Contains(folder) || (foldersPutBack != null && foldersPutBack.Contains(folder)))
                     {
-                        if (packagePath[i] is string folder
-                            && IsOutsideSharedRoots(folder)
-                            && (!wasThere || !foldersWhenEntered.Contains(folder) || (foldersPutBack != null && foldersPutBack.Contains(folder))))
-                        {
-                            folders.Insert(0, folder);
-                            packagePath.RemoveAt(i);
-                        }
+                        folders.Insert(0, new PackagePathFolder(folder, i));
+                        packagePath.RemoveAt(i);
                     }
-
-                    if (folders.Count > 0)
-                        takenFolders[name] = folders;
+                    else if (foldersLeftInPlace.Contains(folder))
+                    {
+                        folders.Insert(0, new PackagePathFolder(folder, i));
+                    }
                 }
+
+                if (folders.Count > 0)
+                    keptFolders[name] = folders;
             }
 
             bundle.PackagePathFolders.Clear();
-            foreach (var folders in takenFolders)
+            foreach (var folders in keptFolders)
                 bundle.PackagePathFolders[folders.Key] = folders.Value;
+            bundle.PackagePathFoldersPutBack.Clear();
+        }
+
+        private static HashSet<string> FindFoldersLeftInPlace(Bundle bundle, string packageName, HashSet<string> foldersPutBack)
+        {
+            var folders = new HashSet<string>(StringComparer.Ordinal);
+            if (bundle.PackagePathFolders.TryGetValue(packageName, out var keptFolders))
+            {
+                foreach (var folder in keptFolders)
+                {
+                    if (foldersPutBack == null || !foldersPutBack.Contains(folder.Folder))
+                        folders.Add(folder.Folder);
+                }
+            }
+            return folders;
         }
 
         /// <summary>
@@ -632,6 +1029,12 @@ namespace PyRevitLoader
                 && pythonModule.Get__dict__().TryGetValue("__path__", out var packagePath))
                 return packagePath as System.Collections.IList;
             return null;
+        }
+
+        private static System.Collections.IList GetResizablePackagePath(object module)
+        {
+            var packagePath = GetPackagePath(module);
+            return packagePath == null || packagePath.IsFixedSize || packagePath.IsReadOnly ? null : packagePath;
         }
 
         private string NormalizeModuleFile(string file)

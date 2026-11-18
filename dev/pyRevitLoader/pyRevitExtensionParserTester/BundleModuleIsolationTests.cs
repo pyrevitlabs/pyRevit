@@ -28,6 +28,20 @@ namespace pyRevitExtensionParserTester
     /// <item>a package a bundle adds to a shared package stayed bound to it, and in its <c>__path__</c>,
     /// for the next bundle.</item>
     /// </list>
+    /// It also covers these findings from the review of pyrevitlabs/pyRevit#4138, which shows the same
+    /// code:
+    /// <list type="bullet">
+    /// <item>a folder a bundle put first in a shared package's <c>__path__</c> came back last on its
+    /// later calls;</item>
+    /// <item>leaving a bundle took a folder out of a shared package's <c>__path__</c> that code outside
+    /// any bundle had added again;</item>
+    /// <item>a nested bundle that gave a shared package a fixed-size <c>__path__</c>, or whose bundle
+    /// could not be set aside for another reason, left a bundle without its own modules;</item>
+    /// <item>a bundle whose <c>lib</c> has a module or package with the name of a shared one got the
+    /// shared one once another bundle had loaded it;</item>
+    /// <item>a module that code outside any bundle had loaded was lost when a bundle loaded a shared
+    /// module of the same name.</item>
+    /// </list>
     /// </summary>
     /// <remarks>
     /// Drives <c>PyRevitLoader.BundleModuleIsolation</c> from the IronPython 3 <c>pyRevitLoader.dll</c>
@@ -42,10 +56,15 @@ namespace pyRevitExtensionParserTester
         private const string LibModuleName = "shared_name";
         private const string TemporaryModuleName = "tmp_mod";
 
+        private static readonly string CountCallsOfLibModule =
+            $"import {LibModuleName}\n{LibModuleName}.calls = getattr({LibModuleName}, 'calls', 0) + 1\n"
+            + $"result = '%s %d' % ({LibModuleName}.VALUE, {LibModuleName}.calls)";
+
         private string _root = string.Empty;
         private object _engine = null!;
         private object _isolation = null!;
         private List<string> _baseSearchPaths = new List<string>();
+        private List<string> _loggedFailures = new List<string>();
 
         [SetUp]
         public void SetUp()
@@ -54,12 +73,13 @@ namespace pyRevitExtensionParserTester
             Directory.CreateDirectory(_root);
             _engine = CreateEngine();
             _baseSearchPaths = GetSearchPaths();
+            _loggedFailures = new List<string>();
             Type isolationType = LoaderAssembly().GetType("PyRevitLoader.BundleModuleIsolation", throwOnError: true)!;
             _isolation = Activator.CreateInstance(
                 isolationType,
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                 binder: null,
-                args: new object?[] { _engine, null },
+                args: new object?[] { _engine, new Action<string>(_loggedFailures.Add) },
                 culture: null)!;
         }
 
@@ -122,18 +142,104 @@ namespace pyRevitExtensionParserTester
             string replacerLib = CreateDirectory(Path.Combine("Replacer", "lib"));
             File.WriteAllText(Path.Combine(replacerLib, "common_mod.py"), "MARKS = ['replacer']");
             object first = CreateBundle("First", sharedRoot);
-            object replacer = CreateBundle("Replacer", sharedRoot);
+            object replacer = CreateBundleWithSharedRootFirst("Replacer", sharedRoot);
             string readMarks = "import common_mod\nresult = ','.join(common_mod.MARKS)";
 
             using (Enter(first))
                 Execute("import common_mod\ncommon_mod.MARKS.append('first')");
             using (Enter(replacer))
-                Execute("import sys\ndel sys.modules['common_mod']\nimport common_mod");
+                Execute($"import sys\ndel sys.modules['common_mod']\nsys.path.insert(0, {PythonString(replacerLib)})\nimport common_mod");
 
             using (Enter(first))
                 Assert.That(Execute(readMarks), Is.EqualTo("first"));
             using (Enter(replacer))
                 Assert.That(Execute(readMarks), Is.EqualTo("replacer"));
+        }
+
+        [Test]
+        public void Enter_BundleWithItsOwnModuleOfASharedModulesName_ImportsItsOwnAfterAnotherBundleLoadedTheShared()
+        {
+            string sharedRoot = CreateSharedLibModule();
+            object withoutOwn = CreateBundle("WithoutOwn", sharedRoot);
+            object withOwn = CreateBundleWithLibModule("WithOwn", "VALUE = 'own'", sharedRoot);
+
+            using (Enter(withoutOwn))
+                Assert.That(Execute(CountCallsOfLibModule), Is.EqualTo("shared 1"));
+            using (Enter(withOwn))
+                Assert.That(Execute(CountCallsOfLibModule), Is.EqualTo("own 1"));
+            using (Enter(withoutOwn))
+                Assert.That(Execute(CountCallsOfLibModule), Is.EqualTo("shared 2"));
+        }
+
+        [Test]
+        public void Enter_BundleWhoseOwnModuleComesAfterTheSharedRoot_GetsTheSharedModule()
+        {
+            string sharedRoot = CreateSharedLibModule();
+            object withoutOwn = CreateBundle("WithoutOwn", sharedRoot);
+            string lib = CreateDirectory(Path.Combine("SharedFirst", "lib"));
+            File.WriteAllText(Path.Combine(lib, LibModuleName + ".py"), "VALUE = 'own'");
+            object sharedFirst = CreateBundleWithSharedRootFirst("SharedFirst", sharedRoot);
+
+            using (Enter(withoutOwn))
+                Assert.That(Execute(CountCallsOfLibModule), Is.EqualTo("shared 1"));
+            using (Enter(sharedFirst))
+                Assert.That(Execute(CountCallsOfLibModule), Is.EqualTo("shared 2"));
+        }
+
+        [Test]
+        public void Enter_BundleWithItsOwnPackageOfASharedPackagesName_ImportsItsOwnSubmodules()
+        {
+            string sharedRoot = CreateSharedPackage();
+            File.WriteAllText(Path.Combine(sharedRoot, "spkg", "other.py"), "VALUE = 'shared'");
+            object withoutOwn = CreateBundle("WithoutOwn", sharedRoot);
+            string ownPackage = CreateDirectory(Path.Combine("WithOwn", "lib", "spkg"));
+            File.WriteAllText(Path.Combine(ownPackage, "__init__.py"), string.Empty);
+            File.WriteAllText(Path.Combine(ownPackage, "other.py"), "VALUE = 'own'");
+            object withOwn = CreateBundle("WithOwn", sharedRoot);
+            string readOther = "import spkg.other\nresult = spkg.other.VALUE";
+
+            using (Enter(withoutOwn))
+                Assert.That(Execute(readOther), Is.EqualTo("shared"));
+            using (Enter(withOwn))
+                Assert.That(Execute(readOther), Is.EqualTo("own"));
+            using (Enter(withoutOwn))
+                Assert.That(Execute(readOther), Is.EqualTo("shared"));
+        }
+
+        [Test]
+        public void Enter_BundleThatOwnsAPackageOfASharedPackagesName_ImportsItsOwnSubmodulesAfterAnotherBundleLoadedTheShared()
+        {
+            string sharedRoot = CreateSharedPackage();
+            File.WriteAllText(Path.Combine(sharedRoot, "spkg", "other.py"), "VALUE = 'shared'");
+            object withoutOwn = CreateBundle("WithoutOwn", sharedRoot);
+            string folder = PythonString(CreateDirectory("OwnPackages"));
+            string ownPackage = CreateDirectory(Path.Combine("OwnPackages", "spkg"));
+            File.WriteAllText(Path.Combine(ownPackage, "__init__.py"), string.Empty);
+            File.WriteAllText(Path.Combine(ownPackage, "other.py"), "VALUE = 'own'");
+            object owner = CreateBundleWithSharedRootFirst("Owner", sharedRoot);
+            string readOther = "import spkg.other\nresult = spkg.other.VALUE";
+
+            using (Enter(owner))
+                Execute($"import sys\nsys.path.insert(0, {folder})\nimport spkg\nsys.path.remove({folder})");
+            using (Enter(withoutOwn))
+                Assert.That(Execute(readOther), Is.EqualTo("shared"));
+            using (Enter(owner))
+                Assert.That(Execute(readOther), Is.EqualTo("own"));
+        }
+
+        [Test]
+        public void Dispose_BundleThatLoadedASharedModuleOverOneFromOutsideAnyBundle_PutsThatOneBack()
+        {
+            string sharedRoot = CreateSharedLibModule();
+            object fallback = CreateBundle("Fallback", sharedRoot);
+            CreateBundleWithLibModule("Unscoped", "VALUE = 'unscoped'");
+
+            Assert.That(Execute(CountCallsOfLibModule), Is.EqualTo("unscoped 1"));
+            using (Enter(fallback))
+                Assert.That(Execute(CountCallsOfLibModule), Is.EqualTo("shared 1"));
+            Assert.That(Execute(CountCallsOfLibModule), Is.EqualTo("unscoped 2"));
+            using (Enter(fallback))
+                Assert.That(Execute(CountCallsOfLibModule), Is.EqualTo("shared 2"));
         }
 
         [Test]
@@ -218,6 +324,43 @@ namespace pyRevitExtensionParserTester
                 Assert.That(Execute("from spkg import plugins\nresult = plugins.VALUE"), Is.EqualTo("First"));
 
             Assert.That(Execute("import spkg\nresult = '%s %d' % (hasattr(spkg, 'plugins'), len(spkg.__path__))"), Is.EqualTo("False 1"));
+        }
+
+        [Test]
+        public void Enter_BundleThatPutItsFolderFirstInASharedPackage_FindsItsSubmoduleThereOnLaterCalls()
+        {
+            string sharedRoot = CreateSharedPackage();
+            File.WriteAllText(Path.Combine(sharedRoot, "spkg", "other.py"), "VALUE = 'shared'");
+            string folder = CreateDirectory(Path.Combine("First", "lib", "spkg_ext"));
+            File.WriteAllText(Path.Combine(folder, "other.py"), "VALUE = 'First'");
+            object bundle = CreateBundle("First", sharedRoot);
+
+            using (Enter(bundle))
+                Execute($"import spkg\nspkg.__path__.insert(0, {PythonString(folder)})");
+            using (Enter(bundle))
+                Assert.That(Execute("import spkg.other\nresult = spkg.other.VALUE"), Is.EqualTo("First"));
+        }
+
+        [Test]
+        public void Dispose_FolderThatCodeOutsideTheBundleAddedAgain_StaysInTheSharedPackage()
+        {
+            string sharedRoot = CreateSharedPackage();
+            string sharedPart = CreateSharedPackagePart(sharedRoot);
+            object bundle = CreateBundleWithPackageForSharedPackage("First", sharedPart, sharedRoot);
+            string folder = PythonString(Path.Combine(_root, "First", "lib", "spkg_ext"));
+            string hasFolder = $"import spkg\nresult = {folder} in spkg.__path__";
+
+            using (Enter(bundle))
+                Execute(ImportPackageFromSharedPackage("First"));
+            Execute($"import spkg\nspkg.__path__.append({folder})");
+            using (Enter(bundle))
+                Assert.That(Execute("from spkg import plugins\nresult = plugins.VALUE"), Is.EqualTo("First"));
+            Assert.That(Execute(hasFolder), Is.True);
+
+            Execute($"import spkg\nspkg.__path__.remove({folder})");
+            using (Enter(bundle))
+                Assert.That(Execute(hasFolder), Is.True);
+            Assert.That(Execute(hasFolder), Is.False);
         }
 
         [Test]
@@ -332,6 +475,58 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        public void Dispose_NestedBundleThatMadeASharedPackagePathFixedSize_GivesTheOuterBundleItsModulesBack()
+        {
+            string sharedRoot = CreateSharedPackage();
+            object outer = CreateBundleWithLibModule("Outer", "VALUE = 'outer'");
+            object nested = CreateBundleWithLibModule("Nested", "VALUE = 'nested'", sharedRoot);
+            string folder = PythonString(CreateDirectory(Path.Combine("Nested", "lib", "spkg_ext")));
+            string readValue = $"import {LibModuleName}\nresult = {LibModuleName}.VALUE";
+
+            using (Enter(outer))
+            {
+                Assert.That(Execute(readValue), Is.EqualTo("outer"));
+                using (Enter(nested))
+                    Execute($"import System, spkg\nspkg.__path__ = System.Array[System.String](list(spkg.__path__) + [{folder}])");
+
+                Assert.That(Execute(readValue), Is.EqualTo("outer"));
+            }
+
+            Assert.That(_loggedFailures, Is.Empty);
+        }
+
+        [Test]
+        public void EnterAndDispose_BundleThatCannotBeSetAside_TheNextBundleStillGetsItsOwnModule()
+        {
+            string sharedRoot = CreateSharedPackage();
+            object outer = CreateBundleWithLibModule("Outer", "VALUE = 'outer'", sharedRoot);
+            object nested = CreateBundleWithLibModule("Nested", "VALUE = 'nested'");
+            string outerFolder = PythonString(CreateDirectory(Path.Combine("Outer", "lib", "spkg_ext")));
+            string nestedFolder = PythonString(CreateDirectory(Path.Combine("Nested", "lib", "spkg_ext")));
+            string readValue = $"import {LibModuleName}\nresult = {LibModuleName}.VALUE";
+
+            using (Enter(outer))
+            {
+                Execute(readValue);
+                Execute(
+                    "import spkg\nfrom System.Collections import ArrayList\n"
+                    + "class PathThatCannotShrink(ArrayList):\n    def RemoveAt(self, index):\n        raise ValueError('cannot shrink')\n"
+                    + $"spkg.__path__ = PathThatCannotShrink(list(spkg.__path__) + [{outerFolder}])");
+                using (Enter(nested))
+                {
+                    Assert.That(Execute(readValue), Is.EqualTo("nested"));
+                    Execute($"import spkg\nspkg.__path__.Add({nestedFolder})");
+                }
+
+                Assert.That(Execute(readValue), Is.EqualTo("outer"));
+            }
+
+            Assert.That(_loggedFailures, Has.Count.EqualTo(2));
+            Assert.That(_loggedFailures[0], Does.Contain("set aside the modules of 'Outer'"));
+            Assert.That(_loggedFailures[1], Does.Contain("set aside the modules of 'Nested'"));
+        }
+
+        [Test]
         public void Enter_AfterABundleChangedSysPath_KeepsTheChangeForThatBundleOnly()
         {
             string extraPath = CreateDirectory("extra");
@@ -379,11 +574,36 @@ namespace pyRevitExtensionParserTester
             Assert.That(Enter(bundle), Is.Null);
         }
 
-        private object CreateBundleWithLibModule(string name, string moduleSource)
+        private object CreateBundleWithLibModule(string name, string moduleSource, params string[] extraPaths)
         {
             string lib = CreateDirectory(Path.Combine(name, "lib"));
             File.WriteAllText(Path.Combine(lib, LibModuleName + ".py"), moduleSource);
-            return CreateBundle(name);
+            return CreateBundle(name, extraPaths);
+        }
+
+        private string CreateSharedPackage()
+        {
+            string sharedRoot = CreateDirectory("site-packages");
+            string sharedPackage = CreateDirectory(Path.Combine("site-packages", "spkg"));
+            File.WriteAllText(Path.Combine(sharedPackage, "__init__.py"), string.Empty);
+            Call(_isolation, "AddSharedRoot", sharedRoot);
+            return sharedRoot;
+        }
+
+        private string CreateSharedLibModule()
+        {
+            string sharedRoot = CreateDirectory("site-packages");
+            File.WriteAllText(Path.Combine(sharedRoot, LibModuleName + ".py"), "VALUE = 'shared'");
+            Call(_isolation, "AddSharedRoot", sharedRoot);
+            return sharedRoot;
+        }
+
+        private object CreateBundleWithSharedRootFirst(string name, string sharedRoot)
+        {
+            string bundleDirectory = CreateDirectory(name);
+            var paths = new List<string>(_baseSearchPaths) { sharedRoot, bundleDirectory, Path.Combine(bundleDirectory, "lib") };
+            SetSearchPaths(paths);
+            return Call(_isolation, "CreateBundle", name)!;
         }
 
         private object CreateBundle(string name, params string[] extraPaths)
