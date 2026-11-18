@@ -23,7 +23,7 @@ import json
 import os
 import uuid
 
-from pyrevit import DB, HOST_APP, revit, script
+from pyrevit import DB, HOST_APP, script
 from pyrevit.compat import get_elementid_from_value_func
 from pyrevit.framework import Controls, System
 from pyrevit.revit import events
@@ -494,11 +494,31 @@ class PreviewSession(object):
         if min(extent.X, extent.Y, extent.Z) <= MIN_EXTENT_FT:
             raise ValueError("The box would have no volume")
         if isinstance(view, DB.View3D):
-            with revit.Transaction("Adjust Section Box"):
-                view.SetSectionBox(new_box)
+            self._commit_edit("Adjust Section Box", lambda: view.SetSectionBox(new_box))
         else:
-            with revit.Transaction("Adjust Crop Box"):
-                view.CropBox = new_box
+            self._commit_edit(
+                "Adjust Crop Box", lambda: setattr(view, "CropBox", new_box)
+            )
+
+    def _commit_edit(self, name, edit):
+        """Run ``edit`` in one transaction and raise unless Revit committed it.
+
+        ``revit.Transaction`` rolls a failed commit back without telling the
+        caller, which would report an edit that never happened as applied.
+        """
+        transaction = DB.Transaction(self.doc, name)
+        transaction.Start()
+        try:
+            edit()
+            status = transaction.Commit()
+        except Exception:
+            if transaction.GetStatus() == DB.TransactionStatus.Started:
+                transaction.RollBack()
+            raise
+        finally:
+            transaction.Dispose()
+        if status != DB.TransactionStatus.Committed:
+            raise ValueError("Revit did not commit the change")
 
     def _finish(self, view, request_id, ok, message=None, revision=None):
         self.bridge.reply(request_id, ok, message)
@@ -514,7 +534,7 @@ class PreviewSession(object):
         revision = payload.get("revision")
         try:
             self._write_box(view, payload["box"])
-        except ValueError as ex:
+        except Exception as ex:
             self._finish(view, request_id, False, str(ex), revision)
             return
         self._finish(view, request_id, True, revision=revision)
@@ -530,9 +550,18 @@ class PreviewSession(object):
             if box is None:
                 self._finish(view, request_id, False, "The scope box has no geometry")
                 return
-            with revit.Transaction("Create Section Box from Scope Box"):
+
+            def assign_section_box():
                 view.SetSectionBox(box)
                 view.IsSectionBoxActive = True
+
+            try:
+                self._commit_edit(
+                    "Create Section Box from Scope Box", assign_section_box
+                )
+            except Exception as ex:
+                self._finish(view, request_id, False, str(ex))
+                return
         else:
             parameter = view.get_Parameter(
                 DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP
@@ -540,9 +569,16 @@ class PreviewSession(object):
             if parameter is None or parameter.IsReadOnly:
                 self._finish(view, request_id, False, "The view has no scope box slot")
                 return
-            with revit.Transaction("Assign Scope Box to View"):
+
+            def assign_scope_box():
                 view.CropBoxActive = True
                 parameter.Set(scope_box.Id)
+
+            try:
+                self._commit_edit("Assign Scope Box to View", assign_scope_box)
+            except Exception as ex:
+                self._finish(view, request_id, False, str(ex))
+                return
         self._finish(view, request_id, True)
 
     def _on_fit_visible(self, payload, request_id):
@@ -577,7 +613,7 @@ class PreviewSession(object):
         ]
         try:
             self._write_box(view, data)
-        except ValueError as ex:
+        except Exception as ex:
             self._finish(view, request_id, False, str(ex))
             return
         self._finish(view, request_id, True)
@@ -638,7 +674,7 @@ class PreviewSession(object):
         ]
         try:
             self._write_box(view, box)
-        except ValueError as ex:
+        except Exception as ex:
             self._finish(view, request_id, False, str(ex))
             return
         self._finish(view, request_id, True)
