@@ -111,8 +111,9 @@ namespace PyRevitLoader
         /// <returns>True if setup succeeded.</returns>
         /// <remarks>
         /// Note: all ComboBoxes share one engine, whose <c>sys.path</c> holds the paths of the script
-        /// that ran last. Each wired handler therefore restores the paths captured right after this
-        /// ComboBox's script ran, so imports inside a handler find this bundle's <c>lib</c> folder.
+        /// that ran last. Each wired handler therefore restores this ComboBox's saved paths first, so
+        /// imports inside a handler find this bundle's <c>lib</c> folder, and saves <c>sys.path</c>
+        /// again afterwards, so changes one handler makes stay for this ComboBox's later calls.
         /// </remarks>
         public bool ExecuteEventHandlerSetup(
             string scriptPath,
@@ -234,6 +235,10 @@ namespace PyRevitLoader
                             {
                                 Log($"Error in __cmb_on_change__: {ex.Message}");
                             }
+                            finally
+                            {
+                                searchPaths = new List<string>(engine.GetSearchPaths());
+                            }
                         };
                         comboBox.CurrentChanged += onChangeHandler;
                         TrackHandler(comboBox, () => comboBox.CurrentChanged -= onChangeHandler);
@@ -261,6 +266,10 @@ namespace PyRevitLoader
                             {
                                 Log($"Error in __cmb_dropdown_close__: {ex.Message}");
                             }
+                            finally
+                            {
+                                searchPaths = new List<string>(engine.GetSearchPaths());
+                            }
                         };
                         comboBox.DropDownClosed += dropdownCloseHandler;
                         TrackHandler(comboBox, () => comboBox.DropDownClosed -= dropdownCloseHandler);
@@ -287,6 +296,10 @@ namespace PyRevitLoader
                             catch (Exception ex)
                             {
                                 Log($"Error in __cmb_dropdown_open__: {ex.Message}");
+                            }
+                            finally
+                            {
+                                searchPaths = new List<string>(engine.GetSearchPaths());
                             }
                         };
                         comboBox.DropDownOpened += dropdownOpenHandler;
