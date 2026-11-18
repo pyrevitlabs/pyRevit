@@ -232,6 +232,44 @@ class ClrRuleScopeTests(unittest.TestCase):
             ),
         )
 
+    def test_clr_list_is_identified_by_import_binding(self):
+        """An aliased CLR List is flagged; a builtin list named List is not."""
+        self.assertEqual(
+            ["CLR-LIST"],
+            self._codes(
+                "from System.Collections.Generic import List as ClrList\n"
+                "ClrList[int]([1])\n"
+            ),
+        )
+        self.assertEqual(
+            [],
+            self._codes("from builtins import list as List\nList[int]([1])\n"),
+        )
+
+    def test_assignment_after_the_call_does_not_suppress_it(self):
+        """Only assignments that precede the call can reach its argument."""
+        self.assertEqual(
+            ["CLR-LIST"],
+            self._codes(
+                """
+                def f(values):
+                    ids = List[int](values)
+                    values = 10
+                    return ids
+                """
+            ),
+        )
+        self.assertEqual(
+            [],
+            self._codes(
+                """
+                def f():
+                    values = 10
+                    return List[int](values)
+                """
+            ),
+        )
+
 
 class NamedIndexerTests(unittest.TestCase):
     """CLR named indexers must use the accessor that pythonnet exposes."""

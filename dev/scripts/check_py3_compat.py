@@ -400,12 +400,37 @@ PYTHON_ITERABLE_BUILTINS = {
 }
 
 
-def _is_generic_list_type(node):
+DEFAULT_CLR_LIST_NAMES = frozenset({"List"})
+NON_CLR_LIST_MODULES = {"typing", "builtins"}
+
+
+def _clr_list_names(tree, local_names):
+    """Return the bare names that denote the CLR ``List`` in a module.
+
+    A name imported as ``List`` from any module other than ``typing`` and
+    ``builtins`` counts under whatever alias it was bound to. An unbound
+    ``List`` counts too, since star imports and shims cannot be resolved; a
+    ``List`` bound to anything else does not.
+    """
+    names = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module not in NON_CLR_LIST_MODULES:
+            names.update(
+                alias.asname or alias.name
+                for alias in node.names
+                if alias.name == "List"
+            )
+    if "List" not in local_names:
+        names.add("List")
+    return frozenset(names)
+
+
+def _is_generic_list_type(node, list_names=DEFAULT_CLR_LIST_NAMES):
     if not isinstance(node, ast.Subscript):
         return False
     target = node.value
     if isinstance(target, ast.Name):
-        return target.id == "List"
+        return target.id in list_names
     return isinstance(target, ast.Attribute) and target.attr == "List"
 
 
@@ -429,7 +454,9 @@ def _is_python_iterable(node, clr_names=frozenset()):
     return isinstance(node, ast.Name) and node.id not in clr_names
 
 
-def _is_generic_list_constructor(node, clr_names=frozenset()):
+def _is_generic_list_constructor(
+    node, clr_names=frozenset(), list_names=DEFAULT_CLR_LIST_NAMES
+):
     """Return whether node constructs a CLR List from a Python iterable.
 
     Matches ``List[T](...)`` and attribute-qualified forms such as
@@ -440,7 +467,7 @@ def _is_generic_list_constructor(node, clr_names=frozenset()):
         isinstance(node, ast.Call)
         and len(node.args) == 1
         and not node.keywords
-        and _is_generic_list_type(node.func)
+        and _is_generic_list_type(node.func, list_names)
         and _is_python_iterable(node.args[0], clr_names)
     )
 
@@ -487,24 +514,36 @@ def _parameter_names(scope):
     return names
 
 
-def _clr_value_names(scopes):
+def _ends_before(node, call):
+    return (node.end_lineno, node.end_col_offset) <= (call.lineno, call.col_offset)
+
+
+def _clr_value_names(scopes, call=None):
     """Return names whose every assignment in ``scopes`` is a CLR value or number.
 
     ``scopes`` runs from the innermost scope outwards, and each name follows the
     innermost scope that binds it. A parameter binds its name, so it hides the
     enclosing scopes' assignments; names bound only as parameters are not
-    included.
+    included. In the innermost scope only assignments that end before ``call``
+    can reach it; later assignments bind the name without deciding its value.
     """
     decided = {}
-    for scope in scopes:
+    for depth, scope in enumerate(scopes):
         verdicts = {}
+        later = []
         for node in _scope_nodes(scope):
             if not isinstance(node, ast.Assign):
                 continue
             for target in node.targets:
-                if isinstance(target, ast.Name):
-                    is_clr = _is_clr_value(node.value)
-                    verdicts[target.id] = verdicts.get(target.id, True) and is_clr
+                if not isinstance(target, ast.Name):
+                    continue
+                if call is not None and depth == 0 and not _ends_before(node, call):
+                    later.append(target.id)
+                    continue
+                is_clr = _is_clr_value(node.value)
+                verdicts[target.id] = verdicts.get(target.id, True) and is_clr
+        for name in later:
+            verdicts.setdefault(name, False)
         for name in _parameter_names(scope):
             verdicts.setdefault(name, False)
         for name, is_clr in verdicts.items():
@@ -524,6 +563,7 @@ class _FileContext:
             for child in ast.iter_child_nodes(node):
                 self.parents[child] = node
         self.local_names = _locally_defined_names(tree)
+        self.clr_list_names = _clr_list_names(tree, self.local_names)
         self.clr_exempt = _is_listed(path, IPY_CLR_EXEMPT)
         self.clr_ref_exempt = _is_listed(path, CLR_REF_EXEMPT)
 
@@ -539,7 +579,7 @@ class _FileContext:
             if isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 scopes.append(current)
         scopes.append(self.tree)
-        return _clr_value_names(scopes)
+        return _clr_value_names(scopes, node)
 
 
 def _is_listed(path, repo_paths):
@@ -682,11 +722,13 @@ def _sort_key(node, ctx):
 
 
 def _clr_list(node, ctx):
-    if not _is_generic_list_constructor(node) or _is_cpython_unreachable(
-        node, ctx.parents
-    ):
+    if not _is_generic_list_constructor(
+        node, list_names=ctx.clr_list_names
+    ) or _is_cpython_unreachable(node, ctx.parents):
         return
-    if _is_generic_list_constructor(node, ctx.clr_value_names(node)):
+    if _is_generic_list_constructor(
+        node, ctx.clr_value_names(node), ctx.clr_list_names
+    ):
         yield (
             "CLR-LIST",
             "List[T](python_iterable) relies on IronPython coercion; "
