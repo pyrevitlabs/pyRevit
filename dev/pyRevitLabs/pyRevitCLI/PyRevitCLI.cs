@@ -98,6 +98,7 @@ namespace pyRevitCLI {
         /// as a failure, matching pre-refactor CLI behavior.
         /// </summary>
         static void Main(string[] args) {
+            PyRevitCLIConsoleEncoding.Apply();
             AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => {
                 if (args.Name.StartsWith("Newtonsoft.Json,")) {
                     var assemblyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pyRevitLabs.Json.dll");
@@ -611,6 +612,20 @@ namespace pyRevitCLI {
                 else if (all("show"))
                     PyRevitCLIAgentCmds.ShowRun(TryGetValue("<run_id>"));
 
+                else if (all("record"))
+                    PyRevitCLIAgentCmds.Record(
+                        action: TryGetValue("<action>"),
+                        screenshots: arguments["--no-screenshots"].IsFalse,
+                        screenshotInterval: TryGetValue("--screenshot-interval"),
+                        maxScreenshots: TryGetValue("--max-screenshots"),
+                        maxEvents: TryGetValue("--max-events"),
+                        maxDuration: TryGetValue("--max-duration"),
+                        revitSelector: TryGetValue("--revit")
+                        );
+
+                else if (all("recordings"))
+                    PyRevitCLIAgentCmds.PrintRecordings(TryGetValue("--limit"));
+
                 else
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Agent);
             }
@@ -844,7 +859,7 @@ namespace pyRevitCLI {
                     if (any("enable", "disable"))
                         PyRevitConfigs.SetAppendTooltipEx(arguments["enable"].IsTrue);
                     else
-                        Console.WriteLine(string.Format("Doc Colorizer is {0}",
+                        Console.WriteLine(string.Format("Tooltip debug info is {0}",
                                                         PyRevitConfigs.GetAppendTooltipEx() ? "Enabled" : "Disabled"));
                 }
 
@@ -921,16 +936,23 @@ namespace pyRevitCLI {
                         var destPath = TryGetValue("<dest_path>");
                         if (destPath is null)
                             Console.WriteLine(string.Format("Telemetry File Path: {0}", PyRevitConfigs.GetTelemetryFilePath()));
-                        else
-                            PyRevitConfigs.EnableTelemetry(telemetryFileDir: destPath);
+                        else {
+                            PyRevitConfigs.EnableTelemetry(
+                                telemetryFileDir: PyRevitCLIArguments.ExistingDirectory(destPath, "telemetry folder"));
+                            Console.WriteLine(string.Format("Telemetry is Enabled. File Path: {0}",
+                                                            PyRevitConfigs.GetTelemetryFilePath()));
+                        }
                     }
 
                     else if (all("server")) {
                         var serverUrl = TryGetValue("<dest_path>");
                         if (serverUrl is null)
                             Console.WriteLine(string.Format("Telemetry Server Url: {0}", PyRevitConfigs.GetTelemetryServerUrl()));
-                        else
+                        else {
                             PyRevitConfigs.EnableTelemetry(telemetryServerUrl: serverUrl);
+                            Console.WriteLine(string.Format("Telemetry is Enabled. Server Url: {0}",
+                                                            PyRevitConfigs.GetTelemetryServerUrl()));
+                        }
 
                     }
 
@@ -994,7 +1016,8 @@ namespace pyRevitCLI {
                         Console.WriteLine(string.Format("Output Style Sheet is set to: {0}",
                                                         PyRevitConfigs.GetOutputStyleSheet()));
                     else
-                        PyRevitConfigs.SetOutputStyleSheet(cssPath);
+                        PyRevitConfigs.SetOutputStyleSheet(
+                            cssPath == string.Empty ? cssPath : PyRevitCLIArguments.ExistingFile(cssPath, "style sheet"));
                 }
 
                 else if (all("seed")) {

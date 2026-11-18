@@ -12,6 +12,7 @@ namespace Build.Modules;
 
 [DependsOn<SeedProductDataModule>]
 [DependsOn<SetProductDataModule>]
+[DependsOn<SetCopyrightYearModule>]
 public sealed class BuildLabsModule(IOptions<BuildOptions> buildOptions) : Module
 {
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)

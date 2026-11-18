@@ -25,6 +25,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly IButtonBuilderFactory _buttonBuilderFactory;
         private readonly IStackBuilder _stackBuilder;
         private readonly IComboBoxBuilder _comboBoxBuilder;
+        private readonly ICheckBoxBuilder _checkBoxBuilder;
         private readonly IUIRibbonScanner? _ribbonScanner;
         private readonly UIApplication _uiApp;
         private readonly BuildContext _buildContext;
@@ -87,6 +88,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             IButtonBuilderFactory buttonBuilderFactory,
             IStackBuilder stackBuilder,
             IComboBoxBuilder comboBoxBuilder,
+            ICheckBoxBuilder checkBoxBuilder,
             BuildContext buildContext,
             IUIRibbonScanner? ribbonScanner = null)
         {
@@ -98,6 +100,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             _buttonBuilderFactory = buttonBuilderFactory ?? throw new ArgumentNullException(nameof(buttonBuilderFactory));
             _stackBuilder = stackBuilder ?? throw new ArgumentNullException(nameof(stackBuilder));
             _comboBoxBuilder = comboBoxBuilder ?? throw new ArgumentNullException(nameof(comboBoxBuilder));
+            _checkBoxBuilder = checkBoxBuilder ?? throw new ArgumentNullException(nameof(checkBoxBuilder));
             _buildContext = buildContext ?? throw new ArgumentNullException(nameof(buildContext));
             _ribbonScanner = ribbonScanner;
 
@@ -380,16 +383,18 @@ namespace pyRevitAssemblyBuilder.UIManager
                         .Where(child => child.Type != CommandComponentType.Separator)
                         .ToList();
 
-                    if (itemChildren.Count == 1)
+                    if (itemChildren.Count == 1 && !IsCheckBox(itemChildren[0]))
                     {
                         HandleComponentBuilding(itemChildren[0], parentPanel, tabName, assemblyInfo);
                         break;
                     }
 
-                    _stackBuilder.BuildStack(component, parentPanel!, assemblyInfo);
+                    var stackedCheckBoxIds = BuildStackItems(component, itemChildren, parentPanel, tabName, assemblyInfo);
                     // Mark all children in the stack as touched
-                    foreach (var child in visibleChildren)
+                    foreach (var child in visibleChildren.Where(child => !IsCheckBox(child)))
                         _ribbonScanner?.MarkElementTouched("button", child.DisplayName, panelName);
+                    foreach (var stackedCheckBoxId in stackedCheckBoxIds)
+                        _ribbonScanner?.MarkElementTouched("button", stackedCheckBoxId, panelName);
                     break;
 
                 case CommandComponentType.ComboBox:
@@ -402,6 +407,12 @@ namespace pyRevitAssemblyBuilder.UIManager
                         _comboBoxBuilder.CreateComboBox(component, parentPanel!);
                     }
                     _ribbonScanner?.MarkElementTouched("button", component.DisplayName, panelName);
+                    break;
+
+                case CommandComponentType.CheckBox:
+                    var checkBoxId = _checkBoxBuilder.CreateOrUpdateCheckBox(component, parentPanel!, tabName);
+                    if (checkBoxId != null)
+                        _ribbonScanner?.MarkElementTouched("button", checkBoxId, panelName);
                     break;
 
                 default:
@@ -469,6 +480,45 @@ namespace pyRevitAssemblyBuilder.UIManager
                 settings.CurrentVersion,
                 settings.LoadBeta,
                 _logger);
+        }
+
+        /// <summary>
+        /// Builds a stack's items. The caller builds a stack's only item itself unless it is a checkbox.
+        /// </summary>
+        /// <remarks>
+        /// Note: checkboxes stack only with other checkboxes, because Revit API stacks cannot hold
+        /// AdWindows items. A mixed stack therefore becomes its other items plus its checkboxes beside
+        /// them. The other items form a stack when there are two or more. The checkboxes always go
+        /// through the checkbox stack builder, even when there is only one, so their ids name the stack.
+        /// </remarks>
+        /// <returns>The ids of the stacked checkboxes it shows, which the ribbon scanner tracks instead
+        /// of their names, because a standalone checkbox in the same panel can share a name.</returns>
+        private IReadOnlyCollection<string> BuildStackItems(
+            ParsedComponent stack,
+            List<ParsedComponent> itemChildren,
+            RibbonPanel? parentPanel,
+            string tabName,
+            ExtensionAssemblyInfo assemblyInfo)
+        {
+            var checkBoxes = itemChildren.Where(IsCheckBox).ToList();
+            var otherItems = itemChildren.Where(child => !IsCheckBox(child)).ToList();
+            if (checkBoxes.Count > 0 && otherItems.Count > 0)
+                _logger.Warning($"Stack '{stack.DisplayName}' mixes checkboxes with other items; its checkboxes are placed beside the stack because they can only be stacked with other checkboxes.");
+
+            if (otherItems.Count == 1)
+                HandleComponentBuilding(otherItems[0], parentPanel, tabName, assemblyInfo);
+            else if (otherItems.Count > 1)
+                _stackBuilder.BuildStack(stack, parentPanel!, assemblyInfo);
+
+            if (checkBoxes.Count == 0)
+                return Array.Empty<string>();
+
+            return _checkBoxBuilder.CreateOrUpdateCheckBoxStack(stack, checkBoxes, parentPanel!, tabName);
+        }
+
+        private static bool IsCheckBox(ParsedComponent component)
+        {
+            return component.Type == CommandComponentType.CheckBox;
         }
     }
 }

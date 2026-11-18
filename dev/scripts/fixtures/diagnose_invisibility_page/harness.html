@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Diagnose Invisibility page harness</title>
+</head>
+<body>
+<div id="app"></div>
+<pre id="out">PENDING</pre>
+<script>
+  window.__errors = [];
+  window.addEventListener("error", (e) => window.__errors.push(String(e.message) + " @" + e.lineno));
+  window.__sent = [];
+  window.chrome = { webview: { postMessage: (m) => window.__sent.push(m), addEventListener() {} } };
+</script>
+<script src="../../../../extensions/pyRevitTools.extension/pyRevit.tab/Analysis.panel/Tools.stack/Inspect.pulldown/Diagnose%20Invisibility.pushbutton/viewer3d.js"></script>
+<script src="../../../../extensions/pyRevitTools.extension/pyRevit.tab/Analysis.panel/Tools.stack/Inspect.pulldown/Diagnose%20Invisibility.pushbutton/report.js"></script>
+<script>
+  const strings = new Proxy(
+    { revealColumns: "A|B|C|D|E|F", selectedCount: "{0} selected" },
+    { get: (target, key) => (key in target ? target[key] : String(key)) }
+  );
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const element = (id) => ({ id, label: "Wall (id " + id + ")", category: "Walls", visible: false, error: null, findings: [] });
+  const view = (ids) => ({ id: 1, name: "3D", type: "ThreeD", template: null, elements: ids.map(element) });
+  const rows = (ids, level) =>
+    ids.map((id, i) => ({ id, code: "category_hidden", category: "Walls", name: "T" + id, level: level || "L1", mark: "", size: 10 - i }));
+
+  function mount(reportIds, rowList) {
+    const app = window.pyRevitInvisibility.mount("app", {
+      channel: "c", bridge: true, document: "d", autoReveal: null,
+      elementCount: reportIds.length, elementIds: reportIds,
+      revealColors: {}, codes: { category_hidden: "Category Hidden" },
+      strings, views: [view(reportIds)],
+    });
+    app.receive("reveal", {
+      viewId: 1, active: true, counts: { category_hidden: rowList.length }, drawn: rowList.length,
+      rows: rowList, notEvaluated: 0, tooSmall: 0, follow: false, scoped: false,
+    });
+    return app;
+  }
+
+  const items = () => [...document.querySelectorAll(".dvi-reveal-item")];
+  const selectedIndexes = () => items().map((row, i) => (row.classList.contains("selected") ? i : null)).filter((i) => i !== null);
+  const click = (i, options) => items()[i].dispatchEvent(new MouseEvent("click", Object.assign({ bubbles: true }, options || {})));
+  const card = () => document.querySelector(".dvi-inspect");
+  const cardLabel = () => (card().hidden ? null : (card().querySelector(".dvi-label") || {}).textContent);
+  const sent = (action) => window.__sent.filter((m) => m.action === action);
+  const lastToken = (action) => sent(action).pop().payload.token;
+  const answer = (id, token) => window.__app.receive("inspect", { viewId: 1, token, element: element(id) });
+
+  const scenarios = {
+    async inspect_tokens() {
+      const R = {};
+      window.__app = mount([], rows([101, 102, 103, 104]));
+      click(0);
+      const first = lastToken("reveal_inspect");
+      answer(102, first + 99);
+      R.wrong_token_ignored = card().hidden;
+      answer(101, first);
+      R.requested_row_shown = cardLabel();
+      card().querySelector(".dvi-inspect-bar button:last-child").click();
+      R.closed = card().hidden;
+      answer(101, first);
+      R.after_close_ignored = card().hidden;
+      click(1);
+      const older = lastToken("reveal_inspect");
+      click(2);
+      const newer = lastToken("reveal_inspect");
+      answer(102, older);
+      R.late_older_ignored = card().hidden;
+      answer(103, newer);
+      R.newest_shown = cardLabel();
+      click(0);
+      const rowRequest = lastToken("reveal_inspect");
+      [...document.querySelectorAll(".dvi-reveal-tools button")].find((b) => b.textContent === "revealAddSelection").click();
+      const focusRequest = sent("reveal_focus").pop();
+      window.__app.receive("result", { requestId: window.__sent.indexOf(focusRequest) + 1, ok: true, message: "" });
+      await wait(50);
+      const selectionRequest = lastToken("reveal_add_selection");
+      R.tokens_distinct = new Set([first, older, newer, rowRequest, selectionRequest]).size === 5;
+      answer(101, rowRequest);
+      R.earlier_row_answer_arriving_first_ignored = card().hidden;
+      answer(104, selectionRequest);
+      R.selection_answer_shown = cardLabel();
+      return R;
+    },
+
+    async selection_pruning() {
+      const R = {};
+      window.__app = mount([103], rows([101, 103]));
+      click(0);
+      window.__app.receive("inspect", { viewId: 1, token: lastToken("reveal_inspect"), element: element(101) });
+      card().querySelector("input.dvi-pick").click();
+      window.__app.selected.add(103);
+      R.selected_before = [...window.__app.selected].sort();
+      window.__app.receive("state", { elementCount: 1, elementIds: [103], views: [view([103])] });
+      R.inspected_kept_after_state = window.__app.selected.has(101);
+      window.__app.receive("state", { elementCount: 0, elementIds: [], views: [view([])] });
+      R.removed_member_pruned = !window.__app.selected.has(103);
+      R.inspected_still_kept = window.__app.selected.has(101);
+      return R;
+    },
+
+    async level_option_kept() {
+      const R = {};
+      window.__app = mount([], rows([1, 2], "L2"));
+      const select = document.querySelector(".dvi-select");
+      select.value = "L2";
+      select.dispatchEvent(new Event("change"));
+      R.rows_with_level = items().length;
+      window.__app.receive("reveal", {
+        viewId: 1, active: true, counts: { category_hidden: 2 }, drawn: 2, rows: rows([1, 2], "L3"),
+        notEvaluated: 0, tooSmall: 0, follow: false, scoped: false,
+      });
+      const rebuilt = document.querySelector(".dvi-select");
+      R.options = [...rebuilt.options].map((o) => o.value);
+      R.select_value = rebuilt.value;
+      R.rows_after_rebuild = items().length;
+      return R;
+    },
+
+    async multi_select() {
+      const R = {};
+      window.__app = mount([103], rows([101, 102, 103, 104, 105, 106]));
+      click(0);
+      R.plain = selectedIndexes();
+      click(3, { shiftKey: true });
+      R.shift_range = selectedIndexes();
+      R.bar = card().textContent;
+      click(1, { ctrlKey: true });
+      R.ctrl_removes = selectedIndexes();
+      click(5, { ctrlKey: true });
+      R.ctrl_adds = selectedIndexes();
+      const add = [...card().querySelectorAll("button")].find((b) => b.textContent.startsWith("revealAddToReport"));
+      R.add_label = add.textContent;
+      add.click();
+      R.add_ids = sent("add_ids").map((m) => m.payload.elementIds);
+      [...card().querySelectorAll("button")].find((b) => b.textContent === "revealSelect").click();
+      R.select_ids = sent("select").map((m) => m.payload.elementIds);
+      click(4);
+      R.plain_after_multi = selectedIndexes();
+      click(2, { shiftKey: true });
+      R.shift_from_anchor = selectedIndexes();
+      [...card().querySelectorAll("button")].find((b) => b.textContent === "clearSelection").click();
+      R.cleared = selectedIndexes();
+      R.card_hidden_after_clear = card().hidden;
+      return R;
+    },
+  };
+
+  (async () => {
+    const name = new URLSearchParams(location.search).get("scenario");
+    let result = {};
+    try {
+      if (!scenarios[name]) throw new Error("unknown scenario " + name);
+      result = await scenarios[name]();
+    } catch (error) {
+      result = { exception: String((error && error.stack) || error) };
+    }
+    result.errors = window.__errors;
+    document.getElementById("out").textContent = "RESULT " + JSON.stringify(result);
+  })();
+</script>
+</body>
+</html>

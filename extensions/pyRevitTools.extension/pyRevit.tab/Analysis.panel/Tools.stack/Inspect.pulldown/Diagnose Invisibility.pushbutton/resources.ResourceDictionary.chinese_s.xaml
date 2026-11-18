@@ -87,7 +87,7 @@
     <sys:String x:Key="ui_no_match">没有图元符合当前过滤条件。</sys:String>
     <sys:String x:Key="ui_loading_scene">正在生成三维预览...</sys:String>
     <sys:String x:Key="ui_scene_empty">这些图元都没有可预览的几何图形。</sys:String>
-    <sys:String x:Key="ui_scene_help">拖动以环绕，Shift+拖动或右键拖动以平移，滚轮缩放，双击以适应。单击图元以找到其卡片。</sys:String>
+    <sys:String x:Key="ui_scene_help">拖动以环绕，Shift+拖动或右键拖动以平移，滚轮缩放，双击以适应。单击图元以找到其卡片。 右键单击元素可使用更多操作。</sys:String>
     <sys:String x:Key="ui_layer_hidden">不可见</sys:String>
     <sys:String x:Key="ui_layer_visible">可见</sys:String>
     <sys:String x:Key="ui_layer_clip">裁剪 / 剖切框</sys:String>
@@ -168,5 +168,39 @@
     <sys:String x:Key="ui_no_view_ticked">请至少勾选一个视图。</sys:String>
     <sys:String x:Key="ui_empty_state">尚无可诊断的内容。请添加图元和视图。</sys:String>
     <sys:String x:Key="ui_reload_blocked">重新加载会清除此报告。请改用“重新检查”。</sys:String>
+
+    <sys:String x:Key="ui_reveal">显示隐藏图元</sys:String>
+    <sys:String x:Key="ui_reveal_hint">在 Revit 中绘制此视图屏幕区域内所有被隐藏的图元，每种原因一种颜色。再次单击可移除。</sys:String>
+    <sys:String x:Key="ui_reveal_refresh">刷新叠加层</sys:String>
+    <sys:String x:Key="ui_reveal_follow">跟随视口</sys:String>
+    <sys:String x:Key="ui_reveal_select">选择</sys:String>
+    <sys:String x:Key="ui_reveal_summary">已绘制 {0} 个隐藏图元</sys:String>
+    <sys:String x:Key="ui_reveal_left_out">另有 {0} 个未绘制。放大视图即可查看。</sys:String>
+    <sys:String x:Key="ui_reveal_skipped">已跳过 {0} 个过小的图元。</sys:String>
+    <sys:String x:Key="ui_reveal_none">可见区域内没有被隐藏的内容。</sys:String>
+    <sys:String x:Key="ui_reveal_search">按名称、类别、标高、标记或 ID 筛选</sys:String>
+    <sys:String x:Key="ui_reveal_all_levels">所有标高</sys:String>
+    <sys:String x:Key="ui_reveal_clear_filter">清除筛选</sys:String>
+    <sys:String x:Key="ui_reveal_select_shown">选择显示的元素</sys:String>
+    <sys:String x:Key="ui_reveal_filtered">在 Revit 中绘制 {1} 个中的 {0} 个</sys:String>
+    <sys:String x:Key="ui_reveal_more_rows">还有 {0} 个。缩小筛选范围即可列出。</sys:String>
+    <sys:String x:Key="ui_reveal_row_hint">在 Revit 中显示此元素并说明它不可见的原因。 按住 Ctrl 或 Shift 点击可选择多个。</sys:String>
+    <sys:String x:Key="ui_reveal_add_selection">添加 Revit 选择</sys:String>
+    <sys:String x:Key="ui_reveal_add_selection_hint">在此视图中诊断 Revit 中选中的元素并绘制它们，无论大小。请在可见之处（例如其他视图或明细表）选择缺失的元素。</sys:String>
+    <sys:String x:Key="ui_reveal_add_to_report">添加到报告</sys:String>
+    <sys:String x:Key="ui_reveal_columns">原因|类别|类型|标高|标记|ID</sys:String>
+    <sys:String x:Key="ui_reveal_search_all">评估匹配的元素</sys:String>
+    <sys:String x:Key="ui_reveal_search_all_hint">诊断所有与筛选匹配的元素，而不仅是时间预算内处理到的较大元素。搜索类别、类型、标高、标记和 ID。</sys:String>
+    <sys:String x:Key="ui_reveal_scoped">仅评估了与筛选匹配的元素。刷新叠加层可评估全部元素。</sys:String>
+    <sys:String x:Key="ui_menu_show_card">转到卡片</sys:String>
+    <sys:String x:Key="ui_menu_frame">在 3D 中居中</sys:String>
+    <sys:String x:Key="ui_menu_zoom">在 Revit 中显示</sys:String>
+    <sys:String x:Key="ui_menu_select">在 Revit 中选择</sys:String>
+    <sys:String x:Key="ui_menu_remove">从报告中移除</sys:String>
+    <sys:String x:Key="reveal_added">已绘制 {0} 个选中的元素。</sys:String>
+    <sys:String x:Key="reveal_added_visible">{0} 个已在此视图中可见。</sys:String>
+    <sys:String x:Key="reveal_unsupported">叠加层在{}类型的视图中不可用。</sys:String>
+    <sys:String x:Key="reveal_needs_webview2">显示隐藏图元需要 WebView2 输出窗口和 IronPython。</sys:String>
+    <sys:String x:Key="reveal_unsupported_active">请先打开平面、剖面、立面或三维视图。</sys:String>
 
 </ResourceDictionary>

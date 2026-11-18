@@ -381,7 +381,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         /// </remarks>
         public RevitProduct RevitProduct { get; private set; } = null;
 
-        public Dictionary<string, string> ProjectInfoProperties { get; private set; }
+        public Dictionary<string, string> ProjectInfoProperties { get; private set; } = new Dictionary<string, string>();
 
         public string CategoryName { get; private set; }
 

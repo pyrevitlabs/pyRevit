@@ -69,6 +69,7 @@
     <Compile Include="SessionManagerReflectionCompatibilityTests.cs" />
     <Compile Include="PythonScriptMultiLangTest.cs" />
     <Compile Include="ComboBoxTests.cs" />
+    <Compile Include="CheckBoxTests.cs" />
     <Compile Include="SmartButtonTests.cs" />
     <Compile Include="StackBuilderTests.cs" />
     <Compile Include="TemplateInheritanceTests.cs" />
@@ -84,6 +85,7 @@
     <Compile Include="PyRevitRootResolutionTests.cs" />
     <Compile Include="ScriptIoReadlineTests.cs" />
     <Compile Include="CommandSearchPathsTests.cs" />
+    <Compile Include="CommandAncestorFoldersTests.cs" />
     <Compile Include="SearchPathsTests.cs" />
     <Compile Include="EnginePortableRequestsImportTests.cs" />
     <Compile Include="ScriptLoggerServiceTests.cs" />

@@ -128,6 +128,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void AppendLog(string outputText) {
+            Agent.AgentRecorder.RecordOutput(outputText);
             var logFilePath = GetLogFilePath();
             if (string.IsNullOrEmpty(logFilePath))
                 return;
