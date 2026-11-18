@@ -1149,7 +1149,8 @@ namespace pyRevitExtensionParser
                 if (componentType == CommandComponentType.ContentButton)
                 {
                     scriptPath = ResolveContentPath(dir, bundleInComponent?.Content)
-                        ?? FindContentFile(bundleDirFiles, "content", revitYear);
+                        ?? FindContentFile(bundleDirFiles, "content", revitYear)
+                        ?? FindLegacyContentFile(bundleDirFiles);
                     if (scriptPath == null)
                     {
                         LogWarning($"'{dir}': no matching or generic content family for Revit year {revitYear}; skipping.");
@@ -1479,18 +1480,40 @@ namespace pyRevitExtensionParser
 
         private static string FindContentFile(string[] files, string role, int revitYear)
         {
-            string FindByName(string name)
+            var families = files.Where(file =>
+                Path.GetExtension(file).Equals(".rfa", StringComparison.OrdinalIgnoreCase)).ToArray();
+
+            string FindByStem(string stem)
             {
-                return files.FirstOrDefault(file =>
-                           Path.GetFileName(file).Equals(name, StringComparison.OrdinalIgnoreCase))
-                    ?? files.FirstOrDefault(file =>
-                           Path.GetFileName(file).EndsWith(name, StringComparison.OrdinalIgnoreCase));
+                return families.FirstOrDefault(file =>
+                           Path.GetFileNameWithoutExtension(file).Equals(stem, StringComparison.OrdinalIgnoreCase))
+                    ?? families.FirstOrDefault(file =>
+                           new[] { "_", "-", " ", "." }.Any(separator =>
+                               Path.GetFileNameWithoutExtension(file).EndsWith(separator + stem, StringComparison.OrdinalIgnoreCase)))
+                    ?? families.FirstOrDefault(file =>
+                           Path.GetFileNameWithoutExtension(file).EndsWith(stem, StringComparison.OrdinalIgnoreCase));
             }
 
             var versioned = revitYear > 0
-                ? FindByName(role + "_" + revitYear.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".rfa")
+                ? FindByStem(role + "_" + revitYear.ToString(System.Globalization.CultureInfo.InvariantCulture))
                 : null;
-            return versioned ?? FindByName(role + ".rfa");
+            return versioned ?? FindByStem(role);
+        }
+
+        private static string FindLegacyContentFile(string[] files)
+        {
+            var families = files.Where(file =>
+                Path.GetExtension(file).Equals(".rfa", StringComparison.OrdinalIgnoreCase)).ToArray();
+            var options = System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                | System.Text.RegularExpressions.RegexOptions.CultureInvariant;
+            if (families.Any(file => System.Text.RegularExpressions.Regex.IsMatch(
+                Path.GetFileNameWithoutExtension(file), @"content_[0-9]+$", options)))
+                return null;
+
+            return families.Where(file => !System.Text.RegularExpressions.Regex.IsMatch(
+                    Path.GetFileNameWithoutExtension(file), @"other(?:_[0-9]+)?$|_[0-9]{4}$", options))
+                .OrderBy(file => file, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
         }
 
         /// <summary>

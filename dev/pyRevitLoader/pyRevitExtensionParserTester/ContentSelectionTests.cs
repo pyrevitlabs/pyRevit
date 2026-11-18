@@ -13,6 +13,7 @@ namespace pyRevitExtensionParserTest
     /// </summary>
     /// <remarks>Regression tests for PR #3947.</remarks>
     [TestFixture]
+    [Category("HostFree")]
     [Property("Level", "Integration")]
     [Property("Environment", "HostFree")]
     public class ContentSelectionTests : TempFileTestBase
@@ -49,6 +50,12 @@ namespace pyRevitExtensionParserTest
         /// <param name="revitYear">The host year used for selection.</param>
         /// <param name="primary">The expected primary postfix.</param>
         /// <param name="alternative">The expected alternative postfix.</param>
+        [TestCase("_", 2024, "content_2024.rfa", "other_2024.rfa")]
+        [TestCase("_", 2025, "content.rfa", "other.rfa")]
+        [TestCase("", 2024, "content_2024.rfa", "other_2024.rfa")]
+        [TestCase("", 2025, "content.rfa", "other.rfa")]
+        [TestCase(".", 2024, "content_2024.rfa", "other_2024.rfa")]
+        [TestCase(".", 2025, "content.rfa", "other.rfa")]
         [TestCase("-", 2024, "content_2024.rfa", "other_2024.rfa")]
         [TestCase("-", 2025, "content.rfa", "other.rfa")]
         [TestCase(" ", 2024, "content_2024.rfa", "other_2024.rfa")]
@@ -117,6 +124,161 @@ namespace pyRevitExtensionParserTest
 
             Assert.That(button?.ScriptPath, Is.EqualTo(BundleFile("Family_content_2024.rfa")));
             Assert.That(button?.ConfigScriptPath, Is.Null);
+        }
+
+        /// <summary>Restores an unversioned family button and uses its primary for Ctrl+Click.</summary>
+        [Category("Unit")]
+        [Property("Level", "Unit")]
+        [TestCase("Window.rfa", 2026)]
+        [TestCase("WINDOW.RFA", 2026)]
+        [TestCase("Window.rfa", 0)]
+        public void SelectsSingleLegacyFamily(string family, int revitYear)
+        {
+            AddFamilies(family);
+
+            var button = ParseButton(revitYear);
+
+            Assert.That(button?.ScriptPath, Is.EqualTo(BundleFile(family)));
+            Assert.That(button?.ConfigScriptPath, Is.EqualTo(button?.ScriptPath));
+        }
+
+        /// <summary>Conventional primary content takes precedence over arbitrary legacy families.</summary>
+        [TestCase(2024, "Z_content_2024.rfa")]
+        [TestCase(2026, "Z_content.rfa")]
+        [TestCase(0, "Z_content.rfa")]
+        public void ConventionalPrimaryPrecedesLegacyFamily(int revitYear, string expected)
+        {
+            AddFamilies("A_Window.rfa", "Z_content.rfa", "Z_content_2024.rfa");
+
+            Assert.That(ParseButton(revitYear)?.ScriptPath, Is.EqualTo(BundleFile(expected)));
+        }
+
+        /// <summary>Exact filenames win over prefixed names for both primary and alternate content.</summary>
+        [TestCase(2024, "content_2024.rfa", "other_2024.rfa")]
+        [TestCase(2026, "content.rfa", "other.rfa")]
+        public void ExactNamesPrecedePrefixedNames(int revitYear, string primary, string alternative)
+        {
+            AddFamilies("A_" + primary, "A_" + alternative, primary, alternative);
+
+            var button = ParseButton(revitYear);
+
+            Assert.That(button?.ScriptPath, Is.EqualTo(BundleFile(primary)));
+            Assert.That(button?.ConfigScriptPath, Is.EqualTo(BundleFile(alternative)));
+        }
+
+        /// <summary>Unambiguous conventional stems win over accidental legacy suffix matches.</summary>
+        [TestCase("_", 2024)]
+        [TestCase("-", 2024)]
+        [TestCase(" ", 2024)]
+        [TestCase(".", 2024)]
+        [TestCase("_", 2026)]
+        public void ConventionalStemsPrecedeMisleadingSuffixes(string separator, int revitYear)
+        {
+            var suffix = revitYear == 2024 ? "_2024" : "";
+            var primary = "Z" + separator + "content" + suffix + ".rfa";
+            var alternative = "Z" + separator + "other" + suffix + ".rfa";
+            AddFamilies("A_notcontent" + suffix + ".rfa", "another" + suffix + ".rfa", primary, alternative);
+
+            var button = ParseButton(revitYear);
+
+            Assert.That(button?.ScriptPath, Is.EqualTo(BundleFile(primary)));
+            Assert.That(button?.ConfigScriptPath, Is.EqualTo(BundleFile(alternative)));
+        }
+
+        /// <summary>Matching-year legacy names retain precedence over generic conventional names.</summary>
+        [Test]
+        public void DelimiterFreeMatchingYearPrecedesGenericConvention()
+        {
+            AddFamilies("Familycontent_2024.rfa", "Familyother_2024.rfa", "content.rfa", "other.rfa");
+
+            var button = ParseButton(2024);
+
+            Assert.That(button?.ScriptPath, Is.EqualTo(BundleFile("Familycontent_2024.rfa")));
+            Assert.That(button?.ConfigScriptPath, Is.EqualTo(BundleFile("Familyother_2024.rfa")));
+        }
+
+        /// <summary>Incompatible versioned primaries block legacy fallback in mixed bundles.</summary>
+        [TestCase("old_content_2024.rfa", 2026)]
+        [TestCase("Family-content_2024.rfa", 2026)]
+        [TestCase("Family content_2024.rfa", 2026)]
+        [TestCase("Familycontent_2024.rfa", 2026)]
+        [TestCase("Family_CONTENT_2024.RFA", 0)]
+        public void IncompatiblePrimaryBlocksLegacyFallback(string primary, int revitYear)
+        {
+            AddFamilies(primary, "Window.rfa");
+
+            Assert.That(ParseButton(revitYear), Is.Null);
+        }
+
+        /// <summary>Fallback never promotes an alternative or an explicitly versioned arbitrary family.</summary>
+        [TestCase("other.rfa")]
+        [TestCase("other_2024.rfa")]
+        [TestCase("Family-other.rfa")]
+        [TestCase("Familyother_2024.rfa")]
+        [TestCase("Window_2024.rfa")]
+        public void IneligibleLegacyFamilyDoesNotCreateButton(string family)
+        {
+            AddFamilies(family);
+
+            Assert.That(ParseButton(2026), Is.Null);
+        }
+
+        /// <summary>RFA-looking backup filenames do not qualify as primary content.</summary>
+        [Test]
+        public void RejectsNonFamilyExtensions()
+        {
+            AddFamilies("content_2026.rfa.bak", "Window.rfa.bak", "script.py");
+
+            Assert.That(ParseButton(2026), Is.Null);
+        }
+
+        /// <summary>Legacy primary selection retains matching, generic and primary-fallback alternatives.</summary>
+        [TestCase(2024, "Family_other_2024.rfa")]
+        [TestCase(2026, "Family_other.rfa")]
+        public void LegacyPrimaryUsesConventionalAlternative(int revitYear, string expected)
+        {
+            AddFamilies("Window.rfa", "Family_other_2024.rfa", "Family_other.rfa");
+
+            var button = ParseButton(revitYear);
+
+            Assert.That(button?.ScriptPath, Is.EqualTo(BundleFile("Window.rfa")));
+            Assert.That(button?.ConfigScriptPath, Is.EqualTo(BundleFile(expected)));
+        }
+
+        /// <summary>An incompatible alternate does not replace a legacy primary on Ctrl+Click.</summary>
+        [Test]
+        public void LegacyPrimaryIgnoresIncompatibleAlternative()
+        {
+            AddFamilies("Window.rfa", "other_2024.rfa");
+
+            var button = ParseButton(2026);
+
+            Assert.That(button?.ScriptPath, Is.EqualTo(BundleFile("Window.rfa")));
+            Assert.That(button?.ConfigScriptPath, Is.EqualTo(button?.ScriptPath));
+        }
+
+        /// <summary>Missing YAML paths allow legacy primary selection without inventing an explicit alternative.</summary>
+        [Test]
+        public void MissingExplicitPathsPreserveLegacyAlternativeContract()
+        {
+            AddFamilies("Window.rfa", "other.rfa");
+            CreateFile(Bundle + "bundle.yaml", "content: 'missing.rfa'\ncontent_alt: 'missing-other.rfa'");
+
+            var button = ParseButton(2026);
+
+            Assert.That(button?.ScriptPath, Is.EqualTo(BundleFile("Window.rfa")));
+            Assert.That(button?.ConfigScriptPath, Is.Null);
+        }
+
+        /// <summary>A valid explicit primary overrides incompatible conventional families and legacy candidates.</summary>
+        [Test]
+        public void ExplicitPrimaryOverridesIncompatibleConventions()
+        {
+            AddFamilies("content_2024.rfa", "Window.rfa");
+            var primary = CreateFile(Panel + "Primary.rfa", "");
+            CreateFile(Bundle + "bundle.yaml", "content: '../Primary.rfa'");
+
+            Assert.That(ParseButton(2026)?.ScriptPath, Is.EqualTo(Path.GetFullPath(primary)));
         }
 
         /// <summary>Changes the assembly filename when only the selected family changes.</summary>
