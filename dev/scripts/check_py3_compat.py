@@ -60,8 +60,8 @@ while those extensions migrate; the run still fails if their count exceeds
 A finding is not flagged when its branch is unreachable on IronPython 3,
 its enclosing test is skipped on that engine, or it is inside a try/except
 NameError/ImportError fallback (the name-shim and import-fallback patterns).
-CLR-NAMED-INDEXER targets CPython instead, so it is skipped only in ``if``
-branches that cannot execute on CPython (``if IRONPY:``, else of ``if PY3:``).
+CLR-LIST and CLR-NAMED-INDEXER target CPython instead, so they are skipped
+only in ``if`` branches that cannot execute on CPython (``if IRONPY:``, else of ``if PY3:``).
 """
 
 import argparse
@@ -943,16 +943,8 @@ def _py2_next(node, ctx):
         )
 
 
-def _is_off_cpython(node, ctx):
-    """Return whether node is guarded off IronPython 3 or off CPython.
-
-    The pythonnet-specific CLR rules skip both kinds of engine branch.
-    """
-    return ctx.is_engine_guarded(node) or _is_cpython_unreachable(node, ctx.parents)
-
-
 def _clr_namespace(node, ctx):
-    if _is_off_cpython(node, ctx):
+    if _is_cpython_unreachable(node, ctx.parents):
         return
     if any(
         _is_clr_interface_base(base) for base in node.bases
@@ -1016,7 +1008,9 @@ def _sort_key(node, ctx):
 
 
 def _clr_list(node, ctx):
-    if not _is_generic_list_constructor(node) or _is_off_cpython(node, ctx):
+    if not _is_generic_list_constructor(node) or _is_cpython_unreachable(
+        node, ctx.parents
+    ):
         return
     if _is_generic_list_constructor(node, ctx.clr_value_names(node)):
         yield (

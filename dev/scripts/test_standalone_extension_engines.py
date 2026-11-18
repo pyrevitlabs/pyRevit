@@ -16,6 +16,8 @@ import tempfile
 import types
 import unittest
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EXTENSIONS = runpy.run_path(
