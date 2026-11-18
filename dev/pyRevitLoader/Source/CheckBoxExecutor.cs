@@ -26,10 +26,13 @@ namespace PyRevitLoader
     /// need an AdWindows reference.
     /// Note: all checkboxes share one engine, so they share <c>sys.path</c> and <c>sys.modules</c>.
     /// Each script run and handler call therefore starts from its own checkbox's search paths and
-    /// modules and hands them back when it ends. A checkbox owns the modules it loaded from its own
-    /// search paths, which are all of them except the engine's base paths, <c>pyrevitlib</c> and
-    /// <c>site-packages</c>, so two bundles can ship <c>lib</c> modules with the same name while
-    /// pyRevit and the standard library are still imported once for all checkboxes.
+    /// modules and hands them back when it ends. A checkbox owns the modules that appear in
+    /// <c>sys.modules</c> while it is the active checkbox and the modules loaded from its own search
+    /// paths, except those loaded from a shared root: the engine's base paths, <c>pyrevitlib</c> and
+    /// <c>site-packages</c>. A package's submodules go with the package, even ones loaded from a shared
+    /// root. So two bundles can ship <c>lib</c> modules with the same name while pyRevit and the
+    /// standard library are still imported once for all checkboxes, and a module stays with its
+    /// checkbox even after the checkbox's code removes the folder it came from from <c>sys.path</c>.
     /// </remarks>
     public class CheckBoxExecutor
     {
@@ -83,6 +86,8 @@ namespace PyRevitLoader
             public Dictionary<string, object> Modules { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
 
             public Dictionary<string, object> HiddenModules { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
+
+            public Dictionary<string, object> ModulesWhenEntered { get; set; }
         }
 
         /// <summary>
@@ -433,10 +438,13 @@ namespace PyRevitLoader
 
         /// <summary>
         /// Points <c>sys.path</c> at the checkbox's saved paths and puts its own modules into
-        /// <c>sys.modules</c>, keeping the shared modules they hide for <see cref="Deactivate"/>.
+        /// <c>sys.modules</c>, keeping the shared modules they hide for <see cref="Deactivate"/>. Then
+        /// records what <c>sys.modules</c> holds, so <see cref="Deactivate"/> can tell which modules
+        /// appeared while the checkbox was active.
         /// </summary>
         private static void Activate(ScriptEngine engine, CheckBoxState state)
         {
+            state.ModulesWhenEntered = null;
             engine.SetSearchPaths(state.SearchPaths);
             var modules = GetSysModules(engine);
             state.HiddenModules.Clear();
@@ -446,6 +454,7 @@ namespace PyRevitLoader
                     state.HiddenModules[module.Key] = hiddenModule;
                 modules[module.Key] = module.Value;
             }
+            state.ModulesWhenEntered = CopyModules(modules);
         }
 
         /// <summary>
@@ -463,8 +472,9 @@ namespace PyRevitLoader
             state.SearchPaths.AddRange(currentPaths);
 
             var modules = GetSysModules(engine);
+            var ownNames = FindOwnModuleNames(modules, state, sharedRoots);
             state.Modules.Clear();
-            foreach (var name in FindOwnModuleNames(modules, state.SearchPaths, sharedRoots))
+            foreach (var name in ownNames)
             {
                 state.Modules[name] = modules[name];
                 modules.Remove(name);
@@ -476,53 +486,81 @@ namespace PyRevitLoader
                     modules[module.Key] = module.Value;
             }
             state.HiddenModules.Clear();
+            state.ModulesWhenEntered = null;
         }
 
         /// <summary>
-        /// Lists the <c>sys.modules</c> entries a checkbox owns: modules whose file lies under one of
-        /// its search paths that is not shared, and the other entries inside such a package, including
-        /// the <c>None</c> entries IronPython 2 records for failed implicit relative imports.
+        /// Lists the <c>sys.modules</c> entries the active checkbox owns: the entries it owned when it
+        /// was entered, the modules that appeared or were replaced since then, the modules whose file
+        /// lies under one of its search paths that is not shared, and every other entry inside such a
+        /// package, including the <c>None</c> entries IronPython 2 records for failed implicit relative
+        /// imports.
         /// </summary>
         /// <remarks>
-        /// Invariant: a module whose file lies under a shared root is never owned, even inside an
-        /// owned package that extends its <c>__path__</c> into <c>site-packages</c>.
+        /// Note: ownership does not depend on the checkbox's final <c>sys.path</c>, so a module imported
+        /// from a folder that the checkbox's code removed from <c>sys.path</c> again still goes with the
+        /// checkbox. A module that appeared without a file path, such as a built-in or .NET namespace
+        /// module or one from the embedded standard library, whose <c>__file__</c> is relative, stays
+        /// shared unless it belongs to an owned package.
+        /// Note: a submodule goes with its package even when its file lies under a shared root, as in a
+        /// package that extends its <c>__path__</c> into <c>site-packages</c>. It cannot stay shared
+        /// between two checkboxes' copies of the package: <c>import pkg.sub</c> in the second checkbox
+        /// would find the cached submodule and leave that checkbox's <c>pkg</c> without it.
+        /// Invariant: call it before <see cref="CheckBoxState.Modules"/> is cleared, because those are
+        /// the entries the checkbox owned when it was entered.
         /// </remarks>
-        private static List<string> FindOwnModuleNames(IDictionary<object, object> modules, IEnumerable<string> searchPaths, ICollection<string> sharedRoots)
+        private static List<string> FindOwnModuleNames(IDictionary<object, object> modules, CheckBoxState state, ICollection<string> sharedRoots)
         {
-            var names = new List<string>();
             var ownRoots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var path in searchPaths)
+            foreach (var path in state.SearchPaths)
             {
                 var root = NormalizePath(path);
                 if (root != null && !sharedRoots.Contains(root))
                     ownRoots.Add(root);
             }
 
-            if (ownRoots.Count == 0)
-                return names;
-
-            var moduleFiles = new Dictionary<string, string>(StringComparer.Ordinal);
+            var moduleNames = new List<string>();
+            var owned = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in modules)
             {
-                if (entry.Key is string name && name != MainModuleName)
-                    moduleFiles[name] = NormalizePath(GetModuleFile(entry.Value));
+                if (!(entry.Key is string name) || name == MainModuleName)
+                    continue;
+
+                moduleNames.Add(name);
+                var file = NormalizePath(GetModuleFile(entry.Value));
+                if (file != null && IsUnderAny(file, sharedRoots))
+                    continue;
+
+                if (state.Modules.ContainsKey(name)
+                    || (file != null && (IsUnderAny(file, ownRoots) || AppearedWhileActive(state, name, entry.Value))))
+                    owned.Add(name);
             }
 
-            var loadedFromOwnRoots = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var module in moduleFiles)
+            var names = new List<string>();
+            foreach (var name in moduleNames)
             {
-                if (module.Value != null && IsUnderAny(module.Value, ownRoots) && !IsUnderAny(module.Value, sharedRoots))
-                    loadedFromOwnRoots.Add(module.Key);
-            }
-
-            foreach (var module in moduleFiles)
-            {
-                var loadedFromSharedRoot = module.Value != null && IsUnderAny(module.Value, sharedRoots);
-                if (loadedFromOwnRoots.Contains(module.Key)
-                    || (!loadedFromSharedRoot && loadedFromOwnRoots.Contains(TopLevelName(module.Key))))
-                    names.Add(module.Key);
+                if (owned.Contains(name) || owned.Contains(TopLevelName(name)))
+                    names.Add(name);
             }
             return names;
+        }
+
+        private static bool AppearedWhileActive(CheckBoxState state, string name, object module)
+        {
+            var modulesWhenEntered = state.ModulesWhenEntered;
+            return modulesWhenEntered != null
+                && (!modulesWhenEntered.TryGetValue(name, out var moduleWhenEntered) || !ReferenceEquals(moduleWhenEntered, module));
+        }
+
+        private static Dictionary<string, object> CopyModules(IDictionary<object, object> modules)
+        {
+            var copy = new Dictionary<string, object>(StringComparer.Ordinal);
+            foreach (var entry in modules)
+            {
+                if (entry.Key is string name)
+                    copy[name] = entry.Value;
+            }
+            return copy;
         }
 
         private static IDictionary<object, object> GetSysModules(ScriptEngine engine)
