@@ -134,6 +134,20 @@ namespace pyRevitExtensionParserTester
             Assert.That(_calls, Is.Empty);
         }
 
+        [Test]
+        public void Release_ErrorReportThatThrows_StillDetachesTheOtherHandlers()
+        {
+            var other = new FakeCheckBox();
+            _registry.Wire(new CheckBoxThatFailsToDetach(), Handler("failing"));
+            _registry.Wire(other, Handler("other"));
+
+            Assert.DoesNotThrow(() => _registry.Release(_ => throw new InvalidOperationException("report failed")));
+            other.RaiseIsCheckedChanged();
+
+            Assert.That(_calls, Is.Empty);
+            Assert.That(other.SubscriberCount, Is.EqualTo(0));
+        }
+
         private PropertyChangedEventHandler Handler(string name)
         {
             return (sender, args) => _calls.Add(name);
