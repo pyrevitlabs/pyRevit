@@ -218,14 +218,22 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             if (_checkBoxScriptInitializer == null)
                 return;
 
+            bool setUp;
             try
             {
-                _checkBoxScriptInitializer.ExecuteEventHandlerSetup(component, checkBox);
+                setUp = _checkBoxScriptInitializer.ExecuteEventHandlerSetup(component, checkBox);
             }
             catch (Exception ex)
             {
                 _logger.Warning($"CheckBox event handler setup failed for '{component.DisplayName}'. Exception: {ex.Message}");
+                setUp = false;
             }
+
+            if (setUp)
+                return;
+
+            checkBox.IsEnabled = false;
+            _logger.Debug($"CheckBox '{component.DisplayName}' disabled because its script setup failed.");
         }
     }
 }
