@@ -998,6 +998,12 @@ class _FrameworkElement(object):
         self.Unloaded = _Event()
 
 
+class _WeakReference(object):
+    def __init__(self, target):
+        self.Target = target
+        self.IsAlive = True
+
+
 def _load_events():
     hooks = {}
     windows = SimpleNamespace(
@@ -1008,6 +1014,7 @@ def _load_events():
     )
     system = SimpleNamespace(
         Object=SimpleNamespace(ReferenceEquals=lambda left, right: left is right),
+        WeakReference=_WeakReference,
         Runtime=SimpleNamespace(
             CompilerServices=SimpleNamespace(
                 RuntimeHelpers=SimpleNamespace(GetHashCode=id)
@@ -1087,6 +1094,16 @@ class TemplateHookTests(unittest.TestCase):
         parked.Loaded.raise_(parked)
         self.assertEqual([], parked.Click.handlers)
         self.assertTrue(self.registry.is_released)
+
+    def test_release_removes_lifecycle_handlers_of_unloaded_instances(self):
+        """An instance that unloaded before release keeps no lifecycle handler."""
+        element = _FrameworkElement()
+        self.hooks["k"](element)
+        element.Loaded.raise_(element)
+        element.Unloaded.raise_(element)
+        self.assertEqual(1, len(element.Loaded.handlers))
+        self.registry.release()
+        self.assertEqual([], element.Loaded.handlers + element.Unloaded.handlers)
 
 
 class _RoutedRoot(object):
