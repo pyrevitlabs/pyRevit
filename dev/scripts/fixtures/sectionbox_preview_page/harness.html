@@ -343,6 +343,8 @@
     R.after_latest_ack = p.view.box.max[2];
     p._onEvent("box", event(9, undefined));
     R.after_unrevisioned = p.view.box.max[2];
+    p._onEvent("view", event(7, 0));
+    R.after_view_change = p.view.box.max[2];
     p.commitRequest("fit_visible", { padding: 1 });
     R.request_generation = window.__sent[window.__sent.length - 1].payload.generation;
     p.onSources({ done: true, truncated: 4 });

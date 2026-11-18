@@ -229,6 +229,7 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
         self.assertEqual(result["after_stale_ack"], 12)
         self.assertEqual(result["after_latest_ack"], 12)
         self.assertEqual(result["after_unrevisioned"], 9)
+        self.assertEqual(result["after_view_change"], 7)
         self.assertEqual(result["truncated_status"], "PreviewTruncated")
         self.assertEqual(result["loaded_status"], "PreviewLoaded")
 

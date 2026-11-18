@@ -142,9 +142,10 @@ class PreviewSession(object):
         payload it was made from, which changes whenever the session follows
         another view or document. A request of an older generation is
         rejected, so an edit queued for one view is never written to another.
-        An ``apply_box`` request also carries an edit ``revision`` that the
-        resulting ``box`` event returns, so the page can ignore an
-        acknowledgement older than its latest edit.
+        An ``apply_box`` request also carries an edit ``revision``. Every
+        view payload sent afterwards, including the ones that follow document
+        changes, repeats the latest applied revision, so the page can ignore
+        a box that predates its latest edit.
     """
 
     def __init__(
@@ -175,6 +176,7 @@ class PreviewSession(object):
         self.doc = None
         self.view_id = None
         self._view_generation = 0
+        self._applied_revision = None
         self.origin = DB.XYZ.Zero
         self._streams = []
         self._ready = False
@@ -232,6 +234,7 @@ class PreviewSession(object):
             same_document = False
         if not same_document or view.Id != self.view_id:
             self._view_generation += 1
+            self._applied_revision = None
         self.doc = view.Document
         self.view_id = view.Id
 
@@ -369,6 +372,8 @@ class PreviewSession(object):
     def _view_payload(self, view):
         payload = view_payload(view, self.datafilename, self.origin)
         payload["generation"] = self._view_generation
+        if self._applied_revision is not None:
+            payload["revision"] = self._applied_revision
         payload["bookmarks"] = self._bookmark_entries(view, payload["kind"])
         return payload
 
@@ -520,24 +525,21 @@ class PreviewSession(object):
         if status != DB.TransactionStatus.Committed:
             raise ValueError("Revit did not commit the change")
 
-    def _finish(self, view, request_id, ok, message=None, revision=None):
+    def _finish(self, view, request_id, ok, message=None):
         self.bridge.reply(request_id, ok, message)
-        payload = self._view_payload(view)
-        if revision is not None:
-            payload["revision"] = revision
-        self._send("box", payload)
+        self._send("box", self._view_payload(view))
         if ok:
             self.on_box_changed()
 
     def _on_apply_box(self, payload, request_id):
         view = self._active_view(payload)
-        revision = payload.get("revision")
+        self._applied_revision = payload.get("revision")
         try:
             self._write_box(view, payload["box"])
         except Exception as ex:
-            self._finish(view, request_id, False, str(ex), revision)
+            self._finish(view, request_id, False, str(ex))
             return
-        self._finish(view, request_id, True, revision=revision)
+        self._finish(view, request_id, True)
 
     def _on_use_scope_box(self, payload, request_id):
         view = self._active_view(payload)

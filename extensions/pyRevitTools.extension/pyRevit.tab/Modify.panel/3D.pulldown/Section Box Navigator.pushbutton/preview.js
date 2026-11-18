@@ -772,7 +772,7 @@ void main() { outColor = uColor; }`;
 
     setView(payload, resetCamera) {
       if (this.drag && !resetCamera) return;
-      if (payload.revision !== undefined && payload.revision < this.editRevision) return;
+      if (!resetCamera && typeof payload.revision === "number" && payload.revision < this.editRevision) return;
       this.view = payload;
       this.drag = null;
       this._buildGuideBuffers();
