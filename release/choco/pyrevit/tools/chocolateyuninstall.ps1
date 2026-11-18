@@ -8,7 +8,8 @@ $packageArgs = @{
   validExitCodes = @(0, 3010, 1605, 1614, 1641)
 }
 
-[array]$key = Get-UninstallRegistryKey -SoftwareName $packageArgs['softwareName']
+[array]$key = @(Get-UninstallRegistryKey -SoftwareName $packageArgs['softwareName']) |
+  Where-Object { $_.PSPath -like '*HKEY_LOCAL_MACHINE*' }
 
 if ($key.Count -eq 1) {
   $packageArgs['file'] = "$($key[0].UninstallString)"
@@ -16,8 +17,6 @@ if ($key.Count -eq 1) {
 } elseif ($key.Count -eq 0) {
   Write-Warning "$($packageArgs['packageName']) has already been uninstalled by other means."
 } else {
-  Write-Warning "$($key.Count) matches found!"
-  Write-Warning 'To prevent accidental data loss, no programs will be uninstalled.'
-  Write-Warning 'Please alert the package maintainer that the following keys were matched:'
-  $key | ForEach-Object { Write-Warning "- $($_.DisplayName)" }
+  $matched = ($key | ForEach-Object { "- $($_.DisplayName)" }) -join [Environment]::NewLine
+  throw "$($key.Count) machine-wide installs match $($packageArgs['softwareName']), so none was uninstalled to prevent accidental data loss:$([Environment]::NewLine)$matched"
 }

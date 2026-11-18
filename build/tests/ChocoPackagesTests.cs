@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Build.Helpers;
 using Build.Modules;
@@ -57,6 +58,35 @@ public sealed class ChocoPackagesTests
                 .Single(line => line.StartsWith("$url64", StringComparison.Ordinal));
             StringAssert.Contains(url, "_admin_signed.exe", package.Id);
             StringAssert.Contains(url, "/" + expectedInstallerPrefix[package.Id], package.Id);
+        }
+    }
+
+    [TestMethod]
+    public void Uninstall_script_matches_only_the_inno_uninstall_name_of_its_own_product()
+    {
+        var displayNames = new Dictionary<string, string>
+        {
+            ["pyrevit-cli"] = "pyRevit CLI version 7.1.0.26316",
+            ["pyrevit"] = "pyRevit version 7.1.0.26316",
+        };
+
+        foreach (var package in PyRevitPaths.ChocoPackages)
+        {
+            var uninstallScript = Path.Combine(
+                Path.GetDirectoryName(package.InstallScript)!,
+                "chocolateyuninstall.ps1");
+            var softwareName = Regex.Match(
+                File.ReadAllText(uninstallScript),
+                @"softwareName\s*=\s*'([^']*)'").Groups[1].Value;
+            var pattern = "^" + Regex.Escape(softwareName).Replace("\\*", ".*") + "$";
+
+            foreach (var (id, displayName) in displayNames)
+            {
+                Assert.AreEqual(
+                    id == package.Id,
+                    Regex.IsMatch(displayName, pattern, RegexOptions.IgnoreCase),
+                    $"{package.Id} vs {displayName}");
+            }
         }
     }
 
