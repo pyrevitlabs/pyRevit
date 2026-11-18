@@ -122,9 +122,17 @@ Supported values are `cpython` and `ironpython`. The declaration is a default
 for Python scripts, including `startup.py`. An absent declaration
 preserves the legacy IronPython default, so extension authors can migrate
 incrementally. A declaration does not affect C#, VB, Ruby, Dynamo, or
-Grasshopper bundles. Event hooks and smart-button `__selfinit__` still choose
-their engine from their own shebang; add `#! python3` to run them under
-CPython.
+Grasshopper bundles.
+
+Only `cpython` overrides per-script selection. `ironpython` is accepted but
+changes nothing: a command or `startup.py` headed `#! python3` still runs under
+CPython. To force IronPython for one command, set `engine.type: ironpython` in
+its `bundle.yaml`.
+
+Event hooks ignore the declaration and choose their engine from their own
+shebang; add `#! python3` to run a hook under CPython. A smart button's
+`__selfinit__` always runs under IronPython, whatever the shebang or
+declaration; the shebang only affects the button's click.
 
 A Python command's engine is resolved in this order:
 

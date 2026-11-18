@@ -42,9 +42,11 @@ namespace pyRevitExtensionParser
         /// or null when it declares none.
         /// </summary>
         /// <remarks>
-        /// It is a default for Python scripts only: a <c>#! python3</c> shebang or a bundle's
-        /// own <c>engine.type</c> still wins. Event hooks and smart-button <c>__selfinit__</c>
-        /// ignore it and pick their engine from their own shebang.
+        /// It is a default for Python scripts only. A bundle's own non-blank <c>engine.type</c>
+        /// takes precedence; without one, <c>cpython</c> selects CPython before the first-line
+        /// rule is consulted, while <c>ironpython</c> leaves the choice to each script's first
+        /// line. Event hooks ignore it and pick their engine from their own shebang;
+        /// smart-button <c>__selfinit__</c> always runs under IronPython.
         /// </remarks>
         public string DeclaredPythonEngine { get; set; }
 

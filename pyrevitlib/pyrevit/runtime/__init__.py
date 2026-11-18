@@ -409,8 +409,9 @@ def create_ipyengine_configs(
         full_frame (bool, optional): Engine shoul be full frame. Defaults to False.
         persistent (bool, optional): Engine should persist. Defaults to False.
         engine_type (str, optional): The extension-level Python engine
-            declaration. ``"cpython"`` becomes a default the script's shebang
-            cannot lose to; any other value preserves per-script selection.
+            declaration. ``"cpython"`` is emitted as the engine type, which
+            ``ScriptRuntime`` accepts before it applies the first-line rule;
+            any other value preserves per-script selection.
         bundle_engine_type (str, optional): The bundle's own ``engine.type``.
             A non-blank value is passed through verbatim and marked explicit.
 
