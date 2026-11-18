@@ -547,7 +547,7 @@ class Extension(GenericUIContainer):
         # using classname otherwise exceptions in superclasses won't show
         GenericUIContainer._update_from_directory(self)
         try:
-            manifest = self.get_manifest()
+            manifest = self._load_manifest(report_errors=False)
         except (IOError, OSError) as manifest_err:
             mlogger.warning(
                 "Can not read extension manifest: %s | %s",
@@ -601,6 +601,9 @@ class Extension(GenericUIContainer):
         return self.get_bundle_file(exts.EXT_MANIFEST_FILE)
 
     def get_manifest(self):
+        return self._load_manifest()
+
+    def _load_manifest(self, report_errors=True):
         manifest_file = self.get_manifest_file()
         if manifest_file:
             with codecs.open(manifest_file, "r", "utf-8") as mfile:
@@ -608,11 +611,12 @@ class Extension(GenericUIContainer):
                     manifest_cfg = json.load(mfile)
                     return manifest_cfg
                 except Exception as manfload_err:
-                    print(
-                        "Can not parse ext manifest file: {} | {}".format(
-                            manifest_file, manfload_err
+                    if report_errors:
+                        print(
+                            "Can not parse ext manifest file: {} | {}".format(
+                                manifest_file, manfload_err
+                            )
                         )
-                    )
                     return
 
     def configure(self):

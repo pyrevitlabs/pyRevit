@@ -130,6 +130,9 @@ class _FakeExtension:
             raise self._manifest_error
         return self._manifest
 
+    def _load_manifest(self, report_errors=True):
+        return self.get_manifest()
+
     def get_manifest_file(self):
         return "extension.json"
 
