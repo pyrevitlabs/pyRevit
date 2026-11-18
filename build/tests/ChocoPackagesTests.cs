@@ -58,6 +58,7 @@ public sealed class ChocoPackagesTests
                 .Single(line => line.StartsWith("$url64", StringComparison.Ordinal));
             StringAssert.Contains(url, "_admin_signed.exe", package.Id);
             StringAssert.Contains(url, "/" + expectedInstallerPrefix[package.Id], package.Id);
+            Assert.AreEqual(package.Id == "pyrevit-cli", url.Contains("/pyRevit_CLI_", StringComparison.Ordinal), package.Id);
         }
     }
 

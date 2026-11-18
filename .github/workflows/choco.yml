@@ -34,7 +34,12 @@ jobs:
           $release = gh api "repos/${{ github.repository }}/releases/tags/$encodedTag" | ConvertFrom-Json
           if ($release.draft) { throw "Release $($env:RELEASE_TAG) is still a draft; publish it first." }
           $packages = @($release.assets | Where-Object { $_.name -like '*.nupkg' })
-          if ($packages.Count -eq 0) { throw "Release $($env:RELEASE_TAG) has no .nupkg assets." }
+          foreach ($id in 'pyrevit', 'pyrevit-cli') {
+            $pattern = '^' + [regex]::Escape($id) + '\.\d'
+            if (-not ($packages | Where-Object { $_.name -match $pattern })) {
+              throw "Release $($env:RELEASE_TAG) has no $id .nupkg asset; its upload may have failed."
+            }
+          }
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           foreach ($package in $packages) {
             Invoke-WebRequest -Uri $package.browser_download_url -OutFile (Join-Path dist $package.name)
