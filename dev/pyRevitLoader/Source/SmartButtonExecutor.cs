@@ -17,12 +17,22 @@ namespace PyRevitLoader
     /// Executes SmartButton __selfinit__ scripts.
     /// Creating a new engine per button was the main performance bottleneck.
     /// </summary>
+    /// <remarks>
+    /// Note: all smart buttons share one engine, so they share <c>sys.path</c> and <c>sys.modules</c>.
+    /// Each button's script run and its <c>__selfinit__</c> call therefore enter that button's bundle of
+    /// a <see cref="BundleModuleIsolation"/>: they start from that button's own search paths and modules
+    /// and hand them back when they end. Two bundles can therefore ship <c>lib</c> modules with the same
+    /// name, while pyRevit and the standard library are still imported once for all buttons. Callbacks
+    /// that <c>__selfinit__</c> subscribes itself, such as Revit event handlers, run outside the
+    /// button's bundle.
+    /// </remarks>
     public class SmartButtonExecutor
     {
         private readonly UIApplication _revit;
         private readonly Action<string> _logger;
         private ScriptEngine _engine;
         private ScriptExecutor _scriptExecutor;
+        private BundleModuleIsolation _isolation;
         private string _pyrevitLibPath;
         private HashSet<string> _baseSearchPaths;
 
@@ -53,6 +63,7 @@ namespace PyRevitLoader
 
             // Cache base search paths
             _baseSearchPaths = new HashSet<string>(_engine.GetSearchPaths());
+            _isolation = new BundleModuleIsolation(_engine, _logger);
         }
 
         /// <summary>
@@ -60,7 +71,8 @@ namespace PyRevitLoader
         /// </summary>
         /// <param name="scriptPath">Path to the Python script file.</param>
         /// <param name="context">The SmartButtonContext to pass to the script.</param>
-        /// <param name="additionalSearchPaths">Additional search paths for imports.</param>
+        /// <param name="additionalSearchPaths">The bundle's ancestor <c>lib</c> folders and the installed library
+        /// extensions' paths; they go before <c>pyrevitlib</c> and <c>site-packages</c>.</param>
         /// <returns>True if initialization succeeded, false if the button should be deactivated.</returns>
         public bool ExecuteSelfInit(
             string scriptPath,
@@ -92,6 +104,7 @@ namespace PyRevitLoader
 
                 // Set __file__ variable
                 scope.SetVariable("__file__", scriptPath);
+                var bundle = _isolation.CreateBundle(context.name);
 
                 // Execute the script file to define __selfinit__
                 var script = _engine.CreateScriptSourceFromFile(scriptPath, Encoding.UTF8, SourceCodeKind.File);
@@ -112,7 +125,10 @@ namespace PyRevitLoader
 
                 try
                 {
-                    script.Execute(scope);
+                    using (_isolation.Enter(bundle))
+                    {
+                        script.Execute(scope);
+                    }
                 }
                 catch (SystemExitException)
                 {
@@ -142,7 +158,11 @@ namespace PyRevitLoader
                 {
                     // Call __selfinit__(script_cmp, ui_button_cmp, __rvt__)
                     var ops = _engine.Operations;
-                    var result = ops.Invoke(selfInitFunc, context, context, _revit);
+                    object result;
+                    using (_isolation.Enter(bundle))
+                    {
+                        result = ops.Invoke(selfInitFunc, context, context, _revit);
+                    }
 
                     // If __selfinit__ returns False, the button should be deactivated
                     if (result is bool boolResult && boolResult == false)
@@ -170,52 +190,54 @@ namespace PyRevitLoader
         }
 
         /// <summary>
-        /// Sets up search paths for a specific component, reusing cached base paths.
+        /// Points the engine's search paths at one smart button: the engine's base paths, the bundle folder and its
+        /// <c>lib</c>, <paramref name="additionalSearchPaths"/>, then <c>pyrevitlib</c> and <c>site-packages</c>.
         /// </summary>
+        /// <remarks>
+        /// Invariant: same order as commands and <see cref="CheckBoxExecutor"/>, so modules in the bundle's
+        /// <c>lib</c> folders and in installed library extensions win over same-named ones in <c>pyrevitlib</c>
+        /// and <c>site-packages</c>.
+        /// Invariant: only <c>pyrevitlib</c> and <c>site-packages</c> are added as shared roots of the
+        /// <see cref="BundleModuleIsolation"/>. pyRevit is then imported once for all smart buttons, while each
+        /// button keeps its own copies of the modules it loads from its other paths, library extensions included.
+        /// </remarks>
         private void SetupSearchPathsForComponent(ScriptEngine engine, string componentDirectory, IEnumerable<string> additionalSearchPaths)
         {
-            // Start with cached base paths
             var paths = new List<string>(_baseSearchPaths);
 
-            // Add component directory
+            void AddPath(string path)
+            {
+                if (!string.IsNullOrEmpty(path) && !paths.Contains(path))
+                    paths.Add(path);
+            }
+
             if (!string.IsNullOrEmpty(componentDirectory) && Directory.Exists(componentDirectory))
             {
-                if (!paths.Contains(componentDirectory))
-                    paths.Add(componentDirectory);
-
-                // Add lib subdirectory if exists
+                AddPath(componentDirectory);
                 var libPath = Path.Combine(componentDirectory, "lib");
-                if (Directory.Exists(libPath) && !paths.Contains(libPath))
-                    paths.Add(libPath);
+                if (Directory.Exists(libPath))
+                    AddPath(libPath);
             }
 
-            // Find and add pyrevitlib (cached)
-            if (_pyrevitLibPath == null)
-            {
-                _pyrevitLibPath = FindPyRevitLib(componentDirectory) ?? string.Empty;
-            }
-
-            if (!string.IsNullOrEmpty(_pyrevitLibPath) && !paths.Contains(_pyrevitLibPath))
-            {
-                paths.Add(_pyrevitLibPath);
-
-                // Add site-packages
-                var pyrevitRoot = Path.GetDirectoryName(_pyrevitLibPath);
-                if (!string.IsNullOrEmpty(pyrevitRoot))
-                {
-                    var sitePackages = Path.Combine(pyrevitRoot, "site-packages");
-                    if (Directory.Exists(sitePackages) && !paths.Contains(sitePackages))
-                        paths.Add(sitePackages);
-                }
-            }
-
-            // Add additional search paths
             if (additionalSearchPaths != null)
             {
                 foreach (var path in additionalSearchPaths)
+                    AddPath(path);
+            }
+
+            if (_pyrevitLibPath == null)
+                _pyrevitLibPath = FindPyRevitLib(componentDirectory) ?? string.Empty;
+
+            if (_pyrevitLibPath.Length > 0)
+            {
+                AddPath(_pyrevitLibPath);
+                _isolation.AddSharedRoot(_pyrevitLibPath);
+                var pyrevitRoot = Path.GetDirectoryName(_pyrevitLibPath);
+                var sitePackages = string.IsNullOrEmpty(pyrevitRoot) ? null : Path.Combine(pyrevitRoot, "site-packages");
+                if (sitePackages != null && Directory.Exists(sitePackages))
                 {
-                    if (!string.IsNullOrEmpty(path) && !paths.Contains(path))
-                        paths.Add(path);
+                    AddPath(sitePackages);
+                    _isolation.AddSharedRoot(sitePackages);
                 }
             }
 

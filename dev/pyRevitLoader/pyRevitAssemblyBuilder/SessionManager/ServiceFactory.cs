@@ -181,10 +181,15 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
         /// <param name="buttonPostProcessor">The button post-processor instance.</param>
+        /// <param name="libraryPathsProvider">Supplies the installed library extensions' search paths, so ComboBox scripts can import from them like commands.</param>
         /// <returns>A new IComboBoxBuilder instance.</returns>
-        public static IComboBoxBuilder CreateComboBoxBuilder(UIApplication uiApplication, ILogger logger, IButtonPostProcessor buttonPostProcessor)
+        public static IComboBoxBuilder CreateComboBoxBuilder(
+            UIApplication uiApplication,
+            ILogger logger,
+            IButtonPostProcessor buttonPostProcessor,
+            Func<IEnumerable<string>>? libraryPathsProvider = null)
         {
-            var comboBoxScriptInitializer = new ComboBoxScriptInitializer(uiApplication, logger);
+            var comboBoxScriptInitializer = new ComboBoxScriptInitializer(uiApplication, logger, libraryPathsProvider);
             return new ComboBoxBuilder(logger, buttonPostProcessor, comboBoxScriptInitializer);
         }
 
@@ -296,15 +301,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var tabIconDecorator = new TabIconDecorator(path => iconManager.LoadBitmapSource(path), themeDetector.IsDarkTheme);
             var tabBuilder = CreateTabBuilder(uiApplication, logger, tabIconDecorator);
             var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager);
-            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
+            Func<IEnumerable<string>> libraryPathsProvider =
+                () => LibraryExtensionSearchPaths.Collect(extensionManager.GetInstalledLibraryExtensions());
+            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger, libraryPathsProvider);
             var buttonBuilderFactory = CreateButtonBuilderFactory(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var stackBuilder = CreateStackBuilder(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
-            var comboBoxBuilder = CreateComboBoxBuilder(uiApplication, logger, buttonPostProcessor);
-            var checkBoxBuilder = CreateCheckBoxBuilder(
-                uiApplication,
-                logger,
-                panelStyleManager,
-                () => LibraryExtensionSearchPaths.Collect(extensionManager.GetInstalledLibraryExtensions()));
+            var comboBoxBuilder = CreateComboBoxBuilder(uiApplication, logger, buttonPostProcessor, libraryPathsProvider);
+            var checkBoxBuilder = CreateCheckBoxBuilder(uiApplication, logger, panelStyleManager, libraryPathsProvider);
 
             // Create ribbon scanner for UI cleanup
             var ribbonScanner = CreateUIRibbonScanner(logger);

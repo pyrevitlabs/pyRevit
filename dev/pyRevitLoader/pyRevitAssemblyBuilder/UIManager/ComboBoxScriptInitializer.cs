@@ -382,6 +382,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         private static readonly Logger nlog = LogManager.GetCurrentClassLogger();
         private readonly SessionManager.ILogger _logger;
         private readonly UIApplication _uiApp;
+        private readonly Lazy<List<string>> _libraryExtensionPaths;
 
         // Cached reflection types and methods
         private static Assembly _pyRevitLoaderAssembly;
@@ -395,10 +396,19 @@ namespace pyRevitAssemblyBuilder.UIManager
         private bool _instanceInitialized;
         private bool _instanceInitializationFailed;
 
-        public ComboBoxScriptInitializer(UIApplication uiApp, SessionManager.ILogger logger)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ComboBoxScriptInitializer"/> class.
+        /// </summary>
+        /// <param name="libraryPathsProvider">Supplies the search paths of the installed library extensions; read once, on first use.</param>
+        public ComboBoxScriptInitializer(
+            UIApplication uiApp,
+            SessionManager.ILogger logger,
+            Func<IEnumerable<string>> libraryPathsProvider = null)
         {
             _uiApp = uiApp;
             _logger = logger;
+            _libraryExtensionPaths = new Lazy<List<string>>(
+                () => new List<string>(libraryPathsProvider?.Invoke() ?? Array.Empty<string>()));
             EnsureStaticInitialized();
             ReleasePreviousSessionExecutor();
         }
@@ -495,6 +505,10 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <summary>
         /// Executes event handler setup for a ComboBox script file.
         /// </summary>
+        /// <remarks>
+        /// The script and its handlers can import from the bundle's ancestor <c>lib</c> folders and from installed
+        /// library extensions, which the executor puts before <c>pyrevitlib</c> and <c>site-packages</c>, as for commands.
+        /// </remarks>
         public bool ExecuteEventHandlerSetup(ParsedComponent component, ComboBox comboBox)
         {
             EnsureInstanceInitialized();
@@ -531,6 +545,8 @@ namespace pyRevitAssemblyBuilder.UIManager
                     current = current.Parent;
                 }
             }
+
+            additionalPaths.AddRange(_libraryExtensionPaths.Value);
 
             try
             {

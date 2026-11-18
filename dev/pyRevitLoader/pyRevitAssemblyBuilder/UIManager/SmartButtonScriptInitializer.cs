@@ -308,6 +308,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly ILogger _logger;
         private readonly UIApplication _uiApp;
         private readonly RevitThemeDetector _themeDetector;
+        private readonly Lazy<List<string>> _libraryExtensionPaths;
         private static Assembly _pyRevitLoaderAssembly;
         private static Type _executorType;
         private static bool _staticInitialized;
@@ -318,11 +319,20 @@ namespace pyRevitAssemblyBuilder.UIManager
         private bool _instanceInitialized;
         private bool _instanceInitializationFailed;
 
-        public SmartButtonScriptInitializer(UIApplication uiApp, ILogger logger)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SmartButtonScriptInitializer"/> class.
+        /// </summary>
+        /// <param name="libraryPathsProvider">Supplies the search paths of the installed library extensions; read once, on first use.</param>
+        public SmartButtonScriptInitializer(
+            UIApplication uiApp,
+            ILogger logger,
+            Func<IEnumerable<string>> libraryPathsProvider = null)
         {
             _uiApp = uiApp;
             _logger = logger;
             _themeDetector = new RevitThemeDetector(logger);
+            _libraryExtensionPaths = new Lazy<List<string>>(
+                () => new List<string>(libraryPathsProvider?.Invoke() ?? Array.Empty<string>()));
 
             // Do static initialization once
             EnsureStaticInitialized();
@@ -406,6 +416,10 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <summary>
         /// Executes the __selfinit__ function for a SmartButton.
         /// </summary>
+        /// <remarks>
+        /// The script can import from the bundle's ancestor <c>lib</c> folders and from installed library
+        /// extensions, which the executor puts before <c>pyrevitlib</c> and <c>site-packages</c>, as for commands.
+        /// </remarks>
         public bool ExecuteSelfInit(ParsedComponent component, PushButton pushButton)
         {
             EnsureInstanceInitialized();
@@ -451,6 +465,8 @@ namespace pyRevitAssemblyBuilder.UIManager
                     current = current.Parent;
                 }
             }
+
+            additionalPaths.AddRange(_libraryExtensionPaths.Value);
 
             var span = LoadTimeline.Active?.StartSpan($"SmartButton '{component?.Name ?? "<unknown>"}'");
             try
