@@ -123,7 +123,7 @@ namespace pyRevitLoader.Integration.Tests
         public void CompiledSearchPaths_HoldOnlyTheCommandsOwnAndAncestorFolders()
         {
             var target = Command(TargetDir);
-            var code = new RoslynCommandTypeGenerator(new MockPythonLogger())
+            var code = new RoslynCommandTypeGenerator(new MockLogger())
                 .GenerateExtensionCode(_extension, "2024", Array.Empty<ParsedExtension>());
 
             var fixtureFolders = CompiledSearchPaths(code, target.ScriptPath)
