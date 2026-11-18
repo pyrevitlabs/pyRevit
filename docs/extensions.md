@@ -35,12 +35,6 @@ A `checkbox` bundle adds a ribbon checkbox. Its `script.py` can define `__chk_in
 
 A handler can also come from another module, as in `from chk_handlers import on_change as __chk_on_change__`, so several checkboxes can share one. `EXEC_PARAMS`, and with it `script.get_config()`, still resolves the checkbox the handler runs for.
 
-Module isolation has three gaps:
-
-- `sys.path` is a new list each time a checkbox becomes active, so a reference kept to an earlier one, such as `from sys import path`, stops changing the live path once another checkbox has run. Use `sys.path` itself.
-- A module from `site-packages` or `pyrevitlib` stays shared, so a checkbox whose `lib` has a module with the same name gets the shared one when another checkbox imported it first.
-- A submodule that a checkbox loads into a shared package, by extending the package's `__path__`, stays bound to that package for every checkbox.
-
 The `ctx` that both handlers receive has these members:
 
 | Member | What it is |
@@ -56,6 +50,12 @@ The `ctx` that both handlers receive has these members:
 Smart buttons and combo boxes keep their modules apart the same way: all smart buttons share one IronPython engine and all combo boxes share another, but each bundle keeps its own copy of the modules it imports from its `lib` folders. This covers the bundle's script and the functions pyRevit calls: `__selfinit__`, the `__cmb_*__` handlers and the `__chk_*__` handlers. A handler that a script subscribes itself, such as a Revit event handler added in `__selfinit__`, runs outside its bundle, so import what it needs at the top of the script rather than inside the handler.
 
 Every checkbox, smart button and combo box also keeps its own copy of the modules it imports from its extension's `lib` folder, so a cache or other state kept in such a module is not shared between bundles.
+
+Module isolation has three gaps, for checkboxes, smart buttons and combo boxes alike:
+
+- `sys.path` is a new list each time a bundle's code starts to run, so a reference kept to an earlier list, such as `from sys import path` at the top of a script, does not change the live path in later calls. Use `sys.path` itself.
+- A module from `site-packages` or `pyrevitlib` stays shared, so a bundle whose `lib` has a module with the same name gets the shared one when another bundle imported it first.
+- A submodule that a bundle loads into a shared package, by extending the package's `__path__`, stays bound to that package for every bundle.
 
 ## Bundle files
 

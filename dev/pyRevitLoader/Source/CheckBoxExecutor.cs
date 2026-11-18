@@ -29,13 +29,8 @@ namespace PyRevitLoader
     /// <see cref="BundleModuleIsolation"/>: it starts from that checkbox's own search paths and modules
     /// and hands them back when it ends. Two bundles can therefore ship <c>lib</c> modules with the same
     /// name, while pyRevit and the standard library are still imported once for all checkboxes.
-    /// Warning: three cases are not isolated. <c>sys.path</c> is a new list each time a checkbox becomes
-    /// active, so a reference kept to an earlier one, such as <c>from sys import path</c>, no longer
-    /// changes the live path once another checkbox has run. A module from a shared root stays shared,
-    /// so a checkbox whose <c>lib</c> has a module with the same name gets the shared one when another
-    /// checkbox imported it first. And a submodule that a checkbox loads into a shared package, by
-    /// extending the package's <c>__path__</c>, stays bound as an attribute of that package, so
-    /// <c>from pkg import sub</c> in another checkbox can return it.
+    /// Warning: <see cref="BundleModuleIsolation"/> lists three cases it does not keep apart, such as a
+    /// reference kept to an earlier <c>sys.path</c> list.
     /// </remarks>
     public class CheckBoxExecutor
     {
