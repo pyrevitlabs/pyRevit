@@ -17,12 +17,13 @@ namespace PyRevitLoader
     /// A bundle owns the modules that appear in <c>sys.modules</c> while it is the active bundle and
     /// the modules loaded from its own search paths, except those loaded from a shared root: the
     /// engine's base paths and the roots added with <see cref="AddSharedRoot"/>, such as
-    /// <c>pyrevitlib</c> and <c>site-packages</c>. A bundle's modules stay out of <c>sys.modules</c>
-    /// while it is not the active bundle, so two bundles can ship <c>lib</c> modules with the same name
-    /// while pyRevit and the standard library are still imported once for all of them. A module stays
-    /// with its bundle even after the bundle's code removes the folder it came from from
-    /// <c>sys.path</c>.
-    /// Invariant: modules loaded from a shared root are never moved, and neither is <c>__main__</c>.
+    /// <c>pyrevitlib</c> and <c>site-packages</c>. A package's submodules go with the package, even
+    /// ones loaded from a shared root. A bundle's modules stay out of <c>sys.modules</c> while it is
+    /// not the active bundle, so two bundles can ship <c>lib</c> modules with the same name while
+    /// pyRevit and the standard library are still imported once for all of them. A module stays with
+    /// its bundle even after the bundle's code removes the folder it came from from <c>sys.path</c>.
+    /// Invariant: a module loaded from a shared root moves only as a submodule of a package the bundle
+    /// owns, and <c>__main__</c> never moves.
     /// Note: only code that runs while its bundle is entered is kept apart. Callbacks a script subscribes
     /// itself, such as Revit event handlers, run with whatever the engine holds when they fire, so an
     /// import inside them can load a module again from the current <c>sys.path</c> instead of reusing
@@ -268,7 +269,7 @@ namespace PyRevitLoader
         /// <summary>
         /// Lists the <c>sys.modules</c> entries the active bundle owns: the entries it owned when it
         /// was entered, the modules that appeared or were replaced since then, the modules whose file
-        /// lies under one of its search paths that is not shared, and the other entries inside such a
+        /// lies under one of its search paths that is not shared, and every other entry inside such a
         /// package, including the <c>None</c> entries IronPython 2 records for failed implicit relative
         /// imports.
         /// </summary>
@@ -278,8 +279,10 @@ namespace PyRevitLoader
         /// bundle. A module that appeared without a file path, such as a built-in or .NET namespace
         /// module or one from the embedded standard library, whose <c>__file__</c> is relative, stays
         /// shared unless it belongs to an owned package.
-        /// Invariant: a module whose file lies under a shared root is never owned, even inside an
-        /// owned package that extends its <c>__path__</c> into <c>site-packages</c>.
+        /// Note: a submodule goes with its package even when its file lies under a shared root, as in a
+        /// package that extends its <c>__path__</c> into <c>site-packages</c>. It cannot stay shared
+        /// between two bundles' copies of the package: <c>import pkg.sub</c> in the second bundle would
+        /// find the cached submodule and leave that bundle's <c>pkg</c> without it.
         /// Invariant: call it before <see cref="Bundle.Modules"/> is cleared, because those are the
         /// entries the bundle owned when it was entered.
         /// </remarks>
@@ -293,15 +296,15 @@ namespace PyRevitLoader
                     ownRoots.Add(root);
             }
 
-            var moduleFiles = new Dictionary<string, string>(StringComparer.Ordinal);
+            var moduleNames = new List<string>();
             var owned = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in modules)
             {
                 if (!(entry.Key is string name) || name == MainModuleName)
                     continue;
 
+                moduleNames.Add(name);
                 var file = NormalizeModuleFile(GetModuleFile(entry.Value));
-                moduleFiles[name] = file;
                 if (file != null && IsUnderAny(file, _sharedRoots))
                     continue;
 
@@ -311,12 +314,10 @@ namespace PyRevitLoader
             }
 
             var names = new List<string>();
-            foreach (var module in moduleFiles)
+            foreach (var name in moduleNames)
             {
-                var loadedFromSharedRoot = module.Value != null && IsUnderAny(module.Value, _sharedRoots);
-                if (owned.Contains(module.Key)
-                    || (!loadedFromSharedRoot && owned.Contains(TopLevelName(module.Key))))
-                    names.Add(module.Key);
+                if (owned.Contains(name) || owned.Contains(TopLevelName(name)))
+                    names.Add(name);
             }
             return names;
         }
