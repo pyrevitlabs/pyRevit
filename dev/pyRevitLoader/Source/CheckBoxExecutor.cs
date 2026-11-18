@@ -17,7 +17,7 @@ namespace PyRevitLoader
     /// <summary>
     /// Runs .checkbox bundle scripts in a shared IronPython engine and wires their handlers:
     /// <c>__chk_init__(ctx)</c> once per load, and <c>__chk_on_change__(sender, args, ctx)</c>
-    /// whenever the checkbox's <c>IsChecked</c> changes.
+    /// whenever the checkbox's <c>IsChecked</c> changes after <c>__chk_init__</c> returns.
     /// </summary>
     /// <remarks>
     /// Important: handlers run on the UI thread from WPF property-change notifications, outside
@@ -34,8 +34,10 @@ namespace PyRevitLoader
     /// standard library are still imported once for all checkboxes, and a module stays with its
     /// checkbox even after the checkbox's code removes the folder it came from from <c>sys.path</c>.
     /// Warning: three cases are not isolated. <c>sys.path</c> is a new list each time a checkbox becomes
-    /// active, so a reference kept to an earlier one, such as <c>from sys import path</c>, no longer
-    /// changes the live path once another checkbox has run. A module from a shared root stays shared,
+    /// active: when its script runs, at every handler call, and when a nested call to another
+    /// checkbox's handler returns. So a reference kept to an earlier list, such as
+    /// <c>from sys import path</c> at the top of the script, no longer changes the live path, even when
+    /// no other checkbox has run. A module from a shared root stays shared,
     /// so a checkbox whose <c>lib</c> has a module with the same name gets the shared one when another
     /// checkbox imported it first. And a submodule that a checkbox loads into a shared package, by
     /// extending the package's <c>__path__</c>, stays bound as an attribute of that package, so

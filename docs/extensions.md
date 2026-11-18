@@ -31,13 +31,13 @@ Supported bundle types (folder postfix): `pushbutton`, `smartbutton`, `pulldown`
 
     Postfixes and every other constant on this page are defined in [pyrevit.extensions][] (`pyrevitlib/pyrevit/extensions/__init__.py`).
 
-A `checkbox` bundle adds a ribbon checkbox. Its `script.py` can define `__chk_init__(ctx)`, which runs when the ribbon loads, and `__chk_on_change__(sender, args, ctx)`, which runs on every change of `ctx.is_checked`. Both run outside Revit API context, so they must not start transactions. All checkboxes run in one IronPython engine, but each keeps its own copy of the modules it imports from its bundle's `lib` folders and from library extensions, so two checkboxes can ship modules with the same name; pyRevit and the standard library are shared. Checkboxes stack only with other checkboxes: in a `stack` that also holds other items, the checkboxes are placed beside the stack and a warning is logged.
+A `checkbox` bundle adds a ribbon checkbox. Its `script.py` can define `__chk_init__(ctx)`, which runs when the ribbon loads, and `__chk_on_change__(sender, args, ctx)`, which runs each time `ctx.is_checked` changes after `__chk_init__` returns. Both run outside Revit API context, so they must not start transactions. All checkboxes run in one IronPython engine, but each keeps its own copy of the modules it imports from its bundle's `lib` folders and from library extensions, so two checkboxes can ship modules with the same name; pyRevit and the standard library are shared. Checkboxes stack only with other checkboxes: in a `stack` that also holds other items, the checkboxes are placed beside the stack and a warning is logged.
 
 A handler can also come from another module, as in `from chk_handlers import on_change as __chk_on_change__`, so several checkboxes can share one. `EXEC_PARAMS`, and with it `script.get_config()`, still resolves the checkbox the handler runs for.
 
 Module isolation has three gaps:
 
-- `sys.path` is a new list each time a checkbox becomes active, so a reference kept to an earlier one, such as `from sys import path`, stops changing the live path once another checkbox has run. Use `sys.path` itself.
+- `sys.path` is a new list each time a checkbox's code starts to run, so a reference kept to an earlier list, such as `from sys import path` at the top of the script, does not change the live path in later calls. Use `sys.path` itself.
 - A module from `site-packages` or `pyrevitlib` stays shared, so a checkbox whose `lib` has a module with the same name gets the shared one when another checkbox imported it first.
 - A submodule that a checkbox loads into a shared package, by extending the package's `__path__`, stays bound to that package for every checkbox.
 
