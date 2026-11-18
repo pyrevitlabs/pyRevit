@@ -52,6 +52,7 @@ namespace PyRevitLoader
         private LoggerStream _outputStream;
         private HashSet<string> _baseSearchPaths;
         private HashSet<string> _sharedModuleRoots;
+        private CheckBoxState _activeState;
         private string _pyrevitLibPath;
         private bool _released;
         private bool _sessionSlotClaimed;
@@ -65,7 +66,7 @@ namespace PyRevitLoader
 
         /// <summary>
         /// One checkbox's share of the engine: the <c>sys.path</c> its code runs with and the modules
-        /// it owns, which stay out of <c>sys.modules</c> while other checkboxes run.
+        /// it owns, which stay out of <c>sys.modules</c> while it is not the active checkbox.
         /// </summary>
         private sealed class CheckBoxState
         {
@@ -81,23 +82,24 @@ namespace PyRevitLoader
 
             public Dictionary<string, object> Modules { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
 
-            public int RunningCalls { get; set; }
+            public Dictionary<string, object> HiddenModules { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
         }
 
         /// <summary>
-        /// What <see cref="EnterCheckBox"/> replaced: the engine's previous <c>sys.path</c> and the
-        /// shared modules that the checkbox's own modules hid while it ran.
+        /// What <see cref="EnterCheckBox"/> replaced: the checkbox that was active before, or the
+        /// engine's <c>sys.path</c> when none was.
         /// </summary>
         private sealed class ReplacedEngineState
         {
-            public ReplacedEngineState(List<string> searchPaths)
+            public ReplacedEngineState(CheckBoxState previousState, List<string> searchPaths)
             {
+                PreviousState = previousState;
                 SearchPaths = searchPaths;
             }
 
-            public List<string> SearchPaths { get; }
+            public CheckBoxState PreviousState { get; }
 
-            public Dictionary<string, object> HiddenModules { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
+            public List<string> SearchPaths { get; }
         }
 
         /// <summary>
@@ -299,19 +301,19 @@ namespace PyRevitLoader
         /// handler left there. Each call therefore enters its checkbox first, so imports inside a
         /// handler find that bundle's <c>lib</c> folder and its own modules, and leaves it afterwards,
         /// so the paths and modules a handler adds, including in <c>__chk_init__</c>, stay with that
-        /// checkbox for its later calls. A handler that sets its own <c>ctx.is_checked</c> raises
-        /// itself again inside the running call; only the outermost call enters and leaves, so the
-        /// inner one cannot set the checkbox's modules aside while the outer one still uses them.
+        /// checkbox for its later calls. Handlers of linked checkboxes can raise each other before
+        /// they return, for example A ticks B and B unticks A: entering B sets A aside, the nested
+        /// call to A sets B aside, and each leave brings back the checkbox that was active before, so
+        /// every call runs with its own checkbox's paths and modules. A call raised while its own
+        /// checkbox is already active keeps the running environment as it is.
         /// </remarks>
         private void InvokeHandler(ObjectOperations ops, CheckBoxState state, string handlerName, object handler, params object[] args)
         {
             ReplacedEngineState replaced = null;
-            state.RunningCalls++;
             try
             {
                 RedirectOutput();
-                if (state.RunningCalls == 1)
-                    replaced = EnterCheckBox(state);
+                replaced = EnterCheckBox(state);
                 ops.Invoke(handler, args);
             }
             catch (Exception ex)
@@ -320,38 +322,35 @@ namespace PyRevitLoader
             }
             finally
             {
-                state.RunningCalls--;
                 LeaveCheckBox(state, replaced);
             }
         }
 
         /// <summary>
-        /// Points <c>sys.path</c> at the checkbox's saved paths and puts its own modules back into
+        /// Makes the checkbox the active one: sets the previously active checkbox aside, then points
+        /// <c>sys.path</c> at this checkbox's saved paths and puts its own modules back into
         /// <c>sys.modules</c>.
         /// </summary>
-        /// <returns>What this replaced, for <see cref="LeaveCheckBox"/> to put back; null once the engine is released.</returns>
+        /// <returns>What this replaced, for <see cref="LeaveCheckBox"/> to put back; null when the
+        /// checkbox is already active or the engine is released.</returns>
         private ReplacedEngineState EnterCheckBox(CheckBoxState state)
         {
             var engine = _engine;
-            if (engine == null)
+            var sharedRoots = _sharedModuleRoots;
+            if (engine == null || sharedRoots == null || ReferenceEquals(_activeState, state))
                 return null;
 
-            var replaced = new ReplacedEngineState(new List<string>(engine.GetSearchPaths()));
-            engine.SetSearchPaths(state.SearchPaths);
-            var modules = GetSysModules(engine);
-            foreach (var module in state.Modules)
-            {
-                if (modules.TryGetValue(module.Key, out var hiddenModule))
-                    replaced.HiddenModules[module.Key] = hiddenModule;
-                modules[module.Key] = module.Value;
-            }
+            var replaced = new ReplacedEngineState(_activeState, new List<string>(engine.GetSearchPaths()));
+            if (_activeState != null)
+                Deactivate(engine, _activeState, sharedRoots);
+            Activate(engine, state);
+            _activeState = state;
             return replaced;
         }
 
         /// <summary>
-        /// Saves <c>sys.path</c> into the checkbox, moves the modules it loaded from its own search
-        /// paths out of <c>sys.modules</c> and into the checkbox, then puts back what
-        /// <see cref="EnterCheckBox"/> replaced.
+        /// Sets the checkbox aside and makes the previously active checkbox active again, or puts the
+        /// engine's previous <c>sys.path</c> back when there was none.
         /// </summary>
         /// <param name="replaced">What <see cref="EnterCheckBox"/> returned; null, which does nothing,
         /// when this call did not enter the checkbox.</param>
@@ -361,43 +360,88 @@ namespace PyRevitLoader
         /// </remarks>
         private void LeaveCheckBox(CheckBoxState state, ReplacedEngineState replaced)
         {
-            var engine = _engine;
-            var sharedRoots = _sharedModuleRoots;
-            if (replaced == null || engine == null || sharedRoots == null)
+            if (replaced == null)
                 return;
 
+            var engine = _engine;
+            var sharedRoots = _sharedModuleRoots;
             try
             {
-                var currentPaths = new List<string>(engine.GetSearchPaths());
-                state.SearchPaths.Clear();
-                state.SearchPaths.AddRange(currentPaths);
+                if (engine == null || sharedRoots == null)
+                    return;
 
-                var modules = GetSysModules(engine);
-                state.Modules.Clear();
-                foreach (var name in FindOwnModuleNames(modules, state.SearchPaths, sharedRoots))
-                {
-                    state.Modules[name] = modules[name];
-                    modules.Remove(name);
-                }
-
-                foreach (var module in replaced.HiddenModules)
-                {
-                    if (!modules.ContainsKey(module.Key))
-                        modules[module.Key] = module.Value;
-                }
-                engine.SetSearchPaths(replaced.SearchPaths);
+                Deactivate(engine, state, sharedRoots);
+                if (replaced.PreviousState != null)
+                    Activate(engine, replaced.PreviousState);
+                else
+                    engine.SetSearchPaths(replaced.SearchPaths);
             }
             catch (Exception ex)
             {
                 Log($"Failed to set aside the modules of CheckBox '{state.Name}': {ex.Message}");
             }
+            finally
+            {
+                _activeState = replaced.PreviousState;
+            }
+        }
+
+        /// <summary>
+        /// Points <c>sys.path</c> at the checkbox's saved paths and puts its own modules into
+        /// <c>sys.modules</c>, keeping the shared modules they hide for <see cref="Deactivate"/>.
+        /// </summary>
+        private static void Activate(ScriptEngine engine, CheckBoxState state)
+        {
+            engine.SetSearchPaths(state.SearchPaths);
+            var modules = GetSysModules(engine);
+            state.HiddenModules.Clear();
+            foreach (var module in state.Modules)
+            {
+                if (modules.TryGetValue(module.Key, out var hiddenModule))
+                    state.HiddenModules[module.Key] = hiddenModule;
+                modules[module.Key] = module.Value;
+            }
+        }
+
+        /// <summary>
+        /// Saves <c>sys.path</c> into the checkbox, moves the modules it owns out of
+        /// <c>sys.modules</c> and into the checkbox, and puts back the shared modules they hid.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: only call it for the active checkbox. Its saved modules are rebuilt from
+        /// <c>sys.modules</c>, which holds all of them only while it is active.
+        /// </remarks>
+        private static void Deactivate(ScriptEngine engine, CheckBoxState state, ICollection<string> sharedRoots)
+        {
+            var currentPaths = new List<string>(engine.GetSearchPaths());
+            state.SearchPaths.Clear();
+            state.SearchPaths.AddRange(currentPaths);
+
+            var modules = GetSysModules(engine);
+            state.Modules.Clear();
+            foreach (var name in FindOwnModuleNames(modules, state.SearchPaths, sharedRoots))
+            {
+                state.Modules[name] = modules[name];
+                modules.Remove(name);
+            }
+
+            foreach (var module in state.HiddenModules)
+            {
+                if (!modules.ContainsKey(module.Key))
+                    modules[module.Key] = module.Value;
+            }
+            state.HiddenModules.Clear();
         }
 
         /// <summary>
         /// Lists the <c>sys.modules</c> entries a checkbox owns: modules whose file lies under one of
-        /// its search paths that is not shared, and every entry inside such a package, including the
-        /// <c>None</c> entries IronPython 2 records for failed implicit relative imports.
+        /// its search paths that is not shared, and the other entries inside such a package, including
+        /// the <c>None</c> entries IronPython 2 records for failed implicit relative imports.
         /// </summary>
+        /// <remarks>
+        /// Invariant: a module whose file lies under a shared root is never owned, even inside an
+        /// owned package that extends its <c>__path__</c> into <c>site-packages</c>.
+        /// </remarks>
         private static List<string> FindOwnModuleNames(IDictionary<object, object> modules, IEnumerable<string> searchPaths, ICollection<string> sharedRoots)
         {
             var names = new List<string>();
@@ -412,21 +456,26 @@ namespace PyRevitLoader
             if (ownRoots.Count == 0)
                 return names;
 
-            var loadedFromOwnRoots = new HashSet<string>(StringComparer.Ordinal);
+            var moduleFiles = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var entry in modules)
             {
                 if (entry.Key is string name && name != MainModuleName)
-                {
-                    var file = NormalizePath(GetModuleFile(entry.Value));
-                    if (file != null && IsUnderAny(file, ownRoots) && !IsUnderAny(file, sharedRoots))
-                        loadedFromOwnRoots.Add(name);
-                }
+                    moduleFiles[name] = NormalizePath(GetModuleFile(entry.Value));
             }
 
-            foreach (var key in modules.Keys)
+            var loadedFromOwnRoots = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var module in moduleFiles)
             {
-                if (key is string name && (loadedFromOwnRoots.Contains(name) || loadedFromOwnRoots.Contains(TopLevelName(name))))
-                    names.Add(name);
+                if (module.Value != null && IsUnderAny(module.Value, ownRoots) && !IsUnderAny(module.Value, sharedRoots))
+                    loadedFromOwnRoots.Add(module.Key);
+            }
+
+            foreach (var module in moduleFiles)
+            {
+                var loadedFromSharedRoot = module.Value != null && IsUnderAny(module.Value, sharedRoots);
+                if (loadedFromOwnRoots.Contains(module.Key)
+                    || (!loadedFromSharedRoot && loadedFromOwnRoots.Contains(TopLevelName(module.Key))))
+                    names.Add(module.Key);
             }
             return names;
         }
@@ -520,6 +569,7 @@ namespace PyRevitLoader
             _outputStream = null;
             _baseSearchPaths = null;
             _sharedModuleRoots = null;
+            _activeState = null;
 
             try
             {
