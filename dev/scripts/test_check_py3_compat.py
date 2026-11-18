@@ -38,6 +38,9 @@ except ImportError:
         _native_form_uses,
     )
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
+
 
 def _form_usages(source):
     return [
@@ -511,6 +514,15 @@ class ClrRuleScopeTests(unittest.TestCase):
             ),
         )
 
+    def test_cpython_reachable_branches_are_flagged(self):
+        """Branches CPython runs report CLR-LIST even when IronPython 3 cannot."""
+        for source in (
+            "if not IRONPY:\n    ids = List[DB.ElementId](element_ids)\n",
+            "if IRONPY:\n    pass\nelse:\n    ids = List[DB.ElementId](element_ids)\n",
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(["CLR-LIST"], self._codes(source))
+
     def test_names_bound_to_clr_values_or_capacities_are_not_flagged(self):
         """CLR results and counts passed by name are not Python iterables."""
         self.assertEqual(
@@ -595,6 +607,16 @@ class ClrRuleScopeTests(unittest.TestCase):
                     ["CLR-NAMESPACE"],
                     self._codes("class Callback({}):\n    pass\n".format(interface)),
                 )
+
+    def test_callback_interface_in_cpython_branch_needs_a_namespace(self):
+        """A callback class CPython defines is covered under ``if not IRONPY:``."""
+        self.assertEqual(
+            ["CLR-NAMESPACE"],
+            self._codes(
+                "if not IRONPY:\n    class Callback(UI.IExternalCommand):\n        pass"
+                + "\n"
+            ),
+        )
 
 
 class NamedIndexerTests(unittest.TestCase):
