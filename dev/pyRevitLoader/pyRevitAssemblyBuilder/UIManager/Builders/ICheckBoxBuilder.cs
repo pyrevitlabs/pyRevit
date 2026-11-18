@@ -25,8 +25,8 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// <param name="stackComponent">The .stack bundle; its display name is part of the ids of the row panel and of each checkbox in it.</param>
         /// <param name="checkBoxComponents">The stack's visible children, all checkboxes, in layout order. Only the first three are shown; any other checkbox a previous load left in the stack is hidden.</param>
         /// <param name="tabName">The tab that contains the panel, used to find the panel's AdWindows counterpart.</param>
-        /// <returns>The AdWindows ids of the checkboxes it shows, which the caller marks as touched in the
-        /// ribbon scanner so reloads keep them.</returns>
+        /// <returns>The AdWindows ids of the checkboxes it shows, including a row whose build failed, which
+        /// the caller marks as touched in the ribbon scanner so reloads keep them.</returns>
         IReadOnlyCollection<string> CreateOrUpdateCheckBoxStack(
             ParsedComponent stackComponent,
             IReadOnlyList<ParsedComponent> checkBoxComponents,
