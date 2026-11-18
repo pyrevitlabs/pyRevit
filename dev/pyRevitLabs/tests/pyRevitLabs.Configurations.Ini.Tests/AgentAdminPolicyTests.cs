@@ -34,12 +34,13 @@ public class AgentAdminPolicyTests : IDisposable
     public void Load_AdminSection_ReturnsEveryPinnedKey()
     {
         var policy = AgentAdminPolicy.Load(WriteConfig(
-            "[agent.admin]\r\nenabled = false\r\npolicy = readonly\r\nengine = cpython\r\nuser_skills = false\r\n"));
+            "[agent.admin]\r\nenabled = false\r\npolicy = readonly\r\nengine = cpython\r\nuser_skills = false\r\nreckless = false\r\n"));
 
         Assert.Equal("false", policy.Enabled);
         Assert.Equal("readonly", policy.Policy);
         Assert.Equal("cpython", policy.Engine);
         Assert.Equal("false", policy.UserSkills);
+        Assert.Equal("false", policy.Reckless);
     }
 
     [Fact]
@@ -60,6 +61,7 @@ public class AgentAdminPolicyTests : IDisposable
         Assert.Null(policy.Enabled);
         Assert.Null(policy.Engine);
         Assert.Null(policy.UserSkills);
+        Assert.Null(policy.Reckless);
     }
 
     [Fact]
@@ -175,6 +177,7 @@ public class AgentAdminPolicyTests : IDisposable
             Assert.Equal("false", policy.Enabled);
             Assert.Equal("readonly", policy.Policy);
             Assert.Equal("false", policy.UserSkills);
+            Assert.Equal("false", policy.Reckless);
         }
     }
 
@@ -239,7 +242,7 @@ public class AgentAdminPolicyTests : IDisposable
     public void Current_BlankPins_ReadAsTheStrictestValues()
     {
         AgentAdminPolicy.OverrideMachineConfigPath(WriteConfig(
-            "[agent.admin]\r\nenabled =\r\npolicy =\r\nengine =\r\nuser_skills =\r\n"));
+            "[agent.admin]\r\nenabled =\r\npolicy =\r\nengine =\r\nuser_skills =\r\nreckless =\r\n"));
 
         var policy = AgentAdminPolicy.Current;
 
@@ -247,6 +250,7 @@ public class AgentAdminPolicyTests : IDisposable
         Assert.Equal("readonly", policy.Policy);
         Assert.Equal("ironpython", policy.Engine);
         Assert.Equal("false", policy.UserSkills);
+        Assert.Equal("false", policy.Reckless);
     }
 
     [Fact]
@@ -264,10 +268,10 @@ public class AgentAdminPolicyTests : IDisposable
     {
         File.WriteAllText(
             Path.Combine(tempRoot, "a-config.ini"),
-            "[agent.admin]\r\nenabled = false\r\npolicy = auto\r\nengine = cpython\r\nuser_skills = true\r\n");
+            "[agent.admin]\r\nenabled = false\r\npolicy = auto\r\nengine = cpython\r\nuser_skills = true\r\nreckless = true\r\n");
         File.WriteAllText(
             Path.Combine(tempRoot, "b-config.ini"),
-            "[agent.admin]\r\nenabled = true\r\npolicy = ask\r\nengine = ironpython\r\nuser_skills = true\r\n");
+            "[agent.admin]\r\nenabled = true\r\npolicy = ask\r\nengine = ironpython\r\nuser_skills = true\r\nreckless = false\r\n");
         AgentAdminPolicy.OverrideMachineConfigDirectory(tempRoot);
 
         var policy = AgentAdminPolicy.Current;
@@ -276,6 +280,7 @@ public class AgentAdminPolicyTests : IDisposable
         Assert.Equal("ask", policy.Policy);
         Assert.Equal("ironpython", policy.Engine);
         Assert.Equal("true", policy.UserSkills);
+        Assert.Equal("false", policy.Reckless);
     }
 
     [Fact]

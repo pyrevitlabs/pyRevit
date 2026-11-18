@@ -708,7 +708,8 @@ class PyRevitConfig(object):
         a stricter value can still be assigned.
 
         Args:
-            key (str): ``enabled``, ``policy``, ``engine`` or ``user_skills``.
+            key (str): ``enabled``, ``policy``, ``engine``, ``user_skills`` or
+                ``reckless``.
 
         Returns:
             (bool): True when the machine config pins the setting.

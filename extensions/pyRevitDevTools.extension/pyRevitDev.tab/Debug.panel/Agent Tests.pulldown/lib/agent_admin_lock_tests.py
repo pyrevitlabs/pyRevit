@@ -26,6 +26,7 @@ class SettingsLockTests(TestCase):
         self.policy = CONFIGS.GetAgentPolicy()
         self.engine = CONFIGS.GetAgentEngine()
         self.skills = CONFIGS.GetAgentUserSkillsEnabled()
+        self.reckless = CONFIGS.GetAgentReckless()
 
     def tearDown(self):
         """Put the user's settings back."""
@@ -33,32 +34,43 @@ class SettingsLockTests(TestCase):
         CONFIGS.SetAgentPolicy(self.policy)
         CONFIGS.SetAgentEngine(self.engine)
         CONFIGS.SetAgentUserSkillsEnabled(self.skills)
+        CONFIGS.SetAgentReckless(self.reckless)
 
     def test_pinned_values_win_over_the_user_config_and_stop_when_unpinned(self):
         """Each pinned setting reads as the pin, and the user's value returns after."""
         CONFIGS.SetAgentEnabled(True)
         CONFIGS.SetAgentEngine("cpython")
         CONFIGS.SetAgentUserSkillsEnabled(True)
-        with admin_pins(enabled="false", engine="ironpython", user_skills="false"):
+        CONFIGS.SetAgentReckless(True)
+        with admin_pins(
+            enabled="false", engine="ironpython", user_skills="false", reckless="false"
+        ):
             self.assertTrue(CONFIGS.IsAgentKeyManaged(CONSTS.ConfigsAgentEnabledKey))
+            self.assertTrue(CONFIGS.IsAgentKeyManaged(CONSTS.ConfigsAgentRecklessKey))
             self.assertFalse(CONFIGS.GetAgentEnabled())
             self.assertEqual("ironpython", CONFIGS.GetAgentEngine())
             self.assertFalse(CONFIGS.GetAgentUserSkillsEnabled())
+            self.assertFalse(CONFIGS.GetAgentReckless())
         self.assertFalse(CONFIGS.IsAgentKeyManaged(CONSTS.ConfigsAgentEnabledKey))
         self.assertTrue(CONFIGS.GetAgentEnabled())
         self.assertEqual("cpython", CONFIGS.GetAgentEngine())
         self.assertTrue(CONFIGS.GetAgentUserSkillsEnabled())
+        self.assertTrue(CONFIGS.GetAgentReckless())
 
     def test_setters_refuse_a_pinned_key_and_leave_the_user_value_alone(self):
         """Changing a pinned setting raises and does not touch the user's config."""
         CONFIGS.SetAgentEnabled(True)
-        with admin_pins(enabled="false", engine="ironpython", user_skills="false"):
+        with admin_pins(
+            enabled="false", engine="ironpython", user_skills="false", reckless="false"
+        ):
             with self.assertRaises(Exception):
                 CONFIGS.SetAgentEnabled(True)
             with self.assertRaises(Exception):
                 CONFIGS.SetAgentEngine("cpython")
             with self.assertRaises(Exception):
                 CONFIGS.SetAgentUserSkillsEnabled(True)
+            with self.assertRaises(Exception):
+                CONFIGS.SetAgentReckless(True)
         self.assertTrue(CONFIGS.GetAgentEnabled())
         self.assertEqual(self.engine, CONFIGS.GetAgentEngine())
 
@@ -114,6 +126,16 @@ class HostLockTests(TestCase):
             self.assertEqual("invalid_params", raised.exception.code)
             scripting = request("get_context")["scripting"]
             self.assertEqual("ironpython", scripting["default_engine"])
+
+    def test_a_reckless_pin_of_false_keeps_runs_checked(self):
+        """With reckless pinned off, the host reports no reckless runs whatever the user set."""
+        reckless_before = CONFIGS.GetAgentReckless()
+        CONFIGS.SetAgentReckless(True)
+        try:
+            with admin_pins(reckless="false"):
+                self.assertNotIn("reckless", request("get_context")["agent"])
+        finally:
+            CONFIGS.SetAgentReckless(reckless_before)
 
     def test_a_host_pinned_on_does_not_refuse(self):
         """Pinning enabled to true does not trigger the refusal."""

@@ -886,6 +886,7 @@ namespace pyRevitCLI {
                         : arguments["policy"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyKey
                         : arguments["engine"].IsTrue ? PyRevitConsts.ConfigsAgentEngineKey
                         : arguments["skills"].IsTrue ? PyRevitConsts.ConfigsAgentUserSkillsEnabledKey
+                        : arguments["reckless"].IsTrue ? PyRevitConsts.ConfigsAgentRecklessKey
                         : null;
 
                     if (all("lock"))

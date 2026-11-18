@@ -31,6 +31,9 @@ public sealed class AgentAdminPolicy {
     /// <summary>Key pinning whether user-authored skills load.</summary>
     public const string UserSkillsKey = "user_skills";
 
+    /// <summary>Key pinning whether agent runs skip the runner's in-script checks.</summary>
+    public const string RecklessKey = "reckless";
+
     private static readonly object CacheLock = new();
     private static AgentAdminPolicy? cached;
     private static string? cachedKey;
@@ -51,8 +54,12 @@ public sealed class AgentAdminPolicy {
     /// <summary>The <c>user_skills</c> pin, or null when not pinned. Empty when the key is present but blank.</summary>
     public string? UserSkills { get; private set; }
 
+    /// <summary>The <c>reckless</c> pin, or null when not pinned. Empty when the key is present but blank.</summary>
+    public string? Reckless { get; private set; }
+
     /// <summary>True when no key is pinned.</summary>
-    public bool IsEmpty => Enabled == null && Policy == null && Engine == null && UserSkills == null;
+    public bool IsEmpty =>
+        Enabled == null && Policy == null && Engine == null && UserSkills == null && Reckless == null;
 
     /// <summary>
     /// True when a machine config file could not be read, so the pins are the strictest
@@ -113,9 +120,10 @@ public sealed class AgentAdminPolicy {
     /// </summary>
     /// <remarks>
     /// Important: a file that exists but cannot be read or parsed fails closed, as
-    /// <c>enabled = false</c>, <c>policy = readonly</c> and <c>user_skills = false</c>. Treating it
-    /// as "nothing pinned" would let anyone who can read the file but not write it, which is every
-    /// standard user, lift the lock by holding the file open while Revit starts.
+    /// <c>enabled = false</c>, <c>policy = readonly</c>, <c>user_skills = false</c> and
+    /// <c>reckless = false</c>. Treating it as "nothing pinned" would let anyone who can read
+    /// the file but not write it, which is every standard user, lift the lock by holding the
+    /// file open while Revit starts.
     /// A key that is present but blank (<c>enabled =</c>, as an unset template variable leaves it)
     /// is a pin with an invalid value, not an absent pin, so it fails closed too: it is returned as
     /// an empty string and the consumer reads it as the strictest value.
@@ -131,6 +139,7 @@ public sealed class AgentAdminPolicy {
             policy.Policy = Read(data, PolicyKey);
             policy.Engine = Read(data, EngineKey);
             policy.UserSkills = Read(data, UserSkillsKey);
+            policy.Reckless = Read(data, RecklessKey);
         }
         catch (Exception ex) {
             ConfigurationDiagnostics.ReportWarning(
@@ -156,6 +165,7 @@ public sealed class AgentAdminPolicy {
         Policy = Combine(policies.Select(policy => policy.Policy), StrictestPolicy),
         Engine = Combine(policies.Select(policy => policy.Engine), StrictestEngine),
         UserSkills = Combine(policies.Select(policy => policy.UserSkills), StrictestFlag),
+        Reckless = Combine(policies.Select(policy => policy.Reckless), StrictestFlag),
     };
 
     private static string? Combine(IEnumerable<string?> values, Func<List<string>, string> strictest) {
@@ -209,6 +219,7 @@ public sealed class AgentAdminPolicy {
         Enabled = "false",
         Policy = "readonly",
         UserSkills = "false",
+        Reckless = "false",
         ReadFailed = true,
     };
 
@@ -309,7 +320,7 @@ public sealed class AgentAdminPolicy {
     private static bool HasPin(string path, string key) => Read(ParseIni(ReadAllText(path)), key) != null;
 
     private static void EnsureKnownKey(string key) {
-        if (key != EnabledKey && key != PolicyKey && key != EngineKey && key != UserSkillsKey)
+        if (key != EnabledKey && key != PolicyKey && key != EngineKey && key != UserSkillsKey && key != RecklessKey)
             throw new ArgumentException("Not a lockable agent setting: " + key, nameof(key));
     }
 

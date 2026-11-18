@@ -354,6 +354,7 @@ namespace pyRevitLabs.PyRevit {
                 case PyRevitConsts.ConfigsAgentPolicyKey: return admin.Policy;
                 case PyRevitConsts.ConfigsAgentEngineKey: return admin.Engine;
                 case PyRevitConsts.ConfigsAgentUserSkillsEnabledKey: return admin.UserSkills;
+                case PyRevitConsts.ConfigsAgentRecklessKey: return admin.Reckless;
                 default: return null;
             }
         }
@@ -378,7 +379,7 @@ namespace pyRevitLabs.PyRevit {
         /// </summary>
         /// <param name="key">One of the <c>PyRevitConsts.ConfigsAgent*Key</c> names.</param>
         /// <param name="value">
-        /// <c>true</c> or <c>false</c> for <c>enabled</c> and <c>user_skills</c>; a policy for
+        /// <c>true</c> or <c>false</c> for <c>enabled</c>, <c>user_skills</c> and <c>reckless</c>; a policy for
         /// <c>policy</c> (the most permissive one users may select); an engine for <c>engine</c>.
         /// </param>
         /// <remarks>
@@ -519,7 +520,8 @@ namespace pyRevitLabs.PyRevit {
             if (key != PyRevitConsts.ConfigsAgentEnabledKey
                 && key != PyRevitConsts.ConfigsAgentPolicyKey
                 && key != PyRevitConsts.ConfigsAgentEngineKey
-                && key != PyRevitConsts.ConfigsAgentUserSkillsEnabledKey)
+                && key != PyRevitConsts.ConfigsAgentUserSkillsEnabledKey
+                && key != PyRevitConsts.ConfigsAgentRecklessKey)
                 throw new PyRevitException($"\"{key}\" is not a lockable agent setting");
         }
 
@@ -712,8 +714,15 @@ namespace pyRevitLabs.PyRevit {
         /// <remarks>
         /// Off by default. Approval, rollback, the policy and the host's run guard still apply.
         /// A value that is not a boolean reads as off.
+        /// Invariant: a value pinned by an administrator wins over the user config. A malformed
+        /// pin reads as <c>false</c>. A pin of <c>true</c> still needs the user's confirmation in
+        /// Revit before a run goes reckless.
         /// </remarks>
         public static bool GetAgentReckless() {
+            var admin = AgentAdminPolicy.Current.Reckless;
+            if (admin != null)
+                return ParseAdminFlag(admin);
+
             IConfigurationService cfg = GetConfigFile();
             return cfg.GetSectionKeyValueOrDefault(
                 PyRevitConsts.ConfigsAgentSection,
@@ -724,7 +733,11 @@ namespace pyRevitLabs.PyRevit {
         /// <summary>
         /// Turns reckless agent runs on or off; the host reads it at the start of each run.
         /// </summary>
+        /// <exception cref="PyRevitSettingManagedException">An administrator pinned <c>reckless</c>.</exception>
         public static void SetAgentReckless(bool state) {
+            if (IsAgentKeyManaged(PyRevitConsts.ConfigsAgentRecklessKey))
+                throw new PyRevitSettingManagedException(PyRevitConsts.ConfigsAgentRecklessKey);
+
             IConfigurationService cfg = GetConfigFile();
             cfg.SetSectionKeyValue(
                 PyRevitConsts.ConfigsAgentSection,

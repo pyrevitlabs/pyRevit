@@ -345,6 +345,7 @@ namespace pyRevitCLI {
             PyRevitConsts.ConfigsAgentPolicyKey,
             PyRevitConsts.ConfigsAgentEngineKey,
             PyRevitConsts.ConfigsAgentUserSkillsEnabledKey,
+            PyRevitConsts.ConfigsAgentRecklessKey,
         };
 
         private static string ManagedNote(string key) {
@@ -471,7 +472,9 @@ namespace pyRevitCLI {
                     : "Reckless agent runs disabled. Applies to the next run.");
             }
             else
-                Console.WriteLine("Reckless agent runs are {0}", PyRevitConfigs.GetAgentReckless() ? "Enabled" : "Disabled");
+                Console.WriteLine("Reckless agent runs are {0}{1}",
+                    PyRevitConfigs.GetAgentReckless() ? "Enabled" : "Disabled",
+                    ManagedNote(PyRevitConsts.ConfigsAgentRecklessKey));
         }
 
         /// <summary>
