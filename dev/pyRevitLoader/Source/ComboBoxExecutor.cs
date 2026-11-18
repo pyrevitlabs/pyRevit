@@ -109,6 +109,12 @@ namespace PyRevitLoader
         /// <param name="comboBox">The Revit ComboBox to wire event handlers to.</param>
         /// <param name="additionalSearchPaths">Additional search paths for imports.</param>
         /// <returns>True if setup succeeded.</returns>
+        /// <remarks>
+        /// Note: all ComboBoxes share one engine, whose <c>sys.path</c> holds the paths of the script
+        /// that ran last. Each wired handler therefore restores this ComboBox's saved paths first, so
+        /// imports inside a handler find this bundle's <c>lib</c> folder, and saves <c>sys.path</c>
+        /// again afterwards, so changes one handler makes stay for this ComboBox's later calls.
+        /// </remarks>
         public bool ExecuteEventHandlerSetup(
             string scriptPath,
             ComboBoxContext context,
@@ -207,6 +213,7 @@ namespace PyRevitLoader
                 // by session cleanup, so we restore it before each invocation.
                 var engine = _engine;
                 var outStream = _outputStream;
+                var searchPaths = new List<string>(engine.GetSearchPaths());
 
                 // Wire up __cmb_on_change__ handler
                 if (hasOnChange)
@@ -221,11 +228,16 @@ namespace PyRevitLoader
                             {
                                 // Restore stdout in case session cleanup set it to None
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
+                                engine.SetSearchPaths(searchPaths);
                                 ops.Invoke(handler, sender, args, context);
                             }
                             catch (Exception ex)
                             {
                                 Log($"Error in __cmb_on_change__: {ex.Message}");
+                            }
+                            finally
+                            {
+                                searchPaths = new List<string>(engine.GetSearchPaths());
                             }
                         };
                         comboBox.CurrentChanged += onChangeHandler;
@@ -247,11 +259,16 @@ namespace PyRevitLoader
                             try
                             {
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
+                                engine.SetSearchPaths(searchPaths);
                                 ops.Invoke(handler, sender, args, context);
                             }
                             catch (Exception ex)
                             {
                                 Log($"Error in __cmb_dropdown_close__: {ex.Message}");
+                            }
+                            finally
+                            {
+                                searchPaths = new List<string>(engine.GetSearchPaths());
                             }
                         };
                         comboBox.DropDownClosed += dropdownCloseHandler;
@@ -273,11 +290,16 @@ namespace PyRevitLoader
                             try
                             {
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
+                                engine.SetSearchPaths(searchPaths);
                                 ops.Invoke(handler, sender, args, context);
                             }
                             catch (Exception ex)
                             {
                                 Log($"Error in __cmb_dropdown_open__: {ex.Message}");
+                            }
+                            finally
+                            {
+                                searchPaths = new List<string>(engine.GetSearchPaths());
                             }
                         };
                         comboBox.DropDownOpened += dropdownOpenHandler;

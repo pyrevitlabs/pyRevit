@@ -67,6 +67,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             var children = new List<ParsedComponent>();
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
+                if (child.Type == CommandComponentType.CheckBox)
+                    continue;
+
                 if (ComponentSupportUtils.IsStackChildVisible(
                         child,
                         settings.CurrentVersion,

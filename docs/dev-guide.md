@@ -225,7 +225,7 @@ Quick checks:
 
 ```shell
 pyrevit clones info dev
-pyrevit attachments
+pyrevit attached
 ```
 
 !!! note
