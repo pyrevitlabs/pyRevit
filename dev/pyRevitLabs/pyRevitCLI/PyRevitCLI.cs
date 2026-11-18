@@ -98,6 +98,7 @@ namespace pyRevitCLI {
         /// as a failure, matching pre-refactor CLI behavior.
         /// </summary>
         static void Main(string[] args) {
+            PyRevitCLIConsoleEncoding.Apply();
             AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => {
                 if (args.Name.StartsWith("Newtonsoft.Json,")) {
                     var assemblyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pyRevitLabs.Json.dll");
@@ -610,6 +611,20 @@ namespace pyRevitCLI {
 
                 else if (all("show"))
                     PyRevitCLIAgentCmds.ShowRun(TryGetValue("<run_id>"));
+
+                else if (all("record"))
+                    PyRevitCLIAgentCmds.Record(
+                        action: TryGetValue("<action>"),
+                        screenshots: arguments["--no-screenshots"].IsFalse,
+                        screenshotInterval: TryGetValue("--screenshot-interval"),
+                        maxScreenshots: TryGetValue("--max-screenshots"),
+                        maxEvents: TryGetValue("--max-events"),
+                        maxDuration: TryGetValue("--max-duration"),
+                        revitSelector: TryGetValue("--revit")
+                        );
+
+                else if (all("recordings"))
+                    PyRevitCLIAgentCmds.PrintRecordings(TryGetValue("--limit"));
 
                 else
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Agent);

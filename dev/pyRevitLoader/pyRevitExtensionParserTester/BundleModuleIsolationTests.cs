@@ -309,6 +309,29 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        public void Enter_OuterBundleAgainFromTheNestedBundle_EveryLevelKeepsItsOwnModule()
+        {
+            object outer = CreateBundleWithLibModule("Outer", "VALUE = 'outer'\ncalls = 0");
+            object nested = CreateBundleWithLibModule("Nested", "VALUE = 'nested'");
+            string countCall = $"import {LibModuleName}\n{LibModuleName}.calls += 1\nresult = {LibModuleName}.calls";
+            string readValue = $"import {LibModuleName}\nresult = {LibModuleName}.VALUE";
+
+            using (Enter(outer))
+            {
+                Execute(countCall);
+                using (Enter(nested))
+                {
+                    using (Enter(outer))
+                        Assert.That(Execute(countCall), Is.EqualTo(2));
+
+                    Assert.That(Execute(readValue), Is.EqualTo("nested"));
+                }
+
+                Assert.That(Execute(countCall), Is.EqualTo(3));
+            }
+        }
+
+        [Test]
         public void Enter_AfterABundleChangedSysPath_KeepsTheChangeForThatBundleOnly()
         {
             string extraPath = CreateDirectory("extra");
