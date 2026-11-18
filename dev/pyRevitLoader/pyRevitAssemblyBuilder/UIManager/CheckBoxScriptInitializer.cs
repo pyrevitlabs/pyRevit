@@ -38,7 +38,8 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// </summary>
         /// <remarks>
         /// Warning: setting a new value raises <c>__chk_on_change__</c> the same way a click does,
-        /// so a change handler that sets it calls itself again.
+        /// so a change handler that sets it calls itself again. Inside <c>__chk_init__</c> it does not,
+        /// because the change handler is attached only after <c>__chk_init__</c> returns.
         /// </remarks>
         public bool is_checked
         {
