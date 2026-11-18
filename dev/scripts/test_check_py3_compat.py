@@ -608,6 +608,16 @@ class ClrRuleScopeTests(unittest.TestCase):
                     self._codes("class Callback({}):\n    pass\n".format(interface)),
                 )
 
+    def test_callback_interface_in_cpython_branch_needs_a_namespace(self):
+        """A callback class CPython defines is covered under ``if not IRONPY:``."""
+        self.assertEqual(
+            ["CLR-NAMESPACE"],
+            self._codes(
+                "if not IRONPY:\n    class Callback(UI.IExternalCommand):\n        pass"
+                + "\n"
+            ),
+        )
+
 
 class NamedIndexerTests(unittest.TestCase):
     """CLR named indexers must use the accessor that pythonnet exposes."""
