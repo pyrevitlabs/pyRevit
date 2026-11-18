@@ -23,16 +23,13 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
     /// checkboxes, because Revit API stacks cannot take AdWindows items.
     /// Invariant: <see cref="RibbonScanner"/> tracks checkboxes by their full id, and
     /// <see cref="UIManagerService"/> marks the ids these methods return, so a checkbox removed before
-    /// a reload is hidden even when another one in the panel has the same name. A stacked checkbox's
-    /// id also names its stack, so it never matches a standalone checkbox with the same name in the
-    /// same panel.
+    /// a reload is hidden even when another one in the panel has the same name.
+    /// <see cref="CheckBoxControlIds"/> builds the ids.
     /// Note: reloads refresh checkboxes where they are and never move them, so moving a checkbox into
     /// or out of a stack needs a Revit restart.
     /// </remarks>
     public class CheckBoxBuilder : ICheckBoxBuilder
     {
-        private const string ControlIdPrefix = "pyRevitCheckBox";
-        private const string StackIdPrefix = "pyRevitCheckBoxStack";
         private const int MaxStackRows = 3;
 
         private readonly ILogger _logger;
@@ -61,9 +58,21 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             if (panelSource == null)
                 return null;
 
+            return CreateOrUpdateCheckBox(component, panelSource, parentPanel.Name, tabName);
+        }
+
+        /// <summary>
+        /// Builds the checkbox into the AdWindows panel behind the Revit panel named <paramref name="panelName"/>.
+        /// </summary>
+        /// <remarks>
+        /// Note: takes the AdWindows panel instead of the Revit panel, so tests can build into one
+        /// without a running Revit.
+        /// </remarks>
+        internal string? CreateOrUpdateCheckBox(ParsedComponent component, AdwRibbonPanelSource panelSource, string panelName, string tabName)
+        {
             try
             {
-                var controlId = BuildControlId(tabName, parentPanel.Name, component.DisplayName);
+                var controlId = CheckBoxControlIds.ForCheckBox(tabName, panelName, component.DisplayName);
                 var checkBox = AdWindowsHelper.FindRibbonItemByName(panelSource.Items, controlId) as AdwRibbonCheckBox;
                 if (checkBox == null)
                 {
@@ -88,17 +97,35 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             RibbonPanel parentPanel,
             string tabName)
         {
-            var shownIds = new HashSet<string>();
             var panelSource = GetPanelSource(stackComponent, parentPanel, tabName);
             if (panelSource == null)
-                return shownIds;
+                return Array.Empty<string>();
 
+            return CreateOrUpdateCheckBoxStack(stackComponent, checkBoxComponents, panelSource, parentPanel.Name, tabName);
+        }
+
+        /// <summary>
+        /// Builds the stack's checkboxes into the AdWindows panel behind the Revit panel named
+        /// <paramref name="panelName"/>.
+        /// </summary>
+        /// <remarks>
+        /// Note: takes the AdWindows panel instead of the Revit panel, so tests can build into one
+        /// without a running Revit.
+        /// </remarks>
+        internal IReadOnlyCollection<string> CreateOrUpdateCheckBoxStack(
+            ParsedComponent stackComponent,
+            IReadOnlyList<ParsedComponent> checkBoxComponents,
+            AdwRibbonPanelSource panelSource,
+            string panelName,
+            string tabName)
+        {
+            var shownIds = new HashSet<string>();
             if (checkBoxComponents.Count > MaxStackRows)
                 _logger.Warning($"Stack '{stackComponent.DisplayName}' has {checkBoxComponents.Count} checkboxes; only the first {MaxStackRows} are shown.");
 
             try
             {
-                var stackId = BuildStackId(tabName, parentPanel.Name, stackComponent.DisplayName);
+                var stackId = CheckBoxControlIds.ForStack(tabName, panelName, stackComponent.DisplayName);
                 var rowPanel = AdWindowsHelper.FindRibbonItemByName(panelSource.Items, stackId) as AdwRibbonRowPanel;
                 if (rowPanel == null)
                 {
@@ -108,7 +135,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
 
                 foreach (var component in checkBoxComponents.Take(MaxStackRows))
                 {
-                    var controlId = BuildStackedControlId(tabName, parentPanel.Name, stackComponent.DisplayName, component.DisplayName);
+                    var controlId = CheckBoxControlIds.ForStackedCheckBox(tabName, panelName, stackComponent.DisplayName, component.DisplayName);
                     shownIds.Add(controlId);
                     var checkBox = AdWindowsHelper.FindRibbonItemByName(rowPanel.Items, controlId) as AdwRibbonCheckBox;
                     if (checkBox == null)
@@ -131,21 +158,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             }
 
             return shownIds;
-        }
-
-        private static string BuildControlId(string tabName, string panelName, string displayName)
-        {
-            return $"{ControlIdPrefix}%{tabName}%{panelName}%{displayName}";
-        }
-
-        private static string BuildStackId(string tabName, string panelName, string stackDisplayName)
-        {
-            return $"{StackIdPrefix}%{tabName}%{panelName}%{stackDisplayName}";
-        }
-
-        private static string BuildStackedControlId(string tabName, string panelName, string stackDisplayName, string displayName)
-        {
-            return $"{ControlIdPrefix}%{tabName}%{panelName}%{stackDisplayName}%{displayName}";
         }
 
         private static void HideCheckBoxesNotIn(AdwRibbonRowPanel rowPanel, ISet<string> shownIds)

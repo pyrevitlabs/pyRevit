@@ -223,39 +223,45 @@ namespace pyRevitAssemblyBuilder.UIManager
             return count;
         }
 
+        private static string GetButtonIdentifier(RibbonItem item)
+        {
+            return GetButtonIdentifier(item.Id, item is RibbonCheckBox, item.AutomationName);
+        }
+
         /// <summary>
         /// Gets the identifier for a ribbon item used for tracking.
         /// Extracts the button's internal name from the Id property.
         /// </summary>
+        /// <param name="automationName">The item's AutomationName, used when it has no id.</param>
         /// <remarks>
         /// Invariant: a checkbox is tracked by its full id, which is what <see cref="UIManagerService"/>
         /// marks for checkboxes. Revit keeps button names unique within a panel, but a standalone
         /// checkbox and a stacked one can share a name there, so their last id segments collide.
+        /// Important: keep this overload free of AdWindows types, so it is tested without Revit.
         /// </remarks>
-        private static string GetButtonIdentifier(RibbonItem item)
+        internal static string GetButtonIdentifier(string? id, bool isCheckBox, string? automationName)
         {
             // The Id property contains the control ID in format like:
             // "CustomCtrl_%CustomCtrl_%Add-Ins%TabName%ButtonName" or just "ButtonName"
             // We need to extract the last segment which is the button's DisplayName
             // This matches what UIManagerService.MarkElementTouched() uses (DisplayName from folder basename)
 
-            var id = item.Id;
-            if (item is RibbonCheckBox && !string.IsNullOrEmpty(id))
-                return id;
-
-            if (!string.IsNullOrEmpty(id))
+            if (id == null || id.Length == 0)
             {
-                // Extract the last segment after the last '%' character
-                var lastPercentIndex = id.LastIndexOf('%');
-                if (lastPercentIndex >= 0 && lastPercentIndex < id.Length - 1)
-                {
-                    return id.Substring(lastPercentIndex + 1);
-                }
-                return id; // Return as-is if no '%' found
+                // Fallback to AutomationName if Id is not available
+                return automationName ?? "";
             }
 
-            // Fallback to AutomationName if Id is not available
-            return item.AutomationName ?? "";
+            if (isCheckBox)
+                return id;
+
+            // Extract the last segment after the last '%' character
+            var lastPercentIndex = id.LastIndexOf('%');
+            if (lastPercentIndex >= 0 && lastPercentIndex < id.Length - 1)
+            {
+                return id.Substring(lastPercentIndex + 1);
+            }
+            return id; // Return as-is if no '%' found
         }
 
         /// <summary>
