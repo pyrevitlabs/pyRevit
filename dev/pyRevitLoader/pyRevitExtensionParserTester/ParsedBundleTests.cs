@@ -683,6 +683,7 @@ is_beta: true
         }
 
         [Test]
+        [Category("HostFree")]
         public void TestPaddedEngineTypeIsTrimmed()
         {
             var extensionDir = Path.Combine(Path.GetTempPath(), $"EngineTypePadded_{System.Guid.NewGuid():N}.extension");
@@ -713,6 +714,7 @@ is_beta: true
         [TestCase("{ \"engine\": \"IronPython\" }", "ironpython")]
         [TestCase("{ \"engine\": { \"clean\": true } }", null)]
         [TestCase("{ \"engine\": \"python3\" }", null)]
+        [Category("HostFree")]
         public void TestExtensionJsonDeclaresPythonEngine(string extensionJson, string? expected)
         {
             var extension = ParseExtensionWithEngine(extensionJson, null, out var extensionDir);
@@ -727,6 +729,7 @@ is_beta: true
         }
 
         [Test]
+        [Category("HostFree")]
         public void TestDeclaredCPythonEngineIsADefaultForPythonCommands()
         {
             var extension = ParseExtensionWithEngine("{ \"engine\": \"cpython\" }", null, out var extensionDir);
@@ -746,6 +749,7 @@ is_beta: true
         }
 
         [Test]
+        [Category("HostFree")]
         public void TestBundleEngineTypeOverridesExtensionDeclaration()
         {
             var extension = ParseExtensionWithEngine(
@@ -766,6 +770,7 @@ is_beta: true
         }
 
         [Test]
+        [Category("HostFree")]
         public void TestNoExtensionDeclarationLeavesEngineTypeUnset()
         {
             var extension = ParseExtensionWithEngine("{}", null, out var extensionDir);
@@ -787,6 +792,7 @@ is_beta: true
 
         [Test]
         [NonParallelizable]
+        [Category("HostFree")]
         public void TestUnsupportedExtensionDeclarationWarnsAndIsIgnored()
         {
             var warnings = new WarningCapture();
@@ -823,6 +829,7 @@ is_beta: true
         [TestCase(false, null, "{\"clean\":true,\"full_frame\":true,\"persistent\":true}")]
         [TestCase(true, null, "{\"clean\":false,\"full_frame\":true,\"persistent\":true}")]
         [TestCase(false, "CPython", "{\"clean\":true,\"full_frame\":true,\"persistent\":true,\"type\":\"CPython\"}")]
+        [Category("HostFree")]
         public void TestStartupEngineConfigs(bool sharedSessionEngine, string? engineType, string expected)
         {
             var configs = pyRevitAssemblyBuilder.SessionManager.SessionManagerService.BuildStartupEngineConfigs(

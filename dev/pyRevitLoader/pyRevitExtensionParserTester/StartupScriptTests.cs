@@ -210,6 +210,7 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
+        [Category("HostFree")]
         public void StartupScripts_IncludesCPythonStartupWithoutPrimaryScript()
         {
             var extension = CreateExtensionWithFiles("startup.cpython.py");
@@ -226,6 +227,7 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
+        [Category("HostFree")]
         public void StartupScripts_RunsPrimaryScriptBeforeCPythonStartup()
         {
             var extension = CreateExtensionWithFiles("startup.cpython.py", "startup.py");
@@ -241,6 +243,7 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
+        [Category("HostFree")]
         public void StartupScripts_IsEmptyWithoutStartupFiles()
         {
             var extension = CreateExtensionWithFiles("readme.md");

@@ -7,6 +7,8 @@ using Xunit;
 namespace PyRevitLabs.PyRevit.Forms.Binding.Tests;
 
 /// <summary>Plain Python data behaves in real WPF under pythonnet as it does under IronPython.</summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 [Collection(PythonWpfCollection.Name)]
 public class PythonBindingTests(PythonWpfHost host) {
     private const string Common = @"
