@@ -119,7 +119,7 @@ namespace pyRevitCLI {
         }
 
         public static void PrintRuns(string limit) {
-            var count = int.TryParse(limit, out var parsed) && parsed > 0 ? parsed : 20;
+            var count = PyRevitCLIArguments.Limit(limit, defaultLimit: 20);
             var runDirs = PyRevitAgentClient.GetRecentRunDirs(count);
             if (runDirs.Count == 0) {
                 Console.WriteLine("No agent runs recorded.");
