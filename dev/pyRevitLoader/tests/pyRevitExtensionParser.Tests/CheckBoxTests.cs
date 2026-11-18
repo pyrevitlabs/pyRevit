@@ -3,10 +3,10 @@ using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using pyRevitExtensionParser;
-using pyRevitExtensionParserTest.TestHelpers;
+using pyRevitLoader.Tests.TestSupport;
 using static pyRevitExtensionParser.ExtensionParser;
 
-namespace pyRevitExtensionParserTest
+namespace pyRevitExtensionParser.Tests
 {
     /// <summary>
     /// Tests for parsing .checkbox bundles.

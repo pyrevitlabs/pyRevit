@@ -6,10 +6,10 @@ using System.Text.RegularExpressions;
 using NUnit.Framework;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitExtensionParser;
-using pyRevitExtensionParserTest.TestHelpers;
+using pyRevitLoader.Tests.TestSupport;
 using static pyRevitExtensionParser.ExtensionParser;
 
-namespace pyRevitExtensionParserTester
+namespace pyRevitLoader.Integration.Tests
 {
     /// <summary>
     /// A command's <c>lib</c> and <c>bin</c> folders come from the extension, the command's ancestors and the
