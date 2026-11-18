@@ -15,10 +15,12 @@ namespace pyRevitExtensionParserTester
     /// <c>lib</c> module with the same name as another bundle's imports its own copy, modules under a
     /// shared root stay one module for all bundles, and a nested bundle hands the outer bundle's
     /// modules back. Reproduces the shared-engine finding from the review of pyrevitlabs/pyRevit#4133,
-    /// which smart buttons, ComboBoxes and checkboxes all had, and two findings from the review of
+    /// which smart buttons, ComboBoxes and checkboxes all had, and four findings from the review of
     /// pyrevitlabs/pyRevit#4136: a module imported from a folder the bundle removed from
-    /// <c>sys.path</c> again reached the next bundle, and a submodule kept shared between two
-    /// bundles' copies of a package was missing from the second bundle's package.
+    /// <c>sys.path</c> again reached the next bundle, a submodule kept shared between two bundles'
+    /// copies of a package was missing from the second bundle's package, the same held for a package
+    /// a bundle adds to a shared package, and a shared module a bundle replaced with its own was gone
+    /// for the next bundle.
     /// </summary>
     /// <remarks>
     /// Drives <c>PyRevitLoader.BundleModuleIsolation</c> from the IronPython 3 <c>pyRevitLoader.dll</c>
@@ -105,6 +107,29 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        public void Dispose_BundleThatReplacedASharedModuleWithItsOwn_PutsTheSharedModuleBack()
+        {
+            string sharedRoot = CreateDirectory("pyrevitlib");
+            File.WriteAllText(Path.Combine(sharedRoot, "common_mod.py"), "MARKS = []");
+            Call(_isolation, "AddSharedRoot", sharedRoot);
+            string replacerLib = CreateDirectory(Path.Combine("Replacer", "lib"));
+            File.WriteAllText(Path.Combine(replacerLib, "common_mod.py"), "MARKS = ['replacer']");
+            object first = CreateBundle("First", sharedRoot);
+            object replacer = CreateBundle("Replacer", sharedRoot);
+            string readMarks = "import common_mod\nresult = ','.join(common_mod.MARKS)";
+
+            using (Enter(first))
+                Execute("import common_mod\ncommon_mod.MARKS.append('first')");
+            using (Enter(replacer))
+                Execute("import sys\ndel sys.modules['common_mod']\nimport common_mod");
+
+            using (Enter(first))
+                Assert.That(Execute(readMarks), Is.EqualTo("first"));
+            using (Enter(replacer))
+                Assert.That(Execute(readMarks), Is.EqualTo("replacer"));
+        }
+
+        [Test]
         public void Enter_SubmoduleOfAnOwnedPackageUnderASharedRoot_MovesWithItsPackage()
         {
             string sharedRoot = CreateDirectory("site-packages");
@@ -131,6 +156,40 @@ namespace pyRevitExtensionParserTester
             using (Enter(second))
                 Assert.That(Execute("import pkg.sub\nresult = pkg.sub.VALUE"), Is.EqualTo("shared"));
             using (Enter(first))
+                Assert.That(Execute("import pkg.sub\nresult = pkg.sub.VALUE"), Is.EqualTo("shared"));
+        }
+
+        [Test]
+        public void Enter_TwoBundlesThatAddAPackageToASharedPackage_EachGetsTheSubmoduleOnItsOwnPackage()
+        {
+            string sharedRoot = CreateDirectory("site-packages");
+            string sharedPackage = CreateDirectory(Path.Combine("site-packages", "spkg"));
+            File.WriteAllText(Path.Combine(sharedPackage, "__init__.py"), string.Empty);
+            string sharedPart = CreateSharedPackagePart(sharedRoot);
+            object first = CreateBundleWithPackageForSharedPackage("First", sharedPart, sharedRoot);
+            object second = CreateBundleWithPackageForSharedPackage("Second", sharedPart, sharedRoot);
+
+            using (Enter(first))
+                Assert.That(Execute(ImportSubmoduleThroughSharedPackage("First")), Is.EqualTo("shared"));
+            Assert.That(Execute("import sys\nresult = 'spkg.plugins.sub' in sys.modules"), Is.False);
+            using (Enter(second))
+                Assert.That(Execute(ImportSubmoduleThroughSharedPackage("Second")), Is.EqualTo("shared"));
+        }
+
+        [Test]
+        public void Dispose_BundleThatReloadedASubmoduleOfItsPackage_KeepsTheEarlierCopyFromOtherBundles()
+        {
+            string sharedRoot = CreateDirectory("site-packages");
+            string sharedPart = CreateSharedPackagePart(sharedRoot);
+            object reloader = CreateBundleWithPackage("Reloader", sharedPart, sharedRoot);
+            object other = CreateBundleWithPackage("Other", sharedPart, sharedRoot);
+
+            using (Enter(reloader))
+                Execute("import pkg.sub");
+            using (Enter(reloader))
+                Execute("import sys\ndel sys.modules['pkg.sub']\nimport pkg.sub");
+
+            using (Enter(other))
                 Assert.That(Execute("import pkg.sub\nresult = pkg.sub.VALUE"), Is.EqualTo("shared"));
         }
 
@@ -276,6 +335,19 @@ namespace pyRevitExtensionParserTester
             string package = CreateDirectory(Path.Combine(name, "lib", "pkg"));
             File.WriteAllText(Path.Combine(package, "__init__.py"), $"__path__.append({PythonString(extraPackagePath)})");
             return CreateBundle(name, sharedRoot);
+        }
+
+        private object CreateBundleWithPackageForSharedPackage(string name, string extraPackagePath, string sharedRoot)
+        {
+            string package = CreateDirectory(Path.Combine(name, "lib", "spkg_ext", "plugins"));
+            File.WriteAllText(Path.Combine(package, "__init__.py"), $"__path__.append({PythonString(extraPackagePath)})");
+            return CreateBundle(name, sharedRoot);
+        }
+
+        private string ImportSubmoduleThroughSharedPackage(string bundleName)
+        {
+            string packageParent = Path.Combine(_root, bundleName, "lib", "spkg_ext");
+            return $"import spkg\nspkg.__path__.append({PythonString(packageParent)})\nimport spkg.plugins.sub\nresult = spkg.plugins.sub.VALUE";
         }
 
         private string CreateModuleFolder(string name, string moduleSource)
