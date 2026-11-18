@@ -36,7 +36,8 @@ namespace pyRevitExtensionParserTester
     /// <item>leaving a bundle took a folder out of a shared package's <c>__path__</c> that code outside
     /// any bundle had added again;</item>
     /// <item>a nested bundle that gave a shared package a fixed-size <c>__path__</c>, or whose bundle
-    /// could not be set aside for another reason, left a bundle without its own modules;</item>
+    /// could not be set aside for another reason, left a bundle without its own modules, and the
+    /// folder it put in a fixed-size <c>__path__</c> stayed there for the next bundle;</item>
     /// <item>a bundle whose <c>lib</c> has a module or package with the name of a shared one got the
     /// shared one once another bundle had loaded it;</item>
     /// <item>a module that code outside any bundle had loaded was lost when a bundle loaded a shared
@@ -492,6 +493,31 @@ namespace pyRevitExtensionParserTester
                 Assert.That(Execute(readValue), Is.EqualTo("outer"));
             }
 
+            Assert.That(_loggedFailures, Is.Empty);
+        }
+
+        [Test]
+        public void Dispose_BundleThatMadeASharedPackagePathFixedSize_TakesItsFolderWithIt()
+        {
+            string sharedRoot = CreateSharedPackage();
+            object other = CreateBundle("Other", sharedRoot);
+            object fixer = CreateBundle("Fixer", sharedRoot);
+            string folder = CreateDirectory(Path.Combine("Fixer", "lib", "spkg_ext"));
+            File.WriteAllText(Path.Combine(folder, "extra.py"), "VALUE = 'Fixer'");
+            string hasFolder = $"import spkg\nresult = {PythonString(folder)} in spkg.__path__";
+            string importExtra = "try:\n    import spkg.extra\n    result = spkg.extra.VALUE\nexcept ImportError:\n    result = 'missing'";
+
+            using (Enter(fixer))
+                Execute($"import System, spkg\nspkg.__path__ = System.Array[System.String](list(spkg.__path__) + [{PythonString(folder)}])");
+            using (Enter(other))
+            {
+                Assert.That(Execute(hasFolder), Is.False);
+                Assert.That(Execute(importExtra), Is.EqualTo("missing"));
+            }
+
+            using (Enter(fixer))
+                Assert.That(Execute(importExtra), Is.EqualTo("Fixer"));
+            Assert.That(Execute(hasFolder), Is.False);
             Assert.That(_loggedFailures, Is.Empty);
         }
 

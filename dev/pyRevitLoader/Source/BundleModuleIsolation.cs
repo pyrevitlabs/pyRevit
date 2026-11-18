@@ -33,7 +33,8 @@ namespace PyRevitLoader
     /// and the folder goes back to its place in the <c>__path__</c>.
     /// Invariant: a module loaded from a shared root moves only as a submodule of a package the bundle
     /// owns, a folder under a shared root never leaves a <c>__path__</c>, a <c>__path__</c> that cannot
-    /// change size, such as a .NET array, is never changed, and <c>__main__</c> never moves.
+    /// change size, such as a .NET array, is replaced by a list of the same folders before a bundle's
+    /// folder leaves it or comes back, and <c>__main__</c> never moves.
     /// Note: only code that runs while its bundle is entered is kept apart. Callbacks a script subscribes
     /// itself, such as Revit event handlers, run with whatever the engine holds when they fire, without
     /// the folders the script added to <c>sys.path</c>, so an import inside them can fail, or load a
@@ -359,7 +360,7 @@ namespace PyRevitLoader
 
             PutBackSharedModulesKeptAside(modules, ownModules, modulesBefore);
             BindToSharedPackages(modules, modulesBefore);
-            AddPackagePathFolders(modules, bundle);
+            AddPackagePathFolders(engine, modules, bundle);
             bundle.ModulesWhenEntered = CopyModules(modules);
             bundle.PackagePathsWhenEntered = CopyPackagePaths(modules, bundle);
         }
@@ -415,7 +416,7 @@ namespace PyRevitLoader
             }
 
             BindToSharedPackages(modules, modulesBefore);
-            MovePackagePathFolders(modules, bundle, modulesBefore);
+            MovePackagePathFolders(engine, modules, bundle, modulesBefore);
             bundle.HiddenModules.Clear();
             bundle.ModulesWhenEntered = null;
             bundle.PackagePathsWhenEntered = null;
@@ -809,15 +810,18 @@ namespace PyRevitLoader
         /// <remarks>
         /// Note: a folder that is already in the list, such as one a callback outside any bundle added
         /// again, is not recorded, so <see cref="MovePackagePathFolders"/> leaves it there for that code.
+        /// A <c>__path__</c> that cannot change size is replaced by a list first.
         /// Invariant: <see cref="Bundle.PackagePathFolders"/> lists each package's folders by position,
         /// lowest first, so each one goes back in front of the same folders as before.
         /// </remarks>
-        private static void AddPackagePathFolders(IDictionary<object, object> modules, Bundle bundle)
+        private static void AddPackagePathFolders(ScriptEngine engine, IDictionary<object, object> modules, Bundle bundle)
         {
             bundle.PackagePathFoldersPutBack.Clear();
             foreach (var package in bundle.PackagePathFolders)
             {
-                if (!modules.TryGetValue(package.Key, out var module) || !(GetResizablePackagePath(module) is System.Collections.IList packagePath))
+                if (!modules.TryGetValue(package.Key, out var module)
+                    || !(module is IronPython.Runtime.PythonModule pythonModule)
+                    || !(GetPackagePath(pythonModule) is System.Collections.IList packagePath))
                     continue;
 
                 var foldersPutBack = new HashSet<string>(StringComparer.Ordinal);
@@ -826,6 +830,7 @@ namespace PyRevitLoader
                     if (packagePath.Contains(folder.Folder))
                         continue;
 
+                    packagePath = MakeResizable(engine, pythonModule, packagePath);
                     packagePath.Insert(Math.Min(folder.Position, packagePath.Count), folder.Folder);
                     foldersPutBack.Add(folder.Folder);
                 }
@@ -868,13 +873,14 @@ namespace PyRevitLoader
         /// the same name would load the first bundle's file. A folder that code outside the bundle added
         /// again is left for that code, and the bundle still gets it back on a later call if it is gone
         /// by then.
-        /// Invariant: a folder under a shared root never moves, and a <c>__path__</c> that cannot change
-        /// size is left as it is. A package that appeared while the bundle was active is looked at only
-        /// when it was loaded from a shared root, so a package without a file keeps its <c>__path__</c>.
-        /// Without a record of what the bundle was entered with, as after a failed
-        /// <see cref="Activate"/>, the bundle keeps the folders it had.
+        /// Invariant: a folder under a shared root never moves. A <c>__path__</c> that cannot change size,
+        /// such as a .NET array a script assigned, is replaced by a list of the same folders before one of
+        /// them leaves, so the bundle's folder does not stay behind for the next bundle. A package that
+        /// appeared while the bundle was active is looked at only when it was loaded from a shared root,
+        /// so a package without a file keeps its <c>__path__</c>. Without a record of what the bundle was
+        /// entered with, as after a failed <see cref="Activate"/>, the bundle keeps the folders it had.
         /// </remarks>
-        private void MovePackagePathFolders(IDictionary<object, object> modules, Bundle bundle, Dictionary<string, object> modulesBefore)
+        private void MovePackagePathFolders(ScriptEngine engine, IDictionary<object, object> modules, Bundle bundle, Dictionary<string, object> modulesBefore)
         {
             var pathsWhenEntered = bundle.PackagePathsWhenEntered;
             if (pathsWhenEntered == null)
@@ -885,7 +891,8 @@ namespace PyRevitLoader
             {
                 if (!(entry.Key is string name)
                     || modulesBefore.ContainsKey(name)
-                    || !(GetResizablePackagePath(entry.Value) is System.Collections.IList packagePath))
+                    || !(entry.Value is IronPython.Runtime.PythonModule package)
+                    || !(GetPackagePath(package) is System.Collections.IList packagePath))
                     continue;
 
                 var wasThere = pathsWhenEntered.TryGetValue(name, out var foldersWhenEntered);
@@ -903,6 +910,7 @@ namespace PyRevitLoader
                     if (!wasThere || !foldersWhenEntered.Contains(folder) || (foldersPutBack != null && foldersPutBack.Contains(folder)))
                     {
                         folders.Insert(0, new PackagePathFolder(folder, i));
+                        packagePath = MakeResizable(engine, package, packagePath);
                         packagePath.RemoveAt(i);
                     }
                     else if (foldersLeftInPlace.Contains(folder))
@@ -1031,10 +1039,19 @@ namespace PyRevitLoader
             return null;
         }
 
-        private static System.Collections.IList GetResizablePackagePath(object module)
+        /// <summary>
+        /// Returns <paramref name="packagePath"/> when it can grow and shrink. Otherwise sets the
+        /// package's <c>__path__</c> to a new Python list of the same folders and returns that list.
+        /// </summary>
+        private static System.Collections.IList MakeResizable(ScriptEngine engine, IronPython.Runtime.PythonModule package, System.Collections.IList packagePath)
         {
-            var packagePath = GetPackagePath(module);
-            return packagePath == null || packagePath.IsFixedSize || packagePath.IsReadOnly ? null : packagePath;
+            if (!packagePath.IsFixedSize && !packagePath.IsReadOnly)
+                return packagePath;
+
+            object listType = IronPython.Hosting.Python.GetBuiltinModule(engine).GetVariable("list");
+            var resizable = (System.Collections.IList)engine.Operations.Invoke(listType, packagePath);
+            package.Get__dict__()["__path__"] = resizable;
+            return resizable;
         }
 
         private string NormalizeModuleFile(string file)
