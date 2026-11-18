@@ -74,7 +74,12 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <summary>Gets the bundle folder name without its suffix, such as <c>Test CheckBox</c>.</summary>
         public string display_name => _component?.DisplayName ?? string.Empty;
 
-        /// <summary>Gets a dictionary handlers can use to keep data between calls.</summary>
+        /// <summary>Gets a dictionary handlers can use to keep data between calls until the next reload.</summary>
+        /// <remarks>
+        /// Note: it is a .NET dictionary, as on <see cref="ComboBoxContext"/>, not a Python dict. On
+        /// IronPython 2.7 it has no <c>get</c> or <c>setdefault</c>, so handlers check keys with
+        /// <c>ContainsKey</c> and read them by index.
+        /// </remarks>
         public Dictionary<string, object> user_data { get; } = new Dictionary<string, object>();
     }
 
