@@ -65,6 +65,10 @@ class DependencyGraph:
             return False
 
 
+def _normalized_dir(path):
+    return op.normcase(op.normpath(path))
+
+
 class ExtensionPackage:
     """Extension package class.
 
@@ -196,21 +200,36 @@ class ExtensionPackage:
         in order and the shipped root last, so a same-named user copy wins as
         a fallback rule only.
 
+        Important:
+            A copy under the shipped root is chosen only when no user copy
+            matches, whichever rule finds it. ``_remove_extpkg`` deletes the
+            returned folder, so returning the shipped copy while a same-named
+            user copy exists would delete the copy pyRevit ships.
+
         Returns:
             (str): Installed directory path or empty string if not installed.
         """
+        shipped_dir = _normalized_dir(EXTENSIONS_DEFAULT_DIR)
         # Package loaded from on-disk extension.json: installed dir is the def file's parent
-        for def_path in self.def_file_path:
-            if op.exists(def_path):
-                parent = op.dirname(def_path)
-                if any(op.basename(parent).endswith(p) for p in EXTENSION_POSTFIXES):
-                    return parent
+        defined_dirs = [
+            op.dirname(def_path)
+            for def_path in sorted(self.def_file_path)
+            if op.exists(def_path)
+            and any(
+                op.basename(op.dirname(def_path)).endswith(postfix)
+                for postfix in EXTENSION_POSTFIXES
+            )
+        ]
+        defined_dirs.sort(
+            key=lambda ext_dir: _normalized_dir(op.dirname(ext_dir)) == shipped_dir
+        )
+        if defined_dirs:
+            return defined_dirs[0]
         # Fallback: match by ext_dirname (name from manifest + postfix)
-        shipped_dir = op.normpath(EXTENSIONS_DEFAULT_DIR)
         search_dirs = [
             ext_dir
             for ext_dir in user_config.get_thirdparty_ext_root_dirs()
-            if op.normpath(ext_dir) != shipped_dir
+            if _normalized_dir(ext_dir) != shipped_dir
         ]
         if op.exists(EXTENSIONS_DEFAULT_DIR):
             search_dirs.append(EXTENSIONS_DEFAULT_DIR)

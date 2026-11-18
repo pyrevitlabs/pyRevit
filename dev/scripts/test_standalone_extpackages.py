@@ -163,6 +163,33 @@ class ExtensionPackageLoadStateTests(unittest.TestCase):
                 self._installed_with_roots(shipped, [thirdparty]),
             )
 
+    def test_user_definition_wins_over_shipped_definition(self):
+        """Same-named packages defined in both roots resolve to the user copy.
+
+        Removing the package deletes the returned folder, so the shipped copy
+        must never win while a user copy exists, whatever the set order.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            shipped = os.path.join(tmp, "shipped")
+            thirdparty = os.path.join(tmp, "thirdparty")
+            for root in (shipped, thirdparty):
+                ext_dir = os.path.join(root, "Example.extension")
+                os.makedirs(ext_dir)
+                definition = os.path.join(ext_dir, "extension.json")
+                with open(definition, "w") as handle:
+                    handle.write("{}")
+                self.package.def_file_path.add(definition)
+            for shipped_spelling in (shipped, shipped.upper(), shipped + os.sep):
+                with patch.object(
+                    self.extpackages.op,
+                    "normcase",
+                    lambda path: path.lower(),
+                ):
+                    self.assertEqual(
+                        os.path.join(thirdparty, "Example.extension"),
+                        self._installed_with_roots(shipped_spelling, [thirdparty]),
+                    )
+
     def _assert_nothing_written(self, before):
         self.assertEqual([], self.saved)
         self.assertEqual(before, self.backend.sections)
