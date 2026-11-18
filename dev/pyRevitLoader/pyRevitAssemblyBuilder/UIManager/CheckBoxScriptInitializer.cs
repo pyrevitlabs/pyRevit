@@ -133,8 +133,10 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <remarks>
         /// The script can import from the bundle's ancestor <c>lib</c> folders and from installed library
         /// extensions, and it gets the identity values a command gets (<c>__commandname__</c> and the rest)
-        /// in its own module scope, so <c>EXEC_PARAMS</c> resolves each checkbox separately.
-        /// <c>__scriptruntime__</c> is None there because a handler call is not a command run.
+        /// in its own module scope, so <c>EXEC_PARAMS</c> resolves each checkbox separately, also in a
+        /// handler imported from another module, because the executor calls handlers through a function
+        /// defined with the same values. <c>__scriptruntime__</c> is None there because a handler call is
+        /// not a command run.
         /// Note: the executor is called even for a bundle without a script, so it can drop the handler an
         /// earlier bundle wired on the same control.
         /// </remarks>

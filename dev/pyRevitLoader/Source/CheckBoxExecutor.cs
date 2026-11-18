@@ -16,7 +16,7 @@ namespace PyRevitLoader
     /// <summary>
     /// Runs .checkbox bundle scripts in a shared IronPython engine and wires their handlers:
     /// <c>__chk_init__(ctx)</c> once per load, and <c>__chk_on_change__(sender, args, ctx)</c>
-    /// whenever the checkbox's <c>IsChecked</c> changes.
+    /// whenever the checkbox's <c>IsChecked</c> changes after <c>__chk_init__</c> returns.
     /// </summary>
     /// <remarks>
     /// Important: handlers run on the UI thread from WPF property-change notifications, outside
@@ -28,6 +28,8 @@ namespace PyRevitLoader
     /// <see cref="BundleModuleIsolation"/>: it starts from that checkbox's own search paths and modules
     /// and hands them back when it ends. Two bundles can therefore ship <c>lib</c> modules with the same
     /// name, while pyRevit and the standard library are still imported once for all checkboxes.
+    /// Warning: <see cref="BundleModuleIsolation"/> lists three cases it does not keep apart, such as a
+    /// reference kept to an earlier <c>sys.path</c> list.
     /// </remarks>
     public class CheckBoxExecutor
     {
@@ -35,6 +37,8 @@ namespace PyRevitLoader
         private const string InitHandlerName = "__chk_init__";
         private const string ChangeHandlerName = "__chk_on_change__";
         private const string CheckedPropertyName = "IsChecked";
+        private const string HandlerCallerName = "__chk_call__";
+        private const string HandlerCallerSource = "def " + HandlerCallerName + "(handler, *args):\n    return handler(*args)\n";
 
         private readonly UIApplication _revit;
         private readonly Action<string> _logger;
@@ -83,7 +87,8 @@ namespace PyRevitLoader
         /// </summary>
         /// <param name="scopeVariables">Values set in the script's own module scope before it runs, such as
         /// <c>__commandname__</c>, so <c>EXEC_PARAMS</c> resolves this checkbox's identity without touching
-        /// other checkboxes.</param>
+        /// other checkboxes. The handlers are called through a function defined in a module that holds the
+        /// same values, so a handler imported from another module resolves this identity too.</param>
         /// <returns>False when the script fails to compile or run; true otherwise, including when it defines no handlers.</returns>
         /// <remarks>
         /// Invariant: called by reflection from <c>CheckBoxScriptInitializer</c>; keep the name and signature.
@@ -135,11 +140,12 @@ namespace PyRevitLoader
                     return true;
 
                 var ops = _engine.Operations;
+                var caller = CreateHandlerCaller(scopeVariables);
                 if (scope.ContainsVariable(InitHandlerName))
-                    InvokeHandler(ops, bundle, InitHandlerName, scope.GetVariable(InitHandlerName), context);
+                    InvokeHandler(ops, bundle, caller, InitHandlerName, scope.GetVariable(InitHandlerName), context);
 
                 if (scope.ContainsVariable(ChangeHandlerName))
-                    WireChangeHandler(checkBox, ops, bundle, scope, context);
+                    WireChangeHandler(checkBox, ops, bundle, caller, scope, context);
 
                 return true;
             }
@@ -249,25 +255,52 @@ namespace PyRevitLoader
         /// </summary>
         /// <remarks>
         /// Note: nothing is subscribed once the executor is released, which happens when
-        /// <c>__chk_init__</c> reloads pyRevit.
+        /// <c>__chk_init__</c> reloads pyRevit, and a subscribed handler does nothing once the executor
+        /// is released, as when an earlier subscriber to the same change notification reloads pyRevit.
         /// </remarks>
-        private void WireChangeHandler(INotifyPropertyChanged checkBox, ObjectOperations ops, BundleModuleIsolation.Bundle bundle, ScriptScope scope, CheckBoxContext context)
+        private void WireChangeHandler(INotifyPropertyChanged checkBox, ObjectOperations ops, BundleModuleIsolation.Bundle bundle, object caller, ScriptScope scope, CheckBoxContext context)
         {
             object handler = scope.GetVariable(ChangeHandlerName);
             PropertyChangedEventHandler onChange = (sender, args) =>
             {
-                if (args.PropertyName == CheckedPropertyName)
-                    InvokeHandler(ops, bundle, ChangeHandlerName, handler, sender, args, context);
+                if (!_handlers.IsReleased && args.PropertyName == CheckedPropertyName)
+                    InvokeHandler(ops, bundle, caller, ChangeHandlerName, handler, sender, args, context);
             };
 
-            if (!_handlers.Wire(checkBox, onChange, _engine, ops, _outputStream, scope, context, handler))
+            if (!_handlers.Wire(checkBox, onChange, _engine, ops, _outputStream, scope, context, caller, handler))
                 return;
 
             Log($"Wired {ChangeHandlerName} for CheckBox '{context.name}'.");
         }
 
         /// <summary>
-        /// Calls a handler with the engine's output, search paths and modules set for its checkbox.
+        /// Defines the function that every handler of one checkbox is called through, in a module that
+        /// holds the checkbox's identity values.
+        /// </summary>
+        /// <remarks>
+        /// Important: <c>EXEC_PARAMS</c> finds the running command in the nearest calling module that sets
+        /// <c>__scriptruntime__</c>. A handler defined in the script finds its own module, but a handler
+        /// imported from another module, such as one that several checkboxes share, would find no
+        /// command on a click, and would find the other checkbox when that checkbox's handler changes
+        /// this one. Calling every handler through this function makes the nearest such module this
+        /// checkbox's.
+        /// </remarks>
+        private object CreateHandlerCaller(IDictionary<string, object> scopeVariables)
+        {
+            var callerScope = _engine.CreateScope();
+            if (scopeVariables != null)
+            {
+                foreach (var variable in scopeVariables)
+                    callerScope.SetVariable(variable.Key, variable.Value);
+            }
+
+            _engine.CreateScriptSourceFromString(HandlerCallerSource, SourceCodeKind.Statements).Execute(callerScope);
+            return callerScope.GetVariable(HandlerCallerName);
+        }
+
+        /// <summary>
+        /// Calls a handler through its checkbox's caller, with the engine's output, search paths and
+        /// modules set for that checkbox.
         /// </summary>
         /// <remarks>
         /// Note: the engine's <c>sys.path</c> and <c>sys.modules</c> hold whatever the last script or
@@ -278,14 +311,17 @@ namespace PyRevitLoader
         /// and B unticks A; <see cref="BundleModuleIsolation.Enter"/> gives every nested call its own
         /// checkbox's paths and modules and brings back the outer checkbox's afterwards.
         /// </remarks>
-        private void InvokeHandler(ObjectOperations ops, BundleModuleIsolation.Bundle bundle, string handlerName, object handler, params object[] args)
+        private void InvokeHandler(ObjectOperations ops, BundleModuleIsolation.Bundle bundle, object caller, string handlerName, object handler, params object[] args)
         {
             try
             {
                 RedirectOutput();
                 using (_isolation?.Enter(bundle))
                 {
-                    ops.Invoke(handler, args);
+                    var callerArgs = new object[args.Length + 1];
+                    callerArgs[0] = handler;
+                    args.CopyTo(callerArgs, 1);
+                    ops.Invoke(caller, callerArgs);
                 }
             }
             catch (Exception ex)
