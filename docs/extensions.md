@@ -37,7 +37,7 @@ The `ctx` that both handlers receive has these members:
 
 | Member | What it is |
 |---|---|
-| `is_checked` | The checked state. Setting a new value raises `__chk_on_change__` again, the same way a click does. |
+| `is_checked` | The checked state. Setting a new value raises `__chk_on_change__` again, the same way a click does, except inside `__chk_init__`: the change handler is attached only after `__chk_init__` returns, so restoring a saved state there does not raise it. |
 | `text`, `enabled`, `visible` | The checkbox's label, and whether it is enabled and shown. All three can be set. |
 | `checkbox` | The AdWindows `RibbonCheckBox` itself. |
 | `uiapp` | Revit's `UIApplication`. |
