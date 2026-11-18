@@ -182,6 +182,7 @@
     <system:String x:Key="PreviewUseScopeBox">使用</system:String>
     <system:String x:Key="PreviewLoading">正在加载模型 {0} / {1}</system:String>
     <system:String x:Key="PreviewLoaded">已加载 {0} 个图元</system:String>
+    <system:String x:Key="PreviewTruncated">已加载 {0} 个图元，为保持预览流畅，省略了 {1} 个较小的图元</system:String>
     <system:String x:Key="PreviewNoBox">此视图没有框。请先在导航器中创建一个。</system:String>
     <system:String x:Key="PreviewSnappedTo">已吸附到 {0}</system:String>
     <system:String x:Key="PreviewHelp">拖动圆形手柄以移动一个面；按住 Alt 可跳过吸附。拖动框上方的箭头可旋转。拖动可环绕，Shift+拖动或右键拖动可平移，滚轮可缩放。</system:String>

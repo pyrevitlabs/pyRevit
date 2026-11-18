@@ -613,6 +613,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         """Disable all controls and clear status when no documents are open."""
         self.Content.IsEnabled = False
         self.preview.close()
+        self.on_preview_hidden()
         self.hide_element(self.project_unit_text)
         self.txtVerticalStatus.Text = ""
         self.txtGridStatus.Text = ""
@@ -2011,7 +2012,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.preview.close()
 
     def open_preview(self):
-        """Open the 3D preview in API context, or explain why it cannot open."""
+        """Open the 3D preview in API context, or explain why it cannot open.
+
+        Runs after the toggle was ticked, so it does nothing when the toggle
+        was unticked again or the navigator closed in the meantime.
+        """
+        if not self.chkShow3D.IsChecked or self.preview.shutting_down:
+            return
         reason = None
         try:
             view = revit.active_view

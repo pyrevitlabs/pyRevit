@@ -242,6 +242,23 @@ def union_bbox(boxes):
     return union
 
 
+def _has_geometry(element, detail_level):
+    """Tell whether ``element`` has any geometry, stopping at its first point.
+
+    A zero-point builder raises :class:`BudgetExceeded` as soon as geometry
+    adds a vertex, so the probe never tessellates more than one face. An
+    element whose geometry cannot be read counts as having some.
+    """
+    probe = MeshBuilder(DB.XYZ(0, 0, 0), 0)
+    try:
+        geometry = element_geometry(element, detail_level)
+        if geometry is not None:
+            walk_geometry(geometry, probe, edges=True)
+    except Exception:
+        return True
+    return bool(probe.indices or probe.edges)
+
+
 def tessellate_element(
     element,
     bbox,
@@ -274,11 +291,17 @@ def tessellate_element(
         (tuple[MeshBuilder, bool]): the builder and whether it holds the
         bounding box only (``approx``): the budget is too small for any real
         geometry, the element exceeded it, failed to tessellate or, with
-        ``box_when_empty``, has no geometry.
+        ``box_when_empty``, has no geometry. An element without geometry
+        stays empty when ``box_when_empty`` is False, even if the budget is
+        too small to draw anything.
     """
     builder = MeshBuilder(origin, budget, transform)
     approx = budget <= BOX_POINT_COUNT
-    if not approx:
+    if approx and not box_when_empty:
+        approx = _has_geometry(element, detail_level)
+        if not approx:
+            return builder, False
+    elif not approx:
         try:
             geometry = element_geometry(element, detail_level)
             if geometry is not None:

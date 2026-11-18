@@ -182,6 +182,7 @@
     <system:String x:Key="PreviewUseScopeBox">Utiliser</system:String>
     <system:String x:Key="PreviewLoading">Chargement du modèle {0} / {1}</system:String>
     <system:String x:Key="PreviewLoaded">{0} éléments chargés</system:String>
+    <system:String x:Key="PreviewTruncated">{0} éléments chargés, {1} petits éléments omis pour que l'aperçu reste fluide</system:String>
     <system:String x:Key="PreviewNoBox">Cette vue n'a pas de boîte. Créez-en une d'abord dans le navigateur.</system:String>
     <system:String x:Key="PreviewSnappedTo">Accrochée à {0}</system:String>
     <system:String x:Key="PreviewHelp">Faites glisser les poignées rondes pour déplacer une face ; maintenez Alt pour désactiver l'accrochage. Faites glisser la flèche au-dessus de la boîte pour la faire pivoter. Glissez pour orbiter, Maj+glisser ou clic droit+glisser pour déplacer, molette pour zoomer.</system:String>

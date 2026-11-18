@@ -96,6 +96,7 @@ PAGE_STRINGS = (
     "PreviewUseScopeBox",
     "PreviewLoading",
     "PreviewLoaded",
+    "PreviewTruncated",
     "PreviewNoBox",
     "PreviewSnappedTo",
     "PreviewHelp",
@@ -135,6 +136,15 @@ class PreviewSession(object):
         the window ends it. Element ids and the origin are kept, never API
         objects, because the user can switch views and documents while it is
         open.
+
+    Invariant:
+        Every request from the page echoes the ``generation`` of the view
+        payload it was made from, which changes whenever the session follows
+        another view or document. A request of an older generation is
+        rejected, so an edit queued for one view is never written to another.
+        An ``apply_box`` request also carries an edit ``revision`` that the
+        resulting ``box`` event returns, so the page can ignore an
+        acknowledgement older than its latest edit.
     """
 
     def __init__(
@@ -164,6 +174,7 @@ class PreviewSession(object):
         self._loaded_doc = None
         self.doc = None
         self.view_id = None
+        self._view_generation = 0
         self.origin = DB.XYZ.Zero
         self._streams = []
         self._ready = False
@@ -182,6 +193,11 @@ class PreviewSession(object):
             self.bridge.handlers[action] = handler
 
     @property
+    def shutting_down(self):
+        """True once the navigator closed and the preview can no longer open."""
+        return self._shutting_down
+
+    @property
     def supported(self):
         """True when the output window can exchange messages with the page."""
         return self.output.supports_messages
@@ -198,16 +214,26 @@ class PreviewSession(object):
         if not self._mounted and not self.bridge.start():
             return False
         changed_view = view.Id != self.view_id
-        self.doc = view.Document
-        self.view_id = view.Id
+        self._follow(view)
         info = get_box_info(view, self.datafilename)
         if self._mounted:
             self._reopen(view, info, changed_view)
         else:
             self._mount(view, info)
         self.is_open = True
+        self._resume_streams()
         self.dock()
         return True
+
+    def _follow(self, view):
+        try:
+            same_document = view.Document.Equals(self.doc)
+        except Exception:
+            same_document = False
+        if not same_document or view.Id != self.view_id:
+            self._view_generation += 1
+        self.doc = view.Document
+        self.view_id = view.Id
 
     def _mount(self, view, info):
         self.origin = scene_origin(self.doc, info["box"] if info else None)
@@ -262,7 +288,6 @@ class PreviewSession(object):
             self._send("view" if changed_view else "box", self._view_payload(view))
             self._send("guides", self._guides_payload())
             self._linked_changed()
-            self._resume_streams()
             return
         self.origin = scene_origin(self.doc, info["box"] if info else None)
         self._loaded_doc = self.doc
@@ -343,6 +368,7 @@ class PreviewSession(object):
 
     def _view_payload(self, view):
         payload = view_payload(view, self.datafilename, self.origin)
+        payload["generation"] = self._view_generation
         payload["bookmarks"] = self._bookmark_entries(view, payload["kind"])
         return payload
 
@@ -382,7 +408,8 @@ class PreviewSession(object):
             return
         stream = next((s for s in self._streams if not s.done), None)
         if stream is None:
-            self._send("sources", {"done": True})
+            truncated = sum(s.truncated for s in self._streams)
+            self._send("sources", {"done": True, "truncated": truncated})
             return
         try:
             chunk = stream.next_chunk(CHUNK_SECONDS)
@@ -426,8 +453,7 @@ class PreviewSession(object):
         except Exception:
             same_document = False
         if not same_document:
-            self.doc = view.Document
-            self.view_id = view.Id
+            self._follow(view)
             info = get_box_info(view, self.datafilename)
             self.origin = scene_origin(self.doc, info["box"] if info else None)
             self._loaded_doc = self.doc
@@ -436,7 +462,7 @@ class PreviewSession(object):
             self._send("reset", self._mount_payload(view))
             return
         event = "box" if view.Id == self.view_id else "view"
-        self.view_id = view.Id
+        self._follow(view)
         self._send(event, self._view_payload(view))
 
     def sync_box(self, view):
@@ -444,7 +470,9 @@ class PreviewSession(object):
         if self.is_open:
             self._send("box", self._view_payload(view))
 
-    def _active_view(self):
+    def _active_view(self, payload):
+        if payload.get("generation") != self._view_generation:
+            raise ValueError("view")
         uidoc = HOST_APP.uiapp.ActiveUIDocument
         if uidoc is None or not uidoc.Document.Equals(self.doc):
             raise ValueError("document")
@@ -472,23 +500,27 @@ class PreviewSession(object):
             with revit.Transaction("Adjust Crop Box"):
                 view.CropBox = new_box
 
-    def _finish(self, view, request_id, ok, message=None):
+    def _finish(self, view, request_id, ok, message=None, revision=None):
         self.bridge.reply(request_id, ok, message)
-        self._send("box", self._view_payload(view))
+        payload = self._view_payload(view)
+        if revision is not None:
+            payload["revision"] = revision
+        self._send("box", payload)
         if ok:
             self.on_box_changed()
 
     def _on_apply_box(self, payload, request_id):
-        view = self._active_view()
+        view = self._active_view(payload)
+        revision = payload.get("revision")
         try:
             self._write_box(view, payload["box"])
         except ValueError as ex:
-            self._finish(view, request_id, False, str(ex))
+            self._finish(view, request_id, False, str(ex), revision)
             return
-        self._finish(view, request_id, True)
+        self._finish(view, request_id, True, revision=revision)
 
     def _on_use_scope_box(self, payload, request_id):
-        view = self._active_view()
+        view = self._active_view(payload)
         scope_box = self.doc.GetElement(get_elementid_from_value(int(payload["id"])))
         if scope_box is None:
             self._finish(view, request_id, False, "The scope box no longer exists")
@@ -514,7 +546,7 @@ class PreviewSession(object):
         self._finish(view, request_id, True)
 
     def _on_fit_visible(self, payload, request_id):
-        view = self._active_view()
+        view = self._active_view(payload)
         info = get_box_info(view, self.datafilename)
         if info is None:
             self._finish(view, request_id, False, "The view has no box")
@@ -571,7 +603,7 @@ class PreviewSession(object):
         return "3d" if isinstance(view, DB.View3D) else "crop"
 
     def _on_bookmark_save(self, payload, request_id):
-        view = self._active_view()
+        view = self._active_view(payload)
         data = self._store()
         box = dict(payload["box"])
         box["origin"] = [
@@ -593,7 +625,7 @@ class PreviewSession(object):
         return data, None
 
     def _on_bookmark_apply(self, payload, request_id):
-        view = self._active_view()
+        view = self._active_view(payload)
         _, entry = self._find_bookmark(payload, view)
         if entry is None:
             self._finish(view, request_id, False, "Unknown bookmark")
@@ -612,7 +644,7 @@ class PreviewSession(object):
         self._finish(view, request_id, True)
 
     def _on_bookmark_rename(self, payload, request_id):
-        view = self._active_view()
+        view = self._active_view(payload)
         data, entry = self._find_bookmark(payload, view)
         if entry is not None:
             entry["name"] = payload["name"]
@@ -620,7 +652,7 @@ class PreviewSession(object):
         self._finish(view, request_id, entry is not None)
 
     def _on_bookmark_delete(self, payload, request_id):
-        view = self._active_view()
+        view = self._active_view(payload)
         data, entry = self._find_bookmark(payload, view)
         if entry is not None:
             self._bookmark_list(data, view, self._kind(view)).remove(entry)

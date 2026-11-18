@@ -124,6 +124,36 @@ class MeshingTests(unittest.TestCase):
             )
             self.assertEqual(differing, 1)
 
+    def tessellate_exhausted(self, geometry_walk, box_when_empty):
+        m = self.meshing
+        m.element_geometry = lambda element, detail_level: []
+        m.walk_geometry = geometry_walk
+        bbox = types.SimpleNamespace(Min=Point(0, 0, 0), Max=Point(1, 1, 1))
+        return m.tessellate_element(
+            object(), bbox, Point(0, 0, 0), 0, box_when_empty=box_when_empty
+        )
+
+    def test_exhausted_budget_keeps_geometryless_elements_out_when_asked(self):
+        builder, approx = self.tessellate_exhausted(
+            lambda geometry, builder, edges=True: None, box_when_empty=False
+        )
+        self.assertEqual((builder.indices, approx), ([], False))
+
+    def test_exhausted_budget_boxes_elements_that_have_geometry(self):
+        def one_segment(geometry, builder, edges=True):
+            builder.add_polyline([Point(0, 0, 0), Point(1, 0, 0)])
+
+        builder, approx = self.tessellate_exhausted(one_segment, box_when_empty=False)
+        self.assertTrue(approx)
+        self.assertEqual(len(builder.indices), 36)
+
+    def test_exhausted_budget_boxes_geometryless_elements_by_default(self):
+        builder, approx = self.tessellate_exhausted(
+            lambda geometry, builder, edges=True: None, box_when_empty=True
+        )
+        self.assertTrue(approx)
+        self.assertEqual(len(builder.indices), 36)
+
 
 if __name__ == "__main__":
     unittest.main()

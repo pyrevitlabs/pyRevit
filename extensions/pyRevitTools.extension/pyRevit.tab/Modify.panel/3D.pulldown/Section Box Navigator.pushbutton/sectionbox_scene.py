@@ -18,8 +18,10 @@ from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func
 from pyrevit.revit import units
 from scene3d.meshing import (
+    BOX_POINT_COUNT,
     FloatArray,
     IntArray,
+    box_corners,
     element_bbox,
     relative,
     tessellate_element,
@@ -125,6 +127,12 @@ class ModelStream(object):
         Chunks are independent: the page appends meshes as they arrive. An
         element's page key is ``source`` (0 for the host, then link order) and
         its id, because link element ids can equal host ids.
+
+    Note:
+        ``MAX_TOTAL_POINTS`` also covers the bounding boxes drawn for elements
+        that exceed their own budget. Once less than one box fits, the
+        remaining, smallest elements are left out and counted in
+        ``truncated``. Elements deleted between chunks are skipped.
     """
 
     def __init__(self, doc, origin, include_links, links_only=False):
@@ -135,6 +143,7 @@ class ModelStream(object):
         self._entries = None
         self._cursor = 0
         self._points = 0
+        self.truncated = 0
 
     @property
     def done(self):
@@ -191,7 +200,14 @@ class ModelStream(object):
         while self._cursor < len(self._entries) and time.time() < deadline:
             entry = self._entries[self._cursor]
             self._cursor += 1
-            budget = min(MAX_ELEMENT_POINTS, max(MAX_TOTAL_POINTS - self._points, 0))
+            remaining = MAX_TOTAL_POINTS - self._points
+            if remaining < BOX_POINT_COUNT:
+                self.truncated = len(self._entries) - self._cursor + 1
+                self._cursor = len(self._entries)
+                break
+            if not entry.element.IsValidObject:
+                continue
+            budget = min(MAX_ELEMENT_POINTS, remaining)
             builder, approx = tessellate_element(
                 entry.element,
                 entry.bbox,
@@ -220,10 +236,25 @@ class ModelStream(object):
         return {"meshes": meshes, "progress": [self._cursor, len(self._entries)]}
 
 
+def _world_bounds(box):
+    if box is None:
+        return None
+    corners = box_corners(box.Min, box.Max, box.Transform)
+    bounds = DB.BoundingBoxXYZ()
+    bounds.Min = DB.XYZ(
+        min(c.X for c in corners), min(c.Y for c in corners), min(c.Z for c in corners)
+    )
+    bounds.Max = DB.XYZ(
+        max(c.X for c in corners), max(c.Y for c in corners), max(c.Z for c in corners)
+    )
+    return bounds
+
+
 def scene_origin(doc, box):
     """Return the scene origin: the center of the model's bounds, else of ``box``."""
     bounds = union_bbox(
-        [element_bbox(element) for element in _model_elements(doc)] + [box]
+        [element_bbox(element) for element in _model_elements(doc)]
+        + [_world_bounds(box)]
     )
     if bounds is None:
         return DB.XYZ.Zero

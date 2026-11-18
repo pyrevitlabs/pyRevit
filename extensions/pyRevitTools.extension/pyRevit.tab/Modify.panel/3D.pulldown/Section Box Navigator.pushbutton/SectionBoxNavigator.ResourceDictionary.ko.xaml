@@ -182,6 +182,7 @@
     <system:String x:Key="PreviewUseScopeBox">사용</system:String>
     <system:String x:Key="PreviewLoading">모델 로드 중 {0} / {1}</system:String>
     <system:String x:Key="PreviewLoaded">요소 {0}개 로드됨</system:String>
+    <system:String x:Key="PreviewTruncated">요소 {0}개 로드됨, 미리보기 반응성을 위해 작은 요소 {1}개 제외됨</system:String>
     <system:String x:Key="PreviewNoBox">이 뷰에는 상자가 없습니다. 먼저 탐색기에서 만드세요.</system:String>
     <system:String x:Key="PreviewSnappedTo">{0}에 스냅됨</system:String>
     <system:String x:Key="PreviewHelp">둥근 핸들을 끌어 면을 이동하세요. Alt를 누르면 스냅이 꺼집니다. 상자 위의 화살표를 끌면 회전합니다. 끌면 궤도 회전, Shift+끌기 또는 오른쪽 버튼 끌기는 이동, 휠은 확대/축소입니다.</system:String>

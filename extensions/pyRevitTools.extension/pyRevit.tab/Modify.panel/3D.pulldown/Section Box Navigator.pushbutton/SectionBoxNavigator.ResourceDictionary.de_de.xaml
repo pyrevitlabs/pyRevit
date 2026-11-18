@@ -182,6 +182,7 @@
     <system:String x:Key="PreviewUseScopeBox">Verwenden</system:String>
     <system:String x:Key="PreviewLoading">Modell wird geladen {0} / {1}</system:String>
     <system:String x:Key="PreviewLoaded">{0} Elemente geladen</system:String>
+    <system:String x:Key="PreviewTruncated">{0} Elemente geladen, {1} kleine Elemente ausgelassen, damit die Vorschau flüssig bleibt</system:String>
     <system:String x:Key="PreviewNoBox">Diese Ansicht hat keine Box. Erstellen Sie zuerst im Navigator eine.</system:String>
     <system:String x:Key="PreviewSnappedTo">Eingerastet an {0}</system:String>
     <system:String x:Key="PreviewHelp">Ziehen Sie die runden Griffe, um eine Fläche zu verschieben; mit Alt wird nicht eingerastet. Ziehen Sie den Pfeil über der Box, um sie zu drehen. Ziehen zum Orbit, Umschalt+Ziehen oder Rechtsklick+Ziehen zum Verschieben, Mausrad zum Zoomen.</system:String>

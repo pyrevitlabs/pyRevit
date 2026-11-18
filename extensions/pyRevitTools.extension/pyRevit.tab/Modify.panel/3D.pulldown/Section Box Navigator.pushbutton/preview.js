@@ -376,6 +376,7 @@ void main() { outColor = uColor; }`;
       this.hover = null;
       this.drag = null;
       this.pending = 0;
+      this.editRevision = 0;
       this.snapHighlight = null;
       this.pendingFrame = 0;
       this.requests = new Map();
@@ -400,7 +401,8 @@ void main() { outColor = uColor; }`;
       return new Promise((resolve) => {
         this.requests.set(requestId, resolve);
         if (window.chrome && window.chrome.webview) {
-          window.chrome.webview.postMessage({ channel: this.channel, action, payload, requestId });
+          const stamped = Object.assign({}, payload, { generation: this.view.generation });
+          window.chrome.webview.postMessage({ channel: this.channel, action, payload: stamped, requestId });
         } else {
           resolve({ ok: false });
         }
@@ -456,7 +458,8 @@ void main() { outColor = uColor; }`;
     onSources(payload) {
       if (payload.done) {
         this.loading = false;
-        this.setStatus(format(this.t("PreviewLoaded"), this.elements.size), "info");
+        const key = payload.truncated ? "PreviewTruncated" : "PreviewLoaded";
+        this.setStatus(format(this.t(key), this.elements.size, payload.truncated), "info");
         this._updateProgress();
       }
       if (payload.loading) {
@@ -769,6 +772,7 @@ void main() { outColor = uColor; }`;
 
     setView(payload, resetCamera) {
       if (this.drag && !resetCamera) return;
+      if (payload.revision !== undefined && payload.revision < this.editRevision) return;
       this.view = payload;
       this.drag = null;
       this._buildGuideBuffers();
@@ -1274,7 +1278,8 @@ void main() { outColor = uColor; }`;
     _commitBox(box, keepDrag) {
       this.view.box = box;
       this.pending += 1;
-      this._post("apply_box", { box });
+      this.editRevision += 1;
+      this._post("apply_box", { box, revision: this.editRevision });
       this._updateSize();
       this.requestRender();
     }

@@ -316,9 +316,40 @@
     const s = p._project(p.viewProj, [3, 0, 4]);
     p.hover = p._hoverAt({ clientX: rect.left + s.x, clientY: rect.top + s.y });
     p._render();
+    const hoveredId = p.hover && p.hover.element.id;
     p.setMode("grid");
     p._render();
-    return { gl: true, error: p.gl.getError(), hovered: p.groups.has("Walls"), elements: p.elements.size };
+    return { gl: true, error: p.gl.getError(), hoveredId, elements: p.elements.size };
+  };
+
+  scenarios.stale_box_acks = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", generation: 7, box: box(), editable: ["x0", "x1", "y0", "y1", "z0", "z1"], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    const R = {};
+    const at = (z) => box({ max: [5, 5, z] });
+    const event = (z, revision) => Object.assign({}, p.view, { box: at(z), revision });
+    p._commitBox(at(11));
+    p._commitBox(at(12));
+    const posted = window.__sent.filter((m) => m.action === "apply_box");
+    R.revisions = posted.map((m) => m.payload.revision);
+    R.generations = posted.map((m) => m.payload.generation);
+    p._onEvent("box", event(11, 1));
+    R.after_stale_ack = p.view.box.max[2];
+    p._onEvent("box", event(12, 2));
+    R.after_latest_ack = p.view.box.max[2];
+    p._onEvent("box", event(9, undefined));
+    R.after_unrevisioned = p.view.box.max[2];
+    p.commitRequest("fit_visible", { padding: 1 });
+    R.request_generation = window.__sent[window.__sent.length - 1].payload.generation;
+    p.onSources({ done: true, truncated: 4 });
+    R.truncated_status = document.querySelector(".sbp-status-text").textContent;
+    p.onSources({ done: true, truncated: 0 });
+    R.loaded_status = document.querySelector(".sbp-status-text").textContent;
+    return R;
   };
 
   (async () => {

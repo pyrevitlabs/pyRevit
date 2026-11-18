@@ -182,6 +182,7 @@
     <system:String x:Key="PreviewUseScopeBox">Use</system:String>
     <system:String x:Key="PreviewLoading">Loading model {0} / {1}</system:String>
     <system:String x:Key="PreviewLoaded">{0} elements loaded</system:String>
+    <system:String x:Key="PreviewTruncated">{0} elements loaded, {1} small elements left out to keep the preview responsive</system:String>
     <system:String x:Key="PreviewNoBox">This view has no box. Create one in the navigator first.</system:String>
     <system:String x:Key="PreviewSnappedTo">Snapped to {0}</system:String>
     <system:String x:Key="PreviewHelp">Drag the round handles to move a face; hold Alt to skip snapping. Drag the arrow above the box to rotate it. Drag to orbit, Shift-drag or right-drag to pan, scroll to zoom.</system:String>

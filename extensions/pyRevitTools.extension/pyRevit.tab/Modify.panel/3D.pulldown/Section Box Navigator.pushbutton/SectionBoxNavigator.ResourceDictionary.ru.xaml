@@ -182,6 +182,7 @@
     <system:String x:Key="PreviewUseScopeBox">Использовать</system:String>
     <system:String x:Key="PreviewLoading">Загрузка модели {0} / {1}</system:String>
     <system:String x:Key="PreviewLoaded">Загружено элементов: {0}</system:String>
+    <system:String x:Key="PreviewTruncated">Загружено элементов: {0}, пропущено мелких элементов: {1}, чтобы просмотр не тормозил</system:String>
     <system:String x:Key="PreviewNoBox">В этом виде нет рамки. Сначала создайте её в навигаторе.</system:String>
     <system:String x:Key="PreviewSnappedTo">Привязано к: {0}</system:String>
     <system:String x:Key="PreviewHelp">Перетаскивайте круглые маркеры, чтобы сдвинуть грань; удерживайте Alt, чтобы отключить привязку. Перетащите стрелку над рамкой, чтобы повернуть её. Перетаскивание — вращение, Shift+перетаскивание или правая кнопка — сдвиг, колесо — масштаб.</system:String>

@@ -182,6 +182,7 @@
     <system:String x:Key="PreviewUseScopeBox">Usar</system:String>
     <system:String x:Key="PreviewLoading">Carregando modelo {0} / {1}</system:String>
     <system:String x:Key="PreviewLoaded">{0} elementos carregados</system:String>
+    <system:String x:Key="PreviewTruncated">{0} elementos carregados, {1} elementos pequenos omitidos para manter a visualização fluida</system:String>
     <system:String x:Key="PreviewNoBox">Esta vista não tem caixa. Crie uma primeiro no navegador.</system:String>
     <system:String x:Key="PreviewSnappedTo">Encaixado em {0}</system:String>
     <system:String x:Key="PreviewHelp">Arraste as alças redondas para mover uma face; segure Alt para não encaixar. Arraste a seta acima da caixa para girá-la. Arraste para orbitar, Shift+arrastar ou botão direito+arrastar para deslocar, role para dar zoom.</system:String>
