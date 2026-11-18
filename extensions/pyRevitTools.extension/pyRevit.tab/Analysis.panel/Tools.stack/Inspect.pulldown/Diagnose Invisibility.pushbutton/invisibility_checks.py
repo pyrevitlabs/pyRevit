@@ -70,7 +70,7 @@ _NON_MODEL_VIEW_TYPES = frozenset(
     if hasattr(DB.ViewType, name)
 )
 
-_NOT_IN_3D_CATEGORIES = (
+NOT_IN_3D_CATEGORIES = (
     DB.BuiltInCategory.OST_Rooms,
     DB.BuiltInCategory.OST_Areas,
     DB.BuiltInCategory.OST_MEPSpaces,
@@ -1110,7 +1110,7 @@ def _check_view_type(ctx):
                 )
             ]
         if view.ViewType == DB.ViewType.ThreeD and any(
-            category.Id == DB.ElementId(builtin) for builtin in _NOT_IN_3D_CATEGORIES
+            category.Id == DB.ElementId(builtin) for builtin in NOT_IN_3D_CATEGORIES
         ):
             return [
                 Finding(

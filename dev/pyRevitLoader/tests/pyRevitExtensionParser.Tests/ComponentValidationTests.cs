@@ -162,7 +162,8 @@ namespace pyRevitExtensionParser.Tests
                     CommandComponentType.NoButton,
                     CommandComponentType.UrlButton,
                     CommandComponentType.ContentButton,
-                    CommandComponentType.ComboBox
+                    CommandComponentType.ComboBox,
+                    CommandComponentType.CheckBox
                 };
 
                 // Validate tab structure

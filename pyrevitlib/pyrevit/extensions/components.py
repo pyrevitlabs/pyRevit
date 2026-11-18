@@ -142,6 +142,19 @@ class SmartButton(GenericUICommand):
     type_id = exts.SMART_BUTTON_POSTFIX
 
 
+class CheckBoxButton(GenericUICommand):
+    """Ribbon checkbox whose script defines ``__chk_*__`` event handlers.
+
+    Note:
+        Revit's API has no ribbon checkbox, so the C# loader builds this one
+        as an AdWindows ``RibbonCheckBox``. Its handlers run outside Revit API
+        context and must not open transactions, and a stack can hold it only
+        alongside other checkboxes.
+    """
+
+    type_id = exts.CHECKBOX_POSTFIX
+
+
 class ContentButton(GenericUICommand):
     """Content Button."""
 
@@ -502,6 +515,7 @@ class Extension(GenericUIContainer):
                 exts.PANEL_PUSH_BUTTON_POSTFIX,
                 exts.CONTENT_BUTTON_POSTFIX,
                 exts.COMBOBOX_POSTFIX,
+                exts.CHECKBOX_POSTFIX,
                 exts.COMP_LIBRARY_DIR_NAME,
                 exts.COMP_HOOKS_DIR_NAME,
             )

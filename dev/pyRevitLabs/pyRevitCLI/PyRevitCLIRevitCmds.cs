@@ -44,11 +44,10 @@ namespace pyRevitCLI {
 
         internal static void
         KillAllRevits(string revitYear) {
-            int revitYearNumber = 0;
-            if (int.TryParse(revitYear, out revitYearNumber))
-                RevitController.KillRunningRevits(revitYearNumber);
-            else
+            if (revitYear is null)
                 RevitController.KillAllRunningRevits();
+            else
+                RevitController.KillRunningRevits(PyRevitCLIArguments.RevitYear(revitYear));
         }
 
         internal static void

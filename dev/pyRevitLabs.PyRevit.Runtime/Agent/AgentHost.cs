@@ -261,6 +261,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The ExternalEvent stays, so a later <see cref="Configure"/> can start the host again.
         /// </summary>
         public static void Stop() {
+            AgentRecorder.StopIfActive("host_stopped");
             DisposeTabHighlight();
             lock (sync) {
                 if (pipeServer == null)
@@ -366,6 +367,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <remarks>
+    /// Session recordings are pruned by the same pass, by their own retention policy
+    /// (<see cref="AgentRecordingStore.Retention"/> and <see cref="AgentRecordingStore.MaxRecordings"/>).
     /// Run records and captures older than <see cref="RecordRetention"/> are deleted when the
     /// host starts and again, at most once per <see cref="PruneInterval"/>, when a run record is
     /// created, so a busy agent doesn't fill the user's profile even in a Revit session left open
@@ -382,6 +385,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public static string InstancesDir => Path.Combine(RootDir, "instances");
         public static string RunsDir => Path.Combine(RootDir, "runs");
         public static string CapturesDir => Path.Combine(RootDir, "captures");
+        public static string RecordingsDir => Path.Combine(RootDir, "recordings");
         public static string InstanceFile =>
             Path.Combine(InstancesDir, AgentHost.ProcessId + ".json");
 
@@ -405,6 +409,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static void PruneOldRecords(DateTime cutoff) {
             var failures = new List<string>();
             var removed = AgentRecordPruner.Prune(RunsDir, CapturesDir, cutoff, failures);
+            try {
+                removed += AgentRecordingStore.Prune(RecordingsDir, DateTime.Now, null);
+            }
+            catch (Exception ex) {
+                failures.Add(ex.Message);
+            }
             foreach (var failure in failures)
                 pathsLogger.Debug("Could not prune agent records: {0}", failure);
             if (removed > 0)

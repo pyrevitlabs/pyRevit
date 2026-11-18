@@ -207,6 +207,9 @@ namespace pyRevitExtensionParser
                 case "large_icon":
                     parsed.LargeIcon = ParseBool(valueNode);
                     return;
+                case "checked":
+                    parsed.IsChecked = ParseBool(valueNode);
+                    return;
                 default:
                     // Keep existing behavior where unknown top-level scalar key-value pairs
                     // are treated as template values.

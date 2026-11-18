@@ -233,6 +233,11 @@ namespace pyRevitExtensionParser
         public List<ComboBoxMember> Members { get; set; } = new List<ComboBoxMember>();
 
         /// <summary>
+        /// Whether a CheckBox component starts checked, taken from its bundle's <c>checked</c> key.
+        /// </summary>
+        public bool IsChecked { get; set; }
+
+        /// <summary>
         /// Gets the localized title for the specified locale, with fallback logic
         /// </summary>
         /// <param name="locale">The preferred locale (e.g., "en_us", "fr_fr")</param>

@@ -122,6 +122,8 @@ Use `Revit` for any Revit dependency and one of the four levels above. A method 
 
 Adding a test or adjacent project must not require changing a central list. Network/elevation requirements must be provisioned or isolated, not used to silently exempt HostFree tests from CI.
 
+`dev/tests/python/library/test_diagnose_invisibility_page.py` runs the real `report.js` of the Diagnose Invisibility report in a headless Edge or Chrome, through `fixtures/diagnose_invisibility_page/harness.html`, with a stubbed WebView2 bridge. Set `PYREVIT_TEST_BROWSER` to a browser executable to override the lookup. A missing browser fails the module when `CI` is set and skips it otherwise.
+
 ## Test quality
 
 - Assert outcomes and propagate failures. Printed comparisons, dialogs and debugger launchers are manual checks.
