@@ -69,6 +69,7 @@
     <Compile Include="SessionManagerReflectionCompatibilityTests.cs" />
     <Compile Include="PythonScriptMultiLangTest.cs" />
     <Compile Include="ComboBoxTests.cs" />
+    <Compile Include="CheckBoxTests.cs" />
     <Compile Include="SmartButtonTests.cs" />
     <Compile Include="StackBuilderTests.cs" />
     <Compile Include="TemplateInheritanceTests.cs" />

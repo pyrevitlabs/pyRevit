@@ -13,6 +13,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// <summary>
         /// Builds a stack of buttons from the specified component.
         /// </summary>
+        /// <remarks>
+        /// Checkbox children are skipped: Revit API stacks cannot hold them, so the caller builds them.
+        /// </remarks>
         /// <param name="component">The stack component containing child buttons.</param>
         /// <param name="parentPanel">The panel to add the stack to.</param>
         /// <param name="assemblyInfo">Information about the assembly containing command implementations.</param>

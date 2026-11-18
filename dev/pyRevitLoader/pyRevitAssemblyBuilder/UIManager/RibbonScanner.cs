@@ -227,6 +227,11 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// Gets the identifier for a ribbon item used for tracking.
         /// Extracts the button's internal name from the Id property.
         /// </summary>
+        /// <remarks>
+        /// Invariant: a checkbox is tracked by its full id, which is what <see cref="UIManagerService"/>
+        /// marks for checkboxes. Revit keeps button names unique within a panel, but a standalone
+        /// checkbox and a stacked one can share a name there, so their last id segments collide.
+        /// </remarks>
         private static string GetButtonIdentifier(RibbonItem item)
         {
             // The Id property contains the control ID in format like:
@@ -235,6 +240,9 @@ namespace pyRevitAssemblyBuilder.UIManager
             // This matches what UIManagerService.MarkElementTouched() uses (DisplayName from folder basename)
 
             var id = item.Id;
+            if (item is RibbonCheckBox && !string.IsNullOrEmpty(id))
+                return id;
+
             if (!string.IsNullOrEmpty(id))
             {
                 // Extract the last segment after the last '%' character
