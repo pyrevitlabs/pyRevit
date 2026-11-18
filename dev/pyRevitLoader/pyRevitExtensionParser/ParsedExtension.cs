@@ -364,115 +364,94 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Collects all lib/ folder paths from the component hierarchy (extension -> tab -> panel -> button)
-        /// matching Python's behavior where each component can have its own lib/ folder
+        /// Returns the <c>lib</c> folders a command imports from: the extension's, then those of the
+        /// command's ancestors from the tab inwards, then the command's own. Missing folders are skipped.
         /// </summary>
+        /// <remarks>
+        /// Invariant: only the extension and the components on the path from the extension down to
+        /// <paramref name="command"/> contribute a folder. The <c>lib</c> of a sibling bundle, or of any
+        /// other component off that path, would shadow the command's own modules of the same name.
+        /// Note: these paths are compiled into the command assemblies, so changing what this returns for
+        /// an unchanged extension needs a new <c>CommandTypeGeneratorSchema</c> in
+        /// <c>AssemblyBuilderService</c>, or cached assemblies keep the old paths.
+        /// </remarks>
         public List<string> CollectLibraryPaths(ParsedComponent command)
         {
-            // Check cache first
             if (_libPathsCache.TryGetValue(command, out var cached))
                 return cached;
 
-            var libPaths = new List<string>();
-
-            // Start with extension's lib folder
-            if (!string.IsNullOrEmpty(this.Directory))
-            {
-                var extLib = Path.Combine(this.Directory, "lib");
-                if (DirExists(extLib))
-                    libPaths.Add(extLib);
-            }
-
-            // Collect lib paths from component hierarchy
-            CollectLibPathsRecursive(this.Children, command, libPaths);
-
-            // Cache the result
+            var libPaths = CollectAncestorFolders(command, "lib");
             _libPathsCache[command] = libPaths;
-
             return libPaths;
         }
 
-        private bool CollectLibPathsRecursive(IEnumerable<ParsedComponent> siblings, ParsedComponent target, List<string> libPaths)
-        {
-            if (siblings == null) return false;
-
-            foreach (var comp in siblings)
-            {
-                // Check if this component has a lib folder
-                if (!string.IsNullOrEmpty(comp.Directory))
-                {
-                    var compLib = Path.Combine(comp.Directory, "lib");
-                    if (DirExists(compLib) && !libPaths.Contains(compLib))
-                        libPaths.Add(compLib);
-                }
-
-                // If this is our target command, we're done
-                if (comp == target)
-                    return true;
-
-                // Otherwise, recurse into children
-                if (comp.Children != null && CollectLibPathsRecursive(comp.Children, target, libPaths))
-                    return true;
-            }
-
-            return false;
-        }
-
         /// <summary>
-        /// Collects all bin/ folder paths from the component hierarchy for locating invoke assemblies.
+        /// Returns the folders searched for a command's assemblies (invoke targets, bundle modules): the
+        /// <c>bin</c> folders of the extension, of the command's ancestors from the tab inwards and of the
+        /// command, then the command's own folder. Missing <c>bin</c> folders are skipped.
         /// </summary>
+        /// <remarks>
+        /// Invariant: as in <see cref="CollectLibraryPaths"/>, no component off the path from the extension
+        /// down to <paramref name="command"/> contributes a folder.
+        /// </remarks>
         public List<string> CollectBinaryPaths(ParsedComponent command)
         {
-            // Check cache first
             if (_binPathsCache.TryGetValue(command, out var cached))
                 return cached;
 
-            var binPaths = new List<string>();
+            var binPaths = CollectAncestorFolders(command, "bin");
+            if (!string.IsNullOrEmpty(command.Directory) && !binPaths.Contains(command.Directory))
+                binPaths.Add(command.Directory);
 
-            if (!string.IsNullOrEmpty(this.Directory))
-            {
-                var extBin = Path.Combine(this.Directory, "bin");
-                if (DirExists(extBin))
-                    binPaths.Add(extBin);
-            }
-
-            CollectBinPathsRecursive(this.Children, command, binPaths);
-
-            if (command != null && !string.IsNullOrEmpty(command.Directory))
-            {
-                var cmdBin = Path.Combine(command.Directory, "bin");
-                if (DirExists(cmdBin) && !binPaths.Contains(cmdBin))
-                    binPaths.Add(cmdBin);
-
-                if (!binPaths.Contains(command.Directory))
-                    binPaths.Add(command.Directory);
-            }
-
-            // Cache the result
             _binPathsCache[command] = binPaths;
-
             return binPaths;
         }
 
-        private bool CollectBinPathsRecursive(IEnumerable<ParsedComponent> siblings, ParsedComponent target, List<string> binPaths)
+        private List<string> CollectAncestorFolders(ParsedComponent command, string folderName)
+        {
+            var folders = new List<string>();
+            AddExistingFolder(folders, this.Directory, folderName);
+            foreach (var component in GetAncestorChain(command))
+                AddExistingFolder(folders, component.Directory, folderName);
+
+            return folders;
+        }
+
+        private void AddExistingFolder(List<string> folders, string parentDirectory, string folderName)
+        {
+            if (string.IsNullOrEmpty(parentDirectory))
+                return;
+
+            var folder = Path.Combine(parentDirectory, folderName);
+            if (DirExists(folder) && !folders.Contains(folder))
+                folders.Add(folder);
+        }
+
+        /// <summary>
+        /// Returns the components from the tab down to <paramref name="target"/>, both included, or only
+        /// <paramref name="target"/> when it is not part of this extension's tree.
+        /// </summary>
+        private List<ParsedComponent> GetAncestorChain(ParsedComponent target)
+        {
+            var chain = new List<ParsedComponent>();
+            if (!AppendChainTo(this.Children, target, chain))
+                chain.Add(target);
+
+            return chain;
+        }
+
+        private static bool AppendChainTo(IEnumerable<ParsedComponent> siblings, ParsedComponent target, List<ParsedComponent> chain)
         {
             if (siblings == null)
                 return false;
 
             foreach (var comp in siblings)
             {
-                if (!string.IsNullOrEmpty(comp.Directory))
-                {
-                    var compBin = Path.Combine(comp.Directory, "bin");
-                    if (DirExists(compBin) && !binPaths.Contains(compBin))
-                        binPaths.Add(compBin);
-                }
-
-                if (comp == target)
+                chain.Add(comp);
+                if (comp == target || AppendChainTo(comp.Children, target, chain))
                     return true;
 
-                if (comp.Children != null && CollectBinPathsRecursive(comp.Children, target, binPaths))
-                    return true;
+                chain.RemoveAt(chain.Count - 1);
             }
 
             return false;
