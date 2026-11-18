@@ -61,7 +61,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                 File.Delete(_modelPath);
         }
 
-        private string WriteModel(string basicFileInfoText) {
+        private string WriteModel(string basicFileInfoText, byte[] projectInformationData = null) {
             byte[] header = { 0x04, 0x00, 0x00, 0x00, 0x00, 0x01 };
             byte[] asciiNewLine = { 0x0D, 0x0A };
             byte[] info = header.Concat(asciiNewLine)
@@ -69,11 +69,33 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                                 .Concat(asciiNewLine)
                                 .ToArray();
 
-            using (var root = RootStorage.Create(_modelPath))
-            using (var stream = root.CreateStream("BasicFileInfo"))
-                stream.Write(info, 0, info.Length);
+            using (var root = RootStorage.Create(_modelPath)) {
+                using (var stream = root.CreateStream("BasicFileInfo"))
+                    stream.Write(info, 0, info.Length);
+
+                if (projectInformationData != null)
+                    using (var stream = root.CreateStream("ProjectInformation"))
+                        stream.Write(projectInformationData, 0, projectInformationData.Length);
+            }
 
             return _modelPath;
+        }
+
+        private static byte[] EmptyZip() {
+            var endOfCentralDirectory = new byte[22];
+            endOfCentralDirectory[0] = 0x50;
+            endOfCentralDirectory[1] = 0x4B;
+            endOfCentralDirectory[2] = 0x05;
+            endOfCentralDirectory[3] = 0x06;
+            return endOfCentralDirectory;
+        }
+
+        [Test()]
+        public void ProjectInformationWithoutProjectXml_HasNoProperties() {
+            var model = new RevitModelFile(WriteModel(Revit2026SampleInfo, EmptyZip()));
+
+            Assert.That(model.ProjectInfoProperties, Is.Not.Null);
+            Assert.That(model.ProjectInfoProperties.Count, Is.EqualTo(0));
         }
 
         [Test()]

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using LibGit2Sharp;
+using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.Common {
@@ -80,7 +81,7 @@ namespace pyRevitLabs.Common {
                 cloneOps.FetchOptions.CredentialsProvider = (_url, _usernameFromUrl, _credTypes) => creds.GetCredentials();
             try {
                 // attempt at cloning the repo
-                logger.Debug("Cloning \"{0}:{1}\" to \"{2}\"", repoPath, branchName, destPath);
+                logger.Debug("Cloning \"{0}:{1}\" to \"{2}\"", repoPath.RedactUrlCredentials(), branchName, destPath);
                 Repository.Clone(repoPath, destPath, cloneOps);
 
                 // make repository object and return

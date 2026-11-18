@@ -1,0 +1,12 @@
+title: Test CheckBox
+help_url: https://pyrevitlabs.notion.site/Developer-Docs
+tooltip: Test CheckBox - demonstrates the pyRevit CheckBox bundle
+tooltip_ext: >
+  This CheckBox demonstrates:
+
+  - The checked key for the initial state
+
+  - __chk_init__ restoring the last saved state on load
+
+  - __chk_on_change__ saving every new state
+checked: false

@@ -31,6 +31,7 @@ SCRIPT_BUNDLE_EXTS = (
     ".nobutton",
     ".linkbutton",
     ".combobox",
+    ".checkbox",
 )
 
 DUNDER_NAMES = frozenset(

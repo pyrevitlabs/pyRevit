@@ -587,6 +587,14 @@ namespace pyRevitExtensionParser
         public List<ComboBoxMember> Members { get; set; } = new List<ComboBoxMember>();
 
         /// <summary>
+        /// Gets or sets whether a .checkbox bundle starts checked, read from the <c>checked</c> key.
+        /// </summary>
+        /// <remarks>
+        /// The bundle script's <c>__chk_init__</c> handler can override it when the ribbon loads.
+        /// </remarks>
+        public bool IsChecked { get; set; }
+
+        /// <summary>
         /// Gets or sets template variables for liquid tag substitution.
         /// </summary>
         /// <remarks>

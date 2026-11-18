@@ -87,7 +87,7 @@
     <sys:String x:Key="ui_no_match">Nenhum elemento corresponde ao filtro atual.</sys:String>
     <sys:String x:Key="ui_loading_scene">Gerando visualização 3D...</sys:String>
     <sys:String x:Key="ui_scene_empty">Nenhum destes elementos tem geometria para visualizar.</sys:String>
-    <sys:String x:Key="ui_scene_help">Arraste para orbitar, Shift+arrastar ou botão direito para mover, roda para zoom, clique duplo para enquadrar. Clique em um elemento para encontrar seu cartão.</sys:String>
+    <sys:String x:Key="ui_scene_help">Arraste para orbitar, Shift+arrastar ou botão direito para mover, roda para zoom, clique duplo para enquadrar. Clique em um elemento para encontrar seu cartão. Clique com o botão direito em um elemento para mais ações.</sys:String>
     <sys:String x:Key="ui_layer_hidden">Não visível</sys:String>
     <sys:String x:Key="ui_layer_visible">Visível</sys:String>
     <sys:String x:Key="ui_layer_clip">Recorte / caixa de seção</sys:String>
@@ -168,5 +168,39 @@
     <sys:String x:Key="ui_no_view_ticked">Marque pelo menos uma vista.</sys:String>
     <sys:String x:Key="ui_empty_state">Ainda não há nada para diagnosticar. Adicione elementos e vistas.</sys:String>
     <sys:String x:Key="ui_reload_blocked">Recarregar apagaria este relatório. Use “Verificar novamente” em vez disso.</sys:String>
+
+    <sys:String x:Key="ui_reveal">Revelar ocultos</sys:String>
+    <sys:String x:Key="ui_reveal_hint">Desenhar no Revit cada elemento oculto na área de tela desta vista, com uma cor por motivo. Clique novamente para remover.</sys:String>
+    <sys:String x:Key="ui_reveal_refresh">Atualizar sobreposição</sys:String>
+    <sys:String x:Key="ui_reveal_follow">Acompanhar a área de visualização</sys:String>
+    <sys:String x:Key="ui_reveal_select">Selecionar</sys:String>
+    <sys:String x:Key="ui_reveal_summary">{0} elemento(s) oculto(s) desenhado(s)</sys:String>
+    <sys:String x:Key="ui_reveal_left_out">Mais {0} não desenhados. Aproxime para vê-los.</sys:String>
+    <sys:String x:Key="ui_reveal_skipped">{0} elemento(s) minúsculo(s) ignorado(s).</sys:String>
+    <sys:String x:Key="ui_reveal_none">Nada está oculto na área visível.</sys:String>
+    <sys:String x:Key="ui_reveal_search">Filtrar por nome, categoria, nível, marca ou id</sys:String>
+    <sys:String x:Key="ui_reveal_all_levels">Todos os níveis</sys:String>
+    <sys:String x:Key="ui_reveal_clear_filter">Limpar filtro</sys:String>
+    <sys:String x:Key="ui_reveal_select_shown">Selecionar exibidos</sys:String>
+    <sys:String x:Key="ui_reveal_filtered">Desenhando {0} de {1} no Revit</sys:String>
+    <sys:String x:Key="ui_reveal_more_rows">Mais {0}. Restrinja o filtro para listá-los.</sys:String>
+    <sys:String x:Key="ui_reveal_row_hint">Mostrar este elemento no Revit e explicar por que ele não está visível. Ctrl ou Shift + clique para selecionar vários.</sys:String>
+    <sys:String x:Key="ui_reveal_add_selection">Adicionar seleção do Revit</sys:String>
+    <sys:String x:Key="ui_reveal_add_selection_hint">Diagnostica nesta vista os elementos selecionados no Revit e os desenha, independentemente do tamanho. Selecione o elemento ausente onde ele estiver visível, por exemplo em outra vista ou em uma tabela.</sys:String>
+    <sys:String x:Key="ui_reveal_add_to_report">Adicionar ao relatório</sys:String>
+    <sys:String x:Key="ui_reveal_columns">Motivo|Categoria|Tipo|Nível|Marca|Id</sys:String>
+    <sys:String x:Key="ui_reveal_search_all">Avaliar elementos correspondentes</sys:String>
+    <sys:String x:Key="ui_reveal_search_all_hint">Diagnostica todos os elementos que correspondem ao filtro, não apenas os maiores alcançados pelo orçamento de tempo. Pesquisa categoria, tipo, nível, marca e id.</sys:String>
+    <sys:String x:Key="ui_reveal_scoped">Somente os elementos que correspondem ao filtro foram avaliados. Atualize a sobreposição para avaliar todos.</sys:String>
+    <sys:String x:Key="ui_menu_show_card">Ir para o cartão</sys:String>
+    <sys:String x:Key="ui_menu_frame">Enquadrar em 3D</sys:String>
+    <sys:String x:Key="ui_menu_zoom">Mostrar no Revit</sys:String>
+    <sys:String x:Key="ui_menu_select">Selecionar no Revit</sys:String>
+    <sys:String x:Key="ui_menu_remove">Remover do relatório</sys:String>
+    <sys:String x:Key="reveal_added">{0} elemento(s) selecionado(s) desenhado(s).</sys:String>
+    <sys:String x:Key="reveal_added_visible">{0} já visível(is) nesta vista.</sys:String>
+    <sys:String x:Key="reveal_unsupported">A sobreposição não está disponível em vistas do tipo {}.</sys:String>
+    <sys:String x:Key="reveal_needs_webview2">Revelar ocultos requer a janela de saída WebView2 e o IronPython.</sys:String>
+    <sys:String x:Key="reveal_unsupported_active">Abra primeiro uma planta, corte, elevação ou vista 3D.</sys:String>
 
 </ResourceDictionary>

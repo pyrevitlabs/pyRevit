@@ -8,17 +8,19 @@ in ``invisibility_checks``.
 """
 
 from pyrevit import forms, revit, script
-from pyrevit.compat import IRONPY, get_elementid_value_func
+from pyrevit.compat import get_elementid_value_func
 
 from invisibility_checks import collect_visible_ids, diagnose_invisibility, t
-from invisibility_report import format_element_label, show_report
+from invisibility_report import (
+    format_element_label,
+    show_report,
+    supports_interactive_report,
+)
 
 logger = script.get_logger()
 output = script.get_output()
 
 get_elementid_value = get_elementid_value_func()
-
-_WEBVIEW2_ENGINE = "WebView2/Chromium"
 
 
 def _get_target_elements():
@@ -32,13 +34,6 @@ def _get_target_elements():
     return revit.pick_elements(
         message=t("pick_prompt", "Select element(s) to diagnose")
     )
-
-
-def _supports_interactive_report():
-    try:
-        return IRONPY and output.renderer_engine == _WEBVIEW2_ENGINE
-    except Exception:
-        return False
 
 
 def _print_plain_report(elements, views):
@@ -104,7 +99,7 @@ def main():
         forms.alert(t("no_view_error", "No view selected."))
         return
 
-    if _supports_interactive_report():
+    if supports_interactive_report(output):
         show_report(output, elements, views)
     else:
         _print_plain_report(elements, views)

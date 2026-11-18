@@ -199,6 +199,7 @@ class Python3CompatibilityTests(SysModulesIsolatedTestCase):
             exts.PANEL_PUSH_BUTTON_POSTFIX,
             exts.CONTENT_BUTTON_POSTFIX,
             exts.COMBOBOX_POSTFIX,
+            exts.CHECKBOX_POSTFIX,
             exts.COMP_LIBRARY_DIR_NAME,
             exts.COMP_HOOKS_DIR_NAME,
         )
@@ -251,6 +252,7 @@ class Python3CompatibilityTests(SysModulesIsolatedTestCase):
             "X.panelbutton",
             "X.content",
             "X.combobox",
+            "X.checkbox",
             "pushbutton",
             "xpushbutton",
             "X.urlbutton",
