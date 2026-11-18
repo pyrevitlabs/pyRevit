@@ -679,14 +679,20 @@ namespace pyRevitExtensionParser
 
         /// <summary>
         /// Reads the extension-level Python engine from <c>"engine": "cpython"</c> or the
-        /// bundle-style <c>"engine": {"type": "cpython"}</c>; unsupported values declare nothing
-        /// and are logged as a warning, matching the Python loader.
+        /// bundle-style <c>"engine": {"type": "cpython"}</c>; unsupported values, including
+        /// a non-string <c>type</c>, declare nothing and are logged as a warning, matching the
+        /// Python loader. A mapping without <c>type</c> declares nothing silently.
         /// </summary>
         private static string ReadDeclaredPythonEngine(JToken engine, string manifestPath)
         {
             var declared = engine is JObject engineObject ? engineObject["type"] : engine;
-            if (declared == null || declared.Type != JTokenType.String)
+            if (declared == null || declared.Type == JTokenType.Null)
                 return null;
+            if (declared.Type != JTokenType.String)
+            {
+                LogWarning($"Ignoring unsupported extension Python engine declaration: {declared} ({manifestPath})");
+                return null;
+            }
             var normalized = declared.ToString().Trim().ToLowerInvariant();
             if (normalized == ParsedExtension.CPythonEngineDeclaration
                 || normalized == ParsedExtension.IronPythonEngineDeclaration)

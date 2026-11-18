@@ -188,24 +188,31 @@ ICON_FILE_FORMAT = ".png"
 
 
 def _engine_type_of(engine_meta):
-    if isinstance(engine_meta, dict):
-        engine_meta = engine_meta.get(MDATA_ENGINE_TYPE)
     if not hasattr(engine_meta, "strip"):
         return None
     return engine_meta.strip()
 
 
-def get_declared_engine_type(metadata):
-    """Return the engine type an extension manifest declares, if any, trimmed.
+def get_declared_engine_value(metadata):
+    """Return the raw engine declaration of an extension manifest, if any.
 
     Accepts ``"engine": "cpython"`` and the bundle-style mapping
     ``"engine": {"type": "cpython", ...}`` that the C# loader also reads. A
     mapping without ``type`` only configures engine behavior and declares
-    nothing.
+    nothing. The value is returned as written, so a non-string ``type`` stays
+    visible to callers that report unsupported declarations.
     """
     if not isinstance(metadata, dict):
         return None
-    return _engine_type_of(metadata.get(MDATA_ENGINE))
+    engine_meta = metadata.get(MDATA_ENGINE)
+    if isinstance(engine_meta, dict):
+        return engine_meta.get(MDATA_ENGINE_TYPE)
+    return engine_meta
+
+
+def get_declared_engine_type(metadata):
+    """Return the string engine type an extension manifest declares, trimmed."""
+    return _engine_type_of(get_declared_engine_value(metadata))
 
 
 def get_bundle_engine_type(metadata):
@@ -213,14 +220,18 @@ def get_bundle_engine_type(metadata):
 
     Unlike an extension manifest, a bundle declares its engine only through
     the ``engine:`` mapping; a scalar ``engine:`` is ignored, as the C#
-    ``BundleParser`` ignores it.
+    ``BundleParser`` ignores it. Mapping keys match case-insensitively and
+    ignoring padding, as ``BundleParser`` normalizes them.
     """
     if not isinstance(metadata, dict):
         return None
     engine_meta = metadata.get(MDATA_ENGINE)
     if not isinstance(engine_meta, dict):
         return None
-    return _engine_type_of(engine_meta)
+    for key, value in engine_meta.items():
+        if hasattr(key, "strip") and key.strip().lower() == MDATA_ENGINE_TYPE:
+            return _engine_type_of(value)
+    return None
 
 
 def first_line_selects_cpython(first_line):
