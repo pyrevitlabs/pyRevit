@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.NLog;
 using pyRevitLabs.TargetApps.Revit;
 
@@ -16,12 +17,13 @@ namespace pyRevitLabs.PyRevit {
     /// the manifest and journal, and the clone and engine the session will load.
     /// </summary>
     public sealed class PyRevitLaunch {
-        internal PyRevitLaunch(string directory, RevitProduct product, PyRevitClone clone, PyRevitEngine engine, string configRoot) {
+        internal PyRevitLaunch(string directory, RevitProduct product, PyRevitClone clone, PyRevitEngine engine, string configRoot, bool? agentEnabled = null) {
             Directory = directory;
             Product = product;
             Clone = clone;
             Engine = engine;
             ConfigRoot = configRoot;
+            AgentEnabled = agentEnabled;
         }
 
         public string Directory { get; }
@@ -31,6 +33,12 @@ namespace pyRevitLabs.PyRevit {
 
         /// <summary>The per-session pyRevit user data folder, or null when the session shares the user's.</summary>
         public string ConfigRoot { get; }
+
+        /// <summary>
+        /// Whether the agent host starts in the session, read from the config the session was seeded with,
+        /// or null when the session shares the user's config and this launch did not read it.
+        /// </summary>
+        public bool? AgentEnabled { get; }
 
         public string ManifestFile => Path.Combine(Directory, PyRevitConsts.AddinFileName + ".addin");
         public string JournalFile => Path.Combine(Directory, "PyRevitLaunch.txt");
@@ -95,15 +103,18 @@ Jrn.Data ""File Name"" , ""IDOK"" , ""{0}""
             CommonUtils.EnsurePath(directory);
             try {
                 string configRoot = null;
+                bool? agentEnabled = null;
                 if (isolated) {
                     configRoot = Path.Combine(directory, PyRevitLabsConsts.AppdataDirName);
                     CommonUtils.EnsurePath(configRoot);
+                    var seededConfig = Path.Combine(configRoot, PyRevitLabsConsts.DefaultConfigsFileName);
                     var sourceConfig = FindConfigToCopy(clone);
                     if (sourceConfig != null)
-                        File.Copy(sourceConfig, Path.Combine(configRoot, PyRevitLabsConsts.DefaultConfigsFileName));
+                        File.Copy(sourceConfig, seededConfig);
+                    agentEnabled = ReadAgentEnabled(seededConfig);
                 }
 
-                var launch = new PyRevitLaunch(directory, product, clone, engine, configRoot);
+                var launch = new PyRevitLaunch(directory, product, clone, engine, configRoot, agentEnabled);
                 RevitAddons.CreateManifestFile(
                     revitYear,
                     Path.GetFileName(launch.ManifestFile),
@@ -221,6 +232,25 @@ Jrn.Data ""File Name"" , ""IDOK"" , ""{0}""
                      && environment[PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar] == "1") {
                 environment.Remove(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar);
                 environment.Remove(PyRevitLabsConsts.PyRevitPathOverrideEnvVar);
+            }
+        }
+
+        /// <summary>
+        /// Whether <c>[agent] enabled</c> is on in <paramref name="configFile"/>. A missing file, a missing
+        /// key and a file that can't be read all count as off, as they do when the agent host starts.
+        /// </summary>
+        internal static bool ReadAgentEnabled(string configFile) {
+            if (!File.Exists(configFile))
+                return PyRevitConsts.ConfigsAgentEnabledDefault;
+            try {
+                return IniConfiguration.Create(configFile, readOnly: true).GetValueOrDefault(
+                    PyRevitConsts.ConfigsAgentSection,
+                    PyRevitConsts.ConfigsAgentEnabledKey,
+                    PyRevitConsts.ConfigsAgentEnabledDefault);
+            }
+            catch (Exception exception) {
+                logger.Debug("Can not read the agent setting of \"{0}\" | {1}", configFile, exception.Message);
+                return false;
             }
         }
 
