@@ -19,8 +19,10 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
     /// <see cref="double"/> and <see cref="string"/> values.
     /// </para>
     /// <para>
-    /// Invariant: there is at most one live proxy per Python object, and proxies compare and
-    /// hash by the identity of that object, so unhashable Python objects work as WPF items.
+    /// Invariant: there is at most one live proxy per Python object. Proxies of hashable objects
+    /// compare with Python <c>==</c> and hash with Python <c>hash()</c>, as pythonnet's own
+    /// <c>PyObject</c> does, so equal values find each other in .NET collections. Proxies of
+    /// unhashable objects compare and hash by identity, so they still work as WPF items.
     /// </para>
     /// </remarks>
     public sealed class PythonObjectProxy : ICustomTypeDescriptor, INotifyPropertyChanged, IPythonValue {
@@ -31,6 +33,7 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         private readonly PyObject source;
         private readonly IntPtr handle;
         private readonly bool isDict;
+        private bool? hashable;
 
         private PythonObjectProxy(PyObject source) {
             this.source = source;
@@ -99,10 +102,16 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
 
         internal void SetAttribute(string name, object value) {
             using (Py.GIL()) {
-                if (isDict)
-                    source.SetItem(name, PythonBinding.ToPython(value));
-                else
-                    source.SetAttr(name, PythonBinding.ToPython(value));
+                var python = PythonBinding.ToPython(value);
+                try {
+                    if (isDict)
+                        source.SetItem(name, python);
+                    else
+                        source.SetAttr(name, python);
+                }
+                finally {
+                    PythonBinding.Release(value, python);
+                }
             }
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
@@ -123,14 +132,52 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
                 return source.ToString();
         }
 
-        /// <summary>True when <paramref name="obj"/> proxies the same Python object.</summary>
+        /// <summary>
+        /// True when <paramref name="obj"/> proxies the same Python object, or an equal one when
+        /// both are hashable.
+        /// </summary>
         public override bool Equals(object obj) {
-            return obj is PythonObjectProxy other && other.handle == handle;
+            if (!(obj is PythonObjectProxy other))
+                return false;
+            if (other.handle == handle)
+                return true;
+            using (Py.GIL()) {
+                if (!IsHashable() || !other.IsHashable())
+                    return false;
+                try {
+                    using (var operatorModule = Py.Import("operator"))
+                    using (var result = operatorModule.InvokeMethod("eq", source, other.source))
+                        return result.IsTrue();
+                }
+                catch (PythonException ex) {
+                    Trace.TraceWarning("Python equality failed: {0}", ex.Message);
+                    return false;
+                }
+            }
         }
 
         /// <inheritdoc/>
         public override int GetHashCode() {
-            return handle.GetHashCode();
+            using (Py.GIL()) {
+                if (IsHashable()) {
+                    try {
+                        using (var hash = source.InvokeMethod("__hash__"))
+                            return hash.As<long>().GetHashCode();
+                    }
+                    catch (PythonException ex) {
+                        Trace.TraceWarning("Python hash failed: {0}", ex.Message);
+                    }
+                }
+                return handle.GetHashCode();
+            }
+        }
+
+        private bool IsHashable() {
+            if (hashable.HasValue)
+                return hashable.Value;
+            using (var hash = source.GetAttr("__hash__"))
+                hashable = !hash.IsNone();
+            return hashable.Value;
         }
 
         /// <summary>
@@ -235,6 +282,8 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         private static readonly ConcurrentDictionary<(string, Type), PythonPropertyDescriptor> Shared =
             new ConcurrentDictionary<(string, Type), PythonPropertyDescriptor>();
 
+        private const int MaxShared = 4096;
+
         private readonly Type propertyType;
 
         private PythonPropertyDescriptor(string name, Type propertyType) : base(name, null) {
@@ -242,6 +291,8 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         }
 
         internal static PythonPropertyDescriptor Named(string name, Type propertyType) {
+            if (Shared.Count >= MaxShared)
+                Shared.Clear();
             return Shared.GetOrAdd((name, propertyType), key => new PythonPropertyDescriptor(key.Item1, key.Item2));
         }
 

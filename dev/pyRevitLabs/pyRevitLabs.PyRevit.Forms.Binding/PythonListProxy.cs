@@ -73,7 +73,13 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
                 RequireWritable();
                 using (Py.GIL()) {
                     CheckIndex(index, Length());
-                    items.SetItem(index, PythonBinding.ToPython(value));
+                    var python = PythonBinding.ToPython(value);
+                    try {
+                        items.SetItem(index, python);
+                    }
+                    finally {
+                        PythonBinding.Release(value, python);
+                    }
                 }
             }
         }
@@ -82,7 +88,13 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         public int Add(object value) {
             RequireWritable();
             using (Py.GIL()) {
-                items.InvokeMethod("append", PythonBinding.ToPython(value)).Dispose();
+                var python = PythonBinding.ToPython(value);
+                try {
+                    items.InvokeMethod("append", python).Dispose();
+                }
+                finally {
+                    PythonBinding.Release(value, python);
+                }
                 return Length() - 1;
             }
         }
@@ -93,8 +105,14 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
             using (Py.GIL()) {
                 if (index < 0 || index > Length())
                     throw new ArgumentOutOfRangeException(nameof(index));
-                using (var position = new PyInt(index))
-                    items.InvokeMethod("insert", position, PythonBinding.ToPython(value)).Dispose();
+                var python = PythonBinding.ToPython(value);
+                try {
+                    using (var position = new PyInt(index))
+                        items.InvokeMethod("insert", position, python).Dispose();
+                }
+                finally {
+                    PythonBinding.Release(value, python);
+                }
             }
         }
 

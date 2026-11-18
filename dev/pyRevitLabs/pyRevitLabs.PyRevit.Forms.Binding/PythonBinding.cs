@@ -387,5 +387,15 @@ def names(value):
                     return value.ToPython();
             }
         }
+
+        /// <summary>
+        /// Disposes a value returned by <see cref="ToPython"/> that the caller owns, and leaves
+        /// the source of a proxy alone.
+        /// </summary>
+        /// <remarks>Requires the GIL.</remarks>
+        internal static void Release(object value, PyObject python) {
+            if (!(value is IPythonValue))
+                python.Dispose();
+        }
     }
 }

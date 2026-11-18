@@ -469,6 +469,27 @@ assert box.Items.Count == 2
         });
     }
 
+    /// <summary>Proxies of hashable objects follow Python equality and hashing; proxies of unhashable objects stay identity based.</summary>
+    [Fact]
+    public void ProxyEqualityFollowsPythonForHashableObjectsOnly() {
+        host.Run(() => {
+            IList list;
+            using (Py.GIL()) {
+                using var scope = Py.CreateScope();
+                scope.Exec(Common + "P = namedtuple('P', 'x y')\nvalues = [P(1, 2), P(1, 2), P(3, 4), Item('a', 1), Item('a', 1)]\nholder = System.Collections.ArrayList()\nholder.Add(Controls.ListBox())\nholder[0].ItemsSource = values\n");
+                var box = (System.Windows.Controls.ListBox)((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+                list = (IList)box.ItemsSource;
+            }
+            Assert.Equal(list[0], list[1]);
+            Assert.Equal(list[0]!.GetHashCode(), list[1]!.GetHashCode());
+            Assert.NotEqual(list[0], list[2]);
+            var keyed = new Dictionary<object, int> { [list[0]!] = 7 };
+            Assert.Equal(7, keyed[list[1]!]);
+            Assert.NotEqual(list[3], list[4]);
+            Assert.Equal(list[3], list[3]);
+        });
+    }
+
     /// <summary>Proxies take the GIL themselves when WPF calls them from code that released it.</summary>
     [Fact]
     public void ProxiesTakeTheGilForCallersThatReleasedIt() {
