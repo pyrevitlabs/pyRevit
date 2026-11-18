@@ -33,12 +33,13 @@ namespace PyRevitLoader
     /// the copy its bundle loaded.
     /// Warning: three cases are not kept apart. <c>sys.path</c> is a new list each time a bundle is
     /// entered or brought back after a nested bundle, so a reference kept to an earlier list, such as
-    /// <c>from sys import path</c>, no longer changes the live path. A module loaded from a shared root
-    /// stays shared, so a bundle whose <c>lib</c> has a module with the same name gets the shared one
-    /// when another bundle imported it first. And a submodule that a bundle loads into a shared package,
-    /// by extending the package's <c>__path__</c>, leaves <c>sys.modules</c> with its bundle but stays
-    /// bound as an attribute of the package, which also keeps the extended <c>__path__</c>, so
-    /// <c>from pkg import sub</c> in another bundle can return it.
+    /// <c>from sys import path</c>, no longer changes the live path. A module loaded from a shared root,
+    /// other than a submodule of a package the bundle owns, stays shared, so a bundle whose <c>lib</c>
+    /// has a module with the same name gets the shared one when another bundle imported it first. And a
+    /// submodule that a bundle loads into a shared package, by extending the package's <c>__path__</c>,
+    /// leaves <c>sys.modules</c> with its bundle but stays bound as an attribute of the package, which
+    /// also keeps the extended <c>__path__</c>, so <c>from pkg import sub</c> in another bundle can
+    /// return it.
     /// Important: not thread-safe. Use it only on the thread that runs the engine's scripts.
     /// </remarks>
     internal sealed class BundleModuleIsolation

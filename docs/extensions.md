@@ -54,7 +54,7 @@ Every checkbox, smart button and combo box also keeps its own copy of the module
 Module isolation has three gaps, for checkboxes, smart buttons and combo boxes alike:
 
 - `sys.path` is a new list each time a bundle's code starts to run, so a reference kept to an earlier list, such as `from sys import path` at the top of a script, does not change the live path in later calls. Use `sys.path` itself.
-- A module from `site-packages` or `pyrevitlib` stays shared, so a bundle whose `lib` has a module with the same name gets the shared one when another bundle imported it first.
+- A module from `site-packages` or `pyrevitlib` stays shared, so a bundle whose `lib` has a module with the same name gets the shared one when another bundle imported it first. A submodule of a package the bundle ships is the exception: if that package extends its `__path__` into `site-packages`, the submodules it loads from there go with the package, so each bundle that ships it has its own copy, with its own state.
 - A submodule that a bundle loads into a shared package, by extending the package's `__path__`, stays bound to that package for every bundle.
 
 ## Bundle files
