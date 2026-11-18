@@ -80,13 +80,14 @@ namespace pyRevitLabs.UnitTests {
 
         [TestMethod]
         public void BlankPins_FailClosed() {
-            WriteUserConfig("[agent]\r\nenabled = true\r\npolicy = auto\r\nengine = cpython\r\nuser_skills = true\r\n");
-            WriteAdminConfig("[agent.admin]\r\nenabled =\r\npolicy =\r\nengine =\r\nuser_skills =\r\n");
+            WriteUserConfig("[agent]\r\nenabled = true\r\npolicy = auto\r\nengine = cpython\r\nuser_skills = true\r\nreckless = true\r\n");
+            WriteAdminConfig("[agent.admin]\r\nenabled =\r\npolicy =\r\nengine =\r\nuser_skills =\r\nreckless =\r\n");
 
             Assert.IsFalse(PyRevitConfigs.GetAgentEnabled());
             Assert.AreEqual("readonly", PyRevitConfigs.GetAgentPolicy());
             Assert.AreEqual("ironpython", PyRevitConfigs.GetAgentEngine());
             Assert.IsFalse(PyRevitConfigs.GetAgentUserSkillsEnabled());
+            Assert.IsFalse(PyRevitConfigs.GetAgentReckless());
             Assert.IsTrue(PyRevitConfigs.IsAgentKeyManaged(PyRevitConsts.ConfigsAgentEnabledKey));
         }
 
@@ -111,6 +112,31 @@ namespace pyRevitLabs.UnitTests {
             WriteAdminConfig("[agent.admin]\r\nuser_skills = false\r\n");
 
             Assert.IsFalse(PyRevitConfigs.GetAgentUserSkillsEnabled());
+        }
+
+        [TestMethod]
+        public void PinnedRecklessFalse_BeatsUserTrue() {
+            WriteUserConfig("[agent]\r\nreckless = true\r\n");
+            WriteAdminConfig("[agent.admin]\r\nreckless = false\r\n");
+
+            Assert.IsFalse(PyRevitConfigs.GetAgentReckless());
+            Assert.IsTrue(PyRevitConfigs.IsAgentKeyManaged(PyRevitConsts.ConfigsAgentRecklessKey));
+        }
+
+        [TestMethod]
+        public void PinnedRecklessMalformed_ReadsAsOff() {
+            WriteUserConfig("[agent]\r\nreckless = true\r\n");
+            WriteAdminConfig("[agent.admin]\r\nreckless = maybe\r\n");
+
+            Assert.IsFalse(PyRevitConfigs.GetAgentReckless());
+        }
+
+        [TestMethod]
+        public void SetAgentReckless_WhenPinned_Throws() {
+            WriteUserConfig("[agent]\r\n");
+            WriteAdminConfig("[agent.admin]\r\nreckless = false\r\n");
+
+            Assert.ThrowsException<PyRevitSettingManagedException>(() => PyRevitConfigs.SetAgentReckless(true));
         }
 
         [TestMethod]

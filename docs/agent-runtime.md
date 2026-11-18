@@ -98,7 +98,8 @@ pyrevit configs agent lock enabled (true | false)
 pyrevit configs agent lock policy (readonly | ask | auto)
 pyrevit configs agent lock engine (ironpython | cpython)
 pyrevit configs agent lock skills (true | false)
-pyrevit configs agent unlock (enabled | policy | engine | skills | --all)
+pyrevit configs agent lock reckless (true | false)
+pyrevit configs agent unlock (enabled | policy | engine | skills | reckless | --all)
 ```
 
 `lock` and `unlock` need an elevated prompt. `lock` also limits the machine config to
@@ -111,6 +112,7 @@ read access, so a standard user cannot remove a pin.
 | `policy` | A ceiling, not a fixed value. Users get the stricter of their own policy and the pin, so a pin of `ask` still lets a user choose `readonly`, but not `auto`. |
 | `engine` | Fixed. Also the default for runs that don't name one, and a run that names the other engine is refused with `engine_locked`. |
 | `user_skills` | Fixed. `false` stops the MCP server loading user-authored skills. |
+| `reckless` | Fixed. `false` keeps every run under the runner's in-script checks, and a run already in reckless mode returns to them at the next run. `true` turns [reckless mode](#reckless-mode) on for every user, who still has to confirm it in Revit before it applies. |
 
 `tab_highlight` is cosmetic and can't be pinned. The pins are read from the machine config only, and
 the `[agent.admin]` section is not copied when that config seeds a new user's profile.
@@ -129,13 +131,13 @@ What users see:
   pin that caps at `readonly` refuses modify runs with `policy_readonly`, naming the administrator.
   `get_context` reports `agent.policy_managed`.
 
-Pins fail closed: an `enabled` or `user_skills` value that is not `true` or `false` reads as
-`false`, a `policy` that isn't one of the three values reads as `readonly`, and an unknown
+Pins fail closed: an `enabled`, `user_skills` or `reckless` value that is not `true` or `false`
+reads as `false`, a `policy` that isn't one of the three values reads as `readonly`, and an unknown
 `engine` reads as `ironpython`. A key that is present but blank, such as `enabled =` left by an
 unset template variable in a hand-deployed file, counts as a pin with an invalid value, not as
 no pin. A machine config that exists but can't be read or parsed, for example because another
 process holds it open exclusively, locks everything in the same way (host off, policy `readonly`,
-no user skills) until it can be read again; a missing file pins nothing.
+no user skills, no reckless runs) until it can be read again; a missing file pins nothing.
 
 Every config-named `.ini` in `%ProgramData%\pyRevit` is read, not only the one pyRevit would load,
 and the strictest value per key wins: `false` over `true`, the lower policy, and `ironpython` when
@@ -539,7 +541,8 @@ you confirm it in a Revit prompt before the next run of any mode, so a script th
 the config can't make later runs reckless; No keeps it off until the setting is turned off
 and on again or Revit restarts. A script can't turn it on for its own run. A reckless run's
 response, its `response.json` record and the compact MCP result carry `"reckless": true`,
-and `get_context` reports `agent.reckless: true` while it is in force.
+and `get_context` reports `agent.reckless: true` while it is in force. An administrator can
+pin the setting for every user of the machine; see [Admin lock](#admin-lock).
 
 What a reckless run skips:
 

@@ -1176,6 +1176,25 @@ func main() {
 											"--log": complete.PredictNothing,
 										},
 									},
+									"reckless": complete.Command{
+										Sub: complete.Commands{
+											"true": complete.Command{
+												Sub: complete.Commands{},
+												Flags: complete.Flags{
+													"--log": complete.PredictNothing,
+												},
+											},
+											"false": complete.Command{
+												Sub: complete.Commands{},
+												Flags: complete.Flags{
+													"--log": complete.PredictNothing,
+												},
+											},
+										},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
 								},
 								Flags: complete.Flags{
 									"--log": complete.PredictNothing,
@@ -1205,6 +1224,13 @@ func main() {
 										},
 									},
 									"skills": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--all": complete.PredictNothing,
+											"--log": complete.PredictNothing,
+										},
+									},
+									"reckless": complete.Command{
 										Sub: complete.Commands{},
 										Flags: complete.Flags{
 											"--all": complete.PredictNothing,
