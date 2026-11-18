@@ -7,20 +7,23 @@ namespace PyRevitLoader
 {
     /// <summary>
     /// Keeps apart the bundles that run in one shared IronPython engine: each bundle's code runs with
-    /// that bundle's own <c>sys.path</c> and its own copies of the modules it loaded from its own
-    /// search paths.
+    /// that bundle's own <c>sys.path</c> and its own copies of the modules it loaded.
     /// </summary>
     /// <remarks>
     /// <see cref="SmartButtonExecutor"/>, <see cref="ComboBoxExecutor"/> and <see cref="CheckBoxExecutor"/>
     /// each run all their bundles in one engine, so their bundles share <c>sys.path</c> and
     /// <c>sys.modules</c>. Without this, a bundle that imports a module another bundle already loaded
     /// under the same name gets that bundle's cached copy.
-    /// A bundle owns the modules it loaded from its own search paths, which are all of them except the
-    /// shared roots: the engine's base paths and the roots added with <see cref="AddSharedRoot"/>, such
-    /// as <c>pyrevitlib</c> and <c>site-packages</c>. A bundle's modules stay out of <c>sys.modules</c>
-    /// while it is not the active bundle, so two bundles can ship <c>lib</c> modules with the same name
-    /// while pyRevit and the standard library are still imported once for all of them.
-    /// Invariant: modules loaded from a shared root are never moved, and neither is <c>__main__</c>.
+    /// A bundle owns the modules that appear in <c>sys.modules</c> while it is the active bundle and
+    /// the modules loaded from its own search paths, except those loaded from a shared root: the
+    /// engine's base paths and the roots added with <see cref="AddSharedRoot"/>, such as
+    /// <c>pyrevitlib</c> and <c>site-packages</c>. A package's submodules go with the package, even
+    /// ones loaded from a shared root. A bundle's modules stay out of <c>sys.modules</c> while it is
+    /// not the active bundle, so two bundles can ship <c>lib</c> modules with the same name while
+    /// pyRevit and the standard library are still imported once for all of them. A module stays with
+    /// its bundle even after the bundle's code removes the folder it came from from <c>sys.path</c>.
+    /// Invariant: a module loaded from a shared root moves only as a submodule of a package the bundle
+    /// owns, and <c>__main__</c> never moves.
     /// Note: only code that runs while its bundle is entered is kept apart. Callbacks a script subscribes
     /// itself, such as Revit event handlers, run with whatever the engine holds when they fire, so an
     /// import inside them can load a module again from the current <c>sys.path</c> instead of reusing
@@ -72,6 +75,8 @@ namespace PyRevitLoader
             internal Dictionary<string, object> Modules { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
 
             internal Dictionary<string, object> HiddenModules { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
+
+            internal Dictionary<string, object> ModulesWhenEntered { get; set; }
         }
 
         /// <summary>
@@ -210,10 +215,13 @@ namespace PyRevitLoader
 
         /// <summary>
         /// Points <c>sys.path</c> at the bundle's saved paths and puts its own modules into
-        /// <c>sys.modules</c>, keeping the modules they hide for <see cref="Deactivate"/>.
+        /// <c>sys.modules</c>, keeping the modules they hide for <see cref="Deactivate"/>. Then records
+        /// what <c>sys.modules</c> holds, so <see cref="Deactivate"/> can tell which modules appeared
+        /// while the bundle was active.
         /// </summary>
         private static void Activate(ScriptEngine engine, Bundle bundle)
         {
+            bundle.ModulesWhenEntered = null;
             engine.SetSearchPaths(bundle.SearchPaths);
             var modules = GetSysModules(engine);
             bundle.HiddenModules.Clear();
@@ -223,6 +231,7 @@ namespace PyRevitLoader
                     bundle.HiddenModules[module.Key] = hiddenModule;
                 modules[module.Key] = module.Value;
             }
+            bundle.ModulesWhenEntered = CopyModules(modules);
         }
 
         /// <summary>
@@ -240,8 +249,9 @@ namespace PyRevitLoader
             bundle.SearchPaths.AddRange(currentPaths);
 
             var modules = GetSysModules(engine);
+            var ownNames = FindOwnModuleNames(modules, bundle);
             bundle.Modules.Clear();
-            foreach (var name in FindOwnModuleNames(modules, bundle.SearchPaths))
+            foreach (var name in ownNames)
             {
                 bundle.Modules[name] = modules[name];
                 modules.Remove(name);
@@ -253,53 +263,81 @@ namespace PyRevitLoader
                     modules[module.Key] = module.Value;
             }
             bundle.HiddenModules.Clear();
+            bundle.ModulesWhenEntered = null;
         }
 
         /// <summary>
-        /// Lists the <c>sys.modules</c> entries a bundle owns: modules whose file lies under one of its
-        /// search paths that is not shared, and the other entries inside such a package, including the
-        /// <c>None</c> entries IronPython 2 records for failed implicit relative imports.
+        /// Lists the <c>sys.modules</c> entries the active bundle owns: the entries it owned when it
+        /// was entered, the modules that appeared or were replaced since then, the modules whose file
+        /// lies under one of its search paths that is not shared, and every other entry inside such a
+        /// package, including the <c>None</c> entries IronPython 2 records for failed implicit relative
+        /// imports.
         /// </summary>
         /// <remarks>
-        /// Invariant: a module whose file lies under a shared root is never owned, even inside an
-        /// owned package that extends its <c>__path__</c> into <c>site-packages</c>.
+        /// Note: ownership does not depend on the bundle's final <c>sys.path</c>, so a module imported
+        /// from a folder that the bundle's code removed from <c>sys.path</c> again still goes with the
+        /// bundle. A module that appeared without a file path, such as a built-in or .NET namespace
+        /// module or one from the embedded standard library, whose <c>__file__</c> is relative, stays
+        /// shared unless it belongs to an owned package.
+        /// Note: a submodule goes with its package even when its file lies under a shared root, as in a
+        /// package that extends its <c>__path__</c> into <c>site-packages</c>. It cannot stay shared
+        /// between two bundles' copies of the package: <c>import pkg.sub</c> in the second bundle would
+        /// find the cached submodule and leave that bundle's <c>pkg</c> without it.
+        /// Invariant: call it before <see cref="Bundle.Modules"/> is cleared, because those are the
+        /// entries the bundle owned when it was entered.
         /// </remarks>
-        private List<string> FindOwnModuleNames(IDictionary<object, object> modules, IEnumerable<string> searchPaths)
+        private List<string> FindOwnModuleNames(IDictionary<object, object> modules, Bundle bundle)
         {
-            var names = new List<string>();
             var ownRoots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var path in searchPaths)
+            foreach (var path in bundle.SearchPaths)
             {
                 var root = NormalizePath(path);
                 if (root != null && !_sharedRoots.Contains(root))
                     ownRoots.Add(root);
             }
 
-            if (ownRoots.Count == 0)
-                return names;
-
-            var moduleFiles = new Dictionary<string, string>(StringComparer.Ordinal);
+            var moduleNames = new List<string>();
+            var owned = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in modules)
             {
-                if (entry.Key is string name && name != MainModuleName)
-                    moduleFiles[name] = NormalizeModuleFile(GetModuleFile(entry.Value));
+                if (!(entry.Key is string name) || name == MainModuleName)
+                    continue;
+
+                moduleNames.Add(name);
+                var file = NormalizeModuleFile(GetModuleFile(entry.Value));
+                if (file != null && IsUnderAny(file, _sharedRoots))
+                    continue;
+
+                if (bundle.Modules.ContainsKey(name)
+                    || (file != null && (IsUnderAny(file, ownRoots) || AppearedWhileActive(bundle, name, entry.Value))))
+                    owned.Add(name);
             }
 
-            var loadedFromOwnRoots = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var module in moduleFiles)
+            var names = new List<string>();
+            foreach (var name in moduleNames)
             {
-                if (module.Value != null && IsUnderAny(module.Value, ownRoots) && !IsUnderAny(module.Value, _sharedRoots))
-                    loadedFromOwnRoots.Add(module.Key);
-            }
-
-            foreach (var module in moduleFiles)
-            {
-                var loadedFromSharedRoot = module.Value != null && IsUnderAny(module.Value, _sharedRoots);
-                if (loadedFromOwnRoots.Contains(module.Key)
-                    || (!loadedFromSharedRoot && loadedFromOwnRoots.Contains(TopLevelName(module.Key))))
-                    names.Add(module.Key);
+                if (owned.Contains(name) || owned.Contains(TopLevelName(name)))
+                    names.Add(name);
             }
             return names;
+        }
+
+        private static bool AppearedWhileActive(Bundle bundle, string name, object module)
+        {
+            var modulesWhenEntered = bundle.ModulesWhenEntered;
+            return modulesWhenEntered != null
+                && (!modulesWhenEntered.TryGetValue(name, out var moduleWhenEntered) || !ReferenceEquals(moduleWhenEntered, module));
+        }
+
+        private static Dictionary<string, object> CopyModules(IDictionary<object, object> modules)
+        {
+            var copy = new Dictionary<string, object>(StringComparer.Ordinal);
+            foreach (var entry in modules)
+            {
+                if (entry.Key is string name)
+                    copy[name] = entry.Value;
+            }
+            return copy;
         }
 
         private static IDictionary<object, object> GetSysModules(ScriptEngine engine)
