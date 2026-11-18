@@ -24,6 +24,9 @@ except ImportError:
         _is_tracked_extension_finding,
     )
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
+
 
 def _unicode_reachability(source):
     tree = ast.parse(source)
@@ -165,6 +168,15 @@ class ClrRuleScopeTests(unittest.TestCase):
                 """
             ),
         )
+
+    def test_cpython_reachable_branches_are_flagged(self):
+        """Branches CPython runs report CLR-LIST even when IronPython 3 cannot."""
+        for source in (
+            "if not IRONPY:\n    ids = List[DB.ElementId](element_ids)\n",
+            "if IRONPY:\n    pass\nelse:\n    ids = List[DB.ElementId](element_ids)\n",
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(["CLR-LIST"], self._codes(source))
 
     def test_names_bound_to_clr_values_or_capacities_are_not_flagged(self):
         """CLR results and counts passed by name are not Python iterables."""
