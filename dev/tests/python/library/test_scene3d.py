@@ -18,7 +18,7 @@ TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
 
 MESHING = (
-    pathlib.Path(__file__).resolve().parents[2]
+    pathlib.Path(__file__).resolve().parents[4]
     / "extensions"
     / "pyRevitTools.extension"
     / "lib"
