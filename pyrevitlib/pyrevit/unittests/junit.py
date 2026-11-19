@@ -26,6 +26,15 @@ def _to_text(value):
         return str(value)
 
 
+def _serialize(element):
+    """Serializes an element to text without an XML declaration.
+
+    Note: Python 2.7 rejects `encoding="unicode"`; lower-case "utf-8" is the one
+    encoding both 2.7 and 3 serialize without adding a declaration.
+    """
+    return ElementTree.tostring(element, encoding="utf-8").decode("utf-8")
+
+
 def _format_seconds(seconds):
     """Formats a duration as JUnit decimal seconds, clamping values consumers reject."""
     return "{0:.3f}".format(max(0.0, float(seconds)))
@@ -155,6 +164,10 @@ class JUnitReport(object):
         Returns:
             str: XML document with an XML declaration.
         """
+        declaration = '<?xml version="1.0" encoding="utf-8"?>'
+        return declaration + _serialize(self._testsuite())
+
+    def _testsuite(self):
         testsuite = ElementTree.Element("testsuite")
         testsuite.set("name", self._name)
         testsuite.set("tests", str(len(self._test_cases)))
@@ -166,9 +179,7 @@ class JUnitReport(object):
 
         for case in self._test_cases:
             self._append_case(testsuite, case)
-
-        declaration = '<?xml version="1.0" encoding="utf-8"?>'
-        return declaration + ElementTree.tostring(testsuite, encoding="unicode")
+        return testsuite
 
     def _count(self, kind):
         """Number of recorded cases of one kind."""
@@ -222,7 +233,7 @@ class JUnitReport(object):
         if directory and not os.path.isdir(directory):
             os.makedirs(directory)
 
-        current = ElementTree.fromstring(self.to_xml())
+        current = self._testsuite()
         suites = []
         if os.path.isfile(path):
             previous = ElementTree.parse(path).getroot()
@@ -247,7 +258,7 @@ class JUnitReport(object):
 
         with io.open(path, "w", encoding="utf-8") as report_file:
             report_file.write(_to_text('<?xml version="1.0" encoding="utf-8"?>'))
-            report_file.write(ElementTree.tostring(root, encoding="unicode"))
+            report_file.write(_serialize(root))
             report_file.write(_to_text("\n"))
 
         return path
