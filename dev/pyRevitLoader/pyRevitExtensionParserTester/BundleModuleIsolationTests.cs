@@ -32,7 +32,12 @@ namespace pyRevitExtensionParserTester
     /// attribute;</item>
     /// <item>a bundle's folder went back to its old index even after a shared folder was added before
     /// its neighbour;</item>
-    /// <item>a folder put back before a failed activation stayed in the shared package.</item>
+    /// <item>a folder put back before a failed activation stayed in the shared package;</item>
+    /// <item>a bundle's folder went back next to the first copy of a neighbour listed twice;</item>
+    /// <item>leaving a bundle that had imported its package again removed the module other code had
+    /// assigned to the shared package's attribute;</item>
+    /// <item>a bundle's package stayed bound to a copy of the shared package that the bundle had
+    /// imported again.</item>
     /// </list>
     /// It also covers these findings from the review of pyrevitlabs/pyRevit#4138, which shows the same
     /// code:
@@ -395,6 +400,25 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        public void Enter_BundleWhoseNeighbourIsListedTwice_PutsItsFolderBackWhereItWas()
+        {
+            string sharedRoot = CreateDirectory("site-packages");
+            string package = CreateDirectory(Path.Combine("site-packages", "spkg"));
+            string right = CreateDirectory(Path.Combine("site-packages", "spkg_right"));
+            File.WriteAllText(Path.Combine(package, "__init__.py"), $"__path__.extend([{PythonString(right)}, __path__[0]])");
+            File.WriteAllText(Path.Combine(right, "leaf.py"), "VALUE = 'right'");
+            Call(_isolation, "AddSharedRoot", sharedRoot);
+            string folder = CreateDirectory(Path.Combine("First", "lib", "spkg_ext"));
+            File.WriteAllText(Path.Combine(folder, "leaf.py"), "VALUE = 'First'");
+            object bundle = CreateBundle("First", sharedRoot);
+
+            using (Enter(bundle))
+                Execute($"import spkg\nspkg.__path__.append({PythonString(folder)})");
+            using (Enter(bundle))
+                Assert.That(Execute("import spkg.leaf\nresult = spkg.leaf.VALUE"), Is.EqualTo("right"));
+        }
+
+        [Test]
         public void Enter_BundleWhoseFoldersCannotAllGoBack_TakesOutTheOnesItPutBack()
         {
             string sharedRoot = CreateSharedPackage();
@@ -433,6 +457,42 @@ namespace pyRevitExtensionParserTester
                 Assert.That(Execute("from spkg import plugins\nresult = plugins.VALUE"), Is.EqualTo("First"));
 
             Assert.That(Execute(readAlias), Is.EqualTo("alias"));
+        }
+
+        [Test]
+        public void Dispose_BundleThatImportedItsPackageAgainOverAnAlias_PutsTheAliasBack()
+        {
+            string sharedRoot = CreateSharedPackage();
+            string sharedPart = CreateSharedPackagePart(sharedRoot);
+            object bundle = CreateBundleWithPackageForSharedPackage("First", sharedPart, sharedRoot);
+            string readAlias = "import spkg\nresult = getattr(getattr(spkg, 'plugins', None), '__name__', None)";
+
+            using (Enter(bundle))
+                Execute(ImportPackageFromSharedPackage("First"));
+            Execute("import spkg, sys\nspkg.plugins = type(sys)('alias')");
+            using (Enter(bundle))
+                Assert.That(
+                    Execute("import spkg, sys\nloaded = spkg.plugins\ndel sys.modules['spkg.plugins']\nimport spkg.plugins\nresult = spkg.plugins is not loaded"),
+                    Is.True);
+
+            Assert.That(Execute(readAlias), Is.EqualTo("alias"));
+        }
+
+        [Test]
+        public void Dispose_BundleThatImportedTheSharedPackageAgain_TakesItsPackageOffTheNewCopy()
+        {
+            string sharedRoot = CreateSharedPackage();
+            string sharedPart = CreateSharedPackagePart(sharedRoot);
+            object bundle = CreateBundleWithPackageForSharedPackage("First", sharedPart, sharedRoot);
+
+            using (Enter(bundle))
+                Execute(ImportPackageFromSharedPackage("First"));
+            using (Enter(bundle))
+                Assert.That(
+                    Execute("import sys\ndel sys.modules['spkg']\nfrom spkg import plugins\nresult = sys.modules['spkg'].plugins.VALUE"),
+                    Is.EqualTo("First"));
+
+            Assert.That(Execute("import spkg\nresult = hasattr(spkg, 'plugins')"), Is.False);
         }
 
         [Test]
