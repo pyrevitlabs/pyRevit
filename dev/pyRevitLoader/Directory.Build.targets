@@ -25,6 +25,8 @@
         <Compile Include="..\Source\SmartButtonExecutor.cs" Link="Source\SmartButtonExecutor.cs"/>
         <Compile Include="..\Source\ComboBoxExecutor.cs" Link="Source\ComboBoxExecutor.cs"/>
         <Compile Include="..\Source\CheckBoxExecutor.cs" Link="Source\CheckBoxExecutor.cs"/>
+        <Compile Include="..\Source\CheckBoxHandlerRegistry.cs" Link="Source\CheckBoxHandlerRegistry.cs"/>
+        <Compile Include="..\Source\BundleModuleIsolation.cs" Link="Source\BundleModuleIsolation.cs"/>
         <Compile Include="..\Source\SessionResourceRegistry.cs" Link="Source\SessionResourceRegistry.cs"/>
         <Compile Include="..\Source\ErrorReporter.cs" Link="Source\ErrorReporter.cs"/>
     </ItemGroup>
