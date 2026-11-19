@@ -356,10 +356,25 @@ namespace pyRevitCLI {
                 Console.WriteLine(string.Format("Engine: {0} ({1})", launch.Engine.Id, launch.Engine.Version));
                 Console.WriteLine(string.Format("Launch Directory: \"{0}\"", launch.Directory));
                 Console.WriteLine(string.Format("Config Root: \"{0}\"", launch.ConfigRoot ?? PyRevitLabsConsts.PyRevitPath));
+                if (launch.AgentEnabled.HasValue)
+                    Console.WriteLine(DescribeAgentHost(launch));
             }
             catch (IOException exception) {
                 logger.Debug("Can not print the launch summary | {0}", exception.Message);
             }
+        }
+
+        private static string DescribeAgentHost(PyRevitLaunch launch) {
+            if (launch.AgentEnabled == true)
+                return "Agent Host: enabled";
+            var seeded = string.Equals(
+                Path.GetDirectoryName(launch.AgentConfigFile),
+                launch.ConfigRoot,
+                StringComparison.OrdinalIgnoreCase);
+            var remedy = seeded
+                ? "Set [agent] enabled = true in the config it was seeded from to turn it on."
+                : string.Format("The machine config \"{0}\" applies instead of the seeded one; set [agent] enabled = true there.", launch.AgentConfigFile);
+            return "Agent Host: disabled in this session's config, so it will not register for MCP. " + remedy;
         }
 
         private static PyRevitClone ResolveLaunchClone(string cloneNameOrPath) {
