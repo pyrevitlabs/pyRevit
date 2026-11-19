@@ -256,8 +256,10 @@ so an `int` binds to a `double` target such as `ProgressBar.Maximum`.
 stored in that adapter match `SelectedValuePath` and trigger values. Every proxy, and every tracked
 adapter, goes back to Python as the original object: `ItemsSource`,
 `SelectedItem`, `Items[i]`, event arguments, filter predicates and
-`DataContext`. Proxies compare by Python identity, so unhashable objects work,
-and they take the GIL on each access.
+`DataContext`. Object proxies of hashable values compare with Python `==` and
+`hash()`, so an equal object assigned to `SelectedItem` selects its item in a
+Python list; unhashable ones and list proxies compare by identity. Proxies take
+the GIL on each access.
 The codecs are process-wide and claim only those four CLR
 targets, plus reference types a form's native root satisfies; Python lists
 passed as `object`, dicts and other builtins stay pythonnet objects. The bundled

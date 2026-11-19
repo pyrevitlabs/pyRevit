@@ -148,8 +148,9 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         }
 
         /// <summary>
-        /// Returns the position of <paramref name="value"/>, matching proxied Python objects by
-        /// identity and other values with <see cref="object.Equals(object, object)"/>.
+        /// Returns the position of <paramref name="value"/>, matching the same Python object first
+        /// and otherwise using <see cref="object.Equals(object, object)"/>, so a
+        /// <see cref="PythonObjectProxy"/> also finds an equal hashable item.
         /// </summary>
         public int IndexOf(object value) {
             using (Py.GIL())
@@ -191,15 +192,12 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
             var python = value as IPythonValue;
             for (var index = 0; index < count; index++) {
                 var item = items.GetItem(index);
-                if (python != null) {
-                    var same = item.Handle == python.Source.Handle;
+                if (python != null && item.Handle == python.Source.Handle) {
                     item.Dispose();
-                    if (same)
-                        return index;
-                }
-                else if (Equals(PythonBinding.ToClr(item), value)) {
                     return index;
                 }
+                if (Equals(PythonBinding.ToClr(item), value))
+                    return index;
             }
             return -1;
         }

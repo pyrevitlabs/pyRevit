@@ -697,4 +697,32 @@ finally:
     window.Close()
 ");
     }
+
+    /// <summary>An equal hashable object assigned as <c>SelectedItem</c> selects the matching item of a Python list.</summary>
+    [Fact]
+    public void SelectedItemMatchesAnEqualItemOfAPythonList() {
+        Python(@"
+class Key(object):
+    def __init__(self, k):
+        self.k = k
+
+    def __eq__(self, o):
+        return isinstance(o, Key) and o.k == self.k
+
+    def __ne__(self, o):
+        return not self.__eq__(o)
+
+    def __hash__(self):
+        return hash(self.k)
+
+box = Controls.ListBox()
+box.ItemsSource = [Key(1), Key(2), Key(3)]
+window = shown(box)
+try:
+    box.SelectedItem = Key(2)
+    assert box.SelectedIndex == 1, box.SelectedIndex
+finally:
+    window.Close()
+");
+    }
 }
