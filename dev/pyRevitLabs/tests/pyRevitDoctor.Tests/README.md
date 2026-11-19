@@ -4,7 +4,7 @@ Host-free xUnit tests for `pyrevit-doctor` (`dev/pyRevitLabs/pyRevitDoctor`).
 
 - **Owner:** pyRevit CLI / doctor maintainers.
 - **Framework:** xUnit on `net10.0-windows`. Every test is tagged `Level=Unit`, `Environment=HostFree`.
-- **Sources under test:** `pyRevitDoctor/ProductCatalog.cs`, compiled in through a linked `Compile` item so the test assembly does not reference the doctor executable.
+- **Sources under test:** `ProductCatalog.cs`, `UninstallEntryMatcher.cs`, `PurgeTargets.cs`, `PurgeSession.cs`, `PurgeFiles.cs` and `RegistryAccess.cs` from `pyRevitDoctor/`, compiled in through linked `Compile` items so the test assembly does not reference the doctor executable. The file-system tests run against a temporary fake profile; the registry key deletion and `PATH` steps are not covered.
 - **Fixtures:** `release/pyrevit-products.json`, copied to `Fixtures/pyrevit-products.json` in the output directory.
 - **CI:** run by `build/Modules/TestConfigurationsModule.cs` as part of `dotnet run -- ci`.
 
