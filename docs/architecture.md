@@ -248,7 +248,10 @@ convert values to CLR `bool`, `int`/`long`, `double`, `string`, null or nested
 proxies, so triggers, sorting, filters, `DisplayMemberPath` and
 `SelectedValuePath` behave as under IronPython. Both the proxy and the
 `BindingModel` type each property by its current value, as IronPython 3 does,
-so an `int` binds to a `double` target such as `ProgressBar.Maximum`.
+so an `int` binds to a `double` target such as `ProgressBar.Maximum`. The proxy
+reuses the value read for that type as the binding's first value, so a binding
+runs a getter once and a generator binds whole; later reads such as
+`UpdateTarget` call the getter again.
 `set_data_context` turns a Python list into a live list proxy, so
 `{Binding Count}` resolves and WPF can hash the context. A Reactive model assigned to
 `object` gets its `BindingModel` adapter, and a Python `int` becomes a CLR

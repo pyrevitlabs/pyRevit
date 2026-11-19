@@ -16,9 +16,11 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
     /// <para>
     /// Properties are a dict's string keys, or otherwise namedtuple fields, instance attributes and class
     /// <c>property</c>s; any other attribute, including ones served by <c>__getattr__</c>, is
-    /// found when a binding path names it. Values are converted by type on every read, so
-    /// triggers, sorting and converters see CLR <see cref="bool"/>, <see cref="int"/>,
-    /// <see cref="double"/> and <see cref="string"/> values.
+    /// found when a binding path names it. Values are converted by type, so triggers, sorting
+    /// and converters see CLR <see cref="bool"/>, <see cref="int"/>, <see cref="double"/> and
+    /// <see cref="string"/> values. A binding's first read may reuse the value read to type its
+    /// descriptor in the same dispatcher operation (see <see cref="GetProperties()"/>); later
+    /// reads call the Python getter.
     /// </para>
     /// <para>
     /// Invariant: there is at most one live proxy per Python object. Proxies of hashable objects
