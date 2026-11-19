@@ -158,6 +158,14 @@ class SelectionTests(unittest.TestCase):
         self.assertIn("-p:IronPythonVersion=IPY342", calls[1])
         self.assertEqual(["IPY2712PR", "IPY342"], [o["engine"] for o in outcomes])
 
+    def test_ironpython_forms_suite_runs_once_per_engine(self):
+        """The IronPython forms suite covers both engines, like the shell suite."""
+        project = {
+            "path": "dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.IronPython.Tests/"
+            "pyRevitLabs.PyRevit.Forms.IronPython.Tests.csproj"
+        }
+        self.assertEqual(("IPY2712PR", "IPY342"), run_tests.engine_variants(project))
+
     def test_csharp_selection_requires_a_built_product(self):
         """A fresh checkout fails fast with the build command, not with skipped cases."""
         with tempfile.TemporaryDirectory() as directory:

@@ -25,7 +25,10 @@ PROJECT_PATTERNS = ("*.csproj", "*.vbproj")
 STRICT_SKIPS_ENV = "PYREVIT_STRICT_SKIPS"
 BASELINES = ROOT / "dev/tests/coverage-baselines.json"
 TRX_NS = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
-ENGINE_VARIANTS = {"pyRevitLabs.PyRevit.Shell.Tests": ("IPY2712PR", "IPY342")}
+ENGINE_VARIANTS = {
+    "pyRevitLabs.PyRevit.Shell.Tests": ("IPY2712PR", "IPY342"),
+    "pyRevitLabs.PyRevit.Forms.IronPython.Tests": ("IPY2712PR", "IPY342"),
+}
 
 
 def python_metadata(path):
