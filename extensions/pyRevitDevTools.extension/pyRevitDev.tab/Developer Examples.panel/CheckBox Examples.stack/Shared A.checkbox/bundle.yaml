@@ -1,0 +1,7 @@
+title: Shared A
+tooltip: Checkbox example - handlers imported from a module that Shared B also uses
+tooltip_ext: >
+  Each change prints this checkbox's name, state and change count to the
+  pyRevit log. Shared B uses the same handlers but keeps its own state and
+  count.
+checked: false

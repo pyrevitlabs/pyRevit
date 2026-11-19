@@ -1,0 +1,6 @@
+title: Toggle Examples
+tooltip: Smart button examples, and a command that reads what a checkbox stored
+layout:
+  - Remembered Toggle
+  - View Counter
+  - Show Saved Setting
