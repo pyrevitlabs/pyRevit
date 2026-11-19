@@ -725,4 +725,38 @@ finally:
     window.Close()
 ");
     }
+
+    private const string KeyClass = @"
+class Key(object):
+    def __init__(self, k):
+        self.k = k
+
+    def __eq__(self, o):
+        return isinstance(o, Key) and o.k == self.k
+
+    def __ne__(self, o):
+        return not self.__eq__(o)
+
+    def __hash__(self):
+        return hash(self.k)
+";
+
+    /// <summary>The same Python object wins over an earlier equal one in <c>IndexOf</c> and <c>Remove</c>.</summary>
+    [Fact]
+    public void ListLookupPrefersTheSameObjectOverAnEqualOne() {
+        host.Run(() => {
+            using (Py.GIL()) {
+                using var scope = Py.CreateScope();
+                scope.Exec(Common + KeyClass + "first, second = Key(2), Key(2)\nvalues = [first, second]\nholder = System.Collections.ArrayList()\nholder.Add(Controls.ListBox())\nholder[0].ItemsSource = values\n");
+                var box = (System.Windows.Controls.ListBox)((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+                var list = (IList)box.ItemsSource;
+                var second = list[1];
+                Assert.Equal(1, list.IndexOf(second));
+                Assert.True(list.Contains(second));
+                list.Remove(second);
+                scope.Exec("assert len(values) == 1 and values[0] is first, values");
+            }
+        });
+    }
+
 }

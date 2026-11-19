@@ -148,8 +148,8 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         }
 
         /// <summary>
-        /// Returns the position of <paramref name="value"/>, matching the same Python object first
-        /// and otherwise using <see cref="object.Equals(object, object)"/>, so a
+        /// Returns the position of <paramref name="value"/>: the first item that is the same Python
+        /// object, or else the first item equal by <see cref="object.Equals(object, object)"/>, so a
         /// <see cref="PythonObjectProxy"/> also finds an equal hashable item.
         /// </summary>
         public int IndexOf(object value) {
@@ -189,14 +189,16 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
 
         private int IndexOfLocked(object value) {
             var count = Length();
-            var python = value as IPythonValue;
-            for (var index = 0; index < count; index++) {
-                var item = items.GetItem(index);
-                if (python != null && item.Handle == python.Source.Handle) {
-                    item.Dispose();
-                    return index;
+            if (value is IPythonValue python) {
+                for (var index = 0; index < count; index++) {
+                    using (var item = items.GetItem(index)) {
+                        if (item.Handle == python.Source.Handle)
+                            return index;
+                    }
                 }
-                if (Equals(PythonBinding.ToClr(item), value))
+            }
+            for (var index = 0; index < count; index++) {
+                if (Equals(PythonBinding.ToClr(items.GetItem(index)), value))
                     return index;
             }
             return -1;
