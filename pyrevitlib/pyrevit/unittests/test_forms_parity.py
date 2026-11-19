@@ -773,7 +773,14 @@ class BindingParityTests(unittest.TestCase):
             self.assertEqual("Ada Lovelace", window.name_tb.Text)
 
     def test_reactive_property_recovers_after_initial_getter_error(self):
-        """A Reactive getter that fails during binding can later provide its value."""
+        """A Reactive getter that fails during binding can later provide its value.
+
+        IronPython 3.4 does not recover yet; see pyrevitlabs/pyRevit#4161.
+        """
+        if IRONPY and sys.version_info[0] == 3:
+            self.skipTest(
+                "IronPython 3 does not recover from an initial getter error (#4161)"
+            )
 
         class Model(forms.Reactive):
             def __init__(self):
