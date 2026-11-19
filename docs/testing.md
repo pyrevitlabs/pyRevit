@@ -104,9 +104,9 @@ The suite only runs inside a Revit session, through the DevTools **Unit Tests** 
 
 | Buttons backed by `pyrevit.unittests` | Other module buttons (assertions or manual probes) |
 |---|---|
-| Run All Tests, Config Module Tests, Credentials Module Tests, Dynamo Module Tests, Output Window Tests, Query get_name Tests, Revit API Catalog Tests, Revit Module Tests, Routes Module Tests, Script Module Tests, Py3 Compat Tests, Py3 Compat Tests (CPython) | CoreUtils Module Tests (increment/decrement parsing), pyRevitLabs Module Tests, Appdata Module Tests, Forms Module Tests |
+| Run All Tests, Config Module Tests, Credentials Module Tests, Dynamo Module Tests, Output Window Tests, Query get_name Tests, Revit API Catalog Tests, Revit Module Tests, Routes Module Tests, Script Module Tests, Py3 Compat Tests, Py3 Compat Tests (CPython) | CoreUtils Module Tests (increment/decrement parsing), pyRevitLabs Module Tests, Appdata Module Tests |
 
-`Run All Tests` discovers every `test_` module in the package except the opt-in `test_revit_api_catalog` (it resolves hundreds of types; run it with its own **Revit API Catalog Tests** button). Modules without a dedicated button (`test_context_conditions`, `test_coreutils_escape`, `test_keynote_locks`, `test_revit_handle_contract`, `test_sys_path`, `test_versionmgr`) are only reached through `Run All Tests`.
+`Run All Tests` discovers every `test_` module in the package except the opt-in `test_revit_api_catalog` (it resolves hundreds of types; run it with its own **Revit API Catalog Tests** button). `test_forms_parity` declares `TEST_LEVEL = "Integration"`, so `Run All Tests` skips it; the DevTools **Debug → Forms Tests** pulldown and the forms C# test projects run it. Modules without a dedicated button (`test_context_conditions`, `test_coreutils_escape`, `test_keynote_locks`, `test_revit_handle_contract`, `test_sys_path`, `test_versionmgr`) are only reached through `Run All Tests`.
 
 An open project does not guarantee that every case runs. Some cases require particular model content or family fixtures injected by the individual compatibility buttons. CoreUtils prints comparisons without failing the command on a mismatch, and Forms opens interactive dialogs; neither provides an automated suite result.
 
@@ -126,7 +126,7 @@ python -m unittest discover -s dev/scripts -p 'test_standalone_*.py' -v
 
 `test_standalone_sectionbox_preview_page.py` does the same for the Section Box Navigator 3D preview page: the box, snapping, rotation and hover math and the page's DOM behaviour in `preview.js`, through `dev/scripts/fixtures/sectionbox_preview_page/harness.html`. The page logic does not need a GL context, so those tests run with WebGL disabled; only one smoke test creates a real context. It does not retry and skips, with the reason reported, when the headless browser has no WebGL2 or does not start one in time, because hosted runners stall at WebGL startup. `test_standalone_scene3d.py` loads `lib/scene3d/meshing.py` with a stubbed Revit API and checks the packed scene JSON, the point budget and non-ASCII text.
 
-Two other host-free modules live beside them: `test_check_config_api.py` and `test_check_py3_compat.py`. They have separate `Pipfile` commands (`pipenv run test-config-api`, `pipenv run test-py3-compat`), and the CI discovery pattern above excludes them. To run every module in the folder locally:
+Two other host-free modules live beside them: `test_check_config_api.py` and `test_check_py3_compat.py`. They have separate `Pipfile` commands (`pipenv run test-config-api`, `pipenv run test-py3-compat`), and the `dotnet run -- ci` test step discovers every `test_check_*.py` module. To run every module in the folder locally:
 
 ```bash
 python -m unittest discover -s dev/scripts -p 'test_*.py' -v
@@ -176,6 +176,5 @@ dotnet test build/tests/Build.Tests.csproj -c Release
 4. **The Python and C# component-tree parsers disagree on layout.** The Python path (`pyrevit.extensions.genericcomps`) drops components not listed in `layout`; the C# path (`pyRevitExtensionParser`) appends them. The ribbon uses C#, so the Python rule only shows up in other consumers.
 5. **Some test bundles depend on a CDN at runtime.** `Test Vue` and `Test D3` load their JavaScript from `unpkg.com`, so they fail without network access.
 6. **Some tests are skipped on a .NET 8+ host.** A few cases need interop assemblies not shipped for .NET 8+, sit behind an opt-in flag, or rely on fixtures that a single button injects.
-7. **Host-free Python discovery is incomplete.** CI omits the two checker test modules listed above.
-8. **Test builds can deploy into the active clone.** Shared build targets copy assemblies into `bin/`; a running Revit session can lock these files and prevent a test build from completing.
+7. **Test builds can deploy into the active clone.** Shared build targets copy assemblies into `bin/`; a running Revit session can lock these files and prevent a test build from completing.
 

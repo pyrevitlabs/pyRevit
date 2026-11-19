@@ -329,7 +329,7 @@ class PrintUtils:
             a sheet in the other orientation, a sheet larger than the paper, or
             a print setting with a non-zero user-defined origin offset.
         """
-        opts = DB.PDFExportOptions()  # compat-ignore: callers gate on IS_REVIT_2022_OR_NEWER
+        opts = DB.PDFExportOptions()  # compat-ignore: gated on IS_REVIT_2022_OR_NEWER
         opts.HideCropBoundaries = hcb
         opts.HideScopeBoxes = hsb
         opts.HideReferencePlane = hrp
@@ -792,7 +792,7 @@ class EditNamingFormatsWindow(forms.WPFWindow):
     @selected_naming_format.setter
     def selected_naming_format(self, value):
         self.formats_lb.SelectedItem = value
-        self.namingformat_edit.DataContext = value
+        forms.set_data_context(self.namingformat_edit, value)
 
     def reset_formatters(self):
         self.formatters_wp.ItemsSource = (
@@ -844,7 +844,7 @@ class EditNamingFormatsWindow(forms.WPFWindow):
 
     def namingformat_changed(self, sender, args):
         naming_format = self.selected_naming_format
-        self.namingformat_edit.DataContext = naming_format
+        forms.set_data_context(self.namingformat_edit, naming_format)
 
     def duplicate_namingformat(self, sender, args):
         naming_format = self.selected_naming_format

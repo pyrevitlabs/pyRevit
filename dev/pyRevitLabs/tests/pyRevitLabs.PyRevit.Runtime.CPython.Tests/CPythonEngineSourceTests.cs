@@ -43,6 +43,25 @@ public class CPythonEngineSourceTests {
     }
 
     /// <summary>
+    /// The forms binding conversions, which decide how Python lists and objects reach CLR
+    /// parameters, are installed when the engine starts rather than on the first
+    /// <c>import pyrevit.forms</c>, so a script converts the same way in a fresh session as after a
+    /// forms tool ran. The call sits outside the bring-up guard so it also runs when pyRevit
+    /// attaches to an interpreter something else brought up.
+    /// </summary>
+    [Fact]
+    public void Start_RegistersTheFormsBindingConversions() {
+        string body = CSharpSource.MemberBody(
+            CSharpSource.CPythonEngine, "public override void Start(ref ScriptRuntime runtime)");
+
+        Assert.Contains("RegisterPythonConversions();", body, StringComparison.Ordinal);
+        Assert.False(
+            CSharpSource.IsInBlockOf(body, "if (!PythonEngine.IsInitialized)", "RegisterPythonConversions();"),
+            "the conversions must be registered whoever brought the interpreter up");
+        Assert.Contains("GetMethod(\"RegisterConversions\"", CSharpSource.CPythonEngine, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// <c>PythonEngine.Initialize</c> has to run inside the <c>CrtLocale</c> scope so the CPython
     /// locale switch never reaches Revit (pyRevit#4074). The behaviour itself is covered by
     /// <see cref="CPythonInterpreterLifecycleTests.Initializing_UnderACrtLocaleScope_LeavesLcCtypeUntouched"/>;

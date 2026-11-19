@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+import tempfile
 import types
 import unittest
 from unittest.mock import patch
@@ -44,6 +45,7 @@ def _load_extpackages():
     pyrevit = types.ModuleType("pyrevit")
     pyrevit.PyRevitException = Exception
     pyrevit.HOST_APP = types.SimpleNamespace(username="test-user")
+    pyrevit.EXTENSIONS_DEFAULT_DIR = ""
     pyrevit.labs = types.ModuleType("pyrevit.labs")
     coreutils = types.ModuleType("pyrevit.coreutils")
     coreutils.git = types.SimpleNamespace()
@@ -106,6 +108,7 @@ class ExtensionPackageLoadStateTests(unittest.TestCase):
                 json.loads(json.dumps(self.backend.sections))
             ),
             get_ext_root_dirs=lambda: [],
+            get_thirdparty_ext_root_dirs=lambda: [],
         )
         self.config_patch = patch.object(self.extpackages, "user_config", user_config)
         self.config_patch.start()
@@ -113,6 +116,87 @@ class ExtensionPackageLoadStateTests(unittest.TestCase):
         self.package = self.extpackages.ExtensionPackage(
             {"name": "Example", "url": "https://example.com/example.git"}
         )
+
+    def _installed_with_roots(self, shipped, thirdparty_roots):
+        user_config = types.SimpleNamespace(
+            get_thirdparty_ext_root_dirs=lambda: thirdparty_roots,
+        )
+        with (
+            patch.object(self.extpackages, "user_config", user_config),
+            patch.object(self.extpackages, "EXTENSIONS_DEFAULT_DIR", shipped),
+        ):
+            return self.package.is_installed
+
+    def test_same_named_extension_resolves_to_user_root_before_shipped(self):
+        """A package without a definition path matches a user root first."""
+        with tempfile.TemporaryDirectory() as tmp:
+            shipped = os.path.join(tmp, "shipped")
+            thirdparty = os.path.join(tmp, "thirdparty")
+            for root in (shipped, thirdparty):
+                os.makedirs(os.path.join(root, "Example.extension"))
+            self.assertEqual(
+                os.path.join(thirdparty, "Example.extension"),
+                self._installed_with_roots(shipped, [thirdparty]),
+            )
+
+    def test_shipped_root_registered_as_user_root_stays_last(self):
+        """The shipped root is a fallback even when the user config lists it first."""
+        with tempfile.TemporaryDirectory() as tmp:
+            shipped = os.path.join(tmp, "shipped")
+            thirdparty = os.path.join(tmp, "thirdparty")
+            for root in (shipped, thirdparty):
+                os.makedirs(os.path.join(root, "Example.extension"))
+            self.assertEqual(
+                os.path.join(thirdparty, "Example.extension"),
+                self._installed_with_roots(shipped, [shipped + os.sep, thirdparty]),
+            )
+
+    def _installed_from_definitions(self, shipped, definitions):
+        self.package.def_file_path = definitions
+        return self._installed_with_roots(shipped, [])
+
+    def test_definition_files_resolve_to_user_copy_in_any_order(self):
+        """A same-named user copy beats the shipped one however the definitions arrive."""
+        with tempfile.TemporaryDirectory() as tmp:
+            shipped = os.path.join(tmp, "shipped")
+            thirdparty = os.path.join(tmp, "thirdparty")
+            definitions = []
+            for root in (shipped, thirdparty):
+                directory = os.path.join(root, "Example.extension")
+                os.makedirs(directory)
+                definitions.append(os.path.join(directory, "extension.json"))
+                with open(definitions[-1], "w") as handle:
+                    handle.write("{}")
+            for ordered in (definitions, definitions[::-1]):
+                self.assertEqual(
+                    os.path.join(thirdparty, "Example.extension"),
+                    self._installed_from_definitions(shipped, list(ordered)),
+                )
+
+    @unittest.skipUnless(os.path.normcase("A") == "a", "case-insensitive paths only")
+    def test_shipped_root_matches_regardless_of_letter_case(self):
+        """A shipped root listed in other letter case is still the last fallback."""
+        with tempfile.TemporaryDirectory() as tmp:
+            shipped = os.path.join(tmp, "shipped")
+            thirdparty = os.path.join(tmp, "thirdparty")
+            for root in (shipped, thirdparty):
+                os.makedirs(os.path.join(root, "Example.extension"))
+            self.assertEqual(
+                os.path.join(thirdparty, "Example.extension"),
+                self._installed_with_roots(shipped, [shipped.upper(), thirdparty]),
+            )
+
+    def test_shipped_extension_is_found_when_no_user_copy_exists(self):
+        """A package only the shipped root has still resolves."""
+        with tempfile.TemporaryDirectory() as tmp:
+            shipped = os.path.join(tmp, "shipped")
+            thirdparty = os.path.join(tmp, "thirdparty")
+            os.makedirs(os.path.join(shipped, "Example.extension"))
+            os.makedirs(thirdparty)
+            self.assertEqual(
+                os.path.join(shipped, "Example.extension"),
+                self._installed_with_roots(shipped, [thirdparty]),
+            )
 
     def _assert_nothing_written(self, before):
         self.assertEqual([], self.saved)
