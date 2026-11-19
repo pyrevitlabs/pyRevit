@@ -17,12 +17,22 @@ namespace PyRevitLoader
     /// Executes SmartButton __selfinit__ scripts.
     /// Creating a new engine per button was the main performance bottleneck.
     /// </summary>
+    /// <remarks>
+    /// Note: all smart buttons share one engine, so they share <c>sys.path</c> and <c>sys.modules</c>.
+    /// Each button's script run and its <c>__selfinit__</c> call therefore enter that button's bundle of
+    /// a <see cref="BundleModuleIsolation"/>: they start from that button's own search paths and modules
+    /// and hand them back when they end. Two bundles can therefore ship <c>lib</c> modules with the same
+    /// name, while pyRevit and the standard library are still imported once for all buttons. Callbacks
+    /// that <c>__selfinit__</c> subscribes itself, such as Revit event handlers, run outside the
+    /// button's bundle.
+    /// </remarks>
     public class SmartButtonExecutor
     {
         private readonly UIApplication _revit;
         private readonly Action<string> _logger;
         private ScriptEngine _engine;
         private ScriptExecutor _scriptExecutor;
+        private BundleModuleIsolation _isolation;
         private string _pyrevitLibPath;
         private HashSet<string> _baseSearchPaths;
 
@@ -53,6 +63,7 @@ namespace PyRevitLoader
 
             // Cache base search paths
             _baseSearchPaths = new HashSet<string>(_engine.GetSearchPaths());
+            _isolation = new BundleModuleIsolation(_engine, _logger);
         }
 
         /// <summary>
@@ -92,6 +103,7 @@ namespace PyRevitLoader
 
                 // Set __file__ variable
                 scope.SetVariable("__file__", scriptPath);
+                var bundle = _isolation.CreateBundle(context.name);
 
                 // Execute the script file to define __selfinit__
                 var script = _engine.CreateScriptSourceFromFile(scriptPath, Encoding.UTF8, SourceCodeKind.File);
@@ -112,7 +124,10 @@ namespace PyRevitLoader
 
                 try
                 {
-                    script.Execute(scope);
+                    using (_isolation.Enter(bundle))
+                    {
+                        script.Execute(scope);
+                    }
                 }
                 catch (SystemExitException)
                 {
@@ -142,7 +157,11 @@ namespace PyRevitLoader
                 {
                     // Call __selfinit__(script_cmp, ui_button_cmp, __rvt__)
                     var ops = _engine.Operations;
-                    var result = ops.Invoke(selfInitFunc, context, context, _revit);
+                    object result;
+                    using (_isolation.Enter(bundle))
+                    {
+                        result = ops.Invoke(selfInitFunc, context, context, _revit);
+                    }
 
                     // If __selfinit__ returns False, the button should be deactivated
                     if (result is bool boolResult && boolResult == false)
@@ -198,6 +217,7 @@ namespace PyRevitLoader
             if (!string.IsNullOrEmpty(_pyrevitLibPath) && !paths.Contains(_pyrevitLibPath))
             {
                 paths.Add(_pyrevitLibPath);
+                _isolation.AddSharedRoot(_pyrevitLibPath);
 
                 // Add site-packages
                 var pyrevitRoot = Path.GetDirectoryName(_pyrevitLibPath);
@@ -205,7 +225,10 @@ namespace PyRevitLoader
                 {
                     var sitePackages = Path.Combine(pyrevitRoot, "site-packages");
                     if (Directory.Exists(sitePackages) && !paths.Contains(sitePackages))
+                    {
                         paths.Add(sitePackages);
+                        _isolation.AddSharedRoot(sitePackages);
+                    }
                 }
             }
 

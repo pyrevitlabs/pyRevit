@@ -33,6 +33,9 @@ from pyrevit.revit import events
 
 import invisibility_fixes as fixes
 import invisibility_scene as scene
+from scene3d import read_asset as read_lib_asset
+from scene3d.bridge import PageBridge
+from scene3d.meshing import scene_to_json
 from invisibility_ghost import GhostPreview, zoom_to
 from invisibility_reveal import (
     REASON_COLORS,
@@ -49,6 +52,7 @@ get_elementid_from_value = get_elementid_from_value_func()
 _WEBVIEW2_ENGINE = "WebView2/Chromium"
 _BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 _ASSETS = ("viewer3d.js", "report.js")
+_LIB_ASSETS = ("gl.js",)
 _STYLESHEET = "report.css"
 
 _ELEMENT_SCOPED_ACTIONS = frozenset(
@@ -294,10 +298,11 @@ class DiagnosisSession(object):
         self.doc = doc
         self.element_ids = [e.Id for e in elements]
         self.view_ids = [v.Id for v in views]
-        self.channel = "invisibility-{}".format(uuid.uuid4().hex)
+        self.bridge = PageBridge(output, "invisibility")
+        self.channel = self.bridge.channel
         self.root_id = "invisibility-app-{}".format(uuid.uuid4().hex[:8])
         self.interactive = False
-        self._handlers = {}
+        self._handlers = self.bridge.handlers
         self.ghost = GhostPreview(doc)
         self.reveal = RevealPreview(doc)
 
@@ -424,7 +429,7 @@ class DiagnosisSession(object):
         Must run in the command, in API context. Falls back to a read-only
         report when the output window cannot receive page messages.
         """
-        if self.output.on_message(self._on_page_message):
+        if self.bridge.start():
             self.interactive = True
             for action, handler in (
                 ("select", self._on_select),
@@ -455,6 +460,8 @@ class DiagnosisSession(object):
             self.output.window.Closed += self._on_window_closed
         self.output.set_title(t("report_title", "Visibility Diagnosis"))
         self.output.add_style(_read_asset(_STYLESHEET))
+        for asset in _LIB_ASSETS:
+            self.output.inject_script(read_lib_asset(asset))
         for asset in _ASSETS:
             self.output.inject_script(_read_asset(asset))
         self.output.inject_to_body("div", "", {"id": self.root_id})
@@ -466,47 +473,15 @@ class DiagnosisSession(object):
             body=True,
         )
 
-    def _on_page_message(self, message):
-        if not isinstance(message, dict) or message.get("channel") != self.channel:
-            return
-        action = message.get("action")
-        handler = self._handlers.get(action)
-        if handler is None:
-            logger.debug("No handler for action '%s'", action)
-            return
-        request_id = message.get("requestId")
-        try:
-            handler(message.get("payload") or {}, request_id)
-        except Exception as ex:
-            logger.debug("Handler '%s' failed: %s", action, ex)
-            self._send(
-                "error",
-                {"action": action, "requestId": request_id, "message": str(ex)},
-            )
-
     def _on_window_closed(self, sender, args):
         self.interactive = False
         self._close_ghosts()
 
     def _send(self, event, payload=None, raw_payload=None):
-        """Post ``{channel, event, payload}`` to the page.
-
-        ``raw_payload`` is pre-encoded JSON used instead of ``payload``, for
-        large bodies serialized by a faster custom encoder than ``json.dumps``.
-        """
-        if raw_payload is None:
-            self.output.post_message(
-                {"channel": self.channel, "event": event, "payload": payload}
-            )
-            return
-        self.output.window.PostWebMessage(
-            '{{"channel":{},"event":{},"payload":{}}}'.format(
-                json.dumps(self.channel), json.dumps(event), raw_payload
-            )
-        )
+        self.bridge.send(event, payload, raw_payload)
 
     def _reply(self, request_id, ok, message=None):
-        self._send("result", {"requestId": request_id, "ok": ok, "message": message})
+        self.bridge.reply(request_id, ok, message)
 
     def _push_views(self, view_ids=None):
         for view_id in view_ids or self.view_ids:
@@ -969,7 +944,7 @@ class DiagnosisSession(object):
         if data is None:
             self._send("scene", {"viewId": id_value(view.Id), "meshes": []})
         else:
-            self._send("scene", raw_payload=scene.scene_to_json(data))
+            self._send("scene", raw_payload=scene_to_json(data))
         self._reply(request_id, True)
 
 

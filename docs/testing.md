@@ -124,6 +124,8 @@ python -m unittest discover -s dev/scripts -p 'test_standalone_*.py' -v
 
 `test_standalone_diagnose_invisibility_page.py` runs the real `report.js` of the Diagnose Invisibility report in a headless Edge or Chrome, through `dev/scripts/fixtures/diagnose_invisibility_page/harness.html`, with a stubbed WebView2 bridge. Set `PYREVIT_TEST_BROWSER` to a browser executable to override the lookup. A missing browser fails the module when `CI` is set and skips it otherwise.
 
+`test_standalone_sectionbox_preview_page.py` does the same for the Section Box Navigator 3D preview page: the box, snapping, rotation and hover math and the page's DOM behaviour in `preview.js`, through `dev/scripts/fixtures/sectionbox_preview_page/harness.html`. The page logic does not need a GL context, so those tests run with WebGL disabled; only one smoke test creates a real context. It does not retry and skips, with the reason reported, when the headless browser has no WebGL2 or does not start one in time, because hosted runners stall at WebGL startup. `test_standalone_scene3d.py` loads `lib/scene3d/meshing.py` with a stubbed Revit API and checks the packed scene JSON, the point budget and non-ASCII text.
+
 Two other host-free modules live beside them: `test_check_config_api.py` and `test_check_py3_compat.py`. They have separate `Pipfile` commands (`pipenv run test-config-api`, `pipenv run test-py3-compat`), and the `dotnet run -- ci` test step discovers every `test_check_*.py` module. To run every module in the folder locally:
 
 ```bash
@@ -169,7 +171,7 @@ dotnet test build/tests/Build.Tests.csproj -c Release
 ## Known issues and things to address
 
 1. **Hosted Python execution needs a documented local procedure.** Its exclusion from CI is intentional. Record fixtures, Revit year, engine, and outcomes for local runs.
-2. **Two C# projects run only a filtered subset.** `pyRevitExtensionParserTester` has far more test classes than the filter selects, including the parser, layout, and bundle-metadata tests. Excluded tests need triage before expanding CI: some expectations track mutable DevTools layouts and titles, while others require Revit assemblies. New classes are excluded unless someone updates the allowlist.
+2. **Two C# projects run only a filtered subset.** `pyRevitExtensionParserTester` has far more test classes than the filter selects, including the parser, layout, and bundle-metadata tests. Excluded tests need triage before expanding CI: some expectations track mutable DevTools layouts and titles, while others require Revit assemblies. New classes are excluded unless they carry the `HostFree` category, which the filter selects, or someone updates the allowlist. The project [README](https://github.com/pyrevitlabs/pyRevit/blob/develop/dev/pyRevitLoader/pyRevitExtensionParserTester/README.md) lists its fixtures that need a local Revit.
 3. **`IRONPY3` coverage requires a separate attachment.** Engine identity is `ironpython` / `cpython` only, so no bundle can select IronPython 3 directly. Attach the clone with that engine before running its ribbon tests.
 4. **The Python and C# component-tree parsers disagree on layout.** The Python path (`pyrevit.extensions.genericcomps`) drops components not listed in `layout`; the C# path (`pyRevitExtensionParser`) appends them. The ribbon uses C#, so the Python rule only shows up in other consumers.
 5. **Some test bundles depend on a CDN at runtime.** `Test Vue` and `Test D3` load their JavaScript from `unpkg.com`, so they fail without network access.

@@ -19,6 +19,13 @@ namespace PyRevitLoader
     /// Executes ComboBox event handler scripts using IronPython directly.
     /// Supports: __cmb_on_change__, __cmb_dropdown_close__, __cmb_dropdown_open__
     /// </summary>
+    /// <remarks>
+    /// Note: all ComboBoxes share one engine, so they share <c>sys.path</c> and <c>sys.modules</c>.
+    /// Each script run and handler call therefore enters its ComboBox's bundle of a
+    /// <see cref="BundleModuleIsolation"/>: it starts from that ComboBox's own search paths and modules
+    /// and hands them back when it ends. Two bundles can therefore ship <c>lib</c> modules with the same
+    /// name, while pyRevit and the standard library are still imported once for all ComboBoxes.
+    /// </remarks>
     public class ComboBoxExecutor
     {
         private readonly UIApplication _revit;
@@ -27,6 +34,7 @@ namespace PyRevitLoader
         private ScriptExecutor _scriptExecutor;
         private string _pyrevitLibPath;
         private HashSet<string> _baseSearchPaths;
+        private BundleModuleIsolation _isolation;
         private object _engineOps;
         private bool _released;
         private bool _sessionSlotClaimed;
@@ -99,6 +107,7 @@ namespace PyRevitLoader
 
             // Cache base search paths
             _baseSearchPaths = new HashSet<string>(_engine.GetSearchPaths());
+            _isolation = new BundleModuleIsolation(_engine, _logger);
         }
 
         /// <summary>
@@ -110,10 +119,11 @@ namespace PyRevitLoader
         /// <param name="additionalSearchPaths">Additional search paths for imports.</param>
         /// <returns>True if setup succeeded.</returns>
         /// <remarks>
-        /// Note: all ComboBoxes share one engine, whose <c>sys.path</c> holds the paths of the script
-        /// that ran last. Each wired handler therefore restores this ComboBox's saved paths first, so
-        /// imports inside a handler find this bundle's <c>lib</c> folder, and saves <c>sys.path</c>
-        /// again afterwards, so changes one handler makes stay for this ComboBox's later calls.
+        /// Note: all ComboBoxes share one engine, whose <c>sys.path</c> and <c>sys.modules</c> hold what
+        /// the script or handler that ran last left there. The script and each wired handler therefore
+        /// run as this ComboBox's bundle of a <see cref="BundleModuleIsolation"/>, so imports inside them
+        /// find this bundle's <c>lib</c> folder and its own modules, and the paths and modules one
+        /// handler adds stay for this ComboBox's later calls.
         /// </remarks>
         public bool ExecuteEventHandlerSetup(
             string scriptPath,
@@ -158,6 +168,7 @@ namespace PyRevitLoader
 
                 // Set __file__ variable
                 scope.SetVariable("__file__", scriptPath);
+                var bundle = _isolation.CreateBundle(context.name);
 
                 // Execute the script file to define event handlers
                 var script = _engine.CreateScriptSourceFromFile(scriptPath, Encoding.UTF8, SourceCodeKind.File);
@@ -178,7 +189,10 @@ namespace PyRevitLoader
 
                 try
                 {
-                    script.Execute(scope);
+                    using (_isolation.Enter(bundle))
+                    {
+                        script.Execute(scope);
+                    }
                 }
                 catch (SystemExitException)
                 {
@@ -213,7 +227,7 @@ namespace PyRevitLoader
                 // by session cleanup, so we restore it before each invocation.
                 var engine = _engine;
                 var outStream = _outputStream;
-                var searchPaths = new List<string>(engine.GetSearchPaths());
+                var isolation = _isolation;
 
                 // Wire up __cmb_on_change__ handler
                 if (hasOnChange)
@@ -228,16 +242,14 @@ namespace PyRevitLoader
                             {
                                 // Restore stdout in case session cleanup set it to None
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
-                                engine.SetSearchPaths(searchPaths);
-                                ops.Invoke(handler, sender, args, context);
+                                using (isolation.Enter(bundle))
+                                {
+                                    ops.Invoke(handler, sender, args, context);
+                                }
                             }
                             catch (Exception ex)
                             {
                                 Log($"Error in __cmb_on_change__: {ex.Message}");
-                            }
-                            finally
-                            {
-                                searchPaths = new List<string>(engine.GetSearchPaths());
                             }
                         };
                         comboBox.CurrentChanged += onChangeHandler;
@@ -259,16 +271,14 @@ namespace PyRevitLoader
                             try
                             {
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
-                                engine.SetSearchPaths(searchPaths);
-                                ops.Invoke(handler, sender, args, context);
+                                using (isolation.Enter(bundle))
+                                {
+                                    ops.Invoke(handler, sender, args, context);
+                                }
                             }
                             catch (Exception ex)
                             {
                                 Log($"Error in __cmb_dropdown_close__: {ex.Message}");
-                            }
-                            finally
-                            {
-                                searchPaths = new List<string>(engine.GetSearchPaths());
                             }
                         };
                         comboBox.DropDownClosed += dropdownCloseHandler;
@@ -290,16 +300,14 @@ namespace PyRevitLoader
                             try
                             {
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
-                                engine.SetSearchPaths(searchPaths);
-                                ops.Invoke(handler, sender, args, context);
+                                using (isolation.Enter(bundle))
+                                {
+                                    ops.Invoke(handler, sender, args, context);
+                                }
                             }
                             catch (Exception ex)
                             {
                                 Log($"Error in __cmb_dropdown_open__: {ex.Message}");
-                            }
-                            finally
-                            {
-                                searchPaths = new List<string>(engine.GetSearchPaths());
                             }
                         };
                         comboBox.DropDownOpened += dropdownOpenHandler;
@@ -386,6 +394,8 @@ namespace PyRevitLoader
             _outputStream = null;
             _scriptExecutor = null;
             _baseSearchPaths = null;
+            _isolation?.Release();
+            _isolation = null;
 
             try
             {
@@ -435,6 +445,7 @@ namespace PyRevitLoader
             if (!string.IsNullOrEmpty(_pyrevitLibPath) && !paths.Contains(_pyrevitLibPath))
             {
                 paths.Add(_pyrevitLibPath);
+                _isolation.AddSharedRoot(_pyrevitLibPath);
 
                 // Add site-packages
                 var pyrevitRoot = Path.GetDirectoryName(_pyrevitLibPath);
@@ -442,7 +453,10 @@ namespace PyRevitLoader
                 {
                     var sitePackages = Path.Combine(pyrevitRoot, "site-packages");
                     if (Directory.Exists(sitePackages) && !paths.Contains(sitePackages))
+                    {
                         paths.Add(sitePackages);
+                        _isolation.AddSharedRoot(sitePackages);
+                    }
                 }
             }
 
