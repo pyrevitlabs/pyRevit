@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -46,9 +45,8 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         /// <summary>Raised after a binding writes an attribute through this proxy.</summary>
         /// <remarks>
         /// Implementing this interface makes WPF listen through <c>PropertyChangedEventManager</c>,
-        /// which holds the proxy weakly, instead of <c>PropertyDescriptor.AddValueChanged</c>, whose
-        /// shared descriptors would keep every bound proxy alive. Changes made from Python are not
-        /// observed.
+        /// which holds the proxy weakly, instead of <c>PropertyDescriptor.AddValueChanged</c>.
+        /// Changes made from Python are not observed.
         /// </remarks>
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -81,17 +79,23 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         }
 
         internal object GetAttribute(string name) {
+            return TryGetAttribute(name, out var value) ? value : null;
+        }
+
+        internal bool TryGetAttribute(string name, out object value) {
             using (Py.GIL()) {
-                PyObject value;
+                PyObject python;
                 try {
-                    value = isDict ? source.GetItem(name) : source.GetAttr(name);
+                    python = isDict ? source.GetItem(name) : source.GetAttr(name);
                 }
                 catch (PythonException ex) {
                     if (!IsMissingAttribute(ex))
                         Trace.TraceWarning("Python binding read of '{0}' failed: {1}", name, ex.Message);
-                    return null;
+                    value = null;
+                    return false;
                 }
-                return PythonBinding.ToClr(value);
+                value = PythonBinding.ToClr(python);
+                return true;
             }
         }
 
@@ -114,16 +118,6 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
                 }
             }
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        }
-
-        internal bool HasAttribute(string name) {
-            using (Py.GIL()) {
-                if (!isDict)
-                    return source.HasAttr(name);
-                using (var key = new PyString(name))
-                using (var found = source.InvokeMethod("__contains__", key))
-                    return found.IsTrue();
-            }
         }
 
         /// <summary>Returns the Python <c>str()</c> of the object, which WPF shows by default.</summary>
@@ -185,18 +179,20 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         /// value as IronPython types them, so WPF converts an <see cref="int"/> for a
         /// <see cref="double"/> target.
         /// </summary>
+        /// <remarks>
+        /// Invariant: a binding runs the attribute's getter once. A descriptor reads its attribute
+        /// only when its type is first asked for, and hands that value to its next
+        /// <see cref="PropertyDescriptor.GetValue"/> on this proxy, so one-shot values such as
+        /// generators bind whole.
+        /// </remarks>
         public PropertyDescriptorCollection GetProperties() {
             List<string> names;
             using (Py.GIL())
                 names = PythonBinding.NamesOf(source);
             var known = new PropertyDescriptor[names.Count];
             for (var index = 0; index < names.Count; index++)
-                known[index] = PythonPropertyDescriptor.Named(names[index], TypeOfAttribute(names[index]));
+                known[index] = new PythonPropertyDescriptor(this, names[index]);
             return new PythonPropertyCollection(this, known);
-        }
-
-        internal Type TypeOfAttribute(string name) {
-            return GetAttribute(name)?.GetType() ?? typeof(object);
         }
 
         /// <inheritdoc/>
@@ -270,44 +266,62 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
 
         public override PropertyDescriptor Find(string name, bool ignoreCase) {
             var found = base.Find(name, ignoreCase);
-            if (found != null || string.IsNullOrEmpty(name) || !owner.HasAttribute(name))
+            if (found != null || string.IsNullOrEmpty(name) || !owner.TryGetAttribute(name, out var value))
                 return found;
-            found = PythonPropertyDescriptor.Named(name, owner.TypeOfAttribute(name));
+            found = new PythonPropertyDescriptor(owner, name, value);
             Add(found);
             return found;
         }
     }
 
     internal sealed class PythonPropertyDescriptor : PropertyDescriptor {
-        private static readonly ConcurrentDictionary<(string, Type), PythonPropertyDescriptor> Shared =
-            new ConcurrentDictionary<(string, Type), PythonPropertyDescriptor>();
+        private readonly PythonObjectProxy owner;
+        private Type propertyType;
+        private object pending;
+        private bool hasPending;
 
-        private const int MaxShared = 4096;
-
-        private readonly Type propertyType;
-
-        private PythonPropertyDescriptor(string name, Type propertyType) : base(name, null) {
-            this.propertyType = propertyType;
+        internal PythonPropertyDescriptor(PythonObjectProxy owner, string name) : base(name, null) {
+            this.owner = owner;
         }
 
-        internal static PythonPropertyDescriptor Named(string name, Type propertyType) {
-            if (Shared.Count >= MaxShared)
-                Shared.Clear();
-            return Shared.GetOrAdd((name, propertyType), key => new PythonPropertyDescriptor(key.Item1, key.Item2));
+        internal PythonPropertyDescriptor(PythonObjectProxy owner, string name, object value) : this(owner, name) {
+            Hold(value);
         }
 
         public override Type ComponentType => typeof(PythonObjectProxy);
 
         public override bool IsReadOnly => false;
 
-        public override Type PropertyType => propertyType;
+        public override Type PropertyType {
+            get {
+                if (propertyType == null)
+                    Hold(owner.GetAttribute(Name));
+                return propertyType;
+            }
+        }
+
+        private void Hold(object value) {
+            propertyType = value?.GetType() ?? typeof(object);
+            pending = value;
+            hasPending = true;
+        }
 
         public override bool CanResetValue(object component) {
             return false;
         }
 
         public override object GetValue(object component) {
+            if (hasPending && ReferenceEquals(component, owner)) {
+                var value = pending;
+                Release();
+                return value;
+            }
             return (component as PythonObjectProxy)?.GetAttribute(Name);
+        }
+
+        private void Release() {
+            pending = null;
+            hasPending = false;
         }
 
         public override void ResetValue(object component) {
@@ -316,6 +330,8 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         public override void SetValue(object component, object value) {
             if (!(component is PythonObjectProxy proxy))
                 return;
+            if (ReferenceEquals(proxy, owner))
+                Release();
             proxy.SetAttribute(Name, value);
             OnValueChanged(component, EventArgs.Empty);
         }

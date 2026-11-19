@@ -659,4 +659,42 @@ finally:
     PythonEvents.Detach('probe-key')
 ");
     }
+
+    /// <summary>A bound property is read once per binding, so a one-shot generator binds all its items.</summary>
+    [Fact]
+    public void BoundPropertyIsReadOncePerBinding() {
+        Python(@"
+reads = {'gen_attr': 0, 'label': 0}
+
+class Model(object):
+    def __init__(self):
+        self._g = (i for i in range(3))
+
+    @property
+    def gen_attr(self):
+        reads['gen_attr'] += 1
+        return self._g
+
+    @property
+    def label(self):
+        reads['label'] += 1
+        return 'items'
+
+panel = Controls.StackPanel()
+text = Controls.TextBlock()
+text.SetBinding(Controls.TextBlock.TextProperty, Data.Binding('label'))
+box = Controls.ListBox()
+box.SetBinding(Controls.ItemsControl.ItemsSourceProperty, Data.Binding('gen_attr'))
+panel.Children.Add(text)
+panel.Children.Add(box)
+panel.DataContext = Model()
+window = shown(panel)
+try:
+    assert box.Items.Count == 3, box.Items.Count
+    assert text.Text == 'items', text.Text
+    assert reads == {'gen_attr': 1, 'label': 1}, reads
+finally:
+    window.Close()
+");
+    }
 }
