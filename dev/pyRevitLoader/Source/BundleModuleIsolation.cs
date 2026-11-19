@@ -44,7 +44,7 @@ namespace PyRevitLoader
     /// a module, when it comes from outside the shared roots, is set aside while a bundle is active, so
     /// it does not reach that bundle, and it comes back when the bundle is left, even when the bundle
     /// loaded a shared module of that name. That shared module is kept for the next bundle that has no
-    /// module of its own by that name.
+    /// module of its own by that name and does not own the package it belongs to.
     /// Warning: two cases are not kept apart. <c>sys.path</c> is a new list each time a bundle is
     /// entered or brought back after a nested bundle, so a reference kept to an earlier list, such as
     /// <c>from sys import path</c>, no longer changes the live path. And a submodule that a bundle adds
@@ -362,7 +362,8 @@ namespace PyRevitLoader
         /// Points <c>sys.path</c> at the bundle's saved paths, sets aside the modules of other bundles
         /// that are still in <c>sys.modules</c> and the shared modules the bundle's own modules shadow,
         /// and puts the bundle's own modules in, keeping what they hide for <see cref="Deactivate"/>.
-        /// Puts back the shared modules kept aside for names the bundle has no module of its own for.
+        /// Puts back the shared modules kept aside for names the bundle has no module of its own for,
+        /// outside the packages it owns.
         /// Binds its submodules of shared packages to those packages and puts the folders it added back
         /// to their places in their <c>__path__</c>. Then records what <c>sys.modules</c> and the shared
         /// packages' <c>__path__</c> hold, so <see cref="Deactivate"/> can tell what changed while the
@@ -395,7 +396,7 @@ namespace PyRevitLoader
                 modules[module.Key] = module.Value;
             }
 
-            PutBackSharedModulesKeptAside(modules, ownModules, modulesBefore);
+            PutBackSharedModulesKeptAside(modules, bundle, ownModules, modulesBefore);
             bundle.PackageBindingsReplaced.Clear();
             BindToSharedPackages(modules, modulesBefore, bundle.PackageBindingsReplaced, null);
             AddPackagePathFolders(engine, modules, bundle);
@@ -745,15 +746,27 @@ namespace PyRevitLoader
 
         /// <summary>
         /// Puts back the shared modules that <see cref="TakeOutModulesThatTookHiddenNames"/> kept aside,
-        /// each group under a name that is free while the bundle is active and that the bundle's own
-        /// modules do not shadow, so every bundle that loads one of them keeps using the same copy.
+        /// each group under a name that is free while the bundle is active, that the bundle's own
+        /// modules do not shadow and that is not inside a package the bundle owns, so every bundle that
+        /// loads one of them keeps using the same copy.
         /// </summary>
-        private void PutBackSharedModulesKeptAside(IDictionary<object, object> modules, OwnModules ownModules, Dictionary<string, object> modulesBefore)
+        /// <remarks>
+        /// Note: a package the bundle owns imports its submodules through its own <c>__path__</c>. A shared
+        /// submodule put back under it would hand the bundle the shared code, as
+        /// <see cref="FindSharedModulesShadowedByOwnModules"/> prevents for the modules already loaded.
+        /// </remarks>
+        private void PutBackSharedModulesKeptAside(IDictionary<object, object> modules, Bundle bundle, OwnModules ownModules, Dictionary<string, object> modulesBefore)
         {
+            if (_sharedModulesKeptAside.Count == 0)
+                return;
+
+            var ownNames = new HashSet<string>(bundle.Modules.Keys, StringComparer.Ordinal);
             var namesPutBack = new List<string>();
             foreach (var group in _sharedModulesKeptAside)
             {
-                if (!IsFree(modules, group.Value.Keys) || !IsParentLoaded(modules, group.Key))
+                if (!IsFree(modules, group.Value.Keys)
+                    || !IsParentLoaded(modules, group.Key)
+                    || IsInsideAnyPackage(group.Key, ownNames))
                     continue;
 
                 if (group.Key.IndexOf('.') < 0

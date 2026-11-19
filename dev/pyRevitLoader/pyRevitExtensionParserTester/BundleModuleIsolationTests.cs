@@ -37,7 +37,9 @@ namespace pyRevitExtensionParserTester
     /// <item>leaving a bundle that had imported its package again removed the module other code had
     /// assigned to the shared package's attribute;</item>
     /// <item>a bundle's package stayed bound to a copy of the shared package that the bundle had
-    /// imported again.</item>
+    /// imported again;</item>
+    /// <item>a shared submodule kept aside for later bundles went back under a package the entering
+    /// bundle owns.</item>
     /// </list>
     /// It also covers these findings from the review of pyrevitlabs/pyRevit#4138, which shows the same
     /// code:
@@ -256,6 +258,36 @@ namespace pyRevitExtensionParserTester
 
             using (Enter(owner))
                 Execute($"import spkg\nspkg.__path__.insert(0, {PythonString(ownParent)})\nimport spkg.plugins");
+            using (Enter(other))
+                Assert.That(Execute(readSub), Is.EqualTo("shared"));
+            using (Enter(owner))
+                Assert.That(Execute(readSub), Is.EqualTo("own"));
+            using (Enter(other))
+                Assert.That(Execute(readSub), Is.EqualTo("shared"));
+        }
+
+        [Test]
+        public void Enter_BundleThatOwnsANestedPackage_ImportsItsOwnSubmoduleOverASharedOneKeptAside()
+        {
+            string sharedRoot = CreateSharedPackage();
+            string sharedPlugins = CreateDirectory(Path.Combine("site-packages", "spkg", "plugins"));
+            File.WriteAllText(Path.Combine(sharedPlugins, "__init__.py"), string.Empty);
+            File.WriteAllText(Path.Combine(sharedPlugins, "sub.py"), "VALUE = 'shared'");
+            string outside = CreateDirectory("Outside");
+            File.WriteAllText(Path.Combine(outside, "sub.py"), "VALUE = 'outside'");
+            object other = CreateBundle("Other", sharedRoot);
+            string ownParent = CreateDirectory(Path.Combine("Owner", "lib", "spkg_ext"));
+            string ownPlugins = CreateDirectory(Path.Combine("Owner", "lib", "spkg_ext", "plugins"));
+            File.WriteAllText(Path.Combine(ownPlugins, "__init__.py"), string.Empty);
+            File.WriteAllText(Path.Combine(ownPlugins, "sub.py"), "VALUE = 'own'");
+            object owner = CreateBundle("Owner", sharedRoot);
+            string readSub = "from spkg.plugins import sub\nresult = sub.VALUE";
+
+            using (Enter(owner))
+                Execute($"import spkg\nspkg.__path__.insert(0, {PythonString(ownParent)})\nimport spkg.plugins");
+            Assert.That(
+                Execute($"import spkg.plugins\nspkg.plugins.__path__.insert(0, {PythonString(outside)})\n{readSub}\nspkg.plugins.__path__.remove({PythonString(outside)})"),
+                Is.EqualTo("outside"));
             using (Enter(other))
                 Assert.That(Execute(readSub), Is.EqualTo("shared"));
             using (Enter(owner))
