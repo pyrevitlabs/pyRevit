@@ -3,6 +3,9 @@
 Native WPF loading and modal interaction are covered by the in-host suite.
 """
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Integration"
+
 import ast
 import gc
 import datetime
@@ -18,7 +21,7 @@ from unittest import mock
 from xml.dom import minidom
 
 
-FORMS = Path(__file__).resolve().parents[2] / "pyrevitlib" / "pyrevit" / "forms"
+FORMS = Path(__file__).resolve().parents[4] / "pyrevitlib" / "pyrevit" / "forms"
 
 
 def _load_xaml_helpers():
@@ -66,7 +69,7 @@ def _load_dialog():
 
 
 def _load_usage_module():
-    script = Path(__file__).resolve().with_name("forms_usage.py")
+    script = FORMS.parents[2] / "dev" / "scripts" / "forms_usage.py"
     spec = importlib.util.spec_from_file_location("forms_usage", script)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

@@ -1,5 +1,8 @@
 """Portable tests for forms helpers whose engine contracts need no Revit host."""
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
+
 import ast
 import datetime
 import importlib.util
@@ -9,7 +12,7 @@ import unittest
 from unittest import mock
 
 
-FORMS = Path(__file__).resolve().parents[2] / "pyrevitlib" / "pyrevit" / "forms"
+FORMS = Path(__file__).resolve().parents[4] / "pyrevitlib" / "pyrevit" / "forms"
 
 
 def _load_shared():

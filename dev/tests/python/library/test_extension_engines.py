@@ -19,7 +19,7 @@ import unittest
 TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 EXTENSIONS = runpy.run_path(
     str(REPO_ROOT / "pyrevitlib/pyrevit/extensions/__init__.py")
 )
@@ -46,7 +46,7 @@ def _load_function(relative_path, name, namespace, class_name=None):
 
 def _load_checker():
     spec = importlib.util.spec_from_file_location(
-        "check_py3_compat", REPO_ROOT / "dev/scripts/check_py3_compat.py"
+        "check_py3_compat", REPO_ROOT / "dev/checks/check_py3_compat.py"
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
