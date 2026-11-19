@@ -800,4 +800,83 @@ expression.UpdateTarget()
 assert text.Text == 'value', text.Text
 ");
     }
+
+    /// <summary>After the first read a binding reads live: <c>UpdateTarget</c> and a two-way write see current values, and a <c>__getattr__</c> attribute is read once.</summary>
+    [Fact]
+    public void BindingReadsAfterTheFirstAreLive() {
+        Python(@"
+reads = {'dynamic': 0}
+
+class Model(object):
+    def __init__(self):
+        self.name = 'first'
+
+    def __getattr__(self, name):
+        if name != 'dynamic':
+            raise AttributeError(name)
+        reads['dynamic'] += 1
+        return 'from getattr'
+
+model = Model()
+text = Controls.TextBlock()
+text.DataContext = model
+expression = text.SetBinding(Controls.TextBlock.TextProperty, Data.Binding('name'))
+expression.UpdateTarget()
+assert text.Text == 'first'
+model.name = 'second'
+expression.UpdateTarget()
+assert text.Text == 'second', text.Text
+
+editor = Controls.TextBox()
+editor.DataContext = model
+binding = Data.Binding('name')
+binding.Mode = Data.BindingMode.TwoWay
+edited = editor.SetBinding(Controls.TextBox.TextProperty, binding)
+editor.Text = 'written'
+edited.UpdateSource()
+edited.UpdateTarget()
+assert model.name == 'written' and editor.Text == 'written', (model.name, editor.Text)
+
+dynamic = Controls.TextBlock()
+dynamic.DataContext = model
+dynamic.SetBinding(Controls.TextBlock.TextProperty, Data.Binding('dynamic'))
+assert dynamic.Text == 'from getattr'
+assert reads['dynamic'] == 1, reads
+");
+    }
+
+    /// <summary>A descriptor reads once whichever of its type or value is asked first, and a value held for its type is not served after the dispatcher moves on.</summary>
+    [Fact]
+    public void DescriptorHoldsItsFirstReadOnlyBriefly() {
+        PyModule? scope = null;
+        object? proxy = null;
+        PropertyDescriptor? descriptor = null;
+        try {
+            host.Run(() => {
+                using (Py.GIL()) {
+                    scope = Py.CreateScope();
+                    scope.Exec(Common + "reads = {'n': 0}\nclass Model(object):\n    def __init__(self):\n        self.value = 1\n    @property\n    def counted(self):\n        reads['n'] += 1\n        return reads['n']\nholder = System.Collections.ArrayList()\nholder.Add(Model())\nmodel = holder[0]\n");
+                    proxy = ((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+                }
+                var counted = TypeDescriptor.GetProperties(proxy)["counted"]!;
+                Assert.Equal(1, counted.GetValue(proxy));
+                Assert.Equal(typeof(int), counted.PropertyType);
+                using (Py.GIL())
+                    Assert.Equal(1, scope!.Eval<int>("reads['n']"));
+                descriptor = TypeDescriptor.GetProperties(proxy)["value"]!;
+                Assert.Equal(typeof(int), descriptor.PropertyType);
+            });
+            host.Run(() => {
+                using (Py.GIL())
+                    scope!.Exec("model.value = 2");
+            });
+            host.Run(() => Assert.Equal(2, descriptor!.GetValue(proxy)));
+        }
+        finally {
+            host.Run(() => {
+                using (Py.GIL())
+                    scope?.Dispose();
+            });
+        }
+    }
 }

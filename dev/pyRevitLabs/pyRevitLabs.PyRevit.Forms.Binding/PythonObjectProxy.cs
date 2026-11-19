@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading;
+using System.Windows.Threading;
 using Python.Runtime;
+using Dispatcher = System.Windows.Threading.Dispatcher;
 
 namespace PyRevitLabs.PyRevit.Forms.Binding {
     /// <summary>
@@ -191,10 +194,11 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         /// <see cref="double"/> target.
         /// </summary>
         /// <remarks>
-        /// Invariant: a binding runs the attribute's getter once. A descriptor reads its attribute
-        /// only when its type is first asked for, and hands that value to its next
-        /// <see cref="PropertyDescriptor.GetValue"/> on this proxy, so one-shot values such as
-        /// generators bind whole.
+        /// Invariant: a binding runs the attribute's getter once. A descriptor types itself from its
+        /// first read, whether its type or its value is asked first. A read made for the type is
+        /// handed to the descriptor's next <see cref="PropertyDescriptor.GetValue"/> on this proxy
+        /// only within the same dispatcher operation, so one-shot values such as generators bind
+        /// whole and later reads are live; off a dispatcher thread nothing is held.
         /// </remarks>
         public PropertyDescriptorCollection GetProperties() {
             List<string> names;
@@ -312,9 +316,17 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         }
 
         private void Hold(object value) {
-            propertyType = value?.GetType() ?? typeof(object);
+            propertyType = TypeOf(value);
+            var dispatcher = Dispatcher.FromThread(Thread.CurrentThread);
+            if (dispatcher == null)
+                return;
             pending = value;
             hasPending = true;
+            dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(Release));
+        }
+
+        private static Type TypeOf(object value) {
+            return value?.GetType() ?? typeof(object);
         }
 
         public override bool CanResetValue(object component) {
@@ -323,11 +335,14 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
 
         public override object GetValue(object component) {
             if (hasPending && ReferenceEquals(component, owner)) {
-                var value = pending;
+                var held = pending;
                 Release();
-                return value;
+                return held;
             }
-            return (component as PythonObjectProxy)?.GetAttribute(Name);
+            var value = (component as PythonObjectProxy)?.GetAttribute(Name);
+            if (propertyType == null && ReferenceEquals(component, owner))
+                propertyType = TypeOf(value);
+            return value;
         }
 
         private void Release() {
