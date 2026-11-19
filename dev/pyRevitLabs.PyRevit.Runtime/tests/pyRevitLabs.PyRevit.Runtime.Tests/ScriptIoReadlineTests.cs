@@ -261,6 +261,15 @@ namespace pyRevitLabs.PyRevit.Runtime.Tests {
             Assert.That(io.read(), Is.EqualTo("input()"));
         }
 
+        [Category("HostFree")]
+        [Category("Unit")]
+        [Test]
+        public void Flush_LowercaseFileObjectAliasDoesNotThrow() {
+            var io = new ScriptIoWithQueuedInput();
+
+            Assert.DoesNotThrow(() => io.flush());
+        }
+
         /// <summary>
         /// A line taken by <c>readline</c> settles the pending raw-read handshake. If the flag
         /// survived, the next raw read would report end of input and the line after it would

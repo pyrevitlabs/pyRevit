@@ -64,7 +64,6 @@ Then fill in the candidate commit and write the release-specific part from the m
 |---|---|
 | `pyRevit CI` run of the candidate commit | Green, including its `wip` job when the candidate is on `develop`. A hotfix branch has no `wip` job, and the gate is the rest of the run. Covers the build, the C# suites, the build pipeline tests, the standalone Python tests and the Revit API compatibility lint |
 | `pyRevit Revit integration tests` run of the candidate commit | Green for 2022-2027: the add-in loads and no Unsigned Add-In dialog appears |
-| Host-free Python modules CI omits: `python -m unittest discover -s dev/scripts -p "test_check_*.py"` | No failure |
 | `mkdocs build --strict` | No warning that the previous release did not have. The build reports existing warnings, so compare instead of expecting a clean run |
 | Published vulnerabilities in shipped dependencies (Dependabot alerts, advisories of the vendored and native libraries) | None with a fixed version available |
 

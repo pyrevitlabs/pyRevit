@@ -1749,6 +1749,7 @@ def _is_under(module_file, root):
     if not isinstance(module_file, str) or not op.isabs(module_file):
         return False
     try:
+        root = op.normcase(op.abspath(root)).rstrip("/\\") + op.sep
         return (op.normcase(op.abspath(module_file)) + op.sep).startswith(root)
     except Exception:
         return False
@@ -1790,8 +1791,10 @@ def _unload_modules_under(folder):
     nested = _library_prefixes(root)
 
     def in_workspace(path):
-        return _is_under(path, root) and not any(
-            _is_under(path, prefix) for prefix in nested
+        return (
+            _is_under(path, root)
+            and not any(_is_under(path, prefix) for prefix in nested)
+            and not _is_runtime_module(path)
         )
 
     def from_workspace(module):
@@ -1815,6 +1818,16 @@ def _namespace_folders(module):
         return list(getattr(module, "__path__", None) or [])
     except Exception:
         return []
+
+
+def _is_runtime_module(module_file):
+    prefixes = (
+        getattr(sys, "prefix", None),
+        getattr(sys, "base_prefix", None),
+        getattr(sys, "exec_prefix", None),
+        getattr(sys, "base_exec_prefix", None),
+    )
+    return any(_is_under(module_file, prefix) for prefix in prefixes if prefix)
 
 
 def _leave_workspace(workspace, added_to_path):

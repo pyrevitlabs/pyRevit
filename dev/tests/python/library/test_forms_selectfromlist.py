@@ -31,9 +31,7 @@ FORMS = os.path.abspath(
 
 def _load_classes():
     """Compile production state and selection methods with portable dependencies."""
-    path = os.path.join(FORMS, "_ipy.py")
-    with open(path, encoding="utf-8-sig") as source:
-        tree = ast.parse(source.read())
+    path = os.path.join(FORMS, "listdialog.py")
     methods = {
         "_prepare_context_items",
         "_get_active_ctx",
@@ -43,27 +41,36 @@ def _load_classes():
         "_get_options",
         "_set_states",
         "checkbox_clicked",
-        "check_selected",
-        "uncheck_selected",
         "check_all",
         "uncheck_all",
         "toggle_all",
     }
     selected = []
-    for node in tree.body:
-        if isinstance(node, ast.ClassDef) and node.name == "TemplateListItem":
-            selected.append(node)
-        elif isinstance(node, ast.ClassDef) and node.name == "SelectFromList":
-            node.bases = [ast.Name(id="object", ctx=ast.Load())]
-            node.body = [
-                child
-                for child in node.body
-                if isinstance(child, ast.FunctionDef) and child.name in methods
-            ]
-            selected.append(node)
-    tree.body = selected
+    for module in ("_reactive.py", "listdialog.py"):
+        with open(os.path.join(FORMS, module), encoding="utf-8-sig") as source:
+            tree = ast.parse(source.read())
+        for node in tree.body:
+            if isinstance(node, ast.ClassDef) and node.name == "TemplateListItem":
+                selected.append(node)
+            elif isinstance(node, ast.ClassDef) and node.name == "SelectFromList":
+                node.bases = [ast.Name(id="object", ctx=ast.Load())]
+                node.body = [
+                    child
+                    for child in node.body
+                    if isinstance(child, ast.FunctionDef) and child.name in methods
+                ]
+                selected.append(node)
+    tree = ast.Module(body=selected, type_ignores=[])
     ast.fix_missing_locations(tree)
     scope = {
+        "_backend": SimpleNamespace(
+            data_context_of=lambda element: element.DataContext,
+            list_source=list,
+            items_source=list,
+            items_of=lambda control: list(control.ItemsSource),
+            selected_items_of=lambda control: list(control.SelectedItems),
+            selected_item_of=lambda control: control.SelectedItem,
+        ),
         "Reactive": object,
         "reactive": property,
         "safe_strtype": str,
