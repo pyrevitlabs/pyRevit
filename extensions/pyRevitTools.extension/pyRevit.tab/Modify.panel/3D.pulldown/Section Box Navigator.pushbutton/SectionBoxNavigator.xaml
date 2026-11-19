@@ -568,13 +568,16 @@
             <GroupBox.Header>
                 <TextBlock FontWeight="Bold" Text="{DynamicResource Settings}"/>
             </GroupBox.Header>
-            <StackPanel Orientation="Horizontal" Margin="5">
+            <WrapPanel Orientation="Horizontal" Margin="5">
                 <CheckBox x:Name="chkPreview" Content="{DynamicResource ShowPreviewOnHover}" 
                         Margin="5" IsChecked="True"/>
                 <CheckBox x:Name="chkIncludeLinks" Content="{DynamicResource IncludeLinkedLevelsAndGrids}" 
                         Margin="5" IsChecked="False"
                         Checked="chkIncludeLinks_checked" Unchecked="chkIncludeLinks_checked"/>
-            </StackPanel>
+                <CheckBox x:Name="chkShow3D" Content="{DynamicResource Show3DPreview}" 
+                        Margin="5" IsChecked="False" ToolTip="{DynamicResource Show3DPreviewTooltip}"
+                        Checked="chkShow3D_changed" Unchecked="chkShow3D_changed"/>
+            </WrapPanel>
         </GroupBox>
     </Grid>
 </Window>
