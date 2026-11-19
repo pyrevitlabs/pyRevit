@@ -207,6 +207,8 @@ def _refresh(controller, names=None, forced=()):
             try:
                 value = getattr(controller, name)
             except Exception:
+                if not values.Contains(name):
+                    values[name] = None
                 continue
             if callable(value) or value is controller:
                 continue
