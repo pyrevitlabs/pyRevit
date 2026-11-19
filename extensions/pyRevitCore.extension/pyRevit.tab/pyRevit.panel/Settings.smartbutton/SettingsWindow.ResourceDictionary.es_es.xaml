@@ -308,6 +308,9 @@
         Créditos al Equipo Parallax por "Parallax Tabbed Views"
     </system:String>
 
+    <system:String x:Key="UI-UX.IsolatedUI">Isolated UI (beta)</system:String>
+    <system:String x:Key="UI-UX.IsolatedUI.Description">Runs the experimental pyRevit UI host in a separate process to isolate UI dependencies from Revit. Restart Revit after changing this option.</system:String>
+    <system:String x:Key="UI-UX.IsolatedUI.RestartRequired">Isolated UI setting changed. Restart Revit for this change to take effect.</system:String>
     <system:String x:Key="UI-UX.OutputWindow">Ventana de Salida</system:String>
     <system:String x:Key="UI-UX.OutputStyling">Estilo de Salida (Hoja de Estilo CSS)</system:String>
     <system:String x:Key="UI-UX.PickCssToolTip">Selecciona una hoja de estilo CSS para sobrescribir la predeterminada.</system:String>

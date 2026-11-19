@@ -83,6 +83,13 @@ namespace pyRevitExtensionParser
         public bool LoadBeta => AsService().Core.LoadBeta ?? false;
 
         /// <summary>
+        /// Gets whether the experimental isolated UI host is enabled through the
+        /// <c>[core] isolated_ui</c> key (default false).
+        /// </summary>
+        public bool IsolatedUi =>
+            AsService().GetSectionKeyValueOrDefault<bool?>("core", "isolated_ui") ?? false;
+
+        /// <summary>
         /// Gets the logging verbosity level (0 = Quiet, 1 = Verbose, 2 = Debug),
         /// derived from the [core] verbose and debug keys.
         /// </summary>
