@@ -29,8 +29,9 @@ namespace PyRevitLoader
     /// such as by deleting it from <c>sys.modules</c> and importing the bundle's module of that name,
     /// goes back into <c>sys.modules</c> when the bundle is left. A bundle that adds its own package to
     /// a shared package, by extending the shared package's <c>__path__</c>, keeps that folder and its
-    /// submodule's binding on the shared package to itself: both are in place only while it is active,
-    /// and the folder goes back to its place in the <c>__path__</c>.
+    /// submodule's binding on the shared package to itself: both are in place only while it is active.
+    /// The folder goes back next to the entries it was next to in the <c>__path__</c>, and the shared
+    /// package's attribute gets back exactly what it held before, such as an alias other code assigned.
     /// Invariant: a module loaded from a shared root moves only as a submodule of a package the bundle
     /// owns, a folder under a shared root never leaves a <c>__path__</c>, a <c>__path__</c> that cannot
     /// change size, such as a .NET array, is replaced by a list of the same folders before a bundle's
@@ -109,23 +110,58 @@ namespace PyRevitLoader
             internal Dictionary<string, HashSet<string>> PackagePathFoldersPutBack { get; } = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
 
             internal Dictionary<string, HashSet<string>> PackagePathsWhenEntered { get; set; }
+
+            internal Dictionary<string, PackageBinding> PackageBindingsReplaced { get; } = new Dictionary<string, PackageBinding>(StringComparer.Ordinal);
         }
 
         /// <summary>
-        /// A folder a bundle keeps in a shared package's <c>__path__</c>, with its position in that list,
-        /// so the folder goes back in front of the same folders as before.
+        /// A folder a bundle keeps in a shared package's <c>__path__</c>, with the entries next to it and
+        /// its position in that list, so the folder goes back next to the same entries as before.
         /// </summary>
         internal sealed class PackagePathFolder
         {
-            internal PackagePathFolder(string folder, int position)
+            internal PackagePathFolder(string folder, int position, string previous, string next)
             {
                 Folder = folder;
                 Position = position;
+                Previous = previous;
+                Next = next;
             }
 
             internal string Folder { get; }
 
             internal int Position { get; }
+
+            internal string Previous { get; }
+
+            internal string Next { get; }
+        }
+
+        /// <summary>
+        /// What a shared package's attribute for a submodule held before <see cref="Activate"/> bound
+        /// the bundle's module to it, so <see cref="Deactivate"/> can put exactly that back.
+        /// </summary>
+        internal sealed class PackageBinding
+        {
+            internal PackageBinding(IronPython.Runtime.PythonModule package, string attribute, bool wasSet, object previous)
+            {
+                Package = package;
+                Attribute = attribute;
+                WasSet = wasSet;
+                Previous = previous;
+            }
+
+            internal IronPython.Runtime.PythonModule Package { get; }
+
+            internal string Attribute { get; }
+
+            internal bool WasSet { get; }
+
+            internal object Previous { get; }
+
+            internal bool IsSet { get; set; }
+
+            internal object Current { get; set; }
         }
 
         /// <summary>
@@ -359,7 +395,8 @@ namespace PyRevitLoader
             }
 
             PutBackSharedModulesKeptAside(modules, ownModules, modulesBefore);
-            BindToSharedPackages(modules, modulesBefore);
+            bundle.PackageBindingsReplaced.Clear();
+            BindToSharedPackages(modules, modulesBefore, bundle.PackageBindingsReplaced, null);
             AddPackagePathFolders(engine, modules, bundle);
             bundle.ModulesWhenEntered = CopyModules(modules);
             bundle.PackagePathsWhenEntered = CopyPackagePaths(modules, bundle);
@@ -415,7 +452,8 @@ namespace PyRevitLoader
                     modulesBefore[module.Key] = null;
             }
 
-            BindToSharedPackages(modules, modulesBefore);
+            var bindingsPutBack = PutBackPackageBindings(bundle);
+            BindToSharedPackages(modules, modulesBefore, null, bindingsPutBack);
             MovePackagePathFolders(engine, modules, bundle, modulesBefore);
             bundle.HiddenModules.Clear();
             bundle.ModulesWhenEntered = null;
@@ -512,7 +550,7 @@ namespace PyRevitLoader
         /// Lists the shared modules that a fresh import in <paramref name="bundle"/> would not reach,
         /// with everything inside them: the top-level modules loaded from a shared root that comes after
         /// one of the bundle's own search paths with a module or package of the same name, and the
-        /// shared submodules of the top-level packages the bundle owns.
+        /// shared submodules of the packages the bundle owns, however deeply nested.
         /// </summary>
         /// <remarks>
         /// Note: <c>import</c> looks in <c>sys.modules</c> before <c>sys.path</c>, so without setting them
@@ -528,13 +566,13 @@ namespace PyRevitLoader
             if (ownModules.ModuleIndexes.Count == 0 && bundle.Modules.Count == 0)
                 return names;
 
-            var shadowed = new HashSet<string>(StringComparer.Ordinal);
+            var shadowed = new HashSet<string>(bundle.Modules.Keys, StringComparer.Ordinal);
             foreach (var entry in modules)
             {
                 if (entry.Key is string name
                     && name.IndexOf('.') < 0
                     && name != MainModuleName
-                    && (bundle.Modules.ContainsKey(name) || IsShadowedByOwnModule(ownModules, name, entry.Value)))
+                    && IsShadowedByOwnModule(ownModules, name, entry.Value))
                     shadowed.Add(name);
             }
 
@@ -769,6 +807,10 @@ namespace PyRevitLoader
         /// </summary>
         /// <param name="modulesBefore">The names whose entries changed, each with the module the entry
         /// held before, or null when there was none.</param>
+        /// <param name="bindingsReplaced">When not null, receives what each attribute held before this
+        /// call changed it, so <see cref="PutBackPackageBindings"/> can put that back.</param>
+        /// <param name="namesToSkip">Submodules whose attribute <see cref="PutBackPackageBindings"/>
+        /// already put back, or null.</param>
         /// <remarks>
         /// Note: <c>from pkg import sub</c> reads the package's <c>sub</c> attribute before it looks in
         /// <c>sys.modules</c>. A bundle's submodule left bound to a shared package would reach the next
@@ -776,12 +818,14 @@ namespace PyRevitLoader
         /// Invariant: an attribute is set only when it is unset or holds a module, and removed only when
         /// it still holds the module that left, so a value the package set itself stays.
         /// </remarks>
-        private static void BindToSharedPackages(IDictionary<object, object> modules, Dictionary<string, object> modulesBefore)
+        private static void BindToSharedPackages(IDictionary<object, object> modules, Dictionary<string, object> modulesBefore, Dictionary<string, PackageBinding> bindingsReplaced, HashSet<string> namesToSkip)
         {
             foreach (var change in modulesBefore)
             {
                 var dot = change.Key.LastIndexOf('.');
-                if (dot < 0 || modulesBefore.ContainsKey(change.Key.Substring(0, dot)))
+                if (dot < 0
+                    || modulesBefore.ContainsKey(change.Key.Substring(0, dot))
+                    || (namesToSkip != null && namesToSkip.Contains(change.Key)))
                     continue;
 
                 if (!modules.TryGetValue(change.Key.Substring(0, dot), out var parent)
@@ -793,48 +837,146 @@ namespace PyRevitLoader
                 var isBound = attributes.TryGetValue(childName, out var bound);
                 if (modules.TryGetValue(change.Key, out var module) && module != null)
                 {
-                    if (!isBound || bound is IronPython.Runtime.PythonModule)
-                        attributes[childName] = module;
+                    if (isBound && (!(bound is IronPython.Runtime.PythonModule) || ReferenceEquals(bound, module)))
+                        continue;
+
+                    RecordBinding(bindingsReplaced, change.Key, package, childName, isBound, bound, true, module);
+                    attributes[childName] = module;
                 }
                 else if (isBound && ReferenceEquals(bound, change.Value))
                 {
+                    RecordBinding(bindingsReplaced, change.Key, package, childName, true, bound, false, null);
                     attributes.Remove(childName);
                 }
             }
         }
 
+        private static void RecordBinding(
+            Dictionary<string, PackageBinding> bindingsReplaced,
+            string moduleName,
+            IronPython.Runtime.PythonModule package,
+            string attribute,
+            bool wasSet,
+            object previous,
+            bool isSet,
+            object current)
+        {
+            if (bindingsReplaced == null)
+                return;
+
+            if (!bindingsReplaced.TryGetValue(moduleName, out var binding))
+            {
+                binding = new PackageBinding(package, attribute, wasSet, previous);
+                bindingsReplaced[moduleName] = binding;
+            }
+            binding.IsSet = isSet;
+            binding.Current = current;
+        }
+
+        /// <summary>
+        /// Puts back what each shared package attribute held before <see cref="Activate"/> changed it for
+        /// the bundle, where the attribute still holds what <see cref="Activate"/> left there, and
+        /// returns the names of the submodules it handled.
+        /// </summary>
+        /// <remarks>
+        /// Note: the attribute can hold something other than the submodule's entry, such as a module
+        /// that other code assigned to it. The bundle's module replaces that while the bundle is active,
+        /// and removing only the bundle's module when it is left would lose it.
+        /// </remarks>
+        private static HashSet<string> PutBackPackageBindings(Bundle bundle)
+        {
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in bundle.PackageBindingsReplaced)
+            {
+                var binding = entry.Value;
+                var attributes = binding.Package.Get__dict__();
+                var isSet = attributes.TryGetValue(binding.Attribute, out var current);
+                if (isSet != binding.IsSet || (isSet && !ReferenceEquals(current, binding.Current)))
+                    continue;
+
+                if (binding.WasSet)
+                    attributes[binding.Attribute] = binding.Previous;
+                else
+                    attributes.Remove(binding.Attribute);
+                names.Add(entry.Key);
+            }
+            bundle.PackageBindingsReplaced.Clear();
+            return names;
+        }
+
         /// <summary>
         /// Puts the folders the bundle keeps in shared packages' <c>__path__</c> that are missing there
-        /// back to their positions, and records which ones it put back.
+        /// back next to the entries they were next to, and records which ones it put back.
         /// </summary>
         /// <remarks>
         /// Note: a folder that is already in the list, such as one a callback outside any bundle added
         /// again, is not recorded, so <see cref="MovePackagePathFolders"/> leaves it there for that code.
-        /// A <c>__path__</c> that cannot change size is replaced by a list first.
+        /// A <c>__path__</c> that cannot change size is replaced by a list first. A folder goes right after
+        /// the entry it followed, or right before the one it preceded when that one is gone, so a shared
+        /// folder added meanwhile does not change which file an import finds. With both gone, it goes back
+        /// to its old position.
         /// Invariant: <see cref="Bundle.PackagePathFolders"/> lists each package's folders by position,
-        /// lowest first, so each one goes back in front of the same folders as before.
+        /// lowest first, so a folder that followed another of the bundle's folders goes back after it.
+        /// If putting a folder back fails, the folders this call put back are taken out again before the
+        /// failure goes on, so none of them is left for the next bundle.
         /// </remarks>
-        private static void AddPackagePathFolders(ScriptEngine engine, IDictionary<object, object> modules, Bundle bundle)
+        private void AddPackagePathFolders(ScriptEngine engine, IDictionary<object, object> modules, Bundle bundle)
         {
             bundle.PackagePathFoldersPutBack.Clear();
-            foreach (var package in bundle.PackagePathFolders)
+            var inserted = new List<KeyValuePair<System.Collections.IList, string>>();
+            try
             {
-                if (!modules.TryGetValue(package.Key, out var module)
-                    || !(module is IronPython.Runtime.PythonModule pythonModule)
-                    || !(GetPackagePath(pythonModule) is System.Collections.IList packagePath))
-                    continue;
-
-                var foldersPutBack = new HashSet<string>(StringComparer.Ordinal);
-                foreach (var folder in package.Value)
+                foreach (var package in bundle.PackagePathFolders)
                 {
-                    if (packagePath.Contains(folder.Folder))
+                    if (!modules.TryGetValue(package.Key, out var module)
+                        || !(module is IronPython.Runtime.PythonModule pythonModule)
+                        || !(GetPackagePath(pythonModule) is System.Collections.IList packagePath))
                         continue;
 
-                    packagePath = MakeResizable(engine, pythonModule, packagePath);
-                    packagePath.Insert(Math.Min(folder.Position, packagePath.Count), folder.Folder);
-                    foldersPutBack.Add(folder.Folder);
+                    var foldersPutBack = new HashSet<string>(StringComparer.Ordinal);
+                    bundle.PackagePathFoldersPutBack[package.Key] = foldersPutBack;
+                    foreach (var folder in package.Value)
+                    {
+                        if (packagePath.Contains(folder.Folder))
+                            continue;
+
+                        packagePath = MakeResizable(engine, pythonModule, packagePath);
+                        packagePath.Insert(FindInsertionIndex(packagePath, folder), folder.Folder);
+                        inserted.Add(new KeyValuePair<System.Collections.IList, string>(packagePath, folder.Folder));
+                        foldersPutBack.Add(folder.Folder);
+                    }
                 }
-                bundle.PackagePathFoldersPutBack[package.Key] = foldersPutBack;
+            }
+            catch
+            {
+                TakeOutInsertedFolders(inserted);
+                bundle.PackagePathFoldersPutBack.Clear();
+                throw;
+            }
+        }
+
+        private static int FindInsertionIndex(System.Collections.IList packagePath, PackagePathFolder folder)
+        {
+            var index = folder.Previous == null ? -1 : packagePath.IndexOf(folder.Previous);
+            if (index >= 0)
+                return index + 1;
+
+            index = folder.Next == null ? -1 : packagePath.IndexOf(folder.Next);
+            return index >= 0 ? index : Math.Min(folder.Position, packagePath.Count);
+        }
+
+        private void TakeOutInsertedFolders(List<KeyValuePair<System.Collections.IList, string>> inserted)
+        {
+            for (var i = inserted.Count - 1; i >= 0; i--)
+            {
+                try
+                {
+                    inserted[i].Key.Remove(inserted[i].Value);
+                }
+                catch (Exception ex)
+                {
+                    Log($"Failed to take '{inserted[i].Value}' out of a package's __path__ again: {ex.Message}");
+                }
             }
         }
 
@@ -859,7 +1001,8 @@ namespace PyRevitLoader
 
         /// <summary>
         /// Takes the folders the active bundle added to the <c>__path__</c> of packages that stay in
-        /// <c>sys.modules</c> out of those lists and into the bundle, with their positions: the folders
+        /// <c>sys.modules</c> out of those lists and into the bundle, with their positions and the entries
+        /// next to them: the folders
         /// outside the shared roots that were not there when it was entered, and the ones
         /// <see cref="Activate"/> put back. A folder the bundle keeps that was already there when it
         /// was entered stays in place and stays with the bundle.
@@ -909,13 +1052,13 @@ namespace PyRevitLoader
 
                     if (!wasThere || !foldersWhenEntered.Contains(folder) || (foldersPutBack != null && foldersPutBack.Contains(folder)))
                     {
-                        folders.Insert(0, new PackagePathFolder(folder, i));
+                        folders.Insert(0, CreatePackagePathFolder(packagePath, i, folder));
                         packagePath = MakeResizable(engine, package, packagePath);
                         packagePath.RemoveAt(i);
                     }
                     else if (foldersLeftInPlace.Contains(folder))
                     {
-                        folders.Insert(0, new PackagePathFolder(folder, i));
+                        folders.Insert(0, CreatePackagePathFolder(packagePath, i, folder));
                     }
                 }
 
@@ -927,6 +1070,13 @@ namespace PyRevitLoader
             foreach (var folders in keptFolders)
                 bundle.PackagePathFolders[folders.Key] = folders.Value;
             bundle.PackagePathFoldersPutBack.Clear();
+        }
+
+        private static PackagePathFolder CreatePackagePathFolder(System.Collections.IList packagePath, int index, string folder)
+        {
+            var previous = index > 0 ? packagePath[index - 1] as string : null;
+            var next = index + 1 < packagePath.Count ? packagePath[index + 1] as string : null;
+            return new PackagePathFolder(folder, index, previous, next);
         }
 
         private static HashSet<string> FindFoldersLeftInPlace(Bundle bundle, string packageName, HashSet<string> foldersPutBack)

@@ -26,7 +26,13 @@ namespace pyRevitExtensionParserTester
     /// <item>a module or package that code outside any bundle imported from a bundle's folder reached
     /// the next bundle;</item>
     /// <item>a package a bundle adds to a shared package stayed bound to it, and in its <c>__path__</c>,
-    /// for the next bundle.</item>
+    /// for the next bundle;</item>
+    /// <item>a bundle that owns a nested package got another bundle's shared submodule of it;</item>
+    /// <item>leaving a bundle removed a module other code had assigned to a shared package's
+    /// attribute;</item>
+    /// <item>a bundle's folder went back to its old index even after a shared folder was added before
+    /// its neighbour;</item>
+    /// <item>a folder put back before a failed activation stayed in the shared package.</item>
     /// </list>
     /// It also covers these findings from the review of pyrevitlabs/pyRevit#4138, which shows the same
     /// code:
@@ -229,6 +235,31 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        public void Enter_BundleThatOwnsANestedPackage_ImportsItsOwnSubmoduleAfterAnotherBundleLoadedTheShared()
+        {
+            string sharedRoot = CreateSharedPackage();
+            string sharedPlugins = CreateDirectory(Path.Combine("site-packages", "spkg", "plugins"));
+            File.WriteAllText(Path.Combine(sharedPlugins, "__init__.py"), string.Empty);
+            File.WriteAllText(Path.Combine(sharedPlugins, "sub.py"), "VALUE = 'shared'");
+            object other = CreateBundle("Other", sharedRoot);
+            string ownParent = CreateDirectory(Path.Combine("Owner", "lib", "spkg_ext"));
+            string ownPlugins = CreateDirectory(Path.Combine("Owner", "lib", "spkg_ext", "plugins"));
+            File.WriteAllText(Path.Combine(ownPlugins, "__init__.py"), string.Empty);
+            File.WriteAllText(Path.Combine(ownPlugins, "sub.py"), "VALUE = 'own'");
+            object owner = CreateBundle("Owner", sharedRoot);
+            string readSub = "from spkg.plugins import sub\nresult = sub.VALUE";
+
+            using (Enter(owner))
+                Execute($"import spkg\nspkg.__path__.insert(0, {PythonString(ownParent)})\nimport spkg.plugins");
+            using (Enter(other))
+                Assert.That(Execute(readSub), Is.EqualTo("shared"));
+            using (Enter(owner))
+                Assert.That(Execute(readSub), Is.EqualTo("own"));
+            using (Enter(other))
+                Assert.That(Execute(readSub), Is.EqualTo("shared"));
+        }
+
+        [Test]
         public void Dispose_BundleThatLoadedASharedModuleOverOneFromOutsideAnyBundle_PutsThatOneBack()
         {
             string sharedRoot = CreateSharedLibModule();
@@ -340,6 +371,68 @@ namespace pyRevitExtensionParserTester
                 Execute($"import spkg\nspkg.__path__.insert(0, {PythonString(folder)})");
             using (Enter(bundle))
                 Assert.That(Execute("import spkg.other\nresult = spkg.other.VALUE"), Is.EqualTo("First"));
+        }
+
+        [Test]
+        public void Enter_SharedFolderAddedBeforeTheBundlesNeighbour_KeepsTheBundlesFolderNextToThatNeighbour()
+        {
+            string sharedRoot = CreateDirectory("site-packages");
+            string left = CreateDirectory(Path.Combine("site-packages", "spkg"));
+            string right = CreateDirectory(Path.Combine("site-packages", "spkg_right"));
+            string front = CreateDirectory(Path.Combine("site-packages", "spkg_front"));
+            File.WriteAllText(Path.Combine(left, "__init__.py"), $"__path__.append({PythonString(right)})");
+            File.WriteAllText(Path.Combine(left, "leaf.py"), "VALUE = 'left'");
+            Call(_isolation, "AddSharedRoot", sharedRoot);
+            string folder = CreateDirectory(Path.Combine("First", "lib", "spkg_ext"));
+            File.WriteAllText(Path.Combine(folder, "leaf.py"), "VALUE = 'First'");
+            object bundle = CreateBundle("First", sharedRoot);
+
+            using (Enter(bundle))
+                Execute($"import spkg\nspkg.__path__.insert(1, {PythonString(folder)})");
+            Execute($"import spkg\nspkg.__path__.insert(0, {PythonString(front)})");
+            using (Enter(bundle))
+                Assert.That(Execute("import spkg.leaf\nresult = spkg.leaf.VALUE"), Is.EqualTo("left"));
+        }
+
+        [Test]
+        public void Enter_BundleWhoseFoldersCannotAllGoBack_TakesOutTheOnesItPutBack()
+        {
+            string sharedRoot = CreateSharedPackage();
+            string first = CreateDirectory(Path.Combine("First", "lib", "first_part"));
+            string second = CreateDirectory(Path.Combine("First", "lib", "second_part"));
+            object bundle = CreateBundle("First", sharedRoot);
+            string hasFirst = $"import spkg\nresult = {PythonString(first)} in spkg.__path__";
+
+            using (Enter(bundle))
+                Execute($"import spkg\nspkg.__path__.append({PythonString(first)})\nspkg.__path__.append({PythonString(second)})");
+            Execute(
+                "import spkg\nfrom System.Collections import ArrayList\n"
+                + "class RejectsSecondPart(ArrayList):\n    def Insert(self, index, value):\n"
+                + "        if value.endswith('second_part'):\n            raise ValueError('rejected')\n"
+                + "        ArrayList.Insert(self, index, value)\n"
+                + "spkg.__path__ = RejectsSecondPart(list(spkg.__path__))");
+            using (Enter(bundle))
+                Assert.That(Execute(hasFirst), Is.False);
+
+            Assert.That(Execute(hasFirst), Is.False);
+            Assert.That(_loggedFailures, Has.Some.Contains("bring back the modules of 'First'"));
+        }
+
+        [Test]
+        public void Dispose_BundleThatBoundItsPackageOverAnAlias_PutsTheAliasBack()
+        {
+            string sharedRoot = CreateSharedPackage();
+            string sharedPart = CreateSharedPackagePart(sharedRoot);
+            object bundle = CreateBundleWithPackageForSharedPackage("First", sharedPart, sharedRoot);
+            string readAlias = "import spkg\nresult = getattr(getattr(spkg, 'plugins', None), '__name__', None)";
+
+            using (Enter(bundle))
+                Execute(ImportPackageFromSharedPackage("First"));
+            Execute("import spkg, sys\nspkg.plugins = type(sys)('alias')");
+            using (Enter(bundle))
+                Assert.That(Execute("from spkg import plugins\nresult = plugins.VALUE"), Is.EqualTo("First"));
+
+            Assert.That(Execute(readAlias), Is.EqualTo("alias"));
         }
 
         [Test]
