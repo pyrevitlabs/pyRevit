@@ -759,4 +759,18 @@ class Key(object):
         });
     }
 
+    /// <summary>Looking up an equal object compares Python items directly, so a generator in the list is not consumed.</summary>
+    [Fact]
+    public void EqualityLookupDoesNotConvertItems() {
+        host.Run(() => {
+            using (Py.GIL()) {
+                using var scope = Py.CreateScope();
+                scope.Exec(Common + KeyClass + "gen = (i for i in range(3))\nvalues = [gen, Key(2)]\nholder = System.Collections.ArrayList()\nholder.Add(Key(2))\n");
+                var probe = ((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0];
+                IList list = PythonBinding.ListSource(scope.Get("values"));
+                Assert.Equal(1, list.IndexOf(probe));
+                scope.Exec("assert next(gen) == 0");
+            }
+        });
+    }
 }

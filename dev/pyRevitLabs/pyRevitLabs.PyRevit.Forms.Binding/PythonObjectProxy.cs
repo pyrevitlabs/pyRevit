@@ -135,18 +135,21 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
                 return false;
             if (other.handle == handle)
                 return true;
-            using (Py.GIL()) {
-                if (!IsHashable() || !other.IsHashable())
-                    return false;
-                try {
-                    using (var operatorModule = Py.Import("operator"))
-                    using (var result = operatorModule.InvokeMethod("eq", source, other.source))
-                        return result.IsTrue();
-                }
-                catch (PythonException ex) {
-                    Trace.TraceWarning("Python equality failed: {0}", ex.Message);
-                    return false;
-                }
+            using (Py.GIL())
+                return Matches(other.source);
+        }
+
+        /// <summary>True when this object and <paramref name="other"/> are both hashable and Python-equal.</summary>
+        /// <remarks>Requires the GIL.</remarks>
+        internal bool Matches(PyObject other) {
+            if (!IsHashable() || !IsHashable(other))
+                return false;
+            try {
+                return source.Equals(other);
+            }
+            catch (PythonException ex) {
+                Trace.TraceWarning("Python equality failed: {0}", ex.Message);
+                return false;
             }
         }
 
@@ -167,11 +170,14 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
         }
 
         private bool IsHashable() {
-            if (hashable.HasValue)
-                return hashable.Value;
-            using (var hash = source.GetAttr("__hash__"))
-                hashable = !hash.IsNone();
+            if (!hashable.HasValue)
+                hashable = IsHashable(source);
             return hashable.Value;
+        }
+
+        private static bool IsHashable(PyObject value) {
+            using (var hash = value.GetAttr("__hash__"))
+                return !hash.IsNone();
         }
 
         /// <summary>

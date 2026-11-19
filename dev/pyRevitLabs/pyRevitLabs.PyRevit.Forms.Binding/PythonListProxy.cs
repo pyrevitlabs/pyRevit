@@ -149,8 +149,9 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
 
         /// <summary>
         /// Returns the position of <paramref name="value"/>: the first item that is the same Python
-        /// object, or else the first item equal by <see cref="object.Equals(object, object)"/>, so a
-        /// <see cref="PythonObjectProxy"/> also finds an equal hashable item.
+        /// object, else for a <see cref="PythonObjectProxy"/> the first hashable item equal by
+        /// Python <c>==</c>, and for CLR values the first item equal by
+        /// <see cref="object.Equals(object, object)"/>. Python items are compared unconverted.
         /// </summary>
         public int IndexOf(object value) {
             using (Py.GIL())
@@ -196,6 +197,15 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
                             return index;
                     }
                 }
+                if (!(value is PythonObjectProxy proxy))
+                    return -1;
+                for (var index = 0; index < count; index++) {
+                    using (var item = items.GetItem(index)) {
+                        if (proxy.Matches(item))
+                            return index;
+                    }
+                }
+                return -1;
             }
             for (var index = 0; index < count; index++) {
                 if (Equals(PythonBinding.ToClr(items.GetItem(index)), value))
