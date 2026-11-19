@@ -307,8 +307,11 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        RunDoctor(string args, bool dryRun = false) {
+        RunDoctor(string args, bool dryRun = false, bool force = false, bool keepConfig = false, bool keepExtensions = false) {
             if (dryRun) args += " --dryrun";
+            if (force) args += " --force";
+            if (keepConfig) args += " --keep-config";
+            if (keepExtensions) args += " --keep-extensions";
 
             string doctorExe = Path.Combine(GetProcessPath(), "pyrevit-doctor.exe");
             ProcessStartInfo cpyProcessInfo = new ProcessStartInfo(doctorExe) {

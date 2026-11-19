@@ -1089,7 +1089,7 @@ namespace pyRevitCLI {
                     PyRevitCLIAppCmds.RunDoctor("--wrappedhelp");
 
                 else if (TryGetValue("<doctor_command>") is var doctorCommand && doctorCommand != null)
-                    PyRevitCLIAppCmds.RunDoctor(doctorCommand, dryRun: arguments["--dryrun"].IsTrue);
+                    PyRevitCLIAppCmds.RunDoctor(doctorCommand, dryRun: arguments["--dryrun"].IsTrue, force: arguments["--force"].IsTrue, keepConfig: arguments["--keep-config"].IsTrue, keepExtensions: arguments["--keep-extensions"].IsTrue);
 
                 else if (all("doctor", "--list"))
                     PyRevitCLIAppCmds.RunDoctor("--list");

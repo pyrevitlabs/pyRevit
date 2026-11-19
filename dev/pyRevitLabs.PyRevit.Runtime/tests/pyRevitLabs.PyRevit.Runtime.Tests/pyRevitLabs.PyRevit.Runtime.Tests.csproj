@@ -15,12 +15,19 @@
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\..\pyRevitLoader\Source\CheckBoxHandlerRegistry.cs" Link="Source\CheckBoxHandlerRegistry.cs" />
+    <Compile Include="..\..\..\pyRevitLoader\Source\BundleModuleIsolation.cs" Link="Source\BundleModuleIsolation.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <ProjectReference Include="..\..\2024\pyRevitLabs.PyRevit.Runtime.2024.csproj" AdditionalProperties="Configuration=Debug IPY342;SkipPyRevitDeploy=true" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
     <ProjectReference Include="..\..\2026\pyRevitLabs.PyRevit.Runtime.2026.csproj" AdditionalProperties="Configuration=Debug IPY342;SkipPyRevitDeploy=true" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\IPY342\IronPython.dll" />
+    <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\IPY342\Microsoft.Dynamic.dll" />
+    <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\IPY342\Microsoft.Scripting.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />

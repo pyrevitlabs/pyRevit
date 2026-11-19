@@ -3,6 +3,8 @@
 Handlers:
 - __chk_init__(ctx) runs once per ribbon load, before the change handler is
   wired, so restoring a saved state here does not fire __chk_on_change__.
+  If it raises or calls sys.exit(), the change handler is not wired at all.
+  If it raises, the checkbox is also disabled until pyRevit reloads.
 - __chk_on_change__(sender, args, ctx) runs on every change of ctx.is_checked,
   from a click or from code.
 
