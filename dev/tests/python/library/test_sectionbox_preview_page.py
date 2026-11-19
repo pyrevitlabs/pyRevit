@@ -6,9 +6,9 @@ with a stubbed WebView2 bridge, and asserts on the box, snapping and rotation
 math and on what mounting the page leaves behind. No Revit is involved.
 
 A missing browser fails the test on CI and skips it elsewhere, so a runner
-without Edge or Chrome cannot pass silently. Only the WebGL smoke test skips
-everywhere when the browser starts no WebGL2 context in time, which hosted
-runners do not reliably allow.
+without Edge or Chrome cannot pass silently. The WebGL smoke test lives in
+``test_sectionbox_preview_webgl.py`` because hosted runners cannot start WebGL2
+reliably.
 """
 
 import html
@@ -232,18 +232,6 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
         self.assertEqual(result["after_view_change"], 7)
         self.assertEqual(result["truncated_status"], "PreviewTruncated")
         self.assertEqual(result["loaded_status"], "PreviewLoaded")
-
-    def test_webgl_context_draws_guides_and_the_hovered_element(self):
-        try:
-            result = run_scenario(self.browser, "gl_smoke", gl=True)
-        except subprocess.TimeoutExpired:
-            self.skipTest("headless browser did not start a WebGL context in time")
-        if not result["gl"]:
-            self.skipTest("the browser has no WebGL2")
-        self.assertEqual(result["error"], 0)
-        self.assertEqual(result["elements"], 1)
-        self.assertEqual(result["hoveredId"], 12)
-        self.assertEqual(result["errors"], [])
 
 
 if __name__ == "__main__":
