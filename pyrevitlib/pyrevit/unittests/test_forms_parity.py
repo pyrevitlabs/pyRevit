@@ -772,6 +772,34 @@ class BindingParityTests(unittest.TestCase):
         with _Shown(window):
             self.assertEqual("Ada Lovelace", window.name_tb.Text)
 
+    def test_reactive_property_recovers_after_initial_getter_error(self):
+        """A Reactive getter that fails during binding can later provide its value."""
+
+        class Model(forms.Reactive):
+            def __init__(self):
+                super(Model, self).__init__()
+                self.ready = False
+
+            @forms.reactive
+            def name(self):
+                if not self.ready:
+                    raise ValueError("not ready")
+                return "recovered"
+
+        model = Model()
+        window = _XamlWindow('<TextBlock x:Name="name_tb" Text="{Binding name}"/>')
+        window.DataContext = model
+        with _Shown(window):
+            expression = window.name_tb.GetBindingExpression(
+                framework.Controls.TextBlock.TextProperty
+            )
+            expression.UpdateTarget()
+            self.assertEqual("", window.name_tb.Text)
+            model.ready = True
+            model.OnPropertyChanged("name")
+            expression.UpdateTarget()
+            self.assertEqual("recovered", window.name_tb.Text)
+
     def test_namedtuple_items_in_template(self):
         """Fields of namedtuple items bind inside an item template.
 
