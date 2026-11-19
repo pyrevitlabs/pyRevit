@@ -773,4 +773,31 @@ class Key(object):
             }
         });
     }
+
+    /// <summary>An attribute whose getter fails is still bound, and shows its value once the getter works.</summary>
+    [Fact]
+    public void FailingGetterStillEstablishesTheBinding() {
+        Python(@"
+class Model(object):
+    def __init__(self):
+        self.ready = False
+
+    def __getattr__(self, name):
+        if name != 'late':
+            raise AttributeError(name)
+        if not self.ready:
+            raise ValueError('not ready')
+        return 'value'
+
+model = Model()
+text = Controls.TextBlock()
+text.DataContext = model
+expression = text.SetBinding(Controls.TextBlock.TextProperty, Data.Binding('late'))
+expression.UpdateTarget()
+assert text.Text == ''
+model.ready = True
+expression.UpdateTarget()
+assert text.Text == 'value', text.Text
+");
+    }
 }

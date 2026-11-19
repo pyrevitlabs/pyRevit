@@ -82,6 +82,10 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
             return TryGetAttribute(name, out var value) ? value : null;
         }
 
+        /// <summary>
+        /// Reads an attribute, false only when it is missing; a getter that raises anything else
+        /// counts as present with a null value, so its binding is kept and can read it later.
+        /// </summary>
         internal bool TryGetAttribute(string name, out object value) {
             using (Py.GIL()) {
                 PyObject python;
@@ -89,10 +93,11 @@ namespace PyRevitLabs.PyRevit.Forms.Binding {
                     python = isDict ? source.GetItem(name) : source.GetAttr(name);
                 }
                 catch (PythonException ex) {
-                    if (!IsMissingAttribute(ex))
-                        Trace.TraceWarning("Python binding read of '{0}' failed: {1}", name, ex.Message);
                     value = null;
-                    return false;
+                    if (IsMissingAttribute(ex))
+                        return false;
+                    Trace.TraceWarning("Python binding read of '{0}' failed: {1}", name, ex.Message);
+                    return true;
                 }
                 value = PythonBinding.ToClr(python);
                 return true;
