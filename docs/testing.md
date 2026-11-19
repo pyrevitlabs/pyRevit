@@ -51,6 +51,9 @@ flowchart LR
         EnvVars["pyRevitLabs.PyRevit.Runtime.EnvVars.Tests"]
         Renderer["pyRevitLabs.PyRevit.Renderer.Tests"]
         Shell["pyRevitLabs.PyRevit.Shell.Tests"]
+        Forms["pyRevitLabs.PyRevit.Forms.Tests"]
+        FormsBinding["pyRevitLabs.PyRevit.Forms.Binding.Tests"]
+        FormsIronPython["pyRevitLabs.PyRevit.Forms.IronPython.Tests"]
         Legacy["pyRevitLabs.UnitTests"]
     end
 
@@ -58,7 +61,7 @@ flowchart LR
     Local --> Fixtures["Revit-tagged C# fixtures<br/>Fixture-specific host setup"]
 ```
 
-The implemented CI selection has **18 C# projects across 27 runs** (26 project/framework runs plus the shell suite's second IronPython engine) and the API-free Python suite. Local validation on 2026-11-07: **2,377 C# cases and 453 Python cases, zero skips**, including the Dynamo parser regressions inherited from PR1. Counts include each framework and engine run. Local Revit results are separate; a general C# in-Revit runner is not implemented.
+The implemented CI selection has **21 C# projects across 35 runs** (33 project/framework runs plus a second IronPython engine for the shell and IronPython forms suites) and the API-free Python suite. Local validation on 2026-11-19: **3,894 C# cases and 795 Python cases, zero skips**, including the Dynamo parser regressions inherited from PR1. Counts include each framework and engine run. The three forms suites open real WPF windows, so they need an interactive desktop session; the hosted Windows runner provides one. Local Revit results are separate; a general C# in-Revit runner is not implemented.
 
 Level describes the test; Environment determines where it runs:
 
@@ -155,7 +158,7 @@ pyrevit clones add dev <path-to-repo>
 pyrevit attach dev default --installed
 ```
 
-In Revit, use DevTools **Debug > Unit Tests > Run All Tests**, a specific library module, or Agent Tests. `Run All Tests` skips the opt-in `test_revit_api_catalog`; run it with **Revit API Catalog Tests**. Record required models/elements, engine capabilities and actual skips. IronPython 3 needs a separate clone attachment.
+In Revit, use DevTools **Debug > Unit Tests > Run All Tests**, a specific library module, or Agent Tests. `Run All Tests` skips the opt-in `test_revit_api_catalog`; run it with **Revit API Catalog Tests**. It also runs only modules whose `TEST_LEVEL` is `Unit`; run the others from their own buttons, `test_forms_parity` from **Debug > Forms Tests**. Record required models/elements, engine capabilities and actual skips. IronPython 3 needs a separate clone attachment.
 
 Set `PYREVIT_TEST_JUNIT_PATH` before launching Revit for XML evidence. Use a fresh destination per year/engine/run. Module results aggregate; rerunning a module replaces its result. Requested report-write failures and unexpected successes must fail the command, including on IronPython 2.7. Record the commit, Revit year, engine, fixture, command and outcome.
 
