@@ -442,75 +442,101 @@ def check_baselines(measured, baseline):
         raise ValueError("\n".join(failures))
 
 
+def product_documents(documents):
+    """Yield ``(identity, classes)`` for each first-party, non-excluded source.
+
+    The identity is the case-normalized path, so differently cased references
+    to one Windows file share a denominator.
+    """
+    for filename, classes in documents.items():
+        source = Path(filename)
+        if not source.is_relative_to(ROOT):
+            continue
+        relative = PurePosixPath(source.relative_to(ROOT).as_posix())
+        if not any(map(relative.full_match, COVERAGE_EXCLUDED_FILES)):
+            yield os.path.normcase(str(source)), classes
+
+
+def _source_line(lines, document, number):
+    return lines.setdefault((document, str(number)), {"hit": False, "branches": {}})
+
+
+def merge_document(lines, document, classes):
+    """Merge one source's line hits and branch outcomes into a module's lines.
+
+    Invariant:
+        A branch is identified by its method, offsets and path, so a branch
+        reported by several suites counts once and is hit if any suite hit it.
+    """
+    for methods in classes.values():
+        for method, details in methods.items():
+            for number, hits in details["Lines"].items():
+                _source_line(lines, document, number)["hit"] |= hits > 0
+            for branch in details["Branches"]:
+                outcomes = _source_line(lines, document, branch["Line"])["branches"]
+                identity = (
+                    method,
+                    branch["Offset"],
+                    branch["EndOffset"],
+                    branch["Path"],
+                )
+                outcomes[identity] = outcomes.get(identity, False) or branch["Hits"] > 0
+
+
+def merge_dotnet_report(modules, path):
+    """Merge one run's ``coverage.json`` into the per-module line maps."""
+    framework = path.parent.parent.name
+    for assembly, documents in json.loads(path.read_text(encoding="utf-8")).items():
+        name = Path(assembly).stem
+        kind = "dotnet-linked" if name.endswith(".Tests") else "dotnet"
+        module = f"{kind}/{name}/{framework}"
+        for document, classes in product_documents(documents):
+            merge_document(modules.setdefault(module, {}), document, classes)
+
+
+def dotnet_ratios(lines):
+    """Summarize a module's merged lines; a module without branches scores 1."""
+    branches = sum(len(value["branches"]) for value in lines.values())
+    return {
+        "line": sum(value["hit"] for value in lines.values()) / len(lines)
+        if lines
+        else 0,
+        "branch": sum(sum(value["branches"].values()) for value in lines.values())
+        / branches
+        if branches
+        else 1,
+        "lines": len(lines),
+        "branches": branches,
+    }
+
+
+def python_coverage(report):
+    """Read coverage.py's JSON report as one measured module per source file."""
+    measured = {}
+    for filename, data in json.loads(report.read_text())["files"].items():
+        summary = data["summary"]
+        measured[f"python/{filename.replace(chr(92), '/')}"] = {
+            "line": summary["covered_lines"] / summary["num_statements"]
+            if summary["num_statements"]
+            else 1,
+            "branch": summary["covered_branches"] / summary["num_branches"]
+            if summary["num_branches"]
+            else 1,
+            "lines": summary["num_statements"],
+            "branches": summary["num_branches"],
+        }
+    return measured
+
+
 def collect_coverage(results):
     """Merge executed lines and branches across suites per module/framework."""
     modules = {}
     for path in results.glob("*/*/*/coverage.json"):
-        framework = path.parent.parent.name
-        for assembly, documents in json.loads(path.read_text(encoding="utf-8")).items():
-            name = Path(assembly).stem
-            kind = "dotnet-linked" if name.endswith(".Tests") else "dotnet"
-            module = f"{kind}/{name}/{framework}"
-            for filename, classes in documents.items():
-                source = Path(filename)
-                if not source.is_relative_to(ROOT):
-                    continue
-                relative = PurePosixPath(source.relative_to(ROOT).as_posix())
-                if any(map(relative.full_match, COVERAGE_EXCLUDED_FILES)):
-                    continue
-                lines = modules.setdefault(module, {})
-                document = os.path.normcase(str(source))
-                for methods in classes.values():
-                    for method, details in methods.items():
-                        for number, hits in details["Lines"].items():
-                            key = (document, str(number))
-                            previous = lines.setdefault(
-                                key, {"hit": False, "branches": {}}
-                            )
-                            previous["hit"] |= hits > 0
-                        for branch in details["Branches"]:
-                            key = (document, str(branch["Line"]))
-                            previous = lines.setdefault(
-                                key, {"hit": False, "branches": {}}
-                            )
-                            identity = (
-                                method,
-                                branch["Offset"],
-                                branch["EndOffset"],
-                                branch["Path"],
-                            )
-                            previous["branches"][identity] = (
-                                previous["branches"].get(identity, False)
-                                or branch["Hits"] > 0
-                            )
-    measured = {}
-    for module, lines in modules.items():
-        branches = sum(len(value["branches"]) for value in lines.values())
-        measured[module] = {
-            "line": sum(value["hit"] for value in lines.values()) / len(lines)
-            if lines
-            else 0,
-            "branch": sum(sum(value["branches"].values()) for value in lines.values())
-            / branches
-            if branches
-            else 1,
-            "lines": len(lines),
-            "branches": branches,
-        }
+        merge_dotnet_report(modules, path)
+    measured = {module: dotnet_ratios(lines) for module, lines in modules.items()}
     python_report = results / "python/coverage.json"
     if python_report.exists():
-        for filename, data in json.loads(python_report.read_text())["files"].items():
-            summary = data["summary"]
-            measured[f"python/{filename.replace(chr(92), '/')}"] = {
-                "line": summary["covered_lines"] / summary["num_statements"]
-                if summary["num_statements"]
-                else 1,
-                "branch": summary["covered_branches"] / summary["num_branches"]
-                if summary["num_branches"]
-                else 1,
-                "lines": summary["num_statements"],
-                "branches": summary["num_branches"],
-            }
+        measured.update(python_coverage(python_report))
     return measured
 
 
