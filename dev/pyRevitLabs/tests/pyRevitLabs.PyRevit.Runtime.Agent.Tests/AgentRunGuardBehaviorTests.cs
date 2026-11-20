@@ -537,6 +537,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             }
         }
 
+        /// <summary>
+        /// An element added and deleted again leaves the change set's added elements, but the
+        /// run still created things, so elements Revit never reported are not a lost element.
+        /// </summary>
+        [Fact]
+        public void AnAdditionThatTheRunDeletedAgainStillMarksTheRunAsHavingCreatedElements() {
+            var app = new UIApplication();
+            var document = new Document { HighestElementValue = 100 };
+            var loadedFamily = new ElementId { Value = 102 };
+            var createdByRun = new ElementId { Value = 101 };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: new[] { loadedFamily }, deleted: Array.Empty<ElementId>());
+                app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { loadedFamily, createdByRun });
+                document.Deleted.Add(loadedFamily);
+                document.Deleted.Add(createdByRun);
+
+                guard.RollBack();
+
+                Assert.False(guard.RollbackFailed);
+            }
+        }
+
         [Fact]
         public void AnElementThatExistedBeforeTheRunAndIsStillMissingIsATraceAfterTheRollback() {
             var app = new UIApplication();
