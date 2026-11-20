@@ -1024,6 +1024,7 @@ class SettingsWindow(forms.WPFWindow):
         if (
             self.loadtooltipex_cb.IsChecked != user_config.tooltip_debug_info
             and not self.reload_requested
+            and not request_reload
         ):
             request_reload = forms.alert(
                 self.get_locale_string("UI-UX.NeedReload"), yes=True, no=True
