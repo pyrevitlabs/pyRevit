@@ -114,6 +114,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
 
         private void ApplyTabIcon(RibbonTab tab, ParsedComponent component)
         {
+            if (!TabIconsEnabled())
+                return;
+
             var lightIconPath = FirstRasterIconPath(component.Icons?.LightIcons);
             var darkIconPath = FirstRasterIconPath(component.Icons?.DarkIcons);
             if (lightIconPath == null && darkIconPath == null)
@@ -136,6 +139,19 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             catch (Exception ex)
             {
                 _logger.Debug($"Failed to apply icon to tab '{tab.Title}'. Exception: {ex.Message}");
+            }
+        }
+
+        private bool TabIconsEnabled()
+        {
+            try
+            {
+                return PyRevitConfig.Load().ShowTabIcons;
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to read ShowTabIcons config. Defaulting to true: {ex.Message}");
+                return true;
             }
         }
 

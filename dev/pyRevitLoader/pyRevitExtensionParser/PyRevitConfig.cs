@@ -83,6 +83,11 @@ namespace pyRevitExtensionParser
         public bool LoadBeta => AsService().Core.LoadBeta ?? false;
 
         /// <summary>
+        /// Gets whether tab bundle icons are shown before ribbon tab titles (default true).
+        /// </summary>
+        public bool ShowTabIcons => AsService().Core.ShowTabIcons ?? true;
+
+        /// <summary>
         /// Gets the logging verbosity level (0 = Quiet, 1 = Verbose, 2 = Debug),
         /// derived from the [core] verbose and debug keys.
         /// </summary>

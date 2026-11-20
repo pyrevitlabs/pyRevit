@@ -14,8 +14,7 @@ namespace pyRevitLabs.Configurations.Sections;
 /// </para>
 /// </summary>
 [SectionName("core")]
-public sealed record CoreSection
-{
+public sealed record CoreSection {
     /// <summary>Whether extension metadata is cached in binary form between sessions. Default true.</summary>
     [KeyName("bincache")]
     [DefaultValue(true)]
@@ -144,6 +143,14 @@ public sealed record CoreSection
     [KeyName("minhostdrivefreespace")]
     [DefaultValue(0L)]
     public long? MinHostDriveFreeSpace { get; set; }
+
+    /// <summary>
+    /// Whether the icon of a tab bundle is shown before the title of its ribbon tab,
+    /// such as the pyRevit tab. Applies on the next reload. Default true.
+    /// </summary>
+    [KeyName("show_tab_icons")]
+    [DefaultValue(true)]
+    public bool? ShowTabIcons { get; set; }
 
     /// <summary>Whether open documents are color-coded in the Revit tab bar. Default false.</summary>
     [KeyName("colorize_docs")]

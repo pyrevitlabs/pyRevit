@@ -292,6 +292,8 @@ class SettingsWindow(forms.WPFWindow):
         self.applocales_cb.ItemsSource = [str(x) for x in sorted_applocales]
         self.applocales_cb.SelectedItem = str(applocale)
 
+        self.showtabicons_cb.IsChecked = user_config.core.ShowTabIcons
+
         # colorize docs
         self.colordocs_cb.IsChecked = user_config.colorize_docs
 
@@ -448,7 +450,9 @@ class SettingsWindow(forms.WPFWindow):
     def _setup_agent(self):
         self._agent_enabled_at_open = PyRevit.PyRevitConfigs.GetAgentEnabled()
         self.agent_cb.IsChecked = self._agent_enabled_at_open
-        self.agent_tab_highlight_cb.IsChecked = PyRevit.PyRevitConfigs.GetAgentTabHighlight()
+        self.agent_tab_highlight_cb.IsChecked = (
+            PyRevit.PyRevitConfigs.GetAgentTabHighlight()
+        )
         policy = PyRevit.PyRevitConfigs.GetAgentPolicy()
         self.agent_policy_readonly_rb.IsChecked = policy == "readonly"
         self.agent_policy_auto_rb.IsChecked = policy == "auto"
@@ -1003,6 +1007,16 @@ class SettingsWindow(forms.WPFWindow):
                             yes=True,
                             no=True,
                         )
+        if (
+            self.showtabicons_cb.IsChecked != user_config.core.ShowTabIcons
+            and not request_reload
+            and not self.reload_requested
+        ):
+            request_reload = forms.alert(
+                self.get_locale_string("UI-UX.NeedReload"), yes=True, no=True
+            )
+        user_config.core.ShowTabIcons = self.showtabicons_cb.IsChecked
+
         # colorize docs
         user_config.colorize_docs = self.colordocs_cb.IsChecked
 
