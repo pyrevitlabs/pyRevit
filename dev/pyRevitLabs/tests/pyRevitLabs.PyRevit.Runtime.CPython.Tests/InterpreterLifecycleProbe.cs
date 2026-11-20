@@ -354,6 +354,7 @@ internal static class InterpreterLifecycleProbe {
             str(Comparer.Default.Compare(Activator.CreateInstance(second), 0)),
         ])
         """;
+
     private const string AdoptUserLocale =
         "import locale; locale.setlocale(locale.LC_CTYPE, 'English_United States.1252')";
 
