@@ -19,6 +19,9 @@ public static class GitHubClientFactory
 {
     private const string ProductName = "pyRevit-build";
 
+    /// <summary>
+    /// Creates a client authenticated with the pipeline's <c>GITHUB_TOKEN</c>.
+    /// </summary>
     /// <exception cref="InvalidOperationException">
     /// <c>GITHUB_TOKEN</c> is not set. Modules marked <c>[SkipIfNoGitHubToken]</c> never get here.
     /// </exception>
@@ -51,7 +54,7 @@ public static class GitHubClientFactory
 
 /// <summary>
 /// Logs the method, URL, status code and duration of each request, and nothing of its headers
-/// or body.
+/// or body. A request that throws is logged with the exception type and rethrown.
 /// </summary>
 internal sealed class RequestLineLoggingHandler(ILogger logger) : DelegatingHandler
 {
@@ -60,16 +63,34 @@ internal sealed class RequestLineLoggingHandler(ILogger logger) : DelegatingHand
         CancellationToken cancellationToken)
     {
         var started = System.Diagnostics.Stopwatch.GetTimestamp();
-        var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(started);
+        HttpResponseMessage response;
+        try
+        {
+            response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(
+                "{Method} {Url} -> {Failure} after {Milliseconds} ms",
+                request.Method,
+                request.RequestUri,
+                exception.GetType().Name,
+                ElapsedMilliseconds(started));
+            throw;
+        }
 
         logger.LogInformation(
             "{Method} {Url} -> {StatusCode} in {Milliseconds} ms",
             request.Method,
             request.RequestUri,
             (int)response.StatusCode,
-            (long)elapsed.TotalMilliseconds);
+            ElapsedMilliseconds(started));
 
         return response;
+    }
+
+    private static long ElapsedMilliseconds(long started)
+    {
+        return (long)System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds;
     }
 }

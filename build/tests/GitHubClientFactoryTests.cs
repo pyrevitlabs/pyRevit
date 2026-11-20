@@ -6,6 +6,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Build.Tests;
 
 [TestClass]
+[TestCategory("HostFree")]
+[TestCategory("Unit")]
 public sealed class GitHubClientFactoryTests
 {
     [TestMethod]
@@ -14,7 +16,7 @@ public sealed class GitHubClientFactoryTests
         var logger = new RecordingLogger();
         using var invoker = new HttpMessageInvoker(new RequestLineLoggingHandler(logger)
         {
-            InnerHandler = new CannedResponseHandler(HttpStatusCode.NotFound, "{\"secret_body\":true}"),
+            InnerHandler = new CannedResponseHandler(HttpStatusCode.NotFound, new StringContent("{\"secret_body\":true}")),
         });
         using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/o/r/issues/1");
         request.Headers.Add("Authorization", "token secret_header");
@@ -29,16 +31,35 @@ public sealed class GitHubClientFactoryTests
     [TestMethod]
     public async Task Response_reaches_the_caller_unread()
     {
+        var content = new ReadCountingContent("payload");
         using var invoker = new HttpMessageInvoker(new RequestLineLoggingHandler(new RecordingLogger())
         {
-            InnerHandler = new CannedResponseHandler(HttpStatusCode.OK, "payload"),
+            InnerHandler = new CannedResponseHandler(HttpStatusCode.OK, content),
         });
         using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/rate_limit");
 
         using var response = await invoker.SendAsync(request, CancellationToken.None);
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.AreEqual(0, content.Reads);
         Assert.AreEqual("payload", await response.Content.ReadAsStringAsync());
+    }
+
+    [TestMethod]
+    public async Task Failed_request_is_logged_and_rethrown()
+    {
+        var logger = new RecordingLogger();
+        using var invoker = new HttpMessageInvoker(new RequestLineLoggingHandler(logger)
+        {
+            InnerHandler = new ThrowingHandler(),
+        });
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://uploads.github.com/assets");
+
+        await Assert.ThrowsExactlyAsync<HttpRequestException>(
+            () => invoker.SendAsync(request, CancellationToken.None));
+
+        Assert.HasCount(1, logger.Lines);
+        StringAssert.StartsWith(logger.Lines[0], "POST https://uploads.github.com/assets -> HttpRequestException after ");
     }
 
     [TestMethod]
@@ -50,7 +71,7 @@ public sealed class GitHubClientFactoryTests
         Assert.AreEqual(new Uri("https://api.github.com/"), client.Connection.BaseAddress);
     }
 
-    private sealed class CannedResponseHandler(HttpStatusCode statusCode, string body) : HttpMessageHandler
+    private sealed class CannedResponseHandler(HttpStatusCode statusCode, HttpContent content) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
@@ -58,8 +79,37 @@ public sealed class GitHubClientFactoryTests
         {
             return Task.FromResult(new HttpResponseMessage(statusCode)
             {
-                Content = new StringContent(body),
+                Content = content,
             });
+        }
+    }
+
+    private sealed class ThrowingHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            throw new HttpRequestException("connection refused");
+        }
+    }
+
+    private sealed class ReadCountingContent(string body) : HttpContent
+    {
+        private readonly byte[] bytes = System.Text.Encoding.UTF8.GetBytes(body);
+
+        public int Reads { get; private set; }
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+        {
+            Reads++;
+            return stream.WriteAsync(bytes, 0, bytes.Length);
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = bytes.Length;
+            return true;
         }
     }
 
