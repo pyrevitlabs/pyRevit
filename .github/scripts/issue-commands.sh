@@ -13,7 +13,6 @@
 #   GH_REPO             owner/name of the repository
 #   ISSUE_NUMBER        issue or pull request the comment was posted on
 #   ISSUE_AUTHOR        login of the issue or pull request author
-#   ISSUE_LABELS        JSON array of the label names at the time of the comment
 #   IS_PULL_REQUEST     "true" when the comment is on a pull request
 #   COMMENT_BODY        text of the comment
 #   AUTHOR_ASSOCIATION  association of the commenter with the repository
@@ -42,7 +41,9 @@ case "$AUTHOR_ASSOCIATION" in
   *) from_team=false ;;
 esac
 
-first_line="$(printf '%s\n' "$COMMENT_BODY" | head -n 1 | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+first_line="${COMMENT_BODY%%$'\n'*}"
+first_line="${first_line%$'\r'}"
+first_line="${first_line#"${first_line%%[![:space:]]*}"}"
 
 if [[ "$from_team" == "true" ]]; then
   if [[ "$IS_PULL_REQUEST" != "true" && "$first_line" == /?* ]]; then
@@ -52,6 +53,7 @@ if [[ "$from_team" == "true" ]]; then
   exit 0
 fi
 
-if jq -e --arg label "$PENDING_LABEL" 'index($label) != null' <<< "$ISSUE_LABELS" > /dev/null; then
+current_labels="$(gh api "$ISSUE_API/labels" --paginate --jq '.[].name')"
+if grep -Fxq "$PENDING_LABEL" <<< "$current_labels"; then
   gh api --method DELETE "$ISSUE_API/labels/$PENDING_LABEL" --silent
 fi
