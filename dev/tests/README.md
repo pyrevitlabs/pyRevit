@@ -21,7 +21,7 @@ A C# test project that must pass on several IronPython engines declares them in 
 
 `revit/run_dynamo.py` is a journal entry point that validates Dynamo execution in a disposable Revit process; run it with `pyrevit run <absolute-script-path> --revit=<year> --purge`, never in an open user session. Results go to `.test-results/dynamo/`.
 
-`pipenv run test` is the documented path. The narrow Pipfile scripts `test-py3-compat`, `test-config-api`, `test-automation-markers` and `test-library` call pytest directly for focused runs: they do not enforce strict skips, metadata validation or coverage, and are not CI equivalents.
+`pipenv run test` is the single entry point and the CI equivalent. `pipenv run python -m pytest <file>` is fine for a focused debug run, but it skips strict skips, metadata validation and coverage, so a local green there does not guarantee a CI green.
 
 ## Coverage and reporting policy
 

@@ -7,7 +7,7 @@ a synthetic violation, and the real tree is asserted clean.
 
 Run with any CPython 3::
 
-    pipenv run test-config-api
+    pipenv run python -m pytest dev/tests/python/tooling/test_check_config_api.py
 
 No pyRevit, no Revit, and no labs assemblies are needed; everything here is
 source analysis.
