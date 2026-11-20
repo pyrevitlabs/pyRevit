@@ -2,8 +2,8 @@
 
 Shared A and Shared B both import their handlers from
 lib/devtools_checkbox_handlers.py in this panel. Each still saves its own
-state and keeps its own change count, which the handler prints to the
-pyRevit log.
+state and keeps its own change count, which the handler shows in the
+checkbox's label.
 """
 
 from devtools_checkbox_handlers import init as __chk_init__

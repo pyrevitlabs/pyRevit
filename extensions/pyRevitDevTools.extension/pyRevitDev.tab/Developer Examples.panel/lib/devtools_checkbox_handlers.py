@@ -1,25 +1,35 @@
 """Checkbox handlers that the Shared A and Shared B examples both use.
 
 Each checkbox imports these as its own ``__chk_init__`` and
-``__chk_on_change__``. ``EXEC_PARAMS`` and ``script.get_config()`` still
-resolve the checkbox the handler runs for, and ``ctx.user_data`` belongs to
-that checkbox, so each one keeps its own saved state and change count.
+``__chk_on_change__``. ``script.get_config()`` still resolves the checkbox
+the handler runs for, and ``ctx.user_data`` belongs to that checkbox, so each
+one keeps its own saved state and change count. The count goes in the
+checkbox's label because handler output only reaches the pyRevit log, which
+pyRevit records only when verbose or file logging is on.
 """
 
-from pyrevit import EXEC_PARAMS, script
+from pyrevit import script
 
 STATE_OPTION = "state"
+LABEL_KEY = "label"
 CHANGE_COUNT_KEY = "change_count"
 
 
 def init(ctx):
-    """Restore the checkbox's saved state when the ribbon loads."""
+    """Restore the checkbox's saved state and remember its label.
+
+    Note:
+        pyRevit resets the label to the bundle title on every load, before
+        ``__chk_init__`` runs, so the label kept here never carries an old
+        count.
+    """
     config = script.get_config()
     ctx.is_checked = bool(config.get_option(STATE_OPTION, default_value=ctx.is_checked))
+    ctx.user_data[LABEL_KEY] = ctx.text
 
 
 def on_change(sender, args, ctx):
-    """Save the checkbox's state and log how often it changed since the last reload.
+    """Save the checkbox's state and show its change count in the label.
 
     Note:
         ``ctx.user_data`` is a .NET dictionary that lasts until the next
@@ -35,8 +45,4 @@ def on_change(sender, args, ctx):
     if user_data.ContainsKey(CHANGE_COUNT_KEY):
         count += user_data[CHANGE_COUNT_KEY]
     user_data[CHANGE_COUNT_KEY] = count
-    print(
-        "{} is {}, changed {} times since the last reload".format(
-            EXEC_PARAMS.command_name, "on" if ctx.is_checked else "off", count
-        )
-    )
+    ctx.text = "{} ({})".format(user_data[LABEL_KEY], count)
