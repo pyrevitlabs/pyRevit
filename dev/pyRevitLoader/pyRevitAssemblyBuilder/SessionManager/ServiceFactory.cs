@@ -110,10 +110,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
         /// <param name="tabIconDecorator">Must be the instance passed to <see cref="SessionManagerService"/>, which resets and refreshes it around each UI build.</param>
+        /// <param name="showTabIcons">Whether tab bundle icons are drawn on the ribbon tabs.</param>
         /// <returns>A new ITabBuilder instance.</returns>
-        public static ITabBuilder CreateTabBuilder(UIApplication uiApplication, ILogger logger, ITabIconDecorator tabIconDecorator)
+        public static ITabBuilder CreateTabBuilder(UIApplication uiApplication, ILogger logger, ITabIconDecorator tabIconDecorator, bool showTabIcons = true)
         {
-            return new TabBuilder(uiApplication, logger, tabIconDecorator);
+            return new TabBuilder(uiApplication, logger, tabIconDecorator, showTabIcons);
         }
 
         /// <summary>
@@ -294,7 +295,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var panelStyleManager = CreatePanelStyleManager(logger);
             var themeDetector = new RevitThemeDetector(logger);
             var tabIconDecorator = new TabIconDecorator(path => iconManager.LoadBitmapSource(path), themeDetector.IsDarkTheme);
-            var tabBuilder = CreateTabBuilder(uiApplication, logger, tabIconDecorator);
+            var tabBuilder = CreateTabBuilder(uiApplication, logger, tabIconDecorator, ReadShowTabIcons(logger));
             var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager);
             var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
             var buttonBuilderFactory = CreateButtonBuilderFactory(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
@@ -361,6 +362,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 uiManager,
                 ribbonScanner,
                 logger);
+        }
+
+        private static bool ReadShowTabIcons(ILogger logger)
+        {
+            try
+            {
+                return PyRevitConfig.Load().ShowTabIcons;
+            }
+            catch (Exception ex)
+            {
+                logger.Debug($"Failed to read show_tab_icons config; showing tab icons. Exception: {ex.Message}");
+                return true;
+            }
         }
     }
 }
