@@ -155,8 +155,7 @@ namespace pyRevitExtensionParserTester
         {
             var runtime = CreateRuntime(suppressOutput: true);
             SetProperty(runtime, "IsDisposed", true);
-            var output = (ScriptOutput)RuntimeHelpers.GetUninitializedObject(
-                typeof(ScriptOutput));
+            var output = (ScriptOutput)CreateUninitialized(typeof(ScriptOutput));
             var heldRecords = new HeldRecordBuffer(10);
             SetField(output, "_runtime", new WeakReference<ScriptRuntime>(runtime));
             SetField(output, "_heldRecords", heldRecords);
@@ -169,10 +168,8 @@ namespace pyRevitExtensionParserTester
         [Test]
         public void RuntimeOutputWindowIsTrackedForDeferredWrites()
         {
-            var output = (ScriptOutput)RuntimeHelpers.GetUninitializedObject(
-                typeof(ScriptOutput));
-            var window = (ScriptConsole)RuntimeHelpers.GetUninitializedObject(
-                typeof(ScriptConsole));
+            var output = (ScriptOutput)CreateUninitialized(typeof(ScriptOutput));
+            var window = (ScriptConsole)CreateUninitialized(typeof(ScriptConsole));
 
             output.TrackRuntimeWindow(window);
 
@@ -212,8 +209,7 @@ namespace pyRevitExtensionParserTester
             bool suppressOutput = false,
             string? logFilePath = null)
         {
-            var runtime = (ScriptRuntime)RuntimeHelpers.GetUninitializedObject(
-                typeof(ScriptRuntime));
+            var runtime = (ScriptRuntime)CreateUninitialized(typeof(ScriptRuntime));
             SetProperty(runtime, "ScriptData", new ScriptData
             {
                 CommandName = "Test Command",
@@ -226,6 +222,15 @@ namespace pyRevitExtensionParserTester
                 LogFilePath = logFilePath
             });
             return runtime;
+        }
+
+        private static object CreateUninitialized(Type type)
+        {
+#if NETFRAMEWORK
+            return System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
+#else
+            return RuntimeHelpers.GetUninitializedObject(type);
+#endif
         }
 
         private static void SetProperty(object target, string propertyName, object value)
