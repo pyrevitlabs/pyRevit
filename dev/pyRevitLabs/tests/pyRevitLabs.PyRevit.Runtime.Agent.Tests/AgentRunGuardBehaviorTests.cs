@@ -539,7 +539,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         public void AnElementThatExistedBeforeTheRunAndIsStillMissingIsATraceAfterTheRollback() {
             var app = new UIApplication();
             var document = new Document { HighestElementValue = 100 };
-            var existedBefore = new ElementId { Value = 100 };
+            var existedBefore = new ElementId { Value = 99 };
             var createdByRun = new ElementId { Value = 101 };
             using (var guard = new AgentRunGuard(app, document)) {
                 guard.Arm("Test");
