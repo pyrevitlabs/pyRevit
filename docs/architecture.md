@@ -331,8 +331,9 @@ tests in `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Binding.Tests`. Portab
 The sibling `pyRevitLabs.PyRevit.Forms.IronPython.Tests` project drives the same
 interactive cases with the shipped IronPython 2.7 and 3 engines (select with
 `-p:IronPythonVersion=IPY2712PR` or `IPY342`). The build pipeline's test gate
-runs both projects, each IronPython engine, and the proxy tests; they show real
-WPF windows, so they need a desktop session. Inside
+runs both projects, each IronPython engine, and the proxy tests; they open real
+WPF windows, so they need a desktop session, but `OffscreenWindows` places those
+windows off-screen and without activation so a local build stays usable. Inside
 Revit, run `pyrevit.unittests.forms_acceptance.run(doc)`
 through pyRevit MCP with each engine and `dry_run=true`. The runner creates real
 selector fixtures and always rolls its transaction group back. On Revit 2026.5,
