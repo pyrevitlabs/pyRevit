@@ -179,14 +179,21 @@ group.Start()
 try:
     t = DB.Transaction(fam_doc, "Preview view")
     t.Start()
-    view_type = [x for x in DB.FilteredElementCollector(fam_doc).OfClass(DB.ViewFamilyType)
-                 if x.ViewFamily == DB.ViewFamily.ThreeDimensional][0]
-    view = DB.View3D.CreateIsometric(fam_doc, view_type.Id)
-    forward = DB.XYZ(1, -1, -1).Normalize()
-    up = forward.CrossProduct(DB.XYZ.BasisZ).Normalize().CrossProduct(forward).Normalize()
-    view.SetOrientation(DB.ViewOrientation3D(forward.Negate().Multiply(1000), up, forward))
-    view.DisplayStyle = DB.DisplayStyle.ShadingWithEdges
-    t.Commit()
+    try:
+        view_type = [x for x in DB.FilteredElementCollector(fam_doc).OfClass(DB.ViewFamilyType)
+                     if x.ViewFamily == DB.ViewFamily.ThreeDimensional][0]
+        view = DB.View3D.CreateIsometric(fam_doc, view_type.Id)
+        forward = DB.XYZ(1, -1, -1).Normalize()
+        right = forward.CrossProduct(DB.XYZ.BasisZ)
+        if right.IsZeroLength():
+            right = DB.XYZ.BasisX
+        up = right.Normalize().CrossProduct(forward).Normalize()
+        view.SetOrientation(DB.ViewOrientation3D(forward.Negate().Multiply(1000), up, forward))
+        view.DisplayStyle = DB.DisplayStyle.ShadingWithEdges
+        t.Commit()
+    finally:
+        if t.GetStatus() == DB.TransactionStatus.Started:
+            t.RollBack()
 
     options = DB.ImageExportOptions()
     options.ExportRange = DB.ExportRange.SetOfViews
@@ -205,7 +212,8 @@ finally:
 - **Use a new view.** The template's own `View 1` exported as an empty dark image, because it has never been shown. A view created in the run renders.
 - **Roll the view back.** The group removes it again, so a family you then load into the project carries no preview view. The PNG stays.
 - **Export before `Close`**, and again after each geometry change you want to check: the image shows the model as it is at that moment. Revit appends ` - 3D View - <view name>` to the `FilePath` prefix.
-- **Other angles:** change `forward`; the `up` line keeps it perpendicular to it.
+- **Commit your own transaction first.** `group.Start()` fails while a transaction of yours is still open on `fam_doc`, so finish the geometry edit before the preview.
+- **Other angles:** change `forward`; `up` stays perpendicular to it, and a straight-up or straight-down `forward` such as `DB.XYZ(0, 0, -1)` falls back to the X axis.
 - **Run in Revit 2026 on IronPython 2.7.12 only, and only the isometric 3D view.** The image is framed tightly on the geometry, so its edges touch the model.
 
 ## Limits that fail
