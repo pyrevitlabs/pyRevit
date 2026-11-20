@@ -8,7 +8,8 @@ using ModularPipelines.Extensions;
 
 PyRevitPaths.Initialize();
 
-if (args is ["test-catalog", var catalogPath, var outputPath]) {
+if (args is ["test-catalog", var catalogPath, var outputPath])
+{
     var requests = System.Text.Json.JsonSerializer.Deserialize<TestCatalogRequest[]>(File.ReadAllText(catalogPath))!;
     var suites = requests.Select(request => new TestCatalogSuite(
         request.Project,
@@ -43,11 +44,13 @@ builder.Services.AddOptions<PublishOptions>().Bind(builder.Configuration.GetSect
 
 builder.Services.Configure<BuildOptions>(options => options.RequireInstallerTooling = modes.Packages);
 
-if (modes.Release) {
+if (modes.Release)
+{
     builder.Services.AddModule<ValidateTagMatchesVersionModule>();
 }
 
-if (modes.Ci) {
+if (modes.Ci)
+{
     builder.Services.AddModule<CheckEnvironmentModule>();
     builder.Services.AddModule<ValidateAgentSkillsModule>();
     builder.Services.AddModule<ResolveVersioningModule>();
@@ -71,7 +74,8 @@ if (modes.Ci) {
     builder.Services.AddModule<BinCompleteModule>();
 }
 
-if (modes.Packages) {
+if (modes.Packages)
+{
     builder.Services.AddModule<RejectTestSignedBinariesModule>();
     builder.Services.AddModule<RestoreStampedMetadataModule>();
     builder.Services.AddModule<BuildInstallersModule>();
@@ -79,35 +83,42 @@ if (modes.Packages) {
     builder.Services.AddModule<StageStandaloneDoctorModule>();
 }
 
-if (modes.Sign || modes.Publish) {
+if (modes.Sign || modes.Publish)
+{
     builder.Services.AddModule<SignBinariesModule>();
     builder.Services.AddModule<SignDistInstallersModule>();
     builder.Services.AddModule<SignChocoPackageModule>();
 }
 
-if (modes.SignsTestBinaries) {
+if (modes.SignsTestBinaries)
+{
     builder.Services.AddModule<SignTestBinariesModule>();
 }
 
-if (modes.RemoveCert) {
+if (modes.RemoveCert)
+{
     builder.Services.AddModule<RemoveTestCertificateModule>();
 }
 
-if (modes.TrustCert) {
+if (modes.TrustCert)
+{
     builder.Services.AddModule<TrustTestCertificateModule>();
 }
 
-if (modes.Publish) {
+if (modes.Publish)
+{
     builder.Services.AddModule<GenerateReleaseNotesModule>();
     builder.Services.AddModule<PublishGithubReleaseModule>();
     builder.Services.AddModule<PublishChocoModule>();
 }
 
-if (modes.Winget) {
+if (modes.Winget)
+{
     builder.Services.AddModule<PublishWingetModule>();
 }
 
-if (modes.Notify) {
+if (modes.Notify)
+{
     builder.Services.AddModule<NotifyIssuesModule>();
 }
 

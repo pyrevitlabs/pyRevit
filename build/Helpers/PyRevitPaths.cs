@@ -3,7 +3,8 @@ namespace Build.Helpers;
 /// <summary>
 /// Repository paths and constants used by the build pipeline.
 /// </summary>
-public static class PyRevitPaths {
+public static class PyRevitPaths
+{
     public static string Root { get; private set; } = FindRepositoryRoot();
 
     public static string DevPath => Path.Combine(Root, "dev");
@@ -141,16 +142,21 @@ public static class PyRevitPaths {
     public static string IsccPath =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Inno Setup 6", "ISCC.exe");
 
-    public static void Initialize(string? rootOverride = null) {
-        if (!string.IsNullOrWhiteSpace(rootOverride)) {
+    public static void Initialize(string? rootOverride = null)
+    {
+        if (!string.IsNullOrWhiteSpace(rootOverride))
+        {
             Root = Path.GetFullPath(rootOverride);
         }
     }
 
-    private static string FindRepositoryRoot() {
+    private static string FindRepositoryRoot()
+    {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
-        while (current is not null) {
-            if (File.Exists(Path.Combine(current.FullName, "pyRevitfile"))) {
+        while (current is not null)
+        {
+            if (File.Exists(Path.Combine(current.FullName, "pyRevitfile")))
+            {
                 return current.FullName;
             }
 
