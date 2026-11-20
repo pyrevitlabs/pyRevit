@@ -192,6 +192,33 @@ class TestWriting(unittest.TestCase):
         self.assertEqual("testsuites", ElementTree.fromstring(content).tag)
         self.assertEqual(3, len(ElementTree.fromstring(content)))
 
+    def test_interrupted_write_keeps_the_previous_report(self):
+        self._write_one("one", "a")
+        original = junit._serialize
+
+        def interrupted(element):
+            raise IOError("interrupted")
+
+        junit._serialize = interrupted
+        try:
+            self.assertRaises(IOError, self._write_one, "two", "b")
+        finally:
+            junit._serialize = original
+        root = ElementTree.parse(self.target).getroot()
+        self.assertEqual("one", root.get("name"))
+
+    def test_unparsable_report_is_reported_not_replaced(self):
+        truncated = b"<testsuites><testsuite".decode("utf-8")
+        os.makedirs(os.path.dirname(self.target))
+        with io.open(self.target, "w", encoding="utf-8") as report_file:
+            report_file.write(truncated)
+        with self.assertRaises(ValueError) as raised:
+            self._write_one("one", "a")
+        self.assertIn(self.target, str(raised.exception))
+        self.assertIn("delete", str(raised.exception))
+        with io.open(self.target, encoding="utf-8") as report_file:
+            self.assertEqual(truncated, report_file.read())
+
 
 class _Python27ElementTree(object):
     """ElementTree whose tostring rejects the "unicode" encoding, as Python 2.7 does."""
