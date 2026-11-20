@@ -58,6 +58,8 @@ plugins:
             show_if_no_docstring: true
             show_category_heading: true
             inherited_members: true
+            docstring_options:
+              warn_missing_types: false
             filters:
               - "!^_"
               - "^_HostApplication"

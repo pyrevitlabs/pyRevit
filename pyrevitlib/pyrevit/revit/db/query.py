@@ -259,9 +259,10 @@ def get_param(element, param_identifier, default=None):
     DB.ElementId         : smart lookup via _get_param_by_element_id()
 
     Args:
-        element (DB.Element)      : The Revit element.
-        param_identifier          : str | DB.BuiltInParameter | System.Guid | DB.ElementId
-        default                   : Returned when nothing is found or on error. Default: None.
+        element (DB.Element): The Revit element.
+        param_identifier (str | DB.BuiltInParameter | System.Guid | DB.ElementId):
+            Parameter name, built-in parameter, shared parameter GUID or parameter id.
+        default (Any): Returned when nothing is found or on error. Default: None.
 
     Returns:
         DB.Parameter or default.
@@ -1134,7 +1135,7 @@ def get_phases_names(doc=None):
 
 
     Args:
-        document (Document): A Revit document.
+        doc (Document): A Revit document. Defaults to the active document.
 
 
     Returns:
@@ -3460,7 +3461,7 @@ def get_array_group_ids(doc=None):
     Collects and returns the IDs of all array groups in the given document.
 
     Args:
-        document (DB.Document): The Revit document to search for array groups.
+        doc (DB.Document): The Revit document to search for array groups.
 
     Returns:
         list: A list of element IDs representing the array groups.

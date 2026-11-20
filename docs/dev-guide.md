@@ -60,7 +60,7 @@ Make sure to uncheck the "Copy the master branch only" option, since we mostly u
 | Profile | You want to… | Get source via | Get `bin/` via |
 |---------|----------------|----------------|----------------|
 | **1 — Run in Revit** | Use pyRevit without building C# | `pyrevit clone` | Public Release `ci-binaries` (`develop`/`master`) or signed `bin-v{version}.zip` on a published `v*` tag |
-| **2 — C# contributor** | Change DLLs and debug in Visual Studio | `git clone` | `dotnet run -- ci` in [`build/`](../build/) |
+| **2 — C# contributor** | Change DLLs and debug in Visual Studio | `git clone` | `dotnet run -- ci` in [`build/`](https://github.com/pyrevitlabs/pyRevit/tree/develop/build) |
 
 #### Profile 1: Run in Revit (CI binaries)
 
@@ -126,7 +126,7 @@ Most contributors can use the default build channel (`none`) shown in Profile 2 
 | `wip` | Testing a **develop**-style stamped build locally | Push to `develop` on `pyrevitlabs/pyRevit` |
 | `release` | Testing a **master** / tag-style stamped build locally | Push to `master` or `v*` tag on `pyrevitlabs/pyRevit` |
 
-Set the channel with the `Build__Channel` environment variable (maps to [`build/appsettings.json`](../build/appsettings.json) → `Build:Channel`). Run commands from `build/`.
+Set the channel with the `Build__Channel` environment variable (maps to [`build/appsettings.json`](https://github.com/pyrevitlabs/pyRevit/blob/develop/build/appsettings.json) → `Build:Channel`). Run commands from `build/`.
 
 **PowerShell:**
 
@@ -168,7 +168,7 @@ dotnet run -c Release -- ci
 
     `wip` and `release` update tracked files under `pyrevitlib/`, `release/`, and installer metadata — the same steps CI runs before building products. Review `git status` before committing; do not push accidental version bumps from a local stamped build.
 
-On GitHub Actions, full stamping runs only when `Build__Channel` is `wip` or `release` **and** `GITHUB_REPOSITORY` is `pyrevitlabs/pyRevit`. Fork workflows always use `none` for stamping even if you set the variable in a custom workflow. Locally, `GITHUB_REPOSITORY` is usually unset, so setting `Build__Channel` is enough to mirror main-repo CI. See [CI/CD — Official repository vs forks](ci-cd.md#official-repository-vs-forks) and [`build/README.md`](../build/README.md).
+On GitHub Actions, full stamping runs only when `Build__Channel` is `wip` or `release` **and** `GITHUB_REPOSITORY` is `pyrevitlabs/pyRevit`. Fork workflows always use `none` for stamping even if you set the variable in a custom workflow. Locally, `GITHUB_REPOSITORY` is usually unset, so setting `Build__Channel` is enough to mirror main-repo CI. See [CI/CD — Official repository vs forks](ci-cd.md#official-repository-vs-forks) and [`build/README.md`](https://github.com/pyrevitlabs/pyRevit/blob/develop/build/README.md).
 
 ### Set Upstream Remote
 

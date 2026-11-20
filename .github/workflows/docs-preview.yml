@@ -38,6 +38,9 @@ jobs:
           pipenv sync
 
       - name: Build docs
+        env:
+          DISABLE_MKDOCS_2_WARNING: 'true'
+          NO_MKDOCS_2_WARNING: '1'
         run: pipenv run mkdocs build --site-dir site
 
       - name: Upload site

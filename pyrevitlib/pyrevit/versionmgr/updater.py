@@ -139,7 +139,7 @@ def update_repo(repo_info):
     """Update repository.
 
     Args:
-        repo_info (:obj:`pyrevit.coreutils.git.RepoInfo`):
+        repo_info (pyrevit.coreutils.git.RepoInfo):
             repository info wrapper object
     """
     repo = repo_info.repo
@@ -187,7 +187,7 @@ def get_updates(repo_info):
     """Fetch updates on repository.
 
     Args:
-        repo_info (:obj:`pyrevit.coreutils.git.RepoInfo`):
+        repo_info (pyrevit.coreutils.git.RepoInfo):
             repository info wrapper object
     """
     repo = repo_info.repo
@@ -233,7 +233,7 @@ def has_pending_updates(repo_info):
     """Check for updates on repository.
 
     Args:
-        repo_info (:obj:`pyrevit.coreutils.git.RepoInfo`):
+        repo_info (pyrevit.coreutils.git.RepoInfo):
             repository info wrapper object
 
     Returns:
