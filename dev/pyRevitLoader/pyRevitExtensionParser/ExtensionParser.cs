@@ -1490,6 +1490,7 @@ namespace pyRevitExtensionParser
                     Hyperlink = finalHyperlink,
                     HelpUrl = finalHelpUrl,
                     Highlight = finalHighlight,
+                    Shortcuts = bundleInComponent?.Shortcuts ?? new List<string>(),
                     MinRevitVersion = finalMinRevitVersion,
                     MaxRevitVersion = finalMaxRevitVersion,
                     IsBeta = finalIsBeta,

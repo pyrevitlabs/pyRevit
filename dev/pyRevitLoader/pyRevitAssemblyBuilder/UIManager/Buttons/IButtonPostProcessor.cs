@@ -50,6 +50,18 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         void ApplyHighlight(RibbonItem ribbonItem, ParsedComponent component);
 
         /// <summary>
+        /// Queues the component's <c>shortcuts</c> for registration as Revit keyboard shortcuts.
+        /// Only push, smart, invoke, URL and link buttons are handled; other component types are ignored.
+        /// </summary>
+        /// <param name="ribbonItem">The ribbon item the shortcuts belong to.</param>
+        /// <param name="component">The component containing the shortcut configuration.</param>
+        /// <remarks>
+        /// Registration happens in one batch once the ribbon is idle. Shortcuts already assigned to
+        /// another command are skipped and logged, never overridden.
+        /// </remarks>
+        void ApplyShortcuts(RibbonItem ribbonItem, ParsedComponent component);
+
+        /// <summary>
         /// Gets the button text with config script indicator if applicable.
         /// Used when creating button data before adding to ribbon.
         /// </summary>

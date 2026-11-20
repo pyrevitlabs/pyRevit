@@ -112,6 +112,7 @@
     <Compile Include="..\Source\SessionResourceRegistry.cs" Link="Source\SessionResourceRegistry.cs" />
     <Compile Include="..\Source\CheckBoxHandlerRegistry.cs" Link="Source\CheckBoxHandlerRegistry.cs" />
     <Compile Include="ScriptBuiltinsTests.cs" />
+    <Compile Include="ShortcutTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
