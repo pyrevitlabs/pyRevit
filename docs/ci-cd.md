@@ -45,8 +45,8 @@ Two workflows do this, because building the docs runs the pull request's own cod
 
 | Workflow | Token | What it does |
 |---|---|---|
-| [`docs-preview.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview.yml) | Read-only, no secrets | Runs `mkdocs build` on the pull request and uploads the site as the `docs-preview-site` artifact. |
-| [`docs-preview-deploy.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview-deploy.yml) | Write, runs from the default branch | Copies that artifact into `pr-preview/pr-<number>/` on `gh-pages` and comments. It never checks out or executes pull request code. A second job removes the folder when the pull request closes. |
+| [`docs-preview.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview.yml) | Read-only, no secrets | Runs `mkdocs build` on the pull request and uploads the site as the `docs-preview-site-pr-<number>` artifact. |
+| [`docs-preview-deploy.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview-deploy.yml) | Write, runs from the default branch | Copies that artifact into `pr-preview/pr-<number>/` on `gh-pages` and comments. It never checks out or executes pull request code. The pull request number in the artifact name is only a claim: the job publishes when that pull request's head repository, branch and commit match the build that produced the artifact. A second job removes the folder when the pull request closes; both jobs share one concurrency group per head branch, and a deploy that finds its pull request already closed removes the preview instead of publishing it. |
 
 The preview is served from the official docs domain, so not every pull request is published automatically:
 
