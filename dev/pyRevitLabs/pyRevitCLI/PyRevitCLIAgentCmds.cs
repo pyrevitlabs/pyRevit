@@ -117,7 +117,7 @@ namespace pyRevitCLI {
             var destination = outFile == null ? null : FullOutputPath(outFile);
 
             var instance = PyRevitAgentClient.Resolve(revitSelector);
-            var result = PyRevitAgentClient.Call(instance, "capture", parameters) as JObject
+            var result = CallCapture(instance, parameters) as JObject
                 ?? throw new PyRevitException("The agent host answered the capture request without a result.");
             var image = result.Value<string>("image_base64")
                 ?? throw new PyRevitException("The agent host answered the capture request without an image.");
@@ -129,6 +129,20 @@ namespace pyRevitCLI {
                 result["path"] = destination;
             }
             Console.WriteLine(result.ToString(Formatting.Indented));
+        }
+
+        private static JToken CallCapture(AgentInstance instance, JObject parameters) {
+            try {
+                return PyRevitAgentClient.Call(instance, "capture", parameters);
+            }
+            catch (AgentClientException ex) when (ex.Details?["views"] is JArray views) {
+                var candidates = views.OfType<JObject>().Select(view => string.Format("  {0}  {1}  {2}{3}",
+                    view.Value<string>("id"),
+                    view.Value<string>("type"),
+                    view.Value<string>("name"),
+                    string.IsNullOrEmpty(view.Value<string>("number")) ? string.Empty : " (sheet " + view.Value<string>("number") + ")"));
+                throw new PyRevitException(ex.Message + Environment.NewLine + string.Join(Environment.NewLine, candidates));
+            }
         }
 
         /// <summary>

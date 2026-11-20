@@ -101,13 +101,29 @@ public sealed class AgentViewCommandsTests : IDisposable {
     }
 
     [Fact]
-    public void CaptureKeepsTheHostErrorForAnAmbiguousViewName() {
-        host.Handler = request => FakeAgentHost.Failure(request, "view_ambiguous", "Several views are named 'Level 1'.");
+    public void CaptureListsTheCandidatesOfAnAmbiguousViewName() {
+        host.Handler = request => FakeAgentHost.Failure(request, "view_ambiguous", "2 views are named 'Level 1'.", new JObject {
+            ["views"] = new JArray(
+                new JObject { ["id"] = 311, ["name"] = "Level 1", ["type"] = "FloorPlan", ["number"] = null },
+                new JObject { ["id"] = 922, ["name"] = "Level 1", ["type"] = "DrawingSheet", ["number"] = "A101" }),
+        });
 
-        var failure = Assert.Throws<AgentClientException>(
+        var refused = Assert.Throws<PyRevitException>(
             () => PyRevitCLIAgentCmds.CaptureView("Level 1", null, null, null, null));
 
-        Assert.Equal("view_ambiguous", failure.Code);
+        Assert.Contains("2 views are named 'Level 1'", refused.Message);
+        Assert.Contains("311  FloorPlan  Level 1", refused.Message);
+        Assert.Contains("922  DrawingSheet  Level 1 (sheet A101)", refused.Message);
+    }
+
+    [Fact]
+    public void CaptureKeepsOtherHostErrorsAsTheyAre() {
+        host.Handler = request => FakeAgentHost.Failure(request, "view_not_found", "No view named 'x'.");
+
+        var failure = Assert.Throws<AgentClientException>(
+            () => PyRevitCLIAgentCmds.CaptureView("x", null, null, null, null));
+
+        Assert.Equal("view_not_found", failure.Code);
     }
 
     [Fact]
