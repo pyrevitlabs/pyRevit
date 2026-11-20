@@ -442,7 +442,6 @@ class SelectionTests(unittest.TestCase):
                             for relative in (
                                 "dev/a/obj/Generated.cs",
                                 "dev/a/tests/Fixture.cs",
-                                "dev/pyRevitLabs.UnitTests/Old.cs",
                                 "dev/a/Product.cs",
                             )
                         }

@@ -36,6 +36,7 @@ flowchart LR
 
     subgraph Runtime["Shared scripting runtime"]
         SharedRuntime["pyRevitLabs.PyRevit.Runtime.Tests"]
+        RuntimeInterop["pyRevitLabs.PyRevit.Runtime.Shared.Tests"]
     end
 
     subgraph Labs["Labs tests"]
@@ -46,6 +47,8 @@ flowchart LR
         Config["pyRevitLabs.Configurations.Tests"]
         INI["pyRevitLabs.Configurations.Ini.Tests"]
         Facade["pyRevitLabs.PyRevit.Tests"]
+        Deployment["pyRevitLabs.PyRevit.Integration.Tests"]
+        Products["pyRevitLabs.TargetApps.Revit.Tests"]
         Agent["pyRevitLabs.PyRevit.Runtime.Agent.Tests"]
         CPython["pyRevitLabs.PyRevit.Runtime.CPython.Tests"]
         EnvVars["pyRevitLabs.PyRevit.Runtime.EnvVars.Tests"]
@@ -54,14 +57,13 @@ flowchart LR
         Forms["pyRevitLabs.PyRevit.Forms.Tests"]
         FormsBinding["pyRevitLabs.PyRevit.Forms.Binding.Tests"]
         FormsIronPython["pyRevitLabs.PyRevit.Forms.IronPython.Tests"]
-        Legacy["pyRevitLabs.UnitTests"]
     end
 
     Local["Local Revit validation<br/>Outside CI"] --> Hosted["Python library and agent suites<br/>DevTools commands"]
     Local --> Fixtures["Revit-tagged C# fixtures<br/>Fixture-specific host setup"]
 ```
 
-The implemented CI selection has **21 C# projects across 35 runs** (33 project/framework runs plus a second IronPython engine for the shell and IronPython forms suites) and the API-free Python suite. Local validation on 2026-11-19: **3,894 C# cases and 795 Python cases, zero skips**, including the Dynamo parser regressions. Counts include each framework and engine run. The three forms suites open real WPF windows, so they need an interactive desktop session; the hosted Windows runner provides one. Local Revit results are separate; a general C# in-Revit runner is not implemented.
+The implemented CI selection has **23 C# projects across 39 runs** (37 project/framework runs plus a second IronPython engine for the shell and IronPython forms suites) and the API-free Python suite. The legacy mixed suite is split by owner with its former MSTest cases converted to NUnit. Local validation on 2026-11-20: **3,923 C# cases and 817 Python cases, zero skips**. Counts include each framework and engine run. The three forms suites open real WPF windows, so they need an interactive desktop session; the hosted Windows runner provides one. Local Revit results are separate; a general C# in-Revit runner is not implemented.
 
 Level describes the test; Environment determines where it runs:
 
@@ -76,7 +78,7 @@ Regression is a purpose, not a level. Bug fixes need a reproducer at the lowest 
 
 ## Ownership and placement
 
-Keep C# tests in separate assemblies beside their owning area, normally `dev/<area>/tests/<Module>.Tests/`. Keep existing NUnit, MSTest and xUnit frameworks. Share discovery and policy; keep fixtures with their owners. Cross-component tests belong in an explicit integration suite.
+Keep C# tests in separate assemblies beside their owning area, normally `dev/<area>/tests/<Module>.Tests/`. NUnit, MSTest and xUnit are supported. A reviewed framework migration must preserve cases, effective tags, fixture isolation and coverage floors. Share discovery and policy; keep fixtures with their owners. Cross-component tests belong in an explicit integration suite.
 
 | Area | Suite locations |
 |---|---|
@@ -85,7 +87,9 @@ Keep C# tests in separate assemblies beside their owning area, normally `dev/<ar
 | Parser-to-command integration | `dev/pyRevitLoader/tests/pyRevitLoader.Integration.Tests/` |
 | Shared scripting runtime | `dev/pyRevitLabs.PyRevit.Runtime/tests/pyRevitLabs.PyRevit.Runtime.Tests/` |
 | CLI, doctor, Common, Emojis, configuration, PyRevit facade, agent, CPython and env-var adapters | Named projects under `dev/pyRevitLabs/tests/` |
-| Legacy MSTest library contracts | `dev/pyRevitLabs/pyRevitLabs.UnitTests/` |
+| Deployment, config seeding and install-scope integration | `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Integration.Tests/` |
+| Product metadata, add-on paths and cache files | `dev/pyRevitLabs/tests/pyRevitLabs.TargetApps.Revit.Tests/` |
+| Dynamo interop and graph contracts | `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.Shared.Tests/` |
 | Build pipeline | `build/tests/` |
 | API-free Python tooling/library checks | `dev/tests/python/**/test_*.py` |
 | Hosted Python library tests | `pyrevitlib/pyrevit/unittests/` |

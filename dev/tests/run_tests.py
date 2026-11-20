@@ -30,7 +30,6 @@ COVERAGE_EXCLUDED_FILES = (
     "**/dev/modules/**",
     "**/obj/**",
     "**/tests/**",
-    "**/pyRevitLabs.UnitTests/**",
 )
 ENGINE_VARIANTS = {
     "pyRevitLabs.PyRevit.Shell.Tests": ("IPY2712PR", "IPY342"),
