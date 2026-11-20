@@ -207,6 +207,8 @@ pyrevit run list_views --revit=2026 --inputs-file=inputs.json          # the sam
 - `--inputs=<json>` or `--inputs-file=<path>` hands the script structured input, like `pyrevit agent run --inputs`. The text must be a JSON object; the CLI refuses anything else before Revit starts. The script gets it as `__inputs__`, the JSON text (`"{}"` when neither option is passed), so `inputs = json.loads(__inputs__)` works the same on every engine. The text travels in the journal, so keep it small and pass larger data by path.
 - The script opens the models itself (`HOST_APP.app.OpenDocumentFile(path)`) and is responsible for saving and closing them. Error dialogs are dismissed automatically unless `--allowdialogs` is passed.
 
+`pyrevit run` starts its own Revit. To run a script in a Revit session that is already open, use `pyrevit agent run`; [Choosing how to run a script](agent-runtime.md#choosing-how-to-run-a-script) compares the two.
+
 `extensions/pyRevitDevTools.extension/commands/list_views_command.py` is the reference example.
 
 ## Preflight checks
