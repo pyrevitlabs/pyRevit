@@ -1034,6 +1034,7 @@ class SettingsWindow(forms.WPFWindow):
         # pyrevit gui settings
         if (
             self.loadtooltipex_cb.IsChecked != user_config.tooltip_debug_info
+            and not request_reload
             and not self.reload_requested
         ):
             request_reload = forms.alert(
