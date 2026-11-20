@@ -1,0 +1,49 @@
+name: pyRevit Docs Preview
+# Builds the mkdocs site for pull requests that touch the docs.
+#
+# This workflow runs the pull request's own code (mkdocs executes
+# docs/gen_ref_pages.py), so it gets a read-only token and no secrets. It only
+# uploads the built site as an artifact; docs-preview-deploy.yml publishes it.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event.action != 'labeled' || github.event.label.name == 'docs-preview'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: docs-preview-build-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Prepare Python 3.14
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.14'
+
+      - name: Prepare pipenv
+        run: |
+          pip install pipenv
+          pipenv sync
+
+      - name: Build docs
+        run: pipenv run mkdocs build --site-dir site
+
+      - name: Upload site
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: docs-preview-site-pr-${{ github.event.pull_request.number }}
+          path: site
+          if-no-files-found: error
+          retention-days: 7

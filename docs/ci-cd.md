@@ -24,7 +24,8 @@ pyRevit's build and release pipeline is split across workflows in [`.github/work
 | **`pyRevit Release`** | [`release.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/release.yml) | On `v*` tag pushes, waits for CI, runs `dotnet run -- release pack sign publish` under **`production`**, attaches signed `bin-v{version}.zip` and the [standalone `pyrevit-doctor.exe`](#standalone-pyrevit-doctorexe) to the draft GitHub Release, then notifies linked issues. |
 | **`Update Winget manifests`** | [`winget.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/winget.yml) | After a GitHub release is **published**, runs `dotnet run -- winget` to submit WinGet manifest PRs. Strips `ElevationRequirement: elevationProhibited` from generated user-scope installers before submit (see Troubleshooting). |
 | **`pyRevit Revit integration tests`** | [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) | Signs `bin/` with a throwaway certificate, launches Revit 2022-2027 by default, and fails if any of them shows the unsigned add-in dialog. Needs a self-hosted runner with Revit; see [Revit integration tests](#revit-integration-tests). |
-| **`pyRevitDocsCI`** | [`docs.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs.yml) | Builds the mkdocs site and deploys it with `mkdocs gh-deploy`. Runs on pushes to the `docs` branch that touch `mkdocs.yml`, `docs/`, `pyrevitlib/` or root `*.md` files, on PRs into `master` with the same paths, and on manual dispatch. It does not use the ModularPipelines project. |
+| **`pyRevitDocsCI`** | [`docs.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs.yml) | Builds the mkdocs site and deploys it to the `gh-pages` branch with `.github/scripts/publish-gh-pages.sh`, which keeps `pr-preview/` intact. Runs on pushes to the `docs` branch that touch `mkdocs.yml`, `docs/`, `pyrevitlib/` or root `*.md` files, on PRs into `master` with the same paths, and on manual dispatch. It does not use the ModularPipelines project. |
+| **`pyRevit Docs Preview`**, **`pyRevit Docs Preview Deploy`** | [`docs-preview.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview.yml), [`docs-preview-deploy.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview-deploy.yml) | Publishes a preview of the docs for pull requests that touch `docs/` or `mkdocs.yml`. See [Docs previews](#docs-previews). |
 | **`issues-manager`**, **`Close inactive issues`** | [`issues-manager.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/issues-manager.yml), [`stale-issues.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/stale-issues.yml) | Issue housekeeping: slash commands and the `needs-more-info` follow-up on comments, and a daily job that marks `needs-more-info` issues stale after 60 days without activity and closes them 14 days later. |
 
 The CI **`notify`** job (develop pushes only) runs `dotnet run -- notify` inline in `ci.yml` with `issues: write` and does **not** use the `production` environment. It `needs` both `build` and `wip`, so a failed WIP pack also holds back the notification.
@@ -41,6 +42,26 @@ This split guarantees that:
 `ci.yml` installs the pinned testing dependencies from `Pipfile.lock`, runs the unified Python selection before the product build, and runs the unified C# selection afterward. `dev/tests/run_tests.py` discovers suites, validates tags, checks per-module coverage baselines, and produces unique reports under `.test-results/`. Artifacts are uploaded even when a test or coverage gate fails.
 
 Tests using the Revit API or requiring installed/running Revit are excluded from the CI test runner and run locally; see [local Revit tests](testing.md#revit-integration-tests). The self-hosted Revit load check is a separate workflow, described in [Revit integration tests](#revit-integration-tests). Product building does not execute test fixtures; local and CI validation use the same shared test entry point.
+
+## Docs previews
+
+A pull request that changes `docs/` or `mkdocs.yml` gets a preview of the whole site at `https://docs.pyrevitlabs.io/pr-preview/pr-<number>/`. A bot comment on the pull request carries the link and is updated on every push. The preview is deleted when the pull request is closed or merged.
+
+Two workflows do this, because building the docs runs the pull request's own code (`docs/gen_ref_pages.py`):
+
+| Workflow | Token | What it does |
+|---|---|---|
+| [`docs-preview.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview.yml) | Read-only, no secrets | Runs `mkdocs build` on the pull request and uploads the site as the `docs-preview-site-pr-<number>` artifact. |
+| [`docs-preview-deploy.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview-deploy.yml) | Write, runs from the default branch | Copies that artifact into `pr-preview/pr-<number>/` on `gh-pages` and comments. It never checks out or executes pull request code. The pull request number in the artifact name is only a claim: the job publishes when that pull request's head repository, branch and commit match the build that produced the artifact. A second job removes the folder when the pull request closes; both jobs share one concurrency group per head branch with `queue: max`, so a pending cleanup is never displaced, and a deploy that finds its pull request already closed removes the preview instead of publishing it. |
+
+The preview is served from the official docs domain, so not every pull request is published automatically:
+
+- Branches in this repository, and forks whose author is an owner, member, collaborator or previous contributor, are published on every push.
+- Any other fork gets a comment with a link to the build artifact. Review the changes, then add the **`docs-preview`** label to publish. The label keeps later pushes published too.
+
+Changes that only touch `pyrevitlib/` do not trigger a preview, even though the API reference is generated from it.
+
+Production deploys ([`docs.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs.yml)) replace everything on `gh-pages` except `pr-preview/`. Do not go back to `mkdocs gh-deploy`: it rewrites the whole branch and deletes every open preview. `docs/robots.txt` keeps search engines out of `/pr-preview/`.
 
 ## Revit integration tests
 
