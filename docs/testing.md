@@ -63,7 +63,7 @@ flowchart LR
     Local --> Fixtures["Revit-tagged C# fixtures<br/>Fixture-specific host setup"]
 ```
 
-The implemented CI selection has **@PROJECTS@ C# projects across @RUNS@ runs** (@PFRUNS@ project/framework runs plus a second IronPython engine for the shell and IronPython forms suites) and the API-free Python suite. The legacy mixed suite is split by owner with its former MSTest cases converted to NUnit. Local validation on 2026-11-20: **@CSHARP@ C# cases and @PYTHON@ Python cases, zero skips**. Counts include each framework and engine run. The three forms suites open real WPF windows, so they need an interactive desktop session; the hosted Windows runner provides one. Local Revit results are separate; a general C# in-Revit runner is not implemented.
+The implemented CI selection has **23 C# projects across 39 runs** (37 project/framework runs plus a second IronPython engine for the shell and IronPython forms suites) and the API-free Python suite. The legacy mixed suite is split by owner with its former MSTest cases converted to NUnit. Local validation on 2026-11-20: **3,923 C# cases and 817 Python cases, zero skips**. Counts include each framework and engine run. The three forms suites open real WPF windows, so they need an interactive desktop session; the hosted Windows runner provides one. Local Revit results are separate; a general C# in-Revit runner is not implemented.
 
 Level describes the test; Environment determines where it runs:
 
