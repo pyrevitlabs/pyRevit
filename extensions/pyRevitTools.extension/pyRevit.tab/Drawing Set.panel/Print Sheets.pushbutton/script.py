@@ -2268,9 +2268,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                 [DB.BuiltInCategory.OST_TitleBlocks], doc=model
             )
             rev_cfg = DB.RevisionSettings.GetRevisionSettings(model)
-            current_setting = self._get_printmanager(
-                model
-            ).PrintSetup.CurrentPrintSetting
+            current_setting = clr_implementation(
+                self._get_printmanager(model).PrintSetup.CurrentPrintSetting
+            )
             for sheet in self.selected_sheetlist.get_sheets(doc=model):
                 sheet_items.append(
                     ViewSheetListItem(
