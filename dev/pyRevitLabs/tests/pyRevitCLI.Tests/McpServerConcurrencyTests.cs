@@ -283,7 +283,7 @@ public partial class McpServerTests {
         using var received = new CountdownEvent(3);
         host.Handler = request => {
             received.Signal();
-            release.Wait(Patience);
+            release.Wait(TimeSpan.FromSeconds(30));
             return RunResponse(request);
         };
         PyRevitAgentClient.PingConnectTimeoutMs = 3000;
