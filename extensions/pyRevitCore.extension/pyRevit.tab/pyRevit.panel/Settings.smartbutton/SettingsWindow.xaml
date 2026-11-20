@@ -478,6 +478,11 @@
                                 </TextBlock>
                             </StackPanel>
                         </GroupBox>
+                        <GroupBox Header="{DynamicResource UI-UX.Ribbon}" Margin="0,10,0,0" Padding="10">
+                            <StackPanel>
+                                <CheckBox x:Name="showtabicons_cb" Content="{DynamicResource UI-UX.ShowTabIcons}" IsChecked="True" IsEnabled="True"/>
+                            </StackPanel>
+                        </GroupBox>
                         <GroupBox Header="{DynamicResource UI-UX.TabColoring}" Margin="0,10,0,0" Padding="10">
                             <StackPanel>
                                 <TextBlock DockPanel.Dock="Top" Margin="0,0,0,5" FontWeight="Medium" Text="{DynamicResource UI-UX.ColoringStyle}" />

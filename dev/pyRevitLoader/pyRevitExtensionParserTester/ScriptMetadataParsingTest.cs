@@ -369,6 +369,21 @@ tooltip: Bundle Tooltip
         }
 
         [Test]
+        public void TestShowTabIconsConfigFromIni()
+        {
+            var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
+
+            File.WriteAllText(configPath, "");
+            Assert.IsTrue(PyRevitConfig.Load(configPath).ShowTabIcons, "Tab icons should be shown when show_tab_icons is not set");
+
+            File.WriteAllText(configPath, "[core]\nshow_tab_icons = false");
+            Assert.IsFalse(PyRevitConfig.Load(configPath).ShowTabIcons, "Tab icons should be hidden when show_tab_icons is false");
+
+            File.WriteAllText(configPath, "[core]\nshow_tab_icons = true");
+            Assert.IsTrue(PyRevitConfig.Load(configPath).ShowTabIcons, "Tab icons should be shown when show_tab_icons is true");
+        }
+
+        [Test]
         public void TestRocketModeEngineConfigs()
         {
             var testCases = new[]
