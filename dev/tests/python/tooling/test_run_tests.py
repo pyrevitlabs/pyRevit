@@ -469,3 +469,14 @@ class SelectionTests(unittest.TestCase):
                 "pluggy==1.7.0 --hash=sha256:cc\n",
                 run_tests.locked_requirements(lock),
             )
+
+    def test_unpinned_lock_entry_names_the_package(self):
+        """A lock entry without a version fails clearly instead of with a KeyError."""
+        with tempfile.TemporaryDirectory() as directory:
+            lock = Path(directory) / "Pipfile.lock"
+            lock.write_text(
+                json.dumps({"develop": {"tool": {"git": "https://example.invalid"}}}),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "tool"):
+                run_tests.locked_requirements(lock)

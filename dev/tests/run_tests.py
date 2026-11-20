@@ -254,6 +254,8 @@ def locked_requirements(lock):
     packages = json.loads(Path(lock).read_text(encoding="utf-8"))["develop"]
     lines = []
     for name, package in packages.items():
+        if "version" not in package:
+            raise ValueError(f"Pipfile.lock develop entry {name} has no pinned version")
         marker = f" ; {package['markers']}" if package.get("markers") else ""
         hashes = "".join(f" --hash={value}" for value in package["hashes"])
         lines.append(f"{name}{package['version']}{marker}{hashes}\n")
