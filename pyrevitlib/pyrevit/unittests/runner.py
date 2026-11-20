@@ -169,12 +169,9 @@ class PyRevitTestResult(TestResult):
         if stop_test_run is not None:
             stop_test_run()
 
-        try:
-            written = self._junit.write()
-            if written:
-                mlogger.debug("Wrote JUnit report: %s", written)
-        except Exception as report_error:
-            mlogger.warning("Could not write JUnit report: %s", report_error)
+        written = self._junit.write()
+        if written:
+            mlogger.debug("Wrote JUnit report: %s", written)
 
     def startTest(self, test):
         """Starts the test.
@@ -409,6 +406,25 @@ def run_test_case(test_case):
     return test_runner.run(suite)
 
 
+def was_successful(result):
+    """Whether a run passed, counting unexpected successes as failures.
+
+    Args:
+        result (TestResult): tests results.
+
+    Returns:
+        (bool): True when nothing failed, errored or unexpectedly passed.
+
+    Note:
+        IronPython 2.7's `TestResult.wasSuccessful` ignores
+        `unexpectedSuccesses` (`unittest/result.py` returns
+        `len(self.failures) == len(self.errors) == 0`), so on the default engine
+        relying on that result alone would let an `@expectedFailure` that
+        starts passing look green. CPython does count them.
+    """
+    return result.wasSuccessful() and not result.unexpectedSuccesses
+
+
 def assert_module_tests_successful(test_module):
     """Runs a module's unit tests and fails the command if any of them failed.
 
@@ -425,17 +441,10 @@ def assert_module_tests_successful(test_module):
         AssertionError: if the module has failures, errors, or unexpected
             successes. The traceback of each offending test is already in the
             output window, so the message only needs to name the module and the
-            counts.
-
-    Note:
-        IronPython 2.7's `TestResult.wasSuccessful` ignores
-        `unexpectedSuccesses` (`unittest/result.py` returns
-        `len(self.failures) == len(self.errors) == 0`), so on the default engine
-        an `@expectedFailure` that starts passing does not fail the command.
-        CPython does count them, which is why the third count is listed.
+            counts. Success is judged by `was_successful`.
     """
     result = run_module_tests(test_module)
-    if result.wasSuccessful():
+    if was_successful(result):
         return result
 
     counts = [

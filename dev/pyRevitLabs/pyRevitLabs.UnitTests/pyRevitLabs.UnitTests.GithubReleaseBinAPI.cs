@@ -3,6 +3,8 @@ using pyRevitLabs.Common;
 
 namespace pyRevitLabs.UnitTests.Common {
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Integration")]
     public class GithubReleaseBinAPITests {
         [TestMethod]
         public void BuildReleaseAssetUrl_ShaZip_Test() {

@@ -1,5 +1,9 @@
 """Agent modify runs: decisions, change sets, rollback and the run guard's blocks."""
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import os
 import os.path as op
 import shutil

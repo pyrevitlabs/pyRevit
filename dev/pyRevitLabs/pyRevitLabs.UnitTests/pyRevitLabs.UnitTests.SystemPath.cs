@@ -7,6 +7,8 @@ using pyRevitLabs.Common;
 
 namespace pyRevitLabs.UnitTests {
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     public class SystemPathTests {
         private const string TestDir = @"C:\Program Files\pyRevit-Master\bin";
 

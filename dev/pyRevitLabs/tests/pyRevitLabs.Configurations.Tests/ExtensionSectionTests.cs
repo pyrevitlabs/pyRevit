@@ -10,10 +10,10 @@ namespace pyRevitLabs.Configurations.Tests;
 /// the dynamic per-extension section, ".extension" precedence over ".lib",
 /// declared defaults for absent keys, and the null result when no section exists.
 /// </summary>
-public class ExtensionSectionTests
-{
-    private static IConfigurationService BuildService(Action<InMemoryConfiguration> seed)
-    {
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
+public class ExtensionSectionTests {
+    private static IConfigurationService BuildService(Action<InMemoryConfiguration> seed) {
         var configuration = new InMemoryConfiguration();
         seed(configuration);
         return new ConfigurationBuilder(false)
@@ -22,10 +22,8 @@ public class ExtensionSectionTests
     }
 
     [Fact]
-    public void GetExtensionSection_ReadsExtensionSection()
-    {
-        var service = BuildService(config =>
-        {
+    public void GetExtensionSection_ReadsExtensionSection() {
+        var service = BuildService(config => {
             config.SetValue("pyRevitCore.extension", "disabled", true);
             config.SetValue("pyRevitCore.extension", "private_repo", true);
             config.SetValue("pyRevitCore.extension", "username", "admin");
@@ -42,8 +40,7 @@ public class ExtensionSectionTests
     }
 
     [Fact]
-    public void GetExtensionSection_FallsBackToLibrarySection()
-    {
+    public void GetExtensionSection_FallsBackToLibrarySection() {
         var service = BuildService(config =>
             config.SetValue("MyLibrary.lib", "disabled", true));
 
@@ -54,10 +51,8 @@ public class ExtensionSectionTests
     }
 
     [Fact]
-    public void GetExtensionSection_PrefersExtensionOverLibrary()
-    {
-        var service = BuildService(config =>
-        {
+    public void GetExtensionSection_PrefersExtensionOverLibrary() {
+        var service = BuildService(config => {
             config.SetValue("Shared.extension", "disabled", false);
             config.SetValue("Shared.lib", "disabled", true);
         });
@@ -69,8 +64,7 @@ public class ExtensionSectionTests
     }
 
     [Fact]
-    public void GetExtensionSection_AbsentSection_ReturnsNull()
-    {
+    public void GetExtensionSection_AbsentSection_ReturnsNull() {
         var service = BuildService(_ => { });
 
         Assert.Null(service.GetExtensionSection("Missing"));
@@ -81,8 +75,7 @@ public class ExtensionSectionTests
     /// apply on read, matching the loader adapter's ReadBool(..., false).
     /// </summary>
     [Fact]
-    public void GetExtensionSection_AppliesDeclaredDefaults_ForAbsentKeys()
-    {
+    public void GetExtensionSection_AppliesDeclaredDefaults_ForAbsentKeys() {
         var service = BuildService(config =>
             config.SetValue("Sparse.extension", "username", "someone"));
 
@@ -99,8 +92,7 @@ public class ExtensionSectionTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void GetExtensionSection_NullOrWhitespaceName_Throws(string? name)
-    {
+    public void GetExtensionSection_NullOrWhitespaceName_Throws(string? name) {
         var service = BuildService(_ => { });
 
         Assert.Throws<ArgumentException>(() => service.GetExtensionSection(name!));
@@ -143,15 +135,13 @@ public class ExtensionSectionTests
     /// section-materialization path can be exercised without the INI backend (and
     /// its JSON round-trip, which is covered by the Ini tests).
     /// </summary>
-    private sealed class InMemoryConfiguration : ConfigurationBase
-    {
+    private sealed class InMemoryConfiguration : ConfigurationBase {
         private readonly Dictionary<string, Dictionary<string, object?>> _data =
             new(StringComparer.OrdinalIgnoreCase);
 
         public InMemoryConfiguration() : base("memory", readOnly: false) { }
 
-        private Dictionary<string, object?> Section(string sectionName)
-        {
+        private Dictionary<string, object?> Section(string sectionName) {
             if (!_data.TryGetValue(sectionName, out var section))
                 _data[sectionName] = section = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
             return section;
@@ -169,8 +159,7 @@ public class ExtensionSectionTests
 
         protected override IEnumerable<string> GetSectionOptionNamesImpl(string sectionName) => _data[sectionName].Keys;
 
-        protected override bool AddSectionImpl(string sectionName)
-        {
+        protected override bool AddSectionImpl(string sectionName) {
             Section(sectionName);
             return true;
         }

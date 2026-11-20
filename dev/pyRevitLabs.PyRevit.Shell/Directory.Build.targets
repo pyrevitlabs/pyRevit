@@ -30,7 +30,7 @@
     </ItemGroup>
 
     <!-- Install alongside the engine assemblies the shell binds at runtime. -->
-    <Target Name="DeployShell" AfterTargets="AfterBuild">
+    <Target Name="DeployShell" AfterTargets="AfterBuild" Condition="'$(SkipPyRevitDeploy)' != 'true'">
         <ItemGroup>
             <ShellDeployFiles Include="$(TargetPath)" />
             <ShellDeployFiles Include="$(TargetDir)ICSharpCode.AvalonEdit.dll" />
