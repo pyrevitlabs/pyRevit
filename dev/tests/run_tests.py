@@ -63,7 +63,7 @@ def python_metadata(path):
     return {"Environment": values["TEST_ENVIRONMENT"], "Level": values["TEST_LEVEL"]}
 
 
-def is_third_party(directory, name):
+def is_third_party(directory, name, repository):
     """Tell vendored or generated folders from first-party folders named alike.
 
     Only ``VENDORED_NAMES``, the ``VENDORED_PATHS`` below the repository root,
@@ -74,8 +74,8 @@ def is_third_party(directory, name):
     if name in VENDORED_NAMES:
         return True
     if (
-        path.is_relative_to(ROOT)
-        and path.relative_to(ROOT).as_posix() in VENDORED_PATHS
+        path.is_relative_to(repository)
+        and path.relative_to(repository).as_posix() in VENDORED_PATHS
     ):
         return True
     return name in BUILD_OUTPUT_NAMES and any(
@@ -83,11 +83,16 @@ def is_third_party(directory, name):
     )
 
 
-def first_party_files(root, pattern):
-    """Walk source trees without descending into dependencies or build outputs."""
+def first_party_files(root, pattern, repository):
+    """Walk source trees without descending into dependencies or build outputs.
+
+    ``root`` is the tree to walk; ``repository`` anchors ``VENDORED_PATHS``.
+    """
     for directory, children, files in os.walk(root):
         children[:] = sorted(
-            child for child in children if not is_third_party(directory, child)
+            child
+            for child in children
+            if not is_third_party(directory, child, repository)
         )
         for name in sorted(files):
             if Path(name).match(pattern):
@@ -149,7 +154,7 @@ def find_dotnet_projects():
     """
     projects = []
     for root in (ROOT / "dev", ROOT / "build"):
-        for path in first_party_files(root, "*.csproj"):
+        for path in first_party_files(root, "*.csproj", ROOT):
             data = evaluate_project(path)
             properties = data["Properties"]
             if properties["IsTestProject"].lower() != "true":
@@ -254,8 +259,8 @@ def discover_python():
     """
     roots = (ROOT / "dev", ROOT / "pyrevitlib/pyrevit/unittests", ROOT / "extensions")
     paths = {
-        path for root in roots for path in first_party_files(root, "test_*.py")
-    } | set(first_party_files(ROOT / "extensions", "*_tests.py"))
+        path for root in roots for path in first_party_files(root, "test_*.py", ROOT)
+    } | set(first_party_files(ROOT / "extensions", "*_tests.py", ROOT))
     return [{"path": str(path), **python_metadata(path)} for path in sorted(paths)]
 
 

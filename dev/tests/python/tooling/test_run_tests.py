@@ -485,11 +485,10 @@ class SelectionTests(unittest.TestCase):
                 (root / relative).parent.mkdir(parents=True, exist_ok=True)
                 (root / relative).write_text("", encoding="utf-8")
             (root / "dev/project/project.csproj").write_text("", encoding="utf-8")
-            with patch.object(run_tests, "ROOT", root):
-                found = {
-                    path.relative_to(root).as_posix()
-                    for path in run_tests.first_party_files(root, "test_*.py")
-                }
+            found = {
+                path.relative_to(root).as_posix()
+                for path in run_tests.first_party_files(root, "test_*.py", root)
+            }
             self.assertEqual(
                 {
                     "extensions/Tab/lib/modules/test_kept.py",
