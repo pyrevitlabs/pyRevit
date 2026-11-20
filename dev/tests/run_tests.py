@@ -468,6 +468,20 @@ def collect_coverage(results):
     return measured
 
 
+def updated_baselines(baseline, measured, language):
+    """Replace the selected language's floors with this run's exact measurements.
+
+    Modules of that language missing from the run are dropped, so removing or
+    renaming a module needs no manual edit; other languages are kept as is.
+    """
+    kept = {
+        module: floors
+        for module, floors in baseline.items()
+        if language != "all" and not module.startswith(language)
+    }
+    return {**kept, **measured}
+
+
 def main():
     """Run the same selection locally and in CI; list local Revit suites only."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -572,10 +586,15 @@ def main():
     if not options.update_baselines:
         check_baselines(measured, selected)
     if options.update_baselines:
-        baseline.update(measured)
         BASELINES.parent.mkdir(parents=True, exist_ok=True)
         BASELINES.write_text(
-            json.dumps(baseline, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            json.dumps(
+                updated_baselines(baseline, measured, options.language),
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
         )
     elif set(measured) - set(baseline):
         raise ValueError(

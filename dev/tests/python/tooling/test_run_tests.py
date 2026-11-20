@@ -348,6 +348,31 @@ class SelectionTests(unittest.TestCase):
         with self.assertRaises(pytest.UsageError):
             conftest.classification(item)
 
+    def test_baseline_update_replaces_only_the_selected_language(self):
+        """Renamed modules drop out; the other language's floors are untouched."""
+        baseline = {
+            "python/old.py": {"line": 0.5},
+            "python/kept.py": {"line": 0.5},
+            "dotnet/A/net48": {"line": 0.4},
+            "dotnet-linked/B/net48": {"line": 0.3},
+        }
+        measured = {"python/kept.py": {"line": 0.61}, "python/new.py": {"line": 0.7}}
+        self.assertEqual(
+            {
+                "python/kept.py": {"line": 0.61},
+                "python/new.py": {"line": 0.7},
+                "dotnet/A/net48": {"line": 0.4},
+                "dotnet-linked/B/net48": {"line": 0.3},
+            },
+            run_tests.updated_baselines(baseline, measured, "python"),
+        )
+        self.assertEqual(
+            {"python/kept.py": {"line": 0.61}},
+            run_tests.updated_baselines(
+                baseline, {"python/kept.py": {"line": 0.61}}, "all"
+            ),
+        )
+
     def test_coverage_merges_branch_identities_and_ignores_deployment_copies(self):
         """Two suites can cover opposite branches without double-counting artifacts."""
         with tempfile.TemporaryDirectory() as directory:
