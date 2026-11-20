@@ -213,6 +213,17 @@ class SelectionTests(unittest.TestCase):
         }
         self.assertEqual(("IPY2712PR", "IPY342"), run_tests.engine_variants(project))
 
+    def test_engine_variant_for_a_missing_project_fails(self):
+        """A renamed suite cannot silently fall back to the default engine only."""
+        projects = [
+            {"path": f"dev/{name}/{name}.csproj"} for name in run_tests.ENGINE_VARIANTS
+        ]
+        run_tests.check_engine_variants(projects)
+        with self.assertRaisesRegex(ValueError, "Shell.Tests"):
+            run_tests.check_engine_variants(
+                [p for p in projects if "Shell" not in p["path"]]
+            )
+
     def test_csharp_selection_requires_a_built_product(self):
         """A fresh checkout fails fast with the build command, not with skipped cases."""
         with tempfile.TemporaryDirectory() as directory:

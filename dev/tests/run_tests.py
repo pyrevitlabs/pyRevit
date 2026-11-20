@@ -176,6 +176,7 @@ def discover_dotnet(results):
                 )
     if not projects:
         raise ValueError("No first-party .NET test projects discovered")
+    check_engine_variants(projects)
     source_list = results / "sources.json"
     catalog_path = results / "dotnet-catalog.json"
     source_list.write_text(
@@ -274,6 +275,20 @@ def locked_requirements(lock):
         hashes = "".join(f" --hash={value}" for value in package["hashes"])
         lines.append(f"{name}{package['version']}{marker}{hashes}\n")
     return "".join(lines)
+
+
+def check_engine_variants(projects):
+    """Reject ``ENGINE_VARIANTS`` keys that name no discovered project.
+
+    A renamed project would otherwise run once on the default engine only.
+    """
+    unknown = set(ENGINE_VARIANTS) - {
+        Path(project["path"]).stem for project in projects
+    }
+    if unknown:
+        raise ValueError(
+            f"ENGINE_VARIANTS names no discovered test project: {sorted(unknown)}"
+        )
 
 
 def engine_variants(project):
