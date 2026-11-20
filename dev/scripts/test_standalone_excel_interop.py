@@ -14,6 +14,7 @@ import sys
 import tempfile
 import time
 import unittest
+import warnings
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SITE_PACKAGES = os.path.join(REPO_ROOT, "site-packages")
@@ -52,6 +53,17 @@ def _load_xl():
 
 
 xl = _load_xl()
+
+
+def setUpModule():
+    """Hide the vendored xlsxwriter's own deprecations; first-party ones still show.
+
+    The filter lasts for the test run only, because unittest restores the
+    warning filters when the run ends.
+    """
+    warnings.filterwarnings(
+        "ignore", category=DeprecationWarning, module=r"xlsxwriter\."
+    )
 
 
 class ExcelInteropTests(unittest.TestCase):
