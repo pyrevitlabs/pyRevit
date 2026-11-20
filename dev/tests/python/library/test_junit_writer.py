@@ -219,6 +219,26 @@ class TestWriting(unittest.TestCase):
         with io.open(self.target, encoding="utf-8") as report_file:
             self.assertEqual(truncated, report_file.read())
 
+    def test_rewrite_without_os_replace(self):
+        junit.os = _Python27Os()
+        try:
+            self._write_one("one", "a")
+            self._write_one("two", "b")
+        finally:
+            junit.os = os
+        root = ElementTree.parse(self.target).getroot()
+        self.assertEqual(["one", "two"], [suite.get("name") for suite in root])
+        self.assertFalse(os.path.exists(self.target + ".tmp"))
+
+
+class _Python27Os(object):
+    """os without `replace`, as on Python 2.7."""
+
+    def __getattr__(self, name):
+        if name == "replace":
+            raise AttributeError(name)
+        return getattr(os, name)
+
 
 class _Python27ElementTree(object):
     """ElementTree whose tostring rejects the "unicode" encoding, as Python 2.7 does."""
