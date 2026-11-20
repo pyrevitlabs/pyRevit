@@ -3442,7 +3442,7 @@ def get_geometry(
     geom_opts.DetailLevel = detail_level
     geom_objs = []
     try:
-        for gobj in element.Geometry[geom_opts]:
+        for gobj in element.get_Geometry(geom_opts):
             if isinstance(gobj, DB.GeometryInstance):
                 inst_geom = gobj.GetInstanceGeometry()
                 geom_objs.extend(list(inst_geom))
