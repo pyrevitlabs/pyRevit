@@ -107,12 +107,23 @@ public sealed class PipelineModesTests
     [TestMethod]
     public void Parse_reads_remaining_modes()
     {
-        var modes = PipelineModes.Parse(["notify", "release", "winget"]);
+        var modes = PipelineModes.Parse(["notify", "release", "winget", "choco"]);
 
         Assert.IsTrue(modes.Notify);
         Assert.IsTrue(modes.Release);
         Assert.IsTrue(modes.Winget);
+        Assert.IsTrue(modes.Choco);
         Assert.IsFalse(modes.Ci);
+    }
+
+    [TestMethod]
+    public void Parse_choco_is_not_a_packaging_mode_and_publish_does_not_push_it()
+    {
+        var choco = PipelineModes.Parse(["choco"]);
+        var publish = PipelineModes.Parse(["publish"]);
+
+        Assert.IsFalse(choco.Packages);
+        Assert.IsFalse(publish.Choco);
     }
 
     private static void Ensure(
@@ -134,6 +145,7 @@ public sealed class PipelineModesTests
                 Notify: false,
                 Release: false,
                 Winget: false,
+                Choco: false,
                 Local: local,
                 SignTest: signTest,
                 RemoveCert: removeCert,

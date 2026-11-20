@@ -203,7 +203,7 @@ Every other finding is either fixed, or listed as a known issue in the release n
 
 ## Draft release and after publishing
 
-Pushing the tag builds the artifacts that users download. Check them before publishing the draft release. The same release job pushes the Chocolatey package before the draft exists, so these checks cannot hold that package back; a failed check means a follow-up release.
+Pushing the tag builds the artifacts that users download. Check them before publishing the draft release. Publishing the release is what triggers the Chocolatey push and the Winget submission, so a failed check is the last chance to hold both back.
 
 | Check | Passed when |
 |---|---|
@@ -215,7 +215,7 @@ After publishing:
 | Check | Passed when |
 |---|---|
 | `pyrevit clone <name> --branch=v<version>` | The clone gets its binaries |
-| `Update Winget manifests` workflow and the Chocolatey package | The workflow ran and the package version is listed |
+| `Update Winget manifests` and `Push Chocolatey packages` workflows | Both ran, and the `pyrevit` and `pyrevit-cli` versions are listed on Chocolatey (pending moderation counts) |
 | Documentation site | Shows the released state |
 | `develop` | Carries the next version (see [Post-release](ci-cd.md#post-release)) |
 
