@@ -16,8 +16,6 @@ permissions:
 
 jobs:
   build:
-    # 'labeled' is only here so a maintainer can publish a fork's preview by
-    # adding the docs-preview label; ignore every other label.
     if: github.event.action != 'labeled' || github.event.label.name == 'docs-preview'
     runs-on: ubuntu-latest
     timeout-minutes: 15

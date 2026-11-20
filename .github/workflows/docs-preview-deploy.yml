@@ -17,8 +17,6 @@ permissions: {}
 
 env:
   PREVIEW_BASE_URL: https://docs.pyrevitlabs.io/pr-preview
-  # A fork's preview is published automatically only for these author
-  # associations; anyone else needs a maintainer to add the docs-preview label.
   TRUSTED_ASSOCIATIONS: '["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'
 
 jobs:
@@ -39,8 +37,6 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      # The artifact cannot be trusted to say which pull request it belongs to,
-      # so look the pull request up from the run's head branch and commit.
       - name: Find pull request
         id: pr
         env:
@@ -155,7 +151,6 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
-      # Scripts come from the default branch, never from the pull request.
       - name: Check out scripts
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

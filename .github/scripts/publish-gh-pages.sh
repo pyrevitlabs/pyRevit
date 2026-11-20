@@ -50,11 +50,9 @@ apply() {
     if [[ "$mode" == "publish" ]]; then
       mkdir -p "./$target"
       cp -a "$site/." "./$target/"
-      # A preview must never claim the custom domain.
       rm -f "./$target/CNAME"
     fi
   fi
-  # mkdocstrings ships assets/_mkdocstrings.css; without .nojekyll Pages drops it.
   touch .nojekyll
 }
 

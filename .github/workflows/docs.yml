@@ -50,8 +50,6 @@ jobs:
           path: gh-pages
           fetch-depth: 1
 
-      # Not `mkdocs gh-deploy`: that replaces the whole branch and would delete
-      # the pull request previews under pr-preview/ (see docs-preview-deploy.yml).
       - name: Deploy docs
         env:
           COMMIT_MESSAGE: "docs: deploy ${{ github.sha }}"
