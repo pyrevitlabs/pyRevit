@@ -514,6 +514,45 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             }
         }
 
+        /// <summary>
+        /// Loading a family creates elements Revit never reports as added, and overwriting the
+        /// family deletes them again. They are missing after every rollback and must not count
+        /// as a lost element.
+        /// </summary>
+        [Fact]
+        public void AnElementTheRunCreatedAndDeletedIsNotATraceAfterTheRollback() {
+            var app = new UIApplication();
+            var document = new Document { HighestElementValue = 100 };
+            var createdByRun = new ElementId { Value = 101 };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { createdByRun });
+                document.Deleted.Add(createdByRun);
+
+                guard.RollBack();
+
+                Assert.False(guard.RollbackFailed);
+            }
+        }
+
+        [Fact]
+        public void AnElementThatExistedBeforeTheRunAndIsStillMissingIsATraceAfterTheRollback() {
+            var app = new UIApplication();
+            var document = new Document { HighestElementValue = 100 };
+            var existedBefore = new ElementId { Value = 100 };
+            var createdByRun = new ElementId { Value = 101 };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { existedBefore, createdByRun });
+                document.Deleted.Add(existedBefore);
+                document.Deleted.Add(createdByRun);
+
+                guard.RollBack();
+
+                Assert.True(guard.RollbackFailed);
+            }
+        }
+
         [Fact]
         public void AnAssimilatedRunIsNotCheckedAgainstTheModel() {
             var app = new UIApplication();

@@ -8,7 +8,7 @@ namespace Autodesk.Revit.DB {
     internal enum TransactionStatus { Uninitialized, Started, RolledBack, Committed, Pending }
     internal enum FailureSeverity { Warning, Error }
     internal enum FailureProcessingResult { Continue, ProceedWithRollBack }
-    internal sealed class ElementId { }
+    internal sealed class ElementId { public long Value { get; set; } = 1; }
     internal sealed class Category { public string Name { get; set; } }
     internal class Element {
         public Category Category { get; set; }
@@ -46,6 +46,7 @@ namespace Autodesk.Revit.DB {
                 IsValidObject = false;
             return CloseSucceeds;
         }
+        public long HighestElementValue { get; set; } = long.MaxValue;
         public HashSet<ElementId> Deleted { get; } = new HashSet<ElementId>();
         public Dictionary<ElementId, Element> Elements { get; } = new Dictionary<ElementId, Element>();
         public Element GetElement(ElementId id) {
@@ -281,7 +282,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public void Disarm() { }
     }
     internal static class AgentIds {
-        public static long ToValue(ElementId id) => 1;
+        public static long ToValue(ElementId id) => id.Value;
+        public static long HighestValue(Document doc) => doc.HighestElementValue;
     }
 }
 namespace pyRevitLabs.PyRevit {
