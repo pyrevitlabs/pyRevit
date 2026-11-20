@@ -363,6 +363,9 @@ namespace pyRevitCLI {
                         commands: new Dictionary<string, string>() {
                             { "status",                 "List running Revit sessions with the agent host" },
                             { "context",                "Print the context of a Revit session (document, view, selection...)" },
+                            { "capture",                "Save a PNG of a Revit view" },
+                            { "inspect",                "Describe elements of the active document by id" },
+                            { "lookup",                 "Look up a Revit API type or member in the running Revit" },
                             { "run",                    "Run a Python script in Revit through the agent host" },
                             { "runs",                   "List recent agent runs" },
                             { "show",                   "Print the record of an agent run" },
@@ -371,6 +374,13 @@ namespace pyRevitCLI {
                         },
                         options: new Dictionary<string, string>() {
                             { "<script_file>",          "Python script to run" },
+                            { "<view>",                 "View name, sheet number, view id, active or 3d (default: active)" },
+                            { "--mode=<capture_mode>",  "export (default), viewport or screen, for 'agent capture'" },
+                            { "--width=<pixels>",       "Image width, 320 to 2400 (default 1280)" },
+                            { "--out=<png_file>",       "Write the capture to this file; otherwise the host keeps it under %APPDATA%\\pyRevit\\agent\\captures" },
+                            { "<element_id>",           "Element ids to inspect, at most 50" },
+                            { "--no-parameters",        "Leave the parameters out of 'agent inspect'" },
+                            { "<api_name>",             "Revit API type or member, e.g. Wall, Wall.Create, ElementId.Value" },
                             { "--mode=<run_mode>",      "query (default), dry_run or modify" },
                             { "--engine=<engine_name>", "ironpython or cpython (default: configured agent engine)" },
                             { "--title=<run_title>",    "Run title; used as the undo name for modify runs" },
