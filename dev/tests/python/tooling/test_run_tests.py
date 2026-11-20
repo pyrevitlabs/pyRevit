@@ -10,6 +10,7 @@ import threading
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -120,10 +121,12 @@ class SelectionTests(unittest.TestCase):
             "pyRevitLabs.PyRevit.Shell.Tests.csproj",
             "framework": "net10.0-windows",
             "tests": [{"Environment": "HostFree"}],
+            "engines": ["IPY2712PR", "IPY342"],
         }
-        self.assertEqual(("IPY2712PR", "IPY342"), run_tests.engine_variants(project))
+        self.assertEqual(["IPY2712PR", "IPY342"], run_tests.engine_variants(project))
         self.assertEqual(
-            (None,), run_tests.engine_variants({"path": "Other.Tests.csproj"})
+            [None],
+            run_tests.engine_variants({"path": "Other.Tests.csproj", "engines": []}),
         )
         calls = []
 
@@ -206,24 +209,29 @@ class SelectionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "coverage.json"):
             self._run_fake_dotnet([{"Environment": "HostFree"}], 1)
 
-    def test_ironpython_forms_suite_runs_once_per_engine(self):
-        """The IronPython forms suite covers both engines, like the shell suite."""
-        project = {
-            "path": "dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.IronPython.Tests/"
-            "pyRevitLabs.PyRevit.Forms.IronPython.Tests.csproj"
-        }
-        self.assertEqual(("IPY2712PR", "IPY342"), run_tests.engine_variants(project))
-
-    def test_engine_variant_for_a_missing_project_fails(self):
-        """A renamed suite cannot silently fall back to the default engine only."""
-        projects = [
-            {"path": f"dev/{name}/{name}.csproj"} for name in run_tests.ENGINE_VARIANTS
-        ]
-        run_tests.check_engine_variants(projects)
-        with self.assertRaisesRegex(ValueError, "Shell.Tests"):
-            run_tests.check_engine_variants(
-                [p for p in projects if "Shell" not in p["path"]]
+    def test_engine_dependent_suites_declare_both_engines(self):
+        """The shell and IronPython forms suites must keep passing on both engines."""
+        for name in (
+            "pyRevitLabs.PyRevit.Shell.Tests",
+            "pyRevitLabs.PyRevit.Forms.IronPython.Tests",
+        ):
+            project = ET.parse(
+                run_tests.ROOT / f"dev/pyRevitLabs/tests/{name}/{name}.csproj"
             )
+            self.assertEqual(
+                ["IPY2712PR", "IPY342"],
+                run_tests.declared_engines(
+                    name, project.findtext(".//PyRevitTestEngines")
+                ),
+            )
+
+    def test_unknown_declared_engine_fails_with_the_allowed_engines(self):
+        """A typo in a project's engine list cannot drop or rename an engine run."""
+        self.assertEqual([], run_tests.declared_engines("Example.Tests", ""))
+        with self.assertRaisesRegex(
+            ValueError, r"Example\.Tests.*\['IPY343'\].*\['IPY2712PR', 'IPY342'\]"
+        ):
+            run_tests.declared_engines("Example.Tests", "IPY2712PR;IPY343")
 
     def test_project_evaluations_run_concurrently_in_discovery_order(self):
         """Discovery pays one evaluation latency per pass, not one per project."""
@@ -237,6 +245,9 @@ class SelectionTests(unittest.TestCase):
                     "Properties": {
                         "AssemblyName": f"{path.stem}.{framework}",
                         "DefineConstants": f";{framework.upper()};",
+                        "PyRevitTestEngines": "IPY342"
+                        if path.stem == "Second.Tests"
+                        else "",
                     },
                     "Items": {"Compile": [{"FullPath": f"{path.stem}.cs"}]},
                 }
@@ -257,7 +268,6 @@ class SelectionTests(unittest.TestCase):
                 side_effect=lambda root, *_: paths if root.name == "dev" else [],
             ),
             patch.object(run_tests, "evaluate_project", side_effect=fake_evaluate),
-            patch.object(run_tests, "check_engine_variants"),
         ):
             projects = run_tests.find_dotnet_projects()
         self.assertEqual(
@@ -271,6 +281,9 @@ class SelectionTests(unittest.TestCase):
                 (p["path"], p["framework"], p["assembly"], p["defines"])
                 for p in projects
             ],
+        )
+        self.assertEqual(
+            [[], [], ["IPY342"], ["IPY342"]], [p["engines"] for p in projects]
         )
 
     def test_csharp_selection_requires_a_built_product(self):

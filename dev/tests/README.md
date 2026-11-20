@@ -17,6 +17,8 @@ python dev/tests/run_tests.py
 
 See `docs/testing.md` for policy and `python/README.md` for Python fixture boundaries. C# test classification rules live in `build/Helpers/TestMetadata.cs`.
 
+A C# test project that must pass on several IronPython engines declares them in its csproj, for example `<PyRevitTestEngines>IPY2712PR;IPY342</PyRevitTestEngines>`. The runner then runs it once per engine with `-p:IronPythonVersion=<engine>`, each into its own results directory, and fails on any name other than `IPY2712PR` or `IPY342`. Projects without the property run once on their default engine.
+
 `revit/run_dynamo.py` is a journal entry point that validates Dynamo execution in a disposable Revit process; run it with `pyrevit run <absolute-script-path> --revit=<year> --purge`, never in an open user session. Results go to `.test-results/dynamo/`.
 
 `pipenv run test` is the documented path. The narrow Pipfile scripts `test-py3-compat`, `test-config-api`, `test-automation-markers` and `test-library` call pytest directly for focused runs: they do not enforce strict skips, metadata validation or coverage, and are not CI equivalents.

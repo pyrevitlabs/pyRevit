@@ -33,10 +33,7 @@ COVERAGE_EXCLUDED_FILES = (
     "**/tests/**",
     "**/pyRevitLabs.UnitTests/**",
 )
-ENGINE_VARIANTS = {
-    "pyRevitLabs.PyRevit.Shell.Tests": ("IPY2712PR", "IPY342"),
-    "pyRevitLabs.PyRevit.Forms.IronPython.Tests": ("IPY2712PR", "IPY342"),
-}
+IRONPYTHON_ENGINES = {"IPY2712PR", "IPY342"}
 
 
 def python_metadata(path):
@@ -133,7 +130,7 @@ def evaluate_project(path, framework=None):
         "dotnet",
         "msbuild",
         path,
-        "-getProperty:IsTestProject,TargetFramework,TargetFrameworks,AssemblyName,DefineConstants",
+        "-getProperty:IsTestProject,TargetFramework,TargetFrameworks,AssemblyName,DefineConstants,PyRevitTestEngines",
         "-getItem:Compile,PackageReference",
         "-p:Configuration=Release",
         "-m:1",
@@ -155,8 +152,8 @@ def find_dotnet_projects():
 
     Raises:
         ValueError: A project references the test SDK without
-            ``IsTestProject=true``, none is found, or ``ENGINE_VARIANTS`` names
-            a project that does not exist.
+            ``IsTestProject=true``, declares an unknown engine, or none is
+            found.
     """
     paths = [
         path
@@ -190,12 +187,14 @@ def find_dotnet_projects():
                 for value in evaluated["Properties"]["DefineConstants"].split(";")
                 if value
             ],
+            "engines": declared_engines(
+                path, evaluated["Properties"]["PyRevitTestEngines"]
+            ),
         }
         for (path, framework), evaluated in zip(targets, evaluations)
     ]
     if not projects:
         raise ValueError("No first-party .NET test projects discovered")
-    check_engine_variants(projects)
     return projects
 
 
@@ -301,23 +300,29 @@ def locked_requirements(lock):
     return "".join(lines)
 
 
-def check_engine_variants(projects):
-    """Reject ``ENGINE_VARIANTS`` keys that name no discovered project.
+def declared_engines(project, value):
+    """Parse a project's ``PyRevitTestEngines`` MSBuild property.
 
-    A renamed project would otherwise run once on the default engine only.
+    ``IRONPYTHON_ENGINES`` mirrors the engine configurations in
+    ``dev/pyRevitLabs.PyRevit.Runtime/Directory.Build.targets``.
+
+    Raises:
+        ValueError: A declared engine is not an IronPython engine, so a typo
+            cannot silently drop or rename an engine run.
     """
-    unknown = set(ENGINE_VARIANTS) - {
-        Path(project["path"]).stem for project in projects
-    }
+    engines = [engine for engine in value.split(";") if engine]
+    unknown = sorted(set(engines) - IRONPYTHON_ENGINES)
     if unknown:
         raise ValueError(
-            f"ENGINE_VARIANTS names no discovered test project: {sorted(unknown)}"
+            f"{project}: PyRevitTestEngines names unknown engines {unknown};"
+            f" allowed engines are {sorted(IRONPYTHON_ENGINES)}"
         )
+    return engines
 
 
 def engine_variants(project):
     """IronPython engines a suite must pass on; ``None`` means the project default."""
-    return ENGINE_VARIANTS.get(Path(project["path"]).stem, (None,))
+    return project["engines"] or [None]
 
 
 def require_built_product(root=ROOT):
