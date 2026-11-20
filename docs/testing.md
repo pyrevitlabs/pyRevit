@@ -22,7 +22,7 @@ CI uses the same runner: Python checks, product build, then C# tests. Product bu
 
 ```mermaid
 flowchart LR
-    Runner["run_tests.py<br/>CI and local API-free execution"] --> Python["Python<br/>dev/tests/python/**/test_*.py"]
+    Runner["run_tests.py<br/>CI and local API-free execution"] --> Python["Python<br/>test_*.py under dev/, pyrevitlib/pyrevit/unittests/, extensions/<br/>*_tests.py under extensions/"]
     Runner --> Loader
     Runner --> Runtime
     Runner --> Labs

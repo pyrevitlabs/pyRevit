@@ -1,5 +1,11 @@
 # Testing infrastructure
 
+| Test kind | Put it in |
+|---|---|
+| API-free Python tests | `python/tooling/` (developer tools, runner) or `python/library/` (library contracts) |
+| Python tests hosted in Revit | `pyrevitlib/pyrevit/unittests/` |
+| Extension bundle tests | `*_tests.py` under `extensions/` |
+
 `run_tests.py` owns shared C#/Python discovery and CI selection. `python/tooling/` verifies developer tools and the runner; `python/library/` verifies API-free Python library contracts. The separate `dev/checks/` and `dev/hooks/` directories own validators and formatting hooks.
 
 From the repository root:
@@ -9,7 +15,11 @@ python dev/tests/run_tests.py --list
 python dev/tests/run_tests.py
 ```
 
-See `docs/testing.md` for policy and `python/README.md` for Python fixture boundaries.
+See `docs/testing.md` for policy and `python/README.md` for Python fixture boundaries. C# test classification rules live in `build/Helpers/TestMetadata.cs`.
+
+`revit/run_dynamo.py` is a journal entry point that validates Dynamo execution in a disposable Revit process; run it with `pyrevit run <absolute-script-path> --revit=<year> --purge`, never in an open user session. Results go to `.test-results/dynamo/`.
+
+`pipenv run test` is the documented path. The narrow Pipfile scripts `test-py3-compat`, `test-config-api`, `test-automation-markers` and `test-library` call pytest directly for focused runs: they do not enforce strict skips, metadata validation or coverage, and are not CI equivalents.
 
 ## Coverage and reporting policy
 
@@ -19,7 +29,7 @@ Owner: repository testing maintainers; suite owners review changes to their modu
 
 From the repository root, use `python dev/tests/run_tests.py --update-baselines` only after reviewing the reports. This explicit update can lower a floor; include a reason and follow-up for every reduction. It does not grant an automatic exception to the policy. Scope and denominator changes require review as well as percentage changes. Reports and inventory live in a unique `.test-results/<run>/` directory, so old reports cannot satisfy a new run.
 
-Python reporting scope is declared in `pyproject.toml`. C# collectors include instrumented first-party code; assemblies never loaded by tests need dedicated suites and do not have measured coverage yet. No repository-wide percentage or performance budget is implied. See `docs/testing.md` for full rules.
+Python reporting scope is declared in `pyproject.toml`. Measuring a new Python module takes an entry in its `[tool.coverage.report] include` list, under a `[tool.coverage.run] source` root, and a reviewed baseline entry in `coverage-baselines.json`; the runner reads both, so it needs no change. C# collectors include instrumented first-party code; assemblies never loaded by tests need dedicated suites and do not have measured coverage yet. No repository-wide percentage or performance budget is implied. See `docs/testing.md` for full rules.
 
 ## Initial baseline calibration
 
