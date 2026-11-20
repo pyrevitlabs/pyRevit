@@ -71,6 +71,53 @@ public class TestMetadataTests {
         StringAssert.Contains(error.Message, "Revti");
     }
 
+    /// <summary>A class tag the catalog cannot read fails instead of disagreeing with the runtime filter.</summary>
+    [TestMethod]
+    public void NonLiteralClassCategoryFailsClosed() {
+        var error = Assert.ThrowsExactly<InvalidDataException>(() => TestMetadata.Read("""
+            [Category(Cats.HostFree), Category("Unit")]
+            class Tests { [Test] public void Case() { } }
+            """, "fixture.cs"));
+        StringAssert.Contains(error.Message, "fixture.cs");
+        StringAssert.Contains(error.Message, "Tests");
+        StringAssert.Contains(error.Message, "Cats.HostFree");
+    }
+
+    /// <summary>A method override the catalog cannot read cannot leave the class's HostFree tag in place.</summary>
+    [TestMethod]
+    public void NonLiteralMethodCategoryFailsClosed() {
+        var error = Assert.ThrowsExactly<InvalidDataException>(() => TestMetadata.Read("""
+            [Category("HostFree"), Category("Integration")]
+            class Tests {
+                [Test, Category(Cats.Revit)]
+                public void Hosted() { }
+            }
+            """, "fixture.cs"));
+        StringAssert.Contains(error.Message, "Tests.Hosted");
+        StringAssert.Contains(error.Message, "Cats.Revit");
+    }
+
+    /// <summary>MSTest categories follow the same literal-only rule.</summary>
+    [TestMethod]
+    public void NonLiteralTestCategoryFailsClosed() {
+        Assert.ThrowsExactly<InvalidDataException>(() => TestMetadata.Read("""
+            [TestCategory("HostFree"), TestCategory("Unit")]
+            class Tests { [TestMethod, TestCategory(Cats.Revit)] public void Hosted() { } }
+            """, "fixture.cs"));
+    }
+
+    /// <summary>xUnit traits with a non-literal key or value fail closed.</summary>
+    [TestMethod]
+    [DataRow("Keys.Env, \"Revit\"")]
+    [DataRow("\"Environment\", Envs.Revit")]
+    public void NonLiteralTraitFailsClosed(string arguments) {
+        var error = Assert.ThrowsExactly<InvalidDataException>(() => TestMetadata.Read($$"""
+            [Trait("Environment", "HostFree"), Trait("Level", "Unit")]
+            class Tests { [Fact, Trait({{arguments}})] public void Hosted() { } }
+            """, "fixture.cs"));
+        StringAssert.Contains(error.Message, "Tests.Hosted");
+    }
+
     /// <summary>Declared purpose categories sit beside the classification tags.</summary>
     [TestMethod]
     public void PurposeCategoryIsAllowed() {
