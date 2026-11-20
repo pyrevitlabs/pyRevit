@@ -8,6 +8,11 @@ internal sealed record ClassifiedTest(string Source, string ClassName, string Me
 internal sealed record TestCatalogRequest(string Project, string Framework, string[] Sources, string[] Defines);
 internal sealed record TestCatalogSuite(string Project, string Framework, IReadOnlyList<ClassifiedTest> Tests);
 
+/// <summary>Classifies C# tests by Environment and Level from their attribute syntax, without loading assemblies.</summary>
+/// <remarks>
+/// Python tests are classified by <c>dev/tests/run_tests.py</c>; the allowed Environment and Level sets here must stay in sync with it.
+/// Tag arguments must be string literals so the catalog always agrees with the runtime category filter.
+/// </remarks>
 internal static class TestMetadata {
     private static readonly HashSet<string> TestAttributes = ["Test", "TestCase", "TestCaseSource", "TestMethod", "DataTestMethod", "Fact", "Theory"];
     private static readonly HashSet<string> Levels = ["Unit", "Integration", "E2E", "Performance"];
@@ -25,9 +30,9 @@ internal static class TestMetadata {
             var type = types[0];
             var defaults = new Dictionary<string, string>();
             foreach (var outer in Enumerable.Reverse(types))
-                foreach (var tag in ReadTags(outer.AttributeLists.SelectMany(list => list.Attributes), path))
+                foreach (var tag in ReadTags(outer.AttributeLists.SelectMany(list => list.Attributes), path, outer.Identifier.ValueText))
                     defaults[tag.Key] = tag.Value;
-            var overrides = ReadTags(method.AttributeLists.SelectMany(list => list.Attributes), path);
+            var overrides = ReadTags(method.AttributeLists.SelectMany(list => list.Attributes), path, $"{type.Identifier}.{method.Identifier}");
             string environment = overrides.GetValueOrDefault("Environment") ?? defaults.GetValueOrDefault("Environment") ?? "";
             string level = overrides.GetValueOrDefault("Level") ?? defaults.GetValueOrDefault("Level") ?? "";
             if (!Environments.Contains(environment) || !Levels.Contains(level))
@@ -41,14 +46,15 @@ internal static class TestMetadata {
 
     private static string Name(AttributeSyntax attribute) => attribute.Name.ToString().Split('.').Last().Replace("Attribute", "");
 
-    private static Dictionary<string, string> ReadTags(IEnumerable<AttributeSyntax> attributes, string path) {
+    private static Dictionary<string, string> ReadTags(IEnumerable<AttributeSyntax> attributes, string path, string owner) {
         var tags = new Dictionary<string, string>();
         foreach (var attribute in attributes) {
-            var values = attribute.ArgumentList?.Arguments
-                .Select(argument => argument.Expression)
-                .OfType<LiteralExpressionSyntax>()
-                .Where(literal => literal.IsKind(SyntaxKind.StringLiteralExpression))
-                .Select(literal => literal.Token.ValueText).ToArray() ?? [];
+            if (Name(attribute) is not ("Trait" or "Category" or "TestCategory"))
+                continue;
+            var expressions = attribute.ArgumentList?.Arguments.Select(argument => argument.Expression).ToArray() ?? [];
+            if (expressions.FirstOrDefault(expression => !expression.IsKind(SyntaxKind.StringLiteralExpression)) is { } nonLiteral)
+                throw new InvalidDataException($"{path}: {owner} [{attribute}] uses '{nonLiteral}'; test tags must be string literals.");
+            var values = expressions.Select(expression => ((LiteralExpressionSyntax)expression).Token.ValueText).ToArray();
             if (Name(attribute) == "Trait" && values.Length == 2 && values[0] is "Environment" or "Level")
                 AddTag(tags, values[0], values[1]);
             if (Name(attribute) is "Category" or "TestCategory" && values.Length == 1) {

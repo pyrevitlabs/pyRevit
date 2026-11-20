@@ -131,6 +131,7 @@ class SelectionTests(unittest.TestCase):
             reports = Path(arguments[arguments.index("--results-directory") + 1])
             (reports / "run").mkdir(parents=True, exist_ok=True)
             (reports / "run" / "coverage.cobertura.xml").write_text("<coverage/>")
+            (reports / "run" / "coverage.json").write_text("{}")
             (reports / "results.trx").write_text(
                 '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
                 '<Results><UnitTestResult outcome="Passed"/></Results>'
@@ -157,6 +158,71 @@ class SelectionTests(unittest.TestCase):
         self.assertIn("-p:IronPythonVersion=IPY2712PR", calls[0])
         self.assertIn("-p:IronPythonVersion=IPY342", calls[1])
         self.assertEqual(["IPY2712PR", "IPY342"], [o["engine"] for o in outcomes])
+
+    def _run_fake_dotnet(self, tests, executed, reports=("coverage.cobertura.xml",)):
+        project = {
+            "path": "Example.Tests.csproj",
+            "framework": "net8.0",
+            "tests": tests,
+        }
+
+        def fake_command(arguments):
+            directory = Path(arguments[arguments.index("--results-directory") + 1])
+            (directory / "run").mkdir(parents=True, exist_ok=True)
+            for report in reports:
+                (directory / "run" / report).write_text("{}")
+            (directory / "results.trx").write_text(
+                '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
+                "<Results>"
+                + '<UnitTestResult outcome="Passed"/>'
+                * executed
+                + "</Results><ResultSummary>"
+                f'<Counters total="{executed}" executed="{executed}" failed="0"/>'
+                "</ResultSummary></TestRun>",
+                encoding="utf-8",
+            )
+
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(run_tests, "command", side_effect=fake_command),
+        ):
+            return run_tests.run_dotnet(project, Path(directory))
+
+    def test_fewer_executed_than_cataloged_host_free_tests_fails(self):
+        """A trait drift cannot silently drop tests that discovery classified."""
+        tests = [{"Environment": "HostFree"}] * 3 + [{"Environment": "Revit"}]
+        with self.assertRaisesRegex(
+            ValueError, r"Example\.Tests net8\.0: executed 2 .* 3 host-free"
+        ):
+            self._run_fake_dotnet(tests, 2, ("coverage.cobertura.xml", "coverage.json"))
+        outcome = self._run_fake_dotnet(
+            tests, 4, ("coverage.cobertura.xml", "coverage.json")
+        )
+        self.assertEqual("4", outcome["executed"])
+
+    def test_missing_json_coverage_report_fails(self):
+        """Coverage aggregation reads coverage.json, so it is required evidence."""
+        with self.assertRaisesRegex(ValueError, "coverage.json"):
+            self._run_fake_dotnet([{"Environment": "HostFree"}], 1)
+
+    def test_ironpython_forms_suite_runs_once_per_engine(self):
+        """The IronPython forms suite covers both engines, like the shell suite."""
+        project = {
+            "path": "dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.IronPython.Tests/"
+            "pyRevitLabs.PyRevit.Forms.IronPython.Tests.csproj"
+        }
+        self.assertEqual(("IPY2712PR", "IPY342"), run_tests.engine_variants(project))
+
+    def test_engine_variant_for_a_missing_project_fails(self):
+        """A renamed suite cannot silently fall back to the default engine only."""
+        projects = [
+            {"path": f"dev/{name}/{name}.csproj"} for name in run_tests.ENGINE_VARIANTS
+        ]
+        run_tests.check_engine_variants(projects)
+        with self.assertRaisesRegex(ValueError, "Shell.Tests"):
+            run_tests.check_engine_variants(
+                [p for p in projects if "Shell" not in p["path"]]
+            )
 
     def test_csharp_selection_requires_a_built_product(self):
         """A fresh checkout fails fast with the build command, not with skipped cases."""
@@ -187,6 +253,29 @@ class SelectionTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "TEST_ENVIRONMENT"):
                 run_tests.python_metadata(path)
 
+    def test_annotated_classification_is_read(self):
+        """Annotated module defaults classify a suite like plain assignments."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "test_annotated.py"
+            path.write_text(
+                'TEST_ENVIRONMENT: str = "HostFree"\nTEST_LEVEL: str = "Unit"\n',
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                {"Environment": "HostFree", "Level": "Unit"},
+                run_tests.python_metadata(path),
+            )
+
+    def test_invalid_classification_reports_the_found_value(self):
+        """The error names the offending value, not only the expected field."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "test_invalid.py"
+            path.write_text(
+                'TEST_ENVIRONMENT = "Hostfree"\nTEST_LEVEL = "Unit"\n', encoding="utf-8"
+            )
+            with self.assertRaisesRegex(ValueError, "found 'Hostfree'"):
+                run_tests.python_metadata(path)
+
     def test_coverage_drop_fails_per_module(self):
         """A strong module cannot mask a second module's regression."""
         baseline = {"parser": {"line": 0.8, "branch": 0.6}}
@@ -195,10 +284,45 @@ class SelectionTests(unittest.TestCase):
                 {"parser": {"line": 0.79, "branch": 0.7}}, baseline
             )
 
+    def test_every_coverage_failure_is_reported_at_once(self):
+        """One run lists all regressions instead of stopping at the first."""
+        baseline = {
+            "first": {"line": 0.8, "branch": 0.6},
+            "second": {"line": 0.5, "branch": 0.5},
+            "gone": {"line": 0.1, "branch": 0.1},
+        }
+        measured = {
+            "first": {"line": 0.7, "branch": 0.6},
+            "second": {"line": 0.5, "branch": 0.4},
+        }
+        with self.assertRaises(ValueError) as raised:
+            run_tests.check_baselines(measured, baseline)
+        message = str(raised.exception)
+        for expected in ("first line", "second branch", "Missing coverage for gone"):
+            self.assertIn(expected, message)
+
     def test_missing_module_coverage_fails(self):
         """Missing evidence cannot silently remove an established module."""
         with self.assertRaisesRegex(ValueError, "Missing coverage"):
             run_tests.check_baselines({}, {"parser": {"line": 0.8, "branch": 0.6}})
+
+    def test_captured_output_excludes_stderr_warnings(self):
+        """MSBuild warnings on stderr cannot corrupt the JSON read from stdout."""
+        script = "import sys; print('{}'); print('warning', file=sys.stderr)"
+        self.assertEqual(
+            "{}\n", run_tests.command([sys.executable, "-c", script], capture=True)
+        )
+        with self.assertRaisesRegex(RuntimeError, "warning"):
+            run_tests.command(
+                [sys.executable, "-c", script + "; sys.exit(1)"], capture=True
+            )
+
+    def test_timeout_names_the_command(self):
+        """A hung command fails with its arguments instead of a raw traceback."""
+        with self.assertRaisesRegex(RuntimeError, "Timed out after 0.5s: .*sleep"):
+            run_tests.command(
+                [sys.executable, "-c", "import time; time.sleep(30)"], timeout=0.5
+            )
 
     def test_empty_trx_is_not_success(self):
         """A successful process with zero executed tests fails validation."""
@@ -234,6 +358,31 @@ class SelectionTests(unittest.TestCase):
         )
         with self.assertRaises(pytest.UsageError):
             conftest.classification(item)
+
+    def test_baseline_update_replaces_only_the_selected_language(self):
+        """Renamed modules drop out; the other language's floors are untouched."""
+        baseline = {
+            "python/old.py": {"line": 0.5},
+            "python/kept.py": {"line": 0.5},
+            "dotnet/A/net48": {"line": 0.4},
+            "dotnet-linked/B/net48": {"line": 0.3},
+        }
+        measured = {"python/kept.py": {"line": 0.61}, "python/new.py": {"line": 0.7}}
+        self.assertEqual(
+            {
+                "python/kept.py": {"line": 0.61},
+                "python/new.py": {"line": 0.7},
+                "dotnet/A/net48": {"line": 0.4},
+                "dotnet-linked/B/net48": {"line": 0.3},
+            },
+            run_tests.updated_baselines(baseline, measured, "python"),
+        )
+        self.assertEqual(
+            {"python/kept.py": {"line": 0.61}},
+            run_tests.updated_baselines(
+                baseline, {"python/kept.py": {"line": 0.61}}, "all"
+            ),
+        )
 
     def test_coverage_merges_branch_identities_and_ignores_deployment_copies(self):
         """Two suites can cover opposite branches without double-counting artifacts."""
@@ -278,6 +427,32 @@ class SelectionTests(unittest.TestCase):
             self.assertEqual(1, measured["dotnet/Example/net8.0"]["branch"])
             self.assertEqual(2, measured["dotnet/Example/net8.0"]["branches"])
 
+    def test_excluded_coverage_files_are_shared_with_the_collector(self):
+        """Files excluded from instrumentation are also excluded from aggregation."""
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory)
+            path = results / "project/net8.0/run/coverage.json"
+            path.parent.mkdir(parents=True)
+            method = {"Example": {"Method": {"Lines": {"1": 1}, "Branches": []}}}
+            path.write_text(
+                json.dumps(
+                    {
+                        "Example.dll": {
+                            str(run_tests.ROOT / relative): method
+                            for relative in (
+                                "dev/a/obj/Generated.cs",
+                                "dev/a/tests/Fixture.cs",
+                                "dev/a/Product.cs",
+                            )
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                1, run_tests.collect_coverage(results)["dotnet/Example/net8.0"]["lines"]
+            )
+
     def test_vendored_sources_never_count_as_product_coverage(self):
         """Referenced dependencies stay out of first-party module baselines."""
         with tempfile.TemporaryDirectory() as directory:
@@ -309,11 +484,10 @@ class SelectionTests(unittest.TestCase):
                 (root / relative).parent.mkdir(parents=True, exist_ok=True)
                 (root / relative).write_text("", encoding="utf-8")
             (root / "dev/project/project.csproj").write_text("", encoding="utf-8")
-            with patch.object(run_tests, "ROOT", root):
-                found = {
-                    path.relative_to(root).as_posix()
-                    for path in run_tests.first_party_files(root, "test_*.py")
-                }
+            found = {
+                path.relative_to(root).as_posix()
+                for path in run_tests.first_party_files(root, "test_*.py", root)
+            }
             self.assertEqual(
                 {
                     "extensions/Tab/lib/modules/test_kept.py",
@@ -396,3 +570,88 @@ class SelectionTests(unittest.TestCase):
                 "pluggy==1.7.0 --hash=sha256:cc\n",
                 run_tests.locked_requirements(lock),
             )
+
+    def test_unpinned_lock_entry_names_the_package(self):
+        """A lock entry without a version fails clearly instead of with a KeyError."""
+        with tempfile.TemporaryDirectory() as directory:
+            lock = Path(directory) / "Pipfile.lock"
+            lock.write_text(
+                json.dumps({"develop": {"tool": {"git": "https://example.invalid"}}}),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "tool"):
+                run_tests.locked_requirements(lock)
+
+
+class GateTests(unittest.TestCase):
+    """Pin the pass/fail control flow that main() delegates."""
+
+    BASELINE = {
+        "python/a.py": {"line": 0.5, "branch": 0.5},
+        "dotnet/A/net48": {"line": 0.5, "branch": 0.5},
+    }
+
+    def test_language_filter_only_checks_the_selected_floors(self):
+        """A Python-only run is not failed by the unmeasured C# modules."""
+        measured = {"python/a.py": {"line": 0.5, "branch": 0.5}}
+        self.assertIsNone(
+            run_tests.gate_coverage(measured, self.BASELINE, "python", False)
+        )
+        with self.assertRaisesRegex(ValueError, "Missing coverage for dotnet/A"):
+            run_tests.gate_coverage(measured, self.BASELINE, "all", False)
+
+    def test_regression_fails_unless_updating(self):
+        """Updating returns new floors without checking; checking rejects drops."""
+        measured = {"python/a.py": {"line": 0.1, "branch": 0.5}}
+        with self.assertRaisesRegex(ValueError, "python/a.py line"):
+            run_tests.gate_coverage(measured, self.BASELINE, "python", False)
+        self.assertEqual(
+            {**self.BASELINE, **measured},
+            run_tests.gate_coverage(measured, self.BASELINE, "python", True),
+        )
+
+    def test_new_module_needs_a_reviewed_baseline(self):
+        """A measured module without a floor fails a normal run."""
+        measured = {
+            "python/a.py": {"line": 0.5, "branch": 0.5},
+            "python/new.py": {"line": 1, "branch": 1},
+        }
+        with self.assertRaisesRegex(ValueError, "need reviewed baselines"):
+            run_tests.gate_coverage(measured, self.BASELINE, "python", False)
+
+    def _run_python(self, suites, tests):
+        def fake_command(arguments, environment):
+            self.assertEqual({run_tests.STRICT_SKIPS_ENV: "1"}, environment)
+            calls.append(arguments)
+            report = next(a for a in arguments if str(a).startswith("--junitxml="))
+            Path(report.split("=", 1)[1]).write_text(
+                f'<testsuites><testsuite tests="{tests}"/></testsuites>',
+                encoding="utf-8",
+            )
+
+        calls = []
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(run_tests, "command", side_effect=fake_command),
+        ):
+            run_tests.run_python(suites, Path(directory) / "python")
+        return calls
+
+    def test_python_run_passes_only_host_free_suites(self):
+        """Revit suites are inventoried but never handed to pytest."""
+        calls = self._run_python(
+            [
+                {"path": "test_free.py", "Environment": "HostFree"},
+                {"path": "test_hosted.py", "Environment": "Revit"},
+            ],
+            1,
+        )
+        self.assertIn("test_free.py", calls[0])
+        self.assertNotIn("test_hosted.py", calls[0])
+
+    def test_python_run_rejects_empty_selections(self):
+        """No host-free suite, or zero selected tests, never passes."""
+        with self.assertRaisesRegex(ValueError, "No host-free Python suites"):
+            self._run_python([{"path": "t.py", "Environment": "Revit"}], 1)
+        with self.assertRaisesRegex(ValueError, "zero tests"):
+            self._run_python([{"path": "t.py", "Environment": "HostFree"}], 0)

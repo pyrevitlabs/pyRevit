@@ -22,6 +22,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         private readonly ILogger _logger;
         private readonly UIApplication _uiApp;
         private readonly ITabIconDecorator _tabIconDecorator;
+        private readonly bool _showTabIcons;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TabBuilder"/> class.
@@ -29,11 +30,14 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// <param name="uiApp">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
         /// <param name="tabIconDecorator">Must be the instance <see cref="SessionManagerService"/> resets and refreshes around each UI build.</param>
-        public TabBuilder(UIApplication uiApp, ILogger logger, ITabIconDecorator tabIconDecorator)
+        /// <param name="showTabIcons">When <c>false</c>, no tab icon is recorded, so the decorator's
+        /// refresh removes any icon a previous session drew.</param>
+        public TabBuilder(UIApplication uiApp, ILogger logger, ITabIconDecorator tabIconDecorator, bool showTabIcons = true)
         {
             _uiApp = uiApp ?? throw new ArgumentNullException(nameof(uiApp));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _tabIconDecorator = tabIconDecorator ?? throw new ArgumentNullException(nameof(tabIconDecorator));
+            _showTabIcons = showTabIcons;
         }
 
         /// <inheritdoc/>
@@ -114,6 +118,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
 
         private void ApplyTabIcon(RibbonTab tab, ParsedComponent component)
         {
+            if (!_showTabIcons)
+                return;
+
             var lightIconPath = FirstRasterIconPath(component.Icons?.LightIcons);
             var darkIconPath = FirstRasterIconPath(component.Icons?.DarkIcons);
             if (lightIconPath == null && darkIconPath == null)

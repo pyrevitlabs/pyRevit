@@ -3,6 +3,9 @@
 The reporter is loaded by path rather than imported, because it must stay importable
 without a Revit host and `pyrevit.unittests` is a package that pulls in `pyrevit`.
 
+Kept IronPython 2.7 compatible, apart from the `pytest` marker, so the same tests
+can run on the default engine the reporter targets.
+
 The shared runner discovers these API-free library fixtures separately from the
 hosted suites in pyrevit.unittests.
 """
@@ -11,15 +14,15 @@ TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Integration"
 
 
-import importlib.util
+import io
 import os
 import tempfile
+import types
 import unittest
-from pathlib import Path
 import pytest
 from xml.etree import ElementTree
 
-REPO_ROOT = str(Path(__file__).resolve().parents[4])
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), *[".."] * 4))
 
 JUNIT_PATH = os.path.join(
     REPO_ROOT,
@@ -31,11 +34,10 @@ JUNIT_PATH = os.path.join(
 
 
 def _load_junit():
-    spec = importlib.util.spec_from_file_location(
-        "pyrevit_junit_under_test", JUNIT_PATH
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module = types.ModuleType("pyrevit_junit_under_test")
+    module.__file__ = JUNIT_PATH
+    with io.open(JUNIT_PATH, encoding="utf-8") as source:
+        exec(compile(source.read(), JUNIT_PATH, "exec"), module.__dict__)
     return module
 
 
@@ -189,6 +191,105 @@ class TestWriting(unittest.TestCase):
             content = report_file.read()
         self.assertEqual("testsuites", ElementTree.fromstring(content).tag)
         self.assertEqual(3, len(ElementTree.fromstring(content)))
+
+    def test_interrupted_write_keeps_the_previous_report(self):
+        self._write_one("one", "a")
+        original = junit._serialize
+
+        def interrupted(element):
+            raise IOError("interrupted")
+
+        junit._serialize = interrupted
+        try:
+            self.assertRaises(IOError, self._write_one, "two", "b")
+        finally:
+            junit._serialize = original
+        root = ElementTree.parse(self.target).getroot()
+        self.assertEqual("one", root.get("name"))
+
+    def test_unparsable_report_is_reported_not_replaced(self):
+        truncated = b"<testsuites><testsuite".decode("utf-8")
+        os.makedirs(os.path.dirname(self.target))
+        with io.open(self.target, "w", encoding="utf-8") as report_file:
+            report_file.write(truncated)
+        with self.assertRaises(ValueError) as raised:
+            self._write_one("one", "a")
+        self.assertIn(self.target, str(raised.exception))
+        self.assertIn("delete", str(raised.exception))
+        with io.open(self.target, encoding="utf-8") as report_file:
+            self.assertEqual(truncated, report_file.read())
+
+    def test_rewrite_without_os_replace(self):
+        junit.os = _Python27Os()
+        try:
+            self._write_one("one", "a")
+            self._write_one("two", "b")
+        finally:
+            junit.os = os
+        root = ElementTree.parse(self.target).getroot()
+        self.assertEqual(["one", "two"], [suite.get("name") for suite in root])
+        self.assertFalse(os.path.exists(self.target + ".tmp"))
+
+
+class _Python27Os(object):
+    """os without `replace`, as on Python 2.7."""
+
+    def __getattr__(self, name):
+        if name == "replace":
+            raise AttributeError(name)
+        return getattr(os, name)
+
+
+class _Python27ElementTree(object):
+    """ElementTree whose tostring rejects the "unicode" encoding, as Python 2.7 does."""
+
+    def __getattr__(self, name):
+        return getattr(ElementTree, name)
+
+    @staticmethod
+    def tostring(element, encoding=None, method=None):
+        if encoding == "unicode":
+            raise LookupError("unknown encoding: unicode")
+        return ElementTree.tostring(element, encoding=encoding, method=method)
+
+
+class TestEncoding(unittest.TestCase):
+    NON_ASCII = b"caf\xc3\xa9 \xc3\xbcber \xe6\x97\xa5\xe6\x9c\xac".decode("utf-8")
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp(prefix="pyrevit-junit-enc-")
+        self.target = os.path.join(self.directory, "report.xml")
+        self.original = junit.ElementTree
+        junit.ElementTree = _Python27ElementTree()
+
+    def tearDown(self):
+        junit.ElementTree = self.original
+
+    def _report(self, name):
+        report = junit.JUnitReport(name)
+        report.add_failure(
+            "test_" + self.NON_ASCII, self.NON_ASCII, trace=self.NON_ASCII
+        )
+        return report
+
+    def test_to_xml_has_a_single_declaration(self):
+        xml = self._report("one").to_xml()
+        self.assertTrue(
+            xml.startswith('<?xml version="1.0" encoding="utf-8"?><testsuite')
+        )
+        self.assertEqual(1, xml.count("<?xml"))
+
+    def test_non_ascii_text_round_trips_through_write(self):
+        self._report("one").write(self.target)
+        self._report("two").write(self.target)
+        with io.open(self.target, encoding="utf-8") as report_file:
+            content = report_file.read()
+        self.assertEqual(1, content.count("<?xml"))
+        failure = (
+            ElementTree.parse(self.target).getroot().find("testsuite/testcase/failure")
+        )
+        self.assertEqual(self.NON_ASCII, failure.get("message"))
+        self.assertEqual(self.NON_ASCII, failure.text)
 
 
 class TestEnvironmentEntryPoint(unittest.TestCase):

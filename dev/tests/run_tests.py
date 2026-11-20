@@ -8,7 +8,7 @@ import argparse
 import ast
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import subprocess
 import sys
 import tempfile
@@ -24,8 +24,17 @@ BUILD_OUTPUT_NAMES = {"bin", "obj"}
 PROJECT_PATTERNS = ("*.csproj", "*.vbproj")
 STRICT_SKIPS_ENV = "PYREVIT_STRICT_SKIPS"
 BASELINES = ROOT / "dev/tests/coverage-baselines.json"
+COVERAGE_TOLERANCE = 0.000001
 TRX_NS = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
-ENGINE_VARIANTS = {"pyRevitLabs.PyRevit.Shell.Tests": ("IPY2712PR", "IPY342")}
+COVERAGE_EXCLUDED_FILES = (
+    "**/dev/modules/**",
+    "**/obj/**",
+    "**/tests/**",
+)
+ENGINE_VARIANTS = {
+    "pyRevitLabs.PyRevit.Shell.Tests": ("IPY2712PR", "IPY342"),
+    "pyRevitLabs.PyRevit.Forms.IronPython.Tests": ("IPY2712PR", "IPY342"),
+}
 
 
 def python_metadata(path):
@@ -34,19 +43,26 @@ def python_metadata(path):
     values = {}
     for node in tree.body:
         if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id in {
-                    "TEST_ENVIRONMENT",
-                    "TEST_LEVEL",
-                }:
-                    values[target.id] = ast.literal_eval(node.value)
+            targets = node.targets
+        elif isinstance(node, ast.AnnAssign) and node.value:
+            targets = [node.target]
+        else:
+            continue
+        for target in targets:
+            if isinstance(target, ast.Name) and target.id in {
+                "TEST_ENVIRONMENT",
+                "TEST_LEVEL",
+            }:
+                values[target.id] = ast.literal_eval(node.value)
     for name, allowed in (("TEST_ENVIRONMENT", ENVIRONMENTS), ("TEST_LEVEL", LEVELS)):
         if values.get(name) not in allowed:
-            raise ValueError(f"{path}: valid {name} is required")
+            raise ValueError(
+                f"{path}: {name} must be one of {sorted(allowed)}, found {values.get(name)!r}"
+            )
     return {"Environment": values["TEST_ENVIRONMENT"], "Level": values["TEST_LEVEL"]}
 
 
-def is_third_party(directory, name):
+def is_third_party(directory, name, repository):
     """Tell vendored or generated folders from first-party folders named alike.
 
     Only ``VENDORED_NAMES``, the ``VENDORED_PATHS`` below the repository root,
@@ -57,8 +73,8 @@ def is_third_party(directory, name):
     if name in VENDORED_NAMES:
         return True
     if (
-        path.is_relative_to(ROOT)
-        and path.relative_to(ROOT).as_posix() in VENDORED_PATHS
+        path.is_relative_to(repository)
+        and path.relative_to(repository).as_posix() in VENDORED_PATHS
     ):
         return True
     return name in BUILD_OUTPUT_NAMES and any(
@@ -66,11 +82,16 @@ def is_third_party(directory, name):
     )
 
 
-def first_party_files(root, pattern):
-    """Walk source trees without descending into dependencies or build outputs."""
+def first_party_files(root, pattern, repository):
+    """Walk source trees without descending into dependencies or build outputs.
+
+    ``root`` is the tree to walk; ``repository`` anchors ``VENDORED_PATHS``.
+    """
     for directory, children, files in os.walk(root):
         children[:] = sorted(
-            child for child in children if not is_third_party(directory, child)
+            child
+            for child in children
+            if not is_third_party(directory, child, repository)
         )
         for name in sorted(files):
             if Path(name).match(pattern):
@@ -78,21 +99,28 @@ def first_party_files(root, pattern):
 
 
 def command(arguments, capture=False, timeout=1200, environment=None):
-    """Propagate subprocess failures and bound potentially hanging test runs."""
-    result = subprocess.run(
-        [str(argument) for argument in arguments],
-        cwd=ROOT,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=timeout,
-        stdout=subprocess.PIPE if capture else None,
-        stderr=subprocess.STDOUT if capture else None,
-        env={**os.environ, "DOTNET_CLI_UI_LANGUAGE": "en", **(environment or {})},
-    )
+    """Propagate subprocess failures and bound potentially hanging test runs.
+
+    With ``capture`` only stdout is returned; stderr is kept apart so tool
+    warnings cannot corrupt parsed output, and is reported on failure.
+    """
+    try:
+        result = subprocess.run(
+            [str(argument) for argument in arguments],
+            cwd=ROOT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+            capture_output=capture,
+            env={**os.environ, "DOTNET_CLI_UI_LANGUAGE": "en", **(environment or {})},
+        )
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError(f"Timed out after {timeout}s: {arguments}") from error
     if result.returncode:
         raise RuntimeError(
-            f"Command failed ({result.returncode}): {arguments}\n{result.stdout or ''}"
+            f"Command failed ({result.returncode}): {arguments}\n"
+            f"{result.stdout or ''}{result.stderr or ''}"
         )
     return result.stdout
 
@@ -115,11 +143,17 @@ def evaluate_project(path, framework=None):
     return json.loads(command(arguments, capture=True))
 
 
-def discover_dotnet(results):
-    """Discover adjacent test projects by evaluated IsTestProject metadata."""
+def find_dotnet_projects():
+    """List each evaluated ``IsTestProject`` project once per target framework.
+
+    Raises:
+        ValueError: A project references the test SDK without
+            ``IsTestProject=true``, none is found, or ``ENGINE_VARIANTS`` names
+            a project that does not exist.
+    """
     projects = []
     for root in (ROOT / "dev", ROOT / "build"):
-        for path in first_party_files(root, "*.csproj"):
+        for path in first_party_files(root, "*.csproj", ROOT):
             data = evaluate_project(path)
             properties = data["Properties"]
             if properties["IsTestProject"].lower() != "true":
@@ -152,6 +186,18 @@ def discover_dotnet(results):
                 )
     if not projects:
         raise ValueError("No first-party .NET test projects discovered")
+    check_engine_variants(projects)
+    return projects
+
+
+def classify_dotnet(projects, results):
+    """Attach each project's tests, classified from source by the build catalog.
+
+    The C# classification rules live in ``build/Helpers/TestMetadata.cs``.
+
+    Raises:
+        ValueError: A project and framework has no classified test.
+    """
     source_list = results / "sources.json"
     catalog_path = results / "dotnet-catalog.json"
     source_list.write_text(
@@ -171,23 +217,17 @@ def discover_dotnet(results):
     command(
         [
             "dotnet",
-            "build",
+            "run",
+            "--project",
             ROOT / "build/Build.csproj",
             "-c",
             "Release",
-            "--nologo",
-            "-m:1",
-            "-nr:false",
-        ]
-    )
-    command(
-        [
-            "dotnet",
-            ROOT / "build/bin/Release/net10.0/pyRevit.Build.dll",
+            "--",
             "test-catalog",
             source_list,
             catalog_path,
-        ]
+        ],
+        environment={"MSBUILDDISABLENODEREUSE": "1"},
     )
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
     for project in projects:
@@ -203,11 +243,17 @@ def discover_dotnet(results):
 
 
 def discover_python():
-    """Inventory named Python tests without importing hosted suites."""
+    """Inventory named Python tests without importing hosted suites.
+
+    Note:
+        ``*_tests.py`` is the extensions' in-Revit suite convention and is only
+        searched there: under ``dev/`` it would match this runner and manual
+        scripts such as ``dfdb_tests.py``. Name every other suite ``test_*.py``.
+    """
     roots = (ROOT / "dev", ROOT / "pyrevitlib/pyrevit/unittests", ROOT / "extensions")
     paths = {
-        path for root in roots for path in first_party_files(root, "test_*.py")
-    } | set(first_party_files(ROOT / "extensions", "*_tests.py"))
+        path for root in roots for path in first_party_files(root, "test_*.py", ROOT)
+    } | set(first_party_files(ROOT / "extensions", "*_tests.py", ROOT))
     return [{"path": str(path), **python_metadata(path)} for path in sorted(paths)]
 
 
@@ -238,10 +284,26 @@ def locked_requirements(lock):
     packages = json.loads(Path(lock).read_text(encoding="utf-8"))["develop"]
     lines = []
     for name, package in packages.items():
+        if "version" not in package:
+            raise ValueError(f"Pipfile.lock develop entry {name} has no pinned version")
         marker = f" ; {package['markers']}" if package.get("markers") else ""
         hashes = "".join(f" --hash={value}" for value in package["hashes"])
         lines.append(f"{name}{package['version']}{marker}{hashes}\n")
     return "".join(lines)
+
+
+def check_engine_variants(projects):
+    """Reject ``ENGINE_VARIANTS`` keys that name no discovered project.
+
+    A renamed project would otherwise run once on the default engine only.
+    """
+    unknown = set(ENGINE_VARIANTS) - {
+        Path(project["path"]).stem for project in projects
+    }
+    if unknown:
+        raise ValueError(
+            f"ENGINE_VARIANTS names no discovered test project: {sorted(unknown)}"
+        )
 
 
 def engine_variants(project):
@@ -274,8 +336,14 @@ def run_dotnet(project, results, engine=None):
 
     Each engine variant reports to its own directory so one run cannot
     overwrite another's evidence; their coverage merges into one module.
+
+    Invariant:
+        The run executes at least the host-free methods the source catalog
+        classified, so drift between catalog parsing and the runtime trait
+        filter fails instead of dropping tests. Test cases only add to it.
     """
-    if not any(test["Environment"] == "HostFree" for test in project["tests"]):
+    cataloged = sum(test["Environment"] == "HostFree" for test in project["tests"])
+    if not cataloged:
         return None
     suite = Path(project["path"]).stem
     directory = (
@@ -288,7 +356,7 @@ def run_dotnet(project, results, engine=None):
         "</RunConfiguration><DataCollectionRunSettings><DataCollectors>"
         '<DataCollector friendlyName="XPlat Code Coverage"><Configuration>'
         "<Format>cobertura,json</Format><Include>[pyRevit*]*,[Build*]*</Include>"
-        "<ExcludeByFile>**/dev/modules/**,**/obj/**,**/tests/**</ExcludeByFile>"
+        f"<ExcludeByFile>{','.join(COVERAGE_EXCLUDED_FILES)}</ExcludeByFile>"
         "<IncludeTestAssembly>true</IncludeTestAssembly>"
         "</Configuration></DataCollector></DataCollectors>"
         "</DataCollectionRunSettings></RunSettings>",
@@ -325,9 +393,14 @@ def run_dotnet(project, results, engine=None):
         ]
     )
     counters = validate_trx(directory / "results.trx")
-    reports = list(directory.glob("*/coverage.cobertura.xml"))
-    if not reports:
-        raise ValueError(f"Missing coverage report: {directory}")
+    if int(counters["executed"]) < cataloged:
+        raise ValueError(
+            f"{suite} {project['framework']}: executed {counters['executed']} tests,"
+            f" fewer than the {cataloged} host-free tests in the catalog"
+        )
+    for report in ("coverage.cobertura.xml", "coverage.json"):
+        if not list(directory.glob(f"*/{report}")):
+            raise ValueError(f"Missing {report} coverage report: {directory}")
     return {
         "project": project["path"],
         "framework": project["framework"],
@@ -337,15 +410,22 @@ def run_dotnet(project, results, engine=None):
 
 
 def check_baselines(measured, baseline):
-    """Enforce separate line and branch floors for each measured module."""
+    """Enforce separate line and branch floors for each measured module.
+
+    Every failing module and kind is reported in one error.
+    """
+    failures = []
     for module, expected in baseline.items():
         if module not in measured:
-            raise ValueError(f"Missing coverage for {module}")
+            failures.append(f"Missing coverage for {module}")
+            continue
         for kind in ("line", "branch"):
-            if measured[module][kind] + 0.000001 < expected[kind]:
-                raise ValueError(
+            if measured[module][kind] + COVERAGE_TOLERANCE < expected[kind]:
+                failures.append(
                     f"Coverage decreased: {module} {kind}: {measured[module][kind]} < {expected[kind]}"
                 )
+    if failures:
+        raise ValueError("\n".join(failures))
 
 
 def collect_coverage(results):
@@ -361,8 +441,8 @@ def collect_coverage(results):
                 source = Path(filename)
                 if not source.is_relative_to(ROOT):
                     continue
-                relative = source.relative_to(ROOT).as_posix()
-                if relative.startswith("dev/modules/") or "/tests/" in relative:
+                relative = PurePosixPath(source.relative_to(ROOT).as_posix())
+                if any(map(relative.full_match, COVERAGE_EXCLUDED_FILES)):
                     continue
                 lines = modules.setdefault(module, {})
                 document = os.path.normcase(str(source))
@@ -420,6 +500,97 @@ def collect_coverage(results):
     return measured
 
 
+def updated_baselines(baseline, measured, language):
+    """Replace the selected language's floors with this run's exact measurements.
+
+    Modules of that language missing from the run are dropped, so removing or
+    renaming a module needs no manual edit; other languages are kept as is.
+    """
+    kept = {
+        module: floors
+        for module, floors in baseline.items()
+        if language != "all" and not module.startswith(language)
+    }
+    return {**kept, **measured}
+
+
+def run_python(suites, directory):
+    """Run the inventoried host-free Python suites with strict skips and coverage.
+
+    Raises:
+        ValueError: No host-free suite is inventoried or pytest selected zero
+            tests, so an empty selection never passes.
+    """
+    files = [suite["path"] for suite in suites if suite["Environment"] == "HostFree"]
+    if not files:
+        raise ValueError("No host-free Python suites discovered")
+    directory.mkdir(parents=True, exist_ok=True)
+    command(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            *files,
+            "--strict-markers",
+            "-o",
+            f"cache_dir={directory / 'cache'}",
+            f"--junitxml={directory / 'results.xml'}",
+            "--cov",
+            "--cov-branch",
+            f"--cov-report=json:{directory / 'coverage.json'}",
+            f"--cov-report=xml:{directory / 'coverage.xml'}",
+            "--cov-report=term",
+        ],
+        environment={STRICT_SKIPS_ENV: "1"},
+    )
+    root = ET.parse(directory / "results.xml").getroot()
+    if sum(int(suite.get("tests", "0")) for suite in root.iter("testsuite")) == 0:
+        raise ValueError("Python run selected zero tests")
+
+
+def report_coverage(results, measured, language):
+    """Write the run's coverage summary and, in CI, the job step summary."""
+    (results / "coverage-summary.json").write_text(
+        json.dumps(measured, indent=2, sort_keys=True), encoding="utf-8"
+    )
+    if "GITHUB_STEP_SUMMARY" in os.environ:
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as report:
+            report.write(
+                f"\n### {language} test coverage\n\n| Module | Lines | Branches |\n|---|---:|---:|\n"
+            )
+            for module, values in sorted(measured.items()):
+                report.write(
+                    f"| {module} | {values['line']:.1%} | {values['branch']:.1%} |\n"
+                )
+
+
+def gate_coverage(measured, baseline, language, update):
+    """Enforce the selected language's floors, or return replacement floors.
+
+    Returns:
+        With ``update``, the baselines to write, unchecked; otherwise ``None``.
+
+    Raises:
+        ValueError: A floor of the selected language regressed or lost its
+            module, or any measured module has no reviewed baseline.
+    """
+    if update:
+        return updated_baselines(baseline, measured, language)
+    check_baselines(
+        measured,
+        {
+            module: floors
+            for module, floors in baseline.items()
+            if language == "all" or module.startswith(language)
+        },
+    )
+    if set(measured) - set(baseline):
+        raise ValueError(
+            "New coverage modules need reviewed baselines: run --update-baselines"
+        )
+    return None
+
+
 def main():
     """Run the same selection locally and in CI; list local Revit suites only."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -453,7 +624,7 @@ def main():
     results.mkdir(parents=True, exist_ok=True)
     inventory = {"python": discover_python(), "dotnet": []}
     if options.language != "python":
-        inventory["dotnet"] = discover_dotnet(results)
+        inventory["dotnet"] = classify_dotnet(find_dotnet_projects(), results)
     (results / "inventory.json").write_text(
         json.dumps(inventory, indent=2), encoding="utf-8"
     )
@@ -463,36 +634,7 @@ def main():
     if options.language != "python":
         require_built_product()
     if options.language != "dotnet":
-        directory = results / "python"
-        directory.mkdir(exist_ok=True)
-        files = [
-            suite["path"]
-            for suite in inventory["python"]
-            if suite["Environment"] == "HostFree"
-        ]
-        if not files:
-            raise ValueError("No host-free Python suites discovered")
-        command(
-            [
-                sys.executable,
-                "-m",
-                "pytest",
-                *files,
-                "--strict-markers",
-                "-o",
-                f"cache_dir={directory / 'cache'}",
-                f"--junitxml={directory / 'results.xml'}",
-                "--cov",
-                "--cov-branch",
-                f"--cov-report=json:{directory / 'coverage.json'}",
-                f"--cov-report=xml:{directory / 'coverage.xml'}",
-                "--cov-report=term",
-            ],
-            environment={STRICT_SKIPS_ENV: "1"},
-        )
-        root = ET.parse(directory / "results.xml").getroot()
-        if sum(int(suite.get("tests", "0")) for suite in root.iter("testsuite")) == 0:
-            raise ValueError("Python run selected zero tests")
+        run_python(inventory["python"], results / "python")
     summary = []
     for project in inventory["dotnet"]:
         for engine in engine_variants(project):
@@ -504,34 +646,14 @@ def main():
     )
     measured = collect_coverage(results)
     baseline = json.loads(BASELINES.read_text()) if BASELINES.exists() else {}
-    selected = {
-        key: value
-        for key, value in baseline.items()
-        if options.language == "all" or key.startswith(options.language)
-    }
-    (results / "coverage-summary.json").write_text(
-        json.dumps(measured, indent=2, sort_keys=True), encoding="utf-8"
+    report_coverage(results, measured, options.language)
+    updated = gate_coverage(
+        measured, baseline, options.language, options.update_baselines
     )
-    if "GITHUB_STEP_SUMMARY" in os.environ:
-        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as report:
-            report.write(
-                f"\n### {options.language} test coverage\n\n| Module | Lines | Branches |\n|---|---:|---:|\n"
-            )
-            for module, values in sorted(measured.items()):
-                report.write(
-                    f"| {module} | {values['line']:.1%} | {values['branch']:.1%} |\n"
-                )
-    if not options.update_baselines:
-        check_baselines(measured, selected)
-    if options.update_baselines:
-        baseline.update(measured)
+    if updated is not None:
         BASELINES.parent.mkdir(parents=True, exist_ok=True)
         BASELINES.write_text(
-            json.dumps(baseline, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
-    elif set(measured) - set(baseline):
-        raise ValueError(
-            "New coverage modules need reviewed baselines: run --update-baselines"
+            json.dumps(updated, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
 
 

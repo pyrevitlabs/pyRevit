@@ -573,6 +573,7 @@ namespace pyRevitExtensionParser
             }
             // Read extension.json for additional templates and rocket_mode_compatible
             bool rocketModeCompatible = false;
+            string declaredPythonEngine = null;
             List<string> authUsers = null;
             List<string> authGroups = null;
             string manifestName = null;
@@ -608,6 +609,8 @@ namespace pyRevitExtensionParser
                             extensionTemplates["author"] = author;
                         }
                     }
+
+                    declaredPythonEngine = ReadDeclaredPythonEngine(json["engine"], extensionJsonPath);
 
                     // Read rocket_mode_compatible setting
                     var rocketModeValue = json["rocket_mode_compatible"]?.ToString();
@@ -663,6 +666,7 @@ namespace pyRevitExtensionParser
                 Engine = parsedBundle?.Engine,
                 Config = extConfig,
                 RocketModeCompatible = rocketModeCompatible,
+                DeclaredPythonEngine = declaredPythonEngine,
                 AuthorizedUsers = authUsers,
                 AuthorizedGroups = authGroups,
                 AuthDefinitionUnreadable = authDefinitionUnreadable
@@ -671,6 +675,30 @@ namespace pyRevitExtensionParser
             ReorderByLayout(parsedExtension, parsedExtension, null);
 
             return parsedExtension;
+        }
+
+        /// <summary>
+        /// Reads the extension-level Python engine from <c>"engine": "cpython"</c> or the
+        /// bundle-style <c>"engine": {"type": "cpython"}</c>; unsupported values, including
+        /// a non-string <c>type</c>, declare nothing and are logged as a warning, matching the
+        /// Python loader. A mapping without <c>type</c> declares nothing silently.
+        /// </summary>
+        private static string ReadDeclaredPythonEngine(JToken engine, string manifestPath)
+        {
+            var declared = engine is JObject engineObject ? engineObject["type"] : engine;
+            if (declared == null || declared.Type == JTokenType.Null)
+                return null;
+            if (declared.Type != JTokenType.String)
+            {
+                LogWarning($"Ignoring unsupported extension Python engine declaration: {declared} ({manifestPath})");
+                return null;
+            }
+            var normalized = declared.ToString().Trim().ToLowerInvariant();
+            if (normalized == ParsedExtension.CPythonEngineDeclaration
+                || normalized == ParsedExtension.IronPythonEngineDeclaration)
+                return normalized;
+            LogWarning($"Ignoring unsupported extension Python engine declaration: {declared} ({manifestPath})");
+            return null;
         }
 
         /// <summary>

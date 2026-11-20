@@ -1,5 +1,11 @@
 # Testing infrastructure
 
+| Test kind | Put it in |
+|---|---|
+| API-free Python tests | `python/tooling/` (developer tools, runner) or `python/library/` (library contracts) |
+| Python tests hosted in Revit | `pyrevitlib/pyrevit/unittests/` |
+| Extension bundle tests | `*_tests.py` under `extensions/` |
+
 `run_tests.py` owns shared C#/Python discovery and CI selection. `python/tooling/` verifies developer tools and the runner; `python/library/` verifies API-free Python library contracts. The separate `dev/checks/` and `dev/hooks/` directories own validators and formatting hooks.
 
 From the repository root:
@@ -9,7 +15,11 @@ python dev/tests/run_tests.py --list
 python dev/tests/run_tests.py
 ```
 
-See `docs/testing.md` for policy and `python/README.md` for Python fixture boundaries.
+See `docs/testing.md` for policy and `python/README.md` for Python fixture boundaries. C# test classification rules live in `build/Helpers/TestMetadata.cs`.
+
+`revit/run_dynamo.py` is a journal entry point that validates Dynamo execution in a disposable Revit process; run it with `pyrevit run <absolute-script-path> --revit=<year> --purge`, never in an open user session. Results go to `.test-results/dynamo/`.
+
+`pipenv run test` is the documented path. The narrow Pipfile scripts `test-py3-compat`, `test-config-api`, `test-automation-markers` and `test-library` call pytest directly for focused runs: they do not enforce strict skips, metadata validation or coverage, and are not CI equivalents.
 
 ## Coverage and reporting policy
 
@@ -17,9 +27,9 @@ Owner: repository testing maintainers; suite owners review changes to their modu
 
 `coverage-baselines.json` records measured line and branch floors per Python source module or C# assembly/framework. The shared runner merges exact line hits and branch identities across suites, excludes test/vendor/generated source, and distinguishes linked production source from deployed assemblies. Missing established modules, regressions, and new measured modules without a baseline fail normal runs.
 
-From the repository root, use `python dev/tests/run_tests.py --update-baselines` only after reviewing the reports. This explicit update can lower a floor; include a reason and follow-up for every reduction. It does not grant an automatic exception to the policy. Scope and denominator changes require review as well as percentage changes. Reports and inventory live in a unique `.test-results/<run>/` directory, so old reports cannot satisfy a new run.
+From the repository root, use `python dev/tests/run_tests.py --update-baselines` only after reviewing the reports. It replaces every floor of the selected `--language` with this run's exact measurements, so removed or renamed modules drop out. Floors are strict on purpose: any decrease beyond float rounding fails. This explicit update can lower a floor; include a reason and follow-up for every reduction. It does not grant an automatic exception to the policy. Scope and denominator changes require review as well as percentage changes. Reports and inventory live in a unique `.test-results/<run>/` directory, so old reports cannot satisfy a new run.
 
-Python reporting scope is declared in `pyproject.toml`. C# collectors include instrumented first-party code; assemblies never loaded by tests need dedicated suites and do not have measured coverage yet. No repository-wide percentage or performance budget is implied. See `docs/testing.md` for full rules.
+Python reporting scope is declared in `pyproject.toml`. Measuring a new Python module takes an entry in its `[tool.coverage.report] include` list, under a `[tool.coverage.run] source` root, and a reviewed baseline entry in `coverage-baselines.json`; the runner reads both, so it needs no change. C# collectors include instrumented first-party code; assemblies never loaded by tests need dedicated suites and do not have measured coverage yet. No repository-wide percentage or performance budget is implied. See `docs/testing.md` for full rules.
 
 ## Initial baseline calibration
 
@@ -29,4 +39,6 @@ The clean runner exercises fewer installed-product, extension-root, and configur
 
 The C# suite layout cleanup also corrected Windows document identity in coverage aggregation. Differently cased MSBuild references to the same source file must contribute one denominator, not two. The `pyRevitLabs.PyRevit` baselines were recomputed from those same initial local/CI reports with normalized Windows paths: 2,046 lines per framework, replacing the duplicated 4,092-line denominator. No production source was removed. An explicit engine-version fixture and script-extension contracts preserve paths previously covered incidentally by the combined parser/runtime project.
 
-Merging `develop` linked more sources into two test projects. `pyRevitDoctor.Tests` now measures the purge sources from #3992, 294 lines instead of 15, so its floor moved from 100% to the measured 80.95% line and 84.83% branch. `pyRevitLabs.PyRevit.Runtime.Tests` gained floors for the loader sources linked by the moved checkbox and bundle-isolation tests (7.69% line, 1.95% branch). Follow-up: add host-free tests for the doctor purge paths and the loader executors to raise both floors.
+Merging `develop` linked more sources into two test projects. `pyRevitDoctor.Tests` now measures the purge sources, 294 lines instead of 15, so its floor moved from 100% to the measured 80.95% line and 84.66% branch (the lower of the local and hosted-runner measurements, because the hosted runner sees two fewer branches). `pyRevitLabs.PyRevit.Runtime.Tests` gained floors for the loader sources linked by the moved checkbox and bundle-isolation tests (7.69% line, 1.95% branch). Follow-up: add host-free tests for the doctor purge paths and the loader executors to raise both floors.
+
+`pyRevitLabs.PyRevit.Forms.Binding` is the Python binding assembly behind the forms suites. Its floors are its first local measurement: 80.53% line on net48, 77.67% line on net8.0-windows and net10.0-windows, and 85.59% branch on all three.

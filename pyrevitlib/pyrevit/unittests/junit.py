@@ -26,9 +26,33 @@ def _to_text(value):
         return str(value)
 
 
+def _serialize(element):
+    """Serializes an element to text without an XML declaration.
+
+    Note: Python 2.7 rejects `encoding="unicode"`; lower-case "utf-8" is the one
+    encoding both 2.7 and 3 serialize without adding a declaration.
+    """
+    return ElementTree.tostring(element, encoding="utf-8").decode("utf-8")
+
+
 def _format_seconds(seconds):
     """Formats a duration as JUnit decimal seconds, clamping values consumers reject."""
     return "{0:.3f}".format(max(0.0, float(seconds)))
+
+
+def _replace(source, destination):
+    """Moves a finished file over the destination.
+
+    Note: IronPython 2.7 has no `os.replace` and its `os.rename` refuses an existing
+    destination, so there the old file is removed first. A crash between the two
+    steps loses the old report but never leaves a truncated one.
+    """
+    if hasattr(os, "replace"):
+        os.replace(source, destination)
+        return
+    if os.path.exists(destination):
+        os.remove(destination)
+    os.rename(source, destination)
 
 
 def report_path():
@@ -155,6 +179,10 @@ class JUnitReport(object):
         Returns:
             str: XML document with an XML declaration.
         """
+        declaration = '<?xml version="1.0" encoding="utf-8"?>'
+        return declaration + _serialize(self._testsuite())
+
+    def _testsuite(self):
         testsuite = ElementTree.Element("testsuite")
         testsuite.set("name", self._name)
         testsuite.set("tests", str(len(self._test_cases)))
@@ -166,9 +194,7 @@ class JUnitReport(object):
 
         for case in self._test_cases:
             self._append_case(testsuite, case)
-
-        declaration = '<?xml version="1.0" encoding="utf-8"?>'
-        return declaration + ElementTree.tostring(testsuite, encoding="unicode")
+        return testsuite
 
     def _count(self, kind):
         """Number of recorded cases of one kind."""
@@ -212,6 +238,10 @@ class JUnitReport(object):
 
         Returns:
             str: the path written, or None when reporting is off.
+
+        Raises:
+            ValueError: the existing file is not a JUnit report. It is left in place,
+                since starting over would drop the suites already reported to it.
         """
         if path is None:
             path = report_path()
@@ -222,10 +252,17 @@ class JUnitReport(object):
         if directory and not os.path.isdir(directory):
             os.makedirs(directory)
 
-        current = ElementTree.fromstring(self.to_xml())
+        current = self._testsuite()
         suites = []
         if os.path.isfile(path):
-            previous = ElementTree.parse(path).getroot()
+            try:
+                previous = ElementTree.parse(path).getroot()
+            except ElementTree.ParseError as error:
+                raise ValueError(
+                    "JUnit report {0} is not valid XML ({1}); delete it and rerun".format(
+                        path, error
+                    )
+                )
             if previous.tag == "testsuite":
                 suites = [previous]
             elif previous.tag == "testsuites":
@@ -245,9 +282,11 @@ class JUnitReport(object):
                     str(sum(int(suite.get(attribute, "0")) for suite in suites)),
                 )
 
-        with io.open(path, "w", encoding="utf-8") as report_file:
+        partial_path = path + ".tmp"
+        with io.open(partial_path, "w", encoding="utf-8") as report_file:
             report_file.write(_to_text('<?xml version="1.0" encoding="utf-8"?>'))
-            report_file.write(ElementTree.tostring(root, encoding="unicode"))
+            report_file.write(_serialize(root))
             report_file.write(_to_text("\n"))
+        _replace(partial_path, path)
 
         return path

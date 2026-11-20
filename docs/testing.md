@@ -22,7 +22,7 @@ CI uses the same runner: Python checks, product build, then C# tests. Product bu
 
 ```mermaid
 flowchart LR
-    Runner["run_tests.py<br/>CI and local API-free execution"] --> Python["Python<br/>dev/tests/python/**/test_*.py"]
+    Runner["run_tests.py<br/>CI and local API-free execution"] --> Python["Python<br/>test_*.py under dev/, pyrevitlib/pyrevit/unittests/, extensions/<br/>*_tests.py under extensions/"]
     Runner --> Loader
     Runner --> Runtime
     Runner --> Labs
@@ -54,13 +54,16 @@ flowchart LR
         EnvVars["pyRevitLabs.PyRevit.Runtime.EnvVars.Tests"]
         Renderer["pyRevitLabs.PyRevit.Renderer.Tests"]
         Shell["pyRevitLabs.PyRevit.Shell.Tests"]
+        Forms["pyRevitLabs.PyRevit.Forms.Tests"]
+        FormsBinding["pyRevitLabs.PyRevit.Forms.Binding.Tests"]
+        FormsIronPython["pyRevitLabs.PyRevit.Forms.IronPython.Tests"]
     end
 
     Local["Local Revit validation<br/>Outside CI"] --> Hosted["Python library and agent suites<br/>DevTools commands"]
     Local --> Fixtures["Revit-tagged C# fixtures<br/>Fixture-specific host setup"]
 ```
 
-The implemented CI selection has **20 C# projects across 31 runs** (30 project/framework runs plus the shell suite's second IronPython engine) and the API-free Python suite. The legacy mixed suite is split by owner with its former MSTest cases converted to NUnit. Local validation on 2026-11-07, before `pyRevitDoctor.Tests` and later develop suites were merged: **2,379 C# cases and 453 Python cases, zero skips**. Counts include each framework and engine run. Local Revit results are separate; a general C# in-Revit runner is not implemented.
+The implemented CI selection has **@PROJECTS@ C# projects across @RUNS@ runs** (@PFRUNS@ project/framework runs plus a second IronPython engine for the shell and IronPython forms suites) and the API-free Python suite. The legacy mixed suite is split by owner with its former MSTest cases converted to NUnit. Local validation on 2026-11-20: **@CSHARP@ C# cases and @PYTHON@ Python cases, zero skips**. Counts include each framework and engine run. The three forms suites open real WPF windows, so they need an interactive desktop session; the hosted Windows runner provides one. Local Revit results are separate; a general C# in-Revit runner is not implemented.
 
 Level describes the test; Environment determines where it runs:
 
@@ -121,8 +124,8 @@ Every automated test needs literal Environment and Level metadata. Class/module 
 Use `Revit` for any Revit dependency and one of the four levels above. A method cannot downgrade a Revit fixture to HostFree. A C# category must be an Environment, a Level or the `Regression` purpose; any other value, such as a misspelled `Revti`, fails discovery instead of silently inheriting the class defaults. HostFree Python modules must be safe to import; isolate API-dependent imports and fixture initialization. Hosted `unittest` modules use plain assignments without importing pytest. API-free pytest cases can override defaults with `@pytest.mark.environment(...)` and `@pytest.mark.level(...)`.
 
 - **C#:** evaluated `IsTestProject=true` projects under `dev/` and `build/`, all declared frameworks, and native discovery. No class/project allowlist.
-- **Python:** `test_*.py` under first-party `dev/`, `pyrevitlib/pyrevit/unittests/`, and `extensions/`, plus `*_tests.py` under `extensions/`, each module listed once. Discovery skips only `dev/modules/`, `.git`, `.venv`, `site-packages`, and `bin`/`obj` beside a project file; any other folder, such as `lib/modules`, is first-party. Metadata is read before imports; pytest runs eligible `unittest` cases too.
-- **Fail closed:** missing/invalid metadata, missing reports, empty selected suites/frameworks, and skipped/expected-failure HostFree cases fail validation. Every explicitly selected Python module needs eligible cases, even when its neighbors pass. Revit cases are excluded before fixtures run. The skip and expected-failure rejection applies when the runner invokes pytest (it sets `PYREVIT_STRICT_SKIPS`); ad hoc `pytest` runs keep normal skip semantics.
+- **Python:** `test_*.py` under first-party `dev/`, `pyrevitlib/pyrevit/unittests/`, and `extensions/`, plus `*_tests.py` under `extensions/` only (the extensions' in-Revit suite convention; elsewhere it would match the runner and manual scripts), each module listed once. Discovery skips only `dev/modules/`, `.git`, `.venv`, `site-packages`, and `bin`/`obj` beside a project file; any other folder, such as `lib/modules`, is first-party. Metadata is read before imports; pytest runs eligible `unittest` cases too.
+- **Fail closed:** missing/invalid metadata, missing reports, empty selected suites/frameworks, a C# run executing fewer tests than its cataloged HostFree methods, and skipped/expected-failure HostFree cases fail validation. Every explicitly selected Python module needs eligible cases, even when its neighbors pass. Revit cases are excluded before fixtures run. The skip and expected-failure rejection applies when the runner invokes pytest (it sets `PYREVIT_STRICT_SKIPS`); ad hoc `pytest` runs keep normal skip semantics.
 
 Adding a test or adjacent project must not require changing a central list. Network/elevation requirements must be provisioned or isolated, not used to silently exempt HostFree tests from CI.
 
@@ -159,7 +162,7 @@ pyrevit clones add dev <path-to-repo>
 pyrevit attach dev default --installed
 ```
 
-In Revit, use DevTools **Debug > Unit Tests > Run All Tests**, a specific library module, or Agent Tests. `Run All Tests` skips the opt-in `test_revit_api_catalog`; run it with **Revit API Catalog Tests**. Record required models/elements, engine capabilities and actual skips. IronPython 3 needs a separate clone attachment.
+In Revit, use DevTools **Debug > Unit Tests > Run All Tests**, a specific library module, or Agent Tests. `Run All Tests` runs every `test_` module in `pyrevitlib/pyrevit/unittests` whatever its `TEST_LEVEL`, except the opt-in modules that have their own entry point: `test_revit_api_catalog` (**Revit API Catalog Tests**), `test_config_roundtrip` (**Config Module Tests**), `test_create_view_helpers` (**Create View Helpers Tests**), `test_dynamo_execution` (**Dynamo Module Tests**), `test_ribbon_control_ids` (**Ribbon Control Id Tests**) and `test_forms_parity` (**Debug > Forms Tests**). Record required models/elements, engine capabilities and actual skips. IronPython 3 needs a separate clone attachment.
 
 Set `PYREVIT_TEST_JUNIT_PATH` before launching Revit for XML evidence. Use a fresh destination per year/engine/run. Module results aggregate; rerunning a module replaces its result. Requested report-write failures and unexpected successes must fail the command, including on IronPython 2.7. Record the commit, Revit year, engine, fixture, command and outcome.
 

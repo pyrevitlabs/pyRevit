@@ -292,6 +292,9 @@ namespace pyRevitCLI {
                         else
                             logger.Debug("Failed getting latest release list OR no CLI releases.");
                     }
+                    catch (pyRevitGithubApiException githubEx) {
+                        Console.WriteLine(string.Format("Could not check for updates. {0}", githubEx.Message));
+                    }
                     catch (Exception getRelEx) {
                         Console.WriteLine(getRelEx.Message);
                     }
