@@ -139,8 +139,14 @@ def evaluate_project(path, framework=None):
     return json.loads(command(arguments, capture=True))
 
 
-def discover_dotnet(results):
-    """Discover adjacent test projects by evaluated IsTestProject metadata."""
+def find_dotnet_projects():
+    """List each evaluated ``IsTestProject`` project once per target framework.
+
+    Raises:
+        ValueError: A project references the test SDK without
+            ``IsTestProject=true``, none is found, or ``ENGINE_VARIANTS`` names
+            a project that does not exist.
+    """
     projects = []
     for root in (ROOT / "dev", ROOT / "build"):
         for path in first_party_files(root, "*.csproj"):
@@ -177,6 +183,17 @@ def discover_dotnet(results):
     if not projects:
         raise ValueError("No first-party .NET test projects discovered")
     check_engine_variants(projects)
+    return projects
+
+
+def classify_dotnet(projects, results):
+    """Attach each project's tests, classified from source by the build catalog.
+
+    The C# classification rules live in ``build/Helpers/TestMetadata.cs``.
+
+    Raises:
+        ValueError: A project and framework has no classified test.
+    """
     source_list = results / "sources.json"
     catalog_path = results / "dotnet-catalog.json"
     source_list.write_text(
@@ -609,7 +626,7 @@ def main():
     results.mkdir(parents=True, exist_ok=True)
     inventory = {"python": discover_python(), "dotnet": []}
     if options.language != "python":
-        inventory["dotnet"] = discover_dotnet(results)
+        inventory["dotnet"] = classify_dotnet(find_dotnet_projects(), results)
     (results / "inventory.json").write_text(
         json.dumps(inventory, indent=2), encoding="utf-8"
     )
