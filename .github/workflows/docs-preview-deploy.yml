@@ -34,6 +34,7 @@ jobs:
     concurrency:
       group: docs-preview-deploy-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
       cancel-in-progress: false
+      queue: max
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -45,8 +46,8 @@ jobs:
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          artifact="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[].name' \
-                        | grep -E '^docs-preview-site-pr-[0-9]+$' | head -n 1 || true)"
+          artifact_names="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[].name')"
+          artifact="$(grep -E -m 1 '^docs-preview-site-pr-[0-9]+$' <<< "$artifact_names" || true)"
           if [[ -z "$artifact" ]]; then
             echo "::notice::The build produced no docs-preview-site-pr-<number> artifact. Skipping."
             exit 0
@@ -172,6 +173,7 @@ jobs:
     concurrency:
       group: docs-preview-deploy-${{ github.event.pull_request.head.repo.full_name }}-${{ github.event.pull_request.head.ref }}
       cancel-in-progress: false
+      queue: max
     env:
       GH_TOKEN: ${{ github.token }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
