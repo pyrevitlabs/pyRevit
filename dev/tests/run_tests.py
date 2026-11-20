@@ -8,7 +8,7 @@ import argparse
 import ast
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import subprocess
 import sys
 import tempfile
@@ -26,6 +26,12 @@ STRICT_SKIPS_ENV = "PYREVIT_STRICT_SKIPS"
 BASELINES = ROOT / "dev/tests/coverage-baselines.json"
 COVERAGE_TOLERANCE = 0.000001
 TRX_NS = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
+COVERAGE_EXCLUDED_FILES = (
+    "**/dev/modules/**",
+    "**/obj/**",
+    "**/tests/**",
+    "**/pyRevitLabs.UnitTests/**",
+)
 ENGINE_VARIANTS = {
     "pyRevitLabs.PyRevit.Shell.Tests": ("IPY2712PR", "IPY342"),
     "pyRevitLabs.PyRevit.Forms.IronPython.Tests": ("IPY2712PR", "IPY342"),
@@ -320,7 +326,7 @@ def run_dotnet(project, results, engine=None):
         "</RunConfiguration><DataCollectionRunSettings><DataCollectors>"
         '<DataCollector friendlyName="XPlat Code Coverage"><Configuration>'
         "<Format>cobertura,json</Format><Include>[pyRevit*]*,[Build*]*</Include>"
-        "<ExcludeByFile>**/dev/modules/**,**/obj/**,**/tests/**,**/pyRevitLabs.UnitTests/**</ExcludeByFile>"
+        f"<ExcludeByFile>{','.join(COVERAGE_EXCLUDED_FILES)}</ExcludeByFile>"
         "<IncludeTestAssembly>true</IncludeTestAssembly>"
         "</Configuration></DataCollector></DataCollectors>"
         "</DataCollectionRunSettings></RunSettings>",
@@ -405,12 +411,8 @@ def collect_coverage(results):
                 source = Path(filename)
                 if not source.is_relative_to(ROOT):
                     continue
-                relative = source.relative_to(ROOT).as_posix()
-                if (
-                    relative.startswith("dev/modules/")
-                    or "/tests/" in relative
-                    or "/pyRevitLabs.UnitTests/" in relative
-                ):
+                relative = PurePosixPath(source.relative_to(ROOT).as_posix())
+                if any(map(relative.full_match, COVERAGE_EXCLUDED_FILES)):
                     continue
                 lines = modules.setdefault(module, {})
                 document = os.path.normcase(str(source))

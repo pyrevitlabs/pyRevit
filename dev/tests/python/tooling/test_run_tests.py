@@ -416,6 +416,33 @@ class SelectionTests(unittest.TestCase):
             self.assertEqual(1, measured["dotnet/Example/net8.0"]["branch"])
             self.assertEqual(2, measured["dotnet/Example/net8.0"]["branches"])
 
+    def test_excluded_coverage_files_are_shared_with_the_collector(self):
+        """Files excluded from instrumentation are also excluded from aggregation."""
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory)
+            path = results / "project/net8.0/run/coverage.json"
+            path.parent.mkdir(parents=True)
+            method = {"Example": {"Method": {"Lines": {"1": 1}, "Branches": []}}}
+            path.write_text(
+                json.dumps(
+                    {
+                        "Example.dll": {
+                            str(run_tests.ROOT / relative): method
+                            for relative in (
+                                "dev/a/obj/Generated.cs",
+                                "dev/a/tests/Fixture.cs",
+                                "dev/pyRevitLabs.UnitTests/Old.cs",
+                                "dev/a/Product.cs",
+                            )
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                1, run_tests.collect_coverage(results)["dotnet/Example/net8.0"]["lines"]
+            )
+
     def test_vendored_sources_never_count_as_product_coverage(self):
         """Referenced dependencies stay out of first-party module baselines."""
         with tempfile.TemporaryDirectory() as directory:
