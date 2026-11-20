@@ -42,6 +42,52 @@ class FormatEngineVersionTests(unittest.TestCase):
         self.assertEqual("3.4.2", self.format("3.4.2"))
         self.assertEqual("2.7.12", self.format("2.7.12.0"))
 
+    def test_missing_or_unreadable_versions_are_unknown(self):
+        for code in ("0", "", None, "abc"):
+            self.assertIsNone(self.format(code), code)
+
+
+LOCALE = {
+    "pyRevit.Engine": "Running on IronPython {} (cpython {})",
+    "pyRevit.Engine.CPython": "Running on cpython {}",
+}
+
+
+def _engine_text(attachment=None, env_code=None, ironpy=False):
+    user_config = types.SimpleNamespace(get_current_attachment=lambda: attachment)
+    envvars = types.SimpleNamespace(
+        IPYVERSION_ENVVAR="PYREVIT_IPYVERSION",
+        get_pyrevit_env_var=lambda name: env_code,
+    )
+    namespace = _load_functions(
+        sys=types.SimpleNamespace(version="2.7.12 (2.7.12.1000)"),
+        IRONPY=ironpy,
+        user_config=user_config,
+        envvars=envvars,
+        logger=types.SimpleNamespace(debug=lambda *args: None),
+    )
+    return namespace["_engine_text"](LOCALE.get, "3.12.3")
+
+
+class EngineTextTests(unittest.TestCase):
+    """The engine line names IronPython only when its version is known."""
+
+    def test_running_on_ironpython_shows_the_interpreter_version(self):
+        self.assertEqual(
+            "Running on IronPython 2.7.12 (cpython 3.12.3)",
+            _engine_text(ironpy=True),
+        )
+
+    def test_unknown_ironpython_version_is_left_out(self):
+        self.assertEqual("Running on cpython 3.12.3", _engine_text(env_code="0"))
+        self.assertEqual("Running on cpython 3.12.3", _engine_text())
+
+    def test_env_var_version_is_shown_without_attachment(self):
+        self.assertEqual(
+            "Running on IronPython 2.7.12 (cpython 3.12.3)",
+            _engine_text(env_code="2712"),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

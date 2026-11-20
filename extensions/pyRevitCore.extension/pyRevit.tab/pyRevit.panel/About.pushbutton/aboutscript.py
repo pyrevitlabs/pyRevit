@@ -21,7 +21,7 @@ def _format_engine_version(code):
         return ".".join(parts[:3])
     if code.isdigit() and len(code) >= 3:
         return ".".join([code[0], code[1], code[2:]])
-    return "unknown"
+    return None
 
 
 def _attached_ironpython_code():
@@ -38,6 +38,15 @@ def _ironpython_version():
     if IRONPY:
         return sys.version.split("(")[0].strip()
     return _format_engine_version(_attached_ironpython_code())
+
+
+def _engine_text(get_locale_string, cpython_version):
+    ironpython_version = _ironpython_version()
+    if ironpython_version:
+        return get_locale_string("pyRevit.Engine").format(
+            ironpython_version, cpython_version
+        )
+    return get_locale_string("pyRevit.Engine.CPython").format(cpython_version)
 
 
 class AboutWindow(forms.WPFWindow):
@@ -82,8 +91,8 @@ class AboutWindow(forms.WPFWindow):
         self.pyrevit_deploy.Text = "{} deployment".format(self.deployname)
         cpyver = user_config.get_active_cpython_engine()
         if cpyver:
-            self.pyrevit_engine.Text = self.get_locale_string("pyRevit.Engine").format(
-                _ironpython_version(), cpyver.Version
+            self.pyrevit_engine.Text = _engine_text(
+                self.get_locale_string, cpyver.Version
             )
 
         if __cachedengine__:
