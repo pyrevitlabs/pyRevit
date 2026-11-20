@@ -117,22 +117,11 @@ namespace pyRevitCLI {
             // setup logger
             // process arguments for hidden debug mode switch
             PyRevitCLILogLevel logLevel = PyRevitCLILogLevel.InfoMessages;
-            var config = new LoggingConfiguration();
-            var logconsole = new ConsoleTarget("logconsole") { Layout = @"${level}: ${message} ${exception}" };
-            config.AddTarget(logconsole);
-            config.AddRule(LogLevel.Error, LogLevel.Fatal, logconsole);
-
-            if (argsList.Contains("--verbose")) {
-                argsList.Remove("--verbose");
-                logLevel = PyRevitCLILogLevel.InfoMessages;
-                config.AddRule(LogLevel.Info, LogLevel.Info, logconsole);
-            }
-
-            if (argsList.Contains("--debug")) {
-                argsList.Remove("--debug");
+            var verbose = argsList.Remove("--verbose");
+            var debug = argsList.Remove("--debug");
+            if (debug)
                 logLevel = PyRevitCLILogLevel.Debug;
-                config.AddRule(LogLevel.Debug, LogLevel.Debug, logconsole);
-            }
+            var config = PyRevitCLILogging.CreateConsoleConfiguration(verbose, debug);
 
             // config logger
             LogManager.Configuration = config;
