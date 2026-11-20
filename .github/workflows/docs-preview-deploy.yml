@@ -1,0 +1,205 @@
+name: pyRevit Docs Preview Deploy
+# Publishes the site built by docs-preview.yml to
+# https://docs.pyrevitlabs.io/pr-preview/pr-<number>/ and removes it when the
+# pull request closes.
+#
+# Both triggers run this file from the default branch with a write token, even
+# for pull requests from forks. Nothing here checks out or executes pull request
+# code: the deploy job only copies the already-built static site.
+on:
+  workflow_run:
+    workflows: ["pyRevit Docs Preview"]
+    types: [completed]
+  pull_request_target:
+    types: [closed]
+
+permissions: {}
+
+env:
+  PREVIEW_BASE_URL: https://docs.pyrevitlabs.io/pr-preview
+  TRUSTED_ASSOCIATIONS: '["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    concurrency:
+      group: docs-preview-deploy-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
+      queue: max
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Find pull request
+        id: pr
+        env:
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          artifact_names="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[].name')"
+          artifact="$(grep -E -m 1 '^docs-preview-site-pr-[0-9]+$' <<< "$artifact_names" || true)"
+          if [[ -z "$artifact" ]]; then
+            echo "::notice::The build produced no docs-preview-site-pr-<number> artifact. Skipping."
+            exit 0
+          fi
+          number="${artifact##*-}"
+          pr="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number")"
+          is_triggering_pr="$(jq -r --arg sha "$HEAD_SHA" --arg repo "$HEAD_REPO" --arg branch "$HEAD_BRANCH" '
+            .head.sha == $sha and .head.repo.full_name == $repo and .head.ref == $branch' <<< "$pr")"
+          if [[ "$is_triggering_pr" != "true" ]]; then
+            echo "::notice::Pull request #$number is not at $HEAD_SHA of $HEAD_REPO (a newer commit was pushed, or the artifact names another pull request). Skipping."
+            exit 0
+          fi
+          if [[ "$(jq -r '.state' <<< "$pr")" != "open" ]]; then
+            action="remove"
+          elif [[ "$(jq -r --arg repo "$GITHUB_REPOSITORY" --argjson trusted "$TRUSTED_ASSOCIATIONS" '
+                  (.head.repo.full_name == $repo)
+                  or (.author_association as $a | $trusted | index($a) != null)
+                  or any(.labels[]; .name == "docs-preview")' <<< "$pr")" == "true" ]]; then
+            action="publish"
+          else
+            action="ask"
+          fi
+          {
+            echo "number=$number"
+            echo "artifact=$artifact"
+            echo "action=$action"
+            echo "short_sha=${HEAD_SHA:0:7}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check out scripts
+        if: steps.pr.outputs.action
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: tools
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Ask for the docs-preview label
+        if: steps.pr.outputs.action == 'ask'
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          SHORT_SHA: ${{ steps.pr.outputs.short_sha }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          cat > "$RUNNER_TEMP/comment.md" <<BODY
+          ### Docs preview
+
+          The docs built successfully for \`$SHORT_SHA\`. Previews of pull requests from first-time contributors are not published automatically.
+
+          - Download the built site from the [workflow run]($RUN_URL) (artifact \`docs-preview-site-pr-$PR_NUMBER\`).
+          - Maintainers: after reviewing the changes, add the \`docs-preview\` label to publish the preview.
+          BODY
+          bash tools/.github/scripts/pr-sticky-comment.sh "$PR_NUMBER" "$RUNNER_TEMP/comment.md"
+
+      - name: Download site
+        if: steps.pr.outputs.action == 'publish'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ steps.pr.outputs.artifact }}
+          path: ${{ runner.temp }}/site
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Check site
+        if: steps.pr.outputs.action == 'publish'
+        run: |
+          cd "$RUNNER_TEMP/site"
+          find . -type l -delete
+          test -f index.html
+          size_mb="$(du -sm . | cut -f1)"
+          if (( size_mb > 300 )); then
+            echo "::error::Built site is ${size_mb} MB, refusing to publish it."
+            exit 1
+          fi
+
+      - name: Check out gh-pages
+        if: steps.pr.outputs.action == 'publish' || steps.pr.outputs.action == 'remove'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: gh-pages
+          fetch-depth: 1
+
+      - name: Publish preview
+        if: steps.pr.outputs.action == 'publish'
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          SHORT_SHA: ${{ steps.pr.outputs.short_sha }}
+        run: |
+          COMMIT_MESSAGE="docs: preview for #$PR_NUMBER ($SHORT_SHA)" \
+            bash tools/.github/scripts/publish-gh-pages.sh publish "$RUNNER_TEMP/site" "pr-preview/pr-$PR_NUMBER"
+
+      - name: Comment with preview link
+        if: steps.pr.outputs.action == 'publish'
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          SHORT_SHA: ${{ steps.pr.outputs.short_sha }}
+        run: |
+          cat > "$RUNNER_TEMP/comment.md" <<BODY
+          ### Docs preview
+
+          **$PREVIEW_BASE_URL/pr-$PR_NUMBER/**
+
+          Built from \`$SHORT_SHA\`. GitHub Pages can take a minute or two to show the latest build. The preview is removed when this pull request is closed.
+          BODY
+          bash tools/.github/scripts/pr-sticky-comment.sh "$PR_NUMBER" "$RUNNER_TEMP/comment.md"
+
+      - name: Remove preview of a closed pull request
+        if: steps.pr.outputs.action == 'remove'
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          COMMIT_MESSAGE="docs: remove preview for #$PR_NUMBER" \
+            bash tools/.github/scripts/publish-gh-pages.sh remove "pr-preview/pr-$PR_NUMBER"
+
+  cleanup:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: docs-preview-deploy-${{ github.event.pull_request.head.repo.full_name }}-${{ github.event.pull_request.head.ref }}
+      cancel-in-progress: false
+      queue: max
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Check out scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: tools
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Check out gh-pages
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: gh-pages
+          fetch-depth: 1
+
+      - name: Remove preview
+        id: remove
+        run: |
+          COMMIT_MESSAGE="docs: remove preview for #$PR_NUMBER" \
+            bash tools/.github/scripts/publish-gh-pages.sh remove "pr-preview/pr-$PR_NUMBER"
+
+      - name: Update comment
+        run: |
+          echo "### Docs preview"$'\n\n'"The preview was removed because this pull request was closed." > "$RUNNER_TEMP/comment.md"
+          bash tools/.github/scripts/pr-sticky-comment.sh "$PR_NUMBER" "$RUNNER_TEMP/comment.md" --update-only
