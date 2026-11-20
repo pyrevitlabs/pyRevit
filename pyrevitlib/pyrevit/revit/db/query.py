@@ -1135,7 +1135,7 @@ def get_phases_names(doc=None):
 
 
     Args:
-        doc (Document): A Revit document. Defaults to the active document.
+        doc (Document): A Revit document. Without one, "-" is returned.
 
 
     Returns:
