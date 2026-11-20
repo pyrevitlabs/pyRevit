@@ -27,8 +27,9 @@ def _format_engine_version(code):
 def _attached_ironpython_code():
     try:
         attachment = user_config.get_current_attachment()
-        if attachment and attachment.Engine:
-            return attachment.Engine.Version
+        engine = attachment.Engine if attachment else None
+        if engine and str(engine.KernelName).lower().startswith("ironpython"):
+            return engine.Version
     except Exception as attach_ex:
         logger.debug("Error getting attached engine: %s", attach_ex)
     return envvars.get_pyrevit_env_var(envvars.IPYVERSION_ENVVAR)

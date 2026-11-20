@@ -89,5 +89,34 @@ class EngineTextTests(unittest.TestCase):
         )
 
 
+def _attachment(kernel, version):
+    engine = types.SimpleNamespace(KernelName=kernel, Version=version)
+    return types.SimpleNamespace(Engine=engine)
+
+
+class AttachedEngineTests(unittest.TestCase):
+    """Only an attached IronPython engine supplies the IronPython version."""
+
+    def test_attached_ironpython_engines_are_shown(self):
+        self.assertEqual(
+            "Running on IronPython 2.7.12 (cpython 3.12.3)",
+            _engine_text(_attachment("IronPython 2", 2712)),
+        )
+        self.assertEqual(
+            "Running on IronPython 3.4.2 (cpython 3.12.3)",
+            _engine_text(_attachment("IronPython 3", 342), env_code="2712"),
+        )
+
+    def test_attached_cpython_engine_falls_back_to_env_var(self):
+        self.assertEqual(
+            "Running on IronPython 2.7.12 (cpython 3.12.3)",
+            _engine_text(_attachment("CPython", 3123), env_code="2712"),
+        )
+        self.assertEqual(
+            "Running on cpython 3.12.3",
+            _engine_text(_attachment("CPython", 3123)),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
