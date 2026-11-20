@@ -81,21 +81,28 @@ def first_party_files(root, pattern):
 
 
 def command(arguments, capture=False, timeout=1200, environment=None):
-    """Propagate subprocess failures and bound potentially hanging test runs."""
-    result = subprocess.run(
-        [str(argument) for argument in arguments],
-        cwd=ROOT,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=timeout,
-        stdout=subprocess.PIPE if capture else None,
-        stderr=subprocess.STDOUT if capture else None,
-        env={**os.environ, "DOTNET_CLI_UI_LANGUAGE": "en", **(environment or {})},
-    )
+    """Propagate subprocess failures and bound potentially hanging test runs.
+
+    With ``capture`` only stdout is returned; stderr is kept apart so tool
+    warnings cannot corrupt parsed output, and is reported on failure.
+    """
+    try:
+        result = subprocess.run(
+            [str(argument) for argument in arguments],
+            cwd=ROOT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+            capture_output=capture,
+            env={**os.environ, "DOTNET_CLI_UI_LANGUAGE": "en", **(environment or {})},
+        )
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError(f"Timed out after {timeout}s: {arguments}") from error
     if result.returncode:
         raise RuntimeError(
-            f"Command failed ({result.returncode}): {arguments}\n{result.stdout or ''}"
+            f"Command failed ({result.returncode}): {arguments}\n"
+            f"{result.stdout or ''}{result.stderr or ''}"
         )
     return result.stdout
 

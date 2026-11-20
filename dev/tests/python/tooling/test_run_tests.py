@@ -255,6 +255,24 @@ class SelectionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Missing coverage"):
             run_tests.check_baselines({}, {"parser": {"line": 0.8, "branch": 0.6}})
 
+    def test_captured_output_excludes_stderr_warnings(self):
+        """MSBuild warnings on stderr cannot corrupt the JSON read from stdout."""
+        script = "import sys; print('{}'); print('warning', file=sys.stderr)"
+        self.assertEqual(
+            "{}\n", run_tests.command([sys.executable, "-c", script], capture=True)
+        )
+        with self.assertRaisesRegex(RuntimeError, "warning"):
+            run_tests.command(
+                [sys.executable, "-c", script + "; sys.exit(1)"], capture=True
+            )
+
+    def test_timeout_names_the_command(self):
+        """A hung command fails with its arguments instead of a raw traceback."""
+        with self.assertRaisesRegex(RuntimeError, "Timed out after 0.5s: .*sleep"):
+            run_tests.command(
+                [sys.executable, "-c", "import time; time.sleep(30)"], timeout=0.5
+            )
+
     def test_empty_trx_is_not_success(self):
         """A successful process with zero executed tests fails validation."""
         with tempfile.TemporaryDirectory() as directory:
