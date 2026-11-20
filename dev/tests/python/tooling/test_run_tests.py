@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -223,6 +224,54 @@ class SelectionTests(unittest.TestCase):
             run_tests.check_engine_variants(
                 [p for p in projects if "Shell" not in p["path"]]
             )
+
+    def test_project_evaluations_run_concurrently_in_discovery_order(self):
+        """Discovery pays one evaluation latency per pass, not one per project."""
+        outer = threading.Barrier(2, timeout=5)
+        inner = threading.Barrier(4, timeout=5)
+
+        def fake_evaluate(path, framework=None):
+            (inner if framework else outer).wait()
+            if framework:
+                return {
+                    "Properties": {
+                        "AssemblyName": f"{path.stem}.{framework}",
+                        "DefineConstants": f";{framework.upper()};",
+                    },
+                    "Items": {"Compile": [{"FullPath": f"{path.stem}.cs"}]},
+                }
+            return {
+                "Properties": {
+                    "IsTestProject": "true",
+                    "TargetFrameworks": "net48;net8.0",
+                    "TargetFramework": "",
+                },
+                "Items": {"PackageReference": []},
+            }
+
+        paths = [Path("First.Tests.csproj"), Path("Second.Tests.csproj")]
+        with (
+            patch.object(
+                run_tests,
+                "first_party_files",
+                side_effect=lambda root, *_: paths if root.name == "dev" else [],
+            ),
+            patch.object(run_tests, "evaluate_project", side_effect=fake_evaluate),
+            patch.object(run_tests, "check_engine_variants"),
+        ):
+            projects = run_tests.find_dotnet_projects()
+        self.assertEqual(
+            [
+                ("First.Tests.csproj", "net48", "First.Tests.net48", ["NET48"]),
+                ("First.Tests.csproj", "net8.0", "First.Tests.net8.0", ["NET8.0"]),
+                ("Second.Tests.csproj", "net48", "Second.Tests.net48", ["NET48"]),
+                ("Second.Tests.csproj", "net8.0", "Second.Tests.net8.0", ["NET8.0"]),
+            ],
+            [
+                (p["path"], p["framework"], p["assembly"], p["defines"])
+                for p in projects
+            ],
+        )
 
     def test_csharp_selection_requires_a_built_product(self):
         """A fresh checkout fails fast with the build command, not with skipped cases."""

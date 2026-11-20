@@ -6,6 +6,7 @@ tests are inventoried for local execution and are never run by this entry point.
 
 import argparse
 import ast
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -147,15 +148,24 @@ def evaluate_project(path, framework=None):
 def find_dotnet_projects():
     """List each evaluated ``IsTestProject`` project once per target framework.
 
+    Note:
+        Implicit framework defines come from a target that exists only in a
+        framework's inner build, so each test framework needs its own
+        evaluation. Evaluations are independent and run concurrently.
+
     Raises:
         ValueError: A project references the test SDK without
             ``IsTestProject=true``, none is found, or ``ENGINE_VARIANTS`` names
             a project that does not exist.
     """
-    projects = []
-    for root in (ROOT / "dev", ROOT / "build"):
-        for path in first_party_files(root, "*.csproj", ROOT):
-            data = evaluate_project(path)
+    paths = [
+        path
+        for root in (ROOT / "dev", ROOT / "build")
+        for path in first_party_files(root, "*.csproj", ROOT)
+    ]
+    with ThreadPoolExecutor() as pool:
+        targets = []
+        for path, data in zip(paths, pool.map(evaluate_project, paths)):
             properties = data["Properties"]
             if properties["IsTestProject"].lower() != "true":
                 if any(
@@ -167,24 +177,22 @@ def find_dotnet_projects():
                     )
                 continue
             frameworks = properties["TargetFrameworks"] or properties["TargetFramework"]
-            for framework in frameworks.split(";"):
-                evaluated = evaluate_project(path, framework)
-                compiled = [item["FullPath"] for item in evaluated["Items"]["Compile"]]
-                projects.append(
-                    {
-                        "path": str(path),
-                        "framework": framework,
-                        "assembly": evaluated["Properties"]["AssemblyName"],
-                        "sources": compiled,
-                        "defines": [
-                            value
-                            for value in evaluated["Properties"][
-                                "DefineConstants"
-                            ].split(";")
-                            if value
-                        ],
-                    }
-                )
+            targets.extend((path, framework) for framework in frameworks.split(";"))
+        evaluations = list(pool.map(lambda target: evaluate_project(*target), targets))
+    projects = [
+        {
+            "path": str(path),
+            "framework": framework,
+            "assembly": evaluated["Properties"]["AssemblyName"],
+            "sources": [item["FullPath"] for item in evaluated["Items"]["Compile"]],
+            "defines": [
+                value
+                for value in evaluated["Properties"]["DefineConstants"].split(";")
+                if value
+            ],
+        }
+        for (path, framework), evaluated in zip(targets, evaluations)
+    ]
     if not projects:
         raise ValueError("No first-party .NET test projects discovered")
     check_engine_variants(projects)
