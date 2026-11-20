@@ -854,7 +854,7 @@ is_beta: true
             public void Error(string message) { }
         }
 
-        private static ParsedExtension ParseExtensionWithEngine(string extensionJson, string bundleYaml, out string extensionDir)
+        private static ParsedExtension ParseExtensionWithEngine(string extensionJson, string? bundleYaml, out string extensionDir)
         {
             extensionDir = Path.Combine(Path.GetTempPath(), $"DeclaredEngine_{System.Guid.NewGuid():N}.extension");
             var bundleDir = Path.Combine(extensionDir, "Test.tab", "Test.panel", "Cmd.pushbutton");

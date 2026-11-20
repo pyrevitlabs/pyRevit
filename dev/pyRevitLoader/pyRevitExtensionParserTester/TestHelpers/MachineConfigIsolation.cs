@@ -33,9 +33,9 @@ public class MachineConfigIsolation
         "disabled = false\n";
 
     private string _isolatedRoot;
-    private string _previousAppDataOverride;
-    private string _previousProgramDataOverride;
-    private string _previousConfigScope;
+    private string? _previousAppDataOverride;
+    private string? _previousProgramDataOverride;
+    private string? _previousConfigScope;
 
     [OneTimeSetUp]
     public void IsolateFromMachineConfig()

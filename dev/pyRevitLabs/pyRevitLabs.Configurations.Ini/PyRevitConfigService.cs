@@ -14,7 +14,7 @@ namespace pyRevitLabs.Configurations.Ini;
 /// <see cref="ConfigurationDiagnostics"/>; a host wires those to its logger.
 /// </summary>
 public static class PyRevitConfigService {
-    private static volatile string loadedConfigPath;
+    private static volatile string? loadedConfigPath;
 
     /// <summary>
     /// The file the shared service was last built from, or null before the first build.
@@ -24,7 +24,7 @@ public static class PyRevitConfigService {
     /// outside the process: a local clone config wins over the user and machine configs that
     /// path resolves to.
     /// </remarks>
-    public static string LoadedConfigPath => loadedConfigPath;
+    public static string? LoadedConfigPath => loadedConfigPath;
 
     /// <summary>
     /// Returns the shared service, building it on first request and caching it

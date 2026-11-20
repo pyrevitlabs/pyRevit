@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
 using NUnit.Framework;
@@ -156,7 +155,7 @@ namespace pyRevitExtensionParserTester
         {
             var runtime = CreateRuntime(suppressOutput: true);
             SetProperty(runtime, "IsDisposed", true);
-            var output = (ScriptOutput)FormatterServices.GetUninitializedObject(
+            var output = (ScriptOutput)RuntimeHelpers.GetUninitializedObject(
                 typeof(ScriptOutput));
             var heldRecords = new HeldRecordBuffer(10);
             SetField(output, "_runtime", new WeakReference<ScriptRuntime>(runtime));
@@ -170,9 +169,9 @@ namespace pyRevitExtensionParserTester
         [Test]
         public void RuntimeOutputWindowIsTrackedForDeferredWrites()
         {
-            var output = (ScriptOutput)FormatterServices.GetUninitializedObject(
+            var output = (ScriptOutput)RuntimeHelpers.GetUninitializedObject(
                 typeof(ScriptOutput));
-            var window = (ScriptConsole)FormatterServices.GetUninitializedObject(
+            var window = (ScriptConsole)RuntimeHelpers.GetUninitializedObject(
                 typeof(ScriptConsole));
 
             output.TrackRuntimeWindow(window);
@@ -211,9 +210,9 @@ namespace pyRevitExtensionParserTester
         private static ScriptRuntime CreateRuntime(
             bool debugMode = false,
             bool suppressOutput = false,
-            string logFilePath = null)
+            string? logFilePath = null)
         {
-            var runtime = (ScriptRuntime)FormatterServices.GetUninitializedObject(
+            var runtime = (ScriptRuntime)RuntimeHelpers.GetUninitializedObject(
                 typeof(ScriptRuntime));
             SetProperty(runtime, "ScriptData", new ScriptData
             {
@@ -233,7 +232,7 @@ namespace pyRevitExtensionParserTester
         {
             target.GetType().GetProperty(
                 propertyName,
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
                 .SetValue(target, value);
         }
 
@@ -241,7 +240,7 @@ namespace pyRevitExtensionParserTester
         {
             target.GetType().GetField(
                 fieldName,
-                BindingFlags.Instance | BindingFlags.NonPublic)
+                BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(target, value);
         }
 
@@ -252,8 +251,8 @@ namespace pyRevitExtensionParserTester
         {
             return (string)typeof(ScriptLoggerService).GetMethod(
                 "FormatVisibleEntry",
-                BindingFlags.Static | BindingFlags.NonPublic)
-                .Invoke(null, new object[] { level, loggerName, message });
+                BindingFlags.Static | BindingFlags.NonPublic)!
+                .Invoke(null, new object[] { level, loggerName, message })!;
         }
     }
 }

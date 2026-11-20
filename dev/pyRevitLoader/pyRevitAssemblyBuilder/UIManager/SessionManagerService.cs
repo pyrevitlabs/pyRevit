@@ -253,7 +253,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // ── PASS 3: Build ALL UI ───────────────────────────────────────────
             foreach (var (ext, assmInfo) in assembledExtensions)
             {
-                var buildStep = timeline.StartSpan($"{ext?.Name ?? "unknown"} - BuildUI");
+                var buildStep = timeline.StartSpan($"{ext.Name} - BuildUI");
                 try
                 {
                     _uiManager?.BuildUI(ext, assmInfo);

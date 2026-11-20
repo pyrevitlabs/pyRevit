@@ -22,39 +22,39 @@ namespace pyRevitExtensionParserTester
     {
         private const string PlantedConfig = "[core]\nread_script_metadata = false\n";
 
-        private string _cloneMarker;
-        private string _cloneConfig;
+        private string? _cloneMarker;
+        private string? _cloneConfig;
 
         [SetUp]
         public void PlantCloneLocalConfig()
         {
-            var assemblyDir = Path.GetDirectoryName(typeof(PyRevitInstallScope).Assembly.Location);
-            _cloneMarker = Path.Combine(assemblyDir, "pyRevitfile");
-            _cloneConfig = Path.Combine(assemblyDir, PyRevitLabsConsts.DefaultConfigsFileName);
-            RemoveLeftoversOfAnInterruptedRun();
-            if (File.Exists(_cloneMarker) || File.Exists(_cloneConfig))
-            {
-                _cloneMarker = null;
-                _cloneConfig = null;
+            _cloneMarker = null;
+            _cloneConfig = null;
+            var assemblyDir = Path.GetDirectoryName(typeof(PyRevitInstallScope).Assembly.Location)!;
+            var cloneMarker = Path.Combine(assemblyDir, "pyRevitfile");
+            var cloneConfig = Path.Combine(assemblyDir, PyRevitLabsConsts.DefaultConfigsFileName);
+            RemoveLeftoversOfAnInterruptedRun(cloneMarker, cloneConfig);
+            if (File.Exists(cloneMarker) || File.Exists(cloneConfig))
                 Assert.Inconclusive("The test output folder already holds a pyRevitfile or pyRevit_config.ini");
-            }
 
-            File.WriteAllText(_cloneMarker, string.Empty);
-            File.WriteAllText(_cloneConfig, PlantedConfig);
+            _cloneMarker = cloneMarker;
+            _cloneConfig = cloneConfig;
+            File.WriteAllText(cloneMarker, string.Empty);
+            File.WriteAllText(cloneConfig, PlantedConfig);
         }
 
         /// <summary>
         /// Deletes the marker and config a killed run left behind, recognised by their exact
         /// planted content; anything else in the output folder is left alone.
         /// </summary>
-        private void RemoveLeftoversOfAnInterruptedRun()
+        private static void RemoveLeftoversOfAnInterruptedRun(string cloneMarker, string cloneConfig)
         {
-            if (File.Exists(_cloneMarker) && File.Exists(_cloneConfig)
-                && new FileInfo(_cloneMarker).Length == 0
-                && File.ReadAllText(_cloneConfig) == PlantedConfig)
+            if (File.Exists(cloneMarker) && File.Exists(cloneConfig)
+                && new FileInfo(cloneMarker).Length == 0
+                && File.ReadAllText(cloneConfig) == PlantedConfig)
             {
-                File.Delete(_cloneMarker);
-                File.Delete(_cloneConfig);
+                File.Delete(cloneMarker);
+                File.Delete(cloneConfig);
             }
         }
 

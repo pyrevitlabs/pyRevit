@@ -51,7 +51,7 @@ namespace pyRevitExtensionParserTester
                 .ToList();
         }
 
-        private string Generate(string libraryExtensionDir = null, string extensionFolder = null)
+        private string Generate(string? libraryExtensionDir = null, string? extensionFolder = null)
         {
             string folder = extensionFolder ?? ExtensionFolder;
             string bundle = folder + "/Dummy.tab/Smoke.panel/Check.pushbutton";
