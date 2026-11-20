@@ -375,6 +375,7 @@ namespace pyRevitCLI {
                         options: new Dictionary<string, string>() {
                             { "<script_file>",          "Python script to run" },
                             { "<view>",                 "View name, sheet number, view id, active or 3d (default: active)" },
+                            { "--view-type=<view_type>", "Revit ViewType such as FloorPlan or Section; narrows a view name shared by several views" },
                             { "--mode=<capture_mode>",  "export (default), viewport or screen, for 'agent capture'" },
                             { "--width=<pixels>",       "Image width, 320 to 2400 (default 1280)" },
                             { "--out=<png_file>",       "Write the capture to this file; otherwise the host keeps it under %APPDATA%\\pyRevit\\agent\\captures" },

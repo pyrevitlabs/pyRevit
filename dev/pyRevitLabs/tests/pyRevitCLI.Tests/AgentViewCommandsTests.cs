@@ -67,6 +67,18 @@ public sealed class AgentViewCommandsTests : IDisposable {
     }
 
     [Fact]
+    public void CapturePassesTheViewTypeToTheHostOnlyWhenGiven() {
+        AnswerCaptureWithImage();
+
+        Printed(() => PyRevitCLIAgentCmds.CaptureView("Level 1", null, null, null, null, viewType: "FloorPlan"));
+        Printed(() => PyRevitCLIAgentCmds.CaptureView("Level 1", null, null, null, null));
+
+        var requests = host.RequestsFor("capture");
+        Assert.Equal("FloorPlan", requests[0]["params"].Value<string>("view_type"));
+        Assert.Null(requests[1]["params"]["view_type"]);
+    }
+
+    [Fact]
     public void CaptureWritesTheImageToOutAndReportsThatFileAsThePath() {
         AnswerCaptureWithImage();
         var target = Path.Combine(outputFolder, "nested", "view.png");
@@ -191,10 +203,11 @@ public sealed class AgentViewCommandsTests : IDisposable {
 
     [Fact]
     public void CaptureOptionsAreParsedAndTheViewIsOptional() {
-        var withView = Parse("agent", "capture", "Level 1", "--mode=viewport", "--width=800", "--out=view.png");
+        var withView = Parse("agent", "capture", "Level 1", "--view-type=FloorPlan", "--mode=viewport", "--width=800", "--out=view.png");
         var withoutView = Parse("agent", "capture");
 
         Assert.Equal("Level 1", PyRevitCLIArguments.Value(withView, "<view>"));
+        Assert.Equal("FloorPlan", PyRevitCLIArguments.Value(withView, "--view-type"));
         Assert.Equal("viewport", PyRevitCLIArguments.Value(withView, "--mode"));
         Assert.Equal("800", PyRevitCLIArguments.Value(withView, "--width"));
         Assert.Equal("view.png", PyRevitCLIArguments.Value(withView, "--out"));

@@ -592,7 +592,7 @@ it. A run that asks for an engine other than the default also starts cold.
 ```text
 pyrevit agent status [--json]              running Revit sessions with the agent host
 pyrevit agent context [--revit=<year|pid|clone>]  get_context of a session
-pyrevit agent capture [<view>] [--mode=export|viewport|screen] [--width=<pixels>]
+pyrevit agent capture [<view>] [--view-type=<ViewType>] [--mode=export|viewport|screen] [--width=<pixels>]
                   [--out=<png_file>] [--revit=<year|pid|clone>]   PNG of a view, like capture_view
 pyrevit agent inspect <element_id>... [--no-parameters] [--revit=<year|pid|clone>]  inspect_elements
 pyrevit agent lookup <api_name> [--revit=<year|pid|clone>]  lookup_revit_api
@@ -607,7 +607,7 @@ pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --ow
                                            entries that point at another pyRevit install
 ```
 
-`capture`, `inspect` and `lookup` are the CLI forms of the `capture_view`, `inspect_elements` and `lookup_revit_api` tools, for clients without MCP. `capture` takes the view the way the tool does (a name, sheet number or id; the active view without one; `3d` for a temporary 3D view) and prints the host's answer without the image data. The host keeps the PNG under `%APPDATA%\pyRevit\agent\captures`; `--out` writes it to a file of your choice as well, and `path` in the output then names that file. `inspect` takes up to 50 element ids of the active document.
+`capture`, `inspect` and `lookup` are the CLI forms of the `capture_view`, `inspect_elements` and `lookup_revit_api` tools, for clients without MCP. `capture` takes the view the way the tool does (a name, sheet number or id; the active view without one; `3d` for a temporary 3D view; `--view-type=FloorPlan` and the like keep only views of that type when a name is shared, as `view_type` does) and prints the host's answer without the image data. The host keeps the PNG under `%APPDATA%\pyRevit\agent\captures`; `--out` writes it to a file of your choice as well, and `path` in the output then names that file. `inspect` takes up to 50 element ids of the active document.
 
 `--timeout` defaults to 300 and is capped at 3600; [reckless mode](#reckless-mode) ignores it.
 `--workspace` must be an existing local folder; network (UNC) paths are refused.

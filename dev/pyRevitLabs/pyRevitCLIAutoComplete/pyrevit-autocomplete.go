@@ -516,10 +516,11 @@ func main() {
 					"capture": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
-							"--mode":  complete.PredictNothing,
-							"--out":   complete.PredictNothing,
-							"--revit": complete.PredictNothing,
-							"--width": complete.PredictNothing,
+							"--mode":      complete.PredictNothing,
+							"--out":       complete.PredictNothing,
+							"--revit":     complete.PredictNothing,
+							"--view-type": complete.PredictNothing,
+							"--width":     complete.PredictNothing,
 						},
 					},
 					"inspect": complete.Command{

@@ -597,6 +597,7 @@ namespace pyRevitCLI {
                 else if (all("capture"))
                     PyRevitCLIAgentCmds.CaptureView(
                         view: TryGetValue("<view>"),
+                        viewType: TryGetValue("--view-type"),
                         mode: TryGetValue("--mode"),
                         width: TryGetValue("--width"),
                         outFile: TryGetValue("--out"),

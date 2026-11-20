@@ -93,6 +93,10 @@ namespace pyRevitCLI {
         /// without the image data.
         /// </summary>
         /// <param name="view">View name, sheet number, view id, <c>active</c> or <c>3d</c>; null captures the active view.</param>
+        /// <param name="viewType">
+        /// A Revit <c>ViewType</c> name such as <c>FloorPlan</c> that keeps only views of that type when a name is shared;
+        /// the host refuses it together with <c>active</c> or <c>3d</c>.
+        /// </param>
         /// <param name="mode"><c>export</c>, <c>viewport</c> or <c>screen</c>; null leaves the choice to the host.</param>
         /// <param name="width">Image width in pixels; the host enforces its range.</param>
         /// <param name="outFile">
@@ -106,10 +110,12 @@ namespace pyRevitCLI {
         /// <remarks>
         /// With <paramref name="outFile"/> the printed <c>path</c> is that file, not the host's copy.
         /// </remarks>
-        public static void CaptureView(string view, string mode, string width, string outFile, string revitSelector) {
+        public static void CaptureView(string view, string mode, string width, string outFile, string revitSelector, string viewType = null) {
             var parameters = new JObject();
             if (view != null)
                 parameters["view"] = view;
+            if (viewType != null)
+                parameters["view_type"] = viewType;
             if (mode != null)
                 parameters["mode"] = mode;
             if (width != null)
