@@ -780,24 +780,41 @@ def release_locks(keynotes_file, lock_ids, username=None):
     return released
 
 
+def _record_values(values):
+    record = framework.Dictionary[str, System.Object]()
+    for name, value in values.items():
+        record[name] = value
+    return record
+
+
 # categories ------------------------------------------------------------------
 
 
 def add_category(conn, key, text):
     text = normalize_keynote_text(text)
-    conn.InsertRecord(KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_TITLE_FIELD: text})
+    conn.InsertRecord(
+        KEYNOTES_DB, CATEGORIES_TABLE, key, _record_values({CATEGORY_TITLE_FIELD: text})
+    )
     return RKeynote(key=key, text=text)
 
 
 def update_category_title(conn, key, new_title):
     new_title = normalize_keynote_text(new_title)
     conn.UpdateRecord(
-        KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_TITLE_FIELD: new_title}
+        KEYNOTES_DB,
+        CATEGORIES_TABLE,
+        key,
+        _record_values({CATEGORY_TITLE_FIELD: new_title}),
     )
 
 
 def update_category_key(conn, key, new_key):
-    conn.UpdateRecord(KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_KEY_FIELD: new_key})
+    conn.UpdateRecord(
+        KEYNOTES_DB,
+        CATEGORIES_TABLE,
+        key,
+        _record_values({CATEGORY_KEY_FIELD: new_key}),
+    )
 
 
 def mark_category_under_edited(conn, key):
@@ -817,7 +834,9 @@ def add_keynote(conn, key, text, parent_key):
         KEYNOTES_DB,
         KEYNOTES_TABLE,
         key,
-        {KEYNOTES_TEXT_FIELD: text, KEYNOTES_PARENTKEY_FIELD: parent_key},
+        _record_values(
+            {KEYNOTES_TEXT_FIELD: text, KEYNOTES_PARENTKEY_FIELD: parent_key}
+        ),
     )
     return RKeynote(key=key, text=text, parent_key=parent_key)
 
@@ -832,16 +851,23 @@ def mark_keynote_under_edited(conn, key):
 
 def update_keynote_text(conn, key, text):
     text = normalize_keynote_text(text)
-    conn.UpdateRecord(KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_TEXT_FIELD: text})
+    conn.UpdateRecord(
+        KEYNOTES_DB, KEYNOTES_TABLE, key, _record_values({KEYNOTES_TEXT_FIELD: text})
+    )
 
 
 def update_keynote_key(conn, key, new_key):
-    conn.UpdateRecord(KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_KEY_FIELD: new_key})
+    conn.UpdateRecord(
+        KEYNOTES_DB, KEYNOTES_TABLE, key, _record_values({KEYNOTES_KEY_FIELD: new_key})
+    )
 
 
 def move_keynote(conn, key, new_parent):
     conn.UpdateRecord(
-        KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_PARENTKEY_FIELD: new_parent}
+        KEYNOTES_DB,
+        KEYNOTES_TABLE,
+        key,
+        _record_values({KEYNOTES_PARENTKEY_FIELD: new_parent}),
     )
 
 
