@@ -1,7 +1,6 @@
 #nullable enable
 using System;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Windows;
 
 namespace PyRevitLabs.PyRevit.Forms.Testing;
@@ -23,15 +22,22 @@ public static class OffscreenWindows {
     static readonly ConditionalWeakTable<Window, object> Tracked = new();
     static readonly object Marker = new();
 
-    static int installed;
+    static readonly object InstallLock = new();
+    static bool installed;
 
     /// <summary>Registers the process-wide handler. Safe to call more than once and from any thread.</summary>
-    /// <remarks>Call before the first test window is created.</remarks>
+    /// <remarks>
+    /// Concurrent callers wait until the handler is registered, so none returns before windows are intercepted.
+    /// Call before the first test window is created.
+    /// </remarks>
     public static void Install() {
-        if (Interlocked.Exchange(ref installed, 1) != 0) {
-            return;
+        lock (InstallLock) {
+            if (installed) {
+                return;
+            }
+            EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.SizeChangedEvent, new RoutedEventHandler(OnSizeChanged));
+            installed = true;
         }
-        EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.SizeChangedEvent, new RoutedEventHandler(OnSizeChanged));
     }
 
     static void OnSizeChanged(object sender, RoutedEventArgs args) {
@@ -48,12 +54,12 @@ public static class OffscreenWindows {
     }
 
     static void MoveOffscreen(Window window) {
-        if (window.Left == FarOffscreen && window.Top == FarOffscreen) {
-            return;
-        }
         window.ShowActivated = false;
         window.ShowInTaskbar = false;
         window.WindowStartupLocation = WindowStartupLocation.Manual;
+        if (window.Left == FarOffscreen && window.Top == FarOffscreen) {
+            return;
+        }
         window.Left = FarOffscreen;
         window.Top = FarOffscreen;
     }
