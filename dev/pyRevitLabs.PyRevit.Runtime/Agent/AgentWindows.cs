@@ -31,6 +31,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern int GetClassName(IntPtr window, StringBuilder className, int maxCount);
 
+        /// <summary>
+        /// Whether a modal dialog is open: Revit's main window is disabled and another visible
+        /// window of the process is showing.
+        /// </summary>
+        /// <remarks>
+        /// Revit disables its main window while a modal dialog runs, which is what stops
+        /// ExternalEvents from firing. Reads window state only and never sends a message.
+        /// </remarks>
+        public static bool IsModalDialogOpen() {
+            try {
+                var mainWindow = Process.GetCurrentProcess().MainWindowHandle;
+                return mainWindow != IntPtr.Zero && !IsWindowEnabled(mainWindow) && OpenDialogs().Count > 0;
+            }
+            catch (Exception) {
+                return false;
+            }
+        }
+
         public static List<string> OpenDialogs() {
             var found = new List<string>();
             try {

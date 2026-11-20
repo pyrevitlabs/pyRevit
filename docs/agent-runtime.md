@@ -1068,6 +1068,9 @@ Honest limits:
   after 30 seconds. The error names Revit's open windows and whether an earlier agent
   request is still running: a modal dialog Revit shows while idle, such as the save
   reminder, isn't part of any run and blocks every request until the user answers it.
+  `get_context` doesn't wait the full timeout for that: once Revit's main window is disabled by a
+  modal dialog and the request has not started for about 1.5 seconds, it answers `revit_busy` naming
+  the dialog.
   The refused request is discarded and never runs after the dialog closes; see
   [What became of a request that got no answer](#what-became-of-a-request-that-got-no-answer).
 - A rollback must not touch committed work, but rolling back a dry run once undid the

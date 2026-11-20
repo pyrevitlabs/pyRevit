@@ -17,5 +17,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         [DllImport("user32.dll")]
         internal static extern bool IsWindowVisible(IntPtr window);
+
+        [DllImport("user32.dll")]
+        internal static extern bool IsWindowEnabled(IntPtr window);
     }
 }
