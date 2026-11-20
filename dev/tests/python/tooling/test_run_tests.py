@@ -131,6 +131,7 @@ class SelectionTests(unittest.TestCase):
             reports = Path(arguments[arguments.index("--results-directory") + 1])
             (reports / "run").mkdir(parents=True, exist_ok=True)
             (reports / "run" / "coverage.cobertura.xml").write_text("<coverage/>")
+            (reports / "run" / "coverage.json").write_text("{}")
             (reports / "results.trx").write_text(
                 '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
                 '<Results><UnitTestResult outcome="Passed"/></Results>'
@@ -157,6 +158,52 @@ class SelectionTests(unittest.TestCase):
         self.assertIn("-p:IronPythonVersion=IPY2712PR", calls[0])
         self.assertIn("-p:IronPythonVersion=IPY342", calls[1])
         self.assertEqual(["IPY2712PR", "IPY342"], [o["engine"] for o in outcomes])
+
+    def _run_fake_dotnet(self, tests, executed, reports=("coverage.cobertura.xml",)):
+        project = {
+            "path": "Example.Tests.csproj",
+            "framework": "net8.0",
+            "tests": tests,
+        }
+
+        def fake_command(arguments):
+            directory = Path(arguments[arguments.index("--results-directory") + 1])
+            (directory / "run").mkdir(parents=True, exist_ok=True)
+            for report in reports:
+                (directory / "run" / report).write_text("{}")
+            (directory / "results.trx").write_text(
+                '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
+                "<Results>"
+                + '<UnitTestResult outcome="Passed"/>'
+                * executed
+                + "</Results><ResultSummary>"
+                f'<Counters total="{executed}" executed="{executed}" failed="0"/>'
+                "</ResultSummary></TestRun>",
+                encoding="utf-8",
+            )
+
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(run_tests, "command", side_effect=fake_command),
+        ):
+            return run_tests.run_dotnet(project, Path(directory))
+
+    def test_fewer_executed_than_cataloged_host_free_tests_fails(self):
+        """A trait drift cannot silently drop tests that discovery classified."""
+        tests = [{"Environment": "HostFree"}] * 3 + [{"Environment": "Revit"}]
+        with self.assertRaisesRegex(
+            ValueError, r"Example\.Tests net8\.0: executed 2 .* 3 host-free"
+        ):
+            self._run_fake_dotnet(tests, 2, ("coverage.cobertura.xml", "coverage.json"))
+        outcome = self._run_fake_dotnet(
+            tests, 4, ("coverage.cobertura.xml", "coverage.json")
+        )
+        self.assertEqual("4", outcome["executed"])
+
+    def test_missing_json_coverage_report_fails(self):
+        """Coverage aggregation reads coverage.json, so it is required evidence."""
+        with self.assertRaisesRegex(ValueError, "coverage.json"):
+            self._run_fake_dotnet([{"Environment": "HostFree"}], 1)
 
     def test_ironpython_forms_suite_runs_once_per_engine(self):
         """The IronPython forms suite covers both engines, like the shell suite."""

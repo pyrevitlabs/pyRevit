@@ -277,8 +277,14 @@ def run_dotnet(project, results, engine=None):
 
     Each engine variant reports to its own directory so one run cannot
     overwrite another's evidence; their coverage merges into one module.
+
+    Invariant:
+        The run executes at least the host-free methods the source catalog
+        classified, so drift between catalog parsing and the runtime trait
+        filter fails instead of dropping tests. Test cases only add to it.
     """
-    if not any(test["Environment"] == "HostFree" for test in project["tests"]):
+    cataloged = sum(test["Environment"] == "HostFree" for test in project["tests"])
+    if not cataloged:
         return None
     suite = Path(project["path"]).stem
     directory = (
@@ -328,9 +334,14 @@ def run_dotnet(project, results, engine=None):
         ]
     )
     counters = validate_trx(directory / "results.trx")
-    reports = list(directory.glob("*/coverage.cobertura.xml"))
-    if not reports:
-        raise ValueError(f"Missing coverage report: {directory}")
+    if int(counters["executed"]) < cataloged:
+        raise ValueError(
+            f"{suite} {project['framework']}: executed {counters['executed']} tests,"
+            f" fewer than the {cataloged} host-free tests in the catalog"
+        )
+    for report in ("coverage.cobertura.xml", "coverage.json"):
+        if not list(directory.glob(f"*/{report}")):
+            raise ValueError(f"Missing {report} coverage report: {directory}")
     return {
         "project": project["path"],
         "framework": project["framework"],
