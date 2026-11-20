@@ -584,6 +584,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly HashSet<ElementId> modified = new HashSet<ElementId>();
         private readonly HashSet<ElementId> deleted = new HashSet<ElementId>();
         private readonly List<string> transactions = new List<string>();
+        private bool recordedAddition;
 
         public bool IsEmpty => added.Count == 0 && modified.Count == 0 && deleted.Count == 0;
 
@@ -612,11 +613,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// Invariant: <c>deleted</c> may hold elements the run created itself. Loading a family
         /// creates elements that <c>DocumentChanged</c> never lists as added, and overwriting or
         /// reloading the family later reports them as deleted. They are missing after every
-        /// rollback, so only ids up to <see cref="AgentIds.HighestValue"/> count as elements
-        /// that existed before the run. The highest id is read from the document after the
-        /// rollback, only when a deleted element is missing; a failed rollback can only raise it
-        /// and make this check stricter. It misses a lost element only when that element had
-        /// the highest id in the model.
+        /// rollback. Such elements only exist in a run that also recorded an added element (the
+        /// family itself), so a run that never recorded one counts every missing deleted
+        /// element. Otherwise only ids up to <see cref="AgentIds.HighestValue"/> count as
+        /// elements that existed before the run. The highest id is read from the document after
+        /// the rollback, only when a deleted element is missing; a failed rollback can only
+        /// raise it and make this check stricter, and leaves the recorded added elements in the
+        /// model, which the first half of this check reports. A lost element goes unnoticed
+        /// only when the run recorded an addition that is gone from the model again, and the
+        /// lost element has an id above every element left in the model.
         /// </para>
         /// </remarks>
         public bool LeavesTracesAfterRollback(Document document) {
@@ -628,13 +633,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var missing = deleted.Where(id => document.GetElement(id) == null).ToList();
             if (missing.Count == 0)
                 return false;
+            if (!recordedAddition)
+                return true;
             var highestExisting = AgentIds.HighestValue(document);
             return missing.Any(id => AgentIds.ToValue(id) <= highestExisting);
         }
 
         public void Record(DocumentChangedEventArgs e) {
-            foreach (var id in e.GetAddedElementIds())
+            foreach (var id in e.GetAddedElementIds()) {
                 added.Add(id);
+                recordedAddition = true;
+            }
             foreach (var id in e.GetDeletedElementIds()) {
                 if (!added.Remove(id))
                     deleted.Add(id);
