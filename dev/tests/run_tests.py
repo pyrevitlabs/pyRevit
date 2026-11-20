@@ -213,7 +213,13 @@ def discover_dotnet(results):
 
 
 def discover_python():
-    """Inventory named Python tests without importing hosted suites."""
+    """Inventory named Python tests without importing hosted suites.
+
+    Note:
+        ``*_tests.py`` is the extensions' in-Revit suite convention and is only
+        searched there: under ``dev/`` it would match this runner and manual
+        scripts such as ``dfdb_tests.py``. Name every other suite ``test_*.py``.
+    """
     roots = (ROOT / "dev", ROOT / "pyrevitlib/pyrevit/unittests", ROOT / "extensions")
     paths = {
         path for root in roots for path in first_party_files(root, "test_*.py")
