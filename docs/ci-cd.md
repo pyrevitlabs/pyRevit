@@ -37,7 +37,7 @@ This split guarantees that:
 - the `.nupkg`'s embedded checksum matches the signed installer users actually download, and
 - the `.nupkg` itself carries a NuGet author signature so Chocolatey clients can verify it.
 
-## Docs previews
+## Docs previews 
 
 A pull request that changes `docs/` or `mkdocs.yml` gets a preview of the whole site at `https://docs.pyrevitlabs.io/pr-preview/pr-<number>/`. A bot comment on the pull request carries the link and is updated on every push. The preview is deleted when the pull request is closed or merged.
 
