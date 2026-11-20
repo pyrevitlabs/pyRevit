@@ -24,6 +24,7 @@ BUILD_OUTPUT_NAMES = {"bin", "obj"}
 PROJECT_PATTERNS = ("*.csproj", "*.vbproj")
 STRICT_SKIPS_ENV = "PYREVIT_STRICT_SKIPS"
 BASELINES = ROOT / "dev/tests/coverage-baselines.json"
+COVERAGE_TOLERANCE = 0.000001
 TRX_NS = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
 ENGINE_VARIANTS = {
     "pyRevitLabs.PyRevit.Shell.Tests": ("IPY2712PR", "IPY342"),
@@ -373,15 +374,22 @@ def run_dotnet(project, results, engine=None):
 
 
 def check_baselines(measured, baseline):
-    """Enforce separate line and branch floors for each measured module."""
+    """Enforce separate line and branch floors for each measured module.
+
+    Every failing module and kind is reported in one error.
+    """
+    failures = []
     for module, expected in baseline.items():
         if module not in measured:
-            raise ValueError(f"Missing coverage for {module}")
+            failures.append(f"Missing coverage for {module}")
+            continue
         for kind in ("line", "branch"):
-            if measured[module][kind] + 0.000001 < expected[kind]:
-                raise ValueError(
+            if measured[module][kind] + COVERAGE_TOLERANCE < expected[kind]:
+                failures.append(
                     f"Coverage decreased: {module} {kind}: {measured[module][kind]} < {expected[kind]}"
                 )
+    if failures:
+        raise ValueError("\n".join(failures))
 
 
 def collect_coverage(results):

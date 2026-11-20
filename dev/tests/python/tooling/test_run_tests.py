@@ -273,6 +273,23 @@ class SelectionTests(unittest.TestCase):
                 {"parser": {"line": 0.79, "branch": 0.7}}, baseline
             )
 
+    def test_every_coverage_failure_is_reported_at_once(self):
+        """One run lists all regressions instead of stopping at the first."""
+        baseline = {
+            "first": {"line": 0.8, "branch": 0.6},
+            "second": {"line": 0.5, "branch": 0.5},
+            "gone": {"line": 0.1, "branch": 0.1},
+        }
+        measured = {
+            "first": {"line": 0.7, "branch": 0.6},
+            "second": {"line": 0.5, "branch": 0.4},
+        }
+        with self.assertRaises(ValueError) as raised:
+            run_tests.check_baselines(measured, baseline)
+        message = str(raised.exception)
+        for expected in ("first line", "second branch", "Missing coverage for gone"):
+            self.assertIn(expected, message)
+
     def test_missing_module_coverage_fails(self):
         """Missing evidence cannot silently remove an established module."""
         with self.assertRaisesRegex(ValueError, "Missing coverage"):
