@@ -36,6 +36,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="..\pyRevitLabs.PyRevit.Forms.Tests\ParitySession.cs" Link="ParitySession.cs"/>
+        <Compile Include="..\pyRevitLabs.PyRevit.Forms.Tests\OffscreenWindows.cs" Link="OffscreenWindows.cs"/>
         <Content Include="..\..\..\..\pyrevitlib\pyrevit\forms\**\*"
                  Exclude="..\..\..\..\pyrevitlib\pyrevit\forms\**\__pycache__\**"
                  LinkBase="forms" CopyToOutputDirectory="PreserveNewest"/>

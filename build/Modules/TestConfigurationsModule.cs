@@ -19,8 +19,9 @@ namespace Build.Modules;
 /// </summary>
 /// <remarks>
 /// The checker tests need Python 3.10 or newer on <c>PATH</c> as <c>python</c>, <c>python3</c> or
-/// <c>py</c>, found by <see cref="ToolResolutionHelper.ResolvePythonExecutable"/>. The forms tests show real
-/// WPF windows, so the runner must have a desktop session.
+/// <c>py</c>, found by <see cref="ToolResolutionHelper.ResolvePythonExecutable"/>. The forms and shell tests open real
+/// WPF windows, so the runner must have a desktop session; the windows are placed off-screen and
+/// without activation by <c>OffscreenWindows</c>.
 /// </remarks>
 public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions) : Module
 {
