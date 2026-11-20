@@ -37,15 +37,22 @@ def python_metadata(path):
     values = {}
     for node in tree.body:
         if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id in {
-                    "TEST_ENVIRONMENT",
-                    "TEST_LEVEL",
-                }:
-                    values[target.id] = ast.literal_eval(node.value)
+            targets = node.targets
+        elif isinstance(node, ast.AnnAssign) and node.value:
+            targets = [node.target]
+        else:
+            continue
+        for target in targets:
+            if isinstance(target, ast.Name) and target.id in {
+                "TEST_ENVIRONMENT",
+                "TEST_LEVEL",
+            }:
+                values[target.id] = ast.literal_eval(node.value)
     for name, allowed in (("TEST_ENVIRONMENT", ENVIRONMENTS), ("TEST_LEVEL", LEVELS)):
         if values.get(name) not in allowed:
-            raise ValueError(f"{path}: valid {name} is required")
+            raise ValueError(
+                f"{path}: {name} must be one of {sorted(allowed)}, found {values.get(name)!r}"
+            )
     return {"Environment": values["TEST_ENVIRONMENT"], "Level": values["TEST_LEVEL"]}
 
 

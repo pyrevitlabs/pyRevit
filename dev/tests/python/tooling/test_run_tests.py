@@ -242,6 +242,29 @@ class SelectionTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "TEST_ENVIRONMENT"):
                 run_tests.python_metadata(path)
 
+    def test_annotated_classification_is_read(self):
+        """Annotated module defaults classify a suite like plain assignments."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "test_annotated.py"
+            path.write_text(
+                'TEST_ENVIRONMENT: str = "HostFree"\nTEST_LEVEL: str = "Unit"\n',
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                {"Environment": "HostFree", "Level": "Unit"},
+                run_tests.python_metadata(path),
+            )
+
+    def test_invalid_classification_reports_the_found_value(self):
+        """The error names the offending value, not only the expected field."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "test_invalid.py"
+            path.write_text(
+                'TEST_ENVIRONMENT = "Hostfree"\nTEST_LEVEL = "Unit"\n', encoding="utf-8"
+            )
+            with self.assertRaisesRegex(ValueError, "found 'Hostfree'"):
+                run_tests.python_metadata(path)
+
     def test_coverage_drop_fails_per_module(self):
         """A strong module cannot mask a second module's regression."""
         baseline = {"parser": {"line": 0.8, "branch": 0.6}}
