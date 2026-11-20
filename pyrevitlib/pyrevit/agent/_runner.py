@@ -1749,9 +1749,8 @@ def _is_under(module_file, root):
     if not isinstance(module_file, str) or not op.isabs(module_file):
         return False
     try:
-        return (op.normcase(op.abspath(module_file)) + op.sep).startswith(
-            _folder_prefix(root)
-        )
+        root = op.normcase(op.abspath(root)).rstrip("/\\") + op.sep
+        return (op.normcase(op.abspath(module_file)) + op.sep).startswith(root)
     except Exception:
         return False
 
@@ -1794,8 +1793,8 @@ def _unload_modules_under(folder):
     def in_workspace(path):
         return (
             _is_under(path, root)
-            and not _is_runtime_module(path)
             and not any(_is_under(path, prefix) for prefix in nested)
+            and not _is_runtime_module(path)
         )
 
     def from_workspace(module):
