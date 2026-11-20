@@ -218,23 +218,17 @@ def classify_dotnet(projects, results):
     command(
         [
             "dotnet",
-            "build",
+            "run",
+            "--project",
             ROOT / "build/Build.csproj",
             "-c",
             "Release",
-            "--nologo",
-            "-m:1",
-            "-nr:false",
-        ]
-    )
-    command(
-        [
-            "dotnet",
-            ROOT / "build/bin/Release/net10.0/pyRevit.Build.dll",
+            "--",
             "test-catalog",
             source_list,
             catalog_path,
-        ]
+        ],
+        environment={"MSBUILDDISABLENODEREUSE": "1"},
     )
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
     for project in projects:
