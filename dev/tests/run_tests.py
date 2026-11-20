@@ -499,6 +499,83 @@ def updated_baselines(baseline, measured, language):
     return {**kept, **measured}
 
 
+def run_python(suites, directory):
+    """Run the inventoried host-free Python suites with strict skips and coverage.
+
+    Raises:
+        ValueError: No host-free suite is inventoried or pytest selected zero
+            tests, so an empty selection never passes.
+    """
+    files = [suite["path"] for suite in suites if suite["Environment"] == "HostFree"]
+    if not files:
+        raise ValueError("No host-free Python suites discovered")
+    directory.mkdir(parents=True, exist_ok=True)
+    command(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            *files,
+            "--strict-markers",
+            "-o",
+            f"cache_dir={directory / 'cache'}",
+            f"--junitxml={directory / 'results.xml'}",
+            "--cov",
+            "--cov-branch",
+            f"--cov-report=json:{directory / 'coverage.json'}",
+            f"--cov-report=xml:{directory / 'coverage.xml'}",
+            "--cov-report=term",
+        ],
+        environment={STRICT_SKIPS_ENV: "1"},
+    )
+    root = ET.parse(directory / "results.xml").getroot()
+    if sum(int(suite.get("tests", "0")) for suite in root.iter("testsuite")) == 0:
+        raise ValueError("Python run selected zero tests")
+
+
+def report_coverage(results, measured, language):
+    """Write the run's coverage summary and, in CI, the job step summary."""
+    (results / "coverage-summary.json").write_text(
+        json.dumps(measured, indent=2, sort_keys=True), encoding="utf-8"
+    )
+    if "GITHUB_STEP_SUMMARY" in os.environ:
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as report:
+            report.write(
+                f"\n### {language} test coverage\n\n| Module | Lines | Branches |\n|---|---:|---:|\n"
+            )
+            for module, values in sorted(measured.items()):
+                report.write(
+                    f"| {module} | {values['line']:.1%} | {values['branch']:.1%} |\n"
+                )
+
+
+def gate_coverage(measured, baseline, language, update):
+    """Enforce the selected language's floors, or return replacement floors.
+
+    Returns:
+        With ``update``, the baselines to write, unchecked; otherwise ``None``.
+
+    Raises:
+        ValueError: A floor of the selected language regressed or lost its
+            module, or any measured module has no reviewed baseline.
+    """
+    if update:
+        return updated_baselines(baseline, measured, language)
+    check_baselines(
+        measured,
+        {
+            module: floors
+            for module, floors in baseline.items()
+            if language == "all" or module.startswith(language)
+        },
+    )
+    if set(measured) - set(baseline):
+        raise ValueError(
+            "New coverage modules need reviewed baselines: run --update-baselines"
+        )
+    return None
+
+
 def main():
     """Run the same selection locally and in CI; list local Revit suites only."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -542,36 +619,7 @@ def main():
     if options.language != "python":
         require_built_product()
     if options.language != "dotnet":
-        directory = results / "python"
-        directory.mkdir(exist_ok=True)
-        files = [
-            suite["path"]
-            for suite in inventory["python"]
-            if suite["Environment"] == "HostFree"
-        ]
-        if not files:
-            raise ValueError("No host-free Python suites discovered")
-        command(
-            [
-                sys.executable,
-                "-m",
-                "pytest",
-                *files,
-                "--strict-markers",
-                "-o",
-                f"cache_dir={directory / 'cache'}",
-                f"--junitxml={directory / 'results.xml'}",
-                "--cov",
-                "--cov-branch",
-                f"--cov-report=json:{directory / 'coverage.json'}",
-                f"--cov-report=xml:{directory / 'coverage.xml'}",
-                "--cov-report=term",
-            ],
-            environment={STRICT_SKIPS_ENV: "1"},
-        )
-        root = ET.parse(directory / "results.xml").getroot()
-        if sum(int(suite.get("tests", "0")) for suite in root.iter("testsuite")) == 0:
-            raise ValueError("Python run selected zero tests")
+        run_python(inventory["python"], results / "python")
     summary = []
     for project in inventory["dotnet"]:
         for engine in engine_variants(project):
@@ -583,39 +631,14 @@ def main():
     )
     measured = collect_coverage(results)
     baseline = json.loads(BASELINES.read_text()) if BASELINES.exists() else {}
-    selected = {
-        key: value
-        for key, value in baseline.items()
-        if options.language == "all" or key.startswith(options.language)
-    }
-    (results / "coverage-summary.json").write_text(
-        json.dumps(measured, indent=2, sort_keys=True), encoding="utf-8"
+    report_coverage(results, measured, options.language)
+    updated = gate_coverage(
+        measured, baseline, options.language, options.update_baselines
     )
-    if "GITHUB_STEP_SUMMARY" in os.environ:
-        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as report:
-            report.write(
-                f"\n### {options.language} test coverage\n\n| Module | Lines | Branches |\n|---|---:|---:|\n"
-            )
-            for module, values in sorted(measured.items()):
-                report.write(
-                    f"| {module} | {values['line']:.1%} | {values['branch']:.1%} |\n"
-                )
-    if not options.update_baselines:
-        check_baselines(measured, selected)
-    if options.update_baselines:
+    if updated is not None:
         BASELINES.parent.mkdir(parents=True, exist_ok=True)
         BASELINES.write_text(
-            json.dumps(
-                updated_baselines(baseline, measured, options.language),
-                indent=2,
-                sort_keys=True,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-    elif set(measured) - set(baseline):
-        raise ValueError(
-            "New coverage modules need reviewed baselines: run --update-baselines"
+            json.dumps(updated, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
 
 

@@ -583,3 +583,77 @@ class SelectionTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "tool"):
                 run_tests.locked_requirements(lock)
+
+
+class GateTests(unittest.TestCase):
+    """Pin the pass/fail control flow that main() delegates."""
+
+    BASELINE = {
+        "python/a.py": {"line": 0.5, "branch": 0.5},
+        "dotnet/A/net48": {"line": 0.5, "branch": 0.5},
+    }
+
+    def test_language_filter_only_checks_the_selected_floors(self):
+        """A Python-only run is not failed by the unmeasured C# modules."""
+        measured = {"python/a.py": {"line": 0.5, "branch": 0.5}}
+        self.assertIsNone(
+            run_tests.gate_coverage(measured, self.BASELINE, "python", False)
+        )
+        with self.assertRaisesRegex(ValueError, "Missing coverage for dotnet/A"):
+            run_tests.gate_coverage(measured, self.BASELINE, "all", False)
+
+    def test_regression_fails_unless_updating(self):
+        """Updating returns new floors without checking; checking rejects drops."""
+        measured = {"python/a.py": {"line": 0.1, "branch": 0.5}}
+        with self.assertRaisesRegex(ValueError, "python/a.py line"):
+            run_tests.gate_coverage(measured, self.BASELINE, "python", False)
+        self.assertEqual(
+            {**self.BASELINE, **measured},
+            run_tests.gate_coverage(measured, self.BASELINE, "python", True),
+        )
+
+    def test_new_module_needs_a_reviewed_baseline(self):
+        """A measured module without a floor fails a normal run."""
+        measured = {
+            "python/a.py": {"line": 0.5, "branch": 0.5},
+            "python/new.py": {"line": 1, "branch": 1},
+        }
+        with self.assertRaisesRegex(ValueError, "need reviewed baselines"):
+            run_tests.gate_coverage(measured, self.BASELINE, "python", False)
+
+    def _run_python(self, suites, tests):
+        def fake_command(arguments, environment):
+            self.assertEqual({run_tests.STRICT_SKIPS_ENV: "1"}, environment)
+            calls.append(arguments)
+            report = next(a for a in arguments if str(a).startswith("--junitxml="))
+            Path(report.split("=", 1)[1]).write_text(
+                f'<testsuites><testsuite tests="{tests}"/></testsuites>',
+                encoding="utf-8",
+            )
+
+        calls = []
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(run_tests, "command", side_effect=fake_command),
+        ):
+            run_tests.run_python(suites, Path(directory) / "python")
+        return calls
+
+    def test_python_run_passes_only_host_free_suites(self):
+        """Revit suites are inventoried but never handed to pytest."""
+        calls = self._run_python(
+            [
+                {"path": "test_free.py", "Environment": "HostFree"},
+                {"path": "test_hosted.py", "Environment": "Revit"},
+            ],
+            1,
+        )
+        self.assertIn("test_free.py", calls[0])
+        self.assertNotIn("test_hosted.py", calls[0])
+
+    def test_python_run_rejects_empty_selections(self):
+        """No host-free suite, or zero selected tests, never passes."""
+        with self.assertRaisesRegex(ValueError, "No host-free Python suites"):
+            self._run_python([{"path": "t.py", "Environment": "Revit"}], 1)
+        with self.assertRaisesRegex(ValueError, "zero tests"):
+            self._run_python([{"path": "t.py", "Environment": "HostFree"}], 0)
