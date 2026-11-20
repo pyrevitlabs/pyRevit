@@ -42,6 +42,13 @@ namespace PyRevitLoader
             _logger = logger;
         }
 
+        /// <summary>
+        /// Why the last <see cref="ExecuteSelfInit"/> call did not run its script or <c>__selfinit__</c>
+        /// to completion; null when it did.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: read by reflection from <c>SmartButtonScriptInitializer</c>; keep the name.
+        /// </remarks>
         public string Message { get; private set; } = null;
 
         private void Log(string message)
@@ -78,6 +85,7 @@ namespace PyRevitLoader
             SmartButtonContext context,
             IEnumerable<string> additionalSearchPaths = null)
         {
+            Message = null;
 
             if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath))
             {

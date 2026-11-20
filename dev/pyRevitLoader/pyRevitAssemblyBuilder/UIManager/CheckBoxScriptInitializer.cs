@@ -157,6 +157,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                 var result = _executeMethod!.Invoke(
                     _executor,
                     new object?[] { scriptPath, context, checkBox, searchPaths, BuildExecutionScope(component) });
+                ExecutorFailure.ReportIfFailed(_executor!, "CheckBox", component.DisplayName, _logger);
                 return result is bool succeeded ? succeeded : true;
             }
             catch (TargetInvocationException ex)

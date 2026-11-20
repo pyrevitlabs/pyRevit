@@ -82,6 +82,14 @@ namespace PyRevitLoader
         }
 
         /// <summary>
+        /// Why the last <see cref="ExecuteEventHandlerSetup"/> call failed; null when it did not.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: read by reflection from <c>CheckBoxScriptInitializer</c>; keep the name.
+        /// </remarks>
+        public string Message { get; private set; }
+
+        /// <summary>
         /// Runs <paramref name="scriptPath"/>, calls its <c>__chk_init__</c>, then subscribes its
         /// <c>__chk_on_change__</c> to <paramref name="checkBox"/>.
         /// </summary>
@@ -109,6 +117,7 @@ namespace PyRevitLoader
             IEnumerable<string> additionalSearchPaths = null,
             IDictionary<string, object> scopeVariables = null)
         {
+            Message = null;
             if (_handlers.IsReleased)
                 return true;
 
@@ -162,7 +171,7 @@ namespace PyRevitLoader
             }
             catch (Exception ex)
             {
-                Log($"CheckBox executor error for '{context?.name}': {ex.Message}");
+                Fail($"CheckBox executor error for '{context?.name}': {ex.Message}");
                 return false;
             }
         }
@@ -177,6 +186,12 @@ namespace PyRevitLoader
         private void Log(string message)
         {
             _logger?.Invoke(message);
+        }
+
+        private void Fail(string message)
+        {
+            Message = message;
+            Log(message);
         }
 
         private void EnsureEngineInitialized()
@@ -226,7 +241,7 @@ namespace PyRevitLoader
             var errors = new ErrorReporter();
             if (script.Compile(compilerOptions, errors) == null)
             {
-                Log("Compilation failed:\r\n" + string.Join("\r\n", errors.Errors));
+                Fail("Compilation failed:\r\n" + string.Join("\r\n", errors.Errors));
                 return ScriptRunResult.Failed;
             }
 
@@ -241,7 +256,7 @@ namespace PyRevitLoader
             }
             catch (Exception ex)
             {
-                Log($"Script execution error in '{scriptPath}': {ex.Message}");
+                Fail($"Script execution error in '{scriptPath}': {ex.Message}");
                 return ScriptRunResult.Failed;
             }
         }
@@ -344,7 +359,7 @@ namespace PyRevitLoader
             }
             catch (Exception ex)
             {
-                Log($"Error in {handlerName}: {ex.Message}");
+                Fail($"Error in {handlerName}: {ex.Message}");
                 return ScriptRunResult.Failed;
             }
         }

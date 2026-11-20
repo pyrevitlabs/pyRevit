@@ -457,6 +457,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             {
                 // Call SmartButtonExecutor.ExecuteSelfInit(scriptPath, context, additionalPaths)
                 var result = _executeMethod.Invoke(_executor, new object[] { scriptPath, context, additionalPaths });
+                ExecutorFailure.ReportIfFailed(_executor, "SmartButton", component.DisplayName, _logger);
                 return result is bool boolResult ? boolResult : true;
             }
             catch (TargetInvocationException ex)

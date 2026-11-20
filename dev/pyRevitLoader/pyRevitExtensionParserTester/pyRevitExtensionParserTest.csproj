@@ -29,6 +29,7 @@
     <Compile Include="TestHelpers\MachineConfigIsolation.cs" />
     <Compile Include="MachineConfigIsolationTests.cs" />
     <Compile Include="MockLogger.cs" />
+    <Compile Include="ExecutorFailureTests.cs" />
     <Compile Include="DarkIconTests.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="LocalizationTests.cs" />
