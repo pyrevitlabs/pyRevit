@@ -14,7 +14,7 @@ from pyrevit.coreutils.ribbon import ICON_MEDIUM
 import minifyui
 
 
-config = script.get_config()
+config = script.get_config(minifyui.MINIFYUI_CONFIG_SECTION)
 
 
 # FIXME: need to figure out a way to fix the icon sizing of toggle buttons

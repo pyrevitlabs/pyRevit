@@ -12,6 +12,7 @@ mlogger = script.get_logger()
 
 
 MINIFYUI_ENV_VAR = "MINIFYUIACTIVE"
+MINIFYUI_CONFIG_SECTION = "MinifyUI_config"
 
 
 class TabOption(forms.TemplateListItem):
