@@ -5,7 +5,7 @@ import traceback
 import unittest
 
 import pyrevit.unittests as tests_pkg
-from pyrevit.unittests.runner import run_module_tests
+from pyrevit.unittests.runner import run_module_tests, was_successful
 
 TEST_MODULE_PREFIX = "test_"
 OPT_IN_MODULES = frozenset(
@@ -76,7 +76,7 @@ for module_name in test_modules:
     try:
         module = __import__(qualified_name, fromlist=["*"])
         result = run_module_tests(module)
-        if not result.wasSuccessful():
+        if not was_successful(result):
             _print_result_details(qualified_name, result)
             failures.append((qualified_name, result))
         else:
