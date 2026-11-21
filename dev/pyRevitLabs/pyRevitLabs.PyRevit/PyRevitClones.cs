@@ -100,6 +100,22 @@ namespace pyRevitLabs.PyRevit {
                 UnregisterClone(clone);
         }
 
+        /// <summary>
+        /// The clone <paramref name="path"/> lies in: the registered one when there is one, otherwise a
+        /// clone read from the path itself, or null when the path is not inside a valid clone.
+        /// </summary>
+        public static PyRevitClone FindContaining(string path) {
+            var registered = GetRegisteredClones().FirstOrDefault(clone => path.IsPathWithin(clone.ClonePath));
+            if (registered != null)
+                return registered;
+            try {
+                return new PyRevitClone(Path.GetDirectoryName(path));
+            }
+            catch (PyRevitException) {
+                return null;
+            }
+        }
+
         // return list of registered clones
         // @handled @logs
         public static List<PyRevitClone> GetRegisteredClones() {
