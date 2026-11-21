@@ -20,7 +20,7 @@ namespace pyRevitExtensionParser
         {
             public List<string> AuthorizedUsers { get; } = new List<string>();
             public List<string> AuthorizedGroups { get; } = new List<string>();
-            public bool AccessListUnreadable { get; set; }
+            public List<string> UnreadableAccessListLocations { get; } = new List<string>();
         }
 
         internal static void ClearCache()
@@ -36,6 +36,8 @@ namespace pyRevitExtensionParser
         /// <returns>
         /// True when a registry entry naming this extension declares an access list that
         /// could not be read; the caller must then treat the extension as restricted.
+        /// Each such entry is logged as an error here, so entries naming no loaded
+        /// extension are never reported.
         /// </returns>
         internal static bool ApplyRegistryAuthorization(
             string extDir,
@@ -66,7 +68,11 @@ namespace pyRevitExtensionParser
 
                 MergeAuthList(ref authUsers, entry.AuthorizedUsers);
                 MergeAuthList(ref authGroups, entry.AuthorizedGroups);
-                accessListUnreadable |= entry.AccessListUnreadable;
+                foreach (var location in entry.UnreadableAccessListLocations)
+                {
+                    ExtensionParser.LogAuthDefinitionUnreadable(location);
+                    accessListUnreadable = true;
+                }
             }
 
             return accessListUnreadable;
@@ -161,9 +167,8 @@ namespace pyRevitExtensionParser
                         continue;
 
                     var accessListUnreadable = false;
-                    var entryLocation = "registry entry '" + name + "' in " + filePath;
-                    var users = ExtensionParser.ReadAuthList(entry["authusers"], entryLocation, ref accessListUnreadable);
-                    var groups = ExtensionParser.ReadAuthList(entry["authgroups"], entryLocation, ref accessListUnreadable);
+                    var users = ExtensionParser.ReadAuthList(entry["authusers"], ref accessListUnreadable);
+                    var groups = ExtensionParser.ReadAuthList(entry["authgroups"], ref accessListUnreadable);
                     if (users == null && groups == null && !accessListUnreadable)
                         continue;
 
@@ -175,7 +180,9 @@ namespace pyRevitExtensionParser
 
                     MergeAuthList(authEntry.AuthorizedUsers, users);
                     MergeAuthList(authEntry.AuthorizedGroups, groups);
-                    authEntry.AccessListUnreadable |= accessListUnreadable;
+                    var entryLocation = "registry entry '" + name + "' in " + filePath;
+                    if (accessListUnreadable && !authEntry.UnreadableAccessListLocations.Contains(entryLocation))
+                        authEntry.UnreadableAccessListLocations.Add(entryLocation);
                 }
             }
             catch (Exception ex)

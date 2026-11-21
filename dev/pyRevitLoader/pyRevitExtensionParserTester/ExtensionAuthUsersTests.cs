@@ -219,6 +219,7 @@ namespace pyRevitExtensionParserTester
         [TestCase("\"authgroups\": {\"sid\": \"S-1-5-32-544\"}")]
         [TestCase("\"authusers\": [\"\", \"  \"]")]
         [TestCase("\"authgroups\": [\"\"]")]
+        [TestCase("\"authusers\": \"SomeoneElse\", \"authgroups\": [\"\"]")]
         public void MalformedAccessListInRegistryEntryIsRefused(string accessList)
         {
             var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "RegistryMalformedAuthExt");
@@ -226,25 +227,15 @@ namespace pyRevitExtensionParserTester
             File.WriteAllText(
                 registryPath,
                 "{\"extensions\": [{\"name\": \"RegistryMalformedAuthExt\", \"type\": \"extension\", " + accessList + "}]}");
-            var errors = new ErrorCapture();
 
             ClearAllCaches();
-            SetLogger(errors);
-            ParsedExtension parsed;
-            try
-            {
-                parsed = ParseInstalledExtensions(extPath).Single();
-            }
-            finally
-            {
-                SetLogger(null);
-            }
+            var parsed = ParseCapturingErrors(extPath, out var errors);
 
             Assert.That(parsed.AuthDefinitionUnreadable, Is.True);
             Assert.That(InvokeIsExtensionAllowed(new ExtensionManagerService(), parsed), Is.False);
             Assert.That(
                 errors.Messages,
-                Has.Some.Contains(
+                Has.Exactly(1).Contains(
                     "Access list in registry entry 'RegistryMalformedAuthExt' in " + registryPath + " could not be read"));
         }
 
@@ -274,9 +265,10 @@ namespace pyRevitExtensionParserTester
                 "{\"extensions\": [{\"name\": \"OtherExt\", \"type\": \"extension\", \"authusers\": \"SomeoneElse\"}]}");
 
             ClearAllCaches();
-            var parsed = ParseInstalledExtensions(extPath).Single();
+            var parsed = ParseCapturingErrors(extPath, out var errors);
 
             Assert.That(parsed.AuthDefinitionUnreadable, Is.False);
+            Assert.That(errors.Messages, Has.None.Contains("Access list in"));
         }
 
         [Test]
@@ -326,6 +318,20 @@ namespace pyRevitExtensionParserTester
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(method, Is.Not.Null);
             return (bool)method!.Invoke(service, new object[] { extension })!;
+        }
+
+        private static ParsedExtension ParseCapturingErrors(string extPath, out ErrorCapture errors)
+        {
+            errors = new ErrorCapture();
+            SetLogger(errors);
+            try
+            {
+                return ParseInstalledExtensions(extPath).Single();
+            }
+            finally
+            {
+                SetLogger(null);
+            }
         }
 
         private sealed class ErrorCapture : IParserLogger
