@@ -279,7 +279,7 @@ pyrevit clones
 !!! warning "`PYREVIT_PATH_OVERRIDE` alone does not isolate the clone registry"
     The first CLI call fills a fresh user folder from the all-users config, so `pyrevit clones` lists, and later commands edit a copy of, the clones registered there. Set `PYREVIT_PROGRAMDATA_PATH_OVERRIDE` as well. `pyrevit launch --isolated` deliberately leaves it alone, because the launched Revit still loads the all-users config.
 
-These variables do not cover places the OS decides: the Revit add-in manifests that `attach` and `detach` write under `%APPDATA%\Autodesk\Revit\Addins`, and the `PATH` entries of `pyrevit env path`. Run those only against a Revit year you have no real attachment for, or not at all.
+These variables do not cover places the OS decides: the Revit add-in manifests that `attach` and `detach` write under `%APPDATA%\Autodesk\Revit\Addins` (and, with `--allusers`, under `%PROGRAMDATA%\Autodesk\Revit\Addins` through Revit 2026 or `%PROGRAMFILES%\Autodesk\Revit\Addins` from Revit 2027), and the `PATH` entries of `pyrevit env path`. Run those only against a Revit year you have no real attachment for, or not at all.
 
 ## Debugging Code
 
