@@ -113,10 +113,15 @@ namespace pyRevitCLI {
                     extDef = PyRevitExtensions.FindRegisteredExtension(extName);
                 }
                 catch (PyRevitException notRegistered) {
-                    var installed = FindInstalledExtensionOrNull(extName)
-                        ?? throw new PyRevitException(string.Format(
+                    var installed = FindInstalledExtensions(extName);
+                    if (installed.Count == 0)
+                        throw new PyRevitException(string.Format(
                             "{0} in the extension sources, and no installed extension matches it", notRegistered.Message));
-                    PrintOrOpenInstalledExtension(installed, info, help);
+                    if (installed.Count > 1)
+                        Console.WriteLine(string.Format("More than one installed extension matches \"{0}\": {1}",
+                                                        extName, string.Join(", ", installed.Select(ext => ext.Name))));
+                    else
+                        PrintOrOpenInstalledExtension(installed[0], info, help);
                     return;
                 }
 
@@ -135,13 +140,21 @@ namespace pyRevitCLI {
             }
         }
 
-        private static PyRevitExtension FindInstalledExtensionOrNull(string extName) {
+        private static List<PyRevitExtension> FindInstalledExtensions(string extName) {
+            List<PyRevitExtension> matches;
             try {
-                return PyRevitExtensions.GetInstalledExtension(extName);
+                var matcher = new System.Text.RegularExpressions.Regex(
+                    extName,
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                    | System.Text.RegularExpressions.RegexOptions.IgnorePatternWhitespace);
+                matches = PyRevitExtensions.GetInstalledExtensions().Where(ext => matcher.IsMatch(ext.Name)).ToList();
             }
-            catch (PyRevitException) {
-                return null;
+            catch (ArgumentException) {
+                return new List<PyRevitExtension>();
             }
+
+            var exact = matches.Where(ext => string.Equals(ext.Name, extName, StringComparison.OrdinalIgnoreCase)).ToList();
+            return exact.Count == 1 ? exact : matches;
         }
 
         private static void PrintOrOpenInstalledExtension(PyRevitExtension installed, bool info, bool help) {
