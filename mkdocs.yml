@@ -95,7 +95,6 @@ nav:
   - Get Started:
     - get-started/index.md
     - Install pyRevit: get-started/install.md
-    - First launch: get-started/first-launch.md
     - Configure pyRevit: get-started/configure.md
     - Install extensions: get-started/install-extensions.md
     - Update pyRevit: get-started/update.md
@@ -171,7 +170,6 @@ nav:
     - Python API: reference/
     - Runtime:
       - runtime/index.md
-      - Load sequence: runtime/load-sequence.md
       - Engines: runtime/engines.md
       - Executor result codes: runtime/executor-result-codes.md
       - Changes to IronPython: runtime/ironpython-changes.md
