@@ -254,8 +254,8 @@ def discover_python():
 
     Note:
         ``*_tests.py`` is the extensions' in-Revit suite convention and is only
-        searched there: under ``dev/`` it would match this runner and manual
-        scripts such as ``dfdb_tests.py``. Name every other suite ``test_*.py``.
+        searched there: under ``dev/`` it would match this runner. Name every
+        other suite ``test_*.py``.
     """
     roots = (ROOT / "dev", ROOT / "pyrevitlib/pyrevit/unittests", ROOT / "extensions")
     paths = {
