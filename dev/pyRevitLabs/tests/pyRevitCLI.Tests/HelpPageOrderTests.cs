@@ -45,13 +45,18 @@ public class HelpPageOrderTests {
         foreach (var section in new[] { "Management Commands", "Commands" }) {
             var positions = ListedCommands(page, section)
                 .Where(command => Regex.IsMatch(command, "^[a-z]"))
-                .Select(command => (command, position: usageWords.FindIndex(words => words.Contains(command))))
+                .Select(command => (command, position: PositionIn(usageWords, command)))
                 .ToList();
 
-            Assert.DoesNotContain(positions, entry => entry.position < 0);
-            Assert.Equal(positions.OrderBy(entry => entry.position).Select(entry => entry.command),
+            Assert.DoesNotContain(positions, entry => entry.position.Line < 0);
+            Assert.Equal(positions.OrderBy(entry => entry.position.Line).ThenBy(entry => entry.position.Word).Select(entry => entry.command),
                          positions.Select(entry => entry.command));
         }
+    }
+
+    private static (int Line, int Word) PositionIn(List<List<string>> usageWords, string command) {
+        var line = usageWords.FindIndex(words => words.Contains(command));
+        return (line, line < 0 ? -1 : usageWords[line].IndexOf(command));
     }
 
     private static List<string> WordsOf(string usageLine) =>
