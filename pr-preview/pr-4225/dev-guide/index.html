@@ -11366,7 +11366,9 @@
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="nv">$env:PYREVIT_AGENT_DIR</span> <span class="p">=</span> <span class="s1">'C:\scratch\agent'</span>
 </span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="nv">$env:PYREVIT_IGNORE_LOCAL_CONFIG</span> <span class="p">=</span> <span class="s1">'1'</span>
 </span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">pyrevit</span> <span class="n">clones</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="nb">Remove-Item</span> <span class="n">Env</span><span class="p">:</span><span class="n">PYREVIT_PATH_OVERRIDE</span><span class="p">,</span> <span class="n">Env</span><span class="p">:</span><span class="n">PYREVIT_PROGRAMDATA_PATH_OVERRIDE</span><span class="p">,</span> <span class="n">Env</span><span class="p">:</span><span class="n">PYREVIT_AGENT_DIR</span><span class="p">,</span> <span class="n">Env</span><span class="p">:</span><span class="n">PYREVIT_IGNORE_LOCAL_CONFIG</span>
 </span></code></pre></div>
+<p>The variables stay set in the shell until removed, as in the last line, so use a throwaway shell if some of them were already set.</p>
 <table>
 <thead>
 <tr>
@@ -11395,7 +11397,7 @@
 </table>
 <div class="admonition warning">
 <p class="admonition-title"><code>PYREVIT_PATH_OVERRIDE</code> alone does not isolate the clone registry</p>
-<p>The first CLI call fills a fresh user folder from the all-users config, so <code>pyrevit clones</code> lists, and later commands edit a copy of, the clones registered there. Set <code>PYREVIT_PROGRAMDATA_PATH_OVERRIDE</code> as well. <code>pyrevit launch --isolated</code> deliberately leaves it alone, because the launched Revit still loads the all-users config.</p>
+<p>The first non-elevated CLI call fills a fresh user folder from the all-users config, so <code>pyrevit clones</code> lists the clones registered there, and non-elevated commands edit only the copy. On an all-users install, an elevated command edits the all-users config directly. Set <code>PYREVIT_PROGRAMDATA_PATH_OVERRIDE</code> as well, especially before running elevated clone commands. <code>pyrevit launch --isolated</code> deliberately leaves it alone, because the launched Revit still loads the all-users config.</p>
 </div>
 <p>These variables do not cover places the OS decides: the Revit add-in manifests that <code>attach</code> and <code>detach</code> write under <code>%APPDATA%\Autodesk\Revit\Addins</code> (and, with <code>--allusers</code>, under <code>%PROGRAMDATA%\Autodesk\Revit\Addins</code> through Revit 2026 or <code>%PROGRAMFILES%\Autodesk\Revit\Addins</code> from Revit 2027), and the <code>PATH</code> entries of <code>pyrevit env path</code>. Run those only against a Revit year you have no real attachment for, or not at all.</p>
 <h2 id="debugging-code">Debugging Code</h2>
