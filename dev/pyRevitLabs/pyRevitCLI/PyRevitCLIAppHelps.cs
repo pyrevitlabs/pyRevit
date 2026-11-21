@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using pyRevitLabs.Common.Extensions;
+using pyRevitLabs.PyRevit;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitCLI {
@@ -385,6 +386,9 @@ namespace pyRevitCLI {
                         commands: new Dictionary<string, string>() {
                             { "status",                 "List running Revit sessions with the agent host" },
                             { "context",                "Print the context of a Revit session (document, view, selection...)" },
+                            { "capture",                "Save a PNG of a Revit view" },
+                            { "inspect",                "Describe elements of the active document by id" },
+                            { "lookup",                 "Look up a Revit API type or member in the running Revit" },
                             { "run",                    "Run a Python script in Revit through the agent host" },
                             { "runs",                   "List recent agent runs" },
                             { "show",                   "Print the record of an agent run" },
@@ -394,6 +398,14 @@ namespace pyRevitCLI {
                         options: new Dictionary<string, string>() {
                             { "--json",                 "Print status as json" },
                             { "<script_file>",          "Python script to run" },
+                            { "<view>",                 "View name, sheet number, view id, active or 3d (default: active)" },
+                            { "--view-type=<view_type>", "Revit ViewType such as FloorPlan or Section; narrows a view name shared by several views" },
+                            { "--mode=<capture_mode>",  "export (default), viewport or screen, for 'agent capture'" },
+                            { "--width=<pixels>",       "Image width, 320 to 2400 (default 1280)" },
+                            { "--out=<png_file>",       "Write the capture to this file; otherwise the host keeps it under %APPDATA%\\pyRevit\\agent\\captures" },
+                            { "<element_id>",           "Element ids to inspect, at most 50" },
+                            { "--no-parameters",        "Leave the parameters out of 'agent inspect'" },
+                            { "<api_name>",             "Revit API type or member, e.g. Wall, Wall.Create, ElementId.Value" },
                             { "--mode=<run_mode>",      "query (default), dry_run or modify" },
                             { "--engine=<engine_name>", "ironpython or cpython (default: configured agent engine)" },
                             { "--title=<run_title>",    "Run title; used as the undo name for modify runs" },
@@ -470,6 +482,59 @@ namespace pyRevitCLI {
                             { "--lock",                 "Lock seed file by admin user" },
                             { "<option_path>",          "Custom option path formatted as \"section:option\"" },
                             { "<option_value>",         "Custom option value" },
+                        });
+                    break;
+
+                case PyRevitCLICommandType.ConfigsRoutes:
+                    BuildHelp(
+                        new List<string>() { "configs routes" },
+                        header: "Configure the pyRevit Routes server.\n"
+                                + "Run a command without a value to print the current setting.",
+                        commands: new Dictionary<string, string>() {
+                            { "port",                   "Port the Routes server listens on (default " + PyRevitConsts.ConfigsRoutesPortDefault + ")" },
+                            { "coreapi",                "Load the Routes core API endpoints" },
+                        },
+                        options: new Dictionary<string, string>() {
+                            { "enable | disable",       "Enable/Disable the Routes server, or the core API" },
+                            { "<port_number>",          "Port number for the Routes server" },
+                        });
+                    break;
+
+                case PyRevitCLICommandType.ConfigsAgent:
+                    BuildHelp(
+                        new List<string>() { "configs agent" },
+                        header: "Configure the pyRevit agent host in Revit.\n"
+                                + "Run a command without a value to print the current setting.",
+                        commands: new Dictionary<string, string>() {
+                            { "policy",                 "What agent scripts may do to the model" },
+                            { "engine",                 "Python engine for agent runs that do not name one (default ironpython)" },
+                            { "skills",                 "Let the agent use the user's own skills" },
+                            { "reckless",               "Run scripts without a timeout and transaction tracking; needs confirmation in Revit" },
+                        },
+                        options: new Dictionary<string, string>() {
+                            { "enable | disable",       "Start the host on the next pyRevit load, or turn the option off" },
+                            { "readonly",               "Queries and dry runs only" },
+                            { "ask",                    "Each modify run needs approval in Revit (default)" },
+                            { "auto",                   "Modify runs are committed without the approval prompt" },
+                            { "ironpython | cpython",   "Engine for agent runs" },
+                        });
+                    break;
+
+                case PyRevitCLICommandType.ConfigsTelemetry:
+                    BuildHelp(
+                        new List<string>() { "configs telemetry" },
+                        header: "Configure script telemetry.\n"
+                                + "Run a command without a value to print the current setting.",
+                        commands: new Dictionary<string, string>() {
+                            { "utc",                    "Use UTC timestamps instead of local time" },
+                            { "file",                   "Folder that receives the telemetry files" },
+                            { "server",                 "Url of the telemetry server" },
+                            { "hooks",                  "Send telemetry for hooks too" },
+                        },
+                        options: new Dictionary<string, string>() {
+                            { "enable | disable",       "Enable/Disable script telemetry" },
+                            { "yes | no",               "Activate/Deactivate config option" },
+                            { "<dest_path>",            "Telemetry folder for file, telemetry server url for server" },
                         });
                     break;
             }

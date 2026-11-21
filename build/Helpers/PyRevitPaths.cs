@@ -1,3 +1,5 @@
+using Build.Models;
+
 namespace Build.Helpers;
 
 /// <summary>
@@ -107,14 +109,25 @@ public static class PyRevitPaths
     public static string PyRevitCommonMsiProps => Path.Combine(ReleasePath, "pyrevit-common.props");
     public static string PyRevitCliMsiProps => Path.Combine(ReleasePath, "pyrevit-cli.props");
     public static string PyRevitCliMsiProject => Path.Combine(ReleasePath, "pyrevit-cli.wixproj");
-    public static string PyRevitChocoNuspec => Path.Combine(ReleasePath, "choco", "pyrevit-cli.nuspec");
-    public static string PyRevitChocoInstallScript => Path.Combine(ReleasePath, "choco", "tools", "chocolateyinstall.ps1");
 
     public static string PyRevitInstallerName => "pyRevit_{0}_signed";
     public static string PyRevitAdminInstallerName => "pyRevit_{0}_admin_signed";
     public static string PyRevitCliInstallerName => "pyRevit_CLI_{0}_signed";
     public static string PyRevitCliAdminInstallerName => "pyRevit_CLI_{0}_admin_signed";
-    public static string PyRevitChocoNupkgName => "pyrevit-cli.{0}.nupkg";
+
+    public static IReadOnlyList<ChocoPackage> ChocoPackages =>
+    [
+        new(
+            "pyrevit-cli",
+            Path.Combine(ReleasePath, "choco", "pyrevit-cli.nuspec"),
+            Path.Combine(ReleasePath, "choco", "tools", "chocolateyinstall.ps1"),
+            PyRevitCliAdminInstallerName),
+        new(
+            "pyrevit",
+            Path.Combine(ReleasePath, "choco", "pyrevit", "pyrevit.nuspec"),
+            Path.Combine(ReleasePath, "choco", "pyrevit", "tools", "chocolateyinstall.ps1"),
+            PyRevitAdminInstallerName),
+    ];
 
     public static IReadOnlyList<string> VersionFiles =>
     [
@@ -150,7 +163,7 @@ public static class PyRevitPaths
         PyRevitCliInstallerScript,
         PyRevitCliAdminInstallerScript,
         PyRevitCommonMsiProps,
-        PyRevitChocoNuspec,
+        .. ChocoPackages.Select(package => package.Nuspec),
     ];
 
     public static string IsccPath =>

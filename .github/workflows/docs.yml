@@ -21,6 +21,9 @@ on:
   # manual run
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   docs:
     runs-on: ubuntu-latest
@@ -37,4 +40,17 @@ jobs:
           pip install pipenv
           pipenv sync
 
-      - run: pipenv run mkdocs gh-deploy --force
+      - name: Build docs
+        run: pipenv run mkdocs build --site-dir site
+
+      - name: Check out gh-pages
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: gh-pages
+          path: gh-pages
+          fetch-depth: 1
+
+      - name: Deploy docs
+        env:
+          COMMIT_MESSAGE: "docs: deploy ${{ github.sha }}"
+        run: bash .github/scripts/publish-gh-pages.sh publish site .

@@ -19,6 +19,10 @@
         <Using Include="Xunit"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <Compile Include="..\pyRevitLabs.PyRevit.Forms.Tests\OffscreenWindows.cs" Link="OffscreenWindows.cs"/>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(ShellEnginesDirectory)' == ''">
         <ProjectReference Include="../../../pyRevitLabs.PyRevit.Shell/pyRevitLabs.PyRevit.Shell.csproj"
                           AdditionalProperties="Configuration=Release $(IronPythonVersion);TargetFrameworks=net8.0-windows;PlatformTarget=AnyCPU;RevitVersion=2025"/>

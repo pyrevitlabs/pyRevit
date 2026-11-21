@@ -127,7 +127,6 @@ jobs:
           Signing__Endpoint: ${{ secrets.AZURE_ENDPOINT }}
           Signing__SigningAccountName: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
           Signing__CertificateProfileName: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
-          Publish__ChocoToken: ${{ secrets.CHOCO_TOKEN }}
           Publish__WingetToken: ${{ secrets.WINGET_GITHUB_TOKEN }}
         run: dotnet run -c Release -- release pack sign publish
 

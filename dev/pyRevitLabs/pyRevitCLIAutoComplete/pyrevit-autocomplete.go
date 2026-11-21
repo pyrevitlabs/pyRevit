@@ -513,6 +513,29 @@ func main() {
 							"--revit": complete.PredictNothing,
 						},
 					},
+					"capture": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--mode":      complete.PredictNothing,
+							"--out":       complete.PredictNothing,
+							"--revit":     complete.PredictNothing,
+							"--view-type": complete.PredictNothing,
+							"--width":     complete.PredictNothing,
+						},
+					},
+					"inspect": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--no-parameters": complete.PredictNothing,
+							"--revit":         complete.PredictNothing,
+						},
+					},
+					"lookup": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--revit": complete.PredictNothing,
+						},
+					},
 					"run": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{

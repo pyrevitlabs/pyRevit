@@ -68,6 +68,7 @@ public sealed class CaseLog {
 /// <remarks>
 /// The interpreter and the WPF dispatcher are process-scoped, so every case of a fixture shares one
 /// session; one failing case is reported by its own theory row instead of hiding later cases.
+/// Windows the cases open are placed off-screen by <see cref="OffscreenWindows"/>.
 /// A case still marked running when the timeout elapses is reported as deadlocked, and cases never
 /// started are reported as not reached.
 /// </remarks>
@@ -99,6 +100,7 @@ public sealed class ParitySession {
     /// <remarks>Outcomes are frozen when the wait ends, so a thread still running after a timeout
     /// cannot change what later queries report.</remarks>
     public static ParitySession Run(Action<CaseLog> body, TimeSpan timeout) {
+        OffscreenWindows.Install();
         var session = new ParitySession();
         string? failure = null;
         var thread = new Thread(() => {
