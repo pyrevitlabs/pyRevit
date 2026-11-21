@@ -1103,7 +1103,12 @@ Honest limits:
   host therefore checks the run's change set against the model: an element the run deleted
   that is still missing, or one it added that is still there, makes the run
   `rollback_incomplete` with `status: error`, for dry runs and queries too, also when the
-  group had already ended before the rollback was requested. The host can't undo the
+  group had already ended before the rollback was requested. Elements the run created
+  itself don't count as deleted: loading a family creates elements Revit never reports as
+  added, and overwriting the family later reports them as deleted. When the run reported
+  an added element, only deleted ids up to the highest id left in the model after the
+  rollback count as elements that existed before the run; a run that reported none counts
+  every missing deleted element. The host can't undo the
   changes then, and the borrowed ownership stays with the local; the user has to
   undo in Revit or close the document without saving. The check does not cover
   modifications: the host records no state from before the run, so a script that only

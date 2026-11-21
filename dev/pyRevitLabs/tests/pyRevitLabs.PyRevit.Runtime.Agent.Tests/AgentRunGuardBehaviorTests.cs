@@ -514,6 +514,92 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             }
         }
 
+        /// <summary>
+        /// Loading a family creates elements Revit never reports as added, and overwriting the
+        /// family deletes them again. They are missing after every rollback and must not count
+        /// as a lost element.
+        /// </summary>
+        [Fact]
+        public void AnElementTheRunCreatedAndDeletedIsNotATraceAfterTheRollback() {
+            var app = new UIApplication();
+            var document = new Document { HighestElementValue = 100 };
+            var loadedFamily = new ElementId { Value = 102 };
+            var createdByRun = new ElementId { Value = 101 };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: new[] { loadedFamily }, deleted: new[] { createdByRun });
+                document.Deleted.Add(loadedFamily);
+                document.Deleted.Add(createdByRun);
+
+                guard.RollBack();
+
+                Assert.False(guard.RollbackFailed);
+            }
+        }
+
+        /// <summary>
+        /// An element added and deleted again leaves the change set's added elements, but the
+        /// run still created things, so elements Revit never reported are not a lost element.
+        /// </summary>
+        [Fact]
+        public void AnAdditionThatTheRunDeletedAgainStillMarksTheRunAsHavingCreatedElements() {
+            var app = new UIApplication();
+            var document = new Document { HighestElementValue = 100 };
+            var loadedFamily = new ElementId { Value = 102 };
+            var createdByRun = new ElementId { Value = 101 };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: new[] { loadedFamily }, deleted: Array.Empty<ElementId>());
+                app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { loadedFamily, createdByRun });
+                document.Deleted.Add(loadedFamily);
+                document.Deleted.Add(createdByRun);
+
+                guard.RollBack();
+
+                Assert.False(guard.RollbackFailed);
+            }
+        }
+
+        [Fact]
+        public void AnElementThatExistedBeforeTheRunAndIsStillMissingIsATraceAfterTheRollback() {
+            var app = new UIApplication();
+            var document = new Document { HighestElementValue = 100 };
+            var loadedFamily = new ElementId { Value = 102 };
+            var existedBefore = new ElementId { Value = 99 };
+            var createdByRun = new ElementId { Value = 101 };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: new[] { loadedFamily }, deleted: new[] { existedBefore, createdByRun });
+                document.Deleted.Add(loadedFamily);
+                document.Deleted.Add(existedBefore);
+                document.Deleted.Add(createdByRun);
+
+                guard.RollBack();
+
+                Assert.True(guard.RollbackFailed);
+            }
+        }
+
+        /// <summary>
+        /// Without a recorded addition the run created nothing, so a missing deleted element
+        /// existed before the run whatever its id, even above every element left in the model.
+        /// </summary>
+        [Fact]
+        public void ARunThatAddedNothingCountsEveryMissingDeletedElementAfterTheRollback() {
+            var app = new UIApplication();
+            var document = new Document { HighestElementValue = 100 };
+            var newestElement = new ElementId { Value = 101 };
+            using (var guard = new AgentRunGuard(app, document)) {
+                guard.Arm("Test");
+                app.Application.Change(document, added: Array.Empty<ElementId>(), deleted: new[] { newestElement });
+                document.Deleted.Add(newestElement);
+
+                guard.RollBack();
+
+                Assert.True(guard.RollbackFailed);
+            }
+        }
+
         [Fact]
         public void AnAssimilatedRunIsNotCheckedAgainstTheModel() {
             var app = new UIApplication();
