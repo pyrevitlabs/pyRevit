@@ -71,6 +71,12 @@ namespace PyRevitLoader
             SessionResourceRegistry.Release(SessionSlotName, onError);
         }
 
+        /// <summary>
+        /// Why the last <see cref="ExecuteEventHandlerSetup"/> call failed; null when it did not.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: read by reflection from <c>ComboBoxScriptInitializer</c>; keep the name.
+        /// </remarks>
         public string Message { get; private set; } = null;
 
         private void Log(string message)
@@ -131,6 +137,7 @@ namespace PyRevitLoader
             ComboBox comboBox,
             IEnumerable<string> additionalSearchPaths = null)
         {
+            Message = null;
 
             if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath))
             {

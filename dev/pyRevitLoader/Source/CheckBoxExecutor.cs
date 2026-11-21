@@ -82,6 +82,14 @@ namespace PyRevitLoader
         }
 
         /// <summary>
+        /// Why the last <see cref="ExecuteEventHandlerSetup"/> call failed; null when it did not.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: read by reflection from <c>CheckBoxScriptInitializer</c>; keep the name.
+        /// </remarks>
+        public string Message { get; private set; }
+
+        /// <summary>
         /// Runs <paramref name="scriptPath"/>, calls its <c>__chk_init__</c>, then subscribes its
         /// <c>__chk_on_change__</c> to <paramref name="checkBox"/>.
         /// </summary>
@@ -109,6 +117,7 @@ namespace PyRevitLoader
             IEnumerable<string> additionalSearchPaths = null,
             IDictionary<string, object> scopeVariables = null)
         {
+            Message = null;
             if (_handlers.IsReleased)
                 return true;
 
@@ -146,7 +155,8 @@ namespace PyRevitLoader
                 var caller = CreateHandlerCaller(scopeVariables);
                 if (scope.ContainsVariable(InitHandlerName))
                 {
-                    var initResult = InvokeHandler(ops, bundle, caller, InitHandlerName, scope.GetVariable(InitHandlerName), context);
+                    Action<string> reportInitFailure = Fail;
+                    var initResult = InvokeHandler(ops, bundle, caller, InitHandlerName, reportInitFailure, scope.GetVariable(InitHandlerName), context);
                     if (initResult != ScriptRunResult.Completed)
                     {
                         if (initResult == ScriptRunResult.Failed && scope.ContainsVariable(ChangeHandlerName))
@@ -162,7 +172,7 @@ namespace PyRevitLoader
             }
             catch (Exception ex)
             {
-                Log($"CheckBox executor error for '{context?.name}': {ex.Message}");
+                Fail($"CheckBox executor error for '{context?.name}': {ex.Message}");
                 return false;
             }
         }
@@ -177,6 +187,12 @@ namespace PyRevitLoader
         private void Log(string message)
         {
             _logger?.Invoke(message);
+        }
+
+        private void Fail(string message)
+        {
+            Message = message;
+            Log(message);
         }
 
         private void EnsureEngineInitialized()
@@ -226,7 +242,7 @@ namespace PyRevitLoader
             var errors = new ErrorReporter();
             if (script.Compile(compilerOptions, errors) == null)
             {
-                Log("Compilation failed:\r\n" + string.Join("\r\n", errors.Errors));
+                Fail("Compilation failed:\r\n" + string.Join("\r\n", errors.Errors));
                 return ScriptRunResult.Failed;
             }
 
@@ -241,7 +257,7 @@ namespace PyRevitLoader
             }
             catch (Exception ex)
             {
-                Log($"Script execution error in '{scriptPath}': {ex.Message}");
+                Fail($"Script execution error in '{scriptPath}': {ex.Message}");
                 return ScriptRunResult.Failed;
             }
         }
@@ -275,7 +291,7 @@ namespace PyRevitLoader
             PropertyChangedEventHandler onChange = (sender, args) =>
             {
                 if (!_handlers.IsReleased && args.PropertyName == CheckedPropertyName)
-                    InvokeHandler(ops, bundle, caller, ChangeHandlerName, handler, sender, args, context);
+                    InvokeHandler(ops, bundle, caller, ChangeHandlerName, Log, handler, sender, args, context);
             };
 
             if (!_handlers.Wire(checkBox, onChange, _engine, ops, _outputStream, scope, context, caller, handler))
@@ -323,8 +339,12 @@ namespace PyRevitLoader
         /// checkbox's paths and modules and brings back the outer checkbox's afterwards.
         /// </remarks>
         /// <returns>Completed when the handler returns, Exited when it calls <c>sys.exit()</c>, and Failed
-        /// when it raises; only a failure is logged.</returns>
-        private ScriptRunResult InvokeHandler(ObjectOperations ops, BundleModuleIsolation.Bundle bundle, object caller, string handlerName, object handler, params object[] args)
+        /// when it raises; only a failure is reported, through <paramref name="reportFailure"/>.</returns>
+        /// <param name="reportFailure">Receives the failure text. Setup passes <see cref="Fail"/> for
+        /// <c>__chk_init__</c> so it becomes <see cref="Message"/>; change handlers pass <see cref="Log"/>,
+        /// because they also run, nested, while another checkbox is loading, and must not make that
+        /// checkbox look like it failed to load.</param>
+        private ScriptRunResult InvokeHandler(ObjectOperations ops, BundleModuleIsolation.Bundle bundle, object caller, string handlerName, Action<string> reportFailure, object handler, params object[] args)
         {
             try
             {
@@ -344,7 +364,7 @@ namespace PyRevitLoader
             }
             catch (Exception ex)
             {
-                Log($"Error in {handlerName}: {ex.Message}");
+                reportFailure($"Error in {handlerName}: {ex.Message}");
                 return ScriptRunResult.Failed;
             }
         }
