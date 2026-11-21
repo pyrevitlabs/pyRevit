@@ -33,42 +33,6 @@ namespace pyRevitCLI {
         Debug,
     }
 
-    internal enum PyRevitCLICommandType {
-        Main,
-        Version,
-        Wiki,
-        Blog,
-        Docs,
-        Source,
-        YouTube,
-        Support,
-        Env,
-        Update,
-        Clone,
-        Clones,
-        Attach,
-        Attached,
-        Switch,
-        Detach,
-        Extend,
-        Extensions,
-        ExtensionsPaths,
-        ExtensionsSources,
-        Releases,
-        Revits,
-        Run,
-        Caches,
-        Config,
-        Configs,
-        ConfigsRoutes,
-        ConfigsAgent,
-        ConfigsTelemetry,
-        Doctor,
-        Agent,
-        Mcp,
-        Launch,
-    }
-
     internal static class PyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -755,6 +719,7 @@ namespace pyRevitCLI {
                         all("routes") ? PyRevitCLICommandType.ConfigsRoutes
                         : all("agent") ? PyRevitCLICommandType.ConfigsAgent
                         : all("telemetry") ? PyRevitCLICommandType.ConfigsTelemetry
+                        : all("apptelemetry") ? PyRevitCLICommandType.ConfigsAppTelemetry
                         : PyRevitCLICommandType.Configs);
 
                 else if (all("bincache")) {
