@@ -7,7 +7,13 @@ using System.Threading.Tasks;
 
 namespace pyRevitLabs.Common {
     public class PyRevitLabsConsts {
+        /// <summary>
+        /// Replaces the pyRevit appdata folder. Does not isolate the all-users config: a fresh folder is
+        /// seeded from it, registered clones included, unless <see cref="PyRevitProgramDataPathOverrideEnvVar"/> is set too.
+        /// </summary>
         public const string PyRevitPathOverrideEnvVar = "PYREVIT_PATH_OVERRIDE";
+
+        /// <summary>Replaces the pyRevit programdata folder that holds the all-users config.</summary>
         public const string PyRevitProgramDataPathOverrideEnvVar = "PYREVIT_PROGRAMDATA_PATH_OVERRIDE";
         public const string PyRevitAgentDirOverrideEnvVar = "PYREVIT_AGENT_DIR";
         public const string PyRevitIgnoreLocalConfigEnvVar = "PYREVIT_IGNORE_LOCAL_CONFIG";

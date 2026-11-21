@@ -257,6 +257,30 @@ The command prints the process id, clone, engine and launch directory, stays in 
 - Sessions of the same Revit year are told apart by clone: `pyrevit agent context --revit=<clone name>`, or `revit: "<clone name>"` in the MCP tools. See [Running several clones side by side](agent-runtime.md#running-several-clones-side-by-side).
 - A plain Revit start, and `pyrevit attach` or `detach`, keep working as before and ignore launched sessions.
 
+## Trying CLI commands without touching your own setup
+
+Commands such as `pyrevit clones add`, `configs` or `extensions` read and write your pyRevit user folder and read the all-users config. To test them against scratch folders, set these environment variables for the call, each pointing at its own empty folder:
+
+```powershell
+$env:PYREVIT_PATH_OVERRIDE = 'C:\scratch\appdata'
+$env:PYREVIT_PROGRAMDATA_PATH_OVERRIDE = 'C:\scratch\programdata'
+$env:PYREVIT_AGENT_DIR = 'C:\scratch\agent'
+$env:PYREVIT_IGNORE_LOCAL_CONFIG = '1'
+pyrevit clones
+```
+
+| Variable | Replaces |
+|---|---|
+| `PYREVIT_PATH_OVERRIDE` | `%APPDATA%\pyRevit`: user config, caches and logs. |
+| `PYREVIT_PROGRAMDATA_PATH_OVERRIDE` | `%PROGRAMDATA%\pyRevit`: the all-users config. |
+| `PYREVIT_AGENT_DIR` | The folder for agent instance records, run records and captures. It follows `PYREVIT_PATH_OVERRIDE` unless set. |
+| `PYREVIT_IGNORE_LOCAL_CONFIG` | Set to `1` to ignore a config stored inside the clone. |
+
+!!! warning "`PYREVIT_PATH_OVERRIDE` alone does not isolate the clone registry"
+    The first CLI call fills a fresh user folder from the all-users config, so `pyrevit clones` lists, and later commands edit a copy of, the clones registered there. Set `PYREVIT_PROGRAMDATA_PATH_OVERRIDE` as well. `pyrevit launch --isolated` deliberately leaves it alone, because the launched Revit still loads the all-users config.
+
+These variables do not cover places the OS decides: the Revit add-in manifests that `attach` and `detach` write under `%APPDATA%\Autodesk\Revit\Addins`, and the `PATH` entries of `pyrevit env path`. Run those only against a Revit year you have no real attachment for, or not at all.
+
 ## Debugging Code
 
 Currently, you cannot use Visual Studio's "Run" button to debug pyRevit because of some build issues. Instead, follow this approach:
