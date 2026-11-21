@@ -161,8 +161,9 @@ namespace pyRevitExtensionParser
                         continue;
 
                     var accessListUnreadable = false;
-                    var users = ExtensionParser.ReadAuthList(entry["authusers"], filePath, ref accessListUnreadable);
-                    var groups = ExtensionParser.ReadAuthList(entry["authgroups"], filePath, ref accessListUnreadable);
+                    var entryLocation = "registry entry '" + name + "' in " + filePath;
+                    var users = ExtensionParser.ReadAuthList(entry["authusers"], entryLocation, ref accessListUnreadable);
+                    var groups = ExtensionParser.ReadAuthList(entry["authgroups"], entryLocation, ref accessListUnreadable);
                     if (users == null && groups == null && !accessListUnreadable)
                         continue;
 

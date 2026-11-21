@@ -244,7 +244,8 @@ namespace pyRevitExtensionParserTester
             Assert.That(InvokeIsExtensionAllowed(new ExtensionManagerService(), parsed), Is.False);
             Assert.That(
                 errors.Messages,
-                Has.Some.Contains("Access list in " + registryPath + " could not be read"));
+                Has.Some.Contains(
+                    "Access list in registry entry 'RegistryMalformedAuthExt' in " + registryPath + " could not be read"));
         }
 
         [TestCase("\"authusers\": []")]
