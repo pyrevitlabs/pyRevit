@@ -51,6 +51,13 @@ def _load_production_modules(imp_available=True):
     case = types.ModuleType("pyrevit.preflight.case")
     case.PreflightTestCase = type("PreflightTestCase", (object,), {})
 
+    results = _load_module(
+        "pyrevit.preflight.results",
+        os.path.join(PYREVIT_ROOT, "preflight", "results.py"),
+    )
+    preflight_package = types.ModuleType("pyrevit.preflight")
+    preflight_package.results = results
+
     modules = {
         "pyrevit": pyrevit,
         "pyrevit.compat": compat,
@@ -60,6 +67,8 @@ def _load_production_modules(imp_available=True):
         "pyrevit.versionmgr": pyrevit.versionmgr,
         "pyrevit.extensions": extensions,
         "pyrevit.extensions.genericcomps": genericcomps,
+        "pyrevit.preflight": preflight_package,
+        "pyrevit.preflight.results": results,
         "pyrevit.preflight.case": case,
         "imp": MagicMock() if imp_available else None,
     }
