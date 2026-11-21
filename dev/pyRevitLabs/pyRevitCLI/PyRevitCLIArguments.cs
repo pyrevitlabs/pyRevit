@@ -4,6 +4,7 @@ using System.Linq;
 using DocoptNet;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.PyRevit;
 
 namespace pyRevitCLI {
     internal static class PyRevitCLIArguments {
@@ -52,6 +53,20 @@ namespace pyRevitCLI {
             if (int.TryParse(text, out var limit) && limit > 0)
                 return limit;
             throw new PyRevitException(string.Format("Invalid limit \"{0}\": expected a positive whole number", text));
+        }
+
+        /// <summary>
+        /// Returns <paramref name="attachment"/> after checking that pyRevit is attached to the Revit year.
+        /// </summary>
+        /// <param name="attachment">The attachment found for <paramref name="revitYear"/>, or null when there is none.</param>
+        /// <param name="revitYear">The Revit year the attachment was looked up for, for the error message.</param>
+        /// <exception cref="PyRevitException">pyRevit is not attached to the Revit year.</exception>
+        internal static PyRevitAttachment RequireAttachment(PyRevitAttachment attachment, int revitYear) {
+            if (attachment != null)
+                return attachment;
+            throw new PyRevitException(string.Format(
+                "pyRevit is not attached to Revit \"{0}\". " +
+                "Runner needs to use the attached clone and engine to execute the script.", revitYear));
         }
 
         /// <summary>
