@@ -119,7 +119,7 @@ OR
 
 OR
 
-- Put exclusions for all Revit versions on C: drive, All %appdata%/pyrevit and %appdata%.   
+- Put exclusions for the Revit executables and for the pyRevit folders under `%appdata%` (`pyRevit` and `pyRevit-Master`). Do not exclude the whole `%appdata%` folder: agree the exact paths with your IT team.   
 
 [v4.8.12.22247 not allowing any of my Revit products to launch - Sentinel One related · Issue #1724 · pyrevitlabs/pyRevit](https://github.com/pyrevitlabs/pyRevit/issues/1724)
 
