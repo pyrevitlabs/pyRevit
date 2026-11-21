@@ -10,7 +10,7 @@ From the repository root:
 ```powershell
 python dev/tests/run_tests.py --install-dependencies
 python dev/tests/run_tests.py --language python
-pipenv run test-library
+python -m pytest dev/tests/python/library
 ```
 
 Discovery includes every `test_*.py` module, including compatibility and automation-marker checkers. Declare literal `TEST_ENVIRONMENT` and `TEST_LEVEL` defaults in each module. HostFree modules must be safe to import without Revit. Existing unittest cases run through pytest; root `conftest.py` applies class defaults and method marker overrides, records tags, and rejects skipped selected cases.

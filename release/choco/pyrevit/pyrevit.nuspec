@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>pyrevit</id>
+    <version>7.0.0.26278</version>
+    <packageSourceUrl>https://github.com/pyrevitlabs/pyRevit/tree/master/release/choco/pyrevit/</packageSourceUrl>
+    <owners>Ehsan Iran-Nejad</owners>
+    <title>pyRevit</title>
+    <authors>Ehsan Iran-Nejad</authors>
+    <projectUrl>https://github.com/pyrevitlabs/pyRevit</projectUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/pyrevitlabs/pyRevit@master/release/choco/chocoicon.png</iconUrl>
+    <copyright>2014-2026</copyright>
+    <licenseUrl>https://github.com/pyrevitlabs/pyRevit/blob/master/LICENSE.txt</licenseUrl>
+    <projectSourceUrl>https://github.com/pyrevitlabs/pyRevit</projectSourceUrl>
+    <docsUrl>https://github.com/pyrevitlabs/pyRevit/blob/master/README.md</docsUrl>
+    <bugTrackerUrl>https://github.com/pyrevitlabs/pyRevit/issues</bugTrackerUrl>
+    <tags>pyrevit revit python automation bim</tags>
+    <summary>Rapid application development environment for Autodesk Revit, installed for all users</summary>
+    <description>pyRevit is a rapid application development (RAD) environment for Autodesk Revit.
+It lets you write Revit automation tools in Python, C# or VB.NET and ships a large set of ready-made tools.
+
+This package runs the pyRevit admin installer silently. It installs pyRevit for all users, attaches it to every
+installed Revit version and adds the pyRevit command line tool to the machine PATH.
+Uninstalling the package runs the installer's own uninstaller.
+
+The package includes the pyRevit CLI. Do not install the pyrevit-cli package next to it.
+</description>
+    <releaseNotes>https://github.com/pyrevitlabs/pyRevit/releases/tag/v7.0.0.26278%2B2233/</releaseNotes>
+    <dependencies>
+      <dependency id="dotnetfx" version="4.8.0.20190930" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

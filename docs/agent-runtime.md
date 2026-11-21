@@ -587,11 +587,29 @@ CPython is not warmed: pythonnet's first initialize is heavy, scans every loaded
 keeps the interpreter up for the rest of the process, so the first CPython run still pays for
 it. A run that asks for an engine other than the default also starts cold.
 
+### Choosing how to run a script
+
+The CLI has three ways to get Python into Revit. They differ in who starts Revit and what the script runs against:
+
+| Command | Revit lifetime | Target | Audience |
+|---|---|---|---|
+| `pyrevit run` | Starts a new Revit from a generated journal and quits it when the script ends | Model files passed on the command line or listed with `--models` | Batch automation, CI |
+| `pyrevit agent run` | Injects the script into a Revit that is already running | The active document, through the [guarded run](#the-guarded-run): approval policy and [run records](#run-records) | People and shell scripts |
+| `pyrevit mcp` | Same agent host as `agent run`, reached through a stdio server | The active document | MCP clients such as Claude Code; started by the client, not typed by hand |
+
+`pyrevit run` and `pyrevit agent run` share the verb but not the mechanism: `run` launches its own Revit and never touches a session you have open, while `agent run` needs a Revit with the agent runtime enabled and acts on the model you are looking at. `pyrevit run` is documented under [Runner commands](extensions.md#runner-commands).
+
+`pyrevit launch` is not a fourth way to run a script. It starts a Revit session on a clone and engine without changing the attachment (see [Running several clones side by side](#running-several-clones-side-by-side)); `agent run` and `mcp` can then target that session by clone name with `--revit`.
+
 ### CLI
 
 ```text
 pyrevit agent status [--json]              running Revit sessions with the agent host
 pyrevit agent context [--revit=<year|pid|clone>]  get_context of a session
+pyrevit agent capture [<view>] [--view-type=<ViewType>] [--mode=export|viewport|screen] [--width=<pixels>]
+                  [--out=<png_file>] [--revit=<year|pid|clone>]   PNG of a view, like capture_view
+pyrevit agent inspect <element_id>... [--no-parameters] [--revit=<year|pid|clone>]  inspect_elements
+pyrevit agent lookup <api_name> [--revit=<year|pid|clone>]  lookup_revit_api
 pyrevit agent run <script_file> [--mode=query|dry_run|modify] [--engine=<e>]
                   [--title=<t>] [--inputs=<json>] [--revit=<year|pid|clone>]
                   [--timeout=<seconds>] [--workspace=<folder>]
@@ -602,6 +620,8 @@ pyrevit mcp (install | uninstall) (claude | codex | cursor | vscode | opencode) 
 pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --owned keeps
                                            entries that point at another pyRevit install
 ```
+
+`capture`, `inspect` and `lookup` are the CLI forms of the `capture_view`, `inspect_elements` and `lookup_revit_api` tools, for clients without MCP. `capture` takes the view the way the tool does (a name, sheet number or id; the active view without one; `3d` for a temporary 3D view; `--view-type=FloorPlan` and the like keep only views of that type when a name is shared, as `view_type` does) and prints the host's answer without the image data. The host keeps the PNG under `%APPDATA%\pyRevit\agent\captures`; `--out` writes it to a file of your choice as well, and `path` in the output then names that file. `inspect` takes up to 50 element ids of the active document.
 
 `--timeout` defaults to 300 and is capped at 3600; [reckless mode](#reckless-mode) ignores it.
 `--workspace` must be an existing local folder; network (UNC) paths are refused.
@@ -1083,7 +1103,12 @@ Honest limits:
   host therefore checks the run's change set against the model: an element the run deleted
   that is still missing, or one it added that is still there, makes the run
   `rollback_incomplete` with `status: error`, for dry runs and queries too, also when the
-  group had already ended before the rollback was requested. The host can't undo the
+  group had already ended before the rollback was requested. Elements the run created
+  itself don't count as deleted: loading a family creates elements Revit never reports as
+  added, and overwriting the family later reports them as deleted. When the run reported
+  an added element, only deleted ids up to the highest id left in the model after the
+  rollback count as elements that existed before the run; a run that reported none counts
+  every missing deleted element. The host can't undo the
   changes then, and the borrowed ownership stays with the local; the user has to
   undo in Revit or close the document without saving. The check does not cover
   modifications: the host records no state from before the run, so a script that only

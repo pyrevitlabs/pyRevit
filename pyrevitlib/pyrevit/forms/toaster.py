@@ -29,7 +29,7 @@ def send_toast(message, title=None, appid=None, icon=None, click=None, actions=N
         appid (str): application unique id (see `--app-id` cli option)
         icon (str): notification icon (see `--icon` cli option)
         click (str): click action (see `--activation-arg` cli option)
-        actions (dict[str:str]):
+        actions (dict[str, str]):
             list of actions (see `--action` and `--action-arg` cli options)
     """
     # set defaults

@@ -8,8 +8,10 @@ using ModularPipelines.Modules;
 namespace Build.Modules;
 
 [DependsOn<BuildRuntimeModule>]
-public sealed class BuildRunnersModule(IOptions<BuildOptions> buildOptions) : Module {
-    protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken) {
+public sealed class BuildRunnersModule(IOptions<BuildOptions> buildOptions) : Module
+{
+    protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
+    {
         var configuration = buildOptions.Value.Configuration;
 
         await DotNetBuildHelper.BuildProjectAsync(
@@ -23,6 +25,5 @@ public sealed class BuildRunnersModule(IOptions<BuildOptions> buildOptions) : Mo
             PyRevitPaths.Runner342Project,
             configuration,
             cancellationToken);
-
     }
 }

@@ -1,0 +1,8 @@
+title: Remembered Toggle
+tooltip: >-
+  Smart button example - a toggle whose state survives Revit restarts.
+
+  __selfinit__ shows the saved state when pyRevit loads. A click flips the
+  state, saves it in the pyRevit user config and switches between on.png and
+  off.png.
+context: zero-doc

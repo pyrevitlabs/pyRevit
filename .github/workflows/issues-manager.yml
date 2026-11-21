@@ -1,20 +1,40 @@
 name: issues-manager
+# Runs .github/scripts/issue-commands.sh for every new issue comment: maintainer
+# slash commands, and removal of the needs-more-info label when the reporter
+# answers.
+#
+# issue_comment always runs this file from the default branch, so the script
+# and the reply templates it checks out are the trusted ones.
 on:
   issue_comment:
     types: [created]
 
+permissions: {}
+
 jobs:
   issue_commented:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     steps:
-      - name: Custom Slash Commands
-        uses: wow-actions/slash-commands@v1.1.0
+      - name: Check out scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CONFIG_FILE: .github/slash-commands.yml
+          sparse-checkout: |
+            .github/scripts
+            .github/issue-replies
+          persist-credentials: false
 
-      - name: Pending Response Follow Up
-        uses: siegerts/pending-response@v1.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          pending-response-label: needs-more-info
+      - name: Handle comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          IS_PULL_REQUEST: ${{ github.event.issue.pull_request != null }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          AUTHOR_ASSOCIATION: ${{ github.event.comment.author_association }}
+        run: bash .github/scripts/issue-commands.sh

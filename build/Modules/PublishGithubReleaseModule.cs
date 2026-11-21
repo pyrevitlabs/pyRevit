@@ -26,6 +26,7 @@ public sealed class PublishGithubReleaseModule(IOptions<PublishOptions> publishO
         var releaseNotes = notesResult.ValueOrDefault ?? string.Empty;
 
         var repositoryInfo = context.GitHub().RepositoryInfo;
+        var gitHubClient = GitHubClientFactory.Create(context);
         var newRelease = new NewRelease("v" + versionInfo.BuildVersion)
         {
             Name = "pyRevit v" + versionInfo.InstallVersion,
@@ -34,7 +35,7 @@ public sealed class PublishGithubReleaseModule(IOptions<PublishOptions> publishO
             Prerelease = versionInfo.IsWip,
         };
 
-        var release = await context.GitHub().Client.Repository.Release.Create(
+        var release = await gitHubClient.Repository.Release.Create(
             repositoryInfo.Owner,
             repositoryInfo.RepositoryName,
             newRelease);
@@ -64,7 +65,7 @@ public sealed class PublishGithubReleaseModule(IOptions<PublishOptions> publishO
                     RawData = stream,
                 };
 
-                await context.GitHub().Client.Repository.Release.UploadAsset(release, upload, cancellationToken);
+                await gitHubClient.Repository.Release.UploadAsset(release, upload, cancellationToken);
             }, cancellationToken)
             .ProcessInParallel();
 

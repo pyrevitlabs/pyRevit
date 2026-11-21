@@ -1,9 +1,12 @@
+using Build.Models;
+
 namespace Build.Helpers;
 
 /// <summary>
 /// Repository paths and constants used by the build pipeline.
 /// </summary>
-public static class PyRevitPaths {
+public static class PyRevitPaths
+{
     public static string Root { get; private set; } = FindRepositoryRoot();
 
     public static string DevPath => Path.Combine(Root, "dev");
@@ -92,14 +95,25 @@ public static class PyRevitPaths {
     public static string PyRevitCommonMsiProps => Path.Combine(ReleasePath, "pyrevit-common.props");
     public static string PyRevitCliMsiProps => Path.Combine(ReleasePath, "pyrevit-cli.props");
     public static string PyRevitCliMsiProject => Path.Combine(ReleasePath, "pyrevit-cli.wixproj");
-    public static string PyRevitChocoNuspec => Path.Combine(ReleasePath, "choco", "pyrevit-cli.nuspec");
-    public static string PyRevitChocoInstallScript => Path.Combine(ReleasePath, "choco", "tools", "chocolateyinstall.ps1");
 
     public static string PyRevitInstallerName => "pyRevit_{0}_signed";
     public static string PyRevitAdminInstallerName => "pyRevit_{0}_admin_signed";
     public static string PyRevitCliInstallerName => "pyRevit_CLI_{0}_signed";
     public static string PyRevitCliAdminInstallerName => "pyRevit_CLI_{0}_admin_signed";
-    public static string PyRevitChocoNupkgName => "pyrevit-cli.{0}.nupkg";
+
+    public static IReadOnlyList<ChocoPackage> ChocoPackages =>
+    [
+        new(
+            "pyrevit-cli",
+            Path.Combine(ReleasePath, "choco", "pyrevit-cli.nuspec"),
+            Path.Combine(ReleasePath, "choco", "tools", "chocolateyinstall.ps1"),
+            PyRevitCliAdminInstallerName),
+        new(
+            "pyrevit",
+            Path.Combine(ReleasePath, "choco", "pyrevit", "pyrevit.nuspec"),
+            Path.Combine(ReleasePath, "choco", "pyrevit", "tools", "chocolateyinstall.ps1"),
+            PyRevitAdminInstallerName),
+    ];
 
     public static IReadOnlyList<string> VersionFiles =>
     [
@@ -135,22 +149,27 @@ public static class PyRevitPaths {
         PyRevitCliInstallerScript,
         PyRevitCliAdminInstallerScript,
         PyRevitCommonMsiProps,
-        PyRevitChocoNuspec,
+        .. ChocoPackages.Select(package => package.Nuspec),
     ];
 
     public static string IsccPath =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Inno Setup 6", "ISCC.exe");
 
-    public static void Initialize(string? rootOverride = null) {
-        if (!string.IsNullOrWhiteSpace(rootOverride)) {
+    public static void Initialize(string? rootOverride = null)
+    {
+        if (!string.IsNullOrWhiteSpace(rootOverride))
+        {
             Root = Path.GetFullPath(rootOverride);
         }
     }
 
-    private static string FindRepositoryRoot() {
+    private static string FindRepositoryRoot()
+    {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
-        while (current is not null) {
-            if (File.Exists(Path.Combine(current.FullName, "pyRevitfile"))) {
+        while (current is not null)
+        {
+            if (File.Exists(Path.Combine(current.FullName, "pyRevitfile")))
+            {
                 return current.FullName;
             }
 

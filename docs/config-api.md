@@ -189,7 +189,7 @@ script.save_config()
 ```bash
 pipenv run check-config-api            # same check as the pre-commit hook, on demand
 pipenv run check-config-api --census   # first-party read/write cost per alias
-pipenv run test-config-api             # tests for the checker itself
+pipenv run python -m pytest dev/tests/python/tooling/test_check_config_api.py  # tests for the checker itself
 ```
 
 The checker is pure source analysis: no pyRevit import, no Revit, no labs
