@@ -109,12 +109,16 @@ if (modes.Publish)
 {
     builder.Services.AddModule<GenerateReleaseNotesModule>();
     builder.Services.AddModule<PublishGithubReleaseModule>();
-    builder.Services.AddModule<PublishChocoModule>();
 }
 
 if (modes.Winget)
 {
     builder.Services.AddModule<PublishWingetModule>();
+}
+
+if (modes.Choco)
+{
+    builder.Services.AddModule<PublishChocoModule>();
 }
 
 if (modes.Notify)
