@@ -174,4 +174,10 @@
     <Using Include="NUnit.Framework.Legacy" />
   </ItemGroup>
 
+  <Target Name="RemoveDocoptSourceGenerator" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'DocoptNet'" />
+    </ItemGroup>
+  </Target>
+
 </Project>
