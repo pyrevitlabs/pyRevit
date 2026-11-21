@@ -10,6 +10,16 @@ import os
 import unittest
 
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
+
+WPF_ASSEMBLIES = (
+    "PresentationFramework",
+    "PresentationCore",
+    "WindowsBase",
+    "IronPython.Wpf",
+)
+
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 PULLDOWN_DIR = os.path.join(
     REPO_ROOT,
@@ -54,8 +64,11 @@ def _references_wpf(node):
         )
     if isinstance(node, ast.Import):
         return any(alias.name == "pyrevit.framework" for alias in node.names)
-    if isinstance(node, ast.Call):
-        return _dotted_name(node.func) == "clr.AddReference"
+    if isinstance(node, ast.Call) and _dotted_name(node.func) == "clr.AddReference":
+        return any(
+            isinstance(arg, ast.Constant) and arg.value in WPF_ASSEMBLIES
+            for arg in node.args
+        )
     return False
 
 
@@ -99,6 +112,12 @@ class WpfUseBeforeReferenceTests(unittest.TestCase):
             "System.Windows.Window()\n"
         )
         self.assertIsNone(wpf_use_before_reference(source))
+
+    def test_non_wpf_add_reference_is_flagged(self):
+        source = (
+            "import clr\nclr.AddReference('RevitAPI')\nfrom System import Windows\n"
+        )
+        self.assertEqual(wpf_use_before_reference(source), 3)
 
     def test_framework_import_after_use_is_flagged(self):
         source = "from System import Windows\nfrom pyrevit.framework import wpf\n"
