@@ -3,15 +3,22 @@ name: pyRevit Docs Preview Deploy
 # https://docs.pyrevitlabs.io/pr-preview/pr-<number>/ and removes it when the
 # pull request closes.
 #
-# Both triggers run this file from the default branch with a write token, even
+# workflow_run runs this file from the default branch with a write token, even
 # for pull requests from forks. Nothing here checks out or executes pull request
 # code: the deploy job only copies the already-built static site.
+#
+# Removal of closed previews:
+# - docs-preview.yml runs on "closed" too and uploads a marker artifact; the
+#   deploy job sees the pull request is no longer open and removes the preview.
+# - The weekly sweep removes any preview whose pull request is not open, as a
+#   backstop (fork runs awaiting approval, deleted forks, missed events).
 on:
   workflow_run:
     workflows: ["pyRevit Docs Preview"]
     types: [completed]
-  pull_request_target:
-    types: [closed]
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
 
 permissions: {}
 
@@ -63,9 +70,9 @@ jobs:
           if [[ "$(jq -r '.state' <<< "$pr")" != "open" ]]; then
             action="remove"
           elif [[ "$(jq -r --arg repo "$GITHUB_REPOSITORY" --argjson trusted "$TRUSTED_ASSOCIATIONS" '
-                  (.head.repo.full_name == $repo)
-                  or (.author_association as $a | $trusted | index($a) != null)
-                  or any(.labels[]; .name == "docs-preview")' <<< "$pr")" == "true" ]]; then
+            (.head.repo.full_name == $repo)
+            or (.author_association as $a | $trusted | index($a) != null)
+            or any(.labels[]; .name == "docs-preview")' <<< "$pr")" == "true" ]]; then
             action="publish"
           else
             action="ask"
@@ -163,25 +170,30 @@ jobs:
           COMMIT_MESSAGE="docs: remove preview for #$PR_NUMBER" \
             bash tools/.github/scripts/publish-gh-pages.sh remove "pr-preview/pr-$PR_NUMBER"
 
-  cleanup:
-    if: github.event_name == 'pull_request_target'
+      - name: Update comment of a closed pull request
+        if: steps.pr.outputs.action == 'remove'
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          echo "### Docs preview"$'\n\n'"The preview was removed because this pull request was closed." > "$RUNNER_TEMP/comment.md"
+          bash tools/.github/scripts/pr-sticky-comment.sh "$PR_NUMBER" "$RUNNER_TEMP/comment.md" --update-only
+
+  sweep:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: write
       pull-requests: write
     concurrency:
-      group: docs-preview-deploy-${{ github.event.pull_request.head.repo.full_name }}-${{ github.event.pull_request.head.ref }}
+      group: docs-preview-sweep
       cancel-in-progress: false
-      queue: max
     env:
       GH_TOKEN: ${{ github.token }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
       - name: Check out scripts
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
           path: tools
           sparse-checkout: .github/scripts
           persist-credentials: false
@@ -193,13 +205,31 @@ jobs:
           path: gh-pages
           fetch-depth: 1
 
-      - name: Remove preview
-        id: remove
+      - name: Remove previews of closed pull requests
         run: |
-          COMMIT_MESSAGE="docs: remove preview for #$PR_NUMBER" \
-            bash tools/.github/scripts/publish-gh-pages.sh remove "pr-preview/pr-$PR_NUMBER"
-
-      - name: Update comment
-        run: |
+          shopt -s nullglob
           echo "### Docs preview"$'\n\n'"The preview was removed because this pull request was closed." > "$RUNNER_TEMP/comment.md"
-          bash tools/.github/scripts/pr-sticky-comment.sh "$PR_NUMBER" "$RUNNER_TEMP/comment.md" --update-only
+          for dir in gh-pages/pr-preview/pr-*/; do
+            number="$(basename "$dir")"
+            number="${number#pr-}"
+            [[ "$number" =~ ^[0-9]+$ ]] || continue
+            # Only a 404 counts as "missing"; any other API error stops the
+            # sweep so a transient failure never removes an open preview.
+            if ! state="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number" --jq '.state' 2>&1)"; then
+              if grep -q "HTTP 404" <<< "$state"; then
+                state="missing"
+              else
+                echo "::error::Could not read pull request #$number: $state"
+                exit 1
+              fi
+            fi
+            if [[ "$state" == "open" ]]; then
+              continue
+            fi
+            echo "Pull request #$number is $state, removing its preview."
+            COMMIT_MESSAGE="docs: remove preview for #$number" \
+              bash tools/.github/scripts/publish-gh-pages.sh remove "pr-preview/pr-$number"
+            if [[ "$state" != "missing" ]]; then
+              bash tools/.github/scripts/pr-sticky-comment.sh "$number" "$RUNNER_TEMP/comment.md" --update-only
+            fi
+          done
