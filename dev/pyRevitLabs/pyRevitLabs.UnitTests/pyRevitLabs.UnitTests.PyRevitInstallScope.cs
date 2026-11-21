@@ -346,6 +346,24 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        public void GetActiveConfig_PerUser_SeedsUserConfigWithoutTheAgentAdminPins() {
+            string machineConfig = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
+            File.WriteAllText(
+                machineConfig,
+                "[core]\r\nuserlocale = en_us\r\n\r\n[agent.admin]\r\nenabled = false\r\n\r\n[agent]\r\npolicy = ask\r\n");
+
+            var active = PyRevitInstallScope.GetActiveConfig();
+
+            string seeded = File.ReadAllText(active.ConfigPath);
+            StringAssert.Contains(seeded, "userlocale");
+            StringAssert.Contains(seeded, "policy");
+            Assert.IsFalse(seeded.Contains("agent.admin"));
+            StringAssert.Contains(File.ReadAllText(machineConfig), "agent.admin");
+        }
+
+        [TestMethod]
         public void GetActiveConfig_PerUser_LockedMachineConfig_IsReadOnlyMachineConfig() {
             string machineConfig = Path.Combine(
                 PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);

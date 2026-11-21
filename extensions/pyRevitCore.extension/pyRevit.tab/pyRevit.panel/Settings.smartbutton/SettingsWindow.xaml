@@ -334,6 +334,7 @@
                     <StackPanel Margin="10px">
                         <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Agent.Description}"/>
                         <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0" FontStyle="Italic" Text="{DynamicResource Agent.Privacy}"/>
+                        <TextBlock x:Name="agent_managed_note" Visibility="Collapsed" TextWrapping="WrapWithOverflow" Margin="0,5,0,0" FontWeight="Medium" Text="{DynamicResource Agent.Managed}"/>
                         <StackPanel>
                             <WrapPanel Margin="0,15,0,0">
                                 <CheckBox x:Name="agent_cb" IsChecked="False" FontWeight="Medium" Content="{DynamicResource Agent.Check}"/>
@@ -352,7 +353,7 @@
                                     <RadioButton x:Name="agent_engine_cpython_rb" GroupName="agent_engine" Margin="0,5,0,0" Content="{DynamicResource Agent.Engine.CPython}"/>
                                 </StackPanel>
                             </GroupBox>
-                            <GroupBox Header="{DynamicResource Agent.Connect}" Padding="10" Margin="0,10,0,0">
+                            <GroupBox x:Name="agent_connect_gb" Header="{DynamicResource Agent.Connect}" Padding="10" Margin="0,10,0,0">
                                 <StackPanel>
                                     <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Agent.Connect.Description}"/>
                                     <WrapPanel Margin="0,10,0,0">

@@ -163,6 +163,10 @@ namespace pyRevitCLI {
                     // now call methods based on inputs
                     ProcessArguments();
                 }
+                catch (PyRevitSettingManagedException ex) {
+                    System.Console.Error.WriteLine("Error: {0}", ex.Message);
+                    Environment.ExitCode = -1;
+                }
                 catch (ConfigurationReadOnlyException ex) {
                     System.Console.Error.WriteLine("Error: {0}", ex.Message);
                     Environment.ExitCode = -1;
@@ -915,7 +919,30 @@ namespace pyRevitCLI {
                 }
 
                 else if (all("agent")) {
-                    if (all("skills"))
+                    var lockKey =
+                        arguments["enabled"].IsTrue ? PyRevitConsts.ConfigsAgentEnabledKey
+                        : arguments["policy"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyKey
+                        : arguments["engine"].IsTrue ? PyRevitConsts.ConfigsAgentEngineKey
+                        : arguments["skills"].IsTrue ? PyRevitConsts.ConfigsAgentUserSkillsEnabledKey
+                        : arguments["reckless"].IsTrue ? PyRevitConsts.ConfigsAgentRecklessKey
+                        : null;
+
+                    if (all("lock"))
+                        PyRevitCLIAgentCmds.ConfigureLock(
+                            lockKey,
+                            arguments["true"].IsTrue ? "true"
+                            : arguments["false"].IsTrue ? "false"
+                            : arguments["readonly"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyReadOnly
+                            : arguments["ask"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyAsk
+                            : arguments["auto"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyAuto
+                            : arguments["ironpython"].IsTrue ? PyRevitConsts.ConfigsAgentEngineIronPython
+                            : arguments["cpython"].IsTrue ? PyRevitConsts.ConfigsAgentEngineCPython
+                            : null);
+
+                    else if (all("unlock"))
+                        PyRevitCLIAgentCmds.ConfigureUnlock(lockKey, arguments["--all"].IsTrue);
+
+                    else if (all("skills"))
                         PyRevitCLIAgentCmds.ConfigureUserSkills(
                             any("enable", "disable") ? arguments["enable"].IsTrue : null);
 

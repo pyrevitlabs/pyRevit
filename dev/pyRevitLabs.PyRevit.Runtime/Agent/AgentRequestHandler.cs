@@ -5,6 +5,7 @@ using System.Threading;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
+using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
@@ -78,6 +79,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         ["pid"] = AgentHost.ProcessId,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
+                        ["disabled_by_admin"] = IsDisabledByAdmin(),
                     };
                     if (AgentParams.Get<bool?>(parameters, "identity") == true && int.TryParse(AgentHost.RevitVersion, out var pingYear)) {
                         var identity = AgentSessionIdentity.Describe(pingYear);
@@ -167,19 +169,40 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>
         /// Refuses work once <c>[agent] enabled</c> is off, so disabling the agent from outside
-        /// Revit stops it at the next request instead of the next pyRevit reload.
+        /// Revit stops it at the next request instead of the next pyRevit reload. The error code is
+        /// <c>disabled_by_admin</c> when an administrator pin in the machine config turned it off,
+        /// and <c>agent_disabled</c> otherwise.
         /// </summary>
         /// <remarks>
         /// Checked again on the main thread just before the work starts, so a request queued
-        /// before the agent was disabled never runs.
+        /// before the agent was disabled never runs. The pin is read from the machine config on
+        /// every request, so a lock applied while Revit is open needs no reload.
         /// </remarks>
         private static void RequireEnabled() {
             if (AgentHost.IsEnabled())
                 return;
-            var disabled = new AgentException("agent_disabled",
-                "The pyRevit agent is disabled in the pyRevit settings, so the request was not run.");
+            var disabled = IsKnownToBeDisabledByAdmin()
+                ? new AgentException("disabled_by_admin",
+                    "The pyRevit agent host is disabled by your administrator, so the request was not run.")
+                : new AgentException("agent_disabled",
+                    "The pyRevit agent is disabled in the pyRevit settings, so the request was not run.");
             disabled.Details["outcome"] = "not_run";
             throw disabled;
+        }
+
+        private static bool IsKnownToBeDisabledByAdmin() {
+            try {
+                return IsDisabledByAdmin();
+            }
+            catch (Exception ex) {
+                logger.Debug("Could not read the agent admin pin: {0}", ex.Message);
+                return false;
+            }
+        }
+
+        private static bool IsDisabledByAdmin() {
+            return PyRevitConfigs.IsAgentKeyManaged(PyRevitConsts.ConfigsAgentEnabledKey)
+                && !PyRevitConfigs.GetAgentEnabled();
         }
 
         /// <summary>
