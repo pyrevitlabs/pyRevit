@@ -11397,7 +11397,7 @@
 <p class="admonition-title"><code>PYREVIT_PATH_OVERRIDE</code> alone does not isolate the clone registry</p>
 <p>The first CLI call fills a fresh user folder from the all-users config, so <code>pyrevit clones</code> lists, and later commands edit a copy of, the clones registered there. Set <code>PYREVIT_PROGRAMDATA_PATH_OVERRIDE</code> as well. <code>pyrevit launch --isolated</code> deliberately leaves it alone, because the launched Revit still loads the all-users config.</p>
 </div>
-<p>These variables do not cover places the OS decides: the Revit add-in manifests that <code>attach</code> and <code>detach</code> write under <code>%APPDATA%\Autodesk\Revit\Addins</code>, and the <code>PATH</code> entries of <code>pyrevit env path</code>. Run those only against a Revit year you have no real attachment for, or not at all.</p>
+<p>These variables do not cover places the OS decides: the Revit add-in manifests that <code>attach</code> and <code>detach</code> write under <code>%APPDATA%\Autodesk\Revit\Addins</code> (and, with <code>--allusers</code>, under <code>%PROGRAMDATA%\Autodesk\Revit\Addins</code> through Revit 2026 or <code>%PROGRAMFILES%\Autodesk\Revit\Addins</code> from Revit 2027), and the <code>PATH</code> entries of <code>pyrevit env path</code>. Run those only against a Revit year you have no real attachment for, or not at all.</p>
 <h2 id="debugging-code">Debugging Code</h2>
 <p>Currently, you cannot use Visual Studio's "Run" button to debug pyRevit because of some build issues. Instead, follow this approach:</p>
 <ol>
