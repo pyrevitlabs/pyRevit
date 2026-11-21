@@ -239,6 +239,64 @@ namespace pyRevitExtensionParserTester
                     "Access list in registry entry 'RegistryMalformedAuthExt' in " + registryPath + " could not be read"));
         }
 
+        [Test]
+        public void MalformedAccessListInRegistryEntryMatchedByManifestNameIsRefused()
+        {
+            var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "RegistryFolderNameExt");
+            File.WriteAllText(
+                Path.Combine(extPath, "extension.json"),
+                "{\"name\": \"RegistryManifestNameExt\"}");
+            File.WriteAllText(
+                Path.Combine(TestTempDir, "extensions.json"),
+                "{\"extensions\": [{\"name\": \"RegistryManifestNameExt\", \"type\": \"extension\", \"authusers\": \"SomeoneElse\"}]}");
+
+            ClearAllCaches();
+            var parsed = ParseInstalledExtensions(extPath).Single();
+
+            Assert.That(parsed.AuthDefinitionUnreadable, Is.True);
+            Assert.That(InvokeIsExtensionAllowed(new ExtensionManagerService(), parsed), Is.False);
+        }
+
+        [Test]
+        public void MalformedSiblingRegistryEntryForSameExtensionIsRefused()
+        {
+            var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "RegistrySiblingExt");
+            File.WriteAllText(
+                Path.Combine(TestTempDir, "extensions.json"),
+                "{\"extensions\": [" +
+                "{\"name\": \"RegistrySiblingExt\", \"type\": \"extension\", \"authusers\": [\"ValidUser\"]}, " +
+                "{\"name\": \"RegistrySiblingExt\", \"type\": \"extension\", \"authusers\": \"SomeoneElse\"}]}");
+
+            ClearAllCaches();
+            var parsed = ParseInstalledExtensions(extPath).Single();
+
+            Assert.That(parsed.AuthorizedUsers, Is.EquivalentTo(new[] { "ValidUser" }));
+            Assert.That(parsed.AuthDefinitionUnreadable, Is.True);
+            Assert.That(InvokeIsExtensionAllowed(new ExtensionManagerService(), parsed), Is.False);
+        }
+
+        /// <summary>
+        /// UseTestPyRevitConfig already clears the parser caches before injecting the
+        /// test config; clearing again after it would drop that injected config.
+        /// </summary>
+        [Test]
+        public void MalformedAccessListInConfiguredLookupSourceIsRefused()
+        {
+            var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "LookupMalformedAuthExt");
+            var lookupPath = Path.Combine(TestTempDir, "custom-registry.json");
+            File.WriteAllText(
+                lookupPath,
+                "{\"extensions\": [{\"name\": \"LookupMalformedAuthExt\", \"type\": \"extension\", \"authgroups\": [\"\"]}]}");
+            UseTestPyRevitConfig(
+                "[environment]\n" +
+                "sources = [\"" + lookupPath.Replace("\\", "\\\\") + "\"]\n");
+
+            var parsed = ParseInstalledExtensions(extPath).Single();
+
+            Assert.That(parsed.AuthDefinitionUnreadable, Is.True);
+            Assert.That(InvokeIsExtensionAllowed(new ExtensionManagerService(), parsed), Is.False);
+        }
+
         [TestCase("\"authusers\": []")]
         [TestCase("\"authusers\": null, \"authgroups\": null")]
         [TestCase("\"author\": \"someone\"")]
