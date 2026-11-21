@@ -25,21 +25,13 @@ A7.0	INTERIOR
 7.01	08 0000 - STOREFRONT WINDOW SYSTEM	A7.0
 ```
 
-Now create an empty test model, and launch the **Manage Keynotes** tool. The tool will inspect the keynote file attached to the model and will notify you that it doesn't have any attached to it. The tool will help you attach a keynote and configure that for the pyRevit Keynote Manager.
+Now create an empty test model, and launch the **Manage Keynotes** tool. When the keynote file of the model cannot be found, the tool says *Keynote file not found* and asks you to select one. Select the keynote file we just created.
 
-![](../assets/tools/keynotes/2019-08-28-08-56-30-keynotes.png)
+Keynote Manager then tells you that the file needs to be converted for this tool. Click **Convert**.
 
-Click **OK** and select the keynote file we just created
+![Keynote Manager offering to convert a keynote file](../assets/tools/keynotes/keynotes-convert-prompt.png)
 
-![](../assets/tools/keynotes/2019-08-28-09-01-21-open.png)
-
-Keynote manager will notify you that the file needs to be configured for this tool. Click **Convert**
-
-![](../assets/tools/keynotes/2019-08-28-09-01-36-keynotes.png)
-
-Keynote manager converts the text file in place and tells you when it is done. It copies the file before converting. When the conversion fails, that copy is kept and its path is shown, so the original content is not lost.
-
-![](../assets/tools/keynotes/2019-08-28-09-02-19-keynotes.png)
+Keynote Manager converts the text file in place and opens it. It copies the file to the pyRevit data folder before converting, and keeps that copy. When the conversion fails, the original content is restored, or the path of the copy is shown when it cannot be restored.
 
 Take a look at the converted keynote file. It should look similar to this
 
@@ -76,9 +68,13 @@ All the lines that start with `#` are invisible to Revit. So this keynote text f
 
 ## Manage Keynotes Window
 
-The window shows the keynote file as one tree. The top-level rows are groups (the categories of the keynote file) and the rows under them are keynotes, which can have child keynotes of their own.
+The window shows the keynote file as one tree. The top-level rows are groups (the categories of the keynote file) and the rows under them are keynotes, which can have child keynotes of their own. The status bar shows the keynote file and how many groups and keynotes it holds, and how many keynotes are used in the model.
+
+![Keynote Manager window](../assets/tools/keynotes/keynote-manager.png)
 
 ### File toolbar
+
+![File toolbar](../assets/tools/keynotes/keynote-manager-file-toolbar.png)
 
 | Button | What it does |
 |---|---|
@@ -97,6 +93,8 @@ The search bar filters the tree as you type. **Filters** adds a ready-made filte
 ### Editing the tree
 
 The toolbar above the tree works on the selected rows. Most of them are also in the right-click menu.
+
+![Tree toolbar](../assets/tools/keynotes/keynote-manager-tree-toolbar.png)
 
 | Command | Shortcut |
 |---|---|
@@ -124,15 +122,20 @@ A group that still has keynotes, and a keynote that has child keynotes or is use
 
 **Copy** and **Paste here** also work between two projects that use different keynote files. Before anything is written, the **Paste Keynotes** window lists every copied row with what is currently in the target file and the result: added, text replaced, already there, or locked by another user. Only the ticked rows are written. Taking a row that conflicts replaces the text of the target keynote and keeps its place in the tree.
 
+![Paste Keynotes window](../assets/tools/keynotes/paste-keynotes.png)
+
 ### Placing Keynotes
 
 Select the kind of keynote to place under **Place**: **User**, **Element** or **Material**. Then select a keynote and click the place button, or Alt+click the keynote in the tree. Revit starts its keynote tool with that key.
 
 Groups cannot be placed, and neither can a keynote that another user has locked.
 
-**Find in model** lists the places where the selected keynote is used in the pyRevit output window. Click an element id in the list to go to that keynote.
+**Find in model** lists the places where the selected keynote is used in the pyRevit output window, one line per keynote tag. Click an element id in the list to go to that keynote. In a workshared model, the line also names the last user who edited the tag.
 
-![](../assets/tools/keynotes/2019-08-28-09-19-23-keynotes.png)
+```text
+Keynote: 2157876 | Source: User | View: Level 1
+Keynote: 2157877 | Source: User | View: Level 1
+```
 
 ## Working with a shared keynote file
 
