@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import sys
 
-from pyrevit.framework import List
+from pyrevit.framework import to_clr_list
 from pyrevit import forms
 from pyrevit import revit, DB, UI
 from pyrevit.revit import query
 from pyrevit import script
-from Autodesk.Revit.DB import Element as DBElement
 
 
 logger = script.get_logger()
@@ -43,6 +42,8 @@ class OptionSet:
 
 class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
     """Handle copy and paste errors."""
+
+    __namespace__ = "pyrevittools.copy_sheets_to_open_documents"
 
     def OnDuplicateTypeNamesFound(self, args):
         """Use destination model types if duplicate."""
@@ -214,7 +215,7 @@ def copy_view_contents(
         with revit.Transaction("Copy View Contents", doc=dest_doc, swallow_errors=True):
             DB.ElementTransformUtils.CopyElements(
                 source_view,
-                List[DB.ElementId](elements_ids),
+                to_clr_list(DB.ElementId, elements_ids),
                 dest_view,
                 None,
                 cp_options,
@@ -309,8 +310,7 @@ def copy_view(activedoc, source_view, dest_doc):
 
 def copy_viewport_types(activedoc, vport_type, vport_typename, dest_doc, newvport):
     dest_vport_typenames = [
-        DBElement.Name.GetValue(dest_doc.GetElement(x))
-        for x in newvport.GetValidTypes()
+        query.get_name(dest_doc.GetElement(x)) for x in newvport.GetValidTypes()
     ]
 
     cp_options = DB.CopyPasteOptions()
@@ -322,7 +322,7 @@ def copy_viewport_types(activedoc, vport_type, vport_typename, dest_doc, newvpor
         ):
             DB.ElementTransformUtils.CopyElements(
                 activedoc,
-                List[DB.ElementId]([vport_type.Id]),
+                to_clr_list(DB.ElementId, [vport_type.Id]),
                 dest_doc,
                 None,
                 cp_options,
@@ -333,7 +333,7 @@ def apply_viewport_type(activedoc, vport_id, dest_doc, newvport_id):
     with revit.Transaction("Apply Viewport Type", doc=dest_doc):
         vport = activedoc.GetElement(vport_id)
         vport_type = activedoc.GetElement(vport.GetTypeId())
-        vport_typename = DBElement.Name.GetValue(vport_type)
+        vport_typename = query.get_name(vport_type)
 
         newvport = dest_doc.GetElement(newvport_id)
 
@@ -341,7 +341,7 @@ def apply_viewport_type(activedoc, vport_id, dest_doc, newvport_id):
 
         for vtype_id in newvport.GetValidTypes():
             vtype = dest_doc.GetElement(vtype_id)
-            if DBElement.Name.GetValue(vtype) == vport_typename:
+            if query.get_name(vtype) == vport_typename:
                 newvport.ChangeTypeId(vtype_id)
 
 
@@ -565,7 +565,7 @@ def copy_sheet_guides(activedoc, source_sheet, dest_doc, dest_sheet):
             with revit.Transaction("Copy Sheet Guide", doc=dest_doc):
                 DB.ElementTransformUtils.CopyElements(
                     activedoc,
-                    List[DB.ElementId]([source_sheet_guide_element.Id]),
+                    to_clr_list(DB.ElementId, [source_sheet_guide_element.Id]),
                     dest_doc,
                     None,
                     cp_options,
