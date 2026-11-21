@@ -178,7 +178,7 @@ nav:
       - BasicFileInfo stream: revit-files/basicfileinfo.md
       - PartAtom stream: revit-files/partatom.md
       - ProjectInformation stream: revit-files/projectinformation.md
-  - Contribute:
+  - Develop pyRevit:
     - Contributing: CONTRIBUTING.md
     - Repository organization: repo-organization.md
     - Developer Guide: dev-guide.md
