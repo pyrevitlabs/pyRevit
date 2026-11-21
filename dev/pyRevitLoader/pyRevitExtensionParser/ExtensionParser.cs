@@ -57,9 +57,9 @@ namespace pyRevitExtensionParser
                 logger.Error(message);
         }
 
-        private static List<string> ReadAuthList(
+        internal static List<string> ReadAuthList(
             JToken token,
-            string extensionJsonPath,
+            string definitionPath,
             ref bool authDefinitionUnreadable)
         {
             if (token == null || token.Type == JTokenType.Null)
@@ -69,7 +69,7 @@ namespace pyRevitExtensionParser
             if (array == null)
             {
                 authDefinitionUnreadable = true;
-                LogAuthDefinitionUnreadable(extensionJsonPath);
+                LogAuthDefinitionUnreadable(definitionPath);
                 return null;
             }
 
@@ -87,7 +87,7 @@ namespace pyRevitExtensionParser
             if (values.Count == 0)
             {
                 authDefinitionUnreadable = true;
-                LogAuthDefinitionUnreadable(extensionJsonPath);
+                LogAuthDefinitionUnreadable(definitionPath);
                 return null;
             }
 
@@ -633,7 +633,7 @@ namespace pyRevitExtensionParser
                 }
             }
 
-            ExtensionRegistryAuth.ApplyRegistryAuthorization(
+            authDefinitionUnreadable |= ExtensionRegistryAuth.ApplyRegistryAuthorization(
                 extDir,
                 extName,
                 manifestName,
