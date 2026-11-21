@@ -59,6 +59,10 @@ Add the url for the script telemetry data formatted as below, inside the server 
 - Replace `you.domain` with the server machine IP or domain name. Remember that this machine needs to be accessible from your pyRevit workstations.
 - Replace `port` with the port that you started the server with.
 
+![Script Telemetry settings](../assets/teams/telemetry/settings-script-telemetry.png)
+
+![Script telemetry data folder](../assets/teams/telemetry/settings-script-telemetry-folder.png)
+
 ### Activating Events
 
 Open pyRevit Settings and under the ***Telemetry*** section, turn on the ***Application Telemetry*** option.  Add the url for the application telemetry data formatted as below, inside the server url box.
@@ -67,23 +71,23 @@ Open pyRevit Settings and under the ***Telemetry*** section, turn on the ***Appl
 
 - Replace `you.domain` and `port` similar to above
 
-Now browse throught the events list and turn on the events that you want pyRevit to listen to and send their information to the server.
+Now browse throught the events list and turn on the events that you want pyRevit to listen to and send their information to the server. **Toggle All** turns them all on or off.
+
+![Application Telemetry settings](../assets/teams/telemetry/settings-application-telemetry.png)
 
 ### Timestamp Setting
 
-By default the telemetry system timestamps all the records in UTC time format. Disabling this option, timestamps the records to the machine local time.
-
-![](../assets/teams/telemetry/2019-08-28-10-41-15-pyrevit-settings.png)
+By default the telemetry system timestamps all the records in UTC time format. Turning off **Use UTC Timestamps**, under *Global Telemetry Settings*, timestamps the records to the machine local time.
 
 ### Command Execution Events
 
 pyRevit can also track command executions by listening to the changes to the active journal file. This helps providing telemetry information about any command (builtin, third-party, or pyRevit). Activate the command execution events under Application Telemetry events list.
 
-![](../assets/teams/telemetry/2019-09-30-11-03-23-pyrevit-settings.png)
+![Command Executed event in the events list](../assets/teams/telemetry/settings-command-executed-event.png)
 
 ### Hook Execution Events
 
-You can also track the execution of the hook scripts defined in your extensions. Turn the Hooks option on under *Send Telemetry For* section to send the hooks telemetry to your server
+You can also track the execution of the hook scripts defined in your extensions. Turn the **Hooks** option on under *Send Telemetry For* section to send the hooks telemetry to your server
 
 You can also send custom data as part of the hook telemetry:
 
@@ -95,8 +99,6 @@ from pyrevit import script
 results = script.get_results()
 results.timesaved = 10
 ```
-
-![](../assets/teams/telemetry/screen-shot-2020-11-27-at-15-47-01.png)
 
 ### Configuring Telemetry System Using pyRevit CLI
 
