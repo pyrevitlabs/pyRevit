@@ -306,6 +306,7 @@ namespace pyRevitLabs.Common.Tests {
 
         /// <summary>A key that was opened is returned as the same instance.</summary>
         [Test]
+        [Category("Integration")]
         public void OpenKeyIsReturnedWhenItExists() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPathGuard\" + Guid.NewGuid().ToString("N");
             try {
@@ -320,6 +321,7 @@ namespace pyRevitLabs.Common.Tests {
 
         /// <summary>Writing a new raw PATH value stores it as <c>ExpandString</c> and reads back the unexpanded text.</summary>
         [Test]
+        [Category("Integration")]
         public void RawValueWriteKeepsExpandStringKindAndUnexpandedText() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {
@@ -337,6 +339,7 @@ namespace pyRevitLabs.Common.Tests {
 
         /// <summary>Writing a raw PATH value keeps an existing <c>String</c> value kind.</summary>
         [Test]
+        [Category("Integration")]
         public void RawValueWriteDoesNotDowngradeExistingStringKind() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {
@@ -354,6 +357,7 @@ namespace pyRevitLabs.Common.Tests {
 
         /// <summary>Reading a raw PATH value that does not exist returns null.</summary>
         [Test]
+        [Category("Integration")]
         public void RawValueReadOfMissingValueIsNull() {
             var subKey = @"Software\pyRevitLabs\Tests\SystemPath\" + Guid.NewGuid().ToString("N");
             try {
