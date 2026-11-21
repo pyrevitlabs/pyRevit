@@ -278,9 +278,10 @@ if selected_titleblocks:
 Use [`forms.select_parameters()`](https://docs.pyrevitlabs.io/reference/pyrevit/forms/#pyrevit.forms.select_parameters) to ask for a selection of type or instance parameters on a Revit element
 
 ```python
-from pyrevit import forms
+from pyrevit import forms, revit
 
-selected_parameters = forms.select_parameters()
+element = revit.pick_element()
+selected_parameters = forms.select_parameters(element)
 if selected_parameters:
     do_stuff_with_parameters()
 ```
@@ -341,8 +342,10 @@ res = forms.SelectFromList.show(ops,
                                 multiselect=False,
                                 name_attr='Name',
                                 button_name='Select Sheet')
-if res.Id == viewsheet1.Id:
-    do_stuff()
+if res:
+    selected_ids = [sheet.Id for sheet in res]
+    if viewsheet1.Id in selected_ids:
+        do_stuff()
 ```
 
 The options also support groups of lists. When option groups are used, a combo box group selector will appear on the window

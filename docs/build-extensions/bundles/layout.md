@@ -19,15 +19,15 @@ For example, below are the layout directives for a UI bundle that includes a few
 
 ```yaml
 layout:
-	- PushButton A
-	- PushButton B
-	- PullDown A
-	- ---                    # see Separator Lines
-	- PullDown B
-	- Stack3 A
-	- >>>                    # see Slide-out Panel
-	- PushButton C
-	- PullDown C
+  - PushButton A
+  - PushButton B
+  - PullDown A
+  - ---                    # see Separator Lines
+  - PullDown B
+  - Stack3 A
+  - >>>                    # see Slide-out Panel
+  - PushButton C
+  - PullDown C
 ```
 
 ### Separator Lines
@@ -35,11 +35,11 @@ layout:
 
 ```yaml
 layout:
-	- PushButton A
-	- PushButton B
-	- PullDown A
-	- ---
-	- PushButton B
+  - PushButton A
+  - PushButton B
+  - PullDown A
+  - ---
+  - PushButton B
 ```
 
 ### Slide-out Panel
@@ -51,12 +51,12 @@ layout:
 
 ```yaml
 layout:
-	- PushButton A
-	- PushButton B
-	- PullDown A
-	- ">>>"
-	- PushButton C
-	- PullDown C
+  - PushButton A
+  - PushButton B
+  - PullDown A
+  - ">>>"
+  - PushButton C
+  - PullDown C
 ```
 
 ### Layout Directives
@@ -73,17 +73,17 @@ Layouts can also contain directives on renaming buttons, or their placement in r
 # examples
 # title directive (\n is escape code for new line)
 # this directive renames the bundle "Misc Tests" -> "Third-Party"
-#																										" Unittests "
+#                                                    " Unittests "
 layout:
   - Misc Tests[title:Third-Party\nUnittests]
 
 # before directive
 # this directive places "Manage Tags" before "Modify"
 layout:
-	- Manage Tags[before:Modify]
+  - Manage Tags[before:Modify]
 
 # beforeall directive
 # this directive places "pyRevit" before everything else
 layout:
-	- pyRevit[beforeall:]
+  - pyRevit[beforeall:]
 ```

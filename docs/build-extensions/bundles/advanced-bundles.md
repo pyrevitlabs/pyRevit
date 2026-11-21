@@ -30,7 +30,7 @@ MyComboBox.combobox/
 ```
 
 ### Configuration (bundle.yaml)
-The `bundle.yaml` file defines the ComboBox properties and its dropdown members.
+The `bundle.yaml` file defines the ComboBox properties and its dropdown members.
 
 **Basic Example**
 
@@ -119,235 +119,112 @@ members:
 ```
 
 ### Script Integration
-ComboBox bundles can include a `script.py` with a `__selfinit__` function that runs during UI creation. This function allows you to:
+A ComboBox bundle can include a `script.py` that defines event handlers. pyRevit looks for three functions by name and connects each one it finds to the matching Revit event:
 
-!!! tip ""
+| Function | Revit event | Called when |
+|---|---|---|
+| `__cmb_on_change__` | `CurrentChanged` | the user selects a different item |
+| `__cmb_dropdown_open__` | `DropDownOpened` | the dropdown opens, before the items are shown |
+| `__cmb_dropdown_close__` | `DropDownClosed` | the dropdown closes |
 
-    > IMPORTANT: Do not use print() inside event handlers! While print() works in \_\_selfinit\_\_, it causes silent failures inside event handlers (e.g., on\_current\_changed). Use TaskDialog.Show() from Autodesk.Revit.UI for feedback in event handlers.
-
-- Subscribe to ComboBox events
-- Dynamically add members
-- Configure the ComboBox based on conditions
-
-```python
-def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
-    """Initialize the ComboBox.
-
-    Args:
-        script_cmp: The ComboBoxGroup component object (bundle metadata)
-        ui_button_cmp: The _PyRevitRibbonComboBox wrapper instance
-        __rvt__: The Revit UIApplication object
-
-    Returns:
-        bool: Return True if successful, False to deactivate the ComboBox
-    """
-    # Get the underlying Revit API ComboBox
-    combobox = ui_button_cmp.get_rvtapi_object()
-
-    # Subscribe to events
-    combobox.CurrentChanged += on_selection_changed
-
-    return True
-```
-
-### Events
-The Revit API ComboBox supports three events that can be subscribed to in `__selfinit__`:
-
-**CurrentChanged**
-
-Fired when the user selects a different item.
+Every handler takes the same three arguments: the Revit `ComboBox` that raised the event, the event arguments, and a context object.
 
 ```python
-from pyrevit.forms import alert
+from Autodesk.Revit.UI import TaskDialog
 
-def on_current_changed(sender, args):
-    selected = sender.Current
-    if selected:
-        alert(
-            "Selected: {}\nID: {}".format(selected.ItemText, selected.Name),
-            "Selection Changed"
-        )
 
-combobox.CurrentChanged += on_current_changed
-```
-
-**DropDownOpened**
-
-Fired when the dropdown is opened (before items are shown). Avoid showing modal dialogs (like `TaskDialog`) in this handler as it blocks the dropdown expansion.
-
-!!! tip ""
-
-    > Note: This event is useful for refreshing items or updating state before the user sees the dropdown, but not for showing UI feedback. Standard `print()` won't produce visible output in this context.
-
-```python
-def on_dropdown_opened(sender, args):
-    # Useful for refreshing dynamic items or updating enabled states
-    # Do NOT use TaskDialog here - it blocks the dropdown
-    pass
-
-combobox.DropDownOpened += on_dropdown_opened
-```
-
-**DropDownClosed**
-
-Fired when the dropdown is closed.
-
-```python
-from pyrevit.forms import alert
-
-def on_dropdown_closed(sender, args):
+def __cmb_on_change__(sender, args, ctx):
     current = sender.Current
-    alert(
-		    "Current selection: {}".format(current.ItemText if current else "None"),
-        "Dropdown Closed"
-    )
+    if current:
+        TaskDialog.Show("Selection changed", "Selected: {}".format(current.ItemText))
 
-combobox.DropDownClosed += on_dropdown_closed
+
+def __cmb_dropdown_open__(sender, args, ctx):
+    print("Dropdown opened")
+
+
+def __cmb_dropdown_close__(sender, args, ctx):
+    print("Dropdown closed with: {}".format(ctx.current_value))
 ```
 
-> Important: Keep references to event handlers on the `ui_button_cmp` object to prevent garbage collection:
->
-> ```python
-> ui_button_cmp._my_handler = on_current_changed
-> ```
+Do not show a `TaskDialog` from `__cmb_dropdown_open__`: it blocks the dropdown from opening.
+
+### The context object
+The third argument gives access to the ComboBox and keeps state between calls.
+
+| Member | Description |
+|---|---|
+| `combobox` | The Revit API `ComboBox` |
+| `ui_item` | Wrapper with helper methods, see below |
+| `current_item` | The selected `ComboBoxMember` |
+| `current_value` | Text of the selected item |
+| `current_name` | Name (id) of the selected item |
+| `items`, `item_count`, `item_texts`, `item_names` | The members and their texts and names |
+| `set_current(name_or_text)` | Select an item by its name or text |
+| `get_item_by_name(name)`, `get_item_by_text(text)` | Find a member |
+| `uiapp` | The Revit `UIApplication` |
+| `directory`, `name`, `display_name` | The bundle folder and names |
+| `user_data` | A dictionary that keeps its content between handler calls |
 
 ### Dynamic Members
-Members can be added programmatically in `__selfinit__`:
+Add members from a handler through `ctx.ui_item`. Use `ctx.user_data` to do it only once:
 
 ```python
-from Autodesk.Revit.UI import ComboBoxMemberData
-
-def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
-    # Add a separator
-    ui_button_cmp.add_separator()
-
-    # Add single item
-    member = ComboBoxMemberData("item_id", "Item Text")
-    member.GroupName = "Dynamic Items"
-    ui_button_cmp.add_item(member)
-
-    # Add multiple items
-    items = [
-        ComboBoxMemberData("item_1", "Item 1"),
-        ComboBoxMemberData("item_2", "Item 2"),
-    ]
-    ui_button_cmp.add_items(items)
-
-    return True
+def __cmb_dropdown_open__(sender, args, ctx):
+    if ctx.user_data.ContainsKey("items_added"):
+        return
+    ui_item = ctx.ui_item
+    ui_item.add_separator()
+    ui_item.AddItem("dynamic_single", "Dynamic Single", "Dynamic Items")
+    ui_item.add_items(
+        [("dynamic_batch_1", "Dynamic Batch 1"), ("dynamic_batch_2", "Dynamic Batch 2")],
+        "Dynamic Items",
+    )
+    ctx.user_data["items_added"] = True
 ```
 
 ### Wrapper API Reference
-The `ui_button_cmp` parameter provides these methods and properties:
+`ctx.ui_item` provides:
 
-**Methods**
-
-| **Method** | **Description** |
+| Member | Description |
 |---|---|
-| `get_rvtapi_object()` | Get underlying Revit API ComboBox |
-| `add_item(member_data)` | Add a single ComboBoxMemberData |
-| `add_items(member_data_list)` | Add multiple members at once |
-| `add_separator()` | Add a separator line in dropdown |
-| `get_items()` | Get list of ComboBoxMember objects |
-| `get_title()` | Get display title |
-| `set_title(title)` | Set display title |
-| `set_contexthelp(url)` | Set F1 help URL |
-| `get_contexthelp()` | Get contextual help object |
-| `activate()` | Show and enable the ComboBox |
-| `deactivate()` | Hide and disable the ComboBox |
-
-**Properties**
-
-| **Property** | **Type** | **Description** |
-|---|---|---|
-| `current` | `ComboBoxMember` | Get/set currently selected member |
-| `enabled` | `bool` | Enable/disable the control |
-| `visible` | `bool` | Show/hide the control |
-| `name` | `str` | ComboBox identifier |
+| `AddItem(name, text, group_name)` | Add one member; the group name is optional |
+| `add_items(items, default_group_name)` | Add several members from `(name, text)` pairs |
+| `add_separator()` | Add a separator line in the dropdown |
+| `get_items()` | List of `ComboBoxMember` objects |
+| `current` | Get or set the selected member |
+| `enabled` | Enable or disable the control |
+| `visible` | Show or hide the control |
+| `get_contexthelp()`, `set_contexthelp(help)` | Read or set the contextual help |
 
 ### Complete Example
-**bundle.yaml**
-
-```text
-title: View Scale
-tooltip: Select view scale
-tooltip_ext: Changes the scale of the active view
-help_url: https://docs.example.com/view-scale
-
-members:
-  - id: "1:1"
-    text: "1:1"
-    group: Detail Scales
-
-  - id: "1:2"
-    text: "1:2"
-    group: Detail Scales
-
-  - id: "1:50"
-    text: "1:50"
-    group: Plan Scales
-
-  - id: "1:100"
-    text: "1:100"
-    group: Plan Scales
-```
-
-**script.py**
-
-```text
-from pyrevit import revit
-from Autodesk.Revit.UI import ComboBoxMemberData
-
-def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
-    combobox = ui_button_cmp.get_rvtapi_object()
-
-    def on_scale_changed(sender, args):
-        selected = sender.Current
-        if not selected:
-            return
-
-        scale_text = selected.Name  # e.g., "1:100"
-        scale_value = int(scale_text.split(":")[1])
-
-        doc = revit.doc
-        view = revit.active_view
-
-        if view and hasattr(view, 'Scale'):
-            with revit.Transaction("Set View Scale"):
-                view.Scale = scale_value
-
-    combobox.CurrentChanged += on_scale_changed
-    ui_button_cmp._scale_handler = on_scale_changed
-
-    return True
-```
+The `Test ComboBox.combobox` bundle in the pyRevitDevTools extension uses all three handlers, dynamic members and the wrapper API: [script.py](https://github.com/pyrevitlabs/pyRevit/blob/develop/extensions/pyRevitDevTools.extension/pyRevitDev.tab/Debug.panel/Test%20ComboBox.combobox/script.py).
 
 ### Icon Specifications
 | **Icon Type** | **Size** | **Format** | **Purpose** |
 |---|---|---|---|
 | `icon.png` | 16x16 or 32x32 | PNG | Main ComboBox icon |
 | `icon.dark.png` | 16x16 or 32x32 | PNG | Dark theme variant |
-| Member `icon` | 16x16 | PNG | Individual dropdown item icon |
+| Member `icon` | 16x16 | PNG | Individual dropdown item icon |
 | `tooltipImage` | ~200-300px wide | PNG | Tooltip preview image |
 
 ### Troubleshooting
 **ComboBox not appearing**
 
-1. Check that the bundle directory ends with `.combobox`
-1. Verify `bundle.yaml` is valid YAML syntax
+1. Check that the bundle directory ends with `.combobox`
+1. Verify `bundle.yaml` is valid YAML syntax
 1. Check pyRevit logs for parsing errors
-1. Ensure `__selfinit__` returns `True` (not `False`)
-1. **Do not use** **`print()`** **inside event handlers** - it causes silent failures. Use `TaskDialog.Show()` instead. (`print()` works fine in `__selfinit__` itself.)
 
 **Members not showing**
 
-1. Verify `members` key exists in `bundle.yaml`
+1. Verify `members` key exists in `bundle.yaml`
 1. Check member format matches supported formats
 1. Look for errors in pyRevit output window
 
 **Events not firing**
 
-1. Ensure event handlers are subscribed in `__selfinit__`
-1. Keep handler references on `ui_button_cmp` to prevent garbage collection
+1. Check the handler names: `__cmb_on_change__`, `__cmb_dropdown_open__`, `__cmb_dropdown_close__`
+1. Each handler must take three arguments: `sender`, `args`, `ctx`
 1. Check for exceptions in event handlers (they may be swallowed silently)
 
 **Icons not displaying**

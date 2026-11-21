@@ -20,7 +20,7 @@ See [Extension Hooks/](hooks.md) for more information about hook scripts inside 
 ```yaml
 extension: .extension
 requires:
-    - extension.yaml      # includes extension metadata e.g. author
+    - extension.json      # includes extension metadata e.g. author
 
 optional:
     - *startup.*          # can include a startup script that runs when Revit is launched

@@ -103,19 +103,18 @@ table_data = [[1234.0, "Cell data aaa", "12.00", "41"],
             row_striping (bool): False to override the default white-grey row stripes and make all white)
 """
 
-output.print_table(table_data=data,
-                   title="Example table with formatting options",
-                   columns=["NUMBERS", "STRINGS", "DECIMALS", "PERCENTAGE"],
-                   formats=['{:.5}', '{}', '', '{}%'],
-                   last_line_style='color:red; font-weight:bold'
-                   column_head_align_styles=["center", "left", "right", "center"],
-                   column_data_align_styles=["right", "left", "right", "center"],
-                   column_widths = ["115px", "auto", "auto", "auto"],
-                   column_vertical_border_style="border:black solid 1px",
-                   repeat_head_as_foot=True if len(table_data)>14 else False # Automatic option by table length,
-                   table_width_style="100%",
-                   row_striping=True)
-                   )
+output.print_html_table(table_data=table_data,
+                        title="Example table with formatting options",
+                        columns=["NUMBERS", "STRINGS", "DECIMALS", "PERCENTAGE"],
+                        formats=['{:.5}', '{}', '', '{}%'],
+                        last_line_style='color:red; font-weight:bold',
+                        column_head_align_styles=["center", "left", "right", "center"],
+                        column_data_align_styles=["right", "left", "right", "center"],
+                        column_widths=["115px", "auto", "auto", "auto"],
+                        column_vertical_border_style="border:black solid 1px",
+                        repeat_head_as_foot=len(table_data) > 14,
+                        table_width_style="100%",
+                        row_striping=True)
 ```
 
 - Call the print\_table method with a 2D list of data.
@@ -250,7 +249,7 @@ Steps could be provided to update the progress bar at intervals specified by `st
 
 ```python
 max_value = 1000
-with ProgressBar(steps=10) as pb:
+with ProgressBar(step=10) as pb:
     for counter in range(0, max_value):
         pb.update_progress(counter, max_value)
 ```

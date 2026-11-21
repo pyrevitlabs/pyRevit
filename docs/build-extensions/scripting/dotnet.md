@@ -16,17 +16,21 @@ At execution time, pyRevit will fill this field. The `ExecParams` is defined as
 
 ```csharp
 public class ExecParams {
-    public string ScriptPath { get; set; }            // path to command script
-    public string ConfigScriptPath { get; set; }      // path to command config script
-    public string CommandUniqueId { get; set; }       // command unique id
-    public string CommandName { get; set; }           // command name
-    public string CommandBundle { get; set; }         // command bundle full name with type
-    public string CommandExtension { get; set; }      // command extention name
-    public string HelpSource { get; set; }            // command help source
-    public bool RefreshEngine { get; set; }           // if a new engine was requested thought UI
-    public bool ConfigMode { get; set; }              // if command is in config mode
-    public bool DebugMode { get; set; }               // if command is in debug mode
-    public bool ExecutedFromUI { get; set; }          // if command has been executed from UI
+    public string ExecId { get; }                // unique id of this execution
+    public string ExecTimeStamp { get; }         // timestamp of this execution
+    public string ScriptPath { get; }            // path to command script
+    public string ConfigScriptPath { get; }      // path to command config script
+    public string CommandUniqueId { get; }       // command unique id
+    public string CommandControlId { get; }      // command control id
+    public string CommandName { get; }           // command name
+    public string CommandBundle { get; }         // command bundle full name with type
+    public string CommandExtension { get; }      // command extension name
+    public string HelpSource { get; }            // command help source
+    public bool RefreshEngine { get; }           // if a new engine was requested through UI
+    public bool ConfigMode { get; }              // if command is in config mode
+    public bool DebugMode { get; }               // if command is in debug mode
+    public bool ExecutedFromUI { get; }          // if command has been executed from UI
+    public object UIButton { get; }              // the ribbon button of the command
 }
 ```
 
