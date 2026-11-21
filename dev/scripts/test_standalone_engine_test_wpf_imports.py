@@ -72,38 +72,20 @@ def _references_wpf(node):
     return False
 
 
-_DEFERRED_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
-
-
-def _definition_time_nodes(scope):
-    args = scope.args
-    return (
-        getattr(scope, "decorator_list", [])
-        + args.defaults
-        + [default for default in args.kw_defaults if default is not None]
-    )
-
-
-def _live_children(node):
-    if isinstance(node, ast.If) and isinstance(node.test, ast.Constant):
+def _import_time_nodes(node):
+    yield node
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+        children = (
+            getattr(node, "decorator_list", [])
+            + node.args.defaults
+            + [default for default in node.args.kw_defaults if default is not None]
+        )
+    elif isinstance(node, ast.If) and isinstance(node.test, ast.Constant):
         children = [node.test] + (node.body if node.test.value else node.orelse)
     else:
         children = ast.iter_child_nodes(node)
-    live = []
     for child in children:
-        if isinstance(child, _DEFERRED_SCOPES):
-            live.extend(_definition_time_nodes(child))
-        else:
-            live.append(child)
-    return live
-
-
-def _import_time_nodes(tree):
-    pending = [tree]
-    while pending:
-        node = pending.pop()
-        yield node
-        pending.extend(_live_children(node))
+        yield from _import_time_nodes(child)
 
 
 def _first_line(nodes, predicate):
@@ -122,13 +104,14 @@ def wpf_use_before_reference(source, filename="<script>"):
     """Return the line of the first unreferenced ``System.Windows`` use, or None.
 
     Note:
-        Only code that runs at import time is compared. Function and lambda
-        bodies are ignored, wherever they are defined, because they run only
-        when called; their decorators and default values still count. So a
-        use inside a function called before the load is not flagged. Branches
-        of an ``if`` whose test is a literal constant (``if False:``,
-        ``if 0:``, the ``else`` of ``if True:``) are ignored; other dead
-        conditions are not detected. Other blocks such as ``try`` count.
+        Only code that runs at import time is compared, by one rule applied
+        to every node: function and lambda bodies are skipped, while their
+        decorators and default values (lambdas included) are checked by the
+        same rule; an ``if`` with a literal-constant test (``if False:``,
+        ``if 0:``, ``if True:``) contributes only the branch that runs;
+        everything else, ``try`` and class bodies included, counts. So a use
+        inside a function called before the load is not flagged, and other
+        dead conditions are not detected.
     """
     tree = ast.parse(source, filename)
     nodes = list(_import_time_nodes(tree))
@@ -215,6 +198,21 @@ class WpfUseBeforeReferenceTests(unittest.TestCase):
             "import System\ndef show(window_type=System.Windows.Window):\n    pass\n"
         )
         self.assertEqual(wpf_use_before_reference(source), 2)
+
+    def test_add_reference_in_lambda_default_is_flagged(self):
+        source = (
+            "import clr\n"
+            "def helper(load=lambda: clr.AddReference('PresentationFramework')):\n"
+            "    pass\n"
+            "from System import Windows\n"
+        )
+        self.assertEqual(wpf_use_before_reference(source), 4)
+
+    def test_use_in_lambda_default_is_accepted(self):
+        source = (
+            "import System\ndef show(make=lambda: System.Windows.Window()):\n    pass\n"
+        )
+        self.assertIsNone(wpf_use_before_reference(source))
 
 
 class EngineTestsScriptsTests(unittest.TestCase):
