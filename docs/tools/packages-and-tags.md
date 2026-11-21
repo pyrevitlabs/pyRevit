@@ -1,6 +1,17 @@
 # Packages and Tags
 
-!!! info "This page is being moved"
-    Until it is written here, read [Manage Packages](https://pyrevitlabs.notion.site/e53e7041158e4b2791d5b9210e037e92) and [Manage Tags](https://pyrevitlabs.notion.site/0c0ec76535724d318f6fb3e04cdeae9a) on the pyRevit Notion site.
+!!! note ""
 
-Planned content: sheet packages and element tags with the pyRevitTags extension.
+    **pyRevitTags** is the extension for managing sheet history, and tagging elements in the model. This extension is not activated by default, so first load it through the pyRevit Extensions tool. A new **Packages & Tags** panel will be added to pyRevit tab. See [Install Extensions](../get-started/install-extensions.md)    
+
+Watch this video for an introduction to the **Manage Packages** tool
+
+[How to pyRevit: Managing Packages](https://www.youtube.com/watch?v=po0lCldSGmk)
+
+!!! note ""
+
+    **pyRevitTags** is the extension for managing sheet history, and tagging elements in the model. This extension is not activated by default, so first load it through the pyRevit Extensions tool. A new **Packages & Tags** panel will be added to pyRevit tab. See [Install Extensions](../get-started/install-extensions.md)    
+
+Watch this video for an introduction to **Manage Tags** tools
+
+[How to pyRevit: Managing Tags](https://www.youtube.com/watch?v=FYNDSAypWlg&t=4s)

@@ -1,6 +1,13 @@
 # Translate pyRevit
 
-!!! info "This page is being moved"
-    Until it is written here, read [Help Translate pyRevit](https://pyrevitlabs.notion.site/c26063a6c9824667a07c6a40b28c70d4) on the pyRevit Notion site.
+pyRevit is being translated into multiple languages. We started first with the languages already supported by Revit. The work has been divided into phases to make it easier for the community to provide translations.
 
-Planned content: add or improve a translation.
+!!! tip ""
+
+    Please reach out to the [Community](../help/community.md) if you would like to help translate pyRevit to your language
+
+## How translations are stored
+
+Button names and tooltips are translated in each bundle's `bundle.yaml`, with one entry per locale code under `title` and `tooltip`. See [Bundle metadata](../build-extensions/bundles/metadata.md) for the format and the locale codes.
+
+Send translations as a pull request. See [Contributing](../CONTRIBUTING.md).
