@@ -43,8 +43,8 @@ Note that the extension does not include anything else other than the `startup.p
 Now let's open the `startup.py` and import the `routes` module. This module provides the functionality we need to define the API:
 
 ```python
-# first import the routes module
-from pyrevit import routes
+# first import the routes module and the Revit DB namespace
+from pyrevit import DB, routes
 ```
 
 Then we need to define a new API...
@@ -81,9 +81,9 @@ Let's define this endpoint. First we need to create a function that collects the
 def get_doors(doc):
     """Find doors in given model"""
     doors = DB.FilteredElementCollector(doc)\
-						  .OfCategory(DB.BuiltInCategory.OST_Doors)\
-						  .WhereElementIsNotElementType()\
-							.ToElements()
+                          .OfCategory(DB.BuiltInCategory.OST_Doors)\
+                          .WhereElementIsNotElementType()\
+                            .ToElements()
 ```
 
 Notice that we have included a `doc` argument for our function since we do not know what the active document would be when this function is being triggered by a HTTP request from outside. So we would need the routes module to provide us the active document as the `doc` argument. See sections below to learn about other predefined arguments that you can define for your logic functions and the implications of each.
@@ -95,9 +95,9 @@ Now that we have our logic function, let's tell the Routes module that this is t
 def get_doors(doc):
     """Find doors in active model"""
     doors = DB.FilteredElementCollector(doc)\
-						  .OfCategory(DB.BuiltInCategory.OST_Doors)\
-						  .WhereElementIsNotElementType()\
-							.ToElements()
+                          .OfCategory(DB.BuiltInCategory.OST_Doors)\
+                          .WhereElementIsNotElementType()\
+                            .ToElements()
 ```
 
 You might have noticed that we do not need to include the `my-api` part of the endpoint, since that's the root of our API and all the endpoints defined using `api.route` will end up after the API. So `@api.route('/doors/')` will mark the logic function for `my-api/doors` endpoint.
@@ -111,12 +111,12 @@ Now that we have the logic connected to the endpoint, we can prepare the doors d
 def get_doors(doc):
     """Find doors in active model"""
     doors = DB.FilteredElementCollector(doc)\
-						  .OfCategory(DB.BuiltInCategory.OST_Doors)\
-						  .WhereElementIsNotElementType()\
-							.ToElements()
+              .OfCategory(DB.BuiltInCategory.OST_Doors)\
+              .WhereElementIsNotElementType()\
+              .ToElements()
 
-		# let's grab the integer ids of the door instances
-		doors_data = [x.Id.IntegerValue for x in doors]
+    # let's grab the integer ids of the door instances
+    doors_data = [x.Id.IntegerValue for x in doors]
 ```
 
 and now we can use the `routes` module again to prepare a reponse:
@@ -126,13 +126,13 @@ and now we can use the `routes` module again to prepare a reponse:
 def get_doors(doc):
     """Find doors in active model"""
     doors = DB.FilteredElementCollector(doc)\
-						  .OfCategory(DB.BuiltInCategory.OST_Doors)\
-						  .WhereElementIsNotElementType()\
-							.ToElements()
-		doors_data = [x.Id.IntegerValue for x in doors]
+              .OfCategory(DB.BuiltInCategory.OST_Doors)\
+              .WhereElementIsNotElementType()\
+              .ToElements()
+    doors_data = [x.Id.IntegerValue for x in doors]
 
-		# create response and return
-		return routes.make_response(data=doors_data)
+    # create response and return
+    return routes.make_response(data=doors_data)
 ```
 
 We are passing a python list (serializable data type) as the response data to the `routes.make_response()` function. This function has more arguments that you can read about in the sections below but for this example we use the defaults (e.g. HTTP response status defaults to `200 OK`)
@@ -196,10 +196,10 @@ The `request` argument on your handler functions can be used to check which HTTP
 ```python
 @api.route('api/end/point/method', methods=["GET", "POST"])
 def test_method(request):
-	if request.method == "POST":
-		# do post stuff
-	else:
-		# do get stuff
+    if request.method == "POST":
+        # do post stuff
+    else:
+        # do get stuff
 ```
 
 #### Route Parameters
@@ -214,15 +214,15 @@ Define the parameter following the `/<type:name>/` format e.g. `/<int:door_id>/`
 
 @api.route('/doors/<int:door_id>')
 def post_id(door_id):
-	# do stuff with door_id
+    # do stuff with door_id
 ```
 
-A few other data types are supported as well (`int`, `float`, `double`, `bool`, `uuid`)
+A few other data types are supported as well (`int`, `float`, `bool`, `uuid`)
 
 ```python
-api.route('/doors/<uuid:door_uniqueid>')
+@api.route('/doors/<uuid:door_uniqueid>')
 def post_uuid(door_uniqueid):
-	# do stuff with door_uniqueid
+    # do stuff with door_uniqueid
 ```
 
 #### Request Data
@@ -232,8 +232,8 @@ The `request` argument on your handler functions can be used to grab any data be
 ```python
 @api.route('api/end/point/data', methods=["POST"])
 def test_data(request):
-	if request.data:
-		# process data
+    if request.data:
+        # process data
 ```
 
 #### Request Headers
@@ -243,7 +243,7 @@ The `request` argument on your handler functions can be used to grab request hea
 ```python
 @api.route('api/end/point/headers', methods=["POST"])
 def test_headers(request):
-	headers = request.headers  # dictionaty of header key:value
+    headers = request.headers  # dictionaty of header key:value
 ```
 
 ### Returning Results
@@ -253,11 +253,11 @@ The `routes.make_response` function can be used to prepare a **routes.Response**
 ```python
 @api.route('api/end/point/reponse', methods=["POST"])
 def mirror(request):
-	return routes.make_reponse(
-		data=request.data,
-		status=routes.HTTP_OK,
-		headers = {"pyRevit": "v4.6.7"}
-	)
+    return routes.make_response(
+        data=request.data,
+        status=routes.OK,
+        headers = {"pyRevit": "v4.6.7"}
+    )
 ```
 
 ### Providing Callback URL
@@ -266,8 +266,8 @@ API calls to the Routes server can provide a callback URL when the endpoint hand
 
 ```json
 {
-	// your data,
-	"callbackUrl": "http://mycallbackserver/api/end/point/callback"
+    // your data,
+    "callbackUrl": "http://mycallbackserver/api/end/point/callback"
 }
 ```
 
@@ -404,6 +404,6 @@ Reload pyRevit remotely into a new session. Returns new session info
 
 ```json
 {
-	"sessionid" : "541a2a8d-0954-4f9a-9644-3551c1a2118e"
+    "session_id" : "541a2a8d-0954-4f9a-9644-3551c1a2118e"
 }
 ```

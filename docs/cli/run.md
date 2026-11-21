@@ -34,9 +34,10 @@ You can also specify a single or multiple models to `pyrevit run` command. If a 
 
 ```powershell
 pyrevit run <script_file> <model_file> [--revit=<revit_year>] [--purge]
+pyrevit run <script_file> --models=<model_list_file> --revit=<revit_year> [--purge]
 
 $ pyrevit run "C:\myscript.py" "C:\Model1.rvt"
-$ pyrevit run "C:\myscript.py" "C:\All-My-Models.txt"
+$ pyrevit run "C:\myscript.py" --models="C:\All-My-Models.txt" --revit=2026
 
 # target models will be listed at the end of env report
 ==> Target Models
@@ -44,7 +45,8 @@ C:\Users\LeoW10\Desktop\batchtest\Project_V19.rvt
 C:\Users\LeoW10\Desktop\batchtest\Project_V18.rvt
 ```
 
-- `<model_file>`: Path to a Revit model file OR a text file listing multiple models (one model per line).
+- `<model_file>`: Path to a Revit model file.
+- `--models=<model_list_file>`: Path to a text file listing multiple models, one per line. `--revit` is required with it.
 
 **Important Note:**
 

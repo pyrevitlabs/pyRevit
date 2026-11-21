@@ -26,9 +26,12 @@ The telemetry server is a separate project: [pyrevitlabs/telemetry-server](https
 Pick a machine that the pyRevit machines can reach, and start the server there with Docker and the database you want:
 
 ```bash
-docker pull ghcr.io/pyrevitlabs/telemetry-server:latest
+git clone https://github.com/pyrevitlabs/telemetry-server.git
+cd telemetry-server
 docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
 ```
+
+The clone provides the compose files; `docker compose` pulls the server image `ghcr.io/pyrevitlabs/telemetry-server`.
 
 The compose files in the server repository cover PostgreSQL, SQL Server, SQLite, Oracle and MongoDB. The server README lists the environment variables (`DbProvider`, `ConnectionStrings__DefaultConnection`, `ASPNETCORE_HTTP_PORTS`) and how to build the server from source.
 
@@ -55,9 +58,6 @@ Add the url for the script telemetry data formatted as below, inside the server 
 
 - Replace `you.domain` with the server machine IP or domain name. Remember that this machine needs to be accessible from your pyRevit workstations.
 - Replace `port` with the port that you started the server with.
-- If you are using the legacy Usage Logging system, use V1  
-  `http://your.domain:port/api/v1/scripts/`  
-  See sections below for differences between V2 and V1 schemas
 
 ![](../assets/teams/telemetry/2019-09-30-10-53-48-pyrevit-settings.png)
 
@@ -128,7 +128,7 @@ See the  [Sending Custom Telemetry Data](../build-extensions/scripting/custom-te
 
 ## Application Event Arguments
 
-Sections below, list the schema for the JSON objects recorded in `eventargs` parameter of the application events telemetry records. You can read and parse this information in your analytics platform to gather more information about the active users, revit verisons, active documents, views, element changes, and many others. The data is collected from the evetn argument object passed by Revit to the event handlers. Each section below, lists one of the event argument objects with a link to the API documentation, and its associated JSON schema in pyRevit telemetry records.
+Sections below, list the schema for the JSON objects recorded in the `args` field of the application events telemetry records. You can read and parse this information in your analytics platform to gather more information about the active users, revit verisons, active documents, views, element changes, and many others. The data is collected from the evetn argument object passed by Revit to the event handlers. Each section below, lists one of the event argument objects with a link to the API documentation, and its associated JSON schema in pyRevit telemetry records.
 
 #### Application Events
 
@@ -406,7 +406,7 @@ Sections below, list the schema for the JSON objects recorded in `eventargs` par
         // ...
     ],
     // list of view info for views that failed to print
-    "print_fail_views ": [{
+    "print_fail_views": [{
             "type": String,
             "family": String,
             "name": String,
@@ -559,12 +559,12 @@ Sections below, list the schema for the JSON objects recorded in `eventargs` par
 
 ```json
 {
-    "view": {
+    "view": [{
         "type": String,
         "family": String,
         "name": String,
         "title": String
-    }
+    }]
 }
 ```
 
@@ -572,12 +572,12 @@ Sections below, list the schema for the JSON objects recorded in `eventargs` par
 
 ```json
 {
-    "view": {
+    "view": [{
         "type": String,
         "family": String,
         "name": String,
         "title": String
-    },
+    }],
     "view_index": String,
     "total_views": String,
 }
@@ -587,12 +587,12 @@ Sections below, list the schema for the JSON objects recorded in `eventargs` par
 
 ```json
 {
-    "view": {
+    "view": [{
         "type": String,
         "family": String,
         "name": String,
         "title": String
-    },
+    }],
     "view_index": String,
     "total_views": String,
     // Revit >=2017, includes print settings info, otherwise null
@@ -686,7 +686,7 @@ Creates a new script telemetry record on the records database.
     "docname": String, // "Project1"
     "docpath": String, // "C:\\path\\to\\Project1.rvt"
     "resultcode": Integer, // 0
-    "commandresults": Object, // { "time_saved": 30 }
+    "commandresults": Object, // string values: { "time_saved": "30" }
     "scriptpath": String, // "C:\\path\\to\\Bundle.bundle\\script.py"
     "trace": {
         "engine": {
@@ -704,9 +704,9 @@ Creates a new script telemetry record on the records database.
 
 ```json
 "configs": {
-    "clean" : Boolean,
-    "persistent" : Boolean,
-    "full_frame" : Boolean
+    "clean" : String, // "True" or "False"
+    "persistent" : String,
+    "full_frame" : String
 }
 ```
 
