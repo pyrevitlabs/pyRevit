@@ -620,6 +620,7 @@ def _load_cpython_facade(package_dir):
     common = ModuleType("pyrevit.forms._common")
     common.__all__ = ["ProgressBar"]
     common.ProgressBar = object
+    common.set_data_context = common.warning = object
     spec = importlib.util.spec_from_file_location(
         "pyrevit.forms",
         package_dir / "__init__.py",
@@ -655,6 +656,13 @@ class CPythonFacadeTests(unittest.TestCase):
     def test_submodules_import_on_first_access(self):
         """A real submodule is imported rather than reported as unsupported."""
         self.assertEqual(1, self.forms.extra.VALUE)
+
+    def test_attribute_only_names_resolve_outside_all(self):
+        """``warning`` and ``set_data_context`` are attributes, not star exports."""
+        for name in ("warning", "set_data_context"):
+            with self.subTest(name=name):
+                self.assertIs(object, getattr(self.forms, name))
+                self.assertNotIn(name, self.forms.__all__)
 
     def test_unknown_names_are_unsupported_attribute_errors(self):
         """Unknown names keep the not-supported contract and work with hasattr."""
@@ -1168,19 +1176,13 @@ class FormsExportsTests(unittest.TestCase):
     """Keep accidental legacy exports compatible as well as the intended API."""
 
     def test_ironpython_public_names_match_the_pre_extraction_surface(self):
-        """IronPython keeps every pre-split name; additions are listed explicitly."""
+        """IronPython star-exports exactly the pre-split names."""
         fixture = Path(__file__).parent / "fixtures" / "forms_ironpython_exports.json"
         pre_split = json.loads(fixture.read_text(encoding="utf-8"))
-        intended_additions = {"warning", "set_data_context"}
         common = _literal_list(FORMS / "_common.py", "__all__")
         legacy = _literal_list(FORMS / "_legacy_exports.py", "LEGACY_EXPORTS")
         self.assertFalse(set(common) & set(legacy))
-        self.assertFalse(set(pre_split) & intended_additions)
-        self.assertEqual(
-            sorted(pre_split) + sorted(intended_additions),
-            sorted(set(common + legacy) - intended_additions)
-            + sorted(intended_additions),
-        )
+        self.assertEqual(sorted(pre_split), sorted(common + legacy))
         self.assertFalse(set(legacy) - _defined_names(FORMS / "_ipy_legacy.py"))
 
     def test_only_ironpython_only_names_stay_unported_on_cpython(self):

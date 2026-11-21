@@ -5,7 +5,8 @@ the engine-neutral names ``pyrevit.forms`` re-exported before the engine split
 (constants, pyrevit helpers, framework namespaces and standard modules), so
 both engines keep them. The IronPython facade adds only the IronPython-only
 legacy names on top; CPython exports exactly this list and reports anything
-else as unsupported.
+else as unsupported. ``warning`` and ``set_data_context`` are imported here
+but left out of ``__all__``; the facade exposes them as attributes only.
 
 Note:
     This module must stay importable by IronPython 2.7, and ``__all__`` must
@@ -155,7 +156,6 @@ __all__ = [
     "XAML_FILES_DIR",
     "is_dark_theme",
     "WindowToggler",
-    "set_data_context",
     "TemplateUserInputWindow",
     "GetValueWindow",
     "ask_for_string",
@@ -165,7 +165,6 @@ __all__ = [
     "ask_for_one_item",
     "alert",
     "alert_ifnot",
-    "warning",
     "pick_folder",
     "pick_file",
     "save_file",
