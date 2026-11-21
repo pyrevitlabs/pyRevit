@@ -2708,6 +2708,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#which-file-pyrevit-uses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which file pyRevit uses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#seed-config-file" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10697,6 +10708,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#which-file-pyrevit-uses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which file pyRevit uses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#seed-config-file" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10861,14 +10883,15 @@
 <p>Preferably use the <a href="../../cli/">pyRevit CLI</a> to make configuration changes to this file.</p>
 </div>
 <p>pyRevit configuration file is a standards INI file that contains various sections for each pyRevit component or tool.</p>
-<p>The config file can be in one location only and that is <code>%APPDATA%/pyRevit</code></p>
-<h2 id="seed-config-file">Seed Config File</h2>
-<p>A Seed configuration file can be provided at <code>%PROGRAMDATA%/pyRevit</code>. pyRevit will use this seed file to configure pyRevit:</p>
+<h2 id="which-file-pyrevit-uses">Which file pyRevit uses</h2>
 <ul>
-<li>If the seed config file is Read-Only for the user, pyRevit will use this config file without recreating a new one under <code>%APPDATA%/pyRevit</code>No other configuration changes are allowed to the config file since the file is Read-Only.</li>
-<li>If the seed config file is writable, then pyRevit will copy the seed into <code>%APPDATA%/pyRevit</code> and will start with this config file.<br />
-  All the future changes to the configs are written to the main config file and not the seed. The seed is used only to bootstrap the main config.</li>
+<li><strong>Installed for the current user</strong>: <code>%APPDATA%\pyRevit\pyRevit_config.ini</code>.</li>
+<li><strong>Installed for all users</strong>: a standard user still gets a file under <code>%APPDATA%\pyRevit</code>, seeded from the machine-wide file when one exists. An elevated process, such as the admin installer or the CLI run as administrator, reads and writes the machine-wide file in <code>%PROGRAMDATA%\pyRevit</code> directly.</li>
+<li><strong>Locked machine-wide file</strong>: when the file in <code>%PROGRAMDATA%\pyRevit</code> has the Windows read-only attribute, every user and every install scope uses it as is, and no setting can be changed.</li>
 </ul>
+<h2 id="seed-config-file">Seed Config File</h2>
+<p><code>pyrevit configs seed</code> copies the current configuration to <code>%PROGRAMDATA%\pyRevit</code>. Each user's pyRevit then starts from that file the first time it loads.</p>
+<p><code>pyrevit configs seed --lock</code> also sets the read-only attribute on the seeded file. That locks the configuration for every user of the machine. Only the read-only attribute locks the file; removing write permissions does not.</p>
 <h3 id="core-configs">Core Configs</h3>
 <p>The most important section is the <code>[core]</code> that has all the runtime configurations.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>[core]
@@ -10911,13 +10934,13 @@
 <h3 id="telemetery-configs">Telemetery Configs</h3>
 <p>These configs options are for the  <a href="../telemetry/">Telemetry System</a></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>[telemetry]
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>active = true
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>active = false
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>telemetry_file_dir = ""
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>telemetry_server_url = "http://data.tvapdx.com:8080/api/v2/scripts/"
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>active_app = true
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>apptelemetry_server_url = "http://data.tvapdx.com:8080/api/v2/events/"
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>telemetry_server_url = ""
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>active_app = false
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>apptelemetry_server_url = ""
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>apptelemetry_event_flags = "0x1d17e7f7ff59"
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>utc_timestamps = falsel
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>utc_timestamps = false
 </span></code></pre></div>
 <h3 id="tab-coloring-configs">Tab Coloring Configs</h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>[tabcoloring]

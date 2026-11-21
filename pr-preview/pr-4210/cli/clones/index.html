@@ -10798,7 +10798,7 @@
 <li><code>--branch=</code>: Specify a specific branch to be cloned</li>
 </ul>
 <h4 id="installing-custom-clones">Installing Custom Clones</h4>
-<p>You can also use the clone command to install your own pyRevit clones from any git url. This is done by providing <code>--source=&lt;repo_url&gt;</code> or <code>--source=&lt;archive_url&gt;</code> depending on if you’re cloning from a git repo or an archive. If you are cloning from a private repository, you can provide the <code>--username</code> and <code>--password</code> to the repo account as well.</p>
+<p>You can also use the clone command to install your own pyRevit clones from any git url. Provide <code>--source=&lt;repo_url&gt;</code> to clone from a git repo, or <code>--image=&lt;archive_url&gt;</code> to install from a ZIP archive. If you are cloning from a private repository, you can provide the <code>--username</code> and <code>--password</code> to the repo account as well.</p>
 <div class="language-powershell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">clone</span> <span class="n">mypyrevit</span> <span class="p">-</span><span class="n">-source</span><span class="p">=</span><span class="s2">"https://www.github.com/my-pyrevit.git"</span> <span class="p">-</span><span class="n">-dest</span><span class="p">=</span><span class="s2">"C:\pyRevit\mypyrevit"</span> <span class="p">-</span><span class="n">-branch</span><span class="p">=</span><span class="n">develop</span>
 </span></code></pre></div>
 <p>Or install from a ZIP archive with <code>--image</code>:</p>

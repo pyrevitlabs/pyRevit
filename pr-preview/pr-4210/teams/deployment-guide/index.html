@@ -10996,7 +10996,7 @@
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>              <span class="n">-ArgumentList</span> <span class="s2">"/VERYSILENT /SUPPRESSMSGBOXES /NORESTART"</span> <span class="p">&gt;</span> <span class="nv">$null</span>
 </span></code></pre></div>
 <p>Lastly we need to add the installed path of the CLI, so we can use the <code>pyrevit</code> command in the next part of our install script.</p>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">$env:Path</span> <span class="p">=</span> <span class="s2">"C:\Program Files\pyRevit CLI"</span>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">$env:Path</span> <span class="p">=</span> <span class="s2">"C:\Program Files\pyRevit CLI\bin;$env:Path"</span>
 </span></code></pre></div>
 <h3 id="cloning-pyrevit">Cloning pyRevit</h3>
 <p>Once the pyRevit CLI is installed on the target machine, we can use the new <code>pyrevit</code> command in the shell to clone pyRevit core and base tools.</p>
@@ -11014,11 +11014,14 @@ See <a href="../deployments/">Deployments</a>  </p>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c"># the name of the clone we are going to create</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nv">$ourclonename</span> <span class="p">=</span> <span class="s2">"ourmain"</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c"># pyrevit clone install path</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nv">$pyrevitcoredest</span> <span class="p">=</span> <span class="p">$(</span><span class="nb">Join-Path</span> <span class="nv">$pyrevitroot</span> <span class="nv">$ourclonename</span><span class="p">)</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c"># the deployment to install, see the Deployments page</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nv">$deploymentname</span> <span class="p">=</span> <span class="s2">"base"</span>
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c"># pyRevit extension install path</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nv">$pyrevitexts</span> <span class="p">=</span> <span class="p">$(</span><span class="nb">Join-Path</span> <span class="nv">$pyrevitroot</span> <span class="s2">"Extensions"</span><span class="p">)</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c"># pyrevit clone install path</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nv">$pyrevitcoredest</span> <span class="p">=</span> <span class="p">$(</span><span class="nb">Join-Path</span> <span class="nv">$pyrevitroot</span> <span class="nv">$ourclonename</span><span class="p">)</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c"># pyRevit extension install path</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="nv">$pyrevitexts</span> <span class="p">=</span> <span class="p">$(</span><span class="nb">Join-Path</span> <span class="nv">$pyrevitroot</span> <span class="s2">"Extensions"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>If you are using the CLI to deploy your own custom core or extensions, define variables for these paths as well.</p>
 <div class="language-powershell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c"># your custom pyRevit core repo path</span>
@@ -11031,21 +11034,24 @@ See <a href="../deployments/">Deployments</a>  </p>
 <p>Now we can create a Powershell function that clones pyRevit on the user machine.</p>
 <div class="language-powershell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c"># clone pyRevit</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">function</span> <span class="n">Clone-PyRevit</span><span class="p">()</span> <span class="p">{</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="c"># make sure paths exits and are clean</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="nb">Confirm-Path</span> <span class="nv">$pyrevitroot</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="nb">Confirm-Path</span> <span class="nv">$pyrevitexts</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="c"># close all open Revits first</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="nb">Write-Output</span> <span class="s2">"Closing All Revits..."</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">pyrevit</span> <span class="n">revits</span> <span class="n">killall</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="c"># forget all previous pyRevit clones if any</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">pyrevit</span> <span class="n">clones</span> <span class="n">forget</span> <span class="nv">$pyrevitclonename</span> <span class="p">&gt;</span> <span class="nv">$null</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="c"># close all open Revits first, so no pyRevit file is in use</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="nb">Write-Output</span> <span class="s2">"Closing All Revits..."</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">pyrevit</span> <span class="n">revits</span> <span class="n">killall</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="k">if</span> <span class="p">(</span><span class="nb">Get-Process</span> <span class="n">-Name</span> <span class="s2">"Revit"</span> <span class="n">-ErrorAction</span> <span class="n">SilentlyContinue</span><span class="p">)</span> <span class="p">{</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>        <span class="k">throw</span> <span class="s2">"Revit is still running. Close it and run the script again."</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="p">}</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="c"># make sure paths exits and are clean</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="nb">Confirm-Path</span> <span class="nv">$pyrevitroot</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="nb">Confirm-Path</span> <span class="nv">$pyrevitexts</span>
 </span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="c"># clone pyRevit now</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>    <span class="nb">Write-Output</span> <span class="s2">"Cloning Core..."</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>    <span class="n">pyrevit</span> <span class="n">clone</span> <span class="nv">$ourclonename</span> <span class="nv">$deploymentname</span> <span class="p">-</span><span class="n">-dest</span><span class="p">=</span><span class="nv">$pyrevitcoredest</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="p">}</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="c"># forget the previous clone if any</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>    <span class="n">pyrevit</span> <span class="n">clones</span> <span class="n">forget</span> <span class="nv">$ourclonename</span> <span class="p">&gt;</span> <span class="nv">$null</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>    <span class="c"># clone pyRevit now</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>    <span class="nb">Write-Output</span> <span class="s2">"Cloning Core..."</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>    <span class="n">pyrevit</span> <span class="n">clone</span> <span class="nv">$ourclonename</span> <span class="nv">$deploymentname</span> <span class="p">-</span><span class="n">-dest</span><span class="p">=</span><span class="nv">$pyrevitcoredest</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>The <code>Clone-PyRevit</code> function uses the utility <code>Confirm-Path</code> function provide here, to confirm the install paths are clean and accessible. See the comments to learn more about the steps.</p>
 <div class="language-powershell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c"># confirms target path exists and is empty. removes existing if found</span>
