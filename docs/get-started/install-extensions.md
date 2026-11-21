@@ -2,28 +2,22 @@
 
 Use the **Extensions** tool in the **pyRevit** panel to install third-party extensions.
 
-!!! note "Screenshots"
+The Extension Manager lists all the registered extensions you can install on your machine, and the ones already installed.
 
-    The screenshots on this page come from an older version of pyRevit. The steps are the same.
+![Extension Manager with an extension selected](../assets/get-started/install-extensions/extension-manager.png)
 
-The Extensions window, shows all the registered extensions that you can install on your machine.
+To install an extension, select it in the list and look at its information and website below the list. Its Git URL is filled in. **Path** is the folder the extension is installed into, the pyRevit extensions folder by default; use **Pick Installation path** to change it. A private repository needs a **Token**. Then click **Install Extension**.
 
-![](../assets/get-started/install-extensions/2019-08-28-08-44-00-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png)
-
-To install an extension, select the extension that you want, take a look at the information about that extension and the website, then click on the Install Extension button and select the destination (By default there is only one destination)
-
-pyRevit will install the extension and will reload automatically.
+pyRevit installs the extension, adds its folder to the extension folders when needed, and reloads.
 
 Most extensions will add their own tab in Revit UI with their tools inside.
 
-![](../assets/get-started/install-extensions/2019-08-28-08-46-53-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png)
+To install an extension that is not in the list, click **Deselect** if an extension is selected, then type its Git URL and click **Add and install**.
 
 ## Adding Extension Manually
 
-To manually add an extension to pyRevit, open the pyRevit **Settings** and add the folder that contains the extension under **Custom Extension Directories**
+To manually add an extension to pyRevit, open the pyRevit **Settings** and add the folder that contains the extension under **Custom Extension Directories**. Add the parent folder of the `.extension` folder, not the `.extension` folder itself. For example, for `C:\ProgramData\pyRevit-docs\Extensions\Test.extension`, add `C:\ProgramData\pyRevit-docs\Extensions`.
 
-![](../assets/get-started/install-extensions/2019-08-30-12-08-18-pyrevit-settings.png)
+![Custom Extension Directories in the Settings window](../assets/get-started/install-extensions/settings-custom-extension-directories.png)
 
-In this example the extension is called `Test.extension` and is inside the `gits` folder on the desktop. The folder to add is the parent, `gits`, not the `.extension` folder itself.
-
-![](../assets/get-started/install-extensions/2019-12-03-14-15-24-pyrevit-settings.png)
+Click **Save Settings and Reload** to load the extension. **Just Save Settings** keeps it for the next reload.

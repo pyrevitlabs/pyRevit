@@ -143,7 +143,7 @@ Well done. Our API endpoint is ready. Let's fire up Revit and the HTTP server no
 
 Let's start Revit. The Routes server is disabled by default. After Revit is fully loaded, open pyRevit Settings, and under the **Routes** section, turn on the server.
 
-![](../assets/teams/routes/revit-8nanoyb1yi.png)
+![Routes section of the Settings window](../assets/teams/routes/settings-routes.png)
 
 The default port for the server is set to `48884` . The first instance of Revit will use the port `48884`, the next Revit instance will use `48885` and so on. See below for information about the **pyRevit Routes Core API** that could be used to inspect the running Revit instances and their port numbers remotely.
 
@@ -331,7 +331,7 @@ $ pyrevit configs routes coreapi enable
 $ pyrevit configs routes coreapi disable
 ```
 
-![](../assets/teams/routes/revit-8nanoyb1yi.png)
+![Routes section of the Settings window](../assets/teams/routes/settings-routes.png)
 
 !!! warning ""
 
