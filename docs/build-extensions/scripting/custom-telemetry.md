@@ -1,6 +1,27 @@
 # Custom telemetry
 
-!!! info "This page is being moved"
-    Until it is written here, read [Sending Custom Telemetry Data](https://pyrevitlabs.notion.site/f1d357361bdb4e12b31d818e6c2a5edc) on the pyRevit Notion site.
+pyRevit has a telemetry system that can record all tool usages to either a json file or to a web server. Scripts can return custom data to this telemetry system.
 
-Planned content: add your own data to a command's telemetry record.
+In example below, the script reports the amount of time it saved to the telemetry system:
+
+```python
+from pyrevit import script
+
+# get the results dictionary object
+results = script.get_results()
+
+# set a value
+results.timesaved = 10
+```
+
+The record sent to the telemetry system will have this information under `commandresults` field. See [Telemetry System](../../teams/telemetry.md) for the full record details.
+
+```json
+{
+    // ...
+    "commandresults": {
+        "timesaved": 10
+    },
+    // ...
+}
+```
