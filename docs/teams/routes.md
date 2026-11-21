@@ -352,7 +352,7 @@ Get the status of Routes Server
 ```json
 {
     "host": "Autodesk Revit 2019.2 build: 20190808_0900(x64)",
-    "username": "eirannejad",
+    "username": "jdoe",
     "session_id": "07ba444f-0494-4c63-ba25-512b099c756e"
 }
 ```

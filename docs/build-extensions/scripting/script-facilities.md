@@ -69,7 +69,7 @@ if config.get_option('firstparam', True):
 		do_task_A()
 ```
 
-These configs are saved into the pyRevit’s user configuration file, alongside pyRevit's internal configs and the configurations for other tools. The configs for your tool will be saved under their own config section. A section can also be defined as `script.get_config(”MySection”)` to be reused for multiple tools.
+These configs are saved into the pyRevit’s user configuration file, alongside pyRevit's internal configs and the configurations for other tools. The configs for your tool will be saved under their own config section. A section can also be defined as `script.get_config("MySection")` to be reused for multiple tools.
 
 The example below shows the configs for the ***Match*** tool (partial). Note that all the options are saved under the `[Match_config]` config section that belongs to the ***Match*** tool.
 
@@ -92,7 +92,7 @@ proj_bg_fill_pattern_visibility = true
 If multiple parameters of different types have to be configured, the `settings_window` library can be used to avoid having to build a UI for that. It will dynamically generate a window based on the chosen setting types. Currently the following types are supported:
 
 ```text
-"bool", "choice", "int", "float", "string", "color", "folder", or "file”
+"bool", "choice", "int", "float", "string", "color", "folder", or "file"
 ```
 
 ```python
@@ -134,6 +134,7 @@ settings:
 ```
 
 ```python
+from pyrevit import script
 from pyrevit.forms import settings_window
 from pyrevit.coreutils.yaml import load_as_dict
 
@@ -192,7 +193,7 @@ script.get_instance_data_file(file_id)
 ```
 
 #### Document Data files
-- These files are marked by host Revit version and name of Active Project and could be shared between instances of host Revit version.
+- These files are marked by host Revit version and the name of the active project, and could be shared between instances of host Revit version.
 - Data files are saved in pyRevit’s appdata directory and are NOT cleaned  up when Revit restarts.
 
 !!! warning ""
@@ -206,9 +207,8 @@ from pyrevit import script
 # Method will return full path of the data file
 script.get_document_data_file(file_id, file_ext)
 
-# You can also pass a document object to get a data file for that
-# document (use document name in file naming)
-script.get_document_data_file(file_id, file_ext, doc)
+# add_cmd_name=True adds the command name to the file name
+script.get_document_data_file(file_id, file_ext, add_cmd_name=True)
 ```
 
 ## Sending Custom Data to Telemetry Server

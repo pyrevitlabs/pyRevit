@@ -233,6 +233,14 @@ The `Test ComboBox.combobox` bundle in the pyRevitDevTools extension uses all th
 1. Verify icon file exists and is a valid PNG
 1. Use 16x16 pixels for member icons
 
+## CheckBox Bundle
+
+```text
+extension: .checkbox
+```
+
+CheckBox bundles add a checkbox to the ribbon. Their `script.py` can define `__chk_init__(ctx)` and `__chk_on_change__(sender, args, ctx)`. See [Extensions](../../extensions.md) for the handlers and the context object. They require pyRevit 7.2.0 or later.
+
 ## Smart-Button Command Bundle
 
 ```text
@@ -351,7 +359,7 @@ assembly: PyRevitTestLinkCommand.dll                # full path to dll. if the d
 command_class: PyRevitTestLinkExternalCommand       # name of the external command class
 ```
 
-As of pyRevit 4.8.5, you can also add Accessibility types to the link bundle file. Since Link buttons points to a completely different assembly, pyRevit can not assign its internal zero-doc or other automatic context filters to these buttons. If that is desired, it is better to use Invoke buttons instead.
+You can also add an availability type to the link bundle file. Since Link buttons points to a completely different assembly, pyRevit can not assign its internal zero-doc or other automatic context filters to these buttons. If that is desired, it is better to use Invoke buttons instead.
 
 ```yaml
 availability_class: PyRevitTestLinkExternalCommandAvail

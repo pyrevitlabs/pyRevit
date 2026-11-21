@@ -1,19 +1,21 @@
 # How pyRevit works
 
-pyRevit's architecture has three major components. Each of of these components are documented under [Developer Docs](index.md)  
+pyRevit has three parts you meet when you build tools for it.
 
-## pyRevit Bundles
----
+## Bundles
 
-Bundles are single, or collection of tools, scripts, libraries, and other content. pyRevit Core decides how to incorporate these bundles into the Revit environment, depending on the bundle type. The most basic bundle is a **Command Button** bundle (`.pushbutton`). Each command bundle is a folder that contains a script file (`script.*`) and might also include an icon (`icon.*`) and is named similar to `MyButton.pushbutton`
+A bundle is a folder with a special name that holds a tool, a group of tools, or other content. pyRevit decides how to show a bundle in Revit from its type. The most common one is the **command bundle** (`.pushbutton`): a folder such as `MyButton.pushbutton` that contains a script (`script.*`) and usually an icon (`icon.*`).
 
-Command bundles are grouped and organized inside **UI Bundles** and then placed inside an **Extension** (`.extension`) bundle. Extensions are collection of bundles - of many types - that make these bundles accessible through the Revit user interface.
+Command bundles are grouped inside **UI bundles** (tabs, panels, pull-downs, stacks), and everything lives inside an **extension** (`.extension`). See [Command bundles](bundles/command-bundles.md), [UI bundles](bundles/ui-bundles.md) and [Extension structure](extensions/structure.md).
 
-## pyRevit Runtime
----
+## Loader and runtime
 
-Runtime is the part that is in charge of parsing the bundles, creating necessary assembly files, preparing the user interface, and executing the commands. pyRevit runtime is currently a combination of C#, and IronPython code (see `pyrevit/runtime/` directory under pyRevit files). The C# code is dynamically compiled on launch time and is cached for performance. This allows dynamic changes to the runtime code that gets reflected when pyRevit reloads. pyRevit can reload without restarting Revit.
+When Revit starts, the pyRevit add-in reads the extensions, builds the ribbon and creates a command for every bundle. When a button is clicked, the runtime runs its script on the right engine: IronPython, CPython, C#, VB.NET, Dynamo or Grasshopper.
 
-## pyRevit Core
+pyRevit can reload without restarting Revit, so new or changed bundles show up after **Reload**.
 
-The core is a collection of tools (e.g. [pyRevit CLI](../cli/index.md)  or Telemetry System ) and libraries (e.g. Labs API Overview ) that assist the Bundles and Runtime. See `bin/` directory under pyRevit files.
+[Understanding pyRevit Architecture](../architecture.md) describes these components in detail.
+
+## Command line and services
+
+The [pyRevit CLI](../cli/index.md) installs, configures and repairs pyRevit from a command prompt. [Telemetry](../teams/telemetry.md) and [Routes](../teams/routes.md) are optional services for teams.

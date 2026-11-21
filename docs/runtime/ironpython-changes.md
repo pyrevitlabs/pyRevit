@@ -1,5 +1,9 @@
 # Changes to IronPython
 
+!!! note ""
+
+    This page records the changes made to third-party modules and libraries when they were added to pyRevit. The version numbers are the ones patched at the time. The current copies are in `site-packages/` and `dev/` of the repository.
+
 ## Python Modules
 
 Python modules shipped with pyRevit and mostly borrowed from cpython modules with minor changes to make them compatible with IronPython.

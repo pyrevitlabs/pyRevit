@@ -1,8 +1,6 @@
 # Get RVT Info
 
-### Get RVT Info tool
-
-You can use this tool in pyRevit’s Project panel to read information about any Revit file (`rvt`, `rtf`, `rfa`, `rft`). One important step is that pyRevit will lookup the build number stored in this file info against its database and provides the exact version of Revit used to write the file:
+You can use this tool in pyRevit’s Project panel to read information about any Revit file (`rvt`, `rte`, `rfa`, `rft`). One important step is that pyRevit will lookup the build number stored in this file info against its database and provides the exact version of Revit used to write the file:
 
 ![](../assets/tools/get-rvt-info/revit-9flloi4t6r.png)
 

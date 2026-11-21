@@ -6,9 +6,7 @@ List installed or running Revits:
 pyrevit revits [--installed] [--log=<log_file>]
 
 $ pyrevit revits --installed        # list installed revits
-Autodesk Revit 2016 Service Pack 2 | Version: 16.0.490.0 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2016\"
-Autodesk Revit 2018.3 | Version: 18.3.0.81 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2018\"
-Autodesk Revit 2019.1 | Version: 19.1.0.112 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2019\"
+<Revit product name> | Version: <version> | Build: <build>(<target>) | Language: <language code> | Path: "C:\Program Files\Autodesk\Revit <year>"
 ```
 
 Close all or specific running Revit:
@@ -16,8 +14,12 @@ Close all or specific running Revit:
 ```powershell
 pyrevit revits killall [<revit_year>] [--log=<log_file>]
 
-$ pyrevit revits killall 2018   # close all Revit 2018s
+$ pyrevit revits killall 2026   # close all Revit 2026s
 ```
+
+!!! warning ""
+
+    `killall` ends the Revit processes without giving users a chance to save.
 
 Generate a report from `RVT` or `RFA` file info:
 
@@ -38,7 +40,7 @@ Document Increment: 2
 - `--csv=`: Write output to specified CSV file
 
 ```powershell
-pyrevit revits fileinfo "C:\Users\eirannejad\Desktop\Test BasicFileInfo.rvt"
+pyrevit revits fileinfo "C:\Models\Test BasicFileInfo.rvt"
 ```
 
 The output is identical to the pyRevit gui tool:
@@ -46,7 +48,7 @@ The output is identical to the pyRevit gui tool:
 ```text
 Created in: Autodesk Revit 2019.2 (Update) (20181217_1515(x64))
 Workshared: No
-Last Saved Path: C:\Users\eirannejad\Desktop\Test BasicFileInfo.rvt
+Last Saved Path: C:\Models\Test BasicFileInfo.rvt
 Document Id: f86eb316-c79a-419f-98ba-67031c6ab92b
 Open Workset Settings: LastViewed
 Document Increment: 1
@@ -67,7 +69,7 @@ $ pyrevit revits fileinfo Project1.rvt
 
 Created in: Autodesk Revit 2019.2 (Update) (20181217_1515(x64))
 Workshared: No
-Last Saved Path: C:\Users\LeoW10\Desktop\Project1.rvt
+Last Saved Path: C:\Models\Project1.rvt
 Document Id: 5cafc5e6-644c-40c6-9e6d-df04b4469fd5
 Open Workset Settings: LastViewed
 Document Increment: 1

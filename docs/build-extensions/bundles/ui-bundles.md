@@ -8,17 +8,15 @@
 
 UI bundles are designed to create easily sharable UI layouts for the **Command Bundles**
 
-A UI bundle is a bundle that can contain command bundles and other UI bundles. There are some limitations depending which version of Revit is being used however pyRevit is usually smart about these differences.
+A UI bundle is a bundle that can contain command bundles and other UI bundles. 
 
 ## All UI Bundles
 
 The requirements and conventions below are shared among all UI bundles
 
 ```text
-requires:
-    - bundle.yaml         # includes bundle metadata e.g. tooltip message
-
 optional:
+    - bundle.yaml         # includes bundle metadata e.g. layout, title, tooltip
     - icon.png            # for Revit UI icons
     - icon.dark.png       # for Revit UI icons in Dark mode
     - lib/                # can include a lib/ directory that hosts modules required by the commands inside this bundle
@@ -27,7 +25,7 @@ optional:
 
 ### Bundle Layout Directives
 
-UI bundles can provide directives on how the child bundles should be ordered in Revit UI. Since pyRevit 4.7, the primary method to provide these directives is to use the Bundle File. These directives are defined in the bundle file and are limited to UI bundles only.
+UI bundles can provide directives on how the child bundles should be ordered in Revit UI. These directives are defined in the bundle file and are limited to UI bundles only.
 
 !!! tip ""
 
@@ -93,12 +91,14 @@ This is how the panels would show up (collaped) and expand when user hovers over
 
 ## Stack UI Bundle
 
+This bundle creates a stack of 2 or 3 buttons in a panel.
+
 ```text
 extension: .stack
 can_contain:
     - Pull-down UI bundle
     - Split-button UI bundle
-    - Split-push-button UI bundle       # Revit 2018 and later
+    - Split-push-button UI bundle
     - All command bundles
 
 max_children: 3 bundles total (of any kind)
@@ -130,5 +130,3 @@ This bundle creates a Split Push Button button (The sticky split button) in a pa
 extension: .splitpushbutton
 can_contain: Other Command bundles
 ```
-
-This bundle creates a stack of 2 or 3 buttons in a panel.
