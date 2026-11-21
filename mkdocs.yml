@@ -46,6 +46,7 @@ plugins:
   - gen-files:
       scripts:
         - docs/gen_ref_pages.py
+        - docs/gen_source_pages.py
   - section-index
   - mkdocstrings:
       default_handler: python
@@ -88,7 +89,97 @@ markdown_extensions:
 
 nav:
   - Home: README.md
-  - Developer Notes:
+  - Get Started:
+    - get-started/index.md
+    - Install pyRevit: get-started/install.md
+    - First launch: get-started/first-launch.md
+    - Configure pyRevit: get-started/configure.md
+    - Install extensions: get-started/install-extensions.md
+    - Update pyRevit: get-started/update.md
+  - Tools:
+    - tools/index.md
+    - Keynotes: tools/keynotes.md
+    - Patterns: tools/patterns.md
+    - Print Sheets: tools/print-sheets.md
+    - Tab Coloring: tools/tab-coloring.md
+    - Get RVT Info: tools/get-rvt-info.md
+    - Packages and Tags: tools/packages-and-tags.md
+  - Build Extensions:
+    - build-extensions/index.md
+    - How pyRevit works: build-extensions/how-pyrevit-works.md
+    - Tutorials:
+      - Your first command: build-extensions/tutorials/first-command.md
+      - Your first CPython command: build-extensions/tutorials/first-cpython-command.md
+      - Your first .NET command: build-extensions/tutorials/first-dotnet-command.md
+      - Your first hook: build-extensions/tutorials/first-hook.md
+      - Python and Revit API course: build-extensions/tutorials/python-revit-api-course.md
+    - Bundles:
+      - Command bundles: build-extensions/bundles/command-bundles.md
+      - UI bundles: build-extensions/bundles/ui-bundles.md
+      - Advanced bundles: build-extensions/bundles/advanced-bundles.md
+      - Metadata: build-extensions/bundles/metadata.md
+      - Context: build-extensions/bundles/context.md
+      - Layout: build-extensions/bundles/layout.md
+      - lib and bin: build-extensions/bundles/lib-and-bin.md
+    - Extensions:
+      - Structure: build-extensions/extensions/structure.md
+      - Metadata: build-extensions/extensions/metadata.md
+      - Startup script: build-extensions/extensions/startup-script.md
+      - Hooks: build-extensions/extensions/hooks.md
+      - Checks: build-extensions/extensions/checks.md
+      - Share your extension: custom_extension.md
+    - Scripting:
+      - IronPython scripts: build-extensions/scripting/ironpython.md
+      - CPython scripts: build-extensions/scripting/cpython.md
+      - C# and VB.NET scripts: build-extensions/scripting/dotnet.md
+      - Click modes: build-extensions/scripting/click-modes.md
+      - Script facilities: build-extensions/scripting/script-facilities.md
+      - Runtime variables: build-extensions/scripting/runtime-variables.md
+      - Output: build-extensions/scripting/output.md
+      - Input and forms: build-extensions/scripting/input-and-forms.md
+      - Charts: build-extensions/scripting/charts.md
+      - Custom telemetry: build-extensions/scripting/custom-telemetry.md
+  - CLI:
+    - cli/index.md
+    - Clones: cli/clones.md
+    - Attach to Revit: cli/attach.md
+    - Configure: cli/configure.md
+    - Extensions: cli/extensions.md
+    - Environment info: cli/environment.md
+    - Caches: cli/caches.md
+    - Run scripts on models: cli/run.md
+    - Revit installs and file info: cli/revits.md
+    - Releases: cli/releases.md
+    - Doctor, launch and update: cli/doctor-launch-update.md
+    - Command reference: cli/reference.md
+  - Deploy for Teams:
+    - teams/index.md
+    - Distribution model: teams/distribution-model.md
+    - Installers: installers.md
+    - Deployments: teams/deployments.md
+    - Team deployment guide: teams/deployment-guide.md
+    - Distribute extensions: teams/extensions.md
+    - Update and maintain: teams/updating.md
+    - Configuration file: teams/configuration-file.md
+    - Telemetry: teams/telemetry.md
+    - Routes (HTTP API): teams/routes.md
+    - Troubleshooting: teams/troubleshooting.md
+  - Reference:
+    - Python API: reference/
+    - Runtime:
+      - runtime/index.md
+      - Load sequence: runtime/load-sequence.md
+      - Engines: runtime/engines.md
+      - Executor result codes: runtime/executor-result-codes.md
+      - Changes to IronPython: runtime/ironpython-changes.md
+    - Revit file internals:
+      - revit-files/index.md
+      - Structured storage: revit-files/structured-storage.md
+      - BasicFileInfo stream: revit-files/basicfileinfo.md
+      - PartAtom stream: revit-files/partatom.md
+      - ProjectInformation stream: revit-files/projectinformation.md
+  - Contribute:
+    - Contributing: CONTRIBUTING.md
     - Repository organization: repo-organization.md
     - Developer Guide: dev-guide.md
     - Architecture: architecture.md
@@ -100,16 +191,19 @@ nav:
     - Interactive Python shell: python-shell.md
     - Agent runtime: agent-runtime.md
     - CI/CD and releases: ci-cd.md
-    - Installers: installers.md
     - Testing: testing.md
     - Release qualification: release-qualification.md
     - Adding support for new Revit version: adding-revit-version.md
-    - Propose your own custom extension: custom_extension.md
-    - Contributing: CONTRIBUTING.md
+    - Translate pyRevit: contribute/translate.md
+    - Documentation and tutorials: contribute/documentation.md
+  - Help:
+    - help/index.md
+    - Installation issues: help/installation-issues.md
+    - Cannot uninstall: help/cannot-uninstall.md
+    - Output links on Windows 11: help/linkify-windows-11.md
+    - Reporting issues: help/reporting-issues.md
+    - Community: help/community.md
+  - About:
+    - Credits: CREDITS.md
+    - Security: SECURITY.md
     - Code Of Conduct: CODE_OF_CONDUCT.md
-  - Security: SECURITY.md
-  - Credits: CREDITS.md
-  - Reference API: reference/
-
-
-
