@@ -34,8 +34,9 @@ Checks:
     CLR-REF     clr.Reference out-param marshaling outside the sanctioned
                 engine-dispatch wrappers
     CLR-NAMED-INDEXER
-                ``.Parameter[...]`` named indexed property read; pythonnet
-                (CPython) has no named indexers, use ``.get_Parameter(...)``
+                ``.Parameter[...]`` or ``.Geometry[...]`` named indexed property
+                read; pythonnet (CPython) has no named indexers, use
+                ``.get_Parameter(...)`` or ``.get_Geometry(...)``
     SORT-KEY    sorted() over dict .items()/.values() without a key=
                 (tuple comparison can fall through to unorderable values)
     PY3-VIEW    a bare dict view (keys/values/items) or map/filter/zip that
@@ -202,7 +203,7 @@ PYTHON_ENGINE_IRONPYTHON = "ironpython"
 CPYTHON_FIRST_LINE_MARKERS = ("python3", "cpython")
 CPYTHON_STARTUP_FILE_NAME = "startup.cpython.py"
 
-CLR_NAMED_INDEXERS = {"Parameter"}
+CLR_NAMED_INDEXERS = {"Geometry", "Parameter"}
 
 
 class Finding:

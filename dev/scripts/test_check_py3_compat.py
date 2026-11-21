@@ -834,6 +834,10 @@ class NamedIndexerTests(unittest.TestCase):
             self._codes("el.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]"),
         )
 
+    def test_geometry_indexer_is_flagged(self):
+        """``Element.Geometry[options]`` is the same IronPython-only form."""
+        self.assertEqual(["CLR-NAMED-INDEXER"], self._codes("el.Geometry[opts]"))
+
     def test_get_parameter_accessor_is_clean(self):
         """The engine-portable accessor is not reported."""
         self.assertEqual(

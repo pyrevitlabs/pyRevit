@@ -5,6 +5,7 @@
 
     <system:String x:Key="pyRevit.Title">pyRevit</system:String>
     <system:String x:Key="pyRevit.Engine">运行于 IronPython {} (cpython {})</system:String>
+    <system:String x:Key="pyRevit.Engine.CPython">运行于 cpython {}</system:String>
     <system:String x:Key="pyRevit.RocketMode.Enabled">火箭模式已启用</system:String>
     <system:String x:Key="pyRevit.RocketMode.Disabled">火箭模式已禁用</system:String>
 
