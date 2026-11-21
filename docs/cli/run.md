@@ -22,7 +22,7 @@ Log File: "...\Temp\51066afe-022c-4dba-bdc5-d35d451b998f\PyRevitRunner_51066afe-
 
 - `--purge`: Runner creates a temporary directory under `%TEMP%` for this execution. Specifying this option, will clear the temporary files after completion. This is helpful when running a script over many files.
 
-If `--revit` option is not specified, the run command will use the newest installed version of Revit to run the command. You can however specify the revsion of Revit e.g. `--revit=2018`
+If `--revit` option is not specified, the run command will use the newest installed version of Revit to run the command. You can however specify the revsion of Revit e.g. `--revit=2018`
 
 At either case, pyRevit uses the clone and engine verison that is attached to Revit, to run the script; So make sure that pyRevit is already attached to the Revit version you are intending to use.
 
@@ -48,7 +48,7 @@ C:\Users\LeoW10\Desktop\batchtest\Project_V18.rvt
 
 **Important Note:**
 
-**The run command does not attempt to open the model in Revit.** Opening a model is a complex process and has many configurations e.g. Opening central or detached, Workset configurations, etc. The run command uses a simple journal file to bootstrap Revit and avoids using complex journal structures to provide configurations on opening models since journals are heavily GUI based and could easily break in the future. Revit API provides ample functionality on opening models. It’s best practice to open the model inside your script.
+**The run command does not attempt to open the model in Revit.** Opening a model is a complex process and has many configurations e.g. Opening central or detached, Workset configurations, etc. The run command uses a simple journal file to bootstrap Revit and avoids using complex journal structures to provide configurations on opening models since journals are heavily GUI based and could easily break in the future. Revit API provides ample functionality on opening models. It’s best practice to open the model inside your script.
 
 The execution environment provides the global variable `__models__` set to a list of model file paths. Your script can read the models from this variable and attempt at opening each.
 

@@ -22,18 +22,18 @@ CPython scripts are always read using UTF-8 encoding. There is no need to provid
 
 [Packages listed here](https://github.com/pyrevitlabs/pyRevit/tree/develop/site-packages) are shipped with pyRevit by default for convenience
 
-## Implement Revit API's .NET Interfaces with CPython and pythonnet
+## Implement Revit API's .NET Interfaces with CPython and pythonnet
 
 **RE**  [https://github.com/pyrevitlabs/pyRevit/issues/686](https://github.com/pyrevitlabs/pyRevit/issues/686)
 
-If you want to use CPython and pythonnet to implement any Revit API's .NET interface (for example: `Autodesk.Revit.DB.ISelectionFilter` in order to use with `Autodesk.Revit.UI.Selection.PickObject`), you must specify `__namespace__` attribute on the derived class
+If you want to use CPython and pythonnet to implement any Revit API's .NET interface (for example: `Autodesk.Revit.DB.ISelectionFilter` in order to use with `Autodesk.Revit.UI.Selection.PickObject`), you must specify `__namespace__` attribute on the derived class
 
-Additionally, your `__namespace__` must be different each time you run your script, otherwise you will get an exception as shown below  
+Additionally, your `__namespace__` must be different each time you run your script, otherwise you will get an exception as shown below  
 Source [Implement a C# Interface in Python for .NET](https://stackoverflow.com/a/50462691)
 
 ```text
-CPython Traceback:
-TypeError : Duplicate type name within an assembly.
+CPython Traceback:
+TypeError : Duplicate type name within an assembly.
 ```
 
  You can use the pyRevit execution id for this purpose since it is unique for every execution.

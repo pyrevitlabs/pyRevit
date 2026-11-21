@@ -47,8 +47,8 @@ __scriptruntime__
 ```python
 # information about the pyrevit command being run
 
-__commandpath__           # main script path
-__configcommandpath__     # config script path
+__commandpath__           # folder of the main script
+__configcommandpath__     # folder of the config script
 __commandname__           # command name
 __commandbundle__         # command bundle name
 __commandextension__      # command bundle name
@@ -111,8 +111,8 @@ EXEC_PARAMS.script_runtime
 ```python
 from pyrevit import EXEC_PARAMS
 
-EXEC_PARAMS.command_path         # main script path
-EXEC_PARAMS.command_config_path  # config script path
+EXEC_PARAMS.command_path         # folder of the main script
+EXEC_PARAMS.command_config_path  # folder of the config script
 EXEC_PARAMS.command_name         # command name
 EXEC_PARAMS.command_bundle       # command bundle name
 EXEC_PARAMS.command_extension    # command bundle name

@@ -55,7 +55,7 @@ config = script.get_config()
 config.firstparam = True
 
 # or via method
-config.set_option(firstparam, True)
+config.set_option('firstparam', True)
 
 # saving configurations
 script.save_config()
@@ -65,7 +65,7 @@ if config.firstparam:
     do_task_A()
 
 # safe access with fallback default
-if config.get_option(firstparam, True):
+if config.get_option('firstparam', True):
 		do_task_A()
 ```
 
@@ -121,16 +121,16 @@ If a lot of parameters have to be set, the builtin `coreutils.yaml` can be used 
 ```yaml
 settings:
 - name: show_progressbar
-	type: bool
-	label: Show Progressbar
-	default: true
+  type: bool
+  label: Show Progressbar
+  default: true
 - name: tree_type
-	type: choice
-	label: Tree Type
-	options:
-		- Apple
-		- Orange
-	default: Apple
+  type: choice
+  label: Tree Type
+  options:
+    - Apple
+    - Orange
+  default: Apple
 ```
 
 ```python

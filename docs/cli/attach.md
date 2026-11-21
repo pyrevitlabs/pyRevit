@@ -11,7 +11,7 @@ $ pyrevit attach dev DEFAULT 2018       # attach `dev` clone to Revit 2018 using
 ```
 
 - `--``allusers`: Use this switch to attach for all users. It creates the manifest files inside the `%PROGRAMDATA%/Autodesk/Revit/Addons` instead of `%APPDATA%/Autodesk/Revit/Addons`
-- `--attached`: This options is helpful when updating existing attachments e.g. specifying a new engine but keeping the same attachments as before
+- `--attached`: This options is helpful when updating existing attachments e.g. specifying a new engine but keeping the same attachments as before
 
 List all the attachments:
 

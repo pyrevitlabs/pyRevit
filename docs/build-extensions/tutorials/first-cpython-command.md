@@ -35,7 +35,9 @@ The rest is business as usual.
 import numpy as np
 import pandas as pd
 
-from pyrevit import revit
+from pyrevit import revit, script
+
+output = script.get_output()
 
 print("\n## numpy array:")
 print(repr(np.arange(15).reshape(3, 5)))
@@ -44,7 +46,7 @@ df_dict = {'key 1': 1, 'key 2': 2, 'key 3': 3}
 df = pd.DataFrame([df_dict])
 
 print("\n## pandas DataFrame:")
-print_html(df.to_html().replace('\n', ''))
+output.print_html(df.to_html().replace('\n', ''))
 
 for element in revit.get_selection():
     print(element)

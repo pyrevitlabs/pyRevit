@@ -48,13 +48,13 @@ See [Anatomy of .NET (C#, VB) Scripts](dotnet.md) for more information on the st
 
 ```csharp
 // import pyRevit runtime namespace
-using PyRevitLabs.PyRevit.Runtime;
+using pyRevitLabs.PyRevit.Runtime.Shared;
 
 namespace MyPyRevitDotNetCommands
 {
    public class TestConfigMode : IExternalCommand
    {
-      // add a public field with type PyRevitLabs.PyRevit.Runtime.ScriptData
+      // add a public field with type pyRevitLabs.PyRevit.Runtime.Shared.ExecParams
       public ExecParams execParams;
 
       public Result Execute(ExternalCommandData revit, ref string message, ElementSet elements)
@@ -73,12 +73,12 @@ namespace MyPyRevitDotNetCommands
 
 ```vbnet
 ' import pyRevit runtime namespace
-Imports PyRevitLabs.PyRevit.Runtime
+Imports pyRevitLabs.PyRevit.Runtime.Shared
 
 Public Class TestDebugMode
     Implements IExternalCommand
 
-    ' add a public field with type PyRevitLabs.PyRevit.Runtime.ScriptData
+    ' add a public field with type pyRevitLabs.PyRevit.Runtime.Shared.ExecParams
     Public execParams As ExecParams
 
     Public Function Execute(ByVal revit As ExternalCommandData, _
@@ -137,13 +137,13 @@ See [Anatomy of .NET (C#, VB) Scripts](dotnet.md) for more information on the st
 
 ```csharp
 // import pyRevit runtime namespace
-using PyRevitLabs.PyRevit.Runtime;
+using pyRevitLabs.PyRevit.Runtime.Shared;
 
 namespace MyPyRevitDotNetCommands
 {
    public class TestDebugMode : IExternalCommand
    {
-      // add a public field with type PyRevitLabs.PyRevit.Runtime.ExecParams
+      // add a public field with type pyRevitLabs.PyRevit.Runtime.Shared.ExecParams
       public ExecParams execParams;
 
       public Result Execute(ExternalCommandData revit, ref string message, ElementSet elements)
@@ -162,11 +162,11 @@ namespace MyPyRevitDotNetCommands
 
 ```vbnet
 ' import pyRevit runtime namespace
-Imports PyRevitLabs.PyRevit.Runtime
+Imports pyRevitLabs.PyRevit.Runtime.Shared
 
 Public Class TestDebugMode
     Implements IExternalCommand
-    ' add a public field with type PyRevitLabs.PyRevit.Runtime.ScriptData
+    ' add a public field with type pyRevitLabs.PyRevit.Runtime.Shared.ExecParams
     Public execParams As ExecParams
 
     Public Function Execute(ByVal revit As ExternalCommandData, _
@@ -205,9 +205,13 @@ ALT-SHIFT-Clicking on a button will show the associated config script file in Wi
 
 If you are using pyRevit Rocket mode, this keyboard combination will force pyRevit to discard the cached engine for this command and use a new fresh engine. If you are developing scripts for pyRevit and using external modules, you’ll need to use this keyboard combination after changes to the imported module source codes. Since the modules are already imported in the cached engine, you would need a new fresh engine to reload the modules.
 
-#### IronPython and CPython Scripts
+#### IronPython Scripts
 
 Cleans up all the cached engines for a fresh start.
+
+#### CPython Scripts
+
+The CPython interpreter stays alive for the whole Revit session, so imported modules are not cleared. Reload the module in your script with `importlib.reload()`, or restart Revit.
 
 #### .NET Scripts
 

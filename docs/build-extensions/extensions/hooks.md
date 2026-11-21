@@ -242,7 +242,7 @@ This hook is executed when Revit wants to know if the command with id `<cmd-id>`
 
 For example:
 
-    `command-before-exec[ID_INPLACE_COMPONENT].py`
+    `command-can-exec[ID_INPLACE_COMPONENT].py`
 
 is executed, when the user switchs to the tab that contains the **Model-In Place** (`ID_INPLACE_COMPONENT`) tool. At this point, pyRevit calls this hook (initiated by the `CanExecute` event in Revit) to check whether this tools is available or not. The hook script needs to return `True` or `False` to Enable or Disable the tool in the Revit user interface.
 

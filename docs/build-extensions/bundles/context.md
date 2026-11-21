@@ -17,7 +17,7 @@ context: selection
 context: <category>
 
 context:
-	- <category>
+  - <category>
   - <category>
 ```
 
@@ -81,13 +81,13 @@ Finally, the various context types can be combined together for more complex con
 
 ```yaml
 context:
-	- selection
-	- active-section-view
+  - selection
+  - active-section-view
 
 context:
-	- walls
-	- columns
-	- active-plan-view
+  - walls
+  - columns
+  - active-plan-view
 ```
 
 ### Advanced Contexts
@@ -96,10 +96,10 @@ You can define more specific context conditions using `any`, `all`, and `exact` 
 
 ```yaml
 context:
-	- active-floor-plan
-	- any:
-	  - OST_Walls
-	  - OST_Floors
+  - active-floor-plan
+  - any:
+    - OST_Walls
+    - OST_Floors
 
 ```
 
@@ -107,7 +107,7 @@ context:
 
 ```yaml
 context:
-	any:
+  any:
     - active-floor-plan
     - active-rcp-plan
   all:
@@ -119,7 +119,7 @@ context:
 
 ```yaml
 context:
-	- doc-project
+  - doc-project
   - exact:
     - OST_Walls
     - OST_Floors
@@ -129,9 +129,9 @@ context:
 
 ```yaml
 context:
-	- doc-workshared
-	- all:
-		- OST_Walls
+  - doc-workshared
+  - all:
+    - OST_Walls
     - OST_Floors
 ```
 

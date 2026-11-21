@@ -112,9 +112,9 @@ The bundle file can also set the order of all the childern bundles in the UI:
 
 ```yaml
 layout:
-	- PushButton A
-	- PushButton B
-	- PullDown A
+  - PushButton A
+  - PushButton B
+  - PullDown A
 ```
 
 ### Bundle Environment Configs

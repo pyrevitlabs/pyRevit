@@ -107,12 +107,12 @@ set_a.data = [12, 19, 3, 17, 6, 3, 7]
 # Set the color for this graph
 set_a.set_color(0xFF, 0x8C, 0x8D, 0.8)
 
+# Same as above for a new data set: set_b
+set_b = chart.data.new_dataset('set_b')
+
 # You can also set custom options for this graph
 # See the Charts.js documentation for all the options
 set_b.fill = False
-
-# Same as above for a new data set: set_b
-set_b = chart.data.new_dataset('set_b')
 
 # Obviously a different set of data and a different color
 set_b.data = [2, 29, 5, 5, 2, 3, 10]
@@ -121,7 +121,8 @@ set_b.set_color(0xFF, 0xCE, 0x56, 0.8)
 # Same as above for a new data set: set_c
 set_c = chart.data.new_dataset('set_c')
 
-# Obviously a different set of data and a different colorset_c.data = [55, 12, 2, 20, 18, 6, 22]
+# Obviously a different set of data and a different color
+set_c.data = [55, 12, 2, 20, 18, 6, 22]
 set_c.set_color(0x36, 0xA2, 0xEB, 0.8)
 ```
 
