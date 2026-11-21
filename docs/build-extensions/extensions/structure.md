@@ -35,7 +35,7 @@ The extension bundle discussed above, is the most important type of extension bu
 
 ### Library Extensions
 
-Library extensions are created to share IronPython modules between all extensions. They’re in essence IronPython module packages. Some users might decide to develop an IronPython library (e.g. [RevitPythonWrapper Library](http://revitpythonwrapper.readthedocs.io/)) that other users can use in their tools and benefit from.
+Library extensions are created to share IronPython modules between all extensions. They’re in essence IronPython module packages. Some users might decide to develop an IronPython library (e.g. [RevitPythonWrapper Library](https://revitpythonwrapper.readthedocs.io/)) that other users can use in their tools and benefit from.
 
 ```yaml
 extension: .lib

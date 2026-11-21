@@ -193,6 +193,10 @@ End Class
 
     Currently there is no mechanism for checking the value of Debug Mode in DynamoBIM or Grasshopper scripts.
 
+## CTRL-SHIFT-Click: Config Mode with Debug
+
+CTRL-SHIFT-Clicking on a button runs the config script in DEBUG mode.
+
 ## ALT-Click: Show Script file in Explorer
 
 ALT-Clicking on a button will show the associated script file in Windows Explorer.
@@ -225,4 +229,4 @@ Does nothing.
 
 Shows the context menu for the pyRevit command.
 
-![](../../assets/build-extensions/scripting/click-modes/2019-09-30-10-57-09-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png)
+The menu opens the help of the command, or copies its script path, config script path, bundle path, unique id, control id, search paths, arguments, context filter, engine configuration or help URL.

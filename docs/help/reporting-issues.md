@@ -25,7 +25,7 @@ Follow the instructions below to collect the debug logs from your pyRevit instal
 
 ### Activating file logging
 
-If pyRevit runs normally, and you can access the pyRevit settings, open the Settings → Reporting Levels and activate the **File Debug Logging** option
+If pyRevit runs normally, and you can access the pyRevit settings, open **Settings** → **Reporting Levels** and activate the **File debug logging** option
 
 ![](../assets/help/reporting-issues/screen-shot-2020-05-08-at-07-55-31.png)
 

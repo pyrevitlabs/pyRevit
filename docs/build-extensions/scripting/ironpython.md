@@ -110,8 +110,8 @@ Similar to [Bundle Metadata](../bundles/metadata.md)
 You can specify the min and max Revit versions that support your script.
 
 ```python
-__min_revit_ver__= 2016
-__max_revit_ver__ = 2019
+__min_revit_ver__ = 2022
+__max_revit_ver__ = 2025
 ```
 
 #### Beta Tools

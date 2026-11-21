@@ -2,10 +2,6 @@
 
 `pyrevit` is the command-line tool, developed specifically to install and configure pyRevit in your production/development environment. There is a lot of commands and options available in the CLI tool. This document will guide you in using these commands and options based on what you’re trying to achieve. Each section below showcases a specific set of functionality of the command-line tool.
 
-This pages shows how to get help, check CLI version, and redirect command results to log file
-
-- Help, Version, & Logs
-
 ## Environment Management
 
 - [Get Environment Info](environment.md)
@@ -19,7 +15,6 @@ This pages shows how to get help, check CLI version, and redirect command result
 
 - [Batch Process Revit Models](run.md)
 - [Manage Installed Revit](revits.md)
-- [Extract Model Metadata](revits.md)
 - [Get Release Info](releases.md)
 
 List the help for each command,  
@@ -41,7 +36,6 @@ To access a variety of online resource, use these commands
 
 ```powershell
 $ pyrevit wiki      # pyRevit wiki page
-$ pyrevit blog      # pyRevit blog page
 $ pyrevit docs      # pyRevit documentation
 $ pyrevit source    # pyRevit source code
 $ pyrevit youtube   # pyRevit YouTube channel
@@ -51,7 +45,7 @@ $ pyrevit support   # pyRevit suppport page for pyRevit patrons
 With most commands you can log the complete results to a log file using the `--log=` option
 
 ```powershell
-$ pyrevit clone master --log="C:\logfile.txt"
+$ pyrevit clones update --all --log="C:\logfile.txt"
 ```
 
 ## Pages in this section

@@ -2,9 +2,11 @@
 
 pyRevit includes a fairly advanced print tool that allows you to print the sheets in a model or a linked model in order, format the output file names and apply custom print settings on a per sheet basis
 
-With the model open, launch the tool from the ***Drawing Set*** panel
+With the model open, launch **Print Sheets** from the ***Drawing Set*** panel.
 
-![](../assets/tools/print-sheets/2019-11-07-09-09-45.png)
+!!! note "Screenshots"
+
+    The screenshots on this page come from an older version of the tool. The options they show still exist; [Options added since](#options-added-since-the-screenshots) lists the newer ones.
 
 ## Selecting Model and Drawing Index
 
@@ -12,7 +14,7 @@ Select the host model first. If the host model has other Revit models linked int
 
 ![](../assets/tools/print-sheets/2019-11-07-08-58-32-print-sheets.png)
 
-Linked modes are shows as `Linked: <model name>`
+Linked models are shown as `Linked: <model name>`. **&lt;All Models&gt;** lists the sheets of the host and of every linked model together.
 
 ![](../assets/tools/print-sheets/2019-11-07-08-54-55-print-sheets.png)
 
@@ -76,7 +78,7 @@ Select the appropriate print setting and the sheet list reflects the newly appli
 
 ### Combining Sheets Into One File
 
-The print tool allows you to combine multiple sheets into one file (`Ordered Sheets.pdf`). Under this option, many of the indexing and print settings are not available to the underlying printing mechanism in Autodesk Revit. For full flexibility, it is better to print the sheets individually and combine them later.
+The print tool allows you to combine multiple sheets into one file (`Ordered Sheet Set.pdf`). Under this option, many of the indexing and print settings are not available to the underlying printing mechanism in Autodesk Revit. For full flexibility, it is better to print the sheets individually and combine them later.
 
 ![](../assets/tools/print-sheets/2019-11-07-09-01-57-print-sheets.png)
 
@@ -95,3 +97,17 @@ Once you are happy with the indices, printing configurations, and the output fil
 - If you are sure about starting the print process if there are more than 5 sheets in the print queue
 
 ![](../assets/tools/print-sheets/2019-11-07-09-01-39-print-sheets.png)
+
+- Whether to replace the files the print creates when they already exist in the output folder
+
+## Options added since the screenshots
+
+- **Printer**: in Revit 2022 and later the list starts with **Revit Internal Printer**, which exports the PDF files with Revit itself instead of a PDF printer driver.
+- **Export DWG** also exports each sheet to DWG. It is not available when combining into one PDF, for linked models, or for **&lt;All Models&gt;**.
+- **Output Folder** is where the PDF and DWG files are saved. Leave it empty to use `Desktop\pyRevit Print Folder`. An external PDF printer may use its own save location.
+- **Subfolder** saves the files in a subfolder of the output folder. Use `\` for nested folders.
+- Both folder fields accept the `{date}`, `{time}`, `{model}` and `{sheet_index}` tags.
+- A *Print Setting* type parameter (of type Text) on a titleblock family can hold the name of the print setting to use. With `<Variable Paper Size>`, the tool assigns that print setting to the sheets using this titleblock.
+- Right-click a file name in the sheet list to copy the file names.
+- When sheets of different models would get the same file name, add `{index}` or `{proj_number}` to the naming format.
+- A combined PDF cannot be made when the paper size varies by sheet.
