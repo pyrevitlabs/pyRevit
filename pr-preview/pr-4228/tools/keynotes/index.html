@@ -11059,7 +11059,7 @@
 <p>Deleting an orphaned <code>.lock</code> file when there are no users active, should solve the stuck Keynote Manager problem</p>
 </div>
 <ul>
-<li><strong><em>Autodesk cloud:</em></strong> Keynote Manager uses the <strong>Autodesk Desktop Connector</strong> to lock the keynote file when a user opens Keynote Manager.</li>
+<li><strong><em>Autodesk cloud:</em></strong> Keynote Manager asks the <strong>Autodesk Desktop Connector</strong> to lock the keynote file when a user opens Keynote Manager. When the connector cannot sync or lock the file, the manager still opens, so check the lock on the file before a long editing session.</li>
 </ul>
 <p><img alt="" src="../../assets/tools/keynotes/screen-shot-2021-12-30-at-21-13-30.png" /></p>
 <p>This effectively stops others from writing their changes until the first user has closed Keynote Manager and released the file.</p>

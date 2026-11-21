@@ -10933,10 +10933,11 @@
 <p>These configs options are for the <a href="../routes/">pyRevit Routes (HTTP API)</a>  </p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>[routes]
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>enabled = true
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>host = ""
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>host = "127.0.0.1"
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>core_api = true
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>port = 48884
 </span></code></pre></div>
+<p><code>host</code> is the address the server listens on. When it is empty or missing, the server listens on every network interface. The server does not authenticate callers, so only open it to the network on purpose.</p>
 <h3 id="telemetry-configs">Telemetry Configs</h3>
 <p>These configs options are for the  <a href="../telemetry/">Telemetry System</a></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>[telemetry]

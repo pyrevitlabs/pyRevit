@@ -10980,7 +10980,7 @@ The other bundle types are on <a href="../ui-bundles/">UI bundles</a> and <a hre
 <p>See <a href="../../scripting/ironpython/">Anatomy of IronPython Scripts</a>  for more detail on IronPython scripts.</p>
 <p>See <a href="../../../get-started/configure/">Configure pyRevit</a> for more information about setting the active IronPython engine version.</p>
 <h3 id="cpython-scripts">CPython Scripts</h3>
-<p>Push-Button bundles can contain a CPython  <code>*.py</code> file as their main script. pyRevit runs the script with the active CPython engine when its first line is <code>python3</code>.</p>
+<p>Push-Button bundles can contain a CPython  <code>*.py</code> file as their main script. pyRevit runs the script with the active CPython engine when its first line is <code>python3</code>. An <code>engine: type</code> set in the bundle file takes precedence over that line.</p>
 <p>See <a href="../../scripting/cpython/">Anatomy of CPython Scripts</a>  for more detail on CPython scripts.</p>
 <p>See <a href="../../../get-started/configure/">Configure pyRevit</a> for more information about setting the active CPython engine version.</p>
 <h3 id="c-vbnet-scripts">C#, VB.NET Scripts</h3>
@@ -11025,11 +11025,14 @@ The other bundle types are on <a href="../ui-bundles/">UI bundles</a> and <a hre
 </span></code></pre></div>
 <p>When the bundle file has no <code>content</code> key, pyRevit looks for the family inside the bundle folder, in this order:</p>
 <ol>
-<li><code>content_&lt;revit year&gt;.rfa</code>, for example <code>content_2026.rfa</code></li>
+<li>the first file named <code>content_*.rfa</code></li>
 <li><code>content.rfa</code></li>
 <li>any other <code>.rfa</code> file</li>
 </ol>
-<p>The alternative family follows the same convention with <code>other_&lt;revit year&gt;.rfa</code> and <code>other.rfa</code>. When a bundle has an alternative family, Revit UI shows a ● in front of the button name e.g. "Marker ●".</p>
+<p>The alternative family follows the same convention with <code>other_*.rfa</code> and <code>other.rfa</code>.</p>
+<div class="admonition warning">
+<p>The suffix after <code>content_</code> or <code>other_</code> is not compared with the running Revit version. Keep one such file per bundle, or set <code>content</code> and <code>content_alt</code> in the bundle file. When a bundle has an alternative family, Revit UI shows a ● in front of the button name e.g. "Marker ●".</p>
+</div>
 <h2 id="url-button-bundle">URL-Button Bundle</h2>
 <p>URL Bundles open the URL link specified in the bundle file, in the default browser. They are great for creating intranet shortcut buttons.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>extension: .urlbutton

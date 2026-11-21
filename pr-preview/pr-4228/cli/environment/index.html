@@ -10895,7 +10895,7 @@
 </span></code></pre></div>
 <p>prints the same information as JSON, with these top-level keys: <code>meta</code>, <code>clones</code>, <code>attachments</code>, <code>extensions</code>, <code>searchPaths</code>, <code>lookupSources</code>, <code>installed</code>, <code>running</code>, <code>pyrevitDataDir</code>, <code>activeCpythonEngineVersion</code> and <code>userEnv</code>.</p>
 <h2 id="sharing-the-report">Sharing the report</h2>
-<p>The report contains your user name and local paths. Add <code>--redact</code> to mask user names, user profile folders, server names and Git URLs before you post the report in an issue. The masking is best effort, so read the result before you share it:</p>
+<p>The report contains your user name and local paths. Add <code>--redact</code> to mask user names, user profile folders, server names and Git URLs before you post the report in an issue. The masking is best effort: it cannot know that a folder name or a repository path is confidential, so read the result before you share it:</p>
 <div class="language-powershell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">pyrevit</span> <span class="n">env</span> <span class="p">-</span><span class="n">-redact</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">pyrevit</span> <span class="n">env</span> <span class="p">-</span><span class="n">-json</span> <span class="p">-</span><span class="n">-redact</span>
 </span></code></pre></div>
