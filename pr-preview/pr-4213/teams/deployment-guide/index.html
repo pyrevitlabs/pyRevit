@@ -11059,12 +11059,11 @@ See <a href="../deployments/">Deployments</a>  </p>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="nb">New-Item</span> <span class="n">-ItemType</span> <span class="n">Directory</span> <span class="n">-Force</span> <span class="n">-Path</span> <span class="nv">$targetpath</span> <span class="p">&gt;</span> <span class="nv">$null</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">}</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c"># removes the folder of the clone that is being replaced</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="k">function</span> <span class="nb">Remove-Clone</span> <span class="p">(</span><span class="no">[string]</span> <span class="nv">$clonepath</span><span class="p">)</span> <span class="p">{</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="k">If</span> <span class="p">(</span><span class="nb">Test-Path</span> <span class="nv">$clonepath</span><span class="p">)</span> <span class="p">{</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>        <span class="nb">Remove-Item</span> <span class="n">-Path</span> <span class="nv">$clonepath</span> <span class="n">-Recurse</span> <span class="n">-Force</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="p">}</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="p">}</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="k">function</span> <span class="nb">Remove-Clone</span> <span class="p">(</span><span class="no">[string]</span> <span class="nv">$clonepath</span><span class="p">)</span> <span class="p">{</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="k">If</span> <span class="p">(</span><span class="nb">Test-Path</span> <span class="n">-LiteralPath</span> <span class="nv">$clonepath</span><span class="p">)</span> <span class="p">{</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>        <span class="nb">Remove-Item</span> <span class="n">-LiteralPath</span> <span class="nv">$clonepath</span> <span class="n">-Recurse</span> <span class="n">-Force</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="p">}</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="p">}</span>
 </span></code></pre></div>
 <div class="admonition warning">
 <p>The script does not close Revit for you. <code>pyrevit revits killall</code> ends every Revit process without a chance to save, so only use it when you are sure no one is working, for example in a logon script.</p>
