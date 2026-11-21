@@ -45,10 +45,8 @@
   const DEFAULT_COMPASS = ["N", "E", "S", "W"];
 
   function viewBasis(camera) {
-    const cp = Math.cos(camera.pitch);
-    const d = [cp * Math.cos(camera.yaw), cp * Math.sin(camera.yaw), Math.sin(camera.pitch)];
-    const right = [-Math.sin(camera.yaw), Math.cos(camera.yaw), 0];
-    return { d, right, up: v3.cross(d, right) };
+    const { back, right, up } = S3.cameraBasis(camera);
+    return { d: back, right, up };
   }
 
   function projector(basis, size) {
