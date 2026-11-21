@@ -16,6 +16,9 @@ on:
       - 'pyrevitlib/pyrevit/**'
       - '*.md'
       - 'Pipfile.lock'
+      - 'pyRevitfile'
+      - 'dev/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt'
+      - 'dev/pyRevitLabs.PyRevit.Runtime/ScriptExecutor.cs'
 
 permissions:
   contents: read

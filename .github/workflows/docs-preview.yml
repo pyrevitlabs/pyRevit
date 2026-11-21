@@ -10,6 +10,9 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+      - 'pyRevitfile'
+      - 'dev/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt'
+      - 'dev/pyRevitLabs.PyRevit.Runtime/ScriptExecutor.cs'
 
 permissions:
   contents: read
