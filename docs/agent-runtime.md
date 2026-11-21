@@ -587,6 +587,20 @@ CPython is not warmed: pythonnet's first initialize is heavy, scans every loaded
 keeps the interpreter up for the rest of the process, so the first CPython run still pays for
 it. A run that asks for an engine other than the default also starts cold.
 
+### Choosing how to run a script
+
+The CLI has three ways to get Python into Revit. They differ in who starts Revit and what the script runs against:
+
+| Command | Revit lifetime | Target | Audience |
+|---|---|---|---|
+| `pyrevit run` | Starts a new Revit from a generated journal and quits it when the script ends | Model files passed on the command line or listed with `--models` | Batch automation, CI |
+| `pyrevit agent run` | Injects the script into a Revit that is already running | The active document, through the [guarded run](#the-guarded-run): approval policy and [run records](#run-records) | People and shell scripts |
+| `pyrevit mcp` | Same agent host as `agent run`, reached through a stdio server | The active document | MCP clients such as Claude Code; started by the client, not typed by hand |
+
+`pyrevit run` and `pyrevit agent run` share the verb but not the mechanism: `run` launches its own Revit and never touches a session you have open, while `agent run` needs a Revit with the agent runtime enabled and acts on the model you are looking at. `pyrevit run` is documented under [Runner commands](extensions.md#runner-commands).
+
+`pyrevit launch` is not a fourth way to run a script. It starts a Revit session on a clone and engine without changing the attachment (see [Running several clones side by side](#running-several-clones-side-by-side)); `agent run` and `mcp` can then target that session by clone name with `--revit`.
+
 ### CLI
 
 ```text
