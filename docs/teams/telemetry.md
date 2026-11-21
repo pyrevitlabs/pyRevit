@@ -71,7 +71,7 @@ Open pyRevit Settings and under the ***Telemetry*** section, turn on the ***Appl
 
 - Replace `you.domain` and `port` similar to above
 
-Now browse throught the events list and turn on the events that you want pyRevit to listen to and send their information to the server. **Toggle All** turns them all on or off.
+Now browse through the events list and turn on the events that you want pyRevit to listen to and send their information to the server. **Toggle All** flips each checkbox: checked events become unchecked and unchecked events become checked.
 
 ![Application Telemetry settings](../assets/teams/telemetry/settings-application-telemetry.png)
 
