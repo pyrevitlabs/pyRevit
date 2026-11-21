@@ -551,7 +551,15 @@ void main() { outColor = uColor; }`;
       else if (event === "sources") this.onSources(payload);
       else if (event === "result") this.onResult(payload);
       else if (event === "error" && payload.requestId) this.onResult({ requestId: payload.requestId, ok: false, message: payload.message });
-      else if (event === "error") this.setStatus(payload.message, "error");
+      else if (event === "error") this._onStreamError(payload.message);
+    }
+
+    _onStreamError(message) {
+      this.loading = false;
+      for (const group of this.groups.values()) group.requested = false;
+      this._renderCategories();
+      this._updateProgress();
+      this.setStatus(message, "error");
     }
 
     onResult(payload) {

@@ -30,7 +30,7 @@
   const RING_SEGMENTS = 72;
   const HALF_EXTENT = 2.45;
   const DRAG_PIXELS = 3;
-  const COMPASS_HIT_PIXELS = 11;
+  const COMPASS_HIT_PIXELS = 9;
   const FACES = {
     top: { n: [0, 0, 1], u: [1, 0, 0], v: [0, 1, 0], shade: 1 },
     bottom: { n: [0, 0, -1], u: [1, 0, 0], v: [0, -1, 0], shade: 0.78 },
@@ -123,6 +123,7 @@
 
   /**
    * What a pointer at (x, y) of a cube of the given pixel size points at.
+   * A compass letter is drawn above the cube, so the nearest letter in reach wins over a face.
    *
    * Returns {kind: "cell", face, iu, iv, dir}, {kind: "compass", key, dir} or null.
    * northAngle turns the compass as in createViewCube.
@@ -130,17 +131,34 @@
   function hitTest(camera, size, x, y, northAngle) {
     const basis = viewBasis(camera);
     const project = projector(basis, size);
+    let nearest = null, nearestGap = COMPASS_HIT_PIXELS;
+    for (const entry of compassEntries(northAngle)) {
+      const p = project(compassPoint(entry));
+      const gap = Math.hypot(p[0] - x, p[1] - y);
+      if (gap <= nearestGap) {
+        nearest = entry;
+        nearestGap = gap;
+      }
+    }
+    if (nearest) return { kind: "compass", key: nearest.key, dir: nearest.dir };
     const visible = FACE_NAMES.filter((face) => faceFacesViewer(basis, face));
     visible.sort((a, b) => v3.dot(FACES[b].n, basis.d) - v3.dot(FACES[a].n, basis.d));
     for (const face of visible) {
       const cell = cellsOf(project, face).find((c) => insideQuad(c.points, x, y));
       if (cell) return { kind: "cell", face, iu: cell.iu, iv: cell.iv, dir: cell.dir };
     }
+    return null;
+  }
+
+  /** The pixel position of each compass letter, {n, e, s, w}, as drawn for this camera. */
+  function compassScreenPoints(camera, size, northAngle) {
+    const project = projector(viewBasis(camera), size);
+    const points = {};
     for (const entry of compassEntries(northAngle)) {
       const p = project(compassPoint(entry));
-      if (Math.hypot(p[0] - x, p[1] - y) <= COMPASS_HIT_PIXELS) return { kind: "compass", key: entry.key, dir: entry.dir };
+      points[entry.key] = [p[0], p[1]];
     }
-    return null;
+    return points;
   }
 
   /** The camera angles {yaw, pitch} that look from a hit's direction; a compass hit keeps the current pitch. */
@@ -297,15 +315,17 @@
 
     const onDown = (event) => {
       event.stopPropagation();
+      if (state.gesture) return;
       try {
         root.setPointerCapture(event.pointerId);
       } catch (error) {
         void error;
       }
-      state.gesture = { x: event.clientX, y: event.clientY, moved: false };
+      state.gesture = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
     };
     const onMove = (event) => {
       const gesture = state.gesture;
+      if (gesture && event.pointerId !== gesture.pointerId) return;
       if (!gesture) {
         const [x, y] = localPoint(event);
         setHover(hitTest(options.getCamera(), size, x, y, north));
@@ -320,8 +340,12 @@
       if (options.onChange) options.onChange();
       update();
     };
+    const onCancel = (event) => {
+      if (state.gesture && event.pointerId === state.gesture.pointerId) state.gesture = null;
+    };
     const onUp = (event) => {
       const gesture = state.gesture;
+      if (gesture && event.pointerId !== gesture.pointerId) return;
       state.gesture = null;
       try {
         root.releasePointerCapture(event.pointerId);
@@ -337,6 +361,8 @@
     root.addEventListener("pointerdown", onDown);
     root.addEventListener("pointermove", onMove);
     root.addEventListener("pointerup", onUp);
+    root.addEventListener("pointercancel", onCancel);
+    root.addEventListener("lostpointercapture", onCancel);
     root.addEventListener("pointerleave", onLeave);
     options.parent.append(root);
     update();
@@ -352,6 +378,6 @@
     };
   }
 
-  S3.viewCube = { FACES, cellDirection, compassEntries, hitTest, cameraFor, viewBasis };
+  S3.viewCube = { FACES, cellDirection, compassEntries, compassScreenPoints, hitTest, cameraFor, viewBasis };
   S3.createViewCube = createViewCube;
 })();

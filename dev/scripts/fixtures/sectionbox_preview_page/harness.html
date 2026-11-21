@@ -469,6 +469,62 @@
     return R;
   };
 
+  scenarios.cube_robustness = () => {
+    const S = window.pyRevitScene3D;
+    const V = S.viewCube;
+    const R = { letters: {} };
+    for (const [name, camera] of [["front", { yaw: -Math.PI / 2, pitch: 0 }], ["tilted", { yaw: -Math.PI / 4, pitch: 0.6 }], ["top", { yaw: -Math.PI / 2, pitch: Math.PI / 2 }]]) {
+      for (const north of [0, 0.45]) {
+        const points = V.compassScreenPoints(camera, 120, north);
+        R.letters[name + ":" + north] = Object.entries(points).map(([key, [x, y]]) => {
+          const hit = V.hitTest(camera, 120, x, y, north);
+          return hit && hit.kind === "compass" ? hit.key === key : false;
+        }).every(Boolean);
+      }
+    }
+    const camera = { yaw: -Math.PI / 4, pitch: 0.6 };
+    let changes = 0;
+    const cube = S.createViewCube({ parent: document.getElementById("app"), getCamera: () => camera, onChange: () => changes++ });
+    const rect = cube.element.getBoundingClientRect();
+    const fire = (type, x, y, id) => cube.element.dispatchEvent(new PointerEvent(type, { clientX: rect.left + x, clientY: rect.top + y, bubbles: true, pointerId: id }));
+    fire("pointerdown", 60, 60, 1);
+    fire("pointerdown", 20, 20, 2);
+    fire("pointermove", 100, 20, 2);
+    R.second_finger_move = [changes, camera.yaw];
+    fire("pointermove", 80, 60, 1);
+    R.owner_move = changes;
+    fire("pointerup", 20, 20, 2);
+    fire("pointermove", 90, 60, 1);
+    R.after_foreign_up = changes;
+    fire("pointercancel", 90, 60, 1);
+    const yawAtCancel = camera.yaw;
+    fire("pointermove", 120, 70, 1);
+    R.after_cancel = [changes > 0, camera.yaw === yawAtCancel];
+    fire("pointerdown", 60, 60, 3);
+    fire("pointerup", 60, 60, 3);
+    R.fresh_gesture_after_cancel = true;
+    cube.element.dispatchEvent(new PointerEvent("lostpointercapture", { pointerId: 3, bubbles: true }));
+    return R;
+  };
+
+  scenarios.stream_error_clears_requests = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    p._onEvent("sources", { done: true, truncated: 3, dropped: [{ source: 0, group: "Pipes", link: null, hidden: false, count: 3 }] });
+    p.requestGroup("0|Pipes");
+    const before = [p.groups.get("0|Pipes").requested, document.querySelector(".sbp-chip a.sbp-link").classList.contains("sbp-disabled")];
+    p._onEvent("error", { message: "stream failed" });
+    return {
+      before,
+      after: [p.groups.get("0|Pipes").requested, document.querySelector(".sbp-chip a.sbp-link").classList.contains("sbp-disabled")],
+      status: document.querySelector(".sbp-status-text").textContent,
+    };
+  };
+
   scenarios.top_view = () => {
     const app = window.pyRevitSectionBoxPreview;
     app.mount("app", {

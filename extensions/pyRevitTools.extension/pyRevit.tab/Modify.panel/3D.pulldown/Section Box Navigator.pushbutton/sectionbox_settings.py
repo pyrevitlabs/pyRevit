@@ -50,10 +50,14 @@ def clean_settings(data):
 
 
 def parse_settings(text):
-    """Return the settings stored in JSON ``text``, empty when it is missing or broken."""
+    """Return the settings stored in JSON ``text``, empty when it is missing or broken.
+
+    The config reader turns a hand-edited ``true`` or ``{}`` into a bool or
+    dict rather than text, so anything but a string counts as broken too.
+    """
     try:
         return clean_settings(json.loads(text)) if text else {}
-    except ValueError:
+    except (TypeError, ValueError):
         return {}
 
 

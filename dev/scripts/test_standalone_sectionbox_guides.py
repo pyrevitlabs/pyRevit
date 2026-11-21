@@ -118,6 +118,13 @@ class RepeatedGridTests(unittest.TestCase):
         self.assertEqual(self.names([host, drifting]), ["A", "A"])
         self.assertEqual(self.names([host, shifted_end]), ["A"])
 
+    def test_endpoint_order_does_not_change_whether_grids_repeat(self):
+        link = grid("A", 0, 0, 1000, 0, True)
+        forward = grid("B", 0, 0, 1000, 8)
+        reversed_ends = grid("B", 1000, 8, 0, 0)
+        self.assertEqual(self.names([forward, link]), ["B", "A"])
+        self.assertEqual(self.names([reversed_ends, link]), ["B", "A"])
+
     def test_a_short_linked_grid_along_a_long_host_grid_is_a_repeat(self):
         host = grid("A", 0, 0, 1000, 0)
         self.assertEqual(
@@ -173,6 +180,10 @@ class RememberedSettingsTests(unittest.TestCase):
         self.assertEqual(clean({"sideWidth": 99999}), {"sideWidth": 1200.0})
         self.assertEqual(clean({"sideWidth": "wide"}), {})
         self.assertEqual(clean({"sideWidth": None}), {})
+
+    def test_values_the_config_reader_returns_as_non_text_are_ignored(self):
+        for stored in (True, False, 5, {"model": False}, ["x"]):
+            self.assertEqual(self.settings.parse_settings(stored), {})
 
     def test_missing_or_broken_config_text_gives_no_settings(self):
         for text in ("", None, "{broken", "[1, 2]", "42"):

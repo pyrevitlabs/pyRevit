@@ -416,6 +416,23 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
         self.assertEqual(result["reset"], ["", None])
         self.assertIsNone(result["saved_after_reset"])
 
+    def test_cube_compass_letters_hit_their_own_center_in_every_view(self):
+        result = self.scenario("cube_robustness")
+        self.assertTrue(all(result["letters"].values()), result["letters"])
+
+    def test_cube_drag_belongs_to_the_pointer_that_started_it(self):
+        result = self.scenario("cube_robustness")
+        self.assertEqual(result["second_finger_move"][0], 0)
+        self.assertEqual(result["owner_move"], 1)
+        self.assertEqual(result["after_foreign_up"], 2)
+        self.assertEqual(result["after_cancel"], [True, True])
+
+    def test_a_failed_stream_re_enables_the_load_links(self):
+        result = self.scenario("stream_error_clears_requests")
+        self.assertEqual(result["before"], [True, True])
+        self.assertEqual(result["after"], [False, False])
+        self.assertEqual(result["status"], "stream failed")
+
     def test_webgl_context_draws_guides_and_the_hovered_element(self):
         try:
             result = run_scenario(self.browser, "gl_smoke", gl=True)

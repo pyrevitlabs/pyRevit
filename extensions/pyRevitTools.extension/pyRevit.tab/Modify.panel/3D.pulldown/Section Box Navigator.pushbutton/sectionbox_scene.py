@@ -144,22 +144,44 @@ class _Entry(object):
 def _near_focus(bbox, transform, focus):
     """Tell whether ``bbox`` (in its own document) touches the world box ``focus``.
 
-    A linked element is tested by the sphere around its transformed center, so
-    its eight corners need no transform.
+    A host element is tested by its own bounds. A linked element is first
+    tested by the sphere around its transformed center, which costs one point
+    transform, and only a candidate that passes gets its eight corners
+    transformed for the tight test, so a long wall just outside the box does
+    not outrank the geometry inside it.
     """
     if focus is None:
         return False
-    center = (bbox.Min + bbox.Max) * 0.5
-    radius = (bbox.Max - bbox.Min).GetLength() * 0.5
-    if transform is not None:
-        center = transform.OfPoint(center)
+    if transform is None:
+        low, high = bbox.Min, bbox.Max
+    else:
+        center = transform.OfPoint((bbox.Min + bbox.Max) * 0.5)
+        radius = (bbox.Max - bbox.Min).GetLength() * 0.5
+        if not _overlaps_box(
+            center - DB.XYZ(radius, radius, radius),
+            center + DB.XYZ(radius, radius, radius),
+            focus,
+        ):
+            return False
+        corners = [transform.OfPoint(c) for c in box_corners(bbox.Min, bbox.Max)]
+        xs, ys, zs = (
+            [c.X for c in corners],
+            [c.Y for c in corners],
+            [c.Z for c in corners],
+        )
+        low = DB.XYZ(min(xs), min(ys), min(zs))
+        high = DB.XYZ(max(xs), max(ys), max(zs))
+    return _overlaps_box(low, high, focus)
+
+
+def _overlaps_box(low, high, focus):
     return (
-        center.X + radius >= focus.Min.X
-        and center.X - radius <= focus.Max.X
-        and center.Y + radius >= focus.Min.Y
-        and center.Y - radius <= focus.Max.Y
-        and center.Z + radius >= focus.Min.Z
-        and center.Z - radius <= focus.Max.Z
+        high.X >= focus.Min.X
+        and low.X <= focus.Max.X
+        and high.Y >= focus.Min.Y
+        and low.Y <= focus.Max.Y
+        and high.Z >= focus.Min.Z
+        and low.Z <= focus.Max.Z
     )
 
 
@@ -244,17 +266,25 @@ class ModelStream(object):
         for source, (doc, transform, title) in enumerate(self._sources()):
             if self.links_only and source == 0:
                 continue
-            ids = _model_element_ids(doc)
-            self._read_total += len(ids)
-            queue.append((source, doc, transform, title, ids))
+            queue.append([source, doc, transform, title, None])
         self._reading = {"queue": queue, "position": 0, "entries": []}
 
     def _read_some(self, deadline):
-        """Read elements until ``deadline``; return True once all are read."""
+        """Read elements until ``deadline``; return True once all are read.
+
+        The native id collection of one source cannot be interrupted, so each
+        call collects at most the sources it reaches before the deadline and
+        always at least one, which keeps a model with many large links from
+        blocking its first chunk.
+        """
         reading = self._reading
         queue = reading["queue"]
         while queue:
             source, doc, transform, title, ids = queue[0]
+            if ids is None:
+                ids = _model_element_ids(doc)
+                queue[0][4] = ids
+                self._read_total += len(ids)
             position = reading["position"]
             while position < len(ids):
                 if position % 64 == 0 and time.time() >= deadline:
@@ -267,6 +297,8 @@ class ModelStream(object):
                     reading["entries"].append(entry)
             queue.pop(0)
             reading["position"] = 0
+            if queue and time.time() >= deadline:
+                return False
         entries = reading["entries"]
         entries.sort(key=lambda entry: (entry.source, not entry.near, -entry.size))
         self._entries = entries
