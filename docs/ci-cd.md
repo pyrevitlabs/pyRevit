@@ -1,8 +1,8 @@
 # CI/CD and release flow
 
-This guide explains how GitHub Actions and the C# ModularPipelines project in [`build/`](../build/) work together: integrating work on **`develop`** (WIP builds), shipping from **`master`** via signed Git tags (releases), how versions are bumped, and the manual maintainer ritual that drives a release.
+This guide explains how GitHub Actions and the C# ModularPipelines project in [`build/`](https://github.com/pyrevitlabs/pyRevit/tree/develop/build) work together: integrating work on **`develop`** (WIP builds), shipping from **`master`** via signed Git tags (releases), how versions are bumped, and the manual maintainer ritual that drives a release.
 
-CI/CD and local product builds are driven by `dotnet run` in [`build/`](../build/README.md).
+CI/CD and local product builds are driven by `dotnet run` in [`build/`](https://github.com/pyrevitlabs/pyRevit/blob/develop/build/README.md).
 
 ## Branches and roles
 
@@ -26,6 +26,7 @@ pyRevit's build and release pipeline is split across workflows in [`.github/work
 | **`Push Chocolatey packages`** | [`choco.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/choco.yml) | After a GitHub release is **published**, downloads the signed `pyrevit` and `pyrevit-cli` `.nupkg` files from that release and runs `dotnet run -- choco` under **`production`** to push them to the Chocolatey community feed. Can also be dispatched with a release tag to push again. |
 | **`pyRevit Revit integration tests`** | [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) | Signs `bin/` with a throwaway certificate, launches Revit 2022-2027 by default, and fails if any of them shows the unsigned add-in dialog. Needs a self-hosted runner with Revit; see [Revit integration tests](#revit-integration-tests). |
 | **`pyRevitDocsCI`** | [`docs.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs.yml) | Builds the mkdocs site and deploys it to the `gh-pages` branch with `.github/scripts/publish-gh-pages.sh`, which keeps `pr-preview/` intact. Runs on pushes to the `docs` branch that touch `mkdocs.yml`, `docs/`, `pyrevitlib/` or root `*.md` files, on PRs into `master` with the same paths, and on manual dispatch. It does not use the ModularPipelines project. |
+| **`pyRevit Docs Check`** | [`docs-check.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-check.yml) | Runs `mkdocs build --strict` on pull requests that touch `docs/`, `mkdocs.yml`, `pyrevitlib/pyrevit/`, root `*.md` files or `Pipfile.lock`, and fails on any build warning (a docstring griffe cannot parse, a broken link). Read-only; it publishes nothing. |
 | **`pyRevit Docs Preview`**, **`pyRevit Docs Preview Deploy`** | [`docs-preview.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview.yml), [`docs-preview-deploy.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview-deploy.yml) | Publishes a preview of the docs for pull requests that touch `docs/` or `mkdocs.yml`. See [Docs previews](#docs-previews). |
 | **`issues-manager`**, **`Close inactive issues`** | [`issues-manager.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/issues-manager.yml), [`stale-issues.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/stale-issues.yml) | Issue housekeeping: slash commands and the `needs-more-info` follow-up on comments, and a daily job that marks `needs-more-info` issues stale after 60 days without activity and closes them 14 days later. |
 
@@ -170,7 +171,7 @@ CLI download order:
 6. NuGet `PyRevit.UnsignedBin` (when `GITHUBTOKEN` is set)
 7. Actions artifacts (when `GITHUBTOKEN` is set)
 
-See also [`build/README.md`](../build/README.md) and the [developer guide](dev-guide.md).
+See also [`build/README.md`](https://github.com/pyrevitlabs/pyRevit/blob/develop/build/README.md) and the [developer guide](dev-guide.md).
 
 ## Feature or fix → `develop` (WIP)
 
@@ -315,7 +316,7 @@ Use the target framework already referenced by the consuming pyRevit project, an
 | `pyrevitlib/pyrevit/version` | Full **build** version string used across the product (drives the `v*` tag name). |
 | `release/version` | **Install** / marketing version used for installers and the release title. |
 
-CI and local product builds invoke the ModularPipelines project from [`build/`](../build/) via `dotnet run`:
+CI and local product builds invoke the ModularPipelines project from [`build/`](https://github.com/pyrevitlabs/pyRevit/tree/develop/build) via `dotnet run`:
 
 | Command | When / purpose |
 |---------|----------------|

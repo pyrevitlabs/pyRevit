@@ -243,7 +243,7 @@ class PyRevitOutputWindow(object):
         Args:
             element_tag (str): html tag of the element e.g. 'div'
             element_contents (str): html code of the element contents
-            attribs (:obj:`dict`): dictionary of attribute names and value
+            attribs (dict): dictionary of attribute names and value
 
         Examples:
             ```python
@@ -263,7 +263,7 @@ class PyRevitOutputWindow(object):
         Args:
             element_tag (str): html tag of the element e.g. 'div'
             element_contents (str): html code of the element contents
-            attribs (:obj:`dict`): dictionary of attribute names and value
+            attribs (dict): dictionary of attribute names and value
 
         Examples:
             ```python
@@ -282,7 +282,7 @@ class PyRevitOutputWindow(object):
 
         Args:
             script_code (str): javascript code
-            attribs (:obj:`dict`): dictionary of attribute names and value
+            attribs (dict): dictionary of attribute names and value
             body (bool, optional): injects script into body instead of head
 
         Examples:
@@ -299,7 +299,7 @@ class PyRevitOutputWindow(object):
 
         Args:
             style_code (str): css styling code
-            attribs (:obj:`dict`): dictionary of attribute names and value
+            attribs (dict): dictionary of attribute names and value
 
         Examples:
             ```python

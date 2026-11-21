@@ -92,9 +92,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <summary>
         /// True when rolling back the active document's group threw, did not report it rolled
-        /// back, or left the model different from before the run (an element the run deleted is
-        /// still missing, or one it added is still there), so the run's changes may still be in
-        /// the model.
+        /// back, or left the model different from before the run (an element that existed before
+        /// and that the run deleted is still missing, or one it added is still there), so the
+        /// run's changes may still be in the model.
         /// </summary>
         /// <remarks>
         /// The model is checked even when the group already ended before the rollback was
@@ -584,6 +584,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly HashSet<ElementId> modified = new HashSet<ElementId>();
         private readonly HashSet<ElementId> deleted = new HashSet<ElementId>();
         private readonly List<string> transactions = new List<string>();
+        private bool recordedAddition;
 
         public bool IsEmpty => added.Count == 0 && modified.Count == 0 && deleted.Count == 0;
 
@@ -593,8 +594,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             added.Concat(modified).Distinct().ToList();
 
         /// <summary>
-        /// True when, after a rollback, an element the run deleted is still missing from
-        /// <paramref name="document"/> or an element it added is still there.
+        /// True when, after a rollback, an element that existed before the run and that the run
+        /// deleted is still missing from <paramref name="document"/>, or an element it added is
+        /// still there.
         /// </summary>
         /// <remarks>
         /// Warning: a group's <c>RollBack()</c> status cannot prove the rollback worked. A
@@ -607,15 +609,41 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// it, so a modification that survives a flushed undo stack is invisible here unless
         /// the run also added or deleted an element.
         /// </para>
+        /// <para>
+        /// Invariant: <c>deleted</c> may hold elements the run created itself. Loading a family
+        /// creates elements that <c>DocumentChanged</c> never lists as added, and overwriting or
+        /// reloading the family later reports them as deleted. They are missing after every
+        /// rollback. Such elements only exist in a run that also recorded an added element (the
+        /// family itself), so a run that never recorded one counts every missing deleted
+        /// element. Otherwise only ids up to <see cref="AgentIds.HighestValue"/> count as
+        /// elements that existed before the run. The highest id is read from the document after
+        /// the rollback, only when a deleted element is missing; a failed rollback can only
+        /// raise it and make this check stricter, and leaves the recorded added elements in the
+        /// model, which the first half of this check reports. A lost element goes unnoticed
+        /// only when the run recorded an addition that is gone from the model again, and the
+        /// lost element has an id above every element left in the model.
+        /// </para>
         /// </remarks>
         public bool LeavesTracesAfterRollback(Document document) {
-            return deleted.Any(id => document.GetElement(id) == null)
-                || added.Any(id => document.GetElement(id) != null);
+            return added.Any(id => document.GetElement(id) != null)
+                || DeletedElementsStillMissing(document);
+        }
+
+        private bool DeletedElementsStillMissing(Document document) {
+            var missing = deleted.Where(id => document.GetElement(id) == null).ToList();
+            if (missing.Count == 0)
+                return false;
+            if (!recordedAddition)
+                return true;
+            var highestExisting = AgentIds.HighestValue(document);
+            return missing.Any(id => AgentIds.ToValue(id) <= highestExisting);
         }
 
         public void Record(DocumentChangedEventArgs e) {
-            foreach (var id in e.GetAddedElementIds())
+            foreach (var id in e.GetAddedElementIds()) {
                 added.Add(id);
+                recordedAddition = true;
+            }
             foreach (var id in e.GetDeletedElementIds()) {
                 if (!added.Remove(id))
                     deleted.Add(id);

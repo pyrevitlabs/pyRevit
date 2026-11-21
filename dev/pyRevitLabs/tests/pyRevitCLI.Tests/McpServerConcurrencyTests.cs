@@ -280,11 +280,12 @@ public partial class McpServerTests {
     [Fact]
     public async Task RevitSessionsServingAnotherClientAreListedBusyWithoutWaitingForEachOther() {
         host.AddInstance("2091");
+        host.AddInstance("2092");
         using var release = new ManualResetEventSlim(false);
-        using var received = new CountdownEvent(2);
+        using var received = new CountdownEvent(3);
         host.Handler = request => {
             received.Signal();
-            release.Wait(Patience);
+            release.Wait(TimeSpan.FromSeconds(30));
             return RunResponse(request);
         };
         PyRevitAgentClient.PingConnectTimeoutMs = 3000;
@@ -303,8 +304,8 @@ public partial class McpServerTests {
             Assert.True(entry.Value<bool>("busy"));
             Assert.Null(entry["responding"]);
         });
-        Assert.Equal(2, Payload(listed)["instances"].Count());
-        Assert.InRange(watch.Elapsed, TimeSpan.FromSeconds(2.9), TimeSpan.FromSeconds(5.5));
+        Assert.Equal(3, Payload(listed)["instances"].Count());
+        Assert.InRange(watch.Elapsed, TimeSpan.FromSeconds(2.9), TimeSpan.FromSeconds(8));
     }
 
     [Fact]
