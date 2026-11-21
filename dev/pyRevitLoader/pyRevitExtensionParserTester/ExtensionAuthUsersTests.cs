@@ -213,6 +213,72 @@ namespace pyRevitExtensionParserTester
             Assert.That(InvokeIsExtensionAllowed(new ExtensionManagerService(), parsed), Is.True);
         }
 
+        [TestCase("\"authusers\": \"SomeoneElse\"")]
+        [TestCase("\"authgroups\": \"S-1-5-32-544\"")]
+        [TestCase("\"authusers\": 5")]
+        [TestCase("\"authgroups\": {\"sid\": \"S-1-5-32-544\"}")]
+        [TestCase("\"authusers\": [\"\", \"  \"]")]
+        [TestCase("\"authgroups\": [\"\"]")]
+        public void MalformedAccessListInRegistryEntryIsRefused(string accessList)
+        {
+            var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "RegistryMalformedAuthExt");
+            var registryPath = Path.Combine(TestTempDir, "extensions.json");
+            File.WriteAllText(
+                registryPath,
+                "{\"extensions\": [{\"name\": \"RegistryMalformedAuthExt\", \"type\": \"extension\", " + accessList + "}]}");
+            var errors = new ErrorCapture();
+
+            ClearAllCaches();
+            SetLogger(errors);
+            ParsedExtension parsed;
+            try
+            {
+                parsed = ParseInstalledExtensions(extPath).Single();
+            }
+            finally
+            {
+                SetLogger(null);
+            }
+
+            Assert.That(parsed.AuthDefinitionUnreadable, Is.True);
+            Assert.That(InvokeIsExtensionAllowed(new ExtensionManagerService(), parsed), Is.False);
+            Assert.That(
+                errors.Messages,
+                Has.Some.Contains(
+                    "Access list in registry entry 'RegistryMalformedAuthExt' in " + registryPath + " could not be read"));
+        }
+
+        [TestCase("\"authusers\": []")]
+        [TestCase("\"authusers\": null, \"authgroups\": null")]
+        [TestCase("\"author\": \"someone\"")]
+        public void RegistryEntryWithoutAccessListLeavesExtensionAvailable(string accessList)
+        {
+            var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "RegistryNoAuthExt");
+            File.WriteAllText(
+                Path.Combine(TestTempDir, "extensions.json"),
+                "{\"extensions\": [{\"name\": \"RegistryNoAuthExt\", \"type\": \"extension\", " + accessList + "}]}");
+
+            ClearAllCaches();
+            var parsed = ParseInstalledExtensions(extPath).Single();
+
+            Assert.That(parsed.AuthDefinitionUnreadable, Is.False);
+            Assert.That(InvokeIsExtensionAllowed(new ExtensionManagerService(), parsed), Is.True);
+        }
+
+        [Test]
+        public void MalformedRegistryEntryForAnotherExtensionDoesNotAffectThisOne()
+        {
+            var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "RegistryNeighbourExt");
+            File.WriteAllText(
+                Path.Combine(TestTempDir, "extensions.json"),
+                "{\"extensions\": [{\"name\": \"OtherExt\", \"type\": \"extension\", \"authusers\": \"SomeoneElse\"}]}");
+
+            ClearAllCaches();
+            var parsed = ParseInstalledExtensions(extPath).Single();
+
+            Assert.That(parsed.AuthDefinitionUnreadable, Is.False);
+        }
+
         [Test]
         public void ApplyRegistryAuthorization_ReadsRegistriesOfAllConfiguredRoots_RegardlessOfOrder()
         {
@@ -260,6 +326,15 @@ namespace pyRevitExtensionParserTester
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(method, Is.Not.Null);
             return (bool)method!.Invoke(service, new object[] { extension })!;
+        }
+
+        private sealed class ErrorCapture : IParserLogger
+        {
+            public List<string> Messages { get; } = new List<string>();
+            public void Debug(string message) { }
+            public void Info(string message) { }
+            public void Warning(string message) { }
+            public void Error(string message) => Messages.Add(message);
         }
     }
 }
