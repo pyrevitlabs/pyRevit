@@ -9,7 +9,7 @@ Now let's create another function that installs the pyRevit extensions we need. 
 ```powershell
 # install extensions
 function Install-Extensions() {
-    # make sure paths exits and are clean
+    # make sure the extensions folder exists. installed extensions are kept
     Confirm-Path $pyrevitexts
 
     # install extensions now
