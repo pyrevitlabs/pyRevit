@@ -75,16 +75,22 @@ def _references_wpf(node):
 _DEFERRED_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
 
 
+def _live_children(node):
+    if isinstance(node, ast.If) and isinstance(node.test, ast.Constant):
+        return [node.test] + (node.body if node.test.value else node.orelse)
+    return [
+        child
+        for child in ast.iter_child_nodes(node)
+        if not isinstance(child, _DEFERRED_SCOPES)
+    ]
+
+
 def _import_time_nodes(tree):
     pending = [tree]
     while pending:
         node = pending.pop()
         yield node
-        pending.extend(
-            child
-            for child in ast.iter_child_nodes(node)
-            if not isinstance(child, _DEFERRED_SCOPES)
-        )
+        pending.extend(_live_children(node))
 
 
 def _first_line(nodes, predicate):
@@ -103,14 +109,18 @@ def wpf_use_before_reference(source, filename="<script>"):
     """Return the line of the first unreferenced ``System.Windows`` use, or None.
 
     Note:
-        Only WPF loads that run at import time count; loads inside function
-        or lambda bodies are ignored because nothing guarantees they are called.
+        Only statements that run at import time are compared. Function and
+        lambda bodies are ignored: their uses are deferred until a call, and
+        their loads may never run. Branches of an ``if`` whose test is a
+        constant (``if False:``, ``if 0:``, the ``else`` of ``if True:``) that
+        can never execute are ignored too. Other blocks such as ``try`` count.
     """
     tree = ast.parse(source, filename)
-    use_line = _first_line(ast.walk(tree), _uses_system_windows)
+    nodes = list(_import_time_nodes(tree))
+    use_line = _first_line(nodes, _uses_system_windows)
     if use_line is None:
         return None
-    reference_line = _first_line(_import_time_nodes(tree), _references_wpf)
+    reference_line = _first_line(nodes, _references_wpf)
     if reference_line is not None and reference_line < use_line:
         return None
     return use_line
@@ -150,6 +160,31 @@ class WpfUseBeforeReferenceTests(unittest.TestCase):
             "from System import Windows\n"
         )
         self.assertEqual(wpf_use_before_reference(source), 3)
+
+    def test_use_in_function_called_after_framework_import_is_accepted(self):
+        source = (
+            "def show():\n"
+            "    from System import Windows\n"
+            "from pyrevit import framework\n"
+            "show()\n"
+        )
+        self.assertIsNone(wpf_use_before_reference(source))
+
+    def test_framework_import_in_inactive_branch_is_flagged(self):
+        source = (
+            "if False:\n    from pyrevit import framework\nfrom System import Windows\n"
+        )
+        self.assertEqual(wpf_use_before_reference(source), 3)
+
+    def test_framework_import_in_try_block_is_accepted(self):
+        source = (
+            "try:\n"
+            "    from pyrevit import framework\n"
+            "except ImportError:\n"
+            "    pass\n"
+            "from System import Windows\n"
+        )
+        self.assertIsNone(wpf_use_before_reference(source))
 
 
 class EngineTestsScriptsTests(unittest.TestCase):
