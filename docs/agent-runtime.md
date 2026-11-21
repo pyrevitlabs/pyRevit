@@ -679,6 +679,10 @@ even while the session that made it is still open.
 
 ### Session recorder
 
+!!! note "pyRevit 7.2.0 or later"
+
+    The session recorder is not part of pyRevit 7.1.0.
+
 An agent only sees a bug through what the user says afterwards. The session recorder records what happens in Revit between two
 explicit user actions, so the agent can read the sequence that led to a bug.
 
