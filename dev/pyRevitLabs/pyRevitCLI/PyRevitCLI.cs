@@ -60,6 +60,9 @@ namespace pyRevitCLI {
         Caches,
         Config,
         Configs,
+        ConfigsRoutes,
+        ConfigsAgent,
+        ConfigsTelemetry,
         Doctor,
         Agent,
         Mcp,
@@ -759,7 +762,11 @@ namespace pyRevitCLI {
 
             else if (all("configs")) {
                 if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Configs);
+                    PyRevitCLIAppHelps.PrintHelp(
+                        all("routes") ? PyRevitCLICommandType.ConfigsRoutes
+                        : all("agent") ? PyRevitCLICommandType.ConfigsAgent
+                        : all("telemetry") ? PyRevitCLICommandType.ConfigsTelemetry
+                        : PyRevitCLICommandType.Configs);
 
                 else if (all("bincache")) {
                     if (any("enable", "disable"))
@@ -1075,7 +1082,7 @@ namespace pyRevitCLI {
                                 configSection, configOption, arguments["enable"].IsTrue);
                         }
                         else
-                            PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
+                            ReportInvalidOptionPath(orignalOptionValue);
                     }
                 }
 
@@ -1102,7 +1109,7 @@ namespace pyRevitCLI {
                             }
                         }
                         else
-                            PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
+                            ReportInvalidOptionPath(orignalOptionValue);
                     }
                 }
             }
@@ -1125,6 +1132,14 @@ namespace pyRevitCLI {
         }
 
         // internal helper functions:
+        private static void ReportInvalidOptionPath(string optionPath) {
+            System.Console.Error.WriteLine(
+                "Error: \"{0}\" is neither a configs command nor a \"section:option\" path. "
+                + "Run 'pyrevit configs --help' to list the configs commands.",
+                optionPath);
+            Environment.ExitCode = -1;
+        }
+
         private static bool all(params string[] keywords) {
             logger.Debug("Checking for all: {0}", string.Join(",", keywords));
             foreach (var keyword in keywords)

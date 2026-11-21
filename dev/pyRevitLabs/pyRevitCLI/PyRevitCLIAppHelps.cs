@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using pyRevitLabs.Common.Extensions;
+using pyRevitLabs.PyRevit;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitCLI {
@@ -481,6 +482,59 @@ namespace pyRevitCLI {
                             { "--lock",                 "Lock seed file by admin user" },
                             { "<option_path>",          "Custom option path formatted as \"section:option\"" },
                             { "<option_value>",         "Custom option value" },
+                        });
+                    break;
+
+                case PyRevitCLICommandType.ConfigsRoutes:
+                    BuildHelp(
+                        new List<string>() { "configs routes" },
+                        header: "Configure the pyRevit Routes server.\n"
+                                + "Run a command without a value to print the current setting.",
+                        commands: new Dictionary<string, string>() {
+                            { "port",                   "Port the Routes server listens on (default " + PyRevitConsts.ConfigsRoutesPortDefault + ")" },
+                            { "coreapi",                "Load the Routes core API endpoints" },
+                        },
+                        options: new Dictionary<string, string>() {
+                            { "enable | disable",       "Enable/Disable the Routes server, or the core API" },
+                            { "<port_number>",          "Port number for the Routes server" },
+                        });
+                    break;
+
+                case PyRevitCLICommandType.ConfigsAgent:
+                    BuildHelp(
+                        new List<string>() { "configs agent" },
+                        header: "Configure the pyRevit agent host in Revit.\n"
+                                + "Run a command without a value to print the current setting.",
+                        commands: new Dictionary<string, string>() {
+                            { "policy",                 "What agent scripts may do to the model" },
+                            { "engine",                 "Python engine for agent runs that do not name one (default ironpython)" },
+                            { "skills",                 "Let the agent use the user's own skills" },
+                            { "reckless",               "Run scripts without a timeout and transaction tracking; needs confirmation in Revit" },
+                        },
+                        options: new Dictionary<string, string>() {
+                            { "enable | disable",       "Start the host on the next pyRevit load, or turn the option off" },
+                            { "readonly",               "Queries and dry runs only" },
+                            { "ask",                    "Each modify run needs approval in Revit (default)" },
+                            { "auto",                   "Modify runs are committed without the approval prompt" },
+                            { "ironpython | cpython",   "Engine for agent runs" },
+                        });
+                    break;
+
+                case PyRevitCLICommandType.ConfigsTelemetry:
+                    BuildHelp(
+                        new List<string>() { "configs telemetry" },
+                        header: "Configure script telemetry.\n"
+                                + "Run a command without a value to print the current setting.",
+                        commands: new Dictionary<string, string>() {
+                            { "utc",                    "Use UTC timestamps instead of local time" },
+                            { "file",                   "Folder that receives the telemetry files" },
+                            { "server",                 "Url of the telemetry server" },
+                            { "hooks",                  "Send telemetry for hooks too" },
+                        },
+                        options: new Dictionary<string, string>() {
+                            { "enable | disable",       "Enable/Disable script telemetry" },
+                            { "yes | no",               "Activate/Deactivate config option" },
+                            { "<dest_path>",            "Telemetry folder for file, telemetry server url for server" },
                         });
                     break;
             }
