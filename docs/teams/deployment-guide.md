@@ -142,7 +142,7 @@ function Confirm-Path ([string] $targetpath) {
 
 function Remove-Clone ([string] $clonepath) {
     If (Test-Path -LiteralPath $clonepath) {
-        Remove-Item -LiteralPath $clonepath -Recurse -Force
+        Remove-Item -LiteralPath $clonepath -Recurse -Force -ErrorAction Stop
     }
 }
 ```

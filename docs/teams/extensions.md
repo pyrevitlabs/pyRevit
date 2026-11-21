@@ -23,6 +23,10 @@ function Install-Extensions() {
 }
 ```
 
+!!! warning ""
+
+    `pyrevit extensions update` overwrites local edits to the tracked files of the extension. Do not edit a deployed extension in place: change it in its repository and deploy again.
+
 ## Customizing pyRevit for Your Team
 
 If you need to deploy your own pyRevit core, or extensions, modify the command above as shown. See [Manage pyRevit clones](../cli/clones.md) to see all the options on the `clone` and `extend` commands used here
