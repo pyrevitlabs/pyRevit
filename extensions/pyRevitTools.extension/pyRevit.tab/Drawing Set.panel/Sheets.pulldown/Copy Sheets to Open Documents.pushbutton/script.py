@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+import System
 
 from pyrevit.framework import to_clr_list
 from pyrevit import forms
@@ -38,16 +39,6 @@ class OptionSet:
 
         # self.op_update_exist_vport_locations = \
         #    Option('Update Existing Viewport Locations')
-
-
-class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
-    """Handle copy and paste errors."""
-
-    __namespace__ = "pyrevittools.copy_sheets_to_open_documents"
-
-    def OnDuplicateTypeNamesFound(self, args):
-        """Use destination model types if duplicate."""
-        return DB.DuplicateTypeAction.UseDestinationTypes
 
 
 def get_user_options():
@@ -209,7 +200,7 @@ def copy_view_contents(
             return False
 
     cp_options = DB.CopyPasteOptions()
-    cp_options.SetDuplicateTypeNamesHandler(CopyUseDestination())
+    cp_options.SetDuplicateTypeNamesHandler(revit.create.CopyUseDestination())
 
     if elements_ids:
         with revit.Transaction("Copy View Contents", doc=dest_doc, swallow_errors=True):
@@ -314,7 +305,7 @@ def copy_viewport_types(activedoc, vport_type, vport_typename, dest_doc, newvpor
     ]
 
     cp_options = DB.CopyPasteOptions()
-    cp_options.SetDuplicateTypeNamesHandler(CopyUseDestination())
+    cp_options.SetDuplicateTypeNamesHandler(revit.create.CopyUseDestination())
 
     if vport_typename not in dest_vport_typenames:
         with revit.Transaction(
@@ -560,7 +551,7 @@ def copy_sheet_guides(activedoc, source_sheet, dest_doc, dest_sheet):
         if not find_guide(source_sheet_guide_element.Name, dest_doc):
             # copy guides to dest_doc
             cp_options = DB.CopyPasteOptions()
-            cp_options.SetDuplicateTypeNamesHandler(CopyUseDestination())
+            cp_options.SetDuplicateTypeNamesHandler(revit.create.CopyUseDestination())
 
             with revit.Transaction("Copy Sheet Guide", doc=dest_doc):
                 DB.ElementTransformUtils.CopyElements(
