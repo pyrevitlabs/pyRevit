@@ -12069,6 +12069,10 @@ instance, including per-launch sessions, shares this folder, so a host start or 
 recorded run, in the same Revit session or another one, can delete a record older than 14 days
 even while the session that made it is still open.</p>
 <h3 id="session-recorder">Session recorder</h3>
+<div class="admonition note">
+<p class="admonition-title">pyRevit 7.2.0 or later</p>
+<p>The session recorder is not part of pyRevit 7.1.0.</p>
+</div>
 <p>An agent only sees a bug through what the user says afterwards. The session recorder records what happens in Revit between two
 explicit user actions, so the agent can read the sequence that led to a bug.</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>record<span class="w"> </span>start<span class="w"> </span><span class="o">[</span>--no-screenshots<span class="o">]</span><span class="w"> </span><span class="o">[</span>--screenshot-interval<span class="o">=</span><span class="m">5</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--max-screenshots<span class="o">=</span><span class="m">20</span><span class="o">]</span>
