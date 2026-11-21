@@ -68,7 +68,7 @@ def shown(content):
             using (Py.GIL()) {
                 using var scope = Py.CreateScope();
                 scope.Exec(Common + "holder = System.Collections.ArrayList()\nfor value in (5, 2 ** 40, 2 ** 80, True, -2 ** 63, 2 ** 63 - 1, -2 ** 63 - 1, 2 ** 63):\n    holder.Add(value)\nassert holder[0] == 5 and holder[2] == 2 ** 80\n");
-                holder = (ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList));
+                holder = (ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList))!;
             }
             Assert.IsType<int>(holder[0]);
             Assert.IsType<long>(holder[1]);
@@ -215,7 +215,7 @@ assert read(Point(3, 4), 'y') == '4'
             using (Py.GIL()) {
                 using var scope = Py.CreateScope();
                 scope.Exec(Common + "class Model(object):\n    def __init__(self):\n        self.flag = True\n        self.count = 7\n        self.big = 2 ** 40\n        self.ratio = 0.5\n        self.text = 'hello'\n        self.nothing = None\n        self.values = [1]\nholder = System.Collections.ArrayList()\nholder.Add(Model())\n");
-                proxy = ((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+                proxy = ((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList))!)[0]!;
             }
             var properties = TypeDescriptor.GetProperties(proxy);
             Assert.Equal(true, properties["flag"]!.GetValue(proxy));
@@ -289,7 +289,7 @@ assert mirror.Text == 'synced'
             using (Py.GIL()) {
                 using var scope = Py.CreateScope();
                 scope.Exec(Common + "holder = System.Collections.ArrayList()\nholder.Add(Item('a', 1))\n");
-                proxy = ((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+                proxy = ((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList))!)[0]!;
             }
             var notifier = Assert.IsAssignableFrom<INotifyPropertyChanged>(proxy);
             var changed = new List<string?>();
@@ -457,7 +457,7 @@ assert box.Items.Count == 2
             using (Py.GIL()) {
                 using var scope = Py.CreateScope();
                 scope.Exec(Common + "holder = System.Collections.ArrayList()\nholder.Add(Controls.ListBox())\nholder[0].ItemsSource = ['a', 'b']\n");
-                var box = (System.Windows.Controls.ListBox)((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+                var box = (System.Windows.Controls.ListBox)((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList))!)[0]!;
                 list = (IList)box.ItemsSource;
             }
             Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(-1, "x"));
@@ -477,7 +477,7 @@ assert box.Items.Count == 2
             using (Py.GIL()) {
                 using var scope = Py.CreateScope();
                 scope.Exec(Common + "P = namedtuple('P', 'x y')\nvalues = [P(1, 2), P(1, 2), P(3, 4), Item('a', 1), Item('a', 1)]\nholder = System.Collections.ArrayList()\nholder.Add(Controls.ListBox())\nholder[0].ItemsSource = values\n");
-                var box = (System.Windows.Controls.ListBox)((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+                var box = (System.Windows.Controls.ListBox)((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList))!)[0]!;
                 list = (IList)box.ItemsSource;
             }
             Assert.Equal(list[0], list[1]);
@@ -492,14 +492,14 @@ assert box.Items.Count == 2
 
     /// <summary>Proxies take the GIL themselves when WPF calls them from code that released it.</summary>
     [Fact]
-    public void ProxiesTakeTheGilForCallersThatReleasedIt() {
+    public async Task ProxiesTakeTheGilForCallersThatReleasedIt() {
         IList? list = null;
         object? item = null;
         host.Run(() => {
             using (Py.GIL()) {
                 using var scope = Py.CreateScope();
                 scope.Exec(Common + "values = [Item('a', 1), Item('b', 2)]\nholder = System.Collections.ArrayList()\nholder.Add(Controls.ListBox())\nholder[0].ItemsSource = values\n");
-                var box = (System.Windows.Controls.ListBox)((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+                var box = (System.Windows.Controls.ListBox)((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList))!)[0]!;
                 list = (IList)box.ItemsSource;
             }
             Assert.Equal(2, list.Count);
@@ -513,7 +513,9 @@ assert box.Items.Count == 2
             Assert.Equal(2, TypeDescriptor.GetProperties(item!)["count"]!.GetValue(item));
             Assert.False(string.IsNullOrEmpty(item!.ToString()));
         });
-        Assert.True(worker.Wait(TimeSpan.FromSeconds(20)), "Proxy access without the GIL deadlocked.");
+        var finished = await Task.WhenAny(worker, Task.Delay(TimeSpan.FromSeconds(20)));
+        Assert.True(finished == worker, "Proxy access without the GIL deadlocked.");
+        await worker;
     }
 
     /// <summary>Registered adapter hooks map Python models to native models and back.</summary>
@@ -748,7 +750,7 @@ class Key(object):
             using (Py.GIL()) {
                 using var scope = Py.CreateScope();
                 scope.Exec(Common + KeyClass + "first, second = Key(2), Key(2)\nvalues = [first, second]\nholder = System.Collections.ArrayList()\nholder.Add(Controls.ListBox())\nholder[0].ItemsSource = values\n");
-                var box = (System.Windows.Controls.ListBox)((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+                var box = (System.Windows.Controls.ListBox)((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList))!)[0]!;
                 var list = (IList)box.ItemsSource;
                 var second = list[1];
                 Assert.Equal(1, list.IndexOf(second));
@@ -766,7 +768,7 @@ class Key(object):
             using (Py.GIL()) {
                 using var scope = Py.CreateScope();
                 scope.Exec(Common + KeyClass + "gen = (i for i in range(3))\nvalues = [gen, Key(2)]\nholder = System.Collections.ArrayList()\nholder.Add(Key(2))\n");
-                var probe = ((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0];
+                var probe = ((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList))!)[0];
                 IList list = PythonBinding.ListSource(scope.Get("values"));
                 Assert.Equal(1, list.IndexOf(probe));
                 scope.Exec("assert next(gen) == 0");
@@ -856,7 +858,7 @@ assert reads['dynamic'] == 1, reads
                 using (Py.GIL()) {
                     scope = Py.CreateScope();
                     scope.Exec(Common + "reads = {'n': 0}\nclass Model(object):\n    def __init__(self):\n        self.value = 1\n    @property\n    def counted(self):\n        reads['n'] += 1\n        return reads['n']\nholder = System.Collections.ArrayList()\nholder.Add(Model())\nmodel = holder[0]\n");
-                    proxy = ((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList)))[0]!;
+                    proxy = ((ArrayList)scope.Get("holder").AsManagedObject(typeof(ArrayList))!)[0]!;
                 }
                 var counted = TypeDescriptor.GetProperties(proxy)["counted"]!;
                 Assert.Equal(1, counted.GetValue(proxy));

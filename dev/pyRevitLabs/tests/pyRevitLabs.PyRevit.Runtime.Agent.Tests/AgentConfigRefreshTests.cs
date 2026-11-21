@@ -10,7 +10,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
         [Fact]
-        public void ARequestThatSeesTheNewTimestampWaitsUntilTheConfigIsReloaded() {
+        public async Task ARequestThatSeesTheNewTimestampWaitsUntilTheConfigIsReloaded() {
             var lastWrite = new DateTime(2026, 1, 1);
             var reloading = new ManualResetEventSlim();
             var finishReload = new ManualResetEventSlim();
@@ -25,9 +25,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             var second = Task.Run(() => refresh.RefreshIfChanged());
 
-            Assert.False(second.Wait(TimeSpan.FromMilliseconds(300)));
+            var early = await Task.WhenAny(second, Task.Delay(TimeSpan.FromMilliseconds(300)));
+            Assert.NotSame(second, early);
             finishReload.Set();
-            Assert.True(Task.WaitAll(new[] { first, second }, Patience));
+            var both = Task.WhenAll(first, second);
+            Assert.Same(both, await Task.WhenAny(both, Task.Delay(Patience)));
+            await both;
             Assert.Equal(1, reloads);
         }
 

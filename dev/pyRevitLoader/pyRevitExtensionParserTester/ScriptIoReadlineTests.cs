@@ -26,7 +26,7 @@ namespace pyRevitExtensionParserTester
             private readonly Queue<string> _pending = new Queue<string>();
 
             public ScriptIoWithQueuedInput(params string[] lines)
-                : base((ScriptRuntime)null)
+                : base((ScriptRuntime)null!)
             {
                 foreach (string line in lines)
                 {
@@ -34,7 +34,7 @@ namespace pyRevitExtensionParserTester
                 }
             }
 
-            protected override string ReadNextLine()
+            protected override string? ReadNextLine()
             {
                 return _pending.Count == 0 ? null : _pending.Dequeue();
             }

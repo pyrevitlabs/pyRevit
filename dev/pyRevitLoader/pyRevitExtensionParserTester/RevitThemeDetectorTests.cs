@@ -23,7 +23,7 @@ namespace pyRevitExtensionParserTest
             RevitThemeDetector.SetHostRevitYearFromVersion(null);
         }
 
-        private static RevitThemeDetector Detector(ILogger logger, string themeName, int revitYear)
+        private static RevitThemeDetector Detector(ILogger logger, string? themeName, int revitYear)
         {
             return new RevitThemeDetector(logger, () => themeName, () => revitYear);
         }

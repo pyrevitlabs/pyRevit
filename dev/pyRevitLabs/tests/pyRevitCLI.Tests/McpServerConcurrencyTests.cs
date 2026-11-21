@@ -212,7 +212,7 @@ public partial class McpServerTests {
 
     /// <summary>A call that finishes within the grace period after stdin ended is still answered (#4050).</summary>
     [Fact]
-    public void ACallFinishingWithinTheGraceAfterInputEndsStillGetsItsAnswer() {
+    public async Task ACallFinishingWithinTheGraceAfterInputEndsStillGetsItsAnswer() {
         using var release = new ManualResetEventSlim(false);
         var runStarted = BlockRunsUntil(release);
         using var session = new LiveSession(inputClosedGracePeriod: Patience);
@@ -227,7 +227,7 @@ public partial class McpServerTests {
         release.Set();
         var run = session.Next();
 
-        Assert.True(closing.Result);
+        Assert.True(await closing);
         Assert.Equal(1, run.Value<int>("id"));
         Assert.False(IsError(run));
     }

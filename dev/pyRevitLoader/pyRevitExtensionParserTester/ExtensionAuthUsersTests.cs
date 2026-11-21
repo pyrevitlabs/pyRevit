@@ -240,10 +240,10 @@ namespace pyRevitExtensionParserTester
                 "[core]\n" +
                 "userextensions = [\"" + rootA.Replace("\\", "\\\\") + "\",\"" + rootB.Replace("\\", "\\\\") + "\"]\n");
 
-            List<string> usersA = null;
-            List<string> groupsA = null;
-            List<string> usersB = null;
-            List<string> groupsB = null;
+            List<string>? usersA = null;
+            List<string>? groupsA = null;
+            List<string>? usersB = null;
+            List<string>? groupsB = null;
             ExtensionRegistryAuth.ApplyRegistryAuthorization(extA, "FirstExt", null, ref usersA, ref groupsA);
             ExtensionRegistryAuth.ApplyRegistryAuthorization(extB, "SecondExt", null, ref usersB, ref groupsB);
 
