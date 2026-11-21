@@ -4,22 +4,26 @@ name: pyRevit Docs Preview
 # This workflow runs the pull request's own code (mkdocs executes
 # docs/gen_ref_pages.py), so it gets a read-only token and no secrets. It only
 # uploads the built site as an artifact; docs-preview-deploy.yml publishes it.
+#
+# When a pull request closes, the "closed" job uploads a small marker artifact
+# under the same name instead of a site. docs-preview-deploy.yml sees that the
+# pull request is no longer open and removes its preview. This replaces the
+# pull_request_target trigger that GitHub blocks by default from 2026-12-02.
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, labeled, closed]
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
-      - 'pyRevitfile'
-      - 'dev/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt'
-      - 'dev/pyRevitLabs.PyRevit.Runtime/ScriptExecutor.cs'
 
 permissions:
   contents: read
 
 jobs:
   build:
-    if: github.event.action != 'labeled' || github.event.label.name == 'docs-preview'
+    if: >-
+      github.event.action != 'closed' &&
+      (github.event.action != 'labeled' || github.event.label.name == 'docs-preview')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
@@ -53,3 +57,26 @@ jobs:
           path: site
           if-no-files-found: error
           retention-days: 7
+
+  closed:
+    # Signals docs-preview-deploy.yml to remove the preview. No checkout, no
+    # pull request code runs here.
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: docs-preview-build-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - name: Write marker
+        run: |
+          mkdir -p "$RUNNER_TEMP/marker"
+          echo "closed" > "$RUNNER_TEMP/marker/closed.txt"
+
+      - name: Upload marker
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: docs-preview-site-pr-${{ github.event.pull_request.number }}
+          path: ${{ runner.temp }}/marker
+          if-no-files-found: error
+          retention-days: 1
