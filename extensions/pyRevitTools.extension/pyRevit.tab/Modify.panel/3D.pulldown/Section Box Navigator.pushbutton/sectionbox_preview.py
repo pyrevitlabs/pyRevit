@@ -446,13 +446,23 @@ class PreviewSession(object):
         script.save_config()
 
     def _on_load_group(self, payload, request_id):
+        """Queue the left-out elements of a category and stream them.
+
+        A request that finds nothing left out still restarts a stream that an
+        error interrupted: the elements it queued stay in the stream, so the
+        retry after the error resumes them instead of reporting an empty
+        category.
+        """
         queued = 0
         for stream in self._streams:
             queued += stream.load_group(int(payload["source"]), payload["group"])
-        self.bridge.reply(request_id, queued > 0, None if queued else "Nothing to load")
-        if queued:
-            self._send("sources", {"loading": True})
-            self._stream_all()
+        unfinished = any(not stream.done for stream in self._streams)
+        if not queued and not unfinished:
+            self.bridge.reply(request_id, False, "Nothing to load")
+            return
+        self.bridge.reply(request_id, True)
+        self._send("sources", {"loading": True})
+        self._stream_all()
 
     def _stream_all(self):
         self._generation += 1
