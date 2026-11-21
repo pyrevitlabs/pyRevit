@@ -1,6 +1,8 @@
 using PyRevitLabs.PyRevit.Runtime.Agent;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public sealed class AgentRecklessInForceTests {
         private static bool Refuse(bool inForce, bool configured) => false;
 

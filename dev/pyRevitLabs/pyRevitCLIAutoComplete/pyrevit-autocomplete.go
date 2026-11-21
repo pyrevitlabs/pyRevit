@@ -1216,9 +1216,9 @@ func main() {
 			"doctor": complete.Command{
 				Sub: complete.Commands{},
 				Flags: complete.Flags{
-					"--dryrun":      complete.PredictNothing,
-					"--force":       complete.PredictNothing,
-					"--help":        complete.PredictNothing,
+					"--dryrun":          complete.PredictNothing,
+					"--force":           complete.PredictNothing,
+					"--help":            complete.PredictNothing,
 					"--keep-config":     complete.PredictNothing,
 					"--keep-extensions": complete.PredictNothing,
 					"--list":            complete.PredictNothing,

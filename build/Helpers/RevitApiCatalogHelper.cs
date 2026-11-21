@@ -60,8 +60,8 @@ public static partial class RevitApiCatalogHelper
             parts.Add($"cataloged for Revit {string.Join(", ", stale)} but no longer built");
         }
 
-        return "dev/scripts/revit_api_catalog/catalog.json is out of date: " + string.Join("; ", parts)
-            + ". Regenerate it with dev/scripts/build_revit_api_catalog.py.";
+        return "dev/checks/revit_api_catalog/catalog.json is out of date: " + string.Join("; ", parts)
+            + ". Regenerate it with dev/checks/build_revit_api_catalog.py.";
     }
 
     [GeneratedRegex(@";REVIT(\d{4})(?=;|<)")]

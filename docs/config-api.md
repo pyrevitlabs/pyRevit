@@ -1,6 +1,6 @@
 # Python config API
 
-How scripts read and write pyRevit settings from Python: the typed sections, the flat `snake_case` aliases, and the raw escape hatches. `dev/scripts/check_config_api.py` checks the Python code against the C# section schemas and the contract constants in the checker, and fails the commit on drift when Python files under `pyrevitlib/` or `extensions/` change (a pre-commit hook; CI and the build do not run it).
+How scripts read and write pyRevit settings from Python: the typed sections, the flat `snake_case` aliases, and the raw escape hatches. `dev/checks/check_config_api.py` checks the Python code against the C# section schemas and the contract constants in the checker, and fails the commit on drift when Python files under `pyrevitlib/` or `extensions/` change (a pre-commit hook; CI and the build do not run it).
 
 ## Two ways to reach a setting
 
@@ -32,9 +32,9 @@ user_config.routes.set_option("port", 8080)   # escape hatch
 
 ## Inventory
 
-`PyRevitConfig` has 35 flat aliases. `dev/scripts/check_config_api.py` derives
+`PyRevitConfig` has 35 flat aliases. `dev/checks/check_config_api.py` derives
 this table from the source; the counts below are asserted by
-`dev/scripts/test_check_config_api.py` so the two cannot drift.
+`dev/tests/python/tooling/test_check_config_api.py` so the two cannot drift.
 
 ### 31 direct delegations
 
@@ -189,7 +189,7 @@ script.save_config()
 ```bash
 pipenv run check-config-api            # same check as the pre-commit hook, on demand
 pipenv run check-config-api --census   # first-party read/write cost per alias
-pipenv run test-config-api             # tests for the checker itself
+pipenv run python -m pytest dev/tests/python/tooling/test_check_config_api.py  # tests for the checker itself
 ```
 
 The checker is pure source analysis: no pyRevit import, no Revit, no labs

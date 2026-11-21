@@ -20,6 +20,8 @@ namespace pyRevitLabs.UnitTests.RevitModelFiles {
     /// inconclusive when it does not list that build for both years.
     /// </remarks>
     [TestClass()]
+    [TestCategory("HostFree")]
+    [TestCategory("Integration")]
     public class RevitModelFileVersionTests {
         private const string Revit2026SampleInfo =
             "Worksharing: Not enabled\r\n"

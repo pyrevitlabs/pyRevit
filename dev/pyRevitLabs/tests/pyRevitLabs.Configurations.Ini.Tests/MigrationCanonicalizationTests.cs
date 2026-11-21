@@ -11,10 +11,10 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// JSON: the value survives, it is reported as converted (not reset), and a
 /// second pass is a no-op because the canonical form is not detected as legacy.
 /// </summary>
-public class MigrationCanonicalizationTests
-{
-    private static string WriteTemp(string content)
-    {
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
+public class MigrationCanonicalizationTests {
+    private static string WriteTemp(string content) {
         string path = Path.Combine(Path.GetTempPath(), $"canon_{Guid.NewGuid():N}.ini");
         File.WriteAllText(path, content);
         return path;
@@ -26,11 +26,9 @@ public class MigrationCanonicalizationTests
             .Build();
 
     [Fact]
-    public void Migration_CanonicalizesLegacySingleQuotedList()
-    {
+    public void Migration_CanonicalizesLegacySingleQuotedList() {
         string path = WriteTemp("[core]\nuserextensions = ['C:\\Tools\\ext1','D:\\ext2']\n");
-        try
-        {
+        try {
             var result = ConfigurationMigrator.Migrate(Build(path));
 
             Assert.True(result.Migrated);
@@ -45,37 +43,31 @@ public class MigrationCanonicalizationTests
                 new List<string> { @"C:\Tools\ext1", @"D:\ext2" },
                 IniConfiguration.Create(path).GetValue<List<string>>("core", "userextensions"));
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
 
     [Fact]
-    public void Migration_LegacyListCanonicalization_IsIdempotent()
-    {
+    public void Migration_LegacyListCanonicalization_IsIdempotent() {
         string path = WriteTemp("[core]\nuserextensions = ['C:\\Tools\\ext1']\n");
-        try
-        {
+        try {
             Assert.Contains("core.userextensions", ConfigurationMigrator.Migrate(Build(path)).ConvertedKeys);
 
             var second = ConfigurationMigrator.Migrate(Build(path));
             Assert.False(second.Migrated);
             Assert.Empty(second.ConvertedKeys);
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
 
     [Fact]
-    public void Migration_CanonicalizesLegacySingleQuotedCloneRegistry()
-    {
+    public void Migration_CanonicalizesLegacySingleQuotedCloneRegistry() {
         string path = WriteTemp(
             "[environment]\nclones = {'dev': 'C:\\pyRevit', 'main': 'D:\\clones\\main'}\n");
-        try
-        {
+        try {
             var result = ConfigurationMigrator.Migrate(Build(path));
 
             Assert.True(result.Migrated);
@@ -89,26 +81,22 @@ public class MigrationCanonicalizationTests
                 new Dictionary<string, string> { ["dev"] = @"C:\pyRevit", ["main"] = @"D:\clones\main" },
                 IniConfiguration.Create(path).GetValue<Dictionary<string, string>>("environment", "clones"));
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
 
     [Fact]
-    public void Migration_LegacyCloneRegistryCanonicalization_IsIdempotent()
-    {
+    public void Migration_LegacyCloneRegistryCanonicalization_IsIdempotent() {
         string path = WriteTemp("[environment]\nclones = {'dev': 'C:\\pyRevit'}\n");
-        try
-        {
+        try {
             Assert.Contains("environment.clones", ConfigurationMigrator.Migrate(Build(path)).ConvertedKeys);
 
             var second = ConfigurationMigrator.Migrate(Build(path));
             Assert.False(second.Migrated);
             Assert.Empty(second.ConvertedKeys);
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
@@ -119,11 +107,9 @@ public class MigrationCanonicalizationTests
     /// it as legacy would risk re-converting a canonical value on every load.
     /// </summary>
     [Fact]
-    public void Migration_CloneRegistryWithApostrophe_IsLeftAlone()
-    {
+    public void Migration_CloneRegistryWithApostrophe_IsLeftAlone() {
         string path = WriteTemp("[environment]\nclones = {\"dev\": \"C:\\\\Bob's Clone\"}\n");
-        try
-        {
+        try {
             var result = ConfigurationMigrator.Migrate(Build(path));
 
             Assert.Empty(result.ConvertedKeys);
@@ -132,12 +118,10 @@ public class MigrationCanonicalizationTests
                 @"C:\Bob's Clone",
                 IniConfiguration.Create(path).GetValue<Dictionary<string, string>>("environment", "clones")["dev"]);
         }
-        finally
-        {
+        finally {
             File.Delete(path);
             foreach (string backup in Directory.GetFiles(
-                         Path.GetDirectoryName(path)!, Path.GetFileName(path) + "*.bak"))
-            {
+                         Path.GetDirectoryName(path)!, Path.GetFileName(path) + "*.bak")) {
                 File.Delete(backup);
             }
         }
@@ -151,12 +135,10 @@ public class MigrationCanonicalizationTests
     /// converted legacy value.
     /// </summary>
     [Fact]
-    public void Migration_CanonicalEmptyContainers_AreNotDetectedAsLegacy()
-    {
+    public void Migration_CanonicalEmptyContainers_AreNotDetectedAsLegacy() {
         string path = WriteTemp(
             "[core]\nuserextensions = []\n\n[environment]\nsources = []\nclones = {}\n");
-        try
-        {
+        try {
             var first = ConfigurationMigrator.Migrate(Build(path));
             Assert.Empty(first.ConvertedKeys);
 
@@ -165,12 +147,10 @@ public class MigrationCanonicalizationTests
             Assert.Empty(second.ConvertedKeys);
             Assert.Null(second.BackupPath);
         }
-        finally
-        {
+        finally {
             File.Delete(path);
             foreach (string backup in Directory.GetFiles(
-                         Path.GetDirectoryName(path)!, Path.GetFileName(path) + "*.bak"))
-            {
+                         Path.GetDirectoryName(path)!, Path.GetFileName(path) + "*.bak")) {
                 File.Delete(backup);
             }
         }
