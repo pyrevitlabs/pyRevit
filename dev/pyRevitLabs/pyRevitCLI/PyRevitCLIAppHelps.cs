@@ -145,7 +145,7 @@ namespace pyRevitCLI {
                             { "<origin_url>",           "New clone remote origin url" },
                             { "--force",                "Just do it; I know what I am doing" },
                             { "--all",                  "All clones" },
-                            { "--clearconfigs",         "Also delete the pyRevit config file of the current user, which every clone shares" },
+                            { "--clearconfigs",         "Also delete the active pyRevit config file, which every clone shares; with an all-users install this is the machine-wide file" },
                             { "--reset",                "Reset remote origin url to default" },
                             { "--skip-bin",             "Skip downloading CI binaries on update" },
                             { "--username=<username>",  "Username to access private repo. Must be specified with --password" },
