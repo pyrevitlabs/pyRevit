@@ -3039,10 +3039,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     self._determine_kfile()
                     continue  # retry in THIS frame — never recurse
                 elif res == "Help":
-                    script.open_url(
-                        "https://www.notion.so/pyrevitlabs/"
-                        "Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da"
-                    )
+                    script.open_url("https://docs.pyrevitlabs.io/tools/keynotes/")
                     raise KeynoteSetupError(
                         "See the help page for converting the keynote file, "
                         "then reopen Keynote Manager."
