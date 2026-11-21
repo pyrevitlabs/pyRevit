@@ -26,6 +26,50 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             return dispatcher;
         }
 
+        private static AgentDispatcher StartDispatcherThatNeverRuns(Func<bool> modalDialogOpen) {
+            var dispatcher = new AgentDispatcher(TimeSpan.Zero, modalDialogOpen, TimeSpan.FromMilliseconds(300));
+            dispatcher.Attach(new ExternalEvent { OnRaise = () => ExternalEventRequest.Accepted });
+            return dispatcher;
+        }
+
+        [Fact]
+        public void ModalDialogRefusesAFailFastRequestLongBeforeTheStartTimeout() {
+            var dispatcher = StartDispatcherThatNeverRuns(() => true);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+
+            var busy = Assert.Throws<AgentException>(() => dispatcher.Invoke(app => "never", Long, failFastOnModalDialog: true));
+
+            Assert.Equal(AgentException.NotRunCode, busy.Code);
+            Assert.Equal("not_run", busy.Details.Value<string>("outcome"));
+            Assert.Contains("A modal dialog is open", busy.Message);
+            Assert.True(clock.Elapsed < TimeSpan.FromSeconds(5), "refused after " + clock.Elapsed);
+        }
+
+        [Fact]
+        public void ModalDialogDoesNotRefuseARequestThatDidNotAskToFailFast() {
+            var dispatcher = StartDispatcherThatNeverRuns(() => true);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+
+            var busy = Assert.Throws<AgentException>(
+                () => dispatcher.Invoke(app => "never", TimeSpan.FromSeconds(2)));
+
+            Assert.Equal(AgentException.NotRunCode, busy.Code);
+            Assert.True(clock.Elapsed >= TimeSpan.FromSeconds(1.9), "refused after " + clock.Elapsed);
+        }
+
+        [Fact]
+        public void DialogThatClosesWithinTheGraceDoesNotRefuseTheRequest() {
+            var polls = 0;
+            var dispatcher = StartDispatcherThatNeverRuns(() => Interlocked.Increment(ref polls) % 2 == 1);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+
+            var busy = Assert.Throws<AgentException>(
+                () => dispatcher.Invoke(app => "never", TimeSpan.FromSeconds(2), failFastOnModalDialog: true));
+
+            Assert.Equal(AgentException.NotRunCode, busy.Code);
+            Assert.True(clock.Elapsed >= TimeSpan.FromSeconds(1.9), "refused after " + clock.Elapsed);
+        }
+
         [Fact]
         public void ScriptStuckPastItsDeadlineReleasesTheCallerAndExplainsLaterBusyErrors() {
             var dispatcher = StartDispatcher();
