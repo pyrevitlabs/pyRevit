@@ -279,7 +279,7 @@ namespace pyRevitCLI {
                 case PyRevitCLICommandType.Releases:
                     BuildHelp(
                         new List<string>() { "releases" },
-                        header: "Info on pyRevit Releases",
+                        header: "Info on pyRevit Releases, listed newest version first",
                         commands: new Dictionary<string, string>() {
                             { "open",                   "Open release page in default browser" },
                             { "download installer",     "Download EXE installer for given release, if exists" },
@@ -417,10 +417,10 @@ namespace pyRevitCLI {
                             { "<run_id>",               "Run id printed by 'agent run' or 'agent runs', or the request id (req-...) of a request that got no answer" },
                             { "<action>",               "start, stop or status, for 'agent record'" },
                             { "--no-screenshots",       "Record without screenshots" },
-                            { "--screenshot-interval=<seconds>", "Minimum seconds between screenshots (default 5)" },
-                            { "--max-screenshots=<count>", "Most screenshots in one recording (default 20, max 100)" },
-                            { "--max-events=<count>",   "Most events in one recording (default 5000, max 20000)" },
-                            { "--max-duration=<seconds>", "Stop the recording after this long (default 1800, max 14400)" },
+                            { "--screenshot-interval=<seconds>", "Minimum seconds between screenshots, 0 to 3600 (default 5); 0 takes one at every opportunity until --max-screenshots is reached" },
+                            { "--max-screenshots=<count>", "Most screenshots in one recording, 0 to 100 (default 20)" },
+                            { "--max-events=<count>",   "Most events in one recording, 1 to 20000 (default 5000)" },
+                            { "--max-duration=<seconds>", "Stop the recording after this long, 1 to 14400 (default 1800)" },
                         });
                     break;
 

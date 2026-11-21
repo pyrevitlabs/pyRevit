@@ -1,6 +1,6 @@
 # Releases
 
-You can get information, and download the archive or installer for pyRevit releases using the cli tool.
+You can get information, and download the archive or installer for pyRevit releases using the cli tool. Releases are listed newest version first, and `<search_pattern>` commands use the first (newest) match.
 
 ```powershell
 pyrevit releases [--notes]

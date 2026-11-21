@@ -108,7 +108,17 @@ namespace pyRevitCLI {
         internal static void
         ProcessExtensionInfoCommands(string extName, bool info, bool help) {
             if (extName != null) {
-                var extDef = PyRevitExtensions.FindRegisteredExtension(extName);
+                PyRevitExtensionDefinition extDef;
+                try {
+                    extDef = PyRevitExtensions.FindRegisteredExtension(extName);
+                }
+                catch (PyRevitException notRegistered) {
+                    var installed = FindInstalledExtensionOrNull(extName)
+                        ?? throw new PyRevitException(string.Format(
+                            "{0} in the extension sources, and no installed extension matches it", notRegistered.Message));
+                    PrintOrOpenInstalledExtension(installed, info, help);
+                    return;
+                }
 
                 if (Errors.LatestError == ErrorCodes.MoreThanOneItemMatched)
                     logger.Warn("More than one extension matches the search pattern \"{0}\"", extName);
@@ -122,6 +132,26 @@ namespace pyRevitCLI {
                             CommonUtils.OpenWithShell(extDef.Website);
                     }
                 }
+            }
+        }
+
+        private static PyRevitExtension FindInstalledExtensionOrNull(string extName) {
+            try {
+                return PyRevitExtensions.GetInstalledExtension(extName);
+            }
+            catch (PyRevitException) {
+                return null;
+            }
+        }
+
+        private static void PrintOrOpenInstalledExtension(PyRevitExtension installed, bool info, bool help) {
+            if (info)
+                Console.WriteLine(installed.ToString());
+            else if (help) {
+                if (string.IsNullOrWhiteSpace(installed.Website))
+                    logger.Error("Extension \"{0}\" has no website to open", installed.Name);
+                else
+                    CommonUtils.OpenWithShell(installed.Website);
             }
         }
 
@@ -245,8 +275,16 @@ namespace pyRevitCLI {
 
         internal static void
         AddExtensionLookupSource(string lookupPath) {
-            if (lookupPath != null)
-                PyRevitExtensions.RegisterExtensionLookupSource(lookupPath);
+            if (lookupPath == null)
+                return;
+
+            PyRevitExtensions.RegisterExtensionLookupSource(lookupPath);
+            try {
+                PyRevitExtensions.VerifyExtensionLookupSource(lookupPath);
+            }
+            catch (PyRevitException ex) {
+                Console.WriteLine(string.Format("Warning: source \"{0}\" was added but can not be used yet: {1}", lookupPath, ex.Message));
+            }
         }
 
         internal static void

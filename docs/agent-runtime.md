@@ -690,6 +690,8 @@ pyrevit agent record status
 pyrevit agent recordings [--limit=<count>]
 ```
 
+The options take numbers in these ranges: `--screenshot-interval` 0 to 3600 seconds (`0` allows a screenshot at every opportunity until `--max-screenshots` is reached), `--max-screenshots` 0 to 100 (`0` takes none), `--max-events` 1 to 20000 and `--max-duration` 1 to 14400 seconds. All but the interval must be whole numbers. A value that is not a number or is outside its range is refused with the option's name.
+
 The user starts a recording, reproduces the problem and stops it. Then the agent calls
 `get_recording` (with `recording_id`, `offset` and `limit` to page the timeline). There is no
 always-on mode: nothing is captured outside a recording, and every hook is a no-op then. It needs
