@@ -10940,6 +10940,10 @@
 <summary>Info</summary>
 <p>Postfixes and every other constant on this page are defined in <a class="autorefs autorefs-internal" href="../reference/pyrevit/extensions/#pyrevit.extensions">pyrevit.extensions</a> (<code>pyrevitlib/pyrevit/extensions/__init__.py</code>).</p>
 </details>
+<div class="admonition note">
+<p class="admonition-title">pyRevit 7.2.0 or later</p>
+<p><code>checkbox</code> bundles are not part of pyRevit 7.1.0.</p>
+</div>
 <p>A <code>checkbox</code> bundle adds a ribbon checkbox. Its <code>script.py</code> can define <code>__chk_init__(ctx)</code>, which runs when the ribbon loads, and <code>__chk_on_change__(sender, args, ctx)</code>, which runs each time <code>ctx.is_checked</code> changes after <code>__chk_init__</code> returns. If <code>__chk_init__</code> raises or calls <code>sys.exit()</code>, <code>__chk_on_change__</code> is not connected until pyRevit reloads. If <code>script.py</code> or <code>__chk_init__</code> raises, the checkbox is also disabled; after <code>sys.exit()</code> it stays enabled but does nothing. Both run outside Revit API context, so they must not start transactions. All checkboxes run in one IronPython engine, but each keeps its own copy of the modules it imports from its bundle's <code>lib</code> folders and from library extensions, so two checkboxes can ship modules with the same name; pyRevit and the standard library are shared. Checkboxes stack only with other checkboxes: in a <code>stack</code> that also holds other items, the checkboxes are placed beside the stack and a warning is logged.</p>
 <p>A handler can also come from another module, as in <code>from chk_handlers import on_change as __chk_on_change__</code>, so several checkboxes can share one. <code>EXEC_PARAMS</code>, and with it <code>script.get_config()</code>, still resolves the checkbox the handler runs for.</p>
 <p>The <code>ctx</code> that both handlers receive has these members:</p>

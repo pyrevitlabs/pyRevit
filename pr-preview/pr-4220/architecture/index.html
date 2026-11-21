@@ -11059,6 +11059,10 @@ duplicated assemblies into its assembly load context. A side effect is that <cod
 imported before a Reload survive it. The contract is asserted by the tests in
 <code>dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.CPython.Tests/</code>.</p>
 <h3 id="forms-across-python-engines">Forms across Python engines</h3>
+<div class="admonition note">
+<p class="admonition-title">pyRevit 7.2.0 or later</p>
+<p>The CPython column describes pyRevit 7.2.0. In 7.1.0 these forms raise <code>PyRevitCPythonNotSupported</code> under CPython.</p>
+</div>
 <p><code>pyrevit.forms</code> exports one engine-neutral API, listed once in
 <code>forms/_common.py</code>. IronPython adds the legacy names it exported before the
 module split (<code>forms/_ipy_legacy.py</code>, listed in <code>forms/_legacy_exports.py</code>).
