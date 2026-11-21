@@ -479,10 +479,10 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     and its constructor default arguments that must be provided here.
 
     Args:
-        modulebuilder (:obj:`ModuleBuilder`): dotnet module builder
+        modulebuilder (ModuleBuilder): dotnet module builder
         type_class (type): source dotnet type for the command
         class_name (str): name for the new type
-        custom_attr_list (:obj:`list`): list of dotnet attributes for the type
+        custom_attr_list (list): list of dotnet attributes for the type
         *args (Any): list of arguments to be used with type constructor
 
     Returns:

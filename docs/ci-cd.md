@@ -1,8 +1,8 @@
 # CI/CD and release flow
 
-This guide explains how GitHub Actions and the C# ModularPipelines project in [`build/`](../build/) work together: integrating work on **`develop`** (WIP builds), shipping from **`master`** via signed Git tags (releases), how versions are bumped, and the manual maintainer ritual that drives a release.
+This guide explains how GitHub Actions and the C# ModularPipelines project in [`build/`](https://github.com/pyrevitlabs/pyRevit/tree/develop/build) work together: integrating work on **`develop`** (WIP builds), shipping from **`master`** via signed Git tags (releases), how versions are bumped, and the manual maintainer ritual that drives a release.
 
-CI/CD and local product builds are driven by `dotnet run` in [`build/`](../build/README.md).
+CI/CD and local product builds are driven by `dotnet run` in [`build/`](https://github.com/pyrevitlabs/pyRevit/blob/develop/build/README.md).
 
 ## Branches and roles
 
@@ -168,7 +168,7 @@ CLI download order:
 6. NuGet `PyRevit.UnsignedBin` (when `GITHUBTOKEN` is set)
 7. Actions artifacts (when `GITHUBTOKEN` is set)
 
-See also [`build/README.md`](../build/README.md) and the [developer guide](dev-guide.md).
+See also [`build/README.md`](https://github.com/pyrevitlabs/pyRevit/blob/develop/build/README.md) and the [developer guide](dev-guide.md).
 
 ## Feature or fix → `develop` (WIP)
 
@@ -313,7 +313,7 @@ Use the target framework already referenced by the consuming pyRevit project, an
 | `pyrevitlib/pyrevit/version` | Full **build** version string used across the product (drives the `v*` tag name). |
 | `release/version` | **Install** / marketing version used for installers and the release title. |
 
-CI and local product builds invoke the ModularPipelines project from [`build/`](../build/) via `dotnet run`:
+CI and local product builds invoke the ModularPipelines project from [`build/`](https://github.com/pyrevitlabs/pyRevit/tree/develop/build) via `dotnet run`:
 
 | Command | When / purpose |
 |---------|----------------|
