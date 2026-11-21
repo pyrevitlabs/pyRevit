@@ -13,6 +13,8 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParserTester
 {
     [TestFixture]
+    [Category("HostFree")]
+    [Category("Unit")]
     public class ExtensionAuthUsersTests : TempFileTestBase
     {
         [TearDown]
