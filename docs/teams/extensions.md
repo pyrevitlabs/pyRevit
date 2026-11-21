@@ -12,9 +12,14 @@ function Install-Extensions() {
     # make sure the extensions folder exists. installed extensions are kept
     Confirm-Path $pyrevitexts
 
-    # install extensions now
-    Write-Output "Cloning Extensions..."
-    pyrevit extend "pyApex" --dest=$pyrevitexts
+    # update the extension when it is already installed, install it otherwise
+    if (Test-Path -LiteralPath (Join-Path $pyrevitexts "pyApex.extension")) {
+        Write-Output "Updating Extensions..."
+        pyrevit extensions update "pyApex"
+    } else {
+        Write-Output "Cloning Extensions..."
+        pyrevit extend "pyApex" --dest=$pyrevitexts
+    }
 }
 ```
 

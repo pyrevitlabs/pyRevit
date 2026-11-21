@@ -140,10 +140,9 @@ function Confirm-Path ([string] $targetpath) {
     New-Item -ItemType Directory -Force -Path $targetpath > $null
 }
 
-# removes the folder of the clone that is being replaced
 function Remove-Clone ([string] $clonepath) {
-    If (Test-Path $clonepath) {
-        Remove-Item -Path $clonepath -Recurse -Force
+    If (Test-Path -LiteralPath $clonepath) {
+        Remove-Item -LiteralPath $clonepath -Recurse -Force
     }
 }
 ```
