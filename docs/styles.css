@@ -70,9 +70,9 @@
   color: var(--pyrevit-yellow-dark);
 }
 
-.md-typeset .headerlink,
-.md-typeset a.md-button,
-.md-typeset .md-content__button {
+[data-md-color-scheme="default"] .md-typeset a.headerlink,
+[data-md-color-scheme="default"] .md-typeset a.md-button,
+[data-md-color-scheme="default"] .md-typeset a.md-content__button {
   text-decoration: none;
 }
 

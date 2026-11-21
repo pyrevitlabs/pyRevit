@@ -1,5 +1,6 @@
 """Generate the code reference pages."""
 
+import re
 from pathlib import Path
 
 import mkdocs_gen_files
@@ -35,10 +36,16 @@ for path in sorted(Path(containing_folder).rglob("*.py")):
 with mkdocs_gen_files.open("reference/SUMMARY.md", "w") as nav_file:
     nav_file.writelines(nav.build_literate_nav())
 
+UNPUBLISHED_ROOT_FILES = {"AGENTS.md", "CLAUDE.md"}
+LINK_INTO_DOCS_FOLDER = re.compile(r"\]\(docs/")
+
 for md in Path(".").glob("*.md"):
+    if md.name in UNPUBLISHED_ROOT_FILES:
+        continue
     try:
         with mkdocs_gen_files.open(md, "w") as f:
-            f.write(Path(md).read_text(encoding="utf-8", errors="replace"))
+            text = Path(md).read_text(encoding="utf-8", errors="replace")
+            f.write(LINK_INTO_DOCS_FOLDER.sub("](", text))
     except UnicodeDecodeError:
         # Skip files that can't be decoded as UTF-8
         print(f"Warning: Skipping {md} due to encoding issues")
