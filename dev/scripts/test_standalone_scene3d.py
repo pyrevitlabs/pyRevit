@@ -191,6 +191,37 @@ class MeshingTests(unittest.TestCase):
         self.assertEqual(len(builder.indices), 36)
         self.assertEqual(detail_levels, [2, 1])
 
+    def tessellate_curves_only_at_coarse(self, edges):
+        m = self.meshing
+        original = m.element_geometry, m.walk_geometry
+
+        def walk(geometry_, builder, edges_=True, level_of_detail=None):
+            if level_of_detail is None:
+                builder.add_polyline([Point(i, 0, 0) for i in range(40)])
+            else:
+                builder.add_polyline([Point(0, 0, 0), Point(1, 0, 0)])
+
+        m.element_geometry, m.walk_geometry = (lambda element, detail: []), walk
+        try:
+            bbox = types.SimpleNamespace(Min=Point(0, 0, 0), Max=Point(1, 1, 1))
+            return m.tessellate_element(
+                object(), bbox, Point(0, 0, 0), 60, edges=edges, coarse_retry=True
+            )
+        finally:
+            m.element_geometry, m.walk_geometry = original
+
+    def test_coarse_retry_without_triangles_keeps_the_box_when_edges_are_not_wanted(
+        self,
+    ):
+        builder, approx = self.tessellate_curves_only_at_coarse(edges=False)
+        self.assertTrue(approx)
+        self.assertEqual(len(builder.indices), 36)
+
+    def test_coarse_retry_with_only_segments_is_kept_when_edges_are_wanted(self):
+        builder, approx = self.tessellate_curves_only_at_coarse(edges=True)
+        self.assertFalse(approx)
+        self.assertEqual(len(builder.edges) // 3, 2)
+
     def test_without_coarse_retry_an_element_over_budget_becomes_a_box(self):
         self.coarse_points = 10
         (builder, approx), detail_levels = self.tessellate_over_budget(False)

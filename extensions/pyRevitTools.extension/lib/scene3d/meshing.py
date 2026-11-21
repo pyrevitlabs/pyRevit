@@ -319,6 +319,8 @@ def tessellate_element(
             again at Coarse detail with coarse face triangulation before
             falling back to the bounding box. Families that draw less at
             Coarse and curved faces then fit the budget and keep their shape.
+            A retry that draws nothing the caller wants (no triangles, or no
+            segments either when ``edges`` is set) falls back to the box too.
 
     Returns:
         (tuple[MeshBuilder, bool]): the builder and whether it holds the
@@ -343,10 +345,13 @@ def tessellate_element(
             approx = True
             if coarse_retry and isinstance(error, BudgetExceeded):
                 try:
-                    builder = _tessellate_coarse(
+                    retried = _tessellate_coarse(
                         element, origin, budget, edges, transform
                     )
-                    approx = False
+                    drawn = retried.indices or (edges and retried.edges)
+                    if drawn:
+                        builder = retried
+                        approx = False
                 except Exception:
                     approx = True
     nothing_drawn = not builder.indices and not builder.edges

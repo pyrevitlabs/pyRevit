@@ -630,7 +630,7 @@ void main() { outColor = uColor; }`;
       this.splitter = el("div", "sbp-splitter");
       this.main.append(this.stage, this.splitter, this.side);
       this._bindSplitter();
-      if (this.flags.sideWidth) this.side.style.width = this.flags.sideWidth + "px";
+      this._applySideWidth();
       this.statusBar = el("div", "sbp-status");
       this.statusText = el("span", "sbp-status-text");
       this.progressText = el("span", "sbp-progress");
@@ -659,11 +659,18 @@ void main() { outColor = uColor; }`;
       this.refreshChrome();
     }
 
+    _sideLimit() {
+      return Math.max(SIDE_MIN_PX, this.main.clientWidth * SIDE_MAX_FRACTION);
+    }
+
     setSideWidth(pixels) {
-      const limit = Math.max(SIDE_MIN_PX, this.main.clientWidth * SIDE_MAX_FRACTION);
-      const width = Math.round(Math.min(limit, Math.max(SIDE_MIN_PX, pixels)));
-      this.flags.sideWidth = width;
-      this.side.style.width = width + "px";
+      this.flags.sideWidth = Math.round(Math.min(this._sideLimit(), Math.max(SIDE_MIN_PX, pixels)));
+      this._applySideWidth();
+    }
+
+    _applySideWidth() {
+      if (!this.flags.sideWidth) return;
+      this.side.style.width = Math.min(this.flags.sideWidth, this._sideLimit()) + "px";
     }
 
     _bindSplitter() {
@@ -1646,6 +1653,7 @@ void main() { outColor = uColor; }`;
         this.canvas.width = w;
         this.canvas.height = h;
       }
+      this._applySideWidth();
       this.requestRender();
     }
 

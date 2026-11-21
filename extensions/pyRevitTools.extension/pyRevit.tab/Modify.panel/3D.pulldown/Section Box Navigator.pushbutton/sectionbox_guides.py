@@ -50,17 +50,26 @@ def _straight_line(entry):
     return x1, y1, (x2 - x1) / length, (y2 - y1) / length
 
 
+def _distance_to_line(line, x, y):
+    lx, ly, dx, dy = line
+    return abs((x - lx) * dy - (y - ly) * dx)
+
+
+def _end_points(entry):
+    x1, y1, x2, y2 = entry["segs"][0]
+    return ((x1, y1), (x2, y2))
+
+
 def _repeats(entry, other):
     line, other_line = _straight_line(entry), _straight_line(other)
     if line is None or other_line is None:
         return False
-    x, y, dx, dy = line
-    ox, oy, odx, ody = other_line
-    if abs(dx * ody - dy * odx) > GRID_PARALLEL_SIN:
+    if abs(line[2] * other_line[3] - line[3] * other_line[2]) > GRID_PARALLEL_SIN:
         return False
-    gap = abs((ox - x) * dy - (oy - y) * dx)
     limit = GRID_SAME_NAME_FT if entry["name"] == other["name"] else GRID_COLLINEAR_FT
-    return gap <= limit
+    ends = [(point, line) for point in _end_points(other)]
+    ends += [(point, other_line) for point in _end_points(entry)]
+    return all(_distance_to_line(ref, *point) <= limit for point, ref in ends)
 
 
 def drop_repeated_grids(entries):
@@ -70,8 +79,10 @@ def drop_repeated_grids(entries):
         entries (list[dict]): ``{name, link, segs}`` entries.
 
     A linked grid repeats a listed one when the two are parallel within half a
-    degree and less than ``GRID_COLLINEAR_FT`` apart, or less than
-    ``GRID_SAME_NAME_FT`` apart when they carry the same name. Host grids are
+    degree and both end points of each lie less than ``GRID_COLLINEAR_FT`` from
+    the other's line, or less than ``GRID_SAME_NAME_FT`` when they carry the
+    same name. Checking the ends keeps a long grid that drifts away at a small
+    angle from counting as a repeat. Host grids are
     always kept and curved grids are never compared. The order is unchanged.
     """
     kept = [entry for entry in entries if not entry["link"]]

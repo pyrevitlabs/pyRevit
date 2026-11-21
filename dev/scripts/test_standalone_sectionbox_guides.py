@@ -111,6 +111,19 @@ class RepeatedGridTests(unittest.TestCase):
         ]
         self.assertEqual(self.names(entries), ["A", "A", "B"])
 
+    def test_a_long_grid_drifting_away_at_a_small_angle_is_not_a_repeat(self):
+        host = grid("A", 0, 0, 1000, 0)
+        drifting = grid("A", 0, 0, 1000, 7, True)
+        shifted_end = grid("B", 0, 0, 1000, 0.02, True)
+        self.assertEqual(self.names([host, drifting]), ["A", "A"])
+        self.assertEqual(self.names([host, shifted_end]), ["A"])
+
+    def test_a_short_linked_grid_along_a_long_host_grid_is_a_repeat(self):
+        host = grid("A", 0, 0, 1000, 0)
+        self.assertEqual(
+            self.names([host, grid("A", 200, 0.01, 300, 0.01, True)]), ["A"]
+        )
+
     def test_curved_and_empty_grids_are_never_compared(self):
         arc = {"name": "R", "link": True, "segs": [[0, 0, 1, 1], [1, 1, 2, 3]]}
         point = grid("P", 3, 3, 3, 3, True)
