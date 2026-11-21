@@ -598,7 +598,7 @@ def report_coverage(results, measured, language):
             report.write(
                 f"\n### {language} test coverage\n\n| Module | Lines | Branches |\n|---|---:|---:|\n"
             )
-            for module, values in sorted(measured.items()):
+            for module, values in sorted(measured.items(), key=lambda item: item[0]):
                 report.write(
                     f"| {module} | {values['line']:.1%} | {values['branch']:.1%} |\n"
                 )
