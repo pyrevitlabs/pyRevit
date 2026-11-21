@@ -10,6 +10,9 @@ from pathlib import Path
 import unittest
 
 
+TEST_ENVIRONMENT = "HostFree"
+TEST_LEVEL = "Unit"
+
 ROOT = Path(__file__).resolve().parents[2]
 FORMS = ROOT / "pyrevitlib" / "pyrevit" / "forms"
 ATTRIBUTE_ONLY = {"warning", "set_data_context"}
@@ -36,12 +39,13 @@ def _forms_references_in_extensions():
     usage = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(usage)
     names = set()
+    unparsable = []
     for path in (ROOT / "extensions").rglob("*.py"):
         try:
             names |= usage.forms_references(_parse(path))
         except (SyntaxError, UnicodeError):
-            continue
-    return names
+            unparsable.append(str(path.relative_to(ROOT)))
+    return names, unparsable
 
 
 def _is_submodule(name):
@@ -66,11 +70,9 @@ class StarExportTests(unittest.TestCase):
 
     def test_star_import_keeps_the_api_bundled_extensions_use(self):
         """Every other ``pyrevit.forms`` name the extensions use is exported."""
-        used = {
-            name
-            for name in _forms_references_in_extensions() - ATTRIBUTE_ONLY
-            if not _is_submodule(name)
-        }
+        references, unparsable = _forms_references_in_extensions()
+        self.assertEqual(unparsable, [])
+        used = {name for name in references - ATTRIBUTE_ONLY if not _is_submodule(name)}
         self.assertIn("alert", used)
         for engine, exported in self.star_lists.items():
             with self.subTest(engine=engine):
