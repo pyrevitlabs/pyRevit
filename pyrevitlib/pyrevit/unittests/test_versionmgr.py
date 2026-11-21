@@ -97,11 +97,19 @@ class LoadedBuildVersionTests(unittest.TestCase):
         )
 
     def test_extended_keeps_the_commit_signature(self):
-        """Extended reporting still appends the commit the clone sits on."""
+        """Extended reporting appends the commit the clone sits on, if any.
+
+        Installer deploys have no git repo, hence no signature and no trailing
+        separator.
+        """
         envvars.set_pyrevit_env_var(envvars.VERSION_ENVVAR, "9.9.9.99999+9999")
-        formatted = versionmgr.get_pyrevit_version().get_formatted(extended=True)
-        self.assertTrue(formatted.startswith("9.9.9.99999+9999:"))
-        self.assertEqual(len(formatted.rsplit(":", 1)[1]), 7)
+        version = versionmgr.get_pyrevit_version()
+        formatted = version.get_formatted(extended=True)
+        if not version.signature:
+            self.assertEqual("9.9.9.99999+9999", formatted)
+            return
+        self.assertEqual("9.9.9.99999+9999:" + version.signature, formatted)
+        self.assertEqual(len(version.signature), 7)
 
     def test_unresolvable_session_value_degrades_to_the_version_file(self):
         """An unresolvable seed must not reach the user-facing string."""
