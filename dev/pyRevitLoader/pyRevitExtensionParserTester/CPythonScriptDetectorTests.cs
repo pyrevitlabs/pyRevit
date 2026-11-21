@@ -92,6 +92,17 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        public void BundleEngineTypeUnrecognized_UsesFirstLineAndIgnoresExtensionDeclaration()
+        {
+            Assert.That(
+                CPythonScriptDetector.RunsOnCPython(ComponentWithScript("#! python3\n", "other"), null),
+                Is.True);
+            Assert.That(
+                CPythonScriptDetector.RunsOnCPython(ComponentWithScript("print(1)\n", "other"), Extension("cpython")),
+                Is.False);
+        }
+
+        [Test]
         public void BundleEngineTypeCPython_ReturnsTrueWithoutShebang()
         {
             var component = ComponentWithScript("print(1)\n", "cpython");
