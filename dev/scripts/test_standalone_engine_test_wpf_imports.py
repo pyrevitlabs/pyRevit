@@ -72,8 +72,23 @@ def _references_wpf(node):
     return False
 
 
-def _first_line(tree, predicate):
-    lines = [node.lineno for node in ast.walk(tree) if predicate(node)]
+_DEFERRED_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+
+
+def _import_time_nodes(tree):
+    pending = [tree]
+    while pending:
+        node = pending.pop()
+        yield node
+        pending.extend(
+            child
+            for child in ast.iter_child_nodes(node)
+            if not isinstance(child, _DEFERRED_SCOPES)
+        )
+
+
+def _first_line(nodes, predicate):
+    lines = [node.lineno for node in nodes if predicate(node)]
     return min(lines) if lines else None
 
 
@@ -85,12 +100,17 @@ def _python_files():
 
 
 def wpf_use_before_reference(source, filename="<script>"):
-    """Return the line of the first unreferenced ``System.Windows`` use, or None."""
+    """Return the line of the first unreferenced ``System.Windows`` use, or None.
+
+    Note:
+        Only WPF loads that run at import time count; loads inside function
+        or lambda bodies are ignored because nothing guarantees they are called.
+    """
     tree = ast.parse(source, filename)
-    use_line = _first_line(tree, _uses_system_windows)
+    use_line = _first_line(ast.walk(tree), _uses_system_windows)
     if use_line is None:
         return None
-    reference_line = _first_line(tree, _references_wpf)
+    reference_line = _first_line(_import_time_nodes(tree), _references_wpf)
     if reference_line is not None and reference_line < use_line:
         return None
     return use_line
@@ -122,6 +142,14 @@ class WpfUseBeforeReferenceTests(unittest.TestCase):
     def test_framework_import_after_use_is_flagged(self):
         source = "from System import Windows\nfrom pyrevit.framework import wpf\n"
         self.assertEqual(wpf_use_before_reference(source), 1)
+
+    def test_framework_import_in_uncalled_function_is_flagged(self):
+        source = (
+            "def helper():\n"
+            "    from pyrevit.framework import Windows\n"
+            "from System import Windows\n"
+        )
+        self.assertEqual(wpf_use_before_reference(source), 3)
 
 
 class EngineTestsScriptsTests(unittest.TestCase):
