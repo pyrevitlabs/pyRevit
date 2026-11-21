@@ -25,6 +25,7 @@ Log File: "...\Temp\51066afe-022c-4dba-bdc5-d35d451b998f\PyRevitRunner_51066afe-
 If `--revit` option is not specified, the run command will use the newest installed version of Revit to run the command. You can however specify the revsion of Revit e.g. `--revit=2018`
 
 At either case, pyRevit uses the clone and engine verison that is attached to Revit, to run the script; So make sure that pyRevit is already attached to the Revit version you are intending to use.
+If it is not attached to that Revit version, the command prints an error and exits with a non-zero exit code without running the script.
 
 All the pyrevit modules are accessible inside the script.
 
