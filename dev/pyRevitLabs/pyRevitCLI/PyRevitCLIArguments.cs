@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using DocoptNet;
 
 using pyRevitLabs.Common;
@@ -19,6 +20,16 @@ namespace pyRevitCLI {
             if (arguments is null || !arguments.TryGetValue(key, out var value) || value is null)
                 return defaultValue;
             return value.Value as string ?? defaultValue;
+        }
+
+        /// <summary>
+        /// Returns the texts docopt parsed for a repeated positional argument such as <c>&lt;element_id&gt;...</c>,
+        /// in command line order, or an empty list when none was given.
+        /// </summary>
+        internal static IReadOnlyList<string> Values(IDictionary<string, ValueObject> arguments, string key) {
+            if (arguments is null || !arguments.TryGetValue(key, out var value) || value is null || !value.IsList)
+                return new List<string>();
+            return value.AsList.Cast<object>().Select(item => item.ToString()).ToList();
         }
 
         /// <summary>

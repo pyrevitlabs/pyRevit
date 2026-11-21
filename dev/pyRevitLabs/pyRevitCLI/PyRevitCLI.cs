@@ -594,6 +594,29 @@ namespace pyRevitCLI {
                 else if (all("context"))
                     PyRevitCLIAgentCmds.PrintContext(TryGetValue("--revit"));
 
+                else if (all("capture"))
+                    PyRevitCLIAgentCmds.CaptureView(
+                        view: TryGetValue("<view>"),
+                        viewType: TryGetValue("--view-type"),
+                        mode: TryGetValue("--mode"),
+                        width: TryGetValue("--width"),
+                        outFile: TryGetValue("--out"),
+                        revitSelector: TryGetValue("--revit")
+                        );
+
+                else if (all("inspect"))
+                    PyRevitCLIAgentCmds.InspectElements(
+                        elementIds: PyRevitCLIArguments.Values(arguments, "<element_id>"),
+                        includeParameters: arguments["--no-parameters"].IsFalse,
+                        revitSelector: TryGetValue("--revit")
+                        );
+
+                else if (all("lookup"))
+                    PyRevitCLIAgentCmds.LookupApi(
+                        name: TryGetValue("<api_name>"),
+                        revitSelector: TryGetValue("--revit")
+                        );
+
                 else if (all("run"))
                     PyRevitCLIAgentCmds.RunScript(
                         scriptFile: TryGetValue("<script_file>"),
