@@ -112,19 +112,18 @@ Now we can create a Powershell function that clones pyRevit on the user machine.
 ```powershell
 # clone pyRevit
 function Clone-PyRevit() {
-    # close all open Revits first, so no pyRevit file is in use
-    Write-Output "Closing All Revits..."
-    pyrevit revits killall
+    # stop if Revit is open: pyRevit files are in use and users may have unsaved work
     if (Get-Process -Name "Revit" -ErrorAction SilentlyContinue) {
-        throw "Revit is still running. Close it and run the script again."
+        throw "Revit is running. Ask the user to save and close it, then run the script again."
     }
 
-    # make sure paths exits and are clean
+    # make sure the shared folders exist. their content is kept
     Confirm-Path $pyrevitroot
     Confirm-Path $pyrevitexts
 
-    # forget the previous clone if any
+    # forget and remove the previous clone if any. sibling clones and extensions are kept
     pyrevit clones forget $ourclonename > $null
+    Remove-Clone $pyrevitcoredest
 
     # clone pyRevit now
     Write-Output "Cloning Core..."
@@ -132,19 +131,25 @@ function Clone-PyRevit() {
 }
 ```
 
-The `Clone-PyRevit` function uses the utility `Confirm-Path` function provide here, to confirm the install paths are clean and accessible. See the comments to learn more about the steps.
+The `Clone-PyRevit` function uses the two utility functions provided here. `Confirm-Path` creates a folder when it is missing and never deletes anything. `Remove-Clone` deletes only the folder of the clone being replaced.
 
 ```powershell
-# confirms target path exists and is empty. removes existing if found
+# creates the target path if it does not exist
 function Confirm-Path ([string] $targetpath) {
     Write-Output "Confirming $($targetpath)"
-    If (Test-Path $targetpath) {
-        Remove-Item -Path $targetpath -Recurse -Force
-    }
-
     New-Item -ItemType Directory -Force -Path $targetpath > $null
 }
+
+function Remove-Clone ([string] $clonepath) {
+    If (Test-Path -LiteralPath $clonepath) {
+        Remove-Item -LiteralPath $clonepath -Recurse -Force
+    }
+}
 ```
+
+!!! warning ""
+
+    The script does not close Revit for you. `pyrevit revits killall` ends every Revit process without a chance to save, so only use it when you are sure no one is working, for example in a logon script.
 
 ### Installing extensions
 
