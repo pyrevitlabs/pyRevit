@@ -19,13 +19,19 @@ def _load_version_class():
     nodes = [
         node
         for node in tree.body
-        if isinstance(node, (ast.ClassDef, ast.FunctionDef))
-        and node.name in ("_PyRevitVersion", "parse_version_string")
+        if (
+            isinstance(node, (ast.ClassDef, ast.FunctionDef))
+            and node.name in ("_PyRevitVersion", "parse_version_string")
+        )
+        or (
+            isinstance(node, ast.Assign)
+            and [getattr(target, "id", None) for target in node.targets]
+            == ["VERSION_REGEX"]
+        )
     ]
     namespace = {
         "re": re,
         "safe_strtype": str,
-        "VERSION_REGEX": r"\A(\d+)\.(\d+)\.(\d+)\.?(.+)?\Z",
         "VERSION_MAJOR": 0,
         "VERSION_MINOR": 0,
         "VERSION_PATCH": 0,
@@ -52,6 +58,10 @@ class ExtendedFormatTests(unittest.TestCase):
 
     def test_no_dangling_separator_without_a_repo(self):
         version = self.version_class("", "9.9.9.99999+9999")
+        self.assertEqual("9.9.9.99999+9999", version.get_formatted(extended=True))
+
+    def test_none_signature_leaves_no_separator(self):
+        version = self.version_class(None, "9.9.9.99999+9999")
         self.assertEqual("9.9.9.99999+9999", version.get_formatted(extended=True))
 
     def test_strict_ignores_the_signature(self):

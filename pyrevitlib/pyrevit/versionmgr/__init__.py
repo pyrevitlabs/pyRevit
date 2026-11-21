@@ -92,7 +92,7 @@ class _PyRevitVersion(object):
     signature = ""
 
     def __init__(self, signature, build_version=None):
-        self.signature = safe_strtype(signature)[:7]
+        self.signature = safe_strtype(signature or "")[:7]
 
         parsed = parse_version_string(build_version)
         if parsed:
