@@ -88,7 +88,7 @@ prints the same information as JSON, with these top-level keys: `meta`, `clones`
 
 ## Sharing the report
 
-The report contains your user name and local paths. Add `--redact` to mask user names, user profile folders, server names and Git URLs before you post the report in an issue. The masking is best effort, so read the result before you share it:
+The report contains your user name and local paths. Add `--redact` to mask user names, user profile folders, server names and Git URLs before you post the report in an issue. The masking is best effort: it cannot know that a folder name or a repository path is confidential, so read the result before you share it:
 
 ```powershell
 pyrevit env --redact

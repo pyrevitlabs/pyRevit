@@ -41,6 +41,7 @@ What seems to work in most cases:
     1. %AppData%\\Autodesk\\ApplicationPlugins
     1. %ProgramData%\\Autodesk\\Revit\\Addins\\\<year\>
     1. %ProgramData%\\Autodesk\\ApplicationPlugins
+    1. For Revit 2027 and later, the all-users folders under `C:\Program Files\Autodesk`, see [Where Revit loads add-ins from](#where-revit-loads-add-ins-from)
 1. \[Reboot computer\]
 1. **Reinstall pyRevit**
 1. Start **each version** of Revit and confirm pyRevit loads.

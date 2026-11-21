@@ -195,7 +195,7 @@ End Class
 
 ## CTRL-SHIFT-Click: Config Mode with Debug
 
-CTRL-SHIFT-Clicking on a button runs the config script in DEBUG mode.
+CTRL-SHIFT-Clicking on a button runs the config script in DEBUG mode. When the bundle has no config script, the main script runs in config mode and DEBUG mode.
 
 ## ALT-Click: Show Script file in Explorer
 

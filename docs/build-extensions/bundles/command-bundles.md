@@ -65,7 +65,7 @@ See [Configure pyRevit](../../get-started/configure.md) for more information abo
 
 ### CPython Scripts
 
-Push-Button bundles can contain a CPython  `*.py` file as their main script. pyRevit runs the script with the active CPython engine when its first line is `#! python3`.
+Push-Button bundles can contain a CPython  `*.py` file as their main script. pyRevit runs the script with the active CPython engine when its first line is `#! python3`. An `engine: type` set in the bundle file takes precedence over that line.
 
 See [Anatomy of CPython Scripts](../scripting/cpython.md)  for more detail on CPython scripts.
 
@@ -138,11 +138,15 @@ optional:
 
 When the bundle file has no `content` key, pyRevit looks for the family inside the bundle folder, in this order:
 
-1. `content_<revit year>.rfa`, for example `content_2026.rfa`
+1. the first file named `content_*.rfa`
 1. `content.rfa`
 1. any other `.rfa` file
 
-The alternative family follows the same convention with `other_<revit year>.rfa` and `other.rfa`. When a bundle has an alternative family, Revit UI shows a ● in front of the button name e.g. "Marker ●".
+The alternative family follows the same convention with `other_*.rfa` and `other.rfa`.
+
+!!! warning ""
+
+    The suffix after `content_` or `other_` is not compared with the running Revit version. Keep one such file per bundle, or set `content` and `content_alt` in the bundle file. When a bundle has an alternative family, Revit UI shows a ● in front of the button name e.g. "Marker ●".
 
 ## URL-Button Bundle
 

@@ -84,10 +84,12 @@ These configs options are for the [pyRevit Routes (HTTP API)](routes.md)
 ```text
 [routes]
 enabled = true
-host = ""
+host = "127.0.0.1"
 core_api = true
 port = 48884
 ```
+
+`host` is the address the server listens on. When it is empty or missing, the server listens on every network interface. The server does not authenticate callers, so only open it to the network on purpose.
 
 ### Telemetry Configs
 

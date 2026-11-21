@@ -96,7 +96,3 @@ Manage the extra folders pyRevit searches for extensions. See [Install extension
 ## Agent Runtime (MCP)
 
 Lets MCP coding agents read and change the open model through pyRevit. It is off by default. See [Agent runtime](../agent-runtime.md).
-
-## Import / Export Settings
-
-**Export Settings** saves the configuration to a file and **Import Settings** loads one.

@@ -30,8 +30,8 @@ $ pyrevit releases open latest
 
 ```powershell
 # download the archive
-$ pyrevit releases download archive <search_pattern> --dest="C:\Downloads"
+$ pyrevit releases download archive <search_pattern> --dest="%USERPROFILE%\Downloads"
 
 # or the installer
-$ pyrevit releases download installer <search_pattern> --dest="C:\Downloads"
+$ pyrevit releases download installer <search_pattern> --dest="%USERPROFILE%\Downloads"
 ```

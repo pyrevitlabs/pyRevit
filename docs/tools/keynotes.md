@@ -148,7 +148,7 @@ In either of these modes, Keynote Manager needs to ensure multiple users do not 
     !!! warning ""
 
         Deleting an orphaned `.lock` file when there are no users active, should solve the stuck Keynote Manager problem
-- ***Autodesk cloud:*** Keynote Manager uses the **Autodesk Desktop Connector** to lock the keynote file when a user opens Keynote Manager.
+- ***Autodesk cloud:*** Keynote Manager asks the **Autodesk Desktop Connector** to lock the keynote file when a user opens Keynote Manager. When the connector cannot sync or lock the file, the manager still opens, so check the lock on the file before a long editing session.
 
     ![](../assets/tools/keynotes/screen-shot-2021-12-30-at-21-13-30.png)
 

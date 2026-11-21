@@ -109,5 +109,5 @@ Once you are happy with the indices, printing configurations, and the output fil
 - Both folder fields accept the `{date}`, `{time}`, `{model}` and `{sheet_index}` tags.
 - A *Print Setting* type parameter (of type Text) on a titleblock family can hold the name of the print setting to use. With `<Variable Paper Size>`, the tool assigns that print setting to the sheets using this titleblock.
 - Right-click a file name in the sheet list to copy the file names.
-- When sheets of different models would get the same file name, add `{index}` or `{proj_number}` to the naming format.
+- When sheets of different models would get the same file name, add `{index}` to the naming format, or `{proj_number}` when the models have different project numbers.
 - A combined PDF cannot be made when the paper size varies by sheet.
