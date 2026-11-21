@@ -75,14 +75,27 @@ def _references_wpf(node):
 _DEFERRED_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
 
 
+def _definition_time_nodes(scope):
+    args = scope.args
+    return (
+        getattr(scope, "decorator_list", [])
+        + args.defaults
+        + [default for default in args.kw_defaults if default is not None]
+    )
+
+
 def _live_children(node):
     if isinstance(node, ast.If) and isinstance(node.test, ast.Constant):
-        return [node.test] + (node.body if node.test.value else node.orelse)
-    return [
-        child
-        for child in ast.iter_child_nodes(node)
-        if not isinstance(child, _DEFERRED_SCOPES)
-    ]
+        children = [node.test] + (node.body if node.test.value else node.orelse)
+    else:
+        children = ast.iter_child_nodes(node)
+    live = []
+    for child in children:
+        if isinstance(child, _DEFERRED_SCOPES):
+            live.extend(_definition_time_nodes(child))
+        else:
+            live.append(child)
+    return live
 
 
 def _import_time_nodes(tree):
@@ -109,11 +122,13 @@ def wpf_use_before_reference(source, filename="<script>"):
     """Return the line of the first unreferenced ``System.Windows`` use, or None.
 
     Note:
-        Only statements that run at import time are compared. Function and
-        lambda bodies are ignored: their uses are deferred until a call, and
-        their loads may never run. Branches of an ``if`` whose test is a
-        constant (``if False:``, ``if 0:``, the ``else`` of ``if True:``) that
-        can never execute are ignored too. Other blocks such as ``try`` count.
+        Only code that runs at import time is compared. Function and lambda
+        bodies are ignored, wherever they are defined, because they run only
+        when called; their decorators and default values still count. So a
+        use inside a function called before the load is not flagged. Branches
+        of an ``if`` whose test is a literal constant (``if False:``,
+        ``if 0:``, the ``else`` of ``if True:``) are ignored; other dead
+        conditions are not detected. Other blocks such as ``try`` count.
     """
     tree = ast.parse(source, filename)
     nodes = list(_import_time_nodes(tree))
@@ -185,6 +200,21 @@ class WpfUseBeforeReferenceTests(unittest.TestCase):
             "from System import Windows\n"
         )
         self.assertIsNone(wpf_use_before_reference(source))
+
+    def test_framework_import_in_function_inside_active_branch_is_flagged(self):
+        source = (
+            "if True:\n"
+            "    def helper():\n"
+            "        from pyrevit import framework\n"
+            "from System import Windows\n"
+        )
+        self.assertEqual(wpf_use_before_reference(source), 4)
+
+    def test_use_in_default_argument_is_flagged(self):
+        source = (
+            "import System\ndef show(window_type=System.Windows.Window):\n    pass\n"
+        )
+        self.assertEqual(wpf_use_before_reference(source), 2)
 
 
 class EngineTestsScriptsTests(unittest.TestCase):
