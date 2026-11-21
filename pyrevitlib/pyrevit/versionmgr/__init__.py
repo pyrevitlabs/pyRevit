@@ -123,13 +123,17 @@ class _PyRevitVersion(object):
         return ver_tuple
 
     def get_formatted(self, strict=False, extended=False):
-        """Returns 'major.minor.patch' in string."""
+        """Returns 'major.minor.patch' in string.
+
+        Extended reporting appends ``:signature`` only when a commit signature is
+        known; installer deploys have no git repo and get no trailing separator.
+        """
         formatted_ver = "{}.{}.{}".format(self.major, self.minor, self.patch)
 
         if not strict and self.metadata:
             formatted_ver += "." + self.metadata
 
-        if extended and not strict:
+        if extended and not strict and self.signature:
             formatted_ver += ":" + self.signature
 
         return formatted_ver
