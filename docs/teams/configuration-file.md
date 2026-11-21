@@ -16,16 +16,17 @@ See the guide below to configure pyRevit using the CLI tool
 
 pyRevit configuration file is a standards INI file that contains various sections for each pyRevit component or tool.
 
-The config file can be in one location only and that is `%APPDATA%/pyRevit`
+## Which file pyRevit uses
+
+- **Installed for the current user**: `%APPDATA%\pyRevit\pyRevit_config.ini`.
+- **Installed for all users**: a standard user still gets a file under `%APPDATA%\pyRevit`, seeded from the machine-wide file when one exists. An elevated process, such as the admin installer or the CLI run as administrator, reads and writes the machine-wide file in `%PROGRAMDATA%\pyRevit` directly.
+- **Locked machine-wide file**: when the file in `%PROGRAMDATA%\pyRevit` has the Windows read-only attribute, every user and every install scope uses it as is, and no setting can be changed.
 
 ## Seed Config File
 
-A Seed configuration file can be provided at `%PROGRAMDATA%/pyRevit`. pyRevit will use this seed file to configure pyRevit:
+`pyrevit configs seed` copies the current configuration to `%PROGRAMDATA%\pyRevit`. Each user's pyRevit then starts from that file the first time it loads.
 
-- If the seed config file is Read-Only for the user, pyRevit will use this config file without recreating a new one under `%APPDATA%/pyRevit  
-  `No other configuration changes are allowed to the config file since the file is Read-Only.
-- If the seed config file is writable, then pyRevit will copy the seed into `%APPDATA%/pyRevit` and will start with this config file.  
-  All the future changes to the configs are written to the main config file and not the seed. The seed is used only to bootstrap the main config.
+`pyrevit configs seed --lock` also sets the read-only attribute on the seeded file. That locks the configuration for every user of the machine. Only the read-only attribute locks the file; removing write permissions does not.
 
 ### Core Configs
 
@@ -87,13 +88,13 @@ These configs options are for the  [Telemetry System](telemetry.md)
 
 ```text
 [telemetry]
-active = true
+active = false
 telemetry_file_dir = ""
-telemetry_server_url = "http://data.tvapdx.com:8080/api/v2/scripts/"
-active_app = true
-apptelemetry_server_url = "http://data.tvapdx.com:8080/api/v2/events/"
+telemetry_server_url = ""
+active_app = false
+apptelemetry_server_url = ""
 apptelemetry_event_flags = "0x1d17e7f7ff59"
-utc_timestamps = falsel
+utc_timestamps = false
 ```
 
 ### Tab Coloring Configs

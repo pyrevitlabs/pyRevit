@@ -41,7 +41,7 @@ $ pyrevit clone dev --dest="C:\pyRevit\dev" --branch=develop
 
 #### Installing Custom Clones
 
-You can also use the clone command to install your own pyRevit clones from any git url. This is done by providing `--source=<repo_url>` or `--source=<archive_url>` depending on if you’re cloning from a git repo or an archive. If you are cloning from a private repository, you can provide the `--username` and `--password` to the repo account as well.
+You can also use the clone command to install your own pyRevit clones from any git url. Provide `--source=<repo_url>` to clone from a git repo, or `--image=<archive_url>` to install from a ZIP archive. If you are cloning from a private repository, you can provide the `--username` and `--password` to the repo account as well.
 
 ```powershell
 $ pyrevit clone mypyrevit --source="https://www.github.com/my-pyrevit.git" --dest="C:\pyRevit\mypyrevit" --branch=develop

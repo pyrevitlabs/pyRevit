@@ -61,7 +61,7 @@ Start-Process -FilePath ".\pyRevit_CLI_<version>_admin_signed.exe" `
 Lastly we need to add the installed path of the CLI, so we can use the `pyrevit` command in the next part of our install script.
 
 ```powershell
-$env:Path = "C:\Program Files\pyRevit CLI"
+$env:Path = "C:\Program Files\pyRevit CLI\bin;$env:Path"
 ```
 
 ### Cloning pyRevit
@@ -86,6 +86,9 @@ $pyrevitroot = "C:\pyRevit"
 # the name of the clone we are going to create
 $ourclonename = "ourmain"
 
+# the deployment to install, see the Deployments page
+$deploymentname = "base"
+
 # pyrevit clone install path
 $pyrevitcoredest = $(Join-Path $pyrevitroot $ourclonename)
 
@@ -109,16 +112,19 @@ Now we can create a Powershell function that clones pyRevit on the user machine.
 ```powershell
 # clone pyRevit
 function Clone-PyRevit() {
+    # close all open Revits first, so no pyRevit file is in use
+    Write-Output "Closing All Revits..."
+    pyrevit revits killall
+    if (Get-Process -Name "Revit" -ErrorAction SilentlyContinue) {
+        throw "Revit is still running. Close it and run the script again."
+    }
+
     # make sure paths exits and are clean
     Confirm-Path $pyrevitroot
     Confirm-Path $pyrevitexts
 
-    # close all open Revits first
-    Write-Output "Closing All Revits..."
-    pyrevit revits killall
-
-    # forget all previous pyRevit clones if any
-    pyrevit clones forget $pyrevitclonename > $null
+    # forget the previous clone if any
+    pyrevit clones forget $ourclonename > $null
 
     # clone pyRevit now
     Write-Output "Cloning Core..."

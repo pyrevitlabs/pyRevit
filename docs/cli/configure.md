@@ -44,4 +44,4 @@ pyrevit configs seed [--lock] [--log=<log_file>]
 $ pyrevit configs seed
 ```
 
-- `--lock`: Locks the file for current user only. pyRevit will now allow changing the configurations if the seed config file is not writable.
+- `--lock`: Sets the read-only attribute on the seeded file, which locks the configuration for every user of the machine. See [Configuration file](../teams/configuration-file.md).
