@@ -41,6 +41,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             Assert.Equal(AgentException.NotRunCode, busy.Code);
             Assert.Equal("not_run", busy.Details.Value<string>("outcome"));
+            Assert.Contains("A modal dialog is open", busy.Message);
             Assert.True(clock.Elapsed < TimeSpan.FromSeconds(5), "refused after " + clock.Elapsed);
         }
 

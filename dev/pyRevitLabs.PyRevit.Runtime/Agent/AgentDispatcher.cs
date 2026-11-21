@@ -82,9 +82,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     throw AgentException.NotRun("Revit rejected the agent request: " + response + ".");
             }
 
-            var gaveUpAfter = WaitForStart(item, startTimeout, failFastOnModalDialog);
-            if (gaveUpAfter.HasValue && TryRemove(item))
-                throw AgentException.NotRun(BusyMessage(gaveUpAfter.Value));
+            if (!WaitForStart(item, startTimeout, failFastOnModalDialog, out var waited, out var blockedByModalDialog)
+                && TryRemove(item))
+                throw AgentException.NotRun(BusyMessage(waited, blockedByModalDialog));
 
             var completion = new Task[] { item.Completion.Task };
             while (Task.WaitAny(completion, HungPollInterval) < 0) {
@@ -166,15 +166,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        private TimeSpan? WaitForStart(AgentWorkItem item, TimeSpan startTimeout, bool failFastOnModalDialog) {
+        private bool WaitForStart(
+            AgentWorkItem item, TimeSpan startTimeout, bool failFastOnModalDialog,
+            out TimeSpan waited, out bool blockedByModalDialog) {
             var clock = Stopwatch.StartNew();
             TimeSpan? blockedSince = null;
+            blockedByModalDialog = false;
             while (true) {
-                var remaining = startTimeout - clock.Elapsed;
+                waited = clock.Elapsed;
+                var remaining = startTimeout - waited;
                 if (remaining <= TimeSpan.Zero)
-                    return clock.Elapsed;
+                    return false;
                 if (item.Started.Wait(remaining < StartPollInterval ? remaining : StartPollInterval))
-                    return null;
+                    return true;
                 if (!failFastOnModalDialog)
                     continue;
                 if (!modalDialogOpen()) {
@@ -182,13 +186,18 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     continue;
                 }
                 blockedSince = blockedSince ?? clock.Elapsed;
-                if (clock.Elapsed - blockedSince.Value >= modalGrace)
-                    return clock.Elapsed;
+                waited = clock.Elapsed;
+                if (waited - blockedSince.Value >= modalGrace) {
+                    blockedByModalDialog = true;
+                    return false;
+                }
             }
         }
 
-        private string BusyMessage(TimeSpan waited) {
+        private string BusyMessage(TimeSpan waited, bool blockedByModalDialog) {
             var message = string.Format(CultureInfo.InvariantCulture, "Revit did not become idle within {0:0.#}s.", waited.TotalSeconds);
+            if (blockedByModalDialog)
+                message += " A modal dialog is open and keeps Revit from starting the request.";
             var since = Interlocked.Read(ref runningSinceTicks);
             var stuck = OverdueScript();
             if (since != 0 && stuck != null)
