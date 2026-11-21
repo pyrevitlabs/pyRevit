@@ -114,7 +114,7 @@ This DLL is required for the dockable console functionality in supported Revit v
 
 ## Step 4: Update Host Registry
 
-Add entries for the new Revit builds in [`release/pyrevit-hosts.json`](../release/pyrevit-hosts.json). CI copies this file into `bin/` at build time.
+Add entries for the new Revit builds in [`release/pyrevit-hosts.json`](https://github.com/pyrevitlabs/pyRevit/blob/develop/release/pyrevit-hosts.json). CI copies this file into `bin/` at build time.
 
 Example entry:
 
@@ -344,7 +344,7 @@ dotnet run -c Debug -- ci
 cd ..
 ```
 
-For Release stamping on the new Revit version, run with `Build__Channel=release` (or `wip`) instead of the default `none`. See [`build/README.md`](../build/README.md) for full options.
+For Release stamping on the new Revit version, run with `Build__Channel=release` (or `wip`) instead of the default `none`. See [`build/README.md`](https://github.com/pyrevitlabs/pyRevit/blob/develop/build/README.md) for full options.
 
 ### 8.2 Attach and test
 
