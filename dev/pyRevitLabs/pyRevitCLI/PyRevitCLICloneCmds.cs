@@ -122,7 +122,10 @@ namespace pyRevitCLI {
                         PyRevitAttachments.Detach(attachment.Product.ProductYear, attachment.AllUsers);
                     }
 
-                PyRevitClones.Delete(clone, clearConfigs: clearConfigs);
+                PyRevitClones.Delete(clone);
+
+                if (clearConfigs)
+                    Console.Error.WriteLine("Warning: --clearconfigs only applies together with --all; the user configuration was kept");
             }
         }
 
