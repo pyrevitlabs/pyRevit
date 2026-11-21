@@ -537,6 +537,22 @@ namespace pyRevitCLI {
                             { "<dest_path>",            "Telemetry folder for file, telemetry server url for server" },
                         });
                     break;
+
+                case PyRevitCLICommandType.ConfigsAppTelemetry:
+                    BuildHelp(
+                        new List<string>() { "configs apptelemetry" },
+                        header: "Configure application telemetry.\n"
+                                + "Run a command without a value to print the current setting.",
+                        commands: new Dictionary<string, string>() {
+                            { "flags",                  "Application telemetry event flags" },
+                            { "server",                 "Url of the application telemetry server" },
+                        },
+                        options: new Dictionary<string, string>() {
+                            { "enable | disable",       "Enable/Disable application telemetry" },
+                            { "<flags>",                "Event flags value" },
+                            { "<server_path>",          "Application telemetry server url" },
+                        });
+                    break;
             }
 
             // now exit
