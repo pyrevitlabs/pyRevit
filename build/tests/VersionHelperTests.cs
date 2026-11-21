@@ -115,4 +115,23 @@ public sealed class VersionHelperTests
     {
         Assert.AreEqual("bin-v6.5.3.26176+2017.zip", VersionHelper.GetCloneBinAssetName("6.5.3.26176+2017"));
     }
+
+    [TestMethod]
+    public void CreateVersionInfo_semanticVersionDropsBuildNumberAndMetadata()
+    {
+        var info = VersionHelper.CreateVersionInfo("7.1.0.26319+1907");
+
+        Assert.AreEqual("7.1.0", info.SemanticVersion);
+        Assert.AreEqual("7.1.0.26319", info.InstallVersion);
+        Assert.AreEqual("7.1.0.26319+1907", info.BuildVersion);
+    }
+
+    [TestMethod]
+    public void CreateVersionInfo_semanticVersionDropsWipSuffix()
+    {
+        var info = VersionHelper.CreateVersionInfo("7.2.0.26330+1015-wip");
+
+        Assert.AreEqual("7.2.0", info.SemanticVersion);
+        Assert.IsTrue(info.IsWip);
+    }
 }
