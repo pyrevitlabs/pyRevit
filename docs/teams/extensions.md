@@ -1,6 +1,33 @@
 # Distribute extensions
 
-!!! info "This page is being moved"
-    Until it is written here, read [pyRevit For Teams](https://pyrevitlabs.notion.site/ddc6c312d6f6488691eed2ec7704fd97) on the pyRevit Notion site.
+These functions continue the script from the [Team deployment guide](deployment-guide.md) and use the variables defined there.
 
-Planned content: install and update your own and third-party extensions for a team.
+## Installing pyRevit Extensions
+
+Now let's create another function that installs the pyRevit extensions we need. Let's assume we need the **pyApex** pyRevit extension.
+
+```powershell
+# install extensions
+function Install-Extensions() {
+    # make sure paths exits and are clean
+    Confirm-Path $pyrevitexts
+
+    # install extensions now
+    Write-Output "Cloning Extensions..."
+    pyrevit extend "pyApex" --dest=$pyrevitexts
+}
+```
+
+## Customizing pyRevit for Your Team
+
+If you need to deploy your own pyRevit core, or extensions, modify the command above as shown. See [Manage pyRevit clones](../cli/clones.md) to see all the options on the `clone` and `extend` commands used here
+
+```powershell
+# clone pyRevit now
+Write-Output "Cloning Core..."
+pyrevit clone $ourclonename --source=$ourpyrevitcore --dest=$pyrevitcoredest
+
+# clone the pyRevit extension now
+Write-Output "Cloning Extensions..."
+pyrevit extend ui $ourextname $ourpyrevitext --dest=$pyrevitexts
+```

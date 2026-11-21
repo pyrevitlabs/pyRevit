@@ -1,4 +1,57 @@
 # CLI
 
-The `pyrevit` command line utility.
-The [command reference](reference.md) lists every usage pattern and is generated from the CLI source, so it always matches the version you are reading about.
+`pyrevit` is the command-line tool, developed specifically to install and configure pyRevit in your production/development environment. There is a lot of commands and options available in the CLI tool. This document will guide you in using these commands and options based on what you’re trying to achieve. Each section below showcases a specific set of functionality of the command-line tool.
+
+This pages shows how to get help, check CLI version, and redirect command results to log file
+
+- Help, Version, & Logs
+
+## Environment Management
+
+- [Get Environment Info](environment.md)
+- [Manage pyRevit clones](clones.md)
+- [Manage pyRevit extensions](extensions.md)
+- [Configure pyRevit](configure.md)
+- [Attach pyRevit to Installed Revits](attach.md)
+- [Clear pyRevit Cache Files](caches.md)
+
+## Misc Functions
+
+- [Batch Process Revit Models](run.md)
+- [Manage Installed Revit](revits.md)
+- [Extract Model Metadata](revits.md)
+- [Get Release Info](releases.md)
+
+List the help for each command,  
+by adding the `--help` flag
+
+```powershell
+$ pyrevit --help        # will print help to console (-h shorthand)
+```
+
+Every command has its own help: add `--help` after the command name, for example `pyrevit clones --help`.
+
+To determine the version of your installed CLI tool
+
+```powershell
+$ pyrevit --version     # -V shorthand
+```
+
+To access a variety of online resource, use these commands
+
+```powershell
+$ pyrevit wiki      # pyRevit wiki page
+$ pyrevit blog      # pyRevit blog page
+$ pyrevit docs      # pyRevit documentation
+$ pyrevit source    # pyRevit source code
+$ pyrevit youtube   # pyRevit YouTube channel
+$ pyrevit support   # pyRevit suppport page for pyRevit patrons
+```
+
+With most commands you can log the complete results to a log file using the `--log=` option
+
+```powershell
+$ pyrevit clone master --log="C:\logfile.txt"
+```
+
+The [command reference](reference.md) lists every usage pattern and is generated from the CLI source.
