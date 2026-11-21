@@ -400,7 +400,10 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
                 "snap",
             ],
         )
-        self.assertEqual(result["clamped"][:2], [1100, True])
+        saved, width, main_width = result["clamped"]
+        self.assertEqual(saved, 1100)
+        self.assertLessEqual(width, main_width * 0.7 + 1)
+        self.assertGreaterEqual(width, 160)
         self.assertEqual(result["defaults_kept"], [True, "ghost", 0.12, True])
 
     def test_preview_covers_log_lines_in_the_output_window_and_the_side_panel_resizes(

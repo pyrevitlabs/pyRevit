@@ -654,7 +654,7 @@
     R.clamped = (() => {
       app.mount("app", { channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 }, settings: { sideWidth: 1100 }, view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] } });
       const q = app.instance;
-      return [q.flags.sideWidth, parseFloat(q.side.style.width) <= q.main.clientWidth * 0.7 + 1, q.main.clientWidth];
+      return [q.flags.sideWidth, parseFloat(q.side.style.width), q.main.clientWidth];
     })();
     R.defaults_kept = (() => {
       app.mount("app", { channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 }, settings: "garbage", view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] } });
