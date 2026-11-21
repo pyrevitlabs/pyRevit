@@ -43,4 +43,35 @@ public class CliArgumentsTests {
         Assert.Equal("fallback", PyRevitCLIArguments.Value(new Dictionary<string, ValueObject>(), "--nope", "fallback"));
         Assert.Equal("fallback", PyRevitCLIArguments.Value(null, "--nope", "fallback"));
     }
+
+    [Theory]
+    [InlineData(null, "configs", "--help")]
+    [InlineData(null, "configs", "-h")]
+    [InlineData("bincache", "configs", "bincache", "--help")]
+    [InlineData("some:option", "configs", "some:option", "--help")]
+    [InlineData("routes", "configs", "routes", "--help")]
+    [InlineData("routes", "configs", "routes", "port", "--help")]
+    [InlineData("agent", "configs", "agent", "--help")]
+    [InlineData("agent", "configs", "agent", "policy", "--help")]
+    [InlineData("telemetry", "configs", "telemetry", "-h")]
+    [InlineData("telemetry", "configs", "telemetry", "utc", "--help")]
+    [InlineData("apptelemetry", "configs", "apptelemetry", "--help")]
+    [InlineData("apptelemetry", "configs", "apptelemetry", "flags", "--help")]
+    public void HelpAfterAnyConfigsWordIsParsedWithTheFirstWordOfTheGroup(string expectedFirstWord, params string[] argv) {
+        var arguments = Parse(argv);
+
+        Assert.True(arguments["--help"].IsTrue || arguments["-h"].IsTrue);
+        Assert.Equal(expectedFirstWord, PyRevitCLIArguments.Values(arguments, "<config_words>").FirstOrDefault());
+    }
+
+    [Theory]
+    [InlineData("configs", "apptelemetry", "flags", "ALL")]
+    [InlineData("configs", "agent", "policy", "ask")]
+    [InlineData("configs", "bincache", "enable")]
+    public void ConfigsCommandsWithoutHelpAreNotTakenForHelp(params string[] argv) {
+        var arguments = Parse(argv);
+
+        Assert.False(arguments["--help"].IsTrue);
+        Assert.False(arguments["-h"].IsTrue);
+    }
 }
