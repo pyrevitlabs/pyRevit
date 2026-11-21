@@ -194,6 +194,16 @@
     <system:String x:Key="PreviewCategories">Categories</system:String>
     <system:String x:Key="PreviewAll">All</system:String>
     <system:String x:Key="PreviewNone">None</system:String>
+    <system:String x:Key="PreviewCubeBack">Back</system:String>
+    <system:String x:Key="PreviewCubeBottom">Bottom</system:String>
+    <system:String x:Key="PreviewCubeLeft">Left</system:String>
+    <system:String x:Key="PreviewCubeRight">Right</system:String>
+    <system:String x:Key="PreviewCompass">N,E,S,W</system:String>
+    <system:String x:Key="PreviewBoxOnly">box only</system:String>
+    <system:String x:Key="PreviewBoxes">{0} as boxes</system:String>
+    <system:String x:Key="PreviewNotLoaded">{0} not loaded</system:String>
+    <system:String x:Key="PreviewLoadGroup">Load</system:String>
+    <system:String x:Key="PreviewSearch">Search categories</system:String>
     <system:String x:Key="PreviewFront">Front</system:String>
     <system:String x:Key="PreviewSide">Side</system:String>
     <system:String x:Key="PreviewAllLevels">All levels</system:String>
