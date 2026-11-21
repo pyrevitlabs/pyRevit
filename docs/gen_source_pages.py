@@ -61,24 +61,34 @@ def write_cli_reference():
 
 
 def write_engines():
-    """Write ``runtime/engines.md`` from the engines in ``pyRevitfile``."""
+    """Write ``runtime/engines.md`` from the engines in ``pyRevitfile``.
+
+    Only engines marked ``runtime = true`` can load pyRevit, so the page
+    separates the ids ``pyrevit attach`` accepts from the script-only engines.
+    """
     engines = tomllib.loads(PYREVITFILE.read_text(encoding="utf-8"))["engines"]
     with mkdocs_gen_files.open("runtime/engines.md", "w") as page:
         print("# Engines\n", file=page)
         print(
-            "Script engines shipped with pyRevit, generated from `pyRevitfile`. "
-            "The engine id is the value `pyrevit attach` accepts; `DEFAULT` is "
-            "the engine used when you attach with `default`.\n",
+            "Script engines shipped with pyRevit, generated from `pyRevitfile`.\n",
             file=page,
         )
-        print("| Name | Engine id | Kernel | Folder | Description |", file=page)
-        print("|---|---|---|---|---|", file=page)
+        print(
+            "A runtime engine loads pyRevit itself: `pyrevit attach` accepts its "
+            "engine id, and `default` selects the `DEFAULT` engine. A script "
+            "engine only runs scripts that ask for it and cannot be attached.\n",
+            file=page,
+        )
+        print("| Name | Engine id | Kernel | Use | Folder | Description |", file=page)
+        print("|---|---|---|---|---|---|", file=page)
         for name, engine in engines.items():
+            use = "Runtime, attachable" if engine.get("runtime") else "Scripts only"
             print(
-                "| `{}` | `{}` | {} | `{}` | {} |".format(
+                "| `{}` | `{}` | {} | {} | `{}` | {} |".format(
                     name,
                     engine["version"],
                     engine["kernel"],
+                    use,
                     engine["path"],
                     engine.get("description", ""),
                 ),

@@ -40,6 +40,9 @@ extra_css:
 
 watch:
   - pyrevitlib/pyrevit
+  - pyRevitfile
+  - dev/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt
+  - dev/pyRevitLabs.PyRevit.Runtime/ScriptExecutor.cs
 
 plugins:
   - search
