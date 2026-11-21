@@ -472,6 +472,7 @@ func main() {
 				},
 				Flags: complete.Flags{
 					"--allowdialogs": complete.PredictNothing,
+					"--clone":        complete.PredictNothing,
 					"--help":         complete.PredictNothing,
 					"--import":       complete.PredictNothing,
 					"--inputs":       complete.PredictNothing,
@@ -1239,9 +1240,9 @@ func main() {
 			"doctor": complete.Command{
 				Sub: complete.Commands{},
 				Flags: complete.Flags{
-					"--dryrun":      complete.PredictNothing,
-					"--force":       complete.PredictNothing,
-					"--help":        complete.PredictNothing,
+					"--dryrun":          complete.PredictNothing,
+					"--force":           complete.PredictNothing,
+					"--help":            complete.PredictNothing,
 					"--keep-config":     complete.PredictNothing,
 					"--keep-extensions": complete.PredictNothing,
 					"--list":            complete.PredictNothing,
