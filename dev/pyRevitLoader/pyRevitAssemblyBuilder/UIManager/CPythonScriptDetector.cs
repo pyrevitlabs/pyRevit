@@ -40,7 +40,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                 using var reader = new StreamReader(scriptPath);
                 return reader.ReadLine();
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
                 return null;
             }
