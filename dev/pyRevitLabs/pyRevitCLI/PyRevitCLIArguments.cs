@@ -55,12 +55,6 @@ namespace pyRevitCLI {
             throw new PyRevitException(string.Format("Invalid limit \"{0}\": expected a positive whole number", text));
         }
 
-        /// <summary>
-        /// Returns <paramref name="attachment"/> after checking that pyRevit is attached to the Revit year.
-        /// </summary>
-        /// <param name="attachment">The attachment found for <paramref name="revitYear"/>, or null when there is none.</param>
-        /// <param name="revitYear">The Revit year the attachment was looked up for, for the error message.</param>
-        /// <exception cref="PyRevitException">pyRevit is not attached to the Revit year.</exception>
         internal static PyRevitAttachment RequireAttachment(PyRevitAttachment attachment, int revitYear) {
             if (attachment != null)
                 return attachment;
