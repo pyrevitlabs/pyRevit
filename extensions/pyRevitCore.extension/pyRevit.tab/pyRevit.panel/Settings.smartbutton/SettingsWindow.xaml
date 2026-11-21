@@ -312,7 +312,7 @@
                                             <LineBreak/>
                                             <Run Text="{DynamicResource Routes.RestAPI.Check.Description}"/>
                                             <LineBreak/>
-                                            <Hyperlink NavigateUri="https://docs.pyrevitlabs.io/teams/routes/#pyrevit-routes-core-api" Click="handle_url_click">
+                                            <Hyperlink NavigateUri="https://docs.pyrevitlabs.io/teams/routes/#pyrevit-core-api" Click="handle_url_click">
                                                 <Run Text="{DynamicResource Routes.RestAPI.Check.Docs}"/>
                                             </Hyperlink>
                                         </TextBlock>
