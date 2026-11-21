@@ -50,11 +50,13 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
 
         private string _modelPath;
 
+        /// <summary>Picks a unique temporary model path.</summary>
         [SetUp]
         public void CreateModelPath() {
             _modelPath = Path.Combine(Path.GetTempPath(), "pyrevit-modelfile-" + Guid.NewGuid().ToString("N") + ".rvt");
         }
 
+        /// <summary>Deletes the temporary model if it was written.</summary>
         [TearDown]
         public void DeleteModel() {
             if (File.Exists(_modelPath))
@@ -90,6 +92,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             return endOfCentralDirectory;
         }
 
+        /// <summary>A ProjectInformation stream without a project XML entry yields an empty property set.</summary>
         [Test()]
         public void ProjectInformationWithoutProjectXml_HasNoProperties() {
             var model = new RevitModelFile(WriteModel(Revit2026SampleInfo, EmptyZip()));
@@ -98,6 +101,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(model.ProjectInfoProperties.Count, Is.EqualTo(0));
         }
 
+        /// <summary>A build number without a date resolves to an unlisted product of the format year, and the last saved path is read.</summary>
         [Test()]
         public void BuildWithoutDate_FallsBackToTheFormatYear() {
             var model = new RevitModelFile(WriteModel(Revit2026SampleInfo));
@@ -109,6 +113,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(model.LastSavedPath, Is.EqualTo(@"C:\Autodesk\Snowdon Towers Sample Architectural.rvt"));
         }
 
+        /// <summary>An unlisted dated build resolves to an unlisted product of the format year that keeps the build number.</summary>
         [Test()]
         public void UnlistedBuild_FallsBackToTheFormatYear_AndKeepsTheBuildNumber() {
             var model = new RevitModelFile(WriteModel(Revit2023SampleInfo));
@@ -128,6 +133,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                 Assert.Inconclusive("The host database does not list build " + Shared2022And2023Build + " for both Revit 2022 and 2023");
         }
 
+        /// <summary>A build listed for two years resolves to the host database record of the model's format year.</summary>
         [TestCase(2022, "22.1.80.32")]
         [TestCase(2023, "23.1.60.36")]
         public void SharedListedBuild_UsesTheFormatYearToPickTheRecord(int formatYear, string expectedVersion) {
@@ -144,6 +150,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(model.RevitProduct.IsListedInHostsDatabase, Is.True);
         }
 
+        /// <summary>An unknown build without a format line leaves the product undetected.</summary>
         [Test()]
         public void UnknownBuild_WithoutFormatYear_StaysUndetected() {
             var model = new RevitModelFile(WriteModel(NoFormatUnknownBuildInfo));
@@ -152,6 +159,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(model.RevitProduct, Is.Null);
         }
 
+        /// <summary><c>CreatedIn</c> names the format year and recorded build and says it is not in pyrevit-hosts.json.</summary>
         [Test()]
         public void UnlistedProduct_DescribesTheRecordedBuild() {
             var revit2026 = new RevitModelFile(WriteModel(Revit2026SampleInfo));
@@ -162,6 +170,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(revit2023.CreatedIn, Is.EqualTo("Autodesk Revit 2023 (build 20220108_1515(x64), not listed in pyrevit-hosts.json)"));
         }
 
+        /// <summary>A product made from a year alone has no version, an empty build number and is not listed.</summary>
         [Test()]
         public void FromProductYear_IsAYearOnlyProduct() {
             var product = RevitProduct.FromProductYear(2025);

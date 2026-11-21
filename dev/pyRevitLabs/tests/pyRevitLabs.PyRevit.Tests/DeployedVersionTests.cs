@@ -33,6 +33,7 @@ namespace pyRevitLabs.PyRevit.Tests {
             File.WriteAllText(Path.Combine(moduleDir, "version"), VersionFileContent);
         }
 
+        /// <summary>Deletes the temporary clone.</summary>
         [TearDown]
         public void RemoveClone() {
             if (Directory.Exists(_clonePath))
@@ -57,11 +58,13 @@ namespace pyRevitLabs.PyRevit.Tests {
                 overwrite: true);
         }
 
+        /// <summary>A clone with no built binaries reports the version file content.</summary>
         [Test]
         public void UnbuiltCloneReportsTheVersionFile() {
             Assert.That(PyRevitClone.GetDeployedVersion(_clonePath, null), Is.EqualTo(VersionFileContent));
         }
 
+        /// <summary>A built clone reports the built assembly's version instead of the version file.</summary>
         [Test]
         public void BuiltCloneReportsTheAssemblyOverTheVersionFile() {
             StageBuiltAssembly(PyRevitConsts.NetFxFolder);
@@ -70,6 +73,7 @@ namespace pyRevitLabs.PyRevit.Tests {
             Assert.That(PyRevitClone.GetDeployedVersion(_clonePath, null), Is.EqualTo(BuiltAssemblyVersion));
         }
 
+        /// <summary>Requesting .NET Framework reads the version from the netfx binaries tree.</summary>
         [Test]
         public void RequestedFrameworkSelectsTheTreeToRead() {
             StageBuiltAssembly(PyRevitConsts.NetFxFolder);
@@ -77,6 +81,7 @@ namespace pyRevitLabs.PyRevit.Tests {
             Assert.That(PyRevitClone.GetDeployedVersion(_clonePath, isNetCore: false), Is.EqualTo(BuiltAssemblyVersion), "A netfx host must read the netfx tree, which is the only one built here.");
         }
 
+        /// <summary>Requesting a framework tree the clone lacks falls back to the version file rather than reading the other tree.</summary>
         [Test]
         public void MissingRequestedFrameworkFallsBackToTheVersionFile() {
             StageBuiltAssembly(PyRevitConsts.NetFxFolder);
@@ -84,6 +89,7 @@ namespace pyRevitLabs.PyRevit.Tests {
             Assert.That(PyRevitClone.GetDeployedVersion(_clonePath, isNetCore: true), Is.EqualTo(VersionFileContent), "Asking for a tree the clone does not have must not read the other one.");
         }
 
+        /// <summary>The version file fallback is returned without trailing whitespace.</summary>
         [Test]
         public void VersionFileFallbackIsTrimmed() {
             File.WriteAllText(

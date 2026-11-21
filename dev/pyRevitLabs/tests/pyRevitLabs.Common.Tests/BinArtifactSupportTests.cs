@@ -13,6 +13,7 @@ namespace pyRevitLabs.Common.Tests {
     public class BinArtifactSupportTests {
         private string _tempRoot = null!;
 
+        /// <summary>Creates a unique temporary root directory for the test.</summary>
         [SetUp]
         public void SetUp() {
             _tempRoot = Path.Combine(
@@ -21,12 +22,14 @@ namespace pyRevitLabs.Common.Tests {
             Directory.CreateDirectory(_tempRoot);
         }
 
+        /// <summary>Deletes the temporary root directory and everything in it.</summary>
         [TearDown]
         public void TearDown() {
             if (Directory.Exists(_tempRoot))
                 Directory.Delete(_tempRoot, recursive: true);
         }
 
+        /// <summary>The develop and master branches have CI bins, matched case-insensitively.</summary>
         [Test]
         public void IsSupportedCiBinBranch_DevelopAndMaster_Test() {
             Assert.That(BinArtifactSupport.IsSupportedCiBinBranch("develop"), Is.True);
@@ -34,6 +37,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(BinArtifactSupport.IsSupportedCiBinBranch("Develop"), Is.True);
         }
 
+        /// <summary>Feature branches, version tags, null and empty refs have no CI bins.</summary>
         [Test]
         public void IsSupportedCiBinBranch_OtherBranches_Test() {
             Assert.That(BinArtifactSupport.IsSupportedCiBinBranch("feature/foo"), Is.False);
@@ -42,6 +46,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(BinArtifactSupport.IsSupportedCiBinBranch(string.Empty), Is.False);
         }
 
+        /// <summary>Release tags such as <c>v6.5.3.26176+2017</c> are version tags regardless of the v case or surrounding whitespace.</summary>
         [Test]
         public void IsVersionTagRef_PublishedReleaseTags_Test() {
             Assert.That(BinArtifactSupport.IsVersionTagRef("v6.5.3.26176+2017"), Is.True);
@@ -49,6 +54,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(BinArtifactSupport.IsVersionTagRef(" v4.8.16 "), Is.True);
         }
 
+        /// <summary>Branch names, words starting with v, a bare v, null and empty refs are not version tags.</summary>
         [Test]
         public void IsVersionTagRef_NonVersionRefs_Test() {
             Assert.That(BinArtifactSupport.IsVersionTagRef("develop"), Is.False);
@@ -60,6 +66,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(BinArtifactSupport.IsVersionTagRef(string.Empty), Is.False);
         }
 
+        /// <summary>A fork's own repository is searched for release bins first, then the upstream repository.</summary>
         [Test]
         public void GetReleaseDownloadRepos_ForkIncludesUpstream_Test() {
             var repos = BinArtifactSupport.GetReleaseDownloadRepos("myorg/pyRevit");
@@ -68,6 +75,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(repos[1], Is.EqualTo(PyRevitLabsConsts.OriginalRepoId));
         }
 
+        /// <summary>The upstream repository is searched once, without a duplicate entry.</summary>
         [Test]
         public void GetReleaseDownloadRepos_UpstreamOnly_Test() {
             var repos = BinArtifactSupport.GetReleaseDownloadRepos(PyRevitLabsConsts.OriginalRepoId);
@@ -75,6 +83,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(repos[0], Is.EqualTo(PyRevitLabsConsts.OriginalRepoId));
         }
 
+        /// <summary>An extracted archive with a top-level <c>bin</c> folder resolves to that folder.</summary>
         [Test]
         public void ResolveBinSourceRoot_DirectBinWrapper_Test() {
             var extractRoot = Path.Combine(_tempRoot, "extract-direct");
@@ -86,6 +95,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(resolved, Is.EqualTo(binDir));
         }
 
+        /// <summary>An extracted archive holding the bin contents directly resolves to the extraction root.</summary>
         [Test]
         public void ResolveBinSourceRoot_FlatRoot_Test() {
             var extractRoot = Path.Combine(_tempRoot, "extract-flat");
@@ -97,6 +107,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(resolved, Is.EqualTo(extractRoot));
         }
 
+        /// <summary>An extracted archive with a single wrapper folder resolves to the <c>bin</c> folder inside it.</summary>
         [Test]
         public void ResolveBinSourceRoot_SingleNestedDir_Test() {
             var extractRoot = Path.Combine(_tempRoot, "extract-nested");
@@ -109,12 +120,14 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(resolved, Is.EqualTo(nestedBin));
         }
 
+        /// <summary>The CI package version is <c>1.0.0-ci-</c> followed by the first seven characters of the commit hash.</summary>
         [Test]
         public void BuildNuGetPackageVersion_Test() {
             var version = GithubNuGetBinAPI.BuildPackageVersion("abcdef1234567890abcdef1234567890abcdef12");
             Assert.That(version, Is.EqualTo("1.0.0-ci-abcdef1"));
         }
 
+        /// <summary>Swapping replaces the clone's bin contents with the new source and leaves no <c>bin.bak</c> or <c>bin.new</c> folder behind.</summary>
         [Test]
         public void SwapBinDirectory_ReplacesExistingBin_Test() {
             var clonePath = Path.Combine(_tempRoot, "clone-success");
@@ -134,6 +147,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(Directory.Exists(Path.Combine(clonePath, "bin.new")), Is.False);
         }
 
+        /// <summary>A swap from a missing source throws <c>PyRevitException</c> and keeps the existing bin and its files in place.</summary>
         [Test]
         public void SwapBinDirectory_RestoresBackupOnFailure_Test() {
             var clonePath = Path.Combine(_tempRoot, "clone-failure");

@@ -23,6 +23,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         private string _previousConfigScopeOverride;
         private Func<bool> _previousElevationDetector;
 
+        /// <summary>Redirects the user and machine config folders to a temporary root and forces a non-elevated process.</summary>
         [SetUp]
         public void Setup() {
             _previousElevationDetector = PyRevitInstallScope.ElevatedProcessDetector;
@@ -50,6 +51,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             File.WriteAllText(configPath, "[core]\r\nuserextensions = [" + encodedPaths + "]\r\n");
         }
 
+        /// <summary>Restores the elevation detector, environment overrides and install scope, then deletes the temporary root.</summary>
         [TearDown]
         public void Cleanup() {
             PyRevitInstallScope.ElevatedProcessDetector = _previousElevationDetector;
@@ -68,12 +70,14 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             FixtureDirectory.Delete(_tempRoot);
         }
 
+        /// <summary>Without any all-users signal the install is per-user and configs live under the AppData folder.</summary>
         [Test]
         public void GetConfigDirectory_WithoutMachineScope_UsesAppDataPath() {
             Assert.That(PyRevitInstallScope.IsAllUsersInstall(), Is.False);
             Assert.That(PyRevitInstallScope.GetConfigDirectory(), Is.EqualTo(PyRevitLabsConsts.PyRevitPath));
         }
 
+        /// <summary>The legacy all-users marker file makes the install all-users and moves configs to ProgramData.</summary>
         [Test]
         public void GetConfigDirectory_WithLegacyMarker_UsesProgramDataPath() {
             string programDataPyRevit = PyRevitLabsConsts.PyRevitProgramDataPath;
@@ -94,6 +98,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>The config scope environment override makes the install all-users and moves configs to ProgramData.</summary>
         [Test]
         public void GetConfigDirectory_WithScopeOverride_UsesProgramDataPath() {
             Environment.SetEnvironmentVariable(
@@ -104,6 +109,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(PyRevitInstallScope.GetConfigDirectory(), Is.EqualTo(PyRevitLabsConsts.PyRevitProgramDataPath));
         }
 
+        /// <summary>A runtime install root under Program Files is detected as an all-users install.</summary>
         [Test]
         public void IsAllUsersInstall_DetectsProgramFilesInstallRoot() {
             var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
@@ -128,6 +134,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(PyRevitInstallScope.IsElevatedProcess(), Is.False);
         }
 
+        /// <summary>A non-elevated all-users session uses a writable user config seeded from the machine config.</summary>
         [Test]
         public void GetActiveConfig_AllUsers_WritableMachineConfig_NonElevated_UsesUserConfig() {
             AssertRequiresNonElevatedWindowsProcess();
@@ -152,6 +159,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(File.ReadAllText(expectedUserConfig), Is.EqualTo(seedContent));
         }
 
+        /// <summary>An elevated all-users session uses the writable machine config directly.</summary>
         [Test]
         public void GetActiveConfig_AllUsers_WritableMachineConfig_Elevated_UsesMachineConfig() {
             PyRevitInstallScope.ElevatedProcessDetector = () => true;
@@ -176,6 +184,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(active.IsReadOnly, Is.False);
         }
 
+        /// <summary>A non-elevated all-users session with no machine config creates a user config and no machine config.</summary>
         [Test]
         public void GetActiveConfig_AllUsers_MissingMachineConfig_NonElevated_CreatesUserConfig() {
             AssertRequiresNonElevatedWindowsProcess();
@@ -196,6 +205,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(File.Exists(expectedMachineConfig), Is.False);
         }
 
+        /// <summary>An elevated all-users session with no machine config creates and uses a writable machine config.</summary>
         [Test]
         public void GetActiveConfig_AllUsers_MissingMachineConfig_Elevated_CreatesMachineConfig() {
             PyRevitInstallScope.ElevatedProcessDetector = () => true;
@@ -218,6 +228,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(File.Exists(expected), Is.True);
         }
 
+        /// <summary>A machine config held open exclusively does not stop a non-elevated session from creating a writable user config.</summary>
         [Test]
         public void GetActiveConfig_AllUsers_UnreadableMachineSeed_CreatesWritableUserConfig() {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
@@ -249,6 +260,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>A read-only machine config in an all-users install is used as the active config and reported read-only.</summary>
         [Test]
         public void GetActiveConfig_AllUsers_LockedMachineConfig_IsReadOnlyMachineConfig() {
             Environment.SetEnvironmentVariable(
@@ -273,6 +285,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>A non-elevated session that cannot write the machine config falls back to a writable user config seeded from it.</summary>
         [Test]
         public void GetActiveConfig_AllUsers_UnwritableMachineConfig_NonElevated_FallsBackToSeededUserConfig() {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
@@ -306,6 +319,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>An elevated session that cannot write the machine config still uses it, reported read-only.</summary>
         [Test]
         public void GetActiveConfig_AllUsers_UnwritableMachineConfig_Elevated_UsesMachineConfig() {
             PyRevitInstallScope.ElevatedProcessDetector = () => true;
@@ -333,6 +347,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>A per-user install with no user config seeds a writable user config from the machine config.</summary>
         [Test]
         public void GetActiveConfig_PerUser_SeedsUserConfigFromMachineConfig() {
             string machineConfig = Path.Combine(
@@ -352,6 +367,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(File.ReadAllText(expectedUserConfig), Is.EqualTo(seedContent));
         }
 
+        /// <summary>A read-only machine config takes precedence in a per-user install and is reported read-only.</summary>
         [Test]
         public void GetActiveConfig_PerUser_LockedMachineConfig_IsReadOnlyMachineConfig() {
             string machineConfig = Path.Combine(
@@ -372,6 +388,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>A per-user install with an existing user config uses it as a writable user config.</summary>
         [Test]
         public void GetActiveConfig_PerUser_ExistingUserConfig_IsUsedDirectly() {
             Directory.CreateDirectory(PyRevitLabsConsts.PyRevitPath);
@@ -385,6 +402,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(active.IsReadOnly, Is.False);
         }
 
+        /// <summary>Loading the config in an elevated all-users install merges the user config's clones and extension sections into the machine config.</summary>
         [Test]
         public void MigrateSplitAdminConfig_MergesClonesAndExtensionSections() {
             PyRevitInstallScope.ElevatedProcessDetector = () => true;
@@ -427,6 +445,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>Seeding shipped defaults writes a disabled entry for an extension whose <c>default_enabled</c> is false.</summary>
         [Test]
         public void SeedShippedExtensionDefaults_WritesDisabledForOptOutExtensions() {
             string appDataPyRevit = PyRevitLabsConsts.PyRevitPath;
@@ -461,6 +480,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>A standard user's extension roots come from the user config, so a machine path the user already removed does not return.</summary>
         [Test]
         public void GetExtensionRoots_AllUsers_StandardUser_ReadsOnlyTheActiveConfig() {
             AssertRequiresNonElevatedWindowsProcess();
@@ -502,6 +522,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>With a read-only machine config only the machine extension paths load and per-user paths are ignored.</summary>
         [Test]
         public void GetExtensionRoots_AllUsers_LockedMachine_SkipsPerUserExtensions() {
             Environment.SetEnvironmentVariable(
@@ -540,6 +561,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>When an unwritable machine config forces the user-config fallback, its extension paths are still loaded.</summary>
         [Test]
         public void GetExtensionRoots_AllUsers_UnwritableMachineFallback_MergesMachineExtensions() {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
@@ -581,6 +603,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>An extension path listed in both machine and user configs appears once, compared case-insensitively.</summary>
         [Test]
         public void GetExtensionRoots_AllUsers_DedupesAcrossScopes() {
             Environment.SetEnvironmentVariable(
@@ -618,6 +641,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>A per-user install loads only the user config's extension paths, not the machine config's.</summary>
         [Test]
         public void GetExtensionRoots_PerUser_IgnoresMachineExtensions() {
             string machineConfigPath = Path.Combine(
@@ -649,6 +673,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>A new machine extension path is loaded for a standard user and written into the user config.</summary>
         [Test]
         public void GetExtensionRoots_AllUsers_StandardUser_PicksUpNewMachinePaths() {
             AssertRequiresNonElevatedWindowsProcess();
@@ -688,6 +713,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>New machine extension paths still load for the session when the user config cannot be saved.</summary>
         [Test]
         public void GetExtensionRoots_AllUsers_WriteBlockedUserConfig_StillLoadsNewMachinePaths() {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
@@ -732,6 +758,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>The user-config fallback with no machine extension paths still returns the user's extension paths.</summary>
         [Test]
         public void GetExtensionRoots_AllUsers_FallbackWithoutMachineExtensions_ReturnsUserOnly() {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(

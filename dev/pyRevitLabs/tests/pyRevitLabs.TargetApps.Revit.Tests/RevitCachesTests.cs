@@ -13,18 +13,21 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
     public class RevitCachesTests {
         private string _tempRoot;
 
+        /// <summary>Creates a scratch folder for Revit.ini fixtures.</summary>
         [SetUp]
         public void Setup() {
             _tempRoot = Path.Combine(Path.GetTempPath(), "pyRevitRevitCachesTests_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_tempRoot);
         }
 
+        /// <summary>Deletes the scratch folder.</summary>
         [TearDown]
         public void Cleanup() {
             if (Directory.Exists(_tempRoot))
                 Directory.Delete(_tempRoot, recursive: true);
         }
 
+        /// <summary>The default BIM 360 cache is the version's CollaborationCache folder under LocalAppData.</summary>
         [Test()]
         public void GetBIM360CacheDirectory_UsesLocalAppDataDefault() {
             var path = pyRevitLabs.TargetApps.Revit.RevitCaches.GetBIM360CacheDirectory(2025);
@@ -35,6 +38,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                               StringComparison.OrdinalIgnoreCase), Is.True, $"Unexpected default cache path: {path}");
         }
 
+        /// <summary>Revit.ini is read from the version's folder under AppData.</summary>
         [Test()]
         public void GetRevitIniFile_UsesAppData() {
             var path = pyRevitLabs.TargetApps.Revit.RevitCaches.GetRevitIniFile(2024);
@@ -45,6 +49,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                               StringComparison.OrdinalIgnoreCase), Is.True, $"Unexpected Revit.ini path: {path}");
         }
 
+        /// <summary>The cache location is read from the CloudModelCache section.</summary>
         [Test()]
         public void ReadCloudModelCacheLocation_ReadsConfiguredValue() {
             var iniPath = WriteIni(
@@ -55,6 +60,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(value, Is.EqualTo(@"D:\Custom\BIM360Cache"));
         }
 
+        /// <summary>Quotes around the cache location are stripped and the same key in other sections is ignored.</summary>
         [Test()]
         public void ReadCloudModelCacheLocation_StripsQuotesAndIgnoresOtherSections() {
             var iniPath = WriteIni(
@@ -68,6 +74,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(value, Is.EqualTo(@"C:\Quoted\Cache"));
         }
 
+        /// <summary>A missing file, an empty value or a missing CloudModelCache section yields null.</summary>
         [Test()]
         public void ReadCloudModelCacheLocation_MissingOrEmpty_ReturnsNull() {
             Assert.That(pyRevitLabs.TargetApps.Revit.RevitCaches.ReadCloudModelCacheLocation(
@@ -80,6 +87,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(pyRevitLabs.TargetApps.Revit.RevitCaches.ReadCloudModelCacheLocation(noSection), Is.Null);
         }
 
+        /// <summary>A custom cache location is ignored before Revit 2024.</summary>
         [Test()]
         public void GetCustomBIM360CacheDirectory_Pre2024_ReturnsNull() {
             var cacheDir = Path.Combine(_tempRoot, "cache2023");
@@ -90,6 +98,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(custom, Is.Null, "Custom cache paths are only supported for Revit 2024+");
         }
 
+        /// <summary>The configured custom cache path is returned as a full path even when the folder does not exist.</summary>
         [Test()]
         public void GetCustomBIM360CacheDirectory_ReturnsConfiguredPathEvenIfMissing() {
             var missingDir = Path.Combine(_tempRoot, "does-not-exist");
@@ -99,6 +108,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(custom, Is.EqualTo(Path.GetFullPath(missingDir)));
         }
 
+        /// <summary>Environment variables in the custom cache location are expanded.</summary>
         [Test()]
         public void GetCustomBIM360CacheDirectory_ExpandsEnvironmentVariables() {
             var cacheDir = Path.Combine(_tempRoot, "envcache");
@@ -115,6 +125,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             }
         }
 
+        /// <summary>The active cache is the custom location when that folder exists.</summary>
         [Test()]
         public void GetActiveBIM360CacheDirectory_UsesExistingCustomPath() {
             var cacheDir = Path.Combine(_tempRoot, "cache2025");
@@ -125,6 +136,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(active, Is.EqualTo(Path.GetFullPath(cacheDir)));
         }
 
+        /// <summary>The active cache falls back to the default when the custom folder is missing.</summary>
         [Test()]
         public void GetActiveBIM360CacheDirectory_FallsBackWhenCustomMissing() {
             var missingDir = Path.Combine(_tempRoot, "does-not-exist");
@@ -135,6 +147,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(active, Is.EqualTo(expected));
         }
 
+        /// <summary>Before Revit 2024 the active cache is always the default location.</summary>
         [Test()]
         public void GetActiveBIM360CacheDirectory_Pre2024_UsesDefault() {
             var cacheDir = Path.Combine(_tempRoot, "cache2023");

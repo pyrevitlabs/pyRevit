@@ -35,6 +35,7 @@ public class PyRevitRunnerCommandTests {
         return path;
     }
 
+    /// <summary>The command name drops only the trailing <c>_command.py</c> postfix, matched case-insensitively.</summary>
     [TestCase("hello_command.py", "hello")]
     [TestCase("Foo_Command.PY", "Foo")]
     [TestCase("Foo_COMMAND.py", "Foo")]
@@ -46,6 +47,7 @@ public class PyRevitRunnerCommandTests {
         Assert.That(command.Name, Is.EqualTo(expectedName));
     }
 
+    /// <summary>Listing commands includes only files with the command postfix, named without it.</summary>
     [Test]
     public void GetCommands_ListsOnlyCommandPostfixFilesUnderTheirCleanName() {
         AddCommandFile("hello_command.py");
@@ -57,6 +59,7 @@ public class PyRevitRunnerCommandTests {
         Assert.That(names, Is.EqualTo(new[] { "Foo", "hello" }));
     }
 
+    /// <summary>A command file with a mixed-case postfix is found by its clean name, ignoring case.</summary>
     [Test]
     public void GetCommand_ResolvesMixedCasePostfixByCleanName() {
         string path = AddCommandFile("Foo_Command.PY");

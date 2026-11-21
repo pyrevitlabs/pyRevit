@@ -49,12 +49,14 @@ namespace Dynamo.Applications {
 
         public static FakeDynamoResult ResultToReturn = FakeDynamoResult.Succeeded;
 
+        /// <summary>Clears the recorded calls and restores a succeeding result between tests.</summary>
         public static void Reset() {
             ReceivedJournalData.Clear();
             ReceivedApplications.Clear();
             ResultToReturn = FakeDynamoResult.Succeeded;
         }
 
+        /// <summary>Records the journal data and application it receives and returns the configured result.</summary>
         public FakeDynamoResult ExecuteDynamoCommand(IDictionary<string, string> journalData,
                                                      FakeRevitUIApplication application) {
             ReceivedJournalData.Add(
@@ -64,6 +66,7 @@ namespace Dynamo.Applications {
             return ResultToReturn;
         }
 
+        /// <summary>Decoy overload with extra parameters that the interop must never pick.</summary>
         public string ExecuteDynamoCommand(Dictionary<string, string> journalData,
                                            FakeRevitUIApplication application,
                                            bool forceManualRun) {
@@ -84,6 +87,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
 
         private string _tempRoot;
 
+        /// <summary>Creates a scratch folder and clears the fake Dynamo state.</summary>
         [SetUp]
         public void Setup() {
             _tempRoot = Path.Combine(Path.GetTempPath(), "pyrevit-dynamo-tests-" + Guid.NewGuid().ToString("N"));
@@ -92,6 +96,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = null;
         }
 
+        /// <summary>Clears the fake Dynamo state and deletes the scratch folder.</summary>
         [TearDown]
         public void Cleanup() {
             Dynamo.Applications.DynamoRevitApp.Reset();
@@ -100,6 +105,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
                 Directory.Delete(_tempRoot, recursive: true);
         }
 
+        /// <summary>A UIless run on a cold session sends a graph-free warm-up call that starts the model, then a second call carrying the graph to the same application.</summary>
         [Test]
         public void HeadlessRun_StartsTheModelBeforeHandingOverTheGraph() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = null;
@@ -138,6 +144,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(Dynamo.Applications.DynamoRevitApp.ReceivedApplications[1], Is.SameAs(application));
         }
 
+        /// <summary>No call of a UIless run asks Dynamo to shut the model down, even when the options request it.</summary>
         [Test]
         public void HeadlessRun_DropsTheModelShutdownSoDynamoCanRunTheGraph() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
@@ -159,6 +166,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             }
         }
 
+        /// <summary>A UIless run reports <c>Succeeded</c> when the Dynamo model is up.</summary>
         [Test]
         public void HeadlessRun_OnceDynamoModelIsUp_ReportsSucceeded() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
@@ -173,6 +181,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
                     + "NotRun here would be a false failure for a run that changed the model");
         }
 
+        /// <summary>Model state cannot be read from a type outside the Dynamo add-in assembly, and the model is reported down.</summary>
         [Test]
         public void ModelUpDetection_ReportsUnavailableForAnUnrelatedAddin() {
             var detected = DynamoRevitInterop.TryGetModelUp(typeof(string), out var modelUp);
@@ -181,6 +190,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(modelUp, Is.False);
         }
 
+        /// <summary>A model whose state is not a started state is read as down.</summary>
         [Test]
         public void ModelUpDetection_TreatsAStoppedModelAsDown() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel {
@@ -197,6 +207,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
                     + "started state must not be read as up");
         }
 
+        /// <summary>A UIless run that also requests model shutdown reports <c>Succeeded</c> when the model is up.</summary>
         [Test]
         public void RunAskingForShutdown_StillDecidesByModelState() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
@@ -216,6 +227,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
                     + "request must not by itself be reported as a run that did not happen");
         }
 
+        /// <summary>A run asking for neither automation nor graph execution reports <c>NotRun</c> even with the model up.</summary>
         [Test]
         public void RunRequestingNeitherAutomationNorExecution_ReportsNotRun() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
@@ -235,6 +247,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
                     + "report a run even when a model is up");
         }
 
+        /// <summary>An automation run without graph execution reports <c>Succeeded</c> when the model is up.</summary>
         [Test]
         public void RunRequestingAutomationOnly_StillReportsByModelState() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
@@ -254,6 +267,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
                     + "state rather than the ExecuteGraph flag alone");
         }
 
+        /// <summary>A headless automation run of a graph saved on Manual reports <c>NotRun</c> naming the graph and run type, and never calls Dynamo.</summary>
         [Test]
         public void HeadlessAutomationRun_OfManualGraph_ReportsNotRunWithoutCallingDynamo() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
@@ -277,6 +291,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(Dynamo.Applications.DynamoRevitApp.ReceivedJournalData.Count, Is.EqualTo(0), "a run known not to execute must not open the graph in Dynamo");
         }
 
+        /// <summary>A headless automation run of a graph saved on Automatic warms up the model and hands the graph over.</summary>
         [Test]
         public void HeadlessAutomationRun_OfAutomaticGraph_RunsIt() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
@@ -297,6 +312,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(Dynamo.Applications.DynamoRevitApp.ReceivedJournalData.Count, Is.EqualTo(2));
             Assert.That(Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[1][DynamoJournalKeys.GraphPath], Is.EqualTo(graphPath));
         }
+        /// <summary>Without automation, a headless run executes the graph whether it is saved on Manual or Automatic.</summary>
         [TestCase("Manual")]
         [TestCase("Automatic")]
         public void HeadlessRunWithoutAutomation_RunsTheGraphWhateverItsRunSetting(string runType) {
@@ -323,6 +339,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(runCall[DynamoJournalKeys.Automation], Is.EqualTo("False"));
         }
 
+        /// <summary>Forcing a manual run under headless automation reports <c>NotRun</c> naming the option, and never calls Dynamo.</summary>
         [Test]
         public void HeadlessAutomationRun_WithForcedManualRun_ReportsNotRunWithoutCallingDynamo() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
@@ -346,6 +363,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(Dynamo.Applications.DynamoRevitApp.ReceivedJournalData.Count, Is.EqualTo(0));
         }
 
+        /// <summary>With the Dynamo UI shown, an automation run of a Manual graph still opens it in a single call.</summary>
         [Test]
         public void AutomationRunShowingUI_OfManualGraph_StillOpensItInDynamo() {
             var graphPath = WriteGraph("manual.dyn", runType: "Manual", hasRunWithoutCrash: true);
@@ -367,6 +385,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[0][DynamoJournalKeys.GraphPath], Is.EqualTo(graphPath));
         }
 
+        /// <summary>The graph run mode is read from JSON and legacy XML graphs, a graph that has not run without a crash reads as Manual, and a missing file reads as Unknown.</summary>
         [Test]
         public void GraphRunMode_FollowsDynamoLoadRules() {
             Assert.That(DynamoRevitInterop.ReadGraphRunMode(WriteGraph("auto.dyn", "Automatic", true)), Is.EqualTo(DynamoGraphRunMode.Automatic));
@@ -375,6 +394,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(DynamoRevitInterop.ReadGraphRunMode(Path.Combine(_tempRoot, "missing.dyn")), Is.EqualTo(DynamoGraphRunMode.Unknown));
         }
 
+        /// <summary>A run showing the UI makes one call that carries the graph, shows the UI and does not shut the model down.</summary>
         [Test]
         public void RunShowingUI_IssuesSingleCallCarryingGraph() {
             var options = new DynamoExecutionOptions {
@@ -397,6 +417,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[0][DynamoJournalKeys.ShutdownModel], Is.EqualTo("False"));
         }
 
+        /// <summary>A failed result from Dynamo is reported as <c>Rejected</c> with the result in the message.</summary>
         [Test]
         public void RunRejectedByDynamo_ReportsRejection() {
             Dynamo.Applications.DynamoRevitApp.ResultToReturn = Dynamo.Applications.FakeDynamoResult.Failed;
@@ -411,6 +432,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(result.Message, Does.Contain("Failed"));
         }
 
+        /// <summary>Journal data uses unpadded Dynamo key names, always includes every option flag, and omits an empty graph path.</summary>
         [Test]
         public void JournalData_UsesDynamoKeyNamesAndAlwaysEmitsOptions() {
             var journalData = DynamoRevitInterop.BuildJournalData(
@@ -441,6 +463,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(journalData[DynamoJournalKeys.Automation], Is.EqualTo("True"));
         }
 
+        /// <summary>Journal data built without the graph drops the graph path, execution and nodes keys but keeps the model options.</summary>
         [Test]
         public void JournalDataWithoutGraph_OmitsGraphKeysButKeepsModelOptions() {
             var journalData = DynamoRevitInterop.BuildJournalData(
@@ -455,6 +478,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(journalData[DynamoJournalKeys.ShutdownModel], Is.EqualTo("True"));
         }
 
+        /// <summary>Journal data carries the nodes info payload verbatim.</summary>
         [Test]
         public void JournalDataWithNodesInfo_CarriesPayload() {
             var journalData = DynamoRevitInterop.BuildJournalData(
@@ -465,6 +489,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(journalData[DynamoJournalKeys.NodesInfo], Is.EqualTo("[{\"Id\":\"1\"}]"));
         }
 
+        /// <summary>Command resolution picks the overload taking only journal data and the application.</summary>
         [Test]
         public void ExecuteCommandMethod_ResolvesOverloadTakingJournalDataAndApplication() {
             var method = DynamoRevitInterop.ResolveExecuteDynamoCommandMethod(
@@ -477,6 +502,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(method.GetParameters().Length, Is.EqualTo(2));
         }
 
+        /// <summary>Command resolution returns null for a type without a compatible command method.</summary>
         [Test]
         public void ExecuteCommandMethod_NotFoundForIncompatibleDynamo() {
             var method = DynamoRevitInterop.ResolveExecuteDynamoCommandMethod(
@@ -488,6 +514,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(method, Is.Null);
         }
 
+        /// <summary>Failed, cancelled and false results count as rejected; succeeded, true and null do not.</summary>
         [Test]
         public void RejectedResult_InterpretsDynamoResultAndBool() {
             Assert.That(DynamoRevitInterop.IsRejectedResult(Dynamo.Applications.FakeDynamoResult.Succeeded), Is.False);
@@ -498,6 +525,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(DynamoRevitInterop.IsRejectedResult(null), Is.False);
         }
 
+        /// <summary>The Dynamo add-in type resolves with no add-in folders given and reports where it was resolved from.</summary>
         [Test]
         public void AppType_ResolvesLoadedAddinAssembly() {
             var appType = DynamoRevitInterop.ResolveDynamoRevitAppType(new string[0], out var resolvedFrom);
@@ -507,6 +535,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(string.IsNullOrEmpty(resolvedFrom), Is.False);
         }
 
+        /// <summary>The Dynamo assembly is found beside the assembly named by the Dynamo add-in manifest, ignoring other manifests.</summary>
         [Test]
         public void DynamoAssemblyFile_FoundNextToManifestAssembly() {
             var installDir = CreateFakeDynamoInstall();
@@ -519,6 +548,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(assemblyFile, Is.EqualTo(Path.Combine(installDir, "DynamoRevitDS.dll")));
         }
 
+        /// <summary>No Dynamo assembly is found when manifests point at another install, the folder is missing, or folder entries are null or empty.</summary>
         [Test]
         public void DynamoAssemblyFile_NotFoundWithoutDynamoInstall() {
             var installDir = Path.Combine(_tempRoot, "otherinstall");

@@ -12,6 +12,7 @@ namespace pyRevitLabs.Common.Tests {
     [Category("Unit")]
     [Category("Regression")]
     public class UrlCredentialRedactionTests {
+        /// <summary>Redaction replaces the whole user info of a URL with <c>***</c> and leaves URLs without credentials and local paths unchanged.</summary>
         [TestCase("https://user:pw@github.com/org/repo.git", "https://***@github.com/org/repo.git")]
         [TestCase("https://token@github.com/org/repo.git", "https://***@github.com/org/repo.git")]
         [TestCase("https://user:top secret@github.com/org/repo.git", "https://***@github.com/org/repo.git")]
@@ -24,6 +25,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(source.RedactUrlCredentials(), Is.EqualTo(expected));
         }
 
+        /// <summary>Redacting a null or empty string returns it unchanged.</summary>
         [Test]
         public void RedactUrlCredentials_KeepsNullAndEmpty() {
             string? nothing = null;

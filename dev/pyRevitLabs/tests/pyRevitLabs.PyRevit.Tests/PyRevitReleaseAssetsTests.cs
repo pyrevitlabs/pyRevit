@@ -27,16 +27,19 @@ public class PyRevitReleaseAssetsTests {
     private static PyRevitRelease ParseRelease(string json) =>
         JsonConvert.DeserializeObject<PyRevitRelease>(json)!;
 
+    /// <summary>By default the installer URL is the signed per-user pyRevit installer, not the CLI or admin one.</summary>
     [Test]
     public void GetInstallerURL_DefaultsToUserInstaller_Issue2215() {
         Assert.That(ParseRelease(ReleaseJson).GetInstallerURL(), Is.EqualTo("https://example.test/user.exe"));
     }
 
+    /// <summary>Asking for admin returns the signed all-users pyRevit installer.</summary>
     [Test]
     public void GetInstallerURL_AdminPicksAdminInstaller_Issue2215() {
         Assert.That(ParseRelease(ReleaseJson).GetInstallerURL(admin: true), Is.EqualTo("https://example.test/admin.exe"));
     }
 
+    /// <summary>A release with assets but no installer has no installer URL.</summary>
     [Test]
     public void GetInstallerURL_WithoutInstallerAsset_ReturnsNull_Issue2215() {
         var release = ParseRelease(@"{ ""tag_name"": ""ci-binaries"", ""assets"": [
@@ -44,11 +47,13 @@ public class PyRevitReleaseAssetsTests {
         Assert.That(release.GetInstallerURL(), Is.Null);
     }
 
+    /// <summary>A release with no assets has no installer URL.</summary>
     [Test]
     public void GetInstallerURL_WithoutAssets_ReturnsNull_Issue2215() {
         Assert.That(ParseRelease(@"{ ""tag_name"": ""v1.0.0"" }").GetInstallerURL(), Is.Null);
     }
 
+    /// <summary>Release filtering always drops CLI releases and keeps pre-releases only when requested.</summary>
     [Test]
     public void FilterPyRevitReleases_HidesPreReleasesUnlessRequested_Issue2215() {
         var releases = new[] {

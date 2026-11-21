@@ -19,12 +19,14 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
     public class WebView2LoadContextTests {
         private string _directory;
 
+        /// <summary>Creates an empty scratch assembly folder.</summary>
         [SetUp]
         public void SetUp() {
             _directory = Path.Combine(Path.GetTempPath(), "pyrevit-webview2-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_directory);
         }
 
+        /// <summary>Deletes the scratch assembly folder.</summary>
         [TearDown]
         public void TearDown() {
             Directory.Delete(_directory, recursive: true);
@@ -44,6 +46,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
         private static IntPtr LoadUnmanaged(WebView2LoadContext context, string name) =>
             (IntPtr)InvokeProtected(context, "LoadUnmanagedDll", name);
 
+        /// <summary>Assemblies outside the WebView2 stack load from the default context, and a nameless request returns null.</summary>
         [Test]
         public void NonIsolatedAssemblies_FallBackToTheDefaultContext() {
             var context = new WebView2LoadContext(_directory);
@@ -56,6 +59,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(context.AssemblyDirectory, Is.EqualTo(_directory));
         }
 
+        /// <summary>A missing WebView2 assembly throws <c>FileNotFoundException</c> saying the installation is incomplete instead of falling back.</summary>
         [Test]
         public void MissingIsolatedAssembly_FailsInsteadOfFallingBack() {
             var context = new WebView2LoadContext(_directory);
@@ -66,6 +70,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(error.Message, Does.Contain("installation is incomplete"));
         }
 
+        /// <summary>A missing WebView2 native loader throws <c>DllNotFoundException</c>, with or without the .dll extension.</summary>
         [Test]
         public void MissingNativeLoader_FailsLoudly() {
             var context = new WebView2LoadContext(_directory);
@@ -74,6 +79,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.Throws<DllNotFoundException>(() => LoadUnmanaged(context, "WebView2Loader.dll"));
         }
 
+        /// <summary>Other native libraries, including an empty name, return a zero handle so default probing takes over.</summary>
         [Test]
         public void OtherMissingNativeLibraries_DeferToDefaultProbing() {
             var context = new WebView2LoadContext(_directory);
@@ -82,6 +88,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared.Tests {
             Assert.That(LoadUnmanaged(context, string.Empty), Is.EqualTo(IntPtr.Zero));
         }
 
+        /// <summary>Every request gets the same process-wide isolated context, whatever folder later callers pass.</summary>
         [Test]
         public void IsolatedContext_IsSharedByTheWholeProcess() {
             var first = IsolatedWebView2Context.GetOrCreate(_directory);

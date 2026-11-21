@@ -11,6 +11,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
     [Category("HostFree")]
     [Category("Unit")]
     public class RevitAddonsTests {
+        /// <summary>User-level add-ins folders live under AppData in Autodesk\Revit\Addins\&lt;year&gt; for every Revit version.</summary>
         [Test()]
         public void GetRevitAddonsFolder_UserLevel_AllVersions_Test() {
             // Test that user-level path is unchanged for all versions
@@ -32,6 +33,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                           path2027.Contains("Autodesk/Revit/Addins/2027"), Is.True, $"Path 2027 should contain correct structure: {path2027}");
         }
 
+        /// <summary>All-users add-ins folders for Revit 2026 and earlier live under ProgramData.</summary>
         [Test()]
         public void GetRevitAddonsFolder_AllUsers_Pre2027_Test() {
             // Test that all-users path uses ProgramData for Revit ≤2026
@@ -51,6 +53,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                           path2026.Contains("Autodesk/Revit/Addins/2026"), Is.True, $"Path 2026 should contain correct structure: {path2026}");
         }
 
+        /// <summary>All-users add-ins folders for Revit 2027 and later live under Program Files in Autodesk\Revit\Addins\&lt;year&gt;.</summary>
         [Test()]
         public void GetRevitAddonsFolder_AllUsers_Post2027_Test() {
             var path2027 = pyRevitLabs.TargetApps.Revit.RevitAddons.GetRevitAddonsFolder(2027, allUsers: true);
@@ -71,6 +74,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                           path2030.Contains("Autodesk/Revit/Addins/2030"), Is.True, $"Path 2030 should use shared Revit\\Addins structure: {path2030}");
         }
 
+        /// <summary>Revit 2026 is the last all-users year under ProgramData and 2027 the first under Program Files.</summary>
         [Test()]
         public void GetRevitAddonsFolder_AllUsers_2027Boundary_Test() {
             var path2026 = pyRevitLabs.TargetApps.Revit.RevitAddons.GetRevitAddonsFolder(2026, allUsers: true);
@@ -87,6 +91,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(path2027.EndsWith(@"Addins\2027") || path2027.EndsWith("Addins/2027"), Is.True, $"2027 should end with Addins\\2027: {path2027}");
         }
 
+        /// <summary>A user-level manifest path sits inside the user add-ins folder and ends with the add-in name and .addin.</summary>
         [Test()]
         public void GetRevitAddonsFilePath_Consistency_Test() {
             // Test that GetRevitAddonsFilePath uses GetRevitAddonsFolder correctly
@@ -101,6 +106,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(userFilePath2027.EndsWith("TestAddin.addin", StringComparison.OrdinalIgnoreCase), Is.True, $"File path should end with TestAddin.addin: {userFilePath2027}");
         }
 
+        /// <summary>The <c>allusers</c> flag picks AppData for users, ProgramData up to 2026 and the shared Addins folder from 2027.</summary>
         [Test()]
         public void GetRevitAddonsFilePath_ExplicitAllUsers_Test() {
             // With allusers: false, path must contain user AppData (no elevation override)

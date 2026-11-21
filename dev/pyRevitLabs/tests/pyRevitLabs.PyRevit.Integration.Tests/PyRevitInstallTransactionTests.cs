@@ -63,6 +63,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             }
         }
 
+        /// <summary>An update whose image is missing throws, leaves the deployed clone and its registration intact, and removes its backup.</summary>
         [Test]
         public void Update_WhenImageIsUnavailable_KeepsTheDeployedCloneAndItsRegistration() {
             var zipPath = Path.Combine(_tempRoot, "clone.zip");
@@ -91,6 +92,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 "failed update must not leave its backup behind");
         }
 
+        /// <summary>Restoring over a locked, partially deployed clone does not throw and keeps the backup.</summary>
         [Test]
         public void RestoreClone_WhenTheFailedDeployCanNotBeRemoved_KeepsTheBackupAndDoesNotThrow() {
             var clonePath = Path.Combine(_tempRoot, "partialDest");
@@ -107,6 +109,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(File.Exists(Path.Combine(backupPath, "previous.txt")), Is.True, "backup must survive a failed restore");
         }
 
+        /// <summary>An update blocked by a locked file throws, keeps the clone and its registration, and leaves no backup.</summary>
         [Test]
         public void Update_WhenTheCloneFolderIsLocked_KeepsTheCloneAndItsRegistration() {
             var zipPath = Path.Combine(_tempRoot, "clone.zip");
@@ -130,6 +133,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(Directory.GetDirectories(_tempRoot, "cloneDest.update-backup-*"), Is.Empty);
         }
 
+        /// <summary>A successful update deploys a fresh copy, keeps the registration and removes the backup.</summary>
         [Test]
         public void Update_WhenImageIsAvailable_ReplacesTheCloneAndRemovesTheBackup() {
             var zipPath = Path.Combine(_tempRoot, "clone.zip");
@@ -152,6 +156,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(PyRevitClones.GetRegisteredClone(CloneName), Is.Not.Null);
         }
 
+        /// <summary>Missing binaries for the branch keep the newly deployed clone instead of restoring the old one, and drop the backup.</summary>
         [Test]
         public void ReplaceClone_WhenBinariesAreMissingForTheBranch_KeepsTheDeployedCloneAndDropsTheBackup() {
             var clonePath = Path.Combine(_tempRoot, "binlessDest");
@@ -170,6 +175,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(Directory.GetDirectories(_tempRoot, "binlessDest.update-backup-*"), Is.Empty);
         }
 
+        /// <summary>A failed redeploy removes the partial deploy, restores the previous clone and drops the backup.</summary>
         [Test]
         public void ReplaceClone_WhenTheRedeployFails_RestoresThePreviousClone() {
             var clonePath = Path.Combine(_tempRoot, "failedDest");
@@ -188,6 +194,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(Directory.GetDirectories(_tempRoot, "failedDest.update-backup-*"), Is.Empty);
         }
 
+        /// <summary>Installing an extension whose folder already exists fails with an already-installed message.</summary>
         [Test]
         public void InstallExtension_WhenAlreadyInstalled_FailsWithAlreadyInstalledMessage() {
             var ex = InstallOverExistingExtension("Sample.extension", "Sample");
@@ -195,6 +202,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(ex.Message, Does.Contain("already installed"));
         }
 
+        /// <summary>An installed extension whose name merely contains the requested name is not reported as already installed.</summary>
         [Test]
         public void InstallExtension_WhenOnlyALongerNameIsInstalled_DoesNotReportAlreadyInstalled() {
             var ex = InstallOverExistingExtension("MyTools.extension", "Tools");
@@ -202,6 +210,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(ex.Message, Does.Not.Contain("already installed"));
         }
 
+        /// <summary>An extension name with regex metacharacters is matched literally and reported as already installed.</summary>
         [Test]
         public void InstallExtension_WhenNameHasRegexMetacharacters_StillDetectsTheInstalledExtension() {
             var ex = InstallOverExistingExtension("C++.extension", "C++");
@@ -209,6 +218,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(ex.Message, Does.Contain("already installed"));
         }
 
+        /// <summary>The already-installed check ignores case.</summary>
         [Test]
         public void InstallExtension_WhenNameDiffersOnlyInCase_FailsWithAlreadyInstalledMessage() {
             var ex = InstallOverExistingExtension("Sample.extension", "SAMPLE");
@@ -232,6 +242,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(ex.Message, Does.Contain("already installed"));
         }
 
+        /// <summary>Deleting an invalid clone removes the cloned folder, keeps the source, and throws naming the source.</summary>
         [Test]
         public void DeleteInvalidClone_RemovesTheClonedPathLeavesTheSourceAloneAndThrows() {
             var sourcePath = Path.Combine(_tempRoot, "source-repo");
@@ -248,6 +259,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(File.Exists(Path.Combine(sourcePath, "keep.txt")), Is.True);
         }
 
+        /// <summary>A successfully cloned extension holds no file locks, so it can be deleted right away.</summary>
         [Test]
         public void InstallExtension_WhenCloneSucceeds_LeavesTheCloneFreeToDeleteRightAway() {
             var sourcePath = CreateLocalSourceRepo();

@@ -69,6 +69,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             };
         }
 
+        /// <summary>A build shared by two years resolves to the record matching the host's full version.</summary>
         [Test()]
         public void FindProductInfo_CollidingBuild_UsesFullVersionOfHost() {
             var records = Colliding2020And2021Records();
@@ -82,6 +83,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(for2021.release, Is.EqualTo("2021.1.7"));
         }
 
+        /// <summary>A build shared by two years resolves to the record matching the year in the host's install path.</summary>
         [Test()]
         public void FindProductInfo_CollidingBuild_UsesInstallPathOfHost() {
             var records = Colliding2020And2021Records();
@@ -95,12 +97,14 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(for2021.release, Is.EqualTo("2021.1.7"));
         }
 
+        /// <summary>A build shared by two years resolves to nothing when no host identity is supplied.</summary>
         [Test()]
         public void FindProductInfo_CollidingBuild_WithoutIdentity_DoesNotGuess() {
             var found = RevitProductData.FindProductInfo(Colliding2020And2021Records(), Shared2020_2021Build);
             Assert.That(found, Is.Null, "A build shared by two product years must not resolve to an arbitrary record");
         }
 
+        /// <summary>A sole build match is rejected when its year contradicts the host's install path and version.</summary>
         [Test()]
         public void FindProductInfo_UniqueBuildMatch_ContradictingProductYear_IsRejected() {
             var found = RevitProductData.FindProductInfo(CollidingRecordWithout2020(), Shared2020_2021Build,
@@ -109,6 +113,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(found, Is.Null, "A record from another product year must not match a Revit 2020 install");
         }
 
+        /// <summary>A build shared by two supported years resolves by either the host's version or its install path.</summary>
         [Test()]
         public void FindProductInfo_CollidingBuildAcrossSupportedYears_UsesProductIdentity() {
             var records = Colliding2021And2022Records();
@@ -122,6 +127,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(for2022.release, Is.EqualTo("2022.1.2"));
         }
 
+        /// <summary>A build shared only by records of one year still resolves to that year.</summary>
         [Test()]
         public void FindProductInfo_CollidingBuildWithinSameProductYear_StillMatches() {
             var records = new List<HostProductInfo>() {
@@ -134,6 +140,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(RevitProductData.GetProductYearFromVersionString(found.version), Is.EqualTo(2023));
         }
 
+        /// <summary>A Revit.exe product version string resolves to the named release.</summary>
         [Test()]
         public void FindProductInfo_RevitExeProductVersionString_ResolvesNamedRelease() {
             var found = RevitProductData.FindProductInfo(Colliding2021And2022Records(),
@@ -142,12 +149,14 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(found.release, Is.EqualTo("2022.1.2"));
         }
 
+        /// <summary>A registry display version absent from the database matches nothing.</summary>
         [Test()]
         public void FindProductInfo_RegistryDisplayVersionNotInDatabase_DoesNotMatch() {
             var found = RevitProductData.FindProductInfo(Colliding2020And2021Records(), "2020.2");
             Assert.That(found, Is.Null);
         }
 
+        /// <summary>A release of another year than the install path is rejected.</summary>
         [Test()]
         public void FindProductInfo_RegistryVersionOfAnotherProductYear_IsRejected() {
             var found = RevitProductData.FindProductInfo(Colliding2020And2021Records(), "2021.1.7",
@@ -155,6 +164,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(found, Is.Null);
         }
 
+        /// <summary>A single record resolves by release, version or build with no host identity.</summary>
         [Test()]
         public void FindProductInfo_UniqueRecord_ResolvesWithoutAnyIdentity() {
             var records = new List<HostProductInfo>() {
@@ -166,6 +176,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(RevitProductData.FindProductInfo(records, Shared2020_2021Build).release, Is.EqualTo("2021.1.7"));
         }
 
+        /// <summary>A null or empty identifier, or a null or empty record list, yields null.</summary>
         [Test()]
         public void FindProductInfo_NoIdentifierOrNoRecords_ReturnsNull() {
             Assert.That(RevitProductData.FindProductInfo(Colliding2020And2021Records(), null), Is.Null);
@@ -174,6 +185,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(RevitProductData.FindProductInfo(null, Shared2020_2021Build), Is.Null);
         }
 
+        /// <summary>Records whose schema version is unknown are ignored.</summary>
         [Test()]
         public void FindProductInfo_IgnoresRecordsOfAnUnknownSchema() {
             var records = new List<HostProductInfo>() {
@@ -184,6 +196,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(RevitProductData.FindProductInfo(records, Shared2020_2021Build), Is.Null);
         }
 
+        /// <summary>The minimum supported year is 2021, so 2020 and 0 are unsupported.</summary>
         [Test()]
         public void MinimumSupportedProductYear_ExcludesRevit2020() {
             Assert.That(RevitProductData.MinimumSupportedProductYear, Is.EqualTo(2021));
@@ -193,6 +206,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(RevitProductData.IsSupportedProductYear(2026), Is.True);
         }
 
+        /// <summary>Only unsupported years get a note, and it names both the year and the minimum.</summary>
         [Test()]
         public void GetUnsupportedProductNote_ReportsTheYearAndTheMinimum() {
             Assert.That(RevitProductData.GetUnsupportedProductNote(2021), Is.Null, "Supported years must not carry a rejection note");
@@ -203,6 +217,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(note, Does.Contain("2021"));
         }
 
+        /// <summary>The year is read from a Revit &lt;year&gt; folder in the path, or 0 when there is none.</summary>
         [Test()]
         public void GetProductYearFromPath_ReadsTheRevitFolder() {
             Assert.That(RevitProductData.GetProductYearFromPath(@"C:\Program Files\Autodesk\Revit 2020\"), Is.EqualTo(2020));
@@ -211,6 +226,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(RevitProductData.GetProductYearFromPath(null), Is.EqualTo(0));
         }
 
+        /// <summary>The year is derived from the major version, or 0 for an unparsable or null string.</summary>
         [Test()]
         public void GetProductYearFromVersionString_ReadsTheMajorVersion() {
             Assert.That(RevitProductData.GetProductYearFromVersionString("20.2.90.12"), Is.EqualTo(2020));
@@ -248,6 +264,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
         private LoggingConfiguration _previousConfig;
         private MemoryTarget _capture;
 
+        /// <summary>Routes all log output into an in-memory target.</summary>
         [SetUp()]
         public void StartCapturingLog() {
             _previousConfig = LogManager.Configuration;
@@ -261,6 +278,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             LogManager.ReconfigExistingLoggers();
         }
 
+        /// <summary>Restores the previous logging configuration.</summary>
         [TearDown()]
         public void StopCapturingLog() {
             LogManager.Configuration = _previousConfig;
@@ -326,6 +344,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             return readable.OrderBy(prod => prod.ProductYear).First();
         }
 
+        /// <summary>Resolving a below-minimum product as the running host warns with the year and advice to switch pyRevit releases.</summary>
         [Test()]
         public void ResolveProduct_RunningHost_BelowMinimumProduct_WarnsToSwitchRelease() {
             var installed = BelowMinimumInstalledProduct();
@@ -342,6 +361,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(warnings, Does.Contain(installed.ProductYear.ToString()));
         }
 
+        /// <summary>Resolving a below-minimum installed sibling still detects it but only logs an info note, with no warning or switch advice.</summary>
         [Test()]
         public void ResolveProduct_InstalledSibling_BelowMinimumProduct_OnlyReportsInfo() {
             var installed = BelowMinimumInstalledProduct();
@@ -360,6 +380,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(reports.Contains(SwitchReleaseAdvice), Is.False, "The scan must not tell the user to switch pyRevit releases for a product they did not launch");
         }
 
+        /// <summary>Scanning installed products logs no warnings or errors.</summary>
         [Test()]
         public void ListInstalledProducts_DoesNotWarnAboutAnyProductItFinds() {
             ScanInstalledProducts();
@@ -368,6 +389,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(CapturedAtLevel("Error").Count, Is.EqualTo(0), Report("Error"));
         }
 
+        /// <summary>Below-minimum products stay listed and their description names the minimum supported year.</summary>
         [Test()]
         public void ListInstalledProducts_KeepsBelowMinimumProductsListed() {
             foreach (var product in BelowMinimumInstalledProducts())
@@ -398,6 +420,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
         private LoggingConfiguration _previousConfig;
         private MemoryTarget _capture;
 
+        /// <summary>Routes all log output into an in-memory target.</summary>
         [SetUp]
         public void StartCapturingLog() {
             _previousConfig = LogManager.Configuration;
@@ -409,6 +432,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             LogManager.ReconfigExistingLoggers();
         }
 
+        /// <summary>Restores the previous logging configuration.</summary>
         [TearDown]
         public void StopCapturingLog() {
             LogManager.Configuration = _previousConfig;
@@ -442,6 +466,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             };
         }
 
+        /// <summary>A file version listed under several builds of one year resolves to nothing without warning.</summary>
         [Test()]
         public void SharedVersion_DefersToTheBuildWithoutWarning() {
             var records = HostDatabaseRecords();
@@ -453,6 +478,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(Warnings(), Is.EqualTo(new List<string>()));
         }
 
+        /// <summary>A binary build number picks the exact release among records sharing a version, without warning.</summary>
         [Test()]
         public void SharedVersion_ResolvesExactlyFromTheBinaryBuild() {
             var records = HostDatabaseRecords();
@@ -462,6 +488,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(Warnings(), Is.EqualTo(new List<string>()));
         }
 
+        /// <summary>A named release resolves even when its version is shared.</summary>
         [Test()]
         public void SharedVersion_NamedReleaseStillResolves() {
             var records = HostDatabaseRecords();
@@ -469,6 +496,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             Assert.That(RevitProductData.FindProductInfo(records, "2021.1.8 Hotfix (20230515)").release, Is.EqualTo("2021.1.8 Hotfix (20230515)"));
         }
 
+        /// <summary>A build shared across two years resolves to nothing and logs one ambiguity warning.</summary>
         [Test()]
         public void BuildSharedAcrossProductYears_StillWarns() {
             var records = new List<HostProductInfo>() {

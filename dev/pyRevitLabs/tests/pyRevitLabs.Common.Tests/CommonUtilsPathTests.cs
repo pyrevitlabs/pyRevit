@@ -17,6 +17,7 @@ namespace pyRevitLabs.Common.Tests {
         private string? _previousTemp;
         private string? _previousLocalAppData;
 
+        /// <summary>Creates a temporary root and records the current TEMP and LOCALAPPDATA values.</summary>
         [SetUp]
         public void Setup() {
             _tempRoot = Path.Combine(Path.GetTempPath(), "pyRevitPathTests_" + Guid.NewGuid().ToString("N"));
@@ -25,6 +26,7 @@ namespace pyRevitLabs.Common.Tests {
             _previousLocalAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
         }
 
+        /// <summary>Restores TEMP and LOCALAPPDATA and deletes the temporary root.</summary>
         [TearDown]
         public void Cleanup() {
             Environment.SetEnvironmentVariable("TEMP", _previousTemp);
@@ -33,6 +35,7 @@ namespace pyRevitLabs.Common.Tests {
                 Directory.Delete(_tempRoot, recursive: true);
         }
 
+        /// <summary>Environment variables inside a path are expanded to their current values.</summary>
         [Test]
         public void ExpandEnvironmentPath_ExpandsNestedVariables() {
             Environment.SetEnvironmentVariable("LOCALAPPDATA", _tempRoot);
@@ -40,6 +43,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(expanded, Is.EqualTo(Path.Combine(_tempRoot, "pyRevit")));
         }
 
+        /// <summary>A TEMP value that refers to another variable is fully expanded, with no <c>%</c> left in the result.</summary>
         [Test]
         public void GetUserTempDirectory_ExpandsPercentTemp() {
             Environment.SetEnvironmentVariable("LOCALAPPDATA", _tempRoot);
@@ -50,6 +54,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(tempDir.EndsWith("Temp", StringComparison.OrdinalIgnoreCase), Is.True);
         }
 
+        /// <summary>A TEMP value that cannot be expanded falls back to <c>Path.GetTempPath()</c> without its trailing separator.</summary>
         [Test]
         public void GetUserTempDirectory_FallsBackToPathGetTempPathWhenUnexpanded() {
             Environment.SetEnvironmentVariable("TEMP", "%NONEXISTENT_PYREVIT_VAR%\\Temp");
@@ -59,6 +64,7 @@ namespace pyRevitLabs.Common.Tests {
             Assert.That(tempDir, Is.EqualTo(expected));
         }
 
+        /// <summary><c>UserEnv.UserTemp</c> returns the same directory as <c>CommonUtils.GetUserTempDirectory</c>.</summary>
         [Test]
         public void UserTemp_MatchesGetUserTempDirectory() {
             Environment.SetEnvironmentVariable("LOCALAPPDATA", _tempRoot);

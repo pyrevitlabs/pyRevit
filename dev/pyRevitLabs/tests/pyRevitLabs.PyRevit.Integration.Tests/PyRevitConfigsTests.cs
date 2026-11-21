@@ -22,6 +22,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         private string _previousProgramDataPathOverride;
         private string _previousConfigScopeOverride;
 
+        /// <summary>Isolates each test in a temporary root and saves the config environment overrides it changes.</summary>
         [SetUp]
         public void Setup() {
             _tempRoot = Path.Combine(Path.GetTempPath(), "pyRevitConfigsSeed_" + Guid.NewGuid().ToString("N"));
@@ -32,6 +33,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             ClearConfigState();
         }
 
+        /// <summary>Restores the saved environment overrides and install scope, then deletes the temporary root.</summary>
         [TearDown]
         public void Cleanup() {
             ClearConfigState();
@@ -50,6 +52,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             FixtureDirectory.Delete(_tempRoot);
         }
 
+        /// <summary>Seeding succeeds without touching the config when the user and machine configs are the same writable file.</summary>
         [Test]
         public void TrySeedConfig_SameWritablePath_ReturnsTrueAndPreservesConfig() {
             SetScope(PyRevitInstallScope.ConfigScopeAllUsers);
@@ -63,6 +66,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(IsReadOnly(configFile), Is.False);
         }
 
+        /// <summary>Seeding with a lock onto the same file keeps its content and marks it read-only.</summary>
         [Test]
         public void TrySeedConfig_SameWritablePathWithLock_ReturnsTrueAndSetsReadOnly() {
             SetScope(PyRevitInstallScope.ConfigScopeAllUsers);
@@ -75,6 +79,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(File.ReadAllText(configFile), Is.EqualTo(ConfigContent));
         }
 
+        /// <summary>Seeding creates the missing machine folder and copies the user config there as a writable file.</summary>
         [Test]
         public void TrySeedConfig_DifferentPath_CreatesTargetDirectoryAndCopiesConfig() {
             SetScope(PyRevitInstallScope.ConfigScopePerUser);
@@ -91,6 +96,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(IsReadOnly(machineConfigFile), Is.False);
         }
 
+        /// <summary>Seeding with a lock copies the user config to the machine path and marks the copy read-only.</summary>
         [Test]
         public void TrySeedConfig_DifferentPathWithLock_CopiesAndSetsReadOnly() {
             SetScope(PyRevitInstallScope.ConfigScopePerUser);
