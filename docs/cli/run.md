@@ -26,6 +26,8 @@ If `--revit` option is not specified, the run command will use the newest instal
 
 At either case, pyRevit uses the clone and engine verison that is attached to Revit, to run the script; So make sure that pyRevit is already attached to the Revit version you are intending to use.
 
+- `--clone=<clone_name_or_path>`: Run on another clone instead, given as the name of a registered clone or the path of a clone. The run uses that clone's default engine and its `pyRevitRunner.dll`, and neither reads nor changes the attachment, so pyRevit does not have to be attached to the Revit version. This is the way to try a runner or loader change from a git worktree.
+
 All the pyrevit modules are accessible inside the script.
 
 #### Running a Script on Revit Models

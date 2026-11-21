@@ -703,7 +703,8 @@ namespace pyRevitCLI {
                                 AllowDialogs = arguments["--allowdialogs"].IsTrue,
                                 InputsJson = inputsJson
                             },
-                            targetIsFileList: true
+                            targetIsFileList: true,
+                            cloneNameOrPath: TryGetValue("--clone")
                         );
                     }
                     else
@@ -716,7 +717,8 @@ namespace pyRevitCLI {
                                 ImportPath = TryGetValue("--import", null),
                                 AllowDialogs = arguments["--allowdialogs"].IsTrue,
                                 InputsJson = inputsJson
-                            }
+                            },
+                            cloneNameOrPath: TryGetValue("--clone")
                         );
                 }
             }

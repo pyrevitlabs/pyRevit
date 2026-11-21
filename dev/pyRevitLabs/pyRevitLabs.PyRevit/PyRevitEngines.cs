@@ -15,5 +15,15 @@ namespace pyRevitLabs.PyRevit {
                     return engine;
             return null;
         }
+
+        /// <summary>
+        /// The engine of <paramref name="clone"/> whose folder contains <paramref name="path"/>, or null.
+        /// </summary>
+        public static PyRevitEngine FindContaining(PyRevitClone clone, string path) {
+            foreach (var engine in clone.GetEngines())
+                if (path.IsPathWithin(engine.Path))
+                    return engine;
+            return null;
+        }
     }
 }

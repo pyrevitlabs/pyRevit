@@ -13,7 +13,8 @@ namespace pyRevitLabs.PyRevit {
     public enum PyRevitAttachmentType {
         AllUsers,
         CurrentUser,
-        PerLaunch
+        PerLaunch,
+        PerRun
     }
 
     public class PyRevitAttachment {
