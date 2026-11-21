@@ -159,7 +159,7 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
     def test_mounting_builds_handles_streams_chunks_and_posts_boxes(self):
         result = self.scenario("mount")
         self.assertEqual(result["elements"], 1)
-        self.assertEqual(result["groups"], ["Walls"])
+        self.assertEqual(result["groups"], ["0|Walls"])
         self.assertEqual(result["bounds"], {"min": [0, 0, 0], "max": [4, 4, 0]})
         self.assertEqual(result["handles"], 7)
         self.assertTrue(result["bookmark"])
@@ -232,6 +232,209 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
         self.assertEqual(result["after_view_change"], 7)
         self.assertEqual(result["truncated_status"], "PreviewTruncated")
         self.assertEqual(result["loaded_status"], "PreviewLoaded")
+
+    def test_view_cube_maps_faces_edges_corners_and_compass_to_cameras(self):
+        result = self.scenario("view_cube")
+        self.assertEqual(result["centre"], ["front", 0, 0])
+        self.assertEqual(result["edge"], ["front", 1, 0])
+        self.assertEqual(result["edgeCamera"], {"yaw": -45, "pitch": 0})
+        self.assertEqual(result["cornerCamera"]["yaw"], -45)
+        self.assertAlmostEqual(result["cornerCamera"]["pitch"], 35.2644, places=3)
+        self.assertEqual(result["frontVisible"], ["front"])
+        self.assertEqual(result["tiltedFaces"], ["front", "right", "top"])
+        self.assertEqual(result["tiltedCells"], 27)
+        self.assertEqual(result["tiltedCompass"], ["e", "n", "s", "w"])
+        self.assertEqual(result["top"]["yaw"], 1)
+        self.assertAlmostEqual(result["top"]["pitchDeg"], 90, places=3)
+        self.assertEqual(result["north"], {"yawDeg": 90, "pitch": 0.5})
+
+    def test_view_cube_draws_labels_and_edits_the_camera_on_click_and_drag(self):
+        result = self.scenario("view_cube")
+        self.assertIn("OBEN", result["labels"])
+        self.assertIn("VORNE", result["labels"])
+        self.assertEqual(result["labels"].count("O"), 1)
+        self.assertEqual(
+            result["clicked"], {"yawDeg": -90, "pitchDeg": 0, "changes": 1}
+        )
+        self.assertTrue(result["dragged"]["yawChanged"])
+        self.assertGreater(result["dragged"]["changes"], 1)
+        self.assertEqual(result["removed"], 0)
+
+    def test_preview_mounts_the_view_cube_and_removes_it_on_dispose(self):
+        result = self.scenario("cube_in_preview")
+        self.assertEqual(result["present"], 1)
+        self.assertIn("PREVIEWFRONT", result["faces"])
+        self.assertEqual(result["after_dispose"], 0)
+
+    def test_side_and_front_views_draw_only_grids_along_the_view_as_vertical_lines(
+        self,
+    ):
+        result = self.scenario("elevation_guides")
+        self.assertEqual(result["front"], ["1", "2"])
+        self.assertTrue(result["vertical"])
+        self.assertLess(result["span"][0], result["span"][1])
+        self.assertEqual(result["side"], ["A"])
+        self.assertEqual(result["iso_segments"], 4)
+        self.assertEqual(result["front_grid_labels"], ["1", "2"])
+
+    def test_level_labels_stay_inside_the_viewport_when_zoomed_into_an_elevation(self):
+        result = self.scenario("elevation_guides")
+        self.assertGreater(result["pinned_level_labels"], 0)
+        self.assertTrue(result["pinned_inside"])
+        self.assertTrue(result["end_aligned"])
+
+    def test_elevation_helpers(self):
+        result = self.scenario("pure_helpers")
+        self.assertEqual(result["along_y"], [1])
+        self.assertEqual(result["along_x"], [0])
+        self.assertEqual(result["elevation"], [True, True, False])
+        self.assertEqual(result["pinned_inside"], {"x": 30, "y": 40})
+        self.assertEqual(result["pinned_left"]["x"], 12)
+        self.assertAlmostEqual(result["pinned_left"]["y"], 42.4, places=6)
+        self.assertIsNone(result["pinned_gone"])
+        self.assertEqual(result["key"], "2|Walls")
+
+    def test_link_categories_get_their_own_rows_and_boxes_are_marked(self):
+        result = self.scenario("link_groups")
+        self.assertEqual(result["keys"], ["0|Walls", "1|Floors", "1|Walls"])
+        self.assertEqual(result["link_head"], "Link: Tower")
+        self.assertEqual(result["indented"], 2)
+        self.assertEqual(result["notes"], 1)
+        self.assertEqual(
+            result["batches"], ["0|Walls:false", "1|Floors:true", "1|Walls:false"]
+        )
+        self.assertEqual(result["label"], "Tower · Floors · 3 · PreviewBoxOnly")
+        self.assertEqual(result["visible"], [True, False, False])
+        self.assertEqual(result["after_drop"], ["0|Walls"])
+
+    def test_left_out_categories_can_be_requested_and_vanish_once_empty(self):
+        result = self.scenario("link_groups")
+        self.assertEqual(result["dropped"], [0, 5])
+        self.assertEqual(result["request"], "0:Furniture")
+        self.assertTrue(result["requested"])
+        self.assertFalse(result["emptied"])
+
+    def test_top_view_looks_straight_down_so_box_outlines_coincide(self):
+        result = self.scenario("top_view")
+        self.assertEqual(result["pitchDeg"], 90)
+        self.assertLess(result["maxGap"], 1e-6)
+        self.assertEqual(result["orientation"], {"northUp": True, "eastRight": True})
+        self.assertTrue(result["panFinite"])
+        self.assertTrue(result["panMoved"])
+        self.assertEqual(result["orbitPitchDeg"], 89.5)
+
+    def test_compass_follows_true_north_for_drawing_and_clicks(self):
+        result = self.scenario("true_north")
+        self.assertEqual(result["n"], [0.5, 0.866, 0])
+        self.assertEqual(result["e"], [0.866, -0.5, 0])
+        self.assertEqual(result["s"], [-0.5, -0.866, 0])
+        self.assertEqual(result["w"], [-0.866, 0.5, 0])
+        self.assertTrue(result["nHitLeftOfCentre"])
+        self.assertTrue(result["nHitAboveCentre"])
+        self.assertEqual(result["headingYawDeg"], 60)
+        self.assertEqual(result["headingPitch"], 0.4)
+        self.assertTrue(result["mounted"])
+
+    def test_category_search_filters_by_category_or_link_and_links_collapse(self):
+        result = self.scenario("category_search")
+        self.assertEqual(
+            result["all"],
+            [
+                "Floors",
+                "Walls",
+                "[Link: Tower]",
+                "Floors",
+                "Walls",
+                "[Link: Plumbing]",
+                "Pipes",
+            ],
+        )
+        self.assertEqual(result["pipe"], ["[Link: Plumbing]", "Pipes"])
+        self.assertEqual(result["tower"], ["[Link: Tower]", "Floors", "Walls"])
+        self.assertEqual(result["walls"], ["Walls", "[Link: Tower]", "Walls"])
+        self.assertEqual(
+            result["visible_after_none"],
+            [
+                "0|Floors:true",
+                "0|Walls:true",
+                "1|Floors:true",
+                "1|Walls:true",
+                "2|Pipes:false",
+            ],
+        )
+        self.assertEqual(
+            result["collapsed"],
+            ["Floors", "Walls", "[Link: Tower]", "[Link: Plumbing]", "Pipes"],
+        )
+        self.assertEqual(
+            result["expanded_while_searching"], ["[Link: Tower]", "Floors", "Walls"]
+        )
+        self.assertEqual(result["collapsed_remembered"], result["collapsed"])
+        self.assertEqual(result["reopened"], 7)
+
+    def test_display_and_box_settings_are_restored_and_posted_when_changed(self):
+        result = self.scenario("remembered_settings")
+        self.assertEqual(result["flags"], [False, "hide", 0.3, False, True, True])
+        self.assertEqual(result["sideWidth"], [333, "333px"])
+        self.assertEqual(result["controls"][0], "hide")
+        self.assertEqual(result["controls"][1], "30")
+        self.assertEqual(result["saves"], 3)
+        self.assertTrue(result["no_request_id"])
+        self.assertEqual(result["last"]["levels"], False)
+        self.assertEqual(result["last"]["cut"], "off")
+        self.assertAlmostEqual(result["last"]["ghost"], 0.45)
+        self.assertEqual(result["last"]["model"], False)
+        self.assertEqual(
+            result["last"]["keys"],
+            [
+                "allLevels",
+                "cut",
+                "ghost",
+                "grids",
+                "levels",
+                "live",
+                "model",
+                "names",
+                "scope",
+                "sideWidth",
+                "snap",
+            ],
+        )
+        saved, width, main_width = result["clamped"]
+        self.assertEqual(saved, 1100)
+        self.assertLessEqual(width, main_width * 0.7 + 1)
+        self.assertGreaterEqual(width, 160)
+        self.assertEqual(result["defaults_kept"], [True, "ghost", 0.12, True])
+
+    def test_preview_covers_log_lines_in_the_output_window_and_the_side_panel_resizes(
+        self,
+    ):
+        result = self.scenario("crowded_output")
+        self.assertEqual(result["position"], "fixed")
+        self.assertEqual((result["top"], result["left"]), (0, 0))
+        self.assertGreater(result["wide"], result["before"] + 50)
+        self.assertEqual(result["narrow"], 160)
+        self.assertAlmostEqual(result["widest"], result["mainWidth"] * 0.7, delta=1)
+        self.assertEqual(result["saved"][:2], [result["wide"], 160])
+        self.assertEqual(result["reset"], ["", None])
+        self.assertIsNone(result["saved_after_reset"])
+
+    def test_cube_compass_letters_hit_their_own_center_in_every_view(self):
+        result = self.scenario("cube_robustness")
+        self.assertTrue(all(result["letters"].values()), result["letters"])
+
+    def test_cube_drag_belongs_to_the_pointer_that_started_it(self):
+        result = self.scenario("cube_robustness")
+        self.assertEqual(result["second_finger_move"][0], 0)
+        self.assertEqual(result["owner_move"], 1)
+        self.assertEqual(result["after_foreign_up"], 2)
+        self.assertEqual(result["after_cancel"], [True, True])
+
+    def test_a_failed_stream_re_enables_the_load_links(self):
+        result = self.scenario("stream_error_clears_requests")
+        self.assertEqual(result["before"], [True, True])
+        self.assertEqual(result["after"], [False, False])
+        self.assertEqual(result["status"], "stream failed")
 
     def test_webgl_context_draws_guides_and_the_hovered_element(self):
         try:

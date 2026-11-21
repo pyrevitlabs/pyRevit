@@ -17,6 +17,7 @@ from sectionbox_navigation import (
     find_next_grid_in_direction,
 )
 from sectionbox_utils import (
+    format_amount,
     is_2d_view,
     get_view_range_and_crop,
     section_box_from_crop,
@@ -128,7 +129,7 @@ def on_view_or_doc_changed(sender, args):
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_window_title))
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
         sb_form.sync_preview_view()
-        logger.info("Form updated due to view or document change.")
+        logger.debug("Form updated due to view or document change.")
     except Exception as ex:
         logger.exception("Failed to update form: {}".format(ex))
 
@@ -227,6 +228,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             lambda: (self.all_levels, self.all_grids),
             self.sync_after_preview_change,
             self.on_preview_hidden,
+            config=my_config,
         )
 
         self.chkIncludeLinks.IsChecked = my_config.get_option("chkLinks_state", False)
@@ -290,11 +292,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         else:
             self.hide_element(self.project_unit_text)
 
-        self.txtLevelNudgeAmount.Text = str(round(level_nudge_value, 3))
+        self.txtLevelNudgeAmount.Text = format_amount(level_nudge_value)
         self.txtLevelNudgeUnit.Text = length_unit_symbol_label or ""
-        self.txtExpandAmount.Text = str(round(expand_nudge_value, 3))
+        self.txtExpandAmount.Text = format_amount(expand_nudge_value)
         self.txtExpandUnit.Text = length_unit_symbol_label or ""
-        self.txtGridNudgeAmount.Text = str(round(grid_nudge_value, 3))
+        self.txtGridNudgeAmount.Text = format_amount(grid_nudge_value)
         self.txtGridNudgeUnit.Text = length_unit_symbol_label or ""
 
     def update_dropdown_visibility(self):
@@ -999,7 +1001,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         """Move section box side to next grid line or by nudge amount."""
         target = params.get("target")  # 'north', 'south', 'east', 'west'
         direction = params.get("direction")  # 'in', 'out'
-        direction_name = str(target + direction)
+        direction_name = "{} {}".format(target, direction)
         nudge_amount = params.get("nudge_amount", 0)
         do_not_apply = params.get("do_not_apply", False)
 

@@ -194,6 +194,16 @@
     <system:String x:Key="PreviewCategories">Kategorien</system:String>
     <system:String x:Key="PreviewAll">Alle</system:String>
     <system:String x:Key="PreviewNone">Keine</system:String>
+    <system:String x:Key="PreviewCubeBack">Hinten</system:String>
+    <system:String x:Key="PreviewCubeBottom">Unten</system:String>
+    <system:String x:Key="PreviewCubeLeft">Links</system:String>
+    <system:String x:Key="PreviewCubeRight">Rechts</system:String>
+    <system:String x:Key="PreviewCompass">N,O,S,W</system:String>
+    <system:String x:Key="PreviewBoxOnly">nur Quader</system:String>
+    <system:String x:Key="PreviewBoxes">{0} als Quader</system:String>
+    <system:String x:Key="PreviewNotLoaded">{0} nicht geladen</system:String>
+    <system:String x:Key="PreviewLoadGroup">Laden</system:String>
+    <system:String x:Key="PreviewSearch">Kategorien suchen</system:String>
     <system:String x:Key="PreviewFront">Vorne</system:String>
     <system:String x:Key="PreviewSide">Seite</system:String>
     <system:String x:Key="PreviewAllLevels">Alle Ebenen</system:String>

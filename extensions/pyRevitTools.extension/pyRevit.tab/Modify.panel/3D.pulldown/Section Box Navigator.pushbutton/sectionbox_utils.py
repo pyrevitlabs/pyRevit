@@ -7,6 +7,17 @@ get_elementid_value = get_elementid_value_func()
 get_elementid_from_value = get_elementid_from_value_func()
 
 
+def format_amount(value):
+    """Format a length amount with up to three decimals, the same on every engine.
+
+    ``str(round(value, 3))`` prints ``2.2970000000000002`` on IronPython 3.4.
+    The value goes through ``float`` because IronPython 2.7 refuses a ``.3f``
+    precision for an ``int``.
+    """
+    text = "{:.3f}".format(float(value)).rstrip("0")
+    return text + "0" if text.endswith(".") else text
+
+
 def is_2d_view(view, only_plan=False):
     """Check if a view is a 2D view (plan, elevation, section)."""
 

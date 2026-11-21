@@ -7,11 +7,14 @@ streams the model to it, applies the boxes it posts and keeps bookmarks.
 
 Page -> Python actions: ``ready``, ``apply_box``, ``use_scope_box``,
 ``bookmark_save``, ``bookmark_apply``, ``bookmark_rename``,
-``bookmark_delete``, ``fit_visible``.
+``bookmark_delete``, ``fit_visible``, ``load_group`` (stream the elements of
+one category that the point limit left out), ``save_settings`` (the page's
+display and box toggles, kept in the navigator's config).
 Python -> page events: ``scene`` (a model chunk), ``view`` (box, kind and
 bookmarks of the active view), ``box`` (the box changed in Revit), ``guides``
 (levels, grids and scope boxes), ``sources`` (link geometry added or
-removed), ``result``, ``error``.
+removed, or streaming finished with the elements left out per category),
+``result``, ``error``.
 
 Important:
     Handlers outlive the command, so the bundle must run on a persistent
@@ -38,11 +41,14 @@ from sectionbox_scene import (
     box_payload,
     grids_payload,
     levels_payload,
+    north_angle,
     scene_origin,
     scope_boxes_payload,
     units_payload,
+    view_focus_bounds,
     view_payload,
 )
+from sectionbox_settings import dump_settings, parse_settings
 from sectionbox_sources import (
     get_visible_model_elements,
     scope_box_to_bounding_box,
@@ -56,6 +62,7 @@ CHUNK_SECONDS = 1.0
 PAGE_WIDTH = 820
 PIN_TOOLTIP = "Keep On Top"
 BOOKMARK_SLOT = "SectionBoxPreviewBookmarks"
+SETTINGS_OPTION = "preview_settings"
 MIN_EXTENT_FT = 1e-6
 PAGE_STRINGS = (
     "PreviewTitle",
@@ -108,6 +115,16 @@ PAGE_STRINGS = (
     "PreviewCategories",
     "PreviewAll",
     "PreviewNone",
+    "PreviewCubeBack",
+    "PreviewCubeBottom",
+    "PreviewCubeLeft",
+    "PreviewCubeRight",
+    "PreviewCompass",
+    "PreviewBoxOnly",
+    "PreviewBoxes",
+    "PreviewNotLoaded",
+    "PreviewLoadGroup",
+    "PreviewSearch",
 )
 
 
@@ -130,6 +147,9 @@ class PreviewSession(object):
             ``get_all_levels``/``get_all_grids`` do for the current setting.
         on_box_changed (callable): called after the preview changed the box.
         on_closed (callable): called when the preview window closes.
+        config (pyrevit.coreutils.configparser.ConfigSection | None):
+            the navigator's config, where the page's display and box settings
+            are kept between sessions; without it they are not remembered.
 
     Lifecycle:
         ``open`` creates the page and docks it; ``close`` or the user closing
@@ -158,6 +178,7 @@ class PreviewSession(object):
         collect_guides,
         on_box_changed,
         on_closed,
+        config=None,
     ):
         self.output = output
         self.navigator = navigator
@@ -167,6 +188,7 @@ class PreviewSession(object):
         self.collect_guides = collect_guides
         self.on_box_changed = on_box_changed
         self.on_closed = on_closed
+        self.config = config
         self.bridge = PageBridge(output, "sectionbox-preview")
         self.root_id = "sbp-app-{}".format(uuid.uuid4().hex[:8])
         self.is_open = False
@@ -191,6 +213,8 @@ class PreviewSession(object):
             ("bookmark_rename", self._on_bookmark_rename),
             ("bookmark_delete", self._on_bookmark_delete),
             ("fit_visible", self._on_fit_visible),
+            ("load_group", self._on_load_group),
+            ("save_settings", self._on_save_settings),
         ):
             self.bridge.handlers[action] = handler
 
@@ -249,6 +273,7 @@ class PreviewSession(object):
         self.output.set_title(self.get_string("PreviewTitle"))
         self.output.add_style(_read_bundle_asset("preview.css"))
         self.output.inject_script(read_lib_asset("gl.js"))
+        self.output.inject_script(read_lib_asset("viewcube.js"))
         self.output.inject_script(_read_bundle_asset("preview.js"))
         self.output.inject_to_body("div", "", {"id": self.root_id})
         self.output.inject_script(
@@ -308,9 +333,10 @@ class PreviewSession(object):
         """Hide the preview window and pause streaming; ``open`` shows it again.
 
         The output window cannot be recreated once closed, so the user closing
-        it only hides it.
+        it only hides it. Hiding also applies to a window that something else
+        showed again, such as a warning logged to the same output window.
         """
-        if not self.is_open:
+        if not self._mounted:
             return
         self.is_open = False
         self._generation += 1
@@ -338,8 +364,7 @@ class PreviewSession(object):
         if self._shutting_down:
             return
         args.Cancel = True
-        if self.is_open:
-            self.close()
+        self.close()
         self.on_closed()
 
     def dock(self):
@@ -365,6 +390,8 @@ class PreviewSession(object):
             "channel": self.bridge.channel,
             "strings": dict((name, self.get_string(name)) for name in PAGE_STRINGS),
             "units": units_payload(self.doc),
+            "northAngle": north_angle(self.doc),
+            "settings": self._load_settings(),
             "view": self._view_payload(view),
             "document": self.doc.Title,
         }
@@ -392,13 +419,50 @@ class PreviewSession(object):
         self._ready = True
         self._send("guides", self._guides_payload())
         self._linked = self.include_links()
-        self._streams = [ModelStream(self.doc, self.origin, False)]
+        focus = self._focus_bounds()
+        self._streams = [ModelStream(self.doc, self.origin, False, focus=focus)]
         if self._linked:
-            self._streams.append(self._link_stream())
+            self._streams.append(self._link_stream(focus))
         self._stream_all()
 
-    def _link_stream(self):
-        return ModelStream(self.doc, self.origin, True, links_only=True)
+    def _focus_bounds(self):
+        view = self.doc.GetElement(self.view_id) if self.view_id else None
+        if view is None:
+            return None
+        return view_focus_bounds(view, self.datafilename)
+
+    def _link_stream(self, focus=None):
+        return ModelStream(self.doc, self.origin, True, links_only=True, focus=focus)
+
+    def _load_settings(self):
+        if self.config is None:
+            return {}
+        return parse_settings(self.config.get_option(SETTINGS_OPTION, ""))
+
+    def _on_save_settings(self, payload, request_id):
+        if self.config is None:
+            return
+        self.config.set_option(SETTINGS_OPTION, dump_settings(payload.get("settings")))
+        script.save_config()
+
+    def _on_load_group(self, payload, request_id):
+        """Queue the left-out elements of a category and stream them.
+
+        A request that finds nothing left out still restarts a stream that an
+        error interrupted: the elements it queued stay in the stream, so the
+        retry after the error resumes them instead of reporting an empty
+        category.
+        """
+        queued = 0
+        for stream in self._streams:
+            queued += stream.load_group(int(payload["source"]), payload["group"])
+        unfinished = any(not stream.done for stream in self._streams)
+        if not queued and not unfinished:
+            self.bridge.reply(request_id, False, "Nothing to load")
+            return
+        self.bridge.reply(request_id, True)
+        self._send("sources", {"loading": True})
+        self._stream_all()
 
     def _stream_all(self):
         self._generation += 1
@@ -414,7 +478,10 @@ class PreviewSession(object):
         stream = next((s for s in self._streams if not s.done), None)
         if stream is None:
             truncated = sum(s.truncated for s in self._streams)
-            self._send("sources", {"done": True, "truncated": truncated})
+            dropped = [group for s in self._streams for group in s.dropped_groups()]
+            self._send(
+                "sources", {"done": True, "truncated": truncated, "dropped": dropped}
+            )
             return
         try:
             chunk = stream.next_chunk(CHUNK_SECONDS)
@@ -437,7 +504,7 @@ class PreviewSession(object):
         self._linked = self.include_links()
         self._send("guides", self._guides_payload())
         if self._linked:
-            self._streams.append(self._link_stream())
+            self._streams.append(self._link_stream(self._focus_bounds()))
             self._send("sources", {"loading": True})
         else:
             self._streams = [s for s in self._streams if not s.links_only]

@@ -15,6 +15,7 @@
   window.chrome = { webview: { postMessage: (m) => window.__sent.push(m), addEventListener() {} } };
 </script>
 <script src="../../../../extensions/pyRevitTools.extension/lib/scene3d/gl.js"></script>
+<script src="../../../../extensions/pyRevitTools.extension/lib/scene3d/viewcube.js"></script>
 <script src="../../../../extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/3D.pulldown/Section%20Box%20Navigator.pushbutton/preview.js"></script>
 <script>
   const A = window.pyRevitSectionBoxPreview.api;
@@ -167,7 +168,7 @@
     p.flags.allLevels = false;
     const hiddenChunk = { progress: [1, 1], meshes: [{ id: 1, source: 0, group: "Rooms", hidden: true, approx: false, positions: packed(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0])), indices: packed(new Uint32Array([0, 1, 2])) }] };
     p._onEvent("scene", hiddenChunk);
-    R.rooms_visible = p.groups.get("Rooms").visible;
+    R.rooms_visible = p.groups.get("0|Rooms").visible;
     p.setCameraPreset("iso");
     p._render();
     R.iso_level_labels = document.querySelectorAll(".sbp-label-level").length;
@@ -295,6 +296,420 @@
     window.addEventListener = add;
     window.removeEventListener = remove;
     return R;
+  };
+
+  scenarios.view_cube = () => {
+    const S = window.pyRevitScene3D;
+    const V = S.viewCube;
+    const deg = (r) => Number((r * 180 / Math.PI).toFixed(4));
+    const scan = (camera) => {
+      const cells = new Set(), compass = new Set();
+      for (let x = 0; x <= 120; x++) {
+        for (let y = 0; y <= 120; y++) {
+          const hit = V.hitTest(camera, 120, x, y);
+          if (hit && hit.kind === "cell") cells.add(hit.face + ":" + hit.iu + ":" + hit.iv);
+          if (hit && hit.kind === "compass") compass.add(hit.key);
+        }
+      }
+      return { cells: [...cells], compass: [...compass].sort() };
+    };
+    const R = {};
+    const front = { yaw: -Math.PI / 2, pitch: 0 };
+    const at = (x, y) => V.hitTest(front, 120, x, y);
+    const centre = at(60, 60);
+    R.centre = [centre.face, centre.iu, centre.iv];
+    const edge = at(85, 60), corner = at(85, 35);
+    R.edge = [edge.face, edge.iu, edge.iv];
+    R.edgeCamera = ((c) => ({ yaw: deg(c.yaw), pitch: deg(c.pitch) }))(V.cameraFor(edge, front));
+    R.cornerCamera = ((c) => ({ yaw: deg(c.yaw), pitch: deg(c.pitch) }))(V.cameraFor(corner, front));
+    R.frontVisible = scan(front).cells.map((c) => c.split(":")[0]).filter((v, i, a) => a.indexOf(v) === i);
+    const tilted = scan({ yaw: -Math.PI / 4, pitch: (35 * Math.PI) / 180 });
+    R.tiltedFaces = tilted.cells.map((c) => c.split(":")[0]).filter((v, i, a) => a.indexOf(v) === i).sort();
+    R.tiltedCells = tilted.cells.length;
+    R.tiltedCompass = tilted.compass;
+    const topHit = { kind: "cell", face: "top", iu: 0, iv: 0, dir: V.cellDirection("top", 0, 0) };
+    const topCamera = V.cameraFor(topHit, { yaw: 1, pitch: 0.3 });
+    R.top = { yaw: topCamera.yaw, pitchDeg: deg(topCamera.pitch) };
+    const north = V.cameraFor({ kind: "compass", key: "n", dir: [0, 1, 0] }, { yaw: 0, pitch: 0.5 });
+    R.north = { yawDeg: deg(north.yaw), pitch: north.pitch };
+
+    const camera = { yaw: -Math.PI / 4, pitch: (35 * Math.PI) / 180 };
+    let changes = 0;
+    const cube = S.createViewCube({
+      parent: document.getElementById("app"), getCamera: () => camera, onChange: () => changes++,
+      labels: { top: "Oben", front: "Vorne" }, compass: ["N", "O", "S", "W"],
+    });
+    const rect = cube.element.getBoundingClientRect();
+    const fire = (type, x, y) => cube.element.dispatchEvent(new PointerEvent(type, { clientX: rect.left + x, clientY: rect.top + y, bubbles: true, pointerId: 3 }));
+    let target = null;
+    for (let x = 0; x <= 120 && !target; x++) for (let y = 0; y <= 120 && !target; y++) {
+      const hit = cube.hit(x, y);
+      if (hit && hit.kind === "cell" && hit.face === "front" && hit.iu === 0 && hit.iv === 0) target = [x, y];
+    }
+    R.labels = [...cube.element.querySelectorAll("text")].map((t) => t.textContent).sort();
+    fire("pointerdown", target[0], target[1]);
+    fire("pointerup", target[0], target[1]);
+    R.clicked = { yawDeg: deg(camera.yaw), pitchDeg: deg(camera.pitch), changes };
+    fire("pointerdown", 60, 60);
+    fire("pointermove", 90, 60);
+    fire("pointerup", 90, 60);
+    R.dragged = { yawChanged: deg(camera.yaw) !== -90, changes };
+    cube.dispose();
+    R.removed = document.querySelectorAll(".scene3d-viewcube").length;
+    return R;
+  };
+
+  scenarios.cube_in_preview = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box(), editable: ["x0", "x1", "y0", "y1", "z0", "z1"], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    const R = { present: document.querySelectorAll(".sbp-stage > .sbp-viewcube").length };
+    p.setCameraPreset("front");
+    p._render();
+    R.faces = [...p.viewCube.element.querySelectorAll("text")].map((t) => t.textContent).sort();
+    p.dispose();
+    R.after_dispose = document.querySelectorAll(".sbp-viewcube").length;
+    return R;
+  };
+
+  scenarios.elevation_guides = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box(), editable: ["x0", "x1", "y0", "y1", "z0", "z1"], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    const levels = [{ name: "Ground", z: 0, elevation: 0 }, { name: "Roof", z: 10, elevation: 10 }];
+    const grids = [
+      { name: "A", segs: [[-30, 0, 30, 0]] },
+      { name: "1", segs: [[40, -30, 40, 30]] },
+      { name: "2", segs: [[-40, -30, -40, 30]] },
+      { name: "D", segs: [[-30, -30, 30, 30]] },
+    ];
+    p.setGuides({ levels, grids, scopeBoxes: [] });
+    const names = () => p._elevationGridLines().map((line) => grids[line.index].name);
+    const R = {};
+    p.setCameraPreset("front");
+    R.front = names();
+    const lines = p._guideSegments();
+    R.vertical = lines.every((l) => l.a[0] === l.b[0] && l.a[1] === l.b[1] && l.a[2] < l.b[2]);
+    R.span = [lines[0].a[2], lines[0].b[2]];
+    p.setCameraPreset("side");
+    R.side = names();
+    p.setCameraPreset("iso");
+    R.iso_segments = p._guideSegments().length;
+    p.setCameraPreset("front");
+    p.frameBounds({ min: [-45, -45, 0], max: [45, 45, 10] });
+    p.flags.levels = false;
+    p._render();
+    R.front_grid_labels = [...document.querySelectorAll(".sbp-label-grid")].map((n) => n.textContent).sort();
+    p.flags.levels = true;
+    p.frameBounds({ min: [-1, -1, -1], max: [1, 1, 1] });
+    p.camera.target = [8, 0, 0.5];
+    p.camera.dist = 4;
+    p._render();
+    const levelLabels = [...document.querySelectorAll(".sbp-label-level")];
+    R.pinned_level_labels = levelLabels.length;
+    R.pinned_inside = levelLabels.every((n) => parseFloat(n.style.left) - (n.textContent.length * 6.5 + 14) - 9 >= 11.999);
+    R.end_aligned = levelLabels.every((n) => n.classList.contains("sbp-label-end"));
+    return R;
+  };
+
+  scenarios.pure_helpers = () => {
+    const A = window.pyRevitSectionBoxPreview.api;
+    const grids = [{ name: "X", segs: [[0, 0, 10, 0]] }, { name: "Y", segs: [[0, 0, 0, 10]] }, { name: "Z", segs: [[0, 0, 10, 10]] }, { name: "Empty", segs: [] }];
+    return {
+      along_y: A.gridsAlongView(grids, Math.PI / 2, (20 * Math.PI) / 180),
+      along_x: A.gridsAlongView(grids, 0, (20 * Math.PI) / 180),
+      elevation: [A.isElevationCamera({ pitch: 0 }), A.isElevationCamera({ pitch: 0.05 }), A.isElevationCamera({ pitch: 0.3 })],
+      pinned_inside: A.pinToViewport([30, 40], [300, 40], 12),
+      pinned_left: A.pinToViewport([-100, 20], [100, 60], 12),
+      pinned_gone: A.pinToViewport([-100, 20], [5, 60], 12),
+      key: A.groupKey(2, "Walls"),
+    };
+  };
+
+  scenarios.link_groups = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box(), editable: ["x0", "x1", "y0", "y1", "z0", "z1"], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    const triangle = packed(new Float32Array([0, 0, 0, 4, 0, 0, 0, 4, 0]));
+    const indices = packed(new Uint32Array([0, 1, 2]));
+    const mesh = (id, source, group, link, approx) => ({ id, source, group, link, approx: !!approx, positions: triangle, indices });
+    p._onEvent("scene", { progress: [3, 3], meshes: [mesh(1, 0, "Walls", null), mesh(2, 1, "Walls", "Tower"), mesh(3, 1, "Floors", "Tower", true)] });
+    const R = {};
+    R.keys = [...p.groups.keys()].sort();
+    R.link_head = document.querySelector(".sbp-link-head .sbp-link-title").textContent;
+    R.indented = document.querySelectorAll(".sbp-indent").length;
+    R.notes = document.querySelectorAll(".sbp-note").length;
+    R.batches = p.batches.map((b) => b.group + ":" + b.approx).sort();
+    R.label = p._elementLabel(p.elements.get("1:3"));
+    const head = document.querySelector(".sbp-link-head input");
+    head.checked = false;
+    head.dispatchEvent(new Event("change"));
+    R.visible = ["0|Walls", "1|Walls", "1|Floors"].map((k) => p.groups.get(k).visible);
+    p._onEvent("sources", { done: true, truncated: 5, dropped: [{ source: 0, group: "Furniture", link: null, hidden: false, count: 5 }] });
+    const furniture = p.groups.get("0|Furniture");
+    R.dropped = [furniture.count, furniture.dropped];
+    const load = [...document.querySelectorAll(".sbp-chip a.sbp-link")].find((a) => a.textContent === "PreviewLoadGroup");
+    load.click();
+    const request = window.__sent.find((m) => m.action === "load_group");
+    R.request = request && request.payload.source + ":" + request.payload.group;
+    R.requested = p.groups.get("0|Furniture").requested;
+    p._onEvent("sources", { done: true, truncated: 0, dropped: [] });
+    R.emptied = p.groups.has("0|Furniture");
+    p._onEvent("sources", { dropLinks: true });
+    R.after_drop = [...p.groups.keys()];
+    return R;
+  };
+
+  scenarios.cube_robustness = () => {
+    const S = window.pyRevitScene3D;
+    const V = S.viewCube;
+    const R = { letters: {} };
+    for (const [name, camera] of [["front", { yaw: -Math.PI / 2, pitch: 0 }], ["tilted", { yaw: -Math.PI / 4, pitch: 0.6 }], ["top", { yaw: -Math.PI / 2, pitch: Math.PI / 2 }]]) {
+      for (const north of [0, 0.45]) {
+        const points = V.compassScreenPoints(camera, 120, north);
+        R.letters[name + ":" + north] = Object.entries(points).map(([key, [x, y]]) => {
+          const hit = V.hitTest(camera, 120, x, y, north);
+          return hit && hit.kind === "compass" ? hit.key === key : false;
+        }).every(Boolean);
+      }
+    }
+    const camera = { yaw: -Math.PI / 4, pitch: 0.6 };
+    let changes = 0;
+    const cube = S.createViewCube({ parent: document.getElementById("app"), getCamera: () => camera, onChange: () => changes++ });
+    const rect = cube.element.getBoundingClientRect();
+    const fire = (type, x, y, id) => cube.element.dispatchEvent(new PointerEvent(type, { clientX: rect.left + x, clientY: rect.top + y, bubbles: true, pointerId: id }));
+    fire("pointerdown", 60, 60, 1);
+    fire("pointerdown", 20, 20, 2);
+    fire("pointermove", 100, 20, 2);
+    R.second_finger_move = [changes, camera.yaw];
+    fire("pointermove", 80, 60, 1);
+    R.owner_move = changes;
+    fire("pointerup", 20, 20, 2);
+    fire("pointermove", 90, 60, 1);
+    R.after_foreign_up = changes;
+    fire("pointercancel", 90, 60, 1);
+    const yawAtCancel = camera.yaw;
+    fire("pointermove", 120, 70, 1);
+    R.after_cancel = [changes > 0, camera.yaw === yawAtCancel];
+    fire("pointerdown", 60, 60, 3);
+    fire("pointerup", 60, 60, 3);
+    R.fresh_gesture_after_cancel = true;
+    cube.element.dispatchEvent(new PointerEvent("lostpointercapture", { pointerId: 3, bubbles: true }));
+    return R;
+  };
+
+  scenarios.stream_error_clears_requests = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    p._onEvent("sources", { done: true, truncated: 3, dropped: [{ source: 0, group: "Pipes", link: null, hidden: false, count: 3 }] });
+    p.requestGroup("0|Pipes");
+    const before = [p.groups.get("0|Pipes").requested, document.querySelector(".sbp-chip a.sbp-link").classList.contains("sbp-disabled")];
+    p._onEvent("error", { message: "stream failed" });
+    return {
+      before,
+      after: [p.groups.get("0|Pipes").requested, document.querySelector(".sbp-chip a.sbp-link").classList.contains("sbp-disabled")],
+      status: document.querySelector(".sbp-status-text").textContent,
+    };
+  };
+
+  scenarios.top_view = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box({ min: [-40, -30, 0], max: [40, 30, 90] }), editable: ["x0", "x1", "y0", "y1", "z0", "z1"], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    p.setCameraPreset("top");
+    p._render();
+    const corners = A.boxCorners(p.view.box);
+    const screen = (c) => p._project(p.viewProj, c);
+    const gaps = [0, 1, 2, 3].map((k) => {
+      const low = screen(corners[k]), high = screen(corners[k + 4]);
+      return Math.hypot(low.x - high.x, low.y - high.y);
+    });
+    const R = { pitchDeg: p.camera.pitch * 180 / Math.PI, maxGap: Math.max(...gaps) };
+    const northUp = screen([0, 20, 0]).y < screen([0, -20, 0]).y;
+    const eastRight = screen([20, 0, 0]).x > screen([-20, 0, 0]).x;
+    R.orientation = { northUp, eastRight };
+    const before = p.camera.target.slice();
+    window.pyRevitScene3D.cameraPan(p.camera, 20, 10, 500);
+    R.panFinite = p.camera.target.every((v) => Number.isFinite(v));
+    R.panMoved = p.camera.target.some((v, i) => v !== before[i]);
+    window.pyRevitScene3D.cameraOrbit(p.camera, 0, 5);
+    R.orbitPitchDeg = Number((p.camera.pitch * 180 / Math.PI).toFixed(2));
+    return R;
+  };
+
+  scenarios.true_north = () => {
+    const V = window.pyRevitScene3D.viewCube;
+    const north = (30 * Math.PI) / 180;
+    const entries = V.compassEntries(north);
+    const dir = (key) => entries.find((e) => e.key === key).dir.map((v) => Number(v.toFixed(4)));
+    const camera = { yaw: -Math.PI / 2, pitch: Math.PI / 2 };
+    const found = (() => {
+      for (let x = 0; x <= 120; x++) for (let y = 0; y <= 120; y++) {
+        const hit = V.hitTest(camera, 120, x, y, north);
+        if (hit && hit.kind === "compass" && hit.key === "n") return { x, y, dir: hit.dir };
+      }
+      return null;
+    })();
+    const heading = V.cameraFor({ kind: "compass", key: "n", dir: found.dir }, { yaw: 0, pitch: 0.4 });
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 }, northAngle: north,
+      view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    p.setCameraPreset("top");
+    p._render();
+    const letters = [...p.viewCube.element.querySelectorAll("text")].filter((t) => t.textContent.length === 1 || t.textContent === "PreviewCompass");
+    const topLetter = [...p.viewCube.element.querySelectorAll("text")].find((t) => t.textContent === "PreviewCompass");
+    return {
+      n: dir("n"), e: dir("e"), s: dir("s"), w: dir("w"),
+      nHitLeftOfCentre: found.x > 60, nHitAboveCentre: found.y < 60,
+      headingYawDeg: Number((heading.yaw * 180 / Math.PI).toFixed(4)), headingPitch: heading.pitch,
+      mounted: !!topLetter, letters: letters.length,
+    };
+  };
+
+  scenarios.category_search = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    const triangle = packed(new Float32Array([0, 0, 0, 4, 0, 0, 0, 4, 0]));
+    const indices = packed(new Uint32Array([0, 1, 2]));
+    const mesh = (id, source, group, link) => ({ id, source, group, link, approx: false, positions: triangle, indices });
+    p._onEvent("scene", { progress: [5, 5], meshes: [
+      mesh(1, 0, "Walls", null), mesh(2, 0, "Floors", null),
+      mesh(3, 1, "Walls", "Tower"), mesh(4, 1, "Floors", "Tower"), mesh(5, 2, "Pipes", "Plumbing"),
+    ] });
+    const rows = () => [...document.querySelectorAll(".sbp-category-list > *")].map((n) => n.classList.contains("sbp-link-head") ? "[" + n.querySelector(".sbp-link-title").textContent + "]" : n.textContent.replace(/\s*\(\d+\)$/, ""));
+    const search = (text) => {
+      p.categorySearch.value = text;
+      p.categorySearch.dispatchEvent(new Event("input"));
+    };
+    const R = { all: rows() };
+    search("pipe");
+    R.pipe = rows();
+    search("tower");
+    R.tower = rows();
+    search("WALLS");
+    R.walls = rows();
+    search("pipe");
+    [...document.querySelectorAll(".sbp-panel-head .sbp-link")].find((a) => a.textContent === "PreviewNone").click();
+    R.visible_after_none = [...p.groups.entries()].map(([k, g]) => k + ":" + g.visible).sort();
+    search("");
+    document.querySelector(".sbp-link-head .sbp-chevron").click();
+    R.collapsed = rows();
+    search("tower");
+    R.expanded_while_searching = rows();
+    search("");
+    R.collapsed_remembered = rows();
+    document.querySelector(".sbp-link-head .sbp-chevron").click();
+    R.reopened = rows().length;
+    return R;
+  };
+
+  scenarios.remembered_settings = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      settings: { model: false, cut: "hide", ghost: 0.3, snap: false, live: true, grids: "yes", junk: 1, ghost2: 1, sideWidth: 333 },
+      view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    const R = { flags: [p.flags.model, p.flags.cut, p.flags.ghost, p.flags.snap, p.flags.live, p.flags.grids] };
+    R.sideWidth = [p.flags.sideWidth, p.side.style.width];
+    R.controls = [p.cutSelect.value, p.ghostRange.value, [...document.querySelectorAll(".sbp-toggle input")].map((i) => i.checked)];
+    const toggles = [...document.querySelectorAll(".sbp-toggle")];
+    const levels = toggles.find((t) => t.textContent === "PreviewLevels").querySelector("input");
+    levels.checked = false;
+    levels.dispatchEvent(new Event("change"));
+    p.cutSelect.value = "off";
+    p.cutSelect.dispatchEvent(new Event("change"));
+    p.ghostRange.value = "45";
+    p.ghostRange.dispatchEvent(new Event("input"));
+    p.ghostRange.dispatchEvent(new Event("change"));
+    const saves = window.__sent.filter((m) => m.action === "save_settings");
+    const last = saves[saves.length - 1].payload.settings;
+    R.saves = saves.length;
+    R.no_request_id = saves.every((m) => m.requestId === undefined);
+    R.last = { levels: last.levels, cut: last.cut, ghost: last.ghost, model: last.model, keys: Object.keys(last).sort() };
+    R.clamped = (() => {
+      app.mount("app", { channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 }, settings: { sideWidth: 1100 }, view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] } });
+      const q = app.instance;
+      return [q.flags.sideWidth, parseFloat(q.side.style.width), q.main.clientWidth];
+    })();
+    R.defaults_kept = (() => {
+      app.mount("app", { channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 }, settings: "garbage", view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] } });
+      const q = app.instance;
+      return [q.flags.model, q.flags.cut, q.flags.ghost, q.flags.snap];
+    })();
+    return R;
+  };
+
+  scenarios.crowded_output = async () => {
+    const app = document.getElementById("app");
+    for (let i = 0; i < 300; i++) {
+      const line = document.createElement("div");
+      line.textContent = "INFO [Section Box Navigator] Form updated due to view or document change.";
+      document.body.insertBefore(line, app);
+    }
+    await new Promise((resolve) => {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "../../../../extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/3D.pulldown/Section%20Box%20Navigator.pushbutton/preview.css";
+      link.onload = resolve;
+      link.onerror = resolve;
+      document.head.append(link);
+    });
+    window.pyRevitSectionBoxPreview.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] },
+    });
+    const root = document.getElementById("app");
+    const rect = root.getBoundingClientRect();
+    const p = window.pyRevitSectionBoxPreview.instance;
+    const splitter = document.querySelector(".sbp-splitter");
+    const main = document.querySelector(".sbp-main").getBoundingClientRect();
+    const fire = (type, x) => splitter.dispatchEvent(new PointerEvent(type, { clientX: x, clientY: 200, bubbles: true, pointerId: 6 }));
+    const before = p.side.getBoundingClientRect().width;
+    fire("pointerdown", main.right - before);
+    fire("pointermove", main.right - 320);
+    fire("pointerup", main.right - 320);
+    const wide = p.side.getBoundingClientRect().width;
+    fire("pointerdown", main.right - wide);
+    fire("pointermove", main.right - 20);
+    fire("pointerup", main.right - 20);
+    const narrow = p.side.getBoundingClientRect().width;
+    fire("pointerdown", main.right - narrow);
+    fire("pointermove", main.left + 5);
+    fire("pointerup", main.left + 5);
+    const widest = p.side.getBoundingClientRect().width;
+    const saved = window.__sent.filter((m) => m.action === "save_settings").map((m) => m.payload.settings.sideWidth);
+    splitter.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    return {
+      position: getComputedStyle(root).position, top: rect.top, left: rect.left,
+      before, wide, narrow, widest, mainWidth: main.width, saved,
+      reset: [p.side.style.width, p.flags.sideWidth],
+      saved_after_reset: window.__sent.filter((m) => m.action === "save_settings").pop().payload.settings.sideWidth,
+    };
   };
 
   scenarios.gl_smoke = () => {
