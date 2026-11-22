@@ -59,6 +59,17 @@ public class ResetToDefaultsTests {
     }
 
     [Fact]
+    public void ResetToDefaults_AlreadyEmptyTypedSection_IsReportedAndRemoved() {
+        var service = BuildService(config => config.AddSection("routes"));
+
+        Assert.Equal(new[] { "routes" }, service.ResetToDefaults("routes", dryRun: true));
+        Assert.True(service.Configuration.HasSection("routes"));
+
+        Assert.Equal(new[] { "routes" }, service.ResetToDefaults("routes"));
+        Assert.False(service.Configuration.HasSection("routes"));
+    }
+
+    [Fact]
     public void ResetToDefaults_UntypedSection_RemovesItWhole() {
         var service = BuildService(config => {
             config.SetValue("MyTool_config", "answer", 42);

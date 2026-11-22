@@ -199,7 +199,7 @@ public sealed class ConfigurationService : IConfigurationService {
                     continue;
 
                 Type? sectionType = FindSectionType(target);
-                if (sectionType is null) {
+                if (sectionType is null || !_configuration.GetSectionOptionNames(target).Any()) {
                     removed.Add(target);
                     if (!dryRun)
                         _configuration.RemoveSection(target);

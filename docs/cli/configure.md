@@ -56,7 +56,7 @@ $ pyrevit configs reset --dryrun
 $ pyrevit configs reset core
 ```
 
-- `<section>`: Resets only that section of the config file, for example `core`, `routes` or `telemetry`. For these, only the settings pyRevit defines are removed; bookkeeping such as the config version stays. Any other section, such as an extension's, is removed whole. Without a section, every section is reset except `environment`, which holds the registered clones and extension sources and is never reset. Shipped extensions that are off by default are switched off again afterwards.
+- `<section>`: Resets only that section of the config file, for example `core`, `routes` or `telemetry`. For these, only the settings pyRevit defines are removed; bookkeeping such as the config version stays. Any other section, such as an extension's, is removed whole. Without a section, every section is reset except `environment`, which holds the registered clones and extension sources and is never reset. When something was reset, shipped extensions that are off by default are switched off again.
 - `--dryrun`: Lists what would be reset and changes nothing.
 
 Before changing anything, `reset` copies the config file to `pyRevit_config.reset.<timestamp>.ini` in your Documents folder. If a seeded config exists in `%PROGRAMDATA%/pyRevit`, it is only copied when the user config is first created, so a reset does not bring it back.
