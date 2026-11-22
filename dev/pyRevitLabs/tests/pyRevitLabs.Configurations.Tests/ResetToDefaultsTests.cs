@@ -9,6 +9,8 @@ namespace pyRevitLabs.Configurations.Tests;
 /// removed so reads fall back to the declared defaults, bookkeeping keys and the
 /// environment section survive, and a dry run changes nothing.
 /// </summary>
+[Trait("Level", "Unit")]
+[Trait("Environment", "HostFree")]
 public class ResetToDefaultsTests {
     private static IConfigurationService BuildService(Action<InMemoryConfiguration> seed) {
         var configuration = new InMemoryConfiguration();
