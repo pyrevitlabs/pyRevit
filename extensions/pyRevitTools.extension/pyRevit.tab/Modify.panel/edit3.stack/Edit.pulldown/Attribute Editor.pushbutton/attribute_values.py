@@ -169,11 +169,18 @@ class ValueCodec(object):
         self._require(parameter.Set(matches[0]))
 
     def _reference_sample(self, column, parameter):
-        if column.key not in self._reference_samples:
-            self._reference_samples[column.key] = self._find_reference_sample(
-                column, parameter.Element
+        owner = parameter.Element
+        category = owner.Category if owner is not None else None
+        cache_key = (
+            column.key,
+            category.Id.ToString() if category is not None else None,
+            isinstance(owner, DB.ElementType),
+        )
+        if cache_key not in self._reference_samples:
+            self._reference_samples[cache_key] = self._find_reference_sample(
+                column, owner
             )
-        return self._reference_samples[column.key]
+        return self._reference_samples[cache_key]
 
     def _find_reference_sample(self, column, owner):
         if owner is None or owner.Category is None:
