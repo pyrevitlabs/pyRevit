@@ -513,6 +513,137 @@
       return R;
     },
 
+    async core_merge_pulls() {
+      const R = {};
+      const make = (id, base, cur, t) => ({ id, t: t || 1, c: "", base: base.slice(), cur: cur.slice(), locked: new Set(), conflicts: new Map(), errors: new Map() });
+      const fresh = (id, v, x, t) => ({ id, t: t || 1, c: "", v, x: x || [] });
+      const first = core.mergeRows([make(1, ["A"], ["B"])], ["k|i"], [fresh(1, ["C"])], ["k|i"]);
+      R.first = [first.rows[0].cur[0], first.rows[0].base[0], first.conflicts, [...first.rows[0].conflicts.entries()]];
+      const second = core.mergeRows(first.rows, ["k|i"], [fresh(1, ["C"])], ["k|i"]);
+      R.second = [second.rows[0].cur[0], second.rows[0].base[0], second.conflicts, [...second.rows[0].conflicts.entries()]];
+      const matched = core.mergeRows(first.rows, ["k|i"], [fresh(1, ["B"])], ["k|i"]);
+      R.revit_now_matches = [matched.rows[0].cur[0], matched.rows[0].base[0], matched.conflicts];
+      const locked = core.mergeRows([make(1, ["A"], ["B"])], ["k|i"], [fresh(1, ["A"], [0])], ["k|i"]);
+      R.locked = [locked.rows[0].cur[0], locked.dropped];
+      const moved = core.mergeRows([make(1, ["A"], ["B"], 1)], ["k|t"], [fresh(1, ["A"], [], 2)], ["k|t"]);
+      R.type_moved = [moved.rows[0].cur[0], moved.dropped];
+      const instanceMoved = core.mergeRows([make(1, ["A"], ["B"], 1)], ["k|i"], [fresh(1, ["A"], [], 2)], ["k|i"]);
+      R.instance_kept = [instanceMoved.rows[0].cur[0], instanceMoved.dropped];
+      return R;
+    },
+
+    async grid_undo_in_filtered_view() {
+      const R = {};
+      mount();
+      await wait(60);
+      const filter = document.querySelectorAll(".ae-filter")[0];
+      filter.value = "D5";
+      filter.dispatchEvent(new Event("input", { bubbles: true }));
+      click(0, 0);
+      paste("X");
+      key("z", { ctrlKey: true });
+      key("y", { ctrlKey: true });
+      R.rows_visible = document.querySelectorAll(".ae-row").length;
+      R.toolbar_rendered = document.querySelectorAll(".ae-toolbar button").length > 5;
+      R.anchor_valid = window.__app.anchor === null || window.__app.anchor.r < Math.max(1, window.__app.view.length);
+      R.ids = window.__app.selectedIds();
+      return R;
+    },
+
+    async grid_stale_push_reply() {
+      const R = {};
+      mount();
+      await wait(60);
+      click(0, 0);
+      paste("N1");
+      window.__backend.push = async (payload) => {
+        await wait(250);
+        return { results: payload.edits.map((e) => ({ row: e.row, key: e.key, ok: true, value: e.text })) };
+      };
+      [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("Push") >= 0).click();
+      await wait(40);
+      window.__app.generation++;
+      window.__app.rows = [];
+      window.__app.columns = [];
+      window.__app.view = [];
+      await wait(400);
+      R.columns_after = window.__app.columns.length;
+      R.toasts = [...document.querySelectorAll(".ae-toast")].map((n) => n.textContent);
+      return R;
+    },
+
+    async grid_f2_on_multiline_cell() {
+      const R = {};
+      const grid = fixtureGrid();
+      grid.rows[0].v[0] = "line one\nline two";
+      mount({ grid });
+      await wait(60);
+      click(0, 0);
+      key("F2");
+      document.querySelector(".ae-editor").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+      R.dirty_after_enter = dirty();
+      click(0, 0);
+      key("F2");
+      document.querySelector(".ae-editor").value = "changed";
+      document.querySelector(".ae-editor").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+      R.dirty_after_change = dirty();
+      return R;
+    },
+
+    async grid_scratch_source_change_prompt() {
+      const R = {};
+      mount();
+      await wait(60);
+      window.__backend.categories = () => [
+        { id: -1, name: "Alpha", instances: 3, types: 1 },
+        { id: -2, name: "Beta", instances: 2, types: 1 },
+      ];
+      window.__backend.available = () => [{ key: "bip|-9|i", heading: "Mark", scope: "i" }];
+      window.__backend.load = (payload) => ({
+        source: payload.source,
+        title: "",
+        unitMode: "display",
+        columns: [column("bip|-9|i", "Mark")],
+        rows: [{ id: 1, t: 1, c: "A", v: ["A"], x: [] }, { id: 2, t: 1, c: "A", v: ["B"], x: [] }],
+        sort: [],
+      });
+      const select = document.querySelector(".ae-toolbar select");
+      select.value = "__scratch__";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      await wait(80);
+      const boxes = () => [...document.querySelectorAll(".ae-panel .ae-section:first-child .ae-item input")];
+      boxes()[0].checked = true;
+      boxes()[0].dispatchEvent(new Event("change", { bubbles: true }));
+      [...document.querySelectorAll(".ae-panel .ae-button")].find((b) => b.textContent === "ui_find_parameters").click();
+      await wait(80);
+      document.querySelector(".ae-panel .ae-item.add").click();
+      const show = () => [...document.querySelectorAll(".ae-panel .ae-button.primary")].find((b) => b.textContent === "ui_apply_columns");
+      show().click();
+      await wait(100);
+      click(0, 0);
+      paste("EDIT");
+      R.dirty_before = dirty();
+      boxes()[1].checked = true;
+      boxes()[1].dispatchEvent(new Event("change", { bubbles: true }));
+      const loadsBefore = sent("load").length;
+      show().click();
+      await wait(80);
+      R.dialog_shown = !!document.querySelector(".ae-dialog");
+      R.loads_while_asking = sent("load").length - loadsBefore;
+      [...document.querySelectorAll(".ae-dialog button")][0].click();
+      await wait(80);
+      R.dirty_after_cancel = dirty();
+      R.loads_after_cancel = sent("load").length - loadsBefore;
+      show().click();
+      await wait(80);
+      [...document.querySelectorAll(".ae-dialog button")][1].click();
+      await wait(120);
+      R.dirty_after_discard = dirty();
+      R.loads_after_discard = sent("load").length - loadsBefore;
+      boxes()[1].checked = true;
+      return R;
+    },
+
     async grid_virtualised() {
       const R = {};
       const rows = [];

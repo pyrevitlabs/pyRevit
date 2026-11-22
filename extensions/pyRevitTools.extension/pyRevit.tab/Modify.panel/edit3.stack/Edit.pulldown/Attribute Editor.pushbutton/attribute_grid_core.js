@@ -149,9 +149,15 @@
       if (previous) {
         newKeys.forEach((key, index) => {
           const was = oldIndex.get(key);
-          if (was === undefined || previous.cur[was] === previous.base[was] || row.locked.has(index)) return;
+          if (was === undefined || previous.cur[was] === previous.base[was]) return;
+          const typeMoved = key.endsWith("|t") && previous.t !== fresh.t;
+          if (row.locked.has(index) || typeMoved) {
+            dropped++;
+            return;
+          }
           row.cur[index] = previous.cur[was];
-          if (fresh.v[index] !== previous.base[was]) {
+          const revitMoved = fresh.v[index] !== previous.base[was] || previous.conflicts.has(was);
+          if (revitMoved && fresh.v[index] !== previous.cur[was]) {
             row.conflicts.set(index, fresh.v[index]);
             conflicts++;
           }

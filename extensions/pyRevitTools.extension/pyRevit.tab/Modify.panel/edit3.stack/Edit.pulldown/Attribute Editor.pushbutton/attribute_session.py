@@ -124,6 +124,8 @@ class AttributeSession(object):
     def _register(self, action, function):
         def handler(payload, request_id):
             try:
+                if action != "theme" and not self._is_active_document():
+                    raise ValueError(t("err_other_document"))
                 result = function(payload)
             except Exception as ex:
                 logger.exception("Attribute Editor action '%s' failed", action)
@@ -132,6 +134,10 @@ class AttributeSession(object):
             self.bridge.reply(request_id, True, result)
 
         self.bridge.handlers[action] = handler
+
+    def _is_active_document(self):
+        active = revit.doc
+        return active is not None and active.Equals(self.doc)
 
     def _load(self, payload):
         source = source_from_payload(self.doc, payload)
@@ -166,8 +172,6 @@ class AttributeSession(object):
         return apply_layout(self.doc, source, payload.get("columns") or [])
 
     def _select(self, payload):
-        if not revit.doc.Equals(self.doc):
-            raise ValueError(t("err_other_document"))
         ids = [get_elementid_from_value(int(value)) for value in payload["ids"]]
         revit.get_selection().set_to(ids)
         if payload.get("zoom"):

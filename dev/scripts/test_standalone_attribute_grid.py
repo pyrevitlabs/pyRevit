@@ -381,6 +381,42 @@ class AttributeGridPageTests(unittest.TestCase):
         self.assertTrue(result["dirty"])
         self.assertEqual(result["base"], "N1 normalized")
 
+    def test_pull_keeps_conflicts_until_resolved_and_reports_dropped_edits(self):
+        result = self.scenario("core_merge_pulls")
+        self.assertEqual(result["first"], ["B", "C", 1, [[0, "C"]]])
+        self.assertEqual(result["second"], ["B", "C", 1, [[0, "C"]]])
+        self.assertEqual(result["revit_now_matches"], ["B", "B", 0])
+        self.assertEqual(result["locked"], ["A", 1])
+        self.assertEqual(result["type_moved"], ["A", 1])
+        self.assertEqual(result["instance_kept"], ["B", 0])
+
+    def test_undo_and_redo_survive_a_filter_that_hides_the_edited_row(self):
+        result = self.scenario("grid_undo_in_filtered_view")
+        self.assertEqual(result["rows_visible"], 0)
+        self.assertTrue(result["toolbar_rendered"])
+        self.assertTrue(result["anchor_valid"])
+        self.assertEqual(result["ids"], [])
+
+    def test_a_push_reply_for_a_replaced_grid_is_not_applied(self):
+        result = self.scenario("grid_stale_push_reply")
+        self.assertEqual(result["columns_after"], 0)
+        self.assertEqual(result["toasts"], ["1 written"])
+
+    def test_opening_and_confirming_a_multiline_cell_stages_no_edit(self):
+        result = self.scenario("grid_f2_on_multiline_cell")
+        self.assertEqual(result["dirty_after_enter"], 0)
+        self.assertEqual(result["dirty_after_change"], 1)
+
+    def test_changing_the_scratch_source_asks_before_dropping_pending_edits(self):
+        result = self.scenario("grid_scratch_source_change_prompt")
+        self.assertEqual(result["dirty_before"], 1)
+        self.assertTrue(result["dialog_shown"])
+        self.assertEqual(result["loads_while_asking"], 0)
+        self.assertEqual(result["dirty_after_cancel"], 1)
+        self.assertEqual(result["loads_after_cancel"], 0)
+        self.assertEqual(result["dirty_after_discard"], 0)
+        self.assertEqual(result["loads_after_discard"], 1)
+
     def test_large_grids_render_only_the_visible_rows(self):
         result = self.scenario("grid_virtualised")
         self.assertLess(result["rendered_rows"], 60)

@@ -65,6 +65,7 @@
       this.strings = data.strings;
       this.requests = new Map();
       this.requestSeq = 0;
+      this.generation = 0;
       this.source = data.start;
       this.title = "";
       this.unitMode = "display";
@@ -279,6 +280,7 @@
     applyGrid(grid, merge) {
       const oldKeys = this.columns.map((c) => c.key);
       const newKeys = grid.columns.map((c) => c.key);
+      if (!merge) this.generation++;
       this.source = grid.source;
       this.loadedSignature = JSON.stringify(grid.source);
       this.title = grid.title;
@@ -858,9 +860,10 @@
         return;
       }
       this.setSelection({ r: vi, c: ci }, { r: vi, c: ci });
-      this.editing = { vi, ci, original: row.cur[ci] };
+      this.editing = { vi, ci, original: row.cur[ci], untouched: null };
       this.editor.hidden = false;
       this.editor.value = initial !== undefined ? initial : row.cur[ci];
+      if (initial === undefined) this.editing.untouched = this.editor.value;
       this.setEditorChoices(column);
       this.positionEditor();
       this.editor.focus();
@@ -888,13 +891,13 @@
 
     commitEdit(move) {
       if (!this.editing) return;
-      const { vi, ci, original } = this.editing;
+      const { vi, ci, original, untouched } = this.editing;
       this.editing = null;
       const value = this.editor.value;
       this.editor.hidden = true;
       const row = this.rows[this.view[vi]];
-      const flattened = original.replace(/[\r\n]+/g, " ");
-      if (row && value !== flattened) this.applyChanges([{ row, ci, value }]);
+      const unchangedText = untouched !== null ? untouched : original;
+      if (row && value !== unchangedText) this.applyChanges([{ row, ci, value }]);
       if (move) this.moveSelection(move[0], move[1], false);
       else this.renderBody();
       this.focusGrid();
@@ -925,10 +928,17 @@
     applyChanges(changes) {
       const entries = [];
       const done = new Set();
+      const expandedTypes = new Set();
       let skipped = 0;
       for (const change of changes) {
         const column = this.columns[change.ci];
-        const targets = column.scope === "t" ? this.byType.get(change.row.t) || [change.row] : [change.row];
+        let targets = [change.row];
+        if (column.scope === "t") {
+          const group = change.row.t + ":" + change.ci;
+          if (expandedTypes.has(group)) continue;
+          expandedTypes.add(group);
+          targets = this.byType.get(change.row.t) || targets;
+        }
         for (const row of targets) {
           const tag = row.id + ":" + change.ci;
           if (done.has(tag)) continue;
@@ -974,7 +984,18 @@
 
     afterHistory() {
       this.recomputeView();
+      this.repairSelection();
       this.renderAll();
+    }
+
+    repairSelection() {
+      if (!this.view.length || !this.columns.length) {
+        this.anchor = this.focus = null;
+        return;
+      }
+      const clampCell = (cell) => (cell ? { r: Math.min(cell.r, this.view.length - 1), c: Math.min(cell.c, this.columns.length - 1) } : cell);
+      this.anchor = clampCell(this.anchor);
+      this.focus = clampCell(this.focus);
     }
 
     selectedCells() {
@@ -982,7 +1003,9 @@
       if (!rect) return [];
       const cells = [];
       for (let vi = rect.r1; vi <= rect.r2; vi++) {
-        for (let ci = rect.c1; ci <= rect.c2; ci++) cells.push({ row: this.rows[this.view[vi]], vi, ci });
+        const row = this.rows[this.view[vi]];
+        if (!row) continue;
+        for (let ci = rect.c1; ci <= rect.c2; ci++) cells.push({ row, vi, ci });
       }
       return cells;
     }
@@ -991,7 +1014,10 @@
       const rect = this.rect();
       if (!rect) return [];
       const ids = [];
-      for (let vi = rect.r1; vi <= rect.r2; vi++) ids.push(this.rows[this.view[vi]].id);
+      for (let vi = rect.r1; vi <= rect.r2; vi++) {
+        const row = this.rows[this.view[vi]];
+        if (row) ids.push(row.id);
+      }
       return ids;
     }
 
@@ -1116,6 +1142,7 @@
         this.plan = [];
         this.available = [];
         this.loadedSignature = null;
+        this.generation++;
         this.anchor = this.focus = null;
         this.openScratch();
         return;
@@ -1179,6 +1206,7 @@
         this.toast(unresolved ? this.S("push_conflicts", unresolved) : this.S("nothing_pending"), "info");
         return;
       }
+      const generation = this.generation;
       this.setBusy(true);
       let results;
       try {
@@ -1194,6 +1222,11 @@
         return;
       } finally {
         this.setBusy(false);
+      }
+      if (generation !== this.generation) {
+        const written = results.filter((result) => result.ok).length;
+        if (written && !dry) this.toast(this.S("push_done", written), "ok");
+        return;
       }
       this.applyResults(edits, results, !!dry);
     }
@@ -1546,13 +1579,22 @@
           this.toast(this.S("pick_categories"), "info");
           return;
         }
-        this.source = { kind: "scratch", categories, scope: this.builder.scope, types: this.builder.types };
+        const next = { kind: "scratch", categories, scope: this.builder.scope, types: this.builder.types };
+        const pending = this.countPending();
+        if (pending && !this.sameScratchSource(next, this.source) && !(await this.confirm(this.S("source_discard", pending), this.S("discard")))) return;
+        this.source = next;
       }
       if (!this.plan.length) {
         this.toast(this.S("no_columns_yet"), "info");
         return;
       }
       await this.load({ columns: this.plan.slice() });
+    }
+
+    sameScratchSource(a, b) {
+      if (a.kind !== "scratch" || b.kind !== "scratch") return false;
+      const ids = (source) => [...(source.categories || [])].sort((x, y) => x - y).join(",");
+      return ids(a) === ids(b) && a.scope === b.scope && !!a.types === !!b.types;
     }
 
     async writeLayout() {
