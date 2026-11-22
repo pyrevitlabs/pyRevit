@@ -135,6 +135,7 @@ Usage:
 	pyrevit configs outputcss [<css_path>] [--log=<log_file>]
 	pyrevit configs seed [--lock] [--log=<log_file>]
 	pyrevit configs seedshippeddefaults [--log=<log_file>]
+	pyrevit configs reset [<section>] [--dryrun] [--log=<log_file>]
 	pyrevit configs <option_path> [(enable | disable)] [--log=<log_file>]
 	pyrevit configs <option_path> [<option_value>] [--log=<log_file>]
     pyrevit doctor (-h | --help)

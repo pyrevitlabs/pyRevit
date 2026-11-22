@@ -1218,6 +1218,13 @@ func main() {
 							"--log": complete.PredictNothing,
 						},
 					},
+					"reset": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--dryrun": complete.PredictNothing,
+							"--log":    complete.PredictNothing,
+						},
+					},
 					"enable": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{

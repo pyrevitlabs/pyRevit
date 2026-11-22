@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using pyRevitLabs.Configurations.Abstractions;
@@ -12,14 +13,12 @@ namespace pyRevitLabs.Configurations.Tests;
 /// is static global state, so each test resets it and the class is non-parallel.
 /// </summary>
 [Collection("PyRevitConfigStore")]
-public class PyRevitConfigStoreTests : IDisposable
-{
+public class PyRevitConfigStoreTests : IDisposable {
     public PyRevitConfigStoreTests() => PyRevitConfigStore.Reset();
     public void Dispose() => PyRevitConfigStore.Reset();
 
     [Fact]
-    public void GetShared_BuildsOnce_AndReturnsSameInstance()
-    {
+    public void GetShared_BuildsOnce_AndReturnsSameInstance() {
         int builds = 0;
         PyRevitConfigStore.SetFactory(() => CountingService(ref builds));
 
@@ -31,8 +30,7 @@ public class PyRevitConfigStoreTests : IDisposable
     }
 
     [Fact]
-    public void Reload_RebuildsOnNextAccess()
-    {
+    public void Reload_RebuildsOnNextAccess() {
         int builds = 0;
         PyRevitConfigStore.SetFactory(() => CountingService(ref builds));
 
@@ -45,15 +43,13 @@ public class PyRevitConfigStoreTests : IDisposable
     }
 
     [Fact]
-    public void GetShared_WithoutFactory_Throws()
-    {
+    public void GetShared_WithoutFactory_Throws() {
         Assert.False(PyRevitConfigStore.HasFactory);
         Assert.Throws<InvalidOperationException>(() => PyRevitConfigStore.GetShared());
     }
 
     [Fact]
-    public void SetFactory_Null_Throws()
-    {
+    public void SetFactory_Null_Throws() {
         Assert.Throws<ArgumentNullException>(() => PyRevitConfigStore.SetFactory(null!));
     }
 
@@ -63,12 +59,10 @@ public class PyRevitConfigStoreTests : IDisposable
     /// through.
     /// </summary>
     [Fact]
-    public void GetShared_ConcurrentFirstAccess_BuildsOnce()
-    {
+    public void GetShared_ConcurrentFirstAccess_BuildsOnce() {
         int builds = 0;
         using var start = new ManualResetEventSlim();
-        PyRevitConfigStore.SetFactory(() =>
-        {
+        PyRevitConfigStore.SetFactory(() => {
             Interlocked.Increment(ref builds);
             Thread.Sleep(50);
             return new StubService();
@@ -76,11 +70,9 @@ public class PyRevitConfigStoreTests : IDisposable
 
         var results = new IConfigurationService[8];
         var threads = new Thread[results.Length];
-        for (int i = 0; i < threads.Length; i++)
-        {
+        for (int i = 0; i < threads.Length; i++) {
             int index = i;
-            threads[i] = new Thread(() =>
-            {
+            threads[i] = new Thread(() => {
                 start.Wait();
                 results[index] = PyRevitConfigStore.GetShared();
             });
@@ -99,11 +91,9 @@ public class PyRevitConfigStoreTests : IDisposable
     /// A failed build must not be replayed to every later caller.
     /// </summary>
     [Fact]
-    public void GetShared_FailedBuild_IsNotCached()
-    {
+    public void GetShared_FailedBuild_IsNotCached() {
         int attempts = 0;
-        PyRevitConfigStore.SetFactory(() =>
-        {
+        PyRevitConfigStore.SetFactory(() => {
             if (Interlocked.Increment(ref attempts) == 1)
                 throw new IOException("config file locked");
 
@@ -116,14 +106,12 @@ public class PyRevitConfigStoreTests : IDisposable
         Assert.Equal(2, attempts);
     }
 
-    private static IConfigurationService CountingService(ref int builds)
-    {
+    private static IConfigurationService CountingService(ref int builds) {
         Interlocked.Increment(ref builds);
         return new StubService();
     }
 
-    private sealed class StubService : IConfigurationService
-    {
+    private sealed class StubService : IConfigurationService {
         public bool ReadOnly => false;
         public IConfiguration Configuration => throw new NotImplementedException();
 
@@ -139,6 +127,8 @@ public class PyRevitConfigStoreTests : IDisposable
         public void SaveSection<T>(T sectionValue) => throw new NotImplementedException();
         public void ApplySection<T>(T sectionValue) => throw new NotImplementedException();
         public void SetSectionKeyValue<T>(string sectionName, string keyName, T keyValue)
+            => throw new NotImplementedException();
+        public IReadOnlyList<string> ResetToDefaults(string? sectionName = null, bool dryRun = false)
             => throw new NotImplementedException();
         public T? GetSectionKeyValueOrDefault<T>(string sectionName, string keyName, T? defaultValue = default)
             => throw new NotImplementedException();

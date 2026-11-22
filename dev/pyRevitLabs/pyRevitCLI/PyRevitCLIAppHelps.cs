@@ -450,6 +450,7 @@ namespace pyRevitCLI {
                         mgmtCommands: new Dictionary<string, string>() {
                             { "seed",                   "Seed existing configuration file to %PROGRAMDATA%" },
                             { "seedshippeddefaults",    "Write disabled flags for shipped extensions with default_enabled=False" },
+                            { "reset",                  "Reset settings to their defaults, optionally for one section" },
                             { "routes",                 "Routes configurations" },
                             { "agent",                  "Agent host configurations (enable, policy, default engine, user skills, reckless runs)" },
                             { "telemetry",              "Script Telemetry configurations" },
@@ -480,6 +481,8 @@ namespace pyRevitCLI {
                             { "hooks",                  "Activate/Deactivate telemetry for hooks" },
                             { "<css_path>",             "Target css file path for output styling" },
                             { "--lock",                 "Lock seed file by admin user" },
+                            { "<section>",              "Config section to reset; all sections except environment when omitted" },
+                            { "--dryrun",               "List what would be reset without changing the config" },
                             { "<option_path>",          "Custom option path formatted as \"section:option\"" },
                             { "<option_value>",         "Custom option value" },
                         });
