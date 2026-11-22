@@ -282,6 +282,7 @@
       const newKeys = grid.columns.map((c) => c.key);
       if (!merge) this.generation++;
       this.source = grid.source;
+      this.loadedSource = grid.source;
       this.loadedSignature = JSON.stringify(grid.source);
       this.title = grid.title;
       this.unitMode = grid.unitMode;
@@ -1142,6 +1143,7 @@
         this.plan = [];
         this.available = [];
         this.loadedSignature = null;
+        this.loadedSource = null;
         this.generation++;
         this.anchor = this.focus = null;
         this.openScratch();
@@ -1581,7 +1583,7 @@
         }
         const next = { kind: "scratch", categories, scope: this.builder.scope, types: this.builder.types };
         const pending = this.countPending();
-        if (pending && !this.sameScratchSource(next, this.source) && !(await this.confirm(this.S("source_discard", pending), this.S("discard")))) return;
+        if (pending && !this.sameScratchSource(next, this.loadedSource || {}) && !(await this.confirm(this.S("source_discard", pending), this.S("discard")))) return;
         this.source = next;
       }
       if (!this.plan.length) {

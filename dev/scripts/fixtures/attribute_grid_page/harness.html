@@ -626,6 +626,8 @@
       boxes()[1].checked = true;
       boxes()[1].dispatchEvent(new Event("change", { bubbles: true }));
       const loadsBefore = sent("load").length;
+      [...document.querySelectorAll(".ae-panel .ae-button")].find((b) => b.textContent === "ui_find_parameters").click();
+      await wait(80);
       show().click();
       await wait(80);
       R.dialog_shown = !!document.querySelector(".ae-dialog");
