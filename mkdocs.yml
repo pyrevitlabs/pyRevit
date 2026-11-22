@@ -107,6 +107,7 @@ nav:
     - Update pyRevit: get-started/update.md
   - Tools:
     - tools/index.md
+    - Attribute Editor: tools/attribute-editor.md
     - Keynotes: tools/keynotes.md
     - Patterns: tools/patterns.md
     - Print Sheets: tools/print-sheets.md

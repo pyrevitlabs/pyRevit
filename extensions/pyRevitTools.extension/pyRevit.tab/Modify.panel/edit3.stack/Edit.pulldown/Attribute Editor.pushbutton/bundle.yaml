@@ -1,0 +1,55 @@
+title:
+  en_us: Attribute Editor ●
+  de_de: Attribut-Editor ●
+  fr_fr: Éditeur d’attributs ●
+  es_es: Editor de atributos ●
+  pt_br: Editor de atributos ●
+  ru: Редактор атрибутов ●
+  chinese_s: 属性编辑器 ●
+  ko: 속성 편집기 ●
+tooltip:
+  en_us: |-
+    Edit the parameters of a schedule's elements in a spreadsheet-like grid with Excel paste, drag-fill and unit-aware typing. Push writes the edits to the model as one undoable step, and Pull reads Revit's current values.
+
+    Shift-click:
+    Start from scratch: pick categories and parameter columns without any schedule.
+  de_de: |-
+    Bearbeiten Sie die Parameter der Elemente einer Bauteilliste in einem tabellenähnlichen Raster mit Excel-Einfügen, Ausfüllen per Ziehen und einheitenbewusster Eingabe. Schreiben überträgt die Änderungen als einen rückgängig machbaren Schritt ins Modell, Lesen holt die aktuellen Werte aus Revit.
+
+    Bei gedrückter Umschalttaste klicken:
+    Von Grund auf beginnen: Kategorien und Parameterspalten ohne Bauteilliste wählen.
+  fr_fr: |-
+    Modifie les paramètres des éléments d’une nomenclature dans une grille de type tableur, avec collage depuis Excel, recopie par glissement et saisie tenant compte des unités. Écrire envoie les modifications au modèle en une seule étape annulable, Lire récupère les valeurs actuelles de Revit.
+
+    Maj+clic :
+    Partir de zéro : choisir des catégories et des colonnes de paramètres sans nomenclature.
+  es_es: |-
+    Edita los parámetros de los elementos de una tabla en una cuadrícula similar a una hoja de cálculo, con pegado desde Excel, relleno por arrastre y escritura que respeta las unidades. Escribir envía las ediciones al modelo en un único paso que se puede deshacer y Leer obtiene los valores actuales de Revit.
+
+    Mayús-clic:
+    Empezar desde cero: elegir categorías y columnas de parámetros sin ninguna tabla.
+  pt_br: |-
+    Edita os parâmetros dos elementos de uma tabela em uma grade semelhante a uma planilha, com colagem do Excel, preenchimento por arrasto e digitação que respeita as unidades. Gravar envia as edições ao modelo em uma única etapa que pode ser desfeita e Ler obtém os valores atuais do Revit.
+
+    Clique mantendo a tecla Shift pressionada:
+    Começar do zero: escolher categorias e colunas de parâmetros sem nenhuma tabela.
+  ru: |-
+    Редактирует параметры элементов спецификации в таблице, похожей на электронную: с вставкой из Excel, заполнением перетаскиванием и вводом с учётом единиц. «Записать» передаёт правки в модель одним шагом, который можно отменить, «Обновить» читает текущие значения из Revit.
+
+    Shift + Щелчок:
+    Начать с нуля: выбрать категории и столбцы параметров без спецификации.
+  chinese_s: |-
+    在类似电子表格的网格中编辑明细表图元的参数，支持从 Excel 粘贴、拖动填充和识别单位的输入。“写入”会将编辑作为一个可撤销的步骤写入模型，“读取”会获取 Revit 的当前值。
+
+    按住 Shift 键单击：
+    从零开始：无需明细表，直接选择类别和参数列。
+  ko: |-
+    일람표 요소의 매개변수를 스프레드시트와 같은 표에서 편집하며 Excel 붙여넣기, 끌어서 채우기, 단위를 인식하는 입력을 지원합니다. 쓰기는 편집 내용을 실행 취소할 수 있는 한 단계로 모델에 반영하고, 읽기는 Revit의 현재 값을 가져옵니다.
+
+    Shift 키를 누르고 클릭:
+    처음부터 시작: 일람표 없이 범주와 매개변수 열을 선택합니다.
+author: wurschdhaud
+context: doc-project
+min_revit_version: 2022
+engine:
+  persistent: true

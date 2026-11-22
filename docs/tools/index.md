@@ -2,6 +2,7 @@
 
 Guides for the tools that ship with pyRevit.
 
+- [Attribute Editor](attribute-editor.md)
 - [Keynotes](keynotes.md)
 - [Patterns](patterns.md)
 - [Print Sheets](print-sheets.md)

@@ -1,18 +1,24 @@
 # -*- coding: utf-8 -*-
-"""Message channel between a page in the output window and Python.
+"""Message channel between an interactive page in the output window and Python.
 
 Page -> Python messages are ``{channel, action, payload, requestId}``;
 Python -> page messages are ``{channel, event, payload}``. Messages on other
 channels, for example from a previous run printed into the same window, are
 ignored.
+
+Tools that render an interactive page (a report, a grid, a preview) create one
+:class:`PageBridge` per page, register a handler per page action and
+:meth:`PageBridge.start` it. The page side posts with
+``window.chrome.webview.postMessage`` and listens with
+``window.chrome.webview.addEventListener("message", ...)``.
 """
 
 import json
 import uuid
 
-from pyrevit import script
+from pyrevit.coreutils.logger import get_logger
 
-logger = script.get_logger()
+mlogger = get_logger(__name__)
 
 
 class PageBridge(object):
@@ -21,6 +27,11 @@ class PageBridge(object):
     Args:
         output (pyrevit.output.PyRevitOutputWindow): the output window.
         prefix (str): channel name prefix; a random suffix makes it unique.
+
+    Attributes:
+        channel (str): channel name the page must put on every message.
+        handlers (dict): action name -> ``handler(payload, request_id)``,
+            filled by the tool before :meth:`start`.
 
     Important:
         ``output.on_message`` handlers outlive the command, so the bundle must
@@ -47,13 +58,13 @@ class PageBridge(object):
         action = message.get("action")
         handler = self.handlers.get(action)
         if handler is None:
-            logger.debug("No handler for action '%s'", action)
+            mlogger.debug("No handler for action '%s'", action)
             return
         request_id = message.get("requestId")
         try:
             handler(message.get("payload") or {}, request_id)
         except Exception as ex:
-            logger.debug("Handler '%s' failed: %s", action, ex)
+            mlogger.debug("Handler '%s' failed: %s", action, ex)
             self.send(
                 "error",
                 {"action": action, "requestId": request_id, "message": str(ex)},
@@ -88,5 +99,11 @@ class PageBridge(object):
         )
 
     def reply(self, request_id, ok, message=None):
-        """Answer a request with a ``result`` event."""
+        """Answer a request with a ``result`` event.
+
+        Args:
+            request_id (object): ``requestId`` of the page message.
+            ok (bool): whether the request succeeded.
+            message (object): JSON-serializable text or data for the page.
+        """
         self.send("result", {"requestId": request_id, "ok": ok, "message": message})

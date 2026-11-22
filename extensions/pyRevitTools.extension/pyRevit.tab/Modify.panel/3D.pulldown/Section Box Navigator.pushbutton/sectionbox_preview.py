@@ -29,9 +29,9 @@ import uuid
 from pyrevit import DB, HOST_APP, script
 from pyrevit.compat import get_elementid_from_value_func
 from pyrevit.framework import Controls, System
+from pyrevit.output.bridge import PageBridge
 from pyrevit.revit import events
 from scene3d import read_asset as read_lib_asset
-from scene3d.bridge import PageBridge
 from scene3d.meshing import box_corners, scene_to_json
 
 from sectionbox_geometry import get_box_info, get_crop_edit_blocker

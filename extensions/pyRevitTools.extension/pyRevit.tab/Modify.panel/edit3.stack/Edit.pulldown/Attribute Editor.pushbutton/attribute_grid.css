@@ -1,0 +1,619 @@
+.ae-root {
+  --ae-bg: #ffffff;
+  --ae-surface: #f5f6f8;
+  --ae-surface-2: #eceef2;
+  --ae-border: #d3d7de;
+  --ae-text: #1d2330;
+  --ae-muted: #6a7384;
+  --ae-accent: #1f6feb;
+  --ae-accent-text: #ffffff;
+  --ae-select: rgba(31, 111, 235, 0.14);
+  --ae-select-edge: #1f6feb;
+  --ae-dirty: #fff3c4;
+  --ae-dirty-edge: #e0a800;
+  --ae-locked: #f1f2f5;
+  --ae-locked-text: #7b8394;
+  --ae-error: #ffd9d9;
+  --ae-error-edge: #d12e2e;
+  --ae-conflict: #ffe0b8;
+  --ae-conflict-edge: #d9780f;
+  --ae-odd: #fafbfc;
+  --ae-ok: #1e8a4c;
+  --ae-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--ae-bg);
+  color: var(--ae-text);
+  font: 13px/1.35 "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+
+.ae-root[data-theme="dark"] {
+  --ae-bg: #1b1e25;
+  --ae-surface: #232731;
+  --ae-surface-2: #2c313d;
+  --ae-border: #3a4150;
+  --ae-text: #e6e9ef;
+  --ae-muted: #98a1b3;
+  --ae-accent: #4c8dff;
+  --ae-accent-text: #0b1220;
+  --ae-select: rgba(76, 141, 255, 0.24);
+  --ae-select-edge: #6fa3ff;
+  --ae-dirty: #5a4b13;
+  --ae-dirty-edge: #f2c230;
+  --ae-locked: #20242d;
+  --ae-locked-text: #7d869a;
+  --ae-error: #5c2323;
+  --ae-error-edge: #ff6b6b;
+  --ae-conflict: #5d3a12;
+  --ae-conflict-edge: #ffa24d;
+  --ae-odd: #1f232c;
+  --ae-ok: #4cc27f;
+  --ae-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+.ae-root * {
+  box-sizing: border-box;
+}
+
+.ae-root.busy,
+.ae-root.busy * {
+  cursor: progress;
+}
+
+.ae-toolbar,
+.ae-findbar,
+.ae-conflictbar,
+.ae-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--ae-surface);
+  border-bottom: 1px solid var(--ae-border);
+  flex-wrap: wrap;
+}
+
+.ae-status {
+  border-bottom: 0;
+  border-top: 1px solid var(--ae-border);
+  color: var(--ae-muted);
+  gap: 16px;
+  padding: 4px 10px;
+}
+
+.ae-conflictbar {
+  background: var(--ae-conflict);
+  border-bottom-color: var(--ae-conflict-edge);
+}
+
+.ae-toolbar [hidden],
+.ae-findbar[hidden],
+.ae-conflictbar[hidden],
+.ae-panel[hidden],
+.ae-empty[hidden],
+.ae-fill[hidden],
+.ae-editor[hidden] {
+  display: none;
+}
+
+.ae-spacer {
+  flex: 1;
+}
+
+.ae-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--ae-border);
+  margin: 0 4px;
+}
+
+.ae-label {
+  color: var(--ae-muted);
+}
+
+.ae-button,
+.ae-seg,
+.ae-mini {
+  font: inherit;
+  color: var(--ae-text);
+  background: var(--ae-bg);
+  border: 1px solid var(--ae-border);
+  border-radius: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.ae-button:hover:not(:disabled),
+.ae-seg:hover:not(:disabled),
+.ae-mini:hover:not(:disabled) {
+  border-color: var(--ae-accent);
+}
+
+.ae-button:disabled,
+.ae-seg:disabled,
+.ae-mini:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ae-button.primary,
+.ae-button.on,
+.ae-seg.on {
+  background: var(--ae-accent);
+  border-color: var(--ae-accent);
+  color: var(--ae-accent-text);
+}
+
+.ae-segs {
+  display: inline-flex;
+}
+
+.ae-seg {
+  border-radius: 0;
+  margin-left: -1px;
+  padding: 3px 9px;
+}
+
+.ae-seg:first-child {
+  border-radius: 4px 0 0 4px;
+  margin-left: 0;
+}
+
+.ae-seg:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.ae-mini {
+  padding: 0 5px;
+  font-size: 11px;
+}
+
+.ae-select,
+.ae-input {
+  font: inherit;
+  color: var(--ae-text);
+  background: var(--ae-bg);
+  border: 1px solid var(--ae-border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  min-width: 0;
+}
+
+.ae-input.narrow {
+  width: 56px;
+  margin-left: 6px;
+}
+
+.ae-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ae-text);
+}
+
+.ae-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.ae-panel {
+  width: 320px;
+  flex: none;
+  overflow: auto;
+  padding: 8px 10px;
+  background: var(--ae-surface);
+  border-right: 1px solid var(--ae-border);
+}
+
+.ae-section {
+  margin-bottom: 12px;
+}
+
+.ae-section h3 {
+  margin: 4px 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ae-muted);
+}
+
+.ae-section .ae-input {
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.ae-section .ae-select {
+  flex: 1;
+}
+
+.ae-section > .ae-check {
+  display: flex;
+  margin: 4px 0 6px;
+}
+
+.ae-row2 {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.ae-list {
+  max-height: 190px;
+  overflow: auto;
+  background: var(--ae-bg);
+  border: 1px solid var(--ae-border);
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.ae-list.tall {
+  max-height: 260px;
+}
+
+.ae-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--ae-surface-2);
+}
+
+.ae-item.dim {
+  opacity: 0.5;
+}
+
+.ae-item.add {
+  cursor: pointer;
+}
+
+.ae-item.add:hover {
+  background: var(--ae-select);
+}
+
+.ae-item .grow {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ae-item .count,
+.ae-item .plus {
+  color: var(--ae-muted);
+}
+
+.ae-item .grip {
+  color: var(--ae-muted);
+  cursor: grab;
+}
+
+.ae-gridwrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
+.ae-scroll {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: var(--ae-bg);
+}
+
+.ae-sizer {
+  position: relative;
+  min-width: 100%;
+}
+
+.ae-header {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--ae-surface);
+}
+
+.ae-hrow {
+  display: flex;
+  position: relative;
+}
+
+.ae-hcell,
+.ae-rowhead {
+  flex: none;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ae-surface);
+  border-right: 1px solid var(--ae-border);
+  border-bottom: 1px solid var(--ae-border);
+  font-weight: 600;
+  user-select: none;
+}
+
+.ae-hcell.frozen,
+.ae-cell.frozen {
+  position: sticky;
+  z-index: 4;
+}
+
+.ae-hcell.filter {
+  padding: 2px 3px;
+  font-weight: 400;
+}
+
+.ae-rowhead {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  justify-content: space-between;
+  font-weight: 400;
+  color: var(--ae-muted);
+  cursor: pointer;
+}
+
+.ae-rowhead.hcell {
+  z-index: 7;
+  font-weight: 600;
+  color: var(--ae-text);
+}
+
+.ae-rowhead.sel {
+  background: var(--ae-surface-2);
+  color: var(--ae-text);
+}
+
+.ae-cat {
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 50px;
+}
+
+.ae-htext {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ae-htext em {
+  font-weight: 400;
+  color: var(--ae-muted);
+}
+
+.ae-badge {
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--ae-surface-2);
+  border: 1px solid var(--ae-border);
+  color: var(--ae-muted);
+  font-weight: 600;
+}
+
+.ae-badge.ro {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+
+.ae-sort {
+  font-size: 10px;
+  padding: 0 3px;
+  background: none;
+  border: 0;
+  color: var(--ae-muted);
+  cursor: pointer;
+}
+
+.ae-sort.on {
+  color: var(--ae-accent);
+}
+
+.ae-resize {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+}
+
+.ae-filter {
+  width: 100%;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ae-text);
+  background: var(--ae-bg);
+  border: 1px solid var(--ae-border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.ae-body {
+  position: relative;
+}
+
+.ae-row {
+  position: absolute;
+  left: 0;
+  display: flex;
+  height: 26px;
+}
+
+.ae-row.odd .ae-cell:not(.sel):not(.dirty):not(.error):not(.conflict):not(.locked) {
+  background: var(--ae-odd);
+}
+
+.ae-cell {
+  flex: none;
+  height: 26px;
+  line-height: 25px;
+  padding: 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: var(--ae-bg);
+  border-right: 1px solid var(--ae-border);
+  border-bottom: 1px solid var(--ae-border);
+  cursor: cell;
+}
+
+.ae-cell.num {
+  text-align: right;
+}
+
+.ae-cell.locked {
+  background: var(--ae-locked);
+  color: var(--ae-locked-text);
+  cursor: default;
+}
+
+.ae-cell.dirty {
+  background: var(--ae-dirty);
+  box-shadow: inset 4px 0 0 var(--ae-dirty-edge);
+}
+
+.ae-cell.dirty.sel {
+  background: linear-gradient(var(--ae-select), var(--ae-select)), var(--ae-dirty);
+}
+
+.ae-cell.error {
+  background: var(--ae-error);
+  box-shadow: inset 0 0 0 1px var(--ae-error-edge);
+}
+
+.ae-cell.conflict {
+  background: var(--ae-conflict);
+  box-shadow: inset 0 0 0 1px var(--ae-conflict-edge);
+}
+
+.ae-cell.sel {
+  background: var(--ae-select);
+}
+
+.ae-cell.fillpad {
+  background: var(--ae-select);
+  outline: 1px dashed var(--ae-select-edge);
+  outline-offset: -1px;
+}
+
+.ae-cell.active {
+  box-shadow: inset 0 0 0 2px var(--ae-select-edge);
+}
+
+.ae-cell.active.dirty {
+  box-shadow: inset 0 0 0 2px var(--ae-select-edge), inset 4px 0 0 var(--ae-dirty-edge);
+}
+
+.ae-fill {
+  position: absolute;
+  z-index: 3;
+  width: 9px;
+  height: 9px;
+  background: var(--ae-select-edge);
+  border: 1px solid var(--ae-bg);
+  cursor: crosshair;
+}
+
+.ae-editor {
+  position: absolute;
+  z-index: 8;
+  font: inherit;
+  color: var(--ae-text);
+  background: var(--ae-bg);
+  border: 2px solid var(--ae-select-edge);
+  padding: 0 6px;
+  outline: none;
+}
+
+.ae-clip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  resize: none;
+  pointer-events: none;
+}
+
+.ae-empty {
+  position: absolute;
+  inset: 90px 0 0 0;
+  text-align: center;
+  color: var(--ae-muted);
+  padding: 40px 20px;
+  pointer-events: none;
+}
+
+.ae-toasts {
+  position: absolute;
+  right: 14px;
+  bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 30;
+  max-width: 420px;
+}
+
+.ae-toast {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--ae-surface-2);
+  border: 1px solid var(--ae-border);
+  box-shadow: var(--ae-shadow);
+}
+
+.ae-toast.ok {
+  border-left: 4px solid var(--ae-ok);
+}
+
+.ae-toast.warn {
+  border-left: 4px solid var(--ae-conflict-edge);
+}
+
+.ae-toast.error {
+  border-left: 4px solid var(--ae-error-edge);
+}
+
+.ae-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.ae-dialog {
+  max-width: 440px;
+  padding: 16px 18px;
+  border-radius: 8px;
+  background: var(--ae-surface);
+  border: 1px solid var(--ae-border);
+  box-shadow: var(--ae-shadow);
+}
+
+.ae-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
