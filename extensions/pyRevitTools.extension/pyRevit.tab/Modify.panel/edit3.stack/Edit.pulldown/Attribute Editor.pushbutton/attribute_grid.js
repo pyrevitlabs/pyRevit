@@ -1165,7 +1165,7 @@
       this.source = { kind: "schedule", id: Number(value) };
       this.available = [];
       const ok = await this.load({ columns: null, fresh: true });
-      if (ok === false) this.source = previous;
+      if (ok === false) this.source = this.loadedSource || previous;
       this.refreshAvailable();
       this.renderToolbar();
     }

@@ -461,6 +461,15 @@ class AttributeGridPageTests(unittest.TestCase):
         self.assertEqual(result["title"], "")
         self.assertEqual(result["select_value"], "__scratch__")
 
+    def test_a_failed_switch_goes_back_to_the_grid_on_screen_and_pull_keeps_edits(self):
+        result = self.scenario("grid_failed_switch_restores_the_displayed_source")
+        self.assertEqual(result["source_id"], 1)
+        self.assertEqual(result["loaded_id"], 1)
+        self.assertEqual(result["select_value"], "1")
+        self.assertEqual(result["pull_source_ids"], [1])
+        self.assertEqual(result["dirty_after_pull"], 1)
+        self.assertEqual(result["cell_after_pull"], "N1")
+
     def test_large_grids_render_only_the_visible_rows(self):
         result = self.scenario("grid_virtualised")
         self.assertLess(result["rendered_rows"], 60)
