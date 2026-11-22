@@ -97,6 +97,8 @@ def _cpython_exports(root):
         )
     )
     return set(ast.literal_eval(assignment.value)) | {
+        "set_data_context",
+        "warning",
         "settings_window",
         "utils",
         "toaster",
