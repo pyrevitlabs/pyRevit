@@ -423,6 +423,11 @@
       );
     }
 
+    isPending(row, ci) {
+      if (row.cur[ci] === row.base[ci]) return false;
+      return !(row.conflicts.has(ci) && row.conflicts.get(ci) === row.cur[ci]);
+    }
+
     isConflict(row, ci) {
       return row.conflicts.has(ci) && row.cur[ci] !== row.conflicts.get(ci);
     }
@@ -537,7 +542,7 @@
       const value = row.cur[ci];
       if (column.kind === "number" || column.kind === "integer") classes.push("num");
       if (locked) classes.push("locked");
-      if (value !== row.base[ci]) classes.push("dirty");
+      if (this.isPending(row, ci)) classes.push("dirty");
       if (row.errors.has(ci)) classes.push("error");
       if (this.isConflict(row, ci)) classes.push("conflict");
       if (ci < this.frozen) classes.push("frozen");
@@ -558,7 +563,7 @@
       const seenTypes = new Set();
       for (const row of this.rows) {
         for (let ci = 0; ci < this.columns.length; ci++) {
-          if (row.cur[ci] === row.base[ci] || row.locked.has(ci)) continue;
+          if (!this.isPending(row, ci) || row.locked.has(ci)) continue;
           if (this.columns[ci].scope === "t") {
             const tag = row.t + ":" + ci;
             if (seenTypes.has(tag)) continue;
@@ -1200,7 +1205,7 @@
       const seenTypes = new Set();
       for (const row of this.rows) {
         this.columns.forEach((column, ci) => {
-          if (row.cur[ci] === row.base[ci] || row.locked.has(ci) || !column.available) return;
+          if (!this.isPending(row, ci) || row.locked.has(ci) || !column.available) return;
           if (this.isConflict(row, ci)) return;
           if (column.scope === "t") {
             const tag = row.t + ":" + ci;

@@ -868,6 +868,37 @@
       return R;
     },
 
+    async grid_typing_the_value_revit_now_has_is_not_pending() {
+      const R = {};
+      mount();
+      await wait(60);
+      click(0, 0);
+      paste("N1");
+      window.__backend.push = (payload) => ({
+        results: payload.edits.map((e) => ({ row: e.row, key: e.key, ok: false, conflict: true, current: "C", message: "changed" })),
+      });
+      const button = (label) => [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf(label) >= 0);
+      button("Push").click();
+      await wait(100);
+      R.conflict_after_push = document.querySelectorAll(".ae-cell.conflict").length;
+      R.pending_before = window.__app.countPending();
+      click(0, 0);
+      paste("C");
+      R.conflict_when_typed = document.querySelectorAll(".ae-cell.conflict").length;
+      R.dirty_when_typed = dirty();
+      R.pending_when_typed = window.__app.countPending();
+      R.bar_hidden = document.querySelector(".ae-conflictbar").hidden;
+      const pushesBefore = sent("push").length;
+      button("Push").click();
+      await wait(100);
+      R.pushes_for_matching_text = sent("push").length - pushesBefore;
+      click(0, 0);
+      paste("D");
+      R.conflict_when_other_text = document.querySelectorAll(".ae-cell.conflict").length;
+      R.pending_when_other_text = window.__app.countPending();
+      return R;
+    },
+
     async grid_virtualised() {
       const R = {};
       const rows = [];

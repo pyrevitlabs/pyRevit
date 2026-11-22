@@ -470,6 +470,18 @@ class AttributeGridPageTests(unittest.TestCase):
         self.assertEqual(result["dirty_after_pull"], 1)
         self.assertEqual(result["cell_after_pull"], "N1")
 
+    def test_typing_the_value_revit_now_has_leaves_nothing_pending(self):
+        result = self.scenario("grid_typing_the_value_revit_now_has_is_not_pending")
+        self.assertEqual(result["conflict_after_push"], 1)
+        self.assertEqual(result["pending_before"], 1)
+        self.assertEqual(result["conflict_when_typed"], 0)
+        self.assertEqual(result["dirty_when_typed"], 0)
+        self.assertEqual(result["pending_when_typed"], 0)
+        self.assertTrue(result["bar_hidden"])
+        self.assertEqual(result["pushes_for_matching_text"], 0)
+        self.assertEqual(result["conflict_when_other_text"], 1)
+        self.assertEqual(result["pending_when_other_text"], 1)
+
     def test_large_grids_render_only_the_visible_rows(self):
         result = self.scenario("grid_virtualised")
         self.assertLess(result["rendered_rows"], 60)
