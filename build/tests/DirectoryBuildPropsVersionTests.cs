@@ -38,6 +38,41 @@ public sealed class DirectoryBuildPropsVersionTests
         }
     }
 
+    [TestMethod]
+    public void VersionStamping_cannot_rewrite_the_webview2_pin()
+    {
+        var pinFile = Path.Combine(PyRevitPaths.DevPath, "WebView2Version.props");
+
+        StringAssert.Contains(File.ReadAllText(pinFile), "<PyRevitWebView2Version>");
+
+        foreach (var file in PyRevitPaths.VersionFiles)
+        {
+            Assert.IsFalse(
+                File.ReadAllText(file).Contains("PyRevitWebView2Version", StringComparison.Ordinal),
+                $"{file} is stamped and would overwrite the pinned WebView2 version.");
+        }
+    }
+
+    [TestMethod]
+    public void VersionStamping_keepsTheExportedBuildVersionOverride()
+    {
+        var copy = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".props");
+        try
+        {
+            File.Copy(PyRevitPaths.DirectoryBuildProps, copy);
+
+            VersionHelper.ReplaceVersionInFiles([copy], "9.9.9.99999+9999");
+
+            var stamped = File.ReadAllText(copy);
+            StringAssert.Contains(stamped, "<Version>9.9.9.99999+9999</Version>");
+            StringAssert.Contains(stamped, $"$({VersionHelper.BuildVersionVariable})</Version>");
+        }
+        finally
+        {
+            File.Delete(copy);
+        }
+    }
+
     private static string EvaluateMsBuildProperty(string projectPath, string property)
     {
         var startInfo = new ProcessStartInfo("dotnet")
