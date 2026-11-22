@@ -25,11 +25,15 @@ BUNDLE = (
 )
 
 
+class ElementTypeStub(object):
+    pass
+
+
 def load_values():
     names = ("pyrevit", "pyrevit.compat", "attribute_strings")
     previous = {name: sys.modules.get(name) for name in names}
     pyrevit = types.ModuleType("pyrevit")
-    pyrevit.DB = types.SimpleNamespace()
+    pyrevit.DB = types.SimpleNamespace(ElementType=ElementTypeStub)
     pyrevit.script = types.SimpleNamespace(
         get_logger=lambda: types.SimpleNamespace(debug=lambda *args: None)
     )
@@ -82,6 +86,54 @@ class ParseNumberTests(unittest.TestCase):
         with self.assertRaises(self.values.EditError) as caught:
             self.parse("abc")
         self.assertEqual(str(caught.exception), "err_number")
+
+
+class ReferenceSampleCacheTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.values = load_values()
+
+    def setUp(self):
+        self.calls = []
+        self.codec = self.values.ValueCodec(None, "display", "Yes", "No")
+        self.codec._find_reference_sample = self.find
+
+    def find(self, column, owner):
+        self.calls.append(owner.Category.Id.ToString())
+        return (
+            None
+            if owner.Category.Id.ToString() == "A"
+            else "sample-" + owner.Category.Id.ToString()
+        )
+
+    @staticmethod
+    def parameter(category, type_owner=False):
+        owner = ElementTypeStub() if type_owner else types.SimpleNamespace()
+        owner.Category = types.SimpleNamespace(
+            Id=types.SimpleNamespace(ToString=lambda: category)
+        )
+        return types.SimpleNamespace(Element=owner)
+
+    def sample(self, category, type_owner=False):
+        column = types.SimpleNamespace(key="bip|-1|i")
+        return self.codec._reference_sample(
+            column, self.parameter(category, type_owner)
+        )
+
+    def test_an_empty_result_of_one_category_is_not_reused_for_another(self):
+        self.assertIsNone(self.sample("A"))
+        self.assertEqual(self.sample("B"), "sample-B")
+        self.assertEqual(self.calls, ["A", "B"])
+
+    def test_a_repeated_lookup_in_the_same_category_is_cached(self):
+        self.sample("B")
+        self.sample("B")
+        self.assertEqual(self.calls, ["B"])
+
+    def test_instances_and_types_of_a_category_are_looked_up_separately(self):
+        self.sample("B")
+        self.sample("B", type_owner=True)
+        self.assertEqual(self.calls, ["B", "B"])
 
 
 if __name__ == "__main__":

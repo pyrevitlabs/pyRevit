@@ -389,6 +389,8 @@ class AttributeGridPageTests(unittest.TestCase):
         self.assertEqual(result["locked"], ["A", 1])
         self.assertEqual(result["type_moved"], ["A", 1])
         self.assertEqual(result["instance_kept"], ["B", 0])
+        self.assertEqual(result["type_followed"], [["A", "B"], 0, 0])
+        self.assertEqual(result["type_conflict_counted_once"], [1, [1, 1]])
 
     def test_undo_and_redo_survive_a_filter_that_hides_the_edited_row(self):
         result = self.scenario("grid_undo_in_filtered_view")
@@ -416,6 +418,34 @@ class AttributeGridPageTests(unittest.TestCase):
         self.assertEqual(result["loads_after_cancel"], 0)
         self.assertEqual(result["dirty_after_discard"], 0)
         self.assertEqual(result["loads_after_discard"], 1)
+
+    def test_a_conflict_survives_later_edits_and_undo_until_resolved(self):
+        result = self.scenario("grid_conflict_survives_edit_and_undo")
+        self.assertEqual(result["conflict_after_pull"], 1)
+        self.assertEqual(result["conflict_after_edit"], 1)
+        self.assertEqual(result["cell_after_undo"], "N1")
+        self.assertEqual(result["conflict_after_undo"], 1)
+        self.assertEqual(result["pushes"], 0)
+        self.assertEqual(result["conflict_when_equal_to_revit"], 0)
+        self.assertEqual(result["dirty_when_equal_to_revit"], 0)
+
+    def test_selection_follows_its_row_when_undo_or_redo_changes_the_filtered_view(
+        self,
+    ):
+        result = self.scenario("grid_undo_selection_follows_the_row")
+        self.assertEqual(result["rows_with_x_hidden"], 4)
+        self.assertEqual(result["rows_after_undo"], 5)
+        self.assertEqual(result["selected_before_redo"], "D2")
+        self.assertEqual(result["rows_after_redo"], 4)
+        self.assertEqual(result["selected_after_redo"], "D2")
+
+    def test_a_reordered_category_set_keeps_pending_edits_without_asking(self):
+        result = self.scenario("grid_scratch_reordered_categories_merge")
+        self.assertEqual(result["dirty_before"], 1)
+        self.assertFalse(result["dialog_shown"])
+        self.assertEqual(result["loads"], 1)
+        self.assertEqual(result["dirty_after"], 1)
+        self.assertEqual(result["cell_after"], "EDIT")
 
     def test_large_grids_render_only_the_visible_rows(self):
         result = self.scenario("grid_virtualised")

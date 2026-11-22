@@ -529,6 +529,10 @@
       R.type_moved = [moved.rows[0].cur[0], moved.dropped];
       const instanceMoved = core.mergeRows([make(1, ["A"], ["B"], 1)], ["k|i"], [fresh(1, ["A"], [], 2)], ["k|i"]);
       R.instance_kept = [instanceMoved.rows[0].cur[0], instanceMoved.dropped];
+      const followed = core.mergeRows([make(1, ["A"], ["B"], 1)], ["k|t"], [fresh(1, ["A"], [], 2), fresh(9, ["A"], [], 1)], ["k|t"]);
+      R.type_followed = [followed.rows.map((r) => r.cur[0]), followed.dropped, followed.conflicts];
+      const twoRows = core.mergeRows([make(1, ["A"], ["B"], 1), make(2, ["A"], ["B"], 1)], ["k|t"], [fresh(1, ["C"], [], 1), fresh(2, ["C"], [], 1)], ["k|t"]);
+      R.type_conflict_counted_once = [twoRows.conflicts, twoRows.rows.map((r) => r.conflicts.size)];
       return R;
     },
 
@@ -643,6 +647,108 @@
       R.dirty_after_discard = dirty();
       R.loads_after_discard = sent("load").length - loadsBefore;
       boxes()[1].checked = true;
+      return R;
+    },
+
+    async grid_conflict_survives_edit_and_undo() {
+      const R = {};
+      mount();
+      await wait(60);
+      click(0, 0);
+      paste("N1");
+      const changed = fixtureGrid();
+      changed.rows[0].v[0] = "Changed in Revit";
+      window.__backend.load = () => changed;
+      const button = (label) => [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf(label) >= 0);
+      button("ui_pull").click();
+      await wait(100);
+      R.conflict_after_pull = document.querySelectorAll(".ae-cell.conflict").length;
+      click(0, 0);
+      paste("D");
+      R.conflict_after_edit = document.querySelectorAll(".ae-cell.conflict").length;
+      key("z", { ctrlKey: true });
+      R.cell_after_undo = cellText(0, 0);
+      R.conflict_after_undo = document.querySelectorAll(".ae-cell.conflict").length;
+      button("Push").click();
+      await wait(100);
+      R.pushes = sent("push").length;
+      click(0, 0);
+      paste("Changed in Revit");
+      R.conflict_when_equal_to_revit = document.querySelectorAll(".ae-cell.conflict").length;
+      R.dirty_when_equal_to_revit = dirty();
+      return R;
+    },
+
+    async grid_undo_selection_follows_the_row() {
+      const R = {};
+      mount();
+      await wait(60);
+      const filter = document.querySelectorAll(".ae-filter")[0];
+      const applyFilter = () => filter.dispatchEvent(new Event("input", { bubbles: true }));
+      filter.value = "D";
+      applyFilter();
+      click(0, 0);
+      paste("X");
+      applyFilter();
+      R.rows_with_x_hidden = window.__app.view.length;
+      key("z", { ctrlKey: true });
+      R.rows_after_undo = window.__app.view.length;
+      click(1, 0);
+      R.selected_before_redo = document.querySelector(".ae-cell.active").textContent;
+      key("y", { ctrlKey: true });
+      R.rows_after_redo = window.__app.view.length;
+      R.selected_after_redo = document.querySelector(".ae-cell.active").textContent;
+      return R;
+    },
+
+    async grid_scratch_reordered_categories_merge() {
+      const R = {};
+      mount();
+      await wait(60);
+      window.__backend.categories = () => [
+        { id: -1, name: "Alpha", instances: 3, types: 1 },
+        { id: -2, name: "Beta", instances: 2, types: 1 },
+      ];
+      window.__backend.available = () => [{ key: "bip|-9|i", heading: "Mark", scope: "i" }];
+      window.__backend.load = (payload) => ({
+        source: payload.source,
+        title: "",
+        unitMode: "display",
+        columns: [column("bip|-9|i", "Mark")],
+        rows: [{ id: 1, t: 1, c: "A", v: ["A"], x: [] }, { id: 2, t: 1, c: "A", v: ["B"], x: [] }],
+        sort: [],
+      });
+      const select = document.querySelector(".ae-toolbar select");
+      select.value = "__scratch__";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      await wait(80);
+      const boxes = () => [...document.querySelectorAll(".ae-panel .ae-section:first-child .ae-item input")];
+      const tick = (index, on) => {
+        boxes()[index].checked = on;
+        boxes()[index].dispatchEvent(new Event("change", { bubbles: true }));
+      };
+      const press = (label) => [...document.querySelectorAll(".ae-panel .ae-button")].find((b) => b.textContent === label).click();
+      tick(0, true);
+      tick(1, true);
+      press("ui_find_parameters");
+      await wait(80);
+      document.querySelector(".ae-panel .ae-item.add").click();
+      press("ui_apply_columns");
+      await wait(100);
+      click(0, 0);
+      paste("EDIT");
+      R.dirty_before = dirty();
+      tick(0, false);
+      tick(0, true);
+      press("ui_find_parameters");
+      await wait(80);
+      const loadsBefore = sent("load").length;
+      press("ui_apply_columns");
+      await wait(120);
+      R.dialog_shown = !!document.querySelector(".ae-dialog");
+      R.loads = sent("load").length - loadsBefore;
+      R.dirty_after = dirty();
+      R.cell_after = cellText(0, 0);
       return R;
     },
 

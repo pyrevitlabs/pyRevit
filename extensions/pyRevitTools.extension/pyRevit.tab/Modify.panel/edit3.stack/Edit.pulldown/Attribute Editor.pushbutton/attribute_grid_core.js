@@ -128,9 +128,24 @@
     return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
   }
 
+  function isTypeKey(key) {
+    return key.endsWith("|t");
+  }
+
   function mergeRows(oldRows, oldKeys, newRows, newKeys) {
     const oldById = new Map(oldRows.map((row) => [row.id, row]));
     const oldIndex = new Map(oldKeys.map((key, index) => [key, index]));
+    const typeEdits = new Map();
+    for (const row of oldRows) {
+      oldKeys.forEach((key, index) => {
+        if (!isTypeKey(key) || row.cur[index] === row.base[index]) return;
+        const tag = row.t + "|" + key;
+        if (!typeEdits.has(tag)) {
+          typeEdits.set(tag, { cur: row.cur[index], base: row.base[index], conflict: row.conflicts.has(index) });
+        }
+      });
+    }
+    const carriedTypeEdits = new Set();
     const merged = [];
     let dropped = 0;
     let conflicts = 0;
@@ -146,36 +161,47 @@
         errors: new Map(),
       };
       const previous = oldById.get(fresh.id);
-      if (previous) {
-        newKeys.forEach((key, index) => {
+      newKeys.forEach((key, index) => {
+        let edit = null;
+        let tag = null;
+        if (isTypeKey(key)) {
+          tag = fresh.t + "|" + key;
+          edit = typeEdits.get(tag) || null;
+        } else if (previous) {
           const was = oldIndex.get(key);
-          if (was === undefined || previous.cur[was] === previous.base[was]) return;
-          const typeMoved = key.endsWith("|t") && previous.t !== fresh.t;
-          if (row.locked.has(index) || typeMoved) {
-            dropped++;
-            return;
+          if (was !== undefined && previous.cur[was] !== previous.base[was]) {
+            edit = { cur: previous.cur[was], base: previous.base[was], conflict: previous.conflicts.has(was) };
           }
-          row.cur[index] = previous.cur[was];
-          const revitMoved = fresh.v[index] !== previous.base[was] || previous.conflicts.has(was);
-          if (revitMoved && fresh.v[index] !== previous.cur[was]) {
-            row.conflicts.set(index, fresh.v[index]);
-            conflicts++;
-          }
-        });
-      }
+        }
+        if (!edit) return;
+        if (row.locked.has(index)) {
+          if (!tag) dropped++;
+          return;
+        }
+        row.cur[index] = edit.cur;
+        const revitMoved = fresh.v[index] !== edit.base || edit.conflict;
+        const firstOfType = tag === null || !carriedTypeEdits.has(tag);
+        if (revitMoved && fresh.v[index] !== edit.cur) {
+          row.conflicts.set(index, fresh.v[index]);
+          if (firstOfType) conflicts++;
+        }
+        if (tag) carriedTypeEdits.add(tag);
+      });
       merged.push(row);
     }
-    const freshIds = new Set(newRows.map((row) => row.id));
-    for (const row of oldRows) {
-      if (freshIds.has(row.id)) continue;
-      if (row.cur.some((value, index) => value !== row.base[index])) dropped++;
+    for (const tag of typeEdits.keys()) {
+      if (!carriedTypeEdits.has(tag)) dropped++;
     }
+    const freshIds = new Set(newRows.map((row) => row.id));
     const keptKeys = new Set(newKeys);
+    const instanceEdits = (row, wanted) =>
+      oldKeys.filter((key, index) => !isTypeKey(key) && wanted(key) && row.cur[index] !== row.base[index]).length;
     for (const row of oldRows) {
-      if (!freshIds.has(row.id)) continue;
-      oldKeys.forEach((key, index) => {
-        if (!keptKeys.has(key) && row.cur[index] !== row.base[index]) dropped++;
-      });
+      if (!freshIds.has(row.id)) {
+        if (instanceEdits(row, () => true)) dropped++;
+      } else {
+        dropped += instanceEdits(row, (key) => !keptKeys.has(key));
+      }
     }
     return { rows: merged, dropped, conflicts };
   }

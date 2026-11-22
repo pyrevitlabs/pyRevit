@@ -249,10 +249,6 @@
       this.renderAll();
     }
 
-    sourceSignature() {
-      return JSON.stringify(this.source);
-    }
-
     async load(options) {
       const settings = options || {};
       const keys = settings.columns !== undefined ? settings.columns : this.columns.length ? this.columns.map((c) => c.key) : null;
@@ -267,7 +263,7 @@
           columns: keys,
           unitMode: settings.unitMode || this.unitMode,
         });
-        this.applyGrid(grid, !settings.fresh && this.rows.length > 0 && this.loadedSignature === JSON.stringify(grid.source));
+        this.applyGrid(grid, !settings.fresh && this.rows.length > 0 && !!this.loadedSource && this.sameSource(this.loadedSource, grid.source));
         return true;
       } catch (error) {
         this.toast(error.message, "error");
@@ -283,7 +279,6 @@
       if (!merge) this.generation++;
       this.source = grid.source;
       this.loadedSource = grid.source;
-      this.loadedSignature = JSON.stringify(grid.source);
       this.title = grid.title;
       this.unitMode = grid.unitMode;
       this.columns = grid.columns;
@@ -424,11 +419,16 @@
       );
     }
 
+    isConflict(row, ci) {
+      return row.conflicts.has(ci) && row.cur[ci] !== row.conflicts.get(ci);
+    }
+
     countConflicts() {
       let count = 0;
       const seenTypes = new Set();
       for (const row of this.rows) {
         for (const ci of row.conflicts.keys()) {
+          if (!this.isConflict(row, ci)) continue;
           if (this.columns[ci].scope === "t") {
             const tag = row.t + ":" + ci;
             if (seenTypes.has(tag)) continue;
@@ -535,7 +535,7 @@
       if (locked) classes.push("locked");
       if (value !== row.base[ci]) classes.push("dirty");
       if (row.errors.has(ci)) classes.push("error");
-      if (row.conflicts.has(ci)) classes.push("conflict");
+      if (this.isConflict(row, ci)) classes.push("conflict");
       if (ci < this.frozen) classes.push("frozen");
       if (rect && vi >= rect.r1 && vi <= rect.r2 && ci >= rect.c1 && ci <= rect.c2) classes.push("sel");
       if (this.anchor && this.anchor.r === vi && this.anchor.c === ci) classes.push("active");
@@ -543,7 +543,7 @@
       if (pad && vi >= pad.r1 && vi <= pad.r2 && ci >= pad.c1 && ci <= pad.c2) classes.push("fillpad");
       let tip = "";
       if (row.errors.has(ci)) tip = row.errors.get(ci);
-      else if (row.conflicts.has(ci)) tip = this.S("tip_conflict", row.conflicts.get(ci));
+      else if (this.isConflict(row, ci)) tip = this.S("tip_conflict", row.conflicts.get(ci));
       else if (locked) tip = this.S("tip_locked");
       const style = "width:" + this.columnWidth(column) + "px" + (ci < this.frozen ? ";left:" + this.offsets[ci] + "px" : "");
       return h("div", { class: classes.join(" "), style, title: tip || value, dataset: { r: vi, c: ci } }, value);
@@ -952,7 +952,6 @@
           entries.push({ row, ci: change.ci, before: row.cur[change.ci], after: change.value });
           row.cur[change.ci] = change.value;
           row.errors.delete(change.ci);
-          row.conflicts.delete(change.ci);
         }
       }
       if (entries.length) {
@@ -984,7 +983,16 @@
     }
 
     afterHistory() {
+      const rowAt = (cell) => (cell ? this.rows[this.view[cell.r]] : null);
+      const anchorRow = rowAt(this.anchor);
+      const focusRow = rowAt(this.focus);
       this.recomputeView();
+      const follow = (cell, row) => {
+        const position = row ? this.view.indexOf(this.rows.indexOf(row)) : -1;
+        return cell && position >= 0 ? { r: position, c: cell.c } : cell;
+      };
+      this.anchor = follow(this.anchor, anchorRow);
+      this.focus = follow(this.focus, focusRow);
       this.repairSelection();
       this.renderAll();
     }
@@ -1142,7 +1150,6 @@
         this.view = [];
         this.plan = [];
         this.available = [];
-        this.loadedSignature = null;
         this.loadedSource = null;
         this.generation++;
         this.anchor = this.focus = null;
@@ -1188,7 +1195,7 @@
       for (const row of this.rows) {
         this.columns.forEach((column, ci) => {
           if (row.cur[ci] === row.base[ci] || row.locked.has(ci) || !column.available) return;
-          if (row.conflicts.has(ci)) return;
+          if (this.isConflict(row, ci)) return;
           if (column.scope === "t") {
             const tag = row.t + ":" + ci;
             if (seenTypes.has(tag)) return;
@@ -1591,6 +1598,11 @@
         return;
       }
       await this.load({ columns: this.plan.slice() });
+    }
+
+    sameSource(a, b) {
+      if (a.kind === "schedule" || b.kind === "schedule") return a.kind === b.kind && a.id === b.id;
+      return this.sameScratchSource(a, b);
     }
 
     sameScratchSource(a, b) {
