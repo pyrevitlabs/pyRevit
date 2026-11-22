@@ -66,6 +66,7 @@
       this.requests = new Map();
       this.requestSeq = 0;
       this.generation = 0;
+      this.loadSeq = 0;
       this.source = data.start;
       this.title = "";
       this.unitMode = "display";
@@ -256,6 +257,7 @@
         this.renderAll();
         return false;
       }
+      const loadId = ++this.loadSeq;
       this.setBusy(true);
       try {
         const grid = await this.request("load", {
@@ -263,9 +265,11 @@
           columns: keys,
           unitMode: settings.unitMode || this.unitMode,
         });
+        if (loadId !== this.loadSeq) return null;
         this.applyGrid(grid, !settings.fresh && this.rows.length > 0 && !!this.loadedSource && this.sameSource(this.loadedSource, grid.source));
         return true;
       } catch (error) {
+        if (loadId !== this.loadSeq) return null;
         this.toast(error.message, "error");
         return false;
       } finally {
@@ -1151,6 +1155,8 @@
         this.plan = [];
         this.available = [];
         this.loadedSource = null;
+        this.title = "";
+        this.loadSeq++;
         this.generation++;
         this.anchor = this.focus = null;
         this.openScratch();
@@ -1159,7 +1165,7 @@
       this.source = { kind: "schedule", id: Number(value) };
       this.available = [];
       const ok = await this.load({ columns: null, fresh: true });
-      if (!ok) this.source = previous;
+      if (ok === false) this.source = previous;
       this.refreshAvailable();
       this.renderToolbar();
     }
@@ -1543,10 +1549,10 @@
         this.toast(this.S("pick_categories"), "info");
         return;
       }
-      this.source = { kind: "scratch", categories, scope: this.builder.scope, types: this.builder.types };
+      const discovery = { kind: "scratch", categories, scope: this.builder.scope, types: this.builder.types };
       this.setBusy(true);
       try {
-        this.available = await this.request("available", { source: this.source, scanAll: this.builder.scanAll });
+        this.available = await this.request("available", { source: discovery, scanAll: this.builder.scanAll });
         this.toast(this.S("parameters_found", this.available.length), "ok");
         this.renderAvailable();
       } catch (error) {

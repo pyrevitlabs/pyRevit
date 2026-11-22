@@ -447,6 +447,20 @@ class AttributeGridPageTests(unittest.TestCase):
         self.assertEqual(result["dirty_after"], 1)
         self.assertEqual(result["cell_after"], "EDIT")
 
+    def test_finding_parameters_does_not_change_the_source_a_pull_reloads(self):
+        result = self.scenario("grid_find_parameters_keeps_the_grid_source")
+        self.assertEqual(result["pull_source"], [[-1]])
+        self.assertEqual(result["dirty_after_pull"], 1)
+        self.assertEqual(result["cell_after_pull"], "EDIT")
+
+    def test_a_schedule_reply_arriving_after_switching_to_a_new_grid_is_ignored(self):
+        result = self.scenario("grid_late_load_reply_is_ignored")
+        self.assertEqual(result["source_kind"], "scratch")
+        self.assertEqual(result["columns"], 0)
+        self.assertEqual(result["rows"], 0)
+        self.assertEqual(result["title"], "")
+        self.assertEqual(result["select_value"], "__scratch__")
+
     def test_large_grids_render_only_the_visible_rows(self):
         result = self.scenario("grid_virtualised")
         self.assertLess(result["rendered_rows"], 60)

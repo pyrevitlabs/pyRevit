@@ -752,6 +752,82 @@
       return R;
     },
 
+    async grid_find_parameters_keeps_the_grid_source() {
+      const R = {};
+      mount();
+      await wait(60);
+      window.__backend.categories = () => [
+        { id: -1, name: "Alpha", instances: 3, types: 1 },
+        { id: -2, name: "Beta", instances: 2, types: 1 },
+      ];
+      window.__backend.available = () => [{ key: "bip|-9|i", heading: "Mark", scope: "i" }];
+      window.__backend.load = (payload) => ({
+        source: payload.source,
+        title: "",
+        unitMode: "display",
+        columns: [column("bip|-9|i", "Mark")],
+        rows: [{ id: 1, t: 1, c: "A", v: ["A"], x: [] }, { id: 2, t: 1, c: "A", v: ["B"], x: [] }],
+        sort: [],
+      });
+      const select = document.querySelector(".ae-toolbar select");
+      select.value = "__scratch__";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      await wait(80);
+      const boxes = () => [...document.querySelectorAll(".ae-panel .ae-section:first-child .ae-item input")];
+      const tick = (index) => {
+        boxes()[index].checked = true;
+        boxes()[index].dispatchEvent(new Event("change", { bubbles: true }));
+      };
+      const press = (label) => [...document.querySelectorAll(".ae-panel .ae-button")].find((b) => b.textContent === label).click();
+      tick(0);
+      press("ui_find_parameters");
+      await wait(80);
+      document.querySelector(".ae-panel .ae-item.add").click();
+      press("ui_apply_columns");
+      await wait(100);
+      click(0, 0);
+      paste("EDIT");
+      tick(1);
+      press("ui_find_parameters");
+      await wait(80);
+      const loadsBefore = sent("load").length;
+      [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("ui_pull") >= 0).click();
+      await wait(120);
+      R.pull_source = sent("load").slice(loadsBefore).map((m) => m.payload.source.categories);
+      R.dirty_after_pull = dirty();
+      R.cell_after_pull = cellText(0, 0);
+      return R;
+    },
+
+    async grid_late_load_reply_is_ignored() {
+      const R = {};
+      mount();
+      await wait(60);
+      const walls = fixtureGrid();
+      walls.title = "Walls";
+      walls.source = { kind: "schedule", id: 2 };
+      window.__backend.load = async (payload) => {
+        if (payload.source.kind === "schedule" && payload.source.id === 2) {
+          await wait(300);
+          return walls;
+        }
+        return fixtureGrid();
+      };
+      const select = document.querySelector(".ae-toolbar select");
+      select.value = "2";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      await wait(60);
+      select.value = "__scratch__";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      await wait(500);
+      R.source_kind = window.__app.source.kind;
+      R.columns = window.__app.columns.length;
+      R.rows = document.querySelectorAll(".ae-row").length;
+      R.title = window.__app.title;
+      R.select_value = document.querySelector(".ae-toolbar select").value;
+      return R;
+    },
+
     async grid_virtualised() {
       const R = {};
       const rows = [];
