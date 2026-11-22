@@ -166,6 +166,8 @@ class AttributeSession(object):
         return apply_layout(self.doc, source, payload.get("columns") or [])
 
     def _select(self, payload):
+        if not revit.doc.Equals(self.doc):
+            raise ValueError(t("err_other_document"))
         ids = [get_elementid_from_value(int(value)) for value in payload["ids"]]
         revit.get_selection().set_to(ids)
         if payload.get("zoom"):

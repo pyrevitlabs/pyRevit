@@ -35,7 +35,10 @@ def format_number(value):
 def parse_number(text):
     cleaned = "".join(text.split())
     if "," in cleaned and "." in cleaned:
-        cleaned = cleaned.replace(",", "")
+        if cleaned.rfind(",") > cleaned.rfind("."):
+            cleaned = cleaned.replace(".", "").replace(",", ".")
+        else:
+            cleaned = cleaned.replace(",", "")
     elif cleaned.count(",") == 1:
         cleaned = cleaned.replace(",", ".")
     try:
@@ -54,6 +57,7 @@ class ValueCodec(object):
         self.no_label = no_label
         self._worksets = None
         self._named_elements = {}
+        self._reference_samples = {}
 
     def worksets(self):
         if self._worksets is None:
@@ -98,7 +102,7 @@ class ValueCodec(object):
         elif storage == DB.StorageType.Integer:
             self._write_integer(column, parameter, text)
         elif storage == DB.StorageType.ElementId:
-            self._write_reference(parameter, text)
+            self._write_reference(column, parameter, text)
         else:
             raise EditError(t("err_unsupported"))
 
@@ -147,12 +151,14 @@ class ValueCodec(object):
             return
         self._require(parameter.Set(number))
 
-    def _write_reference(self, parameter, text):
+    def _write_reference(self, column, parameter, text):
         name = text.strip()
         if not name:
             self._require(parameter.Set(DB.ElementId.InvalidElementId))
             return
         current = self.doc.GetElement(parameter.AsElementId())
+        if current is None:
+            current = self._reference_sample(column, parameter)
         if current is None:
             raise EditError(t("err_reference"))
         matches = self._named_elements_of(current).get(name.lower(), [])
@@ -161,6 +167,32 @@ class ValueCodec(object):
         if len(matches) > 1:
             raise EditError(t("err_ambiguous"))
         self._require(parameter.Set(matches[0]))
+
+    def _reference_sample(self, column, parameter):
+        if column.key not in self._reference_samples:
+            self._reference_samples[column.key] = self._find_reference_sample(
+                column, parameter.Element
+            )
+        return self._reference_samples[column.key]
+
+    def _find_reference_sample(self, column, owner):
+        if owner is None or owner.Category is None:
+            return None
+        collector = DB.FilteredElementCollector(self.doc).OfCategoryId(
+            owner.Category.Id
+        )
+        if isinstance(owner, DB.ElementType):
+            collector = collector.WhereElementIsElementType()
+        else:
+            collector = collector.WhereElementIsNotElementType()
+        for element in collector:
+            candidate = column.find(element)
+            if candidate is None or candidate.StorageType != DB.StorageType.ElementId:
+                continue
+            referenced = self.doc.GetElement(candidate.AsElementId())
+            if referenced is not None:
+                return referenced
+        return None
 
     def _named_elements_of(self, sample):
         element_class = sample.GetType()

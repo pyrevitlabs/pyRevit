@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """Reads a source into the rows and columns the Attribute Editor page shows."""
 
-import itertools
-
 from pyrevit import DB, script
 
 from attribute_columns import SCOPE_TYPE, ColumnSpec, id_value
@@ -10,8 +8,6 @@ from attribute_strings import t
 from attribute_values import ValueCodec
 
 logger = script.get_logger()
-
-DESCRIBE_LIMIT = 300
 
 
 def _read_cell(codec, column, element):
@@ -70,7 +66,7 @@ def build_grid(doc, source, column_keys, unit_mode):
     elements = source.elements()
     units = doc.GetUnits()
     for column in columns:
-        for element in itertools.islice(elements, DESCRIBE_LIMIT):
+        for element in elements:
             parameter = column.find(element)
             if parameter is not None:
                 column.describe(parameter, units)

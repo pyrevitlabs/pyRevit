@@ -1159,6 +1159,7 @@
       for (const row of this.rows) {
         this.columns.forEach((column, ci) => {
           if (row.cur[ci] === row.base[ci] || row.locked.has(ci) || !column.available) return;
+          if (row.conflicts.has(ci)) return;
           if (column.scope === "t") {
             const tag = row.t + ":" + ci;
             if (seenTypes.has(tag)) return;
@@ -1174,7 +1175,8 @@
       this.commitEdit(null);
       const edits = this.gatherEdits();
       if (!edits.length) {
-        this.toast(this.S("nothing_pending"), "info");
+        const unresolved = this.countConflicts();
+        this.toast(unresolved ? this.S("push_conflicts", unresolved) : this.S("nothing_pending"), "info");
         return;
       }
       this.setBusy(true);
@@ -1213,9 +1215,10 @@
             for (const member of group) member.errors.delete(ci);
             return;
           }
+          const sent = edits[index].text;
           for (const member of group) {
             member.base[ci] = result.value;
-            member.cur[ci] = result.value;
+            if (member.cur[ci] === sent) member.cur[ci] = result.value;
             member.errors.delete(ci);
             member.conflicts.delete(ci);
           }

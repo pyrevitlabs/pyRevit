@@ -116,4 +116,6 @@
     <sys:String x:Key="err_yes_no">Use Sí o No.</sys:String>
     <sys:String x:Key="transaction_push">Editor de atributos: escribir valores</sys:String>
     <sys:String x:Key="transaction_layout">Editor de atributos: cambiar columnas de la tabla</sys:String>
+    <sys:String x:Key="err_other_document">Ahora hay otro proyecto activo. Active el proyecto para el que se abrió este editor.</sys:String>
+    <sys:String x:Key="err_not_committed">Revit no conservó este cambio.</sys:String>
 </ResourceDictionary>

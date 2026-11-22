@@ -116,4 +116,6 @@
     <sys:String x:Key="err_yes_no">예 또는 아니요를 사용하세요.</sys:String>
     <sys:String x:Key="transaction_push">속성 편집기: 값 쓰기</sys:String>
     <sys:String x:Key="transaction_layout">속성 편집기: 일람표 열 변경</sys:String>
+    <sys:String x:Key="err_other_document">지금은 다른 프로젝트가 활성화되어 있습니다. 이 편집기를 연 프로젝트를 활성화하세요.</sys:String>
+    <sys:String x:Key="err_not_committed">Revit이 이 변경을 유지하지 않았습니다.</sys:String>
 </ResourceDictionary>

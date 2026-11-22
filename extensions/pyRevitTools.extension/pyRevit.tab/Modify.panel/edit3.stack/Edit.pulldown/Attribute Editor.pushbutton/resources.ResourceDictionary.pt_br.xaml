@@ -116,4 +116,6 @@
     <sys:String x:Key="err_yes_no">Use Sim ou Não.</sys:String>
     <sys:String x:Key="transaction_push">Editor de atributos: gravar valores</sys:String>
     <sys:String x:Key="transaction_layout">Editor de atributos: alterar colunas da tabela</sys:String>
+    <sys:String x:Key="err_other_document">Outro projeto está ativo agora. Ative o projeto para o qual este editor foi aberto.</sys:String>
+    <sys:String x:Key="err_not_committed">O Revit não manteve esta alteração.</sys:String>
 </ResourceDictionary>

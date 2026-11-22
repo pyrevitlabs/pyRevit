@@ -116,4 +116,6 @@
     <sys:String x:Key="err_yes_no">请使用“是”或“否”。</sys:String>
     <sys:String x:Key="transaction_push">属性编辑器：写入值</sys:String>
     <sys:String x:Key="transaction_layout">属性编辑器：更改明细表的列</sys:String>
+    <sys:String x:Key="err_other_document">当前活动的是另一个项目。请激活打开此编辑器时所用的项目。</sys:String>
+    <sys:String x:Key="err_not_committed">Revit 没有保留此更改。</sys:String>
 </ResourceDictionary>

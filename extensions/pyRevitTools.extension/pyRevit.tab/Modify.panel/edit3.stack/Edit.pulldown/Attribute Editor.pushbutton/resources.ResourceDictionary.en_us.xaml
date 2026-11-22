@@ -116,4 +116,6 @@
     <sys:String x:Key="err_yes_no">Use Yes or No.</sys:String>
     <sys:String x:Key="transaction_push">Attribute Editor: write values</sys:String>
     <sys:String x:Key="transaction_layout">Attribute Editor: change schedule columns</sys:String>
+    <sys:String x:Key="err_other_document">Another project is active now. Activate the project this editor was opened for.</sys:String>
+    <sys:String x:Key="err_not_committed">Revit did not keep this change.</sys:String>
 </ResourceDictionary>

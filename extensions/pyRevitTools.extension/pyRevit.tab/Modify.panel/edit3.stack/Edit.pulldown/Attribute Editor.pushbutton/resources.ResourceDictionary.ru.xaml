@@ -116,4 +116,6 @@
     <sys:String x:Key="err_yes_no">Используйте «Да» или «Нет».</sys:String>
     <sys:String x:Key="transaction_push">Редактор атрибутов: запись значений</sys:String>
     <sys:String x:Key="transaction_layout">Редактор атрибутов: изменение столбцов спецификации</sys:String>
+    <sys:String x:Key="err_other_document">Сейчас активен другой проект. Активируйте проект, для которого открыт этот редактор.</sys:String>
+    <sys:String x:Key="err_not_committed">Revit не сохранил это изменение.</sys:String>
 </ResourceDictionary>

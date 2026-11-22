@@ -90,21 +90,65 @@ def apply_edits(doc, edits, unit_mode, force=False, dry=False):
         (list[dict]): one result per edit: ``{row, key, ok, message}`` for a
         failure (plus ``conflict`` and ``current`` for a conflict) or
         ``{row, key, ok, value, typeId}`` where ``value`` is Revit's text after
-        the write and ``typeId`` is set when a type was changed.
+        the commit and ``typeId`` is set when a type was changed.
 
     Important:
         A failing cell does not stop the others, and the cells that succeeded
-        are committed as one undo step.
+        are committed as one undo step. When Revit refuses the commit, every
+        cell is reported as failed.
     """
     codec = make_codec(doc, unit_mode)
     columns = {}
     type_edits = {}
-    transaction_class = revit.DryTransaction if dry else revit.Transaction
     results = []
-    with transaction_class(t("transaction_push"), doc):
+
+    def write_all():
         for edit in edits:
             results.append(_apply_edit(doc, edit, codec, columns, type_edits, force))
+
+    if dry:
+        with revit.DryTransaction(t("transaction_push"), doc):
+            write_all()
+        return results
+    if not _commit(doc, t("transaction_push"), write_all):
+        return [
+            _failure(edit, t("err_not_committed")) if result["ok"] else result
+            for edit, result in zip(edits, results)
+        ]
+    for edit, result in zip(edits, results):
+        if result["ok"]:
+            _refresh_value(doc, edit, result, codec, columns)
     return results
+
+
+def _commit(doc, name, body):
+    """Run ``body`` in one transaction; return whether Revit kept its changes.
+
+    ``revit.Transaction`` logs a failed commit and carries on, so it cannot tell
+    the caller that nothing was saved.
+    """
+    transaction = DB.Transaction(doc, name)
+    transaction.Start()
+    try:
+        body()
+    except Exception:
+        transaction.RollBack()
+        raise
+    try:
+        return transaction.Commit() == DB.TransactionStatus.Committed
+    except Exception as ex:
+        logger.debug("Commit failed: %s", ex)
+        if transaction.HasStarted():
+            transaction.RollBack()
+        return False
+
+
+def _refresh_value(doc, edit, result, codec, columns):
+    element = doc.GetElement(get_elementid_from_value(int(edit["row"])))
+    column = columns[edit["key"]]
+    parameter = column.find(element) if element is not None else None
+    if parameter is not None:
+        result["value"] = codec.read(column, parameter)
 
 
 def apply_layout(doc, source, ordered_keys):
@@ -161,6 +205,11 @@ def apply_layout(doc, source, ordered_keys):
                 _order_keeping_unmanaged_fields(definition.GetFieldOrder(), wanted),
             )
         )
+    after = set(source.field_ids_by_key())
+    summary["added"] = len(after - set(existing))
+    summary["removed"] = len(set(existing) - after)
+    if set(ordered_keys) - after - set(item["key"] for item in summary["failed"]):
+        summary["failed"].append({"key": "", "message": t("err_not_committed")})
     return summary
 
 

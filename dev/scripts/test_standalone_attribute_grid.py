@@ -366,6 +366,21 @@ class AttributeGridPageTests(unittest.TestCase):
         self.assertEqual(result["load_columns"], ["bip|-9|i"])
         self.assertEqual(result["rows_loaded"], 1)
 
+    def test_a_conflicted_cell_is_not_pushed_until_the_user_decides(self):
+        result = self.scenario("grid_conflict_not_pushed")
+        self.assertEqual(result["conflict_cells"], 1)
+        self.assertEqual(result["cell_text"], "N1")
+        self.assertEqual(result["pushes"], 0)
+        self.assertEqual(result["toast"], "ui_push_conflicts")
+        self.assertEqual(result["pushes_after_keep_mine"], 1)
+        self.assertEqual(result["sent_base"], "Changed in Revit")
+
+    def test_text_typed_while_a_push_is_running_is_kept(self):
+        result = self.scenario("grid_edit_during_push")
+        self.assertEqual(result["cell_after"], "N2")
+        self.assertTrue(result["dirty"])
+        self.assertEqual(result["base"], "N1 normalized")
+
     def test_large_grids_render_only_the_visible_rows(self):
         result = self.scenario("grid_virtualised")
         self.assertLess(result["rendered_rows"], 60)

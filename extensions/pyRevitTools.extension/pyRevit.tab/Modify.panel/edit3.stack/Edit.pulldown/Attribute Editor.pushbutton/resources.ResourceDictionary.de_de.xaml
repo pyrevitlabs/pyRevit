@@ -116,4 +116,6 @@
     <sys:String x:Key="err_yes_no">Ja oder Nein verwenden.</sys:String>
     <sys:String x:Key="transaction_push">Attribut-Editor: Werte schreiben</sys:String>
     <sys:String x:Key="transaction_layout">Attribut-Editor: Bauteillistenspalten ändern</sys:String>
+    <sys:String x:Key="err_other_document">Jetzt ist ein anderes Projekt aktiv. Aktivieren Sie das Projekt, für das dieser Editor geöffnet wurde.</sys:String>
+    <sys:String x:Key="err_not_committed">Revit hat diese Änderung nicht übernommen.</sys:String>
 </ResourceDictionary>

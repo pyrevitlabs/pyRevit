@@ -116,4 +116,6 @@
     <sys:String x:Key="err_yes_no">Utilisez Oui ou Non.</sys:String>
     <sys:String x:Key="transaction_push">Éditeur d’attributs : écrire les valeurs</sys:String>
     <sys:String x:Key="transaction_layout">Éditeur d’attributs : modifier les colonnes de la nomenclature</sys:String>
+    <sys:String x:Key="err_other_document">Un autre projet est actif. Activez le projet pour lequel cet éditeur a été ouvert.</sys:String>
+    <sys:String x:Key="err_not_committed">Revit n’a pas conservé cette modification.</sys:String>
 </ResourceDictionary>

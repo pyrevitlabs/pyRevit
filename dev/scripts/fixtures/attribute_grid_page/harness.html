@@ -466,6 +466,53 @@
       return R;
     },
 
+    async grid_conflict_not_pushed() {
+      const R = {};
+      mount();
+      await wait(60);
+      click(0, 0);
+      paste("N1");
+      const changed = fixtureGrid();
+      changed.rows[0].v[0] = "Changed in Revit";
+      window.__backend.load = () => changed;
+      [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("ui_pull") >= 0).click();
+      await wait(100);
+      R.conflict_cells = document.querySelectorAll(".ae-cell.conflict").length;
+      R.cell_text = cellText(0, 0);
+      [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("Push") >= 0).click();
+      await wait(100);
+      R.pushes = sent("push").length;
+      R.toast = [...document.querySelectorAll(".ae-toast")].map((n) => n.textContent).pop();
+      [...document.querySelectorAll(".ae-conflictbar button")][0].click();
+      window.__backend.push = (payload) => ({ results: payload.edits.map((e) => ({ row: e.row, key: e.key, ok: true, value: e.text })) });
+      [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("Push") >= 0).click();
+      await wait(100);
+      R.pushes_after_keep_mine = sent("push").length;
+      R.sent_base = sent("push")[0] ? sent("push")[0].payload.edits[0].base : null;
+      return R;
+    },
+
+    async grid_edit_during_push() {
+      const R = {};
+      mount();
+      await wait(60);
+      click(0, 0);
+      paste("N1");
+      window.__backend.push = async (payload) => {
+        await wait(250);
+        return { results: payload.edits.map((e) => ({ row: e.row, key: e.key, ok: true, value: "N1 normalized" })) };
+      };
+      [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("Push") >= 0).click();
+      await wait(60);
+      click(0, 0);
+      paste("N2");
+      await wait(400);
+      R.cell_after = cellText(0, 0);
+      R.dirty = cellAt(0, 0).classList.contains("dirty");
+      R.base = window.__app.rows[0].base[0];
+      return R;
+    },
+
     async grid_virtualised() {
       const R = {};
       const rows = [];
