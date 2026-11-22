@@ -72,13 +72,55 @@ public sealed class VersionHelperTests
     }
 
     [TestMethod]
-    public void DirectoryBuildProps_takesTheExportedBuildVersion()
+    public void DirectoryBuildProps_givesMsBuildTheExportedBuildVersion()
     {
-        var props = File.ReadAllText(PyRevitPaths.DirectoryBuildProps);
+        var original = Environment.GetEnvironmentVariable(VersionHelper.BuildVersionVariable);
+        var projectDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(projectDirectory);
+        try
+        {
+            var projectPath = Path.Combine(projectDirectory, "Probe.csproj");
+            File.WriteAllText(
+                projectPath,
+                $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <Import Project="{PyRevitPaths.DirectoryBuildProps}" />
+                  <PropertyGroup>
+                    <TargetFramework>net10.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """);
+            VersionHelper.ExportBuildVersion("7.2.0.26326+1041");
 
-        StringAssert.Contains(
-            props,
-            $"<Version Condition=\"'$({VersionHelper.BuildVersionVariable})' != ''\">$({VersionHelper.BuildVersionVariable})</Version>");
+            var version = EvaluateMsBuildProperty(projectPath, "Version");
+
+            Assert.AreEqual("7.2.0.26326+1041", version);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(VersionHelper.BuildVersionVariable, original);
+            Directory.Delete(projectDirectory, recursive: true);
+        }
+    }
+
+    private static string EvaluateMsBuildProperty(string projectPath, string property)
+    {
+        var startInfo = new System.Diagnostics.ProcessStartInfo("dotnet")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            WorkingDirectory = Path.GetDirectoryName(projectPath)!,
+        };
+        startInfo.ArgumentList.Add("msbuild");
+        startInfo.ArgumentList.Add(projectPath);
+        startInfo.ArgumentList.Add($"-getProperty:{property}");
+
+        using var process = System.Diagnostics.Process.Start(startInfo)!;
+        var output = process.StandardOutput.ReadToEnd();
+        var error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        Assert.AreEqual(0, process.ExitCode, error + output);
+        return output.Trim();
     }
 
     [TestMethod]
