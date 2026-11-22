@@ -18,6 +18,7 @@
 
   <PropertyGroup>
     <Version>7.0.0.26278+2233</Version>
+    <Version Condition="'$(PyRevitBuildVersion)' != ''">$(PyRevitBuildVersion)</Version>
     <Copyright>Copyright © 2014-2026</Copyright>
     <Company>pyRevitLabs.io</Company>
   </PropertyGroup>

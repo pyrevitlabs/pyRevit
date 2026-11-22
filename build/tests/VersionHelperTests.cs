@@ -54,6 +54,54 @@ public sealed class VersionHelperTests
     }
 
     [TestMethod]
+    public void ExportBuildVersion_exposesTheVersionToChildProcesses()
+    {
+        var original = Environment.GetEnvironmentVariable(VersionHelper.BuildVersionVariable);
+        try
+        {
+            VersionHelper.ExportBuildVersion("7.2.0.26326+1041");
+
+            Assert.AreEqual(
+                "7.2.0.26326+1041",
+                Environment.GetEnvironmentVariable(VersionHelper.BuildVersionVariable));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(VersionHelper.BuildVersionVariable, original);
+        }
+    }
+
+    [TestMethod]
+    public void DirectoryBuildProps_takesTheExportedBuildVersion()
+    {
+        var props = File.ReadAllText(PyRevitPaths.DirectoryBuildProps);
+
+        StringAssert.Contains(
+            props,
+            $"<Version Condition=\"'$({VersionHelper.BuildVersionVariable})' != ''\">$({VersionHelper.BuildVersionVariable})</Version>");
+    }
+
+    [TestMethod]
+    public void VersionStamping_keepsTheExportedBuildVersionOverride()
+    {
+        var copy = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".props");
+        try
+        {
+            File.Copy(PyRevitPaths.DirectoryBuildProps, copy);
+
+            VersionHelper.ReplaceVersionInFiles([copy], "9.9.9.99999+9999");
+
+            var stamped = File.ReadAllText(copy);
+            StringAssert.Contains(stamped, "<Version>9.9.9.99999+9999</Version>");
+            StringAssert.Contains(stamped, $"$({VersionHelper.BuildVersionVariable})</Version>");
+        }
+        finally
+        {
+            File.Delete(copy);
+        }
+    }
+
+    [TestMethod]
     public void IsVersionTagBuild_detectsTagRefType()
     {
         var originalRefType = Environment.GetEnvironmentVariable("GITHUB_REF_TYPE");
