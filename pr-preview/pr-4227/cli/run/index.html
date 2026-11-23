@@ -10706,7 +10706,7 @@
 <p>Without <code>--clone</code>, pyRevit uses the clone and engine version that is attached to Revit, to run the script; So make sure that pyRevit is already attached to the Revit version you are intending to use.
 If it is not attached to that Revit version, the command prints an error and exits with a non-zero exit code without running the script.</p>
 <ul>
-<li><code>--clone=&lt;clone_name_or_path&gt;</code>: Run on another clone instead, given as the name of a registered clone or the path of a clone. The run uses that clone's default engine and its <code>pyRevitRunner.dll</code>, and neither reads nor changes the attachment, so pyRevit does not have to be attached to the Revit version. This is the way to try a runner or loader change from a git worktree. Revit still loads the add-in of the attached clone, if there is one.</li>
+<li><code>--clone=&lt;clone_name_or_path&gt;</code>: Run on another clone instead, given as the name of a registered clone or the path of a clone. The run uses that clone's default engine and its <code>pyRevitRunner.dll</code>, and neither reads nor changes the attachment, so pyRevit does not have to be attached to the Revit version. This is the way to try a runner or loader change from a git worktree. Revit still loads the add-in of the attached clone, if there is one, and an assembly with the same identity as one the attached clone already loaded is shared with it, so the script can run the attached clone's copy. Detach pyRevit from that Revit version to test a change in a loaded assembly.</li>
 </ul>
 <p>All the pyrevit modules are accessible inside the script.</p>
 <h4 id="running-a-script-on-revit-models">Running a Script on Revit Models</h4>
