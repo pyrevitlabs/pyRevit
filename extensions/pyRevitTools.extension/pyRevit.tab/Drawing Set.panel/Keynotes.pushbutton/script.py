@@ -726,7 +726,7 @@ class EditRecordWindow(forms.WPFWindow):
 
     @property
     def active_key(self):
-        if self.recordKey.Content and "●" not in self.recordKey.Content:
+        if self.recordKey.Content and self.recordKey.Content != "●●●":
             return self.recordKey.Content
 
     @active_key.setter
