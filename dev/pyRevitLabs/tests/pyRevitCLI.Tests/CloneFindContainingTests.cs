@@ -62,6 +62,23 @@ public class CloneFindContainingTests : IDisposable {
         var clone = PyRevitClones.FindContaining(runnerPath);
 
         Assert.True(clone.ClonePath.IsSamePathAs(nestedClonePath));
+        Assert.Equal("inner", clone.Name);
+    }
+
+    /// <summary>
+    ///     Looking up the clone of a runner never rewrites the stored clones list, even when it holds a stale entry.
+    /// </summary>
+    [Fact]
+    public void FindContaining_StaleRegistration_DoesNotPruneTheStoredList() {
+        var staleClonePath = Path.Combine(temp, "gone");
+        PyRevitConfigs.GetConfigFile().SaveSection(new EnvironmentSection {
+            Clones = new Dictionary<string, string> { { "outer", outerClonePath }, { "stale", staleClonePath } }
+        });
+        var runnerPath = Path.Combine(outerClonePath, "bin", "engines", "IPY342", "pyRevitRunner.dll");
+
+        PyRevitClones.FindContaining(runnerPath);
+
+        Assert.True(PyRevitConfigs.GetConfigFile().Environment.Clones.ContainsKey("stale"));
     }
 
     /// <summary>

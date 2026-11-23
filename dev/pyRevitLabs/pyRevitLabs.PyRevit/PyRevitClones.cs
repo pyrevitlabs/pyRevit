@@ -110,7 +110,8 @@ namespace pyRevitLabs.PyRevit {
             var registeredClones = GetRegisteredClones(pruneStoredList: false);
             try {
                 var nearest = new PyRevitClone(Path.GetDirectoryName(path));
-                return registeredClones.FirstOrDefault(clone => clone.Equals(nearest)) ?? nearest;
+                return registeredClones.FirstOrDefault(clone => clone.Equals(nearest))
+                    ?? new PyRevitClone(nearest.ClonePath, name: new DirectoryInfo(nearest.ClonePath).Name);
             }
             catch (PyRevitException) {
                 return registeredClones.FirstOrDefault(clone => path.IsPathWithin(clone.ClonePath));
