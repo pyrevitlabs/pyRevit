@@ -66,6 +66,20 @@ public class CloneFindContainingTests : IDisposable {
     }
 
     /// <summary>
+    ///     A runner in a clone whose folder name is reserved still belongs to that clone, not to the registered clone around it.
+    /// </summary>
+    [Fact]
+    public void FindContaining_RunnerInNestedCloneWithReservedFolderName_ReturnsTheNestedClone() {
+        var reservedClonePath = Path.Combine(outerClonePath, "worktrees", "docs");
+        Directory.CreateDirectory(Path.Combine(reservedClonePath, "pyrevitlib", "pyrevit"));
+        var runnerPath = Path.Combine(reservedClonePath, "bin", "engines", "IPY342", "pyRevitRunner.dll");
+
+        var clone = PyRevitClones.FindContaining(runnerPath);
+
+        Assert.True(clone.ClonePath.IsSamePathAs(reservedClonePath));
+    }
+
+    /// <summary>
     ///     Looking up the clone of a runner never rewrites the stored clones list, even when it holds a stale entry.
     /// </summary>
     [Fact]
