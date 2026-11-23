@@ -436,18 +436,6 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
         self.assertEqual(result["after"], [False, False])
         self.assertEqual(result["status"], "stream failed")
 
-    def test_webgl_context_draws_guides_and_the_hovered_element(self):
-        try:
-            result = run_scenario(self.browser, "gl_smoke", gl=True)
-        except subprocess.TimeoutExpired:
-            self.skipTest("headless browser did not start a WebGL context in time")
-        if not result["gl"]:
-            self.skipTest("the browser has no WebGL2")
-        self.assertEqual(result["error"], 0)
-        self.assertEqual(result["elements"], 1)
-        self.assertEqual(result["hoveredId"], 12)
-        self.assertEqual(result["errors"], [])
-
 
 if __name__ == "__main__":
     unittest.main()

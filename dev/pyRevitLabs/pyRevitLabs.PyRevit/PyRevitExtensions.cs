@@ -590,6 +590,27 @@ namespace pyRevitLabs.PyRevit {
                 _logger.Debug("Extension lookup source already exists. Skipping registration.");
         }
 
+        /// <summary>
+        /// Reads an extension lookup source the way a search does and fails when it cannot be used.
+        /// </summary>
+        /// <param name="extLookupSource">Path or url of an extension definition json.</param>
+        /// <exception cref="PyRevitException">
+        /// The source is not a valid file or url, cannot be downloaded or read, is not valid json,
+        /// or holds no <c>extensions</c> list.
+        /// </exception>
+        public static void VerifyExtensionLookupSource(string extLookupSource) {
+            try {
+                LookupExtensionInDefinitionFile(extLookupSource.NormalizeAsPath());
+            }
+            catch (PyRevitException) {
+                throw;
+            }
+            catch (Exception ex) {
+                _logger.Debug(ex, "Extension lookup source \"{0}\" can not be read as an extension list", extLookupSource);
+                throw new PyRevitException(string.Format("Source \"{0}\" holds no list of extensions.", extLookupSource));
+            }
+        }
+
         // unregister extension lookup source
         // @handled @logs
         public static void UnregisterExtensionLookupSource(string extLookupSource) {
