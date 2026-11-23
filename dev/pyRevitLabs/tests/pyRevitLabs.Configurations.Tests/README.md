@@ -2,7 +2,7 @@
 
 Owner: the owning module maintainers; the change author owns unassigned fixes and quarantines until reassigned. Quarantines require an issue and review within 14 days.
 
-Frameworks: `net8.0`.
+Frameworks: `net48`, `net8.0`, `net8.0-windows`.
 
 Fixtures and helpers are owned by this suite. Temporary configuration and output must be cleaned up after each test.
 

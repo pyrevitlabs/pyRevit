@@ -126,13 +126,20 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
-        /// <summary>
-        /// The registered clones that pass validation.
-        /// </summary>
-        /// <param name="pruneStoredList">When true, a stored clones list holding invalid or duplicate
-        /// entries is rewritten without them. Pass false from lookups that must never write the config.</param>
+        // return list of registered clones
         // @handled @logs
-        public static List<PyRevitClone> GetRegisteredClones(bool pruneStoredList = true) {
+        public static List<PyRevitClone> GetRegisteredClones() {
+            return GetRegisteredClones(pruneStoredList: true);
+        }
+
+        /// <summary>
+        /// Returns the registered clones that pass verification.
+        /// </summary>
+        /// <param name="pruneStoredList">
+        /// When false, registrations that fail verification are skipped but stay in the config, so a
+        /// clone on an unavailable drive is not unregistered by a caller that only needs to read.
+        /// </param>
+        public static List<PyRevitClone> GetRegisteredClones(bool pruneStoredList) {
             // safely get clone list
             var cfg = PyRevitConfigs.GetConfigFile();
             var clonesDict = MergeMachineRegisteredClones(cfg, cfg.Environment.Clones);
