@@ -308,7 +308,8 @@ namespace pyRevitLabs.Common {
         public static string GetRemoteUrl(string repoPath, string remoteName) {
             if (IsValidRepo(repoPath)) {
                 try {
-                    return new Repository(repoPath).Network.Remotes[remoteName].Url;
+                    using (var repo = new Repository(repoPath))
+                        return repo.Network.Remotes[remoteName].Url;
                 }
                 catch (Exception ex) {
                     logger.Debug("Can not determine remote \"{0}\" url for \"{1}\"", remoteName, repoPath);
