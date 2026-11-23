@@ -70,6 +70,7 @@ if (modes.Packages)
     builder.Services.AddModule<RestoreStampedMetadataModule>();
     builder.Services.AddModule<BuildInstallersModule>();
     builder.Services.AddModule<BuildChocoModule>();
+    builder.Services.AddModule<StageStandaloneDoctorModule>();
 }
 
 if (modes.Sign || modes.Publish)
@@ -98,12 +99,16 @@ if (modes.Publish)
 {
     builder.Services.AddModule<GenerateReleaseNotesModule>();
     builder.Services.AddModule<PublishGithubReleaseModule>();
-    builder.Services.AddModule<PublishChocoModule>();
 }
 
 if (modes.Winget)
 {
     builder.Services.AddModule<PublishWingetModule>();
+}
+
+if (modes.Choco)
+{
+    builder.Services.AddModule<PublishChocoModule>();
 }
 
 if (modes.Notify)

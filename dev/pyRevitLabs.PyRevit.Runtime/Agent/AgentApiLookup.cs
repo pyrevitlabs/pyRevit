@@ -23,6 +23,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxMatches = 40;
         private const int MaxEnumValues = 600;
         private const int MaxSuggestions = 10;
+        private const int MaxQueryChars = 256;
 
         private static readonly Lazy<Type[]> PublicTypes = new Lazy<Type[]>(LoadPublicTypes);
 
@@ -34,6 +35,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (string.IsNullOrWhiteSpace(query))
                 throw new AgentException("invalid_params", "'name' is required.");
             query = query.Trim();
+            if (query.Length > MaxQueryChars)
+                throw new AgentException("invalid_params", $"'name' must be at most {MaxQueryChars} characters.");
 
             var types = FindTypes(query);
             string memberName = null;

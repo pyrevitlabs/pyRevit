@@ -1599,7 +1599,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void OpenButton_Click(object sender, RoutedEventArgs e) {
             try {
-                var uri = new Uri(SaveContentsToTemp()).AbsoluteUri;
+                var uri = new Uri(SaveContentsToTemp()).ToString();
                 var processInfo = new ProcessStartInfo() {
                     FileName = uri,
                     UseShellExecute = true

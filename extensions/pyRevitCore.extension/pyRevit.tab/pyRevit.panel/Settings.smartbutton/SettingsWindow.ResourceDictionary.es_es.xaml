@@ -261,6 +261,9 @@
     <system:String x:Key="UI-UX.SelectLanguage">Seleccionar Idioma de UI:</system:String>
     <system:String x:Key="UI-UX.RegionSettingsLink">Ayudar a Traducir pyRevit</system:String>
 
+    <system:String x:Key="UI-UX.Ribbon">Cinta</system:String>
+    <system:String x:Key="UI-UX.ShowTabIcons">Mostrar iconos en las pestañas de la cinta de pyRevit</system:String>
+
     <system:String x:Key="UI-UX.TabColoring">Coloración de Pestañas</system:String>
     <system:String x:Key="UI-UX.ColoringStyle">Estilo de Coloración</system:String>
     <system:String x:Key="UI-UX.ColorizeOpenDocuments">Colorizar Documentos Abiertos</system:String>

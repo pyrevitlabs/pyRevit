@@ -128,6 +128,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void AppendLog(string outputText) {
+            Agent.AgentRecorder.RecordOutput(outputText);
             var logFilePath = GetLogFilePath();
             if (string.IsNullOrEmpty(logFilePath))
                 return;
@@ -820,6 +821,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
             finally {
                 _flushingOnThread = false;
             }
+        }
+
+        /// <summary>
+        /// Flushes output through the lowercase file-object API expected by Python code.
+        /// </summary>
+        public void flush() {
+            Flush();
         }
 
         public override long Seek(long offset, SeekOrigin origin) {

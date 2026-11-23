@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>disable</Nullable>
+
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+
+        <PermitDeploy>true</PermitDeploy>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+        <PackageReference Include="xunit" Version="2.5.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="..\..\pyRevitDoctor\ProductCatalog.cs" Link="Sources\ProductCatalog.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\UninstallEntryMatcher.cs" Link="Sources\UninstallEntryMatcher.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\PurgeTargets.cs" Link="Sources\PurgeTargets.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\PurgeSession.cs" Link="Sources\PurgeSession.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\PurgeFiles.cs" Link="Sources\PurgeFiles.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\RegistryAccess.cs" Link="Sources\RegistryAccess.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\WrappedHelp.cs" Link="Sources\WrappedHelp.cs"/>
+        <Compile Include="..\..\pyRevitDoctor\DoctorArguments.cs" Link="Sources\DoctorArguments.cs"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\..\..\..\release\pyrevit-products.json" Link="Fixtures\pyrevit-products.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+</Project>

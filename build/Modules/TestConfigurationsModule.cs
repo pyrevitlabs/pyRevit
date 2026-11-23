@@ -13,9 +13,16 @@ namespace Build.Modules;
 [DependsOn<BuildShellModule>]
 /// <summary>
 /// Runs configuration backend, CPython interpreter lifecycle, CPython env vars and event handler,
-/// agent runtime guard, renderer load-context, and compatibility tests after their build outputs
-/// are available.
+/// agent runtime guard, doctor product catalog, renderer load-context, <c>pyrevit.forms</c> engine
+/// parity, and compatibility tests after their build outputs are available, plus the Python 3
+/// compatibility checker's own unit tests.
 /// </summary>
+/// <remarks>
+/// The checker tests need Python 3.10 or newer on <c>PATH</c> as <c>python</c>, <c>python3</c> or
+/// <c>py</c>, found by <see cref="ToolResolutionHelper.ResolvePythonExecutable"/>. The forms and shell tests open real
+/// WPF windows, so the runner must have a desktop session; the windows are placed off-screen and
+/// without activation by <c>OffscreenWindows</c>.
+/// </remarks>
 public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions) : Module
 {
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
@@ -66,10 +73,39 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
 
         await RunTestsAsync(
             context,
+            PyRevitPaths.DoctorTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        await RunTestsAsync(
+            context,
             PyRevitPaths.RendererTestProject,
             configuration,
             [],
             cancellationToken);
+
+        await RunTestsAsync(
+            context,
+            PyRevitPaths.FormsBindingTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        await RunTestsAsync(
+            context,
+            PyRevitPaths.FormsTestProject,
+            configuration,
+            [],
+            cancellationToken);
+
+        foreach (var engine in new[] { "IPY2712PR", "IPY342" })
+            await RunTestsAsync(
+                context,
+                PyRevitPaths.FormsIronPythonTestProject,
+                configuration,
+                [$"-p:IronPythonVersion={engine}"],
+                cancellationToken);
 
         foreach (var engine in new[] { "IPY2712PR", "IPY342" })
             await RunTestsAsync(
@@ -92,7 +128,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                     "-f",
                     framework,
                     "--filter",
-                    "FullyQualifiedName~PyRevitConfigsSeedTests|FullyQualifiedName~RevitProductDataTests|FullyQualifiedName~SharedHostVersionTests|FullyQualifiedName~BelowMinimumProductReportingTests|FullyQualifiedName~AttachableProductTests|FullyQualifiedName~AttachableProductFilterTests|FullyQualifiedName~PyRevitBuildVersionTests|FullyQualifiedName~DeployedVersionTests|FullyQualifiedName~SystemPathTests|FullyQualifiedName~PyRevitInstallScopeTests",
+                    "FullyQualifiedName~PyRevitConfigsSeedTests|FullyQualifiedName~RevitProductDataTests|FullyQualifiedName~SharedHostVersionTests|FullyQualifiedName~BelowMinimumProductReportingTests|FullyQualifiedName~AttachableProductTests|FullyQualifiedName~AttachableProductFilterTests|FullyQualifiedName~PyRevitBuildVersionTests|FullyQualifiedName~DeployedVersionTests|FullyQualifiedName~SystemPathTests|FullyQualifiedName~PyRevitInstallScopeTests|FullyQualifiedName~PyRevitRunnerCommandTests|FullyQualifiedName~PyRevitCloneIdentityTests|FullyQualifiedName~PathComparisonTests|FullyQualifiedName~PyRevitReleaseAssetsTests|FullyQualifiedName~GithubReleasesResponseTests|FullyQualifiedName~PyRevitInstallTransactionTests|FullyQualifiedName~RevitModelFileVersionTests|FullyQualifiedName~UrlCredentialRedactionTests",
                 ],
                 cancellationToken);
 
@@ -105,9 +141,28 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                 "-f",
                 "net8.0-windows",
                 "--filter",
-                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests|FullyQualifiedName~DevToolsPanelButtonTests.TestPanelButtonWithBundle|FullyQualifiedName~DevToolsPanelButtonTests.TestBundleTestsPulldownFromDevToolsExtension|FullyQualifiedName~DynamoGraphSelectionTests",
+                "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests|FullyQualifiedName~EmojisTests|FullyQualifiedName~ScriptEngineManagerTests|FullyQualifiedName~ScriptOutputUiGateTests|FullyQualifiedName~RevitThemeDetectorTests|FullyQualifiedName~EnvDictionaryTests|FullyQualifiedName~DevToolsPanelButtonTests.TestPanelButtonWithBundle|FullyQualifiedName~DevToolsPanelButtonTests.TestBundleTestsPulldownFromDevToolsExtension|FullyQualifiedName~DynamoGraphSelectionTests|FullyQualifiedName~ParsedExtensionHashTests|FullyQualifiedName~ExtensionAuthUsersTests|FullyQualifiedName~ScriptMetadataParsingTest|FullyQualifiedName~ScriptLoggerServiceTests|FullyQualifiedName~MachineConfigIsolationTests|TestCategory=HostFree",
             ],
             cancellationToken);
+
+        await RunPythonTestsAsync(context, "test_check_*.py", cancellationToken);
+    }
+
+    private static async Task RunPythonTestsAsync(
+        IModuleContext context,
+        string pattern,
+        CancellationToken cancellationToken)
+    {
+        await context.Shell.Command.ExecuteCommandLineTool(
+            new GenericCommandLineToolOptions(ToolResolutionHelper.ResolvePythonExecutable())
+            {
+                Arguments = ["-m", "unittest", "discover", "-s", Path.Combine("dev", "scripts"), "-p", pattern],
+            },
+            new CommandExecutionOptions
+            {
+                WorkingDirectory = PyRevitPaths.Root,
+            },
+            cancellationToken: cancellationToken);
     }
 
     private static async Task RunTestsAsync(

@@ -11,7 +11,6 @@ using DotNetVersionFinder;
 using System.Security.AccessControl;
 
 namespace pyRevitLabs.Common {
-    // https://code.msdn.microsoft.com/windowsapps/How-to-determine-the-263b1850
     public class OSVersionInfo {
 
         public string FullName {

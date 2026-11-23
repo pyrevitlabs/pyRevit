@@ -29,6 +29,8 @@
     <Compile Include="TestHelpers\MachineConfigIsolation.cs" />
     <Compile Include="MachineConfigIsolationTests.cs" />
     <Compile Include="MockLogger.cs" />
+    <Compile Include="ExecutorFailureTests.cs" />
+    <Compile Include="CPythonScriptDetectorTests.cs" />
     <Compile Include="DarkIconTests.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="LocalizationTests.cs" />
@@ -44,6 +46,8 @@
     <Compile Include="ParsedBundleTests.cs" />
     <Compile Include="ParsedComponentTests.cs" />
     <Compile Include="ParserBasicTests.cs" />
+    <Compile Include="ParsedExtensionHashTests.cs" />
+    <Compile Include="ScriptMetadataIssue4046Tests.cs" />
     <Compile Include="ParserErrorHandlingTests.cs" />
     <Compile Include="DiagnosticTests.cs" />
     <Compile Include="QuotedValueTests.cs" />
@@ -51,6 +55,10 @@
     <Compile Include="FullIntegrationQuoteTest.cs" />
     <Compile Include="StartupScriptTests.cs" />
     <Compile Include="SeparatorTests.cs" />
+    <Compile Include="ExtensionAssemblyNameTests.cs" />
+    <Compile Include="LinkAssemblyPathResolverTests.cs" />
+    <Compile Include="AvailabilityBindingTests.cs" />
+    <Compile Include="LayoutMarkerPlacementTests.cs" />
     <Compile Include="DebugPanelCustomTitleTest.cs" />
     <Compile Include="CSharpScriptTests.cs" />
     <Compile Include="DynamoScriptTests.cs" />
@@ -63,6 +71,12 @@
     <Compile Include="SessionManagerReflectionCompatibilityTests.cs" />
     <Compile Include="PythonScriptMultiLangTest.cs" />
     <Compile Include="ComboBoxTests.cs" />
+    <Compile Include="CheckBoxTests.cs" />
+    <Compile Include="CheckBoxControlIdsTests.cs" />
+    <Compile Include="CheckBoxBuilderAdWindowsTests.cs" />
+    <Compile Include="TestHelpers\InstalledAdWindows.cs" />
+    <Compile Include="StackItemSplitTests.cs" />
+    <Compile Include="RibbonScannerTests.cs" />
     <Compile Include="SmartButtonTests.cs" />
     <Compile Include="StackBuilderTests.cs" />
     <Compile Include="TemplateInheritanceTests.cs" />
@@ -78,6 +92,7 @@
     <Compile Include="PyRevitRootResolutionTests.cs" />
     <Compile Include="ScriptIoReadlineTests.cs" />
     <Compile Include="CommandSearchPathsTests.cs" />
+    <Compile Include="CommandAncestorFoldersTests.cs" />
     <Compile Include="SearchPathsTests.cs" />
     <Compile Include="EnginePortableRequestsImportTests.cs" />
     <Compile Include="ScriptLoggerServiceTests.cs" />
@@ -91,6 +106,13 @@
     <Compile Include="LoadTimelineTests.cs" />
     <Compile Include="EnvDictionaryTests.cs" />
     <Compile Include="ScriptEngineManagerTests.cs" />
+    <Compile Include="ScriptRequestTests.cs" />
+    <Compile Include="SessionResourceRegistryTests.cs" />
+    <Compile Include="BundleModuleIsolationTests.cs" />
+    <Compile Include="CheckBoxHandlerRegistryTests.cs" />
+    <Compile Include="IronPythonRuleCachesTests.cs" />
+    <Compile Include="..\Source\SessionResourceRegistry.cs" Link="Source\SessionResourceRegistry.cs" />
+    <Compile Include="..\Source\CheckBoxHandlerRegistry.cs" Link="Source\CheckBoxHandlerRegistry.cs" />
     <Compile Include="ScriptBuiltinsTests.cs" />
   </ItemGroup>
 
@@ -151,5 +173,11 @@
     <Using Include="NUnit.Framework" />
     <Using Include="NUnit.Framework.Legacy" />
   </ItemGroup>
+
+  <Target Name="RemoveDocoptSourceGenerator" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'DocoptNet'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

@@ -46,8 +46,41 @@ LEGACY_SHORT_CODES = {
     "view_template": "Viewtemplate",
     "view_specific": "View-specific",
     "view_discipline": "Discipline",
+    "view_type": "View type",
+    "detail_level": "Detail level",
     "unknown": "Hidden unknown",
 }
+
+_NON_MODEL_VIEW_TYPES = frozenset(
+    getattr(DB.ViewType, name)
+    for name in (
+        "DraftingView",
+        "Legend",
+        "Schedule",
+        "ColumnSchedule",
+        "PanelSchedule",
+        "DrawingSheet",
+        "Report",
+        "CostReport",
+        "LoadsReport",
+        "PresureLossReport",
+        "ProjectBrowser",
+        "SystemBrowser",
+    )
+    if hasattr(DB.ViewType, name)
+)
+
+NOT_IN_3D_CATEGORIES = (
+    DB.BuiltInCategory.OST_Rooms,
+    DB.BuiltInCategory.OST_Areas,
+    DB.BuiltInCategory.OST_MEPSpaces,
+)
+
+DETAIL_LEVELS = (
+    DB.ViewDetailLevel.Coarse,
+    DB.ViewDetailLevel.Medium,
+    DB.ViewDetailLevel.Fine,
+)
 
 
 def t(key, default=None):
@@ -998,6 +1031,150 @@ def _check_view_discipline(ctx):
     return []
 
 
+def detail_level_label(level):
+    """Return the localized name of a ``DB.ViewDetailLevel``."""
+    return t("detail_level_" + str(level).lower(), str(level))
+
+
+def _has_drawable_geometry(geometry):
+    pending = [geometry]
+    while pending:
+        for item in pending.pop():
+            if isinstance(item, DB.GeometryInstance):
+                pending.append(item.GetInstanceGeometry())
+            elif isinstance(item, DB.GeometryElement):
+                pending.append(item)
+            elif isinstance(item, DB.Solid):
+                if item.Faces.Size > 0:
+                    return True
+            elif isinstance(item, (DB.Curve, DB.Mesh, DB.PolyLine)):
+                return True
+    return False
+
+
+def _draws_at_detail_level(element, level):
+    options = DB.Options()
+    options.DetailLevel = level
+    geometry = element.get_Geometry(options)
+    return geometry is not None and _has_drawable_geometry(geometry)
+
+
+def _draws_in_view(element, view):
+    options = DB.Options()
+    options.View = view
+    geometry = element.get_Geometry(options)
+    return geometry is not None and _has_drawable_geometry(geometry)
+
+
+def target_detail_level(levels, current):
+    """Pick the level to switch to: the finest finer one, else the nearest coarser."""
+    ranked = sorted(levels, key=DETAIL_LEVELS.index)
+    finer = [
+        level
+        for level in ranked
+        if DETAIL_LEVELS.index(level) > DETAIL_LEVELS.index(current)
+    ]
+    return finer[-1] if finer else ranked[-1]
+
+
+def _view_type_label(view):
+    type_element = view.Document.GetElement(view.GetTypeId())
+    return getattr(type_element, "FamilyName", None) or str(view.ViewType)
+
+
+def _check_view_type(ctx):
+    """Element of a kind the view type can never show.
+
+    Drafting views, legends, schedules and sheets hold only view-specific
+    content, so a model element is impossible there whatever its settings.
+    Rooms, areas and spaces are never drawn in 3D views.
+    """
+    view = ctx.view
+    try:
+        category = ctx.element.Category
+        if category is None or ctx.is_view_specific:
+            return []
+        if (
+            view.ViewType in _NON_MODEL_VIEW_TYPES
+            and category.CategoryType == DB.CategoryType.Model
+        ):
+            return [
+                Finding(
+                    "view_type",
+                    t(
+                        "reason_model_in_flat_view",
+                        "'{}' is a model element, and views of type '{}' cannot"
+                        " show model elements. They only hold view-specific"
+                        " detail and annotation content.",
+                    ).format(category.Name, _view_type_label(view)),
+                )
+            ]
+        if view.ViewType == DB.ViewType.ThreeD and any(
+            category.Id == DB.ElementId(builtin) for builtin in NOT_IN_3D_CATEGORIES
+        ):
+            return [
+                Finding(
+                    "view_type",
+                    t(
+                        "reason_not_in_3d",
+                        "Category '{}' is never displayed in 3D views",
+                    ).format(category.Name),
+                )
+            ]
+    except Exception:
+        pass
+    return []
+
+
+def _check_detail_level(ctx):
+    """Element that has no geometry at the view's detail level.
+
+    Families switch geometry per detail level, so a view at Coarse can show
+    nothing of an element that appears at Medium or Fine. An element that
+    still draws in the view, such as a duct reduced to a single line, is not
+    reported.
+
+    Note:
+        Element collectors still report such elements, so this check also
+        runs for elements the collector reported as visible.
+    """
+    try:
+        view_level = ctx.view.DetailLevel
+        if view_level not in DETAIL_LEVELS or ctx.is_view_specific:
+            return []
+        if _draws_at_detail_level(ctx.element, view_level) or _draws_in_view(
+            ctx.element, ctx.view
+        ):
+            return []
+        shown_at = [
+            level
+            for level in DETAIL_LEVELS
+            if level != view_level and _draws_at_detail_level(ctx.element, level)
+        ]
+        if not shown_at:
+            return []
+        return [
+            Finding(
+                "detail_level",
+                t(
+                    "reason_detail_level",
+                    "Element has no geometry at this view's detail level ({0});"
+                    " it appears at {1}",
+                ).format(
+                    detail_level_label(view_level),
+                    ", ".join(detail_level_label(level) for level in shown_at),
+                ),
+                fix={
+                    "action": "set_detail_level",
+                    "level": str(target_detail_level(shown_at, view_level)),
+                    "shown": [str(level) for level in shown_at],
+                },
+            )
+        ]
+    except Exception:
+        return []
+
+
 _SETTING_CHECKS = (
     _check_workset,
     _check_phase,
@@ -1036,17 +1213,25 @@ def diagnose(element, view, visible_ids=None):
         specific cause could be pinned down.
 
     Note:
+        An element a view type can never show (a model element in a drafting
+        view) is reported alone, before any other check.
+
         When the view's collector reports the element, only the checks the
-        collector is blind to run: crop and cut-plane clipping, and confirmed
-        hidden subcategories. Any such finding overrides the collector.
+        collector is blind to run: crop and cut-plane clipping, detail
+        level, and confirmed hidden subcategories. Any such finding
+        overrides the collector.
     """
     ctx = _CheckContext(element, view)
+    impossible = _check_view_type(ctx)
+    if impossible:
+        return impossible
     if visible_ids is None:
         visible_ids = collect_visible_ids(view)
 
     clip_findings = []
     for check in _CLIP_CHECKS:
         clip_findings.extend(check(ctx))
+    clip_findings.extend(_check_detail_level(ctx))
 
     if ctx.element_id in visible_ids:
         blind_findings = clip_findings + _check_drawn_subcategories(ctx)
@@ -1069,8 +1254,8 @@ def diagnose(element, view, visible_ids=None):
                     "reason_unknown",
                     "Element is not visible but no specific cause could be"
                     " determined. Possible causes: view-specific element type"
-                    " (e.g. annotation from another view), linked model"
-                    " visibility, or detail level.",
+                    " (e.g. annotation from another view) or linked model"
+                    " visibility.",
                 ),
             )
         )

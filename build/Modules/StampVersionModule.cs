@@ -23,10 +23,14 @@ public sealed class StampVersionModule(IOptions<BuildOptions> buildOptions) : Mo
         VersionHelper.ReplaceVersionInFiles(PyRevitPaths.VersionFiles, versionInfo.BuildVersion);
         File.WriteAllText(PyRevitPaths.InstallVersionFile, versionInfo.InstallVersion);
         VersionHelper.ReplaceVersionInFiles(PyRevitPaths.InstallerScripts, versionInfo.InstallVersion);
-        XmlHelper.SetChocoVersion(
-            PyRevitPaths.PyRevitChocoNuspec,
-            versionInfo.InstallVersion,
-            VersionHelper.GetReleaseTagUrl(versionInfo.BuildVersionUrlSafe));
+        foreach (var package in PyRevitPaths.ChocoPackages)
+        {
+            XmlHelper.SetChocoVersion(
+                package.Nuspec,
+                versionInfo.InstallVersion,
+                VersionHelper.GetReleaseTagUrl(versionInfo.BuildVersionUrlSafe));
+        }
+
         XmlHelper.SetMsiVersion(PyRevitPaths.PyRevitCommonMsiProps, versionInfo.InstallVersion);
 
         return versionInfo;

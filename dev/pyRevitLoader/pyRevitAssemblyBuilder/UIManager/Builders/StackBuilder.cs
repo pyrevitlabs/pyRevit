@@ -67,6 +67,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             var children = new List<ParsedComponent>();
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
+                if (child.Type == CommandComponentType.CheckBox)
+                    continue;
+
                 if (ComponentSupportUtils.IsStackChildVisible(
                         child,
                         settings.CurrentVersion,
@@ -388,9 +391,10 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 button.AssemblyName = assemblyInfo.Location;
                 button.ClassName = className;
 
-                if (!string.IsNullOrEmpty(component.Context))
+                var availabilityClassName = AvailabilityBinding.ForContext(className, component.Context);
+                if (availabilityClassName != null)
                 {
-                    button.AvailabilityClassName = className + "_avail";
+                    button.AvailabilityClassName = availabilityClassName;
                 }
             }
             catch (Exception ex)

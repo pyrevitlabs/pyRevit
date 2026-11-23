@@ -6,7 +6,13 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.revit.db import failure
 
 
-__all__ = ("carryout", "Transaction", "DryTransaction", "TransactionGroup")
+__all__ = (
+    "carryout",
+    "Transaction",
+    "DryTransaction",
+    "TransactionGroup",
+    "DryTransactionGroup",
+)
 
 
 # pylint: disable=W0703,C0302,C0103
@@ -32,6 +38,11 @@ class Transaction:
             assert action.status == ActionStatus.Started  # True
             assert action.status == ActionStatus.Committed    # True
         ```
+
+    Note:
+        `failures_preprocessor` takes any `DB.IFailuresPreprocessor` and wins
+        over `swallow_errors`. Both are ignored when the transaction runs as a
+        `SubTransaction` inside an already open transaction.
     """
 
     def __init__(
@@ -43,6 +54,7 @@ class Transaction:
         swallow_errors=False,
         log_errors=True,
         nested=False,
+        failures_preprocessor=None,
     ):
         doc = doc or DOCS.doc
         # create nested transaction if one is already open
@@ -59,9 +71,11 @@ class Transaction:
             self._fhndlr_ops = self._fhndlr_ops.SetForcedModalHandling(
                 show_error_dialog
             )
-            if swallow_errors:
+            if not failures_preprocessor and swallow_errors:
+                failures_preprocessor = failure.FailureSwallower()
+            if failures_preprocessor:
                 self._fhndlr_ops = self._fhndlr_ops.SetFailuresPreprocessor(
-                    failure.FailureSwallower()
+                    failures_preprocessor
                 )
             self._rvtxn.SetFailureHandlingOptions(self._fhndlr_ops)
         self._logerror = log_errors
@@ -175,6 +189,23 @@ class TransactionGroup:
 
     def has_ended(self):
         return self._rvtxn_grp.HasEnded()
+
+
+class DryTransactionGroup(TransactionGroup):
+    """Transaction group that always rolls back, even when its body succeeds.
+
+    Transactions inside it commit normally, so `DocumentChanged` fires and
+    their effects can be inspected, then the whole group is discarded.
+
+    Invariant:
+        The document is left exactly as it was before the group started.
+    """
+
+    def __exit__(self, exception, exception_value, traceback):
+        try:
+            self._rvtxn_grp.RollBack()
+        finally:
+            self._rvtxn_grp.Dispose()
 
 
 def carryout(name, doc=None):

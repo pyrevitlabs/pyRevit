@@ -44,11 +44,10 @@ namespace pyRevitCLI {
 
         internal static void
         KillAllRevits(string revitYear) {
-            int revitYearNumber = 0;
-            if (int.TryParse(revitYear, out revitYearNumber))
-                RevitController.KillRunningRevits(revitYearNumber);
-            else
+            if (revitYear is null)
                 RevitController.KillAllRunningRevits();
+            else
+                RevitController.KillRunningRevits(PyRevitCLIArguments.RevitYear(revitYear));
         }
 
         internal static void
@@ -248,10 +247,15 @@ namespace pyRevitCLI {
                                 try {
                                     var cmdScript = ext.GetCommand(commandName);
                                     if (cmdScript != null) {
-                                        logger.Debug("Run command matching \"{0}\" found: \"{1}\"",
-                                                        commandName, cmdScript);
-                                        commandScriptPath = cmdScript.Path;
-                                        break;
+                                        if (commandScriptPath is null) {
+                                            logger.Debug("Run command matching \"{0}\" found: \"{1}\"",
+                                                            commandName, cmdScript);
+                                            commandScriptPath = cmdScript.Path;
+                                        }
+                                        else
+                                            System.Console.Error.WriteLine(
+                                                "Warning: run command \"{0}\" is also defined in \"{1}\" and is shadowed by \"{2}\"",
+                                                commandName, cmdScript.Path, commandScriptPath);
                                     }
                                 }
                                 catch {
@@ -308,6 +312,85 @@ namespace pyRevitCLI {
                 }
             }
 
+        }
+
+        /// <summary>
+        /// Starts Revit on a clone and engine through a per-launch manifest and blocks until that
+        /// Revit exits, then removes the launch directory. The shared per-year attachment is not read or written.
+        /// </summary>
+        internal static void
+        LaunchClone(string cloneNameOrPath, bool useDefaultEngine, string engineVersion, string revitYear, string model, bool isolated, string language) {
+            var languageCode = PyRevitLauncher.ParseLanguage(language);
+            var modelPath = PyRevitLauncher.ParseModel(model);
+            if (!int.TryParse(revitYear, out var revitYearNumber))
+                throw new PyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
+
+            var clone = ResolveLaunchClone(cloneNameOrPath);
+            PyRevitEngineVersion engineVer;
+            if (useDefaultEngine)
+                engineVer = PyRevitEngineVersion.Default;
+            else if (int.TryParse(engineVersion, out var engineNumber))
+                engineVer = (PyRevitEngineVersion)engineNumber;
+            else
+                engineVer = clone.GetConfiguredEngine(engineVersion).Version;
+
+            var launch = PyRevitLauncher.Prepare(clone, engineVer, revitYearNumber, isolated, modelPath);
+            Process process = null;
+            try {
+                process = PyRevitLauncher.Start(launch, languageCode);
+                PrintLaunch(launch, process);
+                process.WaitForExit();
+            }
+            finally {
+                if (process == null || process.HasExited)
+                    PyRevitLauncher.Cleanup(launch);
+            }
+        }
+
+        private static void PrintLaunch(PyRevitLaunch launch, Process process) {
+            try {
+                PyRevitCLIAppCmds.PrintHeader("Launched Revit");
+                Console.WriteLine(string.Format("Process Id: {0}", process.Id));
+                Console.WriteLine(string.Format("Product: {0}", launch.Product));
+                Console.WriteLine(string.Format("Clone: {0}", launch.Clone));
+                Console.WriteLine(string.Format("Engine: {0} ({1})", launch.Engine.Id, launch.Engine.Version));
+                Console.WriteLine(string.Format("Launch Directory: \"{0}\"", launch.Directory));
+                Console.WriteLine(string.Format("Config Root: \"{0}\"", launch.ConfigRoot ?? PyRevitLabsConsts.PyRevitPath));
+                if (launch.AgentEnabled.HasValue)
+                    Console.WriteLine(DescribeAgentHost(launch));
+            }
+            catch (IOException exception) {
+                logger.Debug("Can not print the launch summary | {0}", exception.Message);
+            }
+        }
+
+        private static string DescribeAgentHost(PyRevitLaunch launch) {
+            if (launch.AgentEnabled == true)
+                return "Agent Host: enabled";
+            var seeded = string.Equals(
+                Path.GetDirectoryName(launch.AgentConfigFile),
+                launch.ConfigRoot,
+                StringComparison.OrdinalIgnoreCase);
+            var remedy = seeded
+                ? "Set [agent] enabled = true in the config it was seeded from to turn it on."
+                : string.Format("The machine config \"{0}\" applies instead of the seeded one; set [agent] enabled = true there.", launch.AgentConfigFile);
+            return "Agent Host: disabled in this session's config, so it will not register for MCP. " + remedy;
+        }
+
+        private static PyRevitClone ResolveLaunchClone(string cloneNameOrPath) {
+            var registered = PyRevitClones.GetRegisteredClones().FirstOrDefault(clone => clone.Matches(cloneNameOrPath));
+            if (registered != null)
+                return registered;
+            if (Directory.Exists(cloneNameOrPath)) {
+                var clonePath = Path.GetFullPath(cloneNameOrPath);
+                try {
+                    return new PyRevitClone(clonePath, name: new DirectoryInfo(clonePath).Name);
+                }
+                catch (PyRevitException) {
+                    return new PyRevitClone(clonePath);
+                }
+            }
+            throw new PyRevitException(string.Format("Can not find clone \"{0}\"", cloneNameOrPath));
         }
 
         // privates:

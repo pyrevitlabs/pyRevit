@@ -390,6 +390,33 @@ namespace pyRevitLabs.PyRevit {
                 state);
         }
 
+        /// <summary>
+        /// Whether agent runs skip the Python runner's in-script checks: the run timeout, the
+        /// loop and handler rewriting that enforces it, and per-line transaction tracking.
+        /// </summary>
+        /// <remarks>
+        /// Off by default. Approval, rollback, the policy and the host's run guard still apply.
+        /// A value that is not a boolean reads as off.
+        /// </remarks>
+        public static bool GetAgentReckless() {
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentRecklessKey,
+                PyRevitConsts.ConfigsAgentRecklessDefault);
+        }
+
+        /// <summary>
+        /// Turns reckless agent runs on or off; the host reads it at the start of each run.
+        /// </summary>
+        public static void SetAgentReckless(bool state) {
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SetSectionKeyValue(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentRecklessKey,
+                state);
+        }
+
         // telemetry
         public static bool GetTelemetryStatus() {
             IConfigurationService cfg = GetConfigFile();

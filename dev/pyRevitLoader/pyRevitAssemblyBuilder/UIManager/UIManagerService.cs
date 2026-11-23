@@ -25,6 +25,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly IButtonBuilderFactory _buttonBuilderFactory;
         private readonly IStackBuilder _stackBuilder;
         private readonly IComboBoxBuilder _comboBoxBuilder;
+        private readonly ICheckBoxBuilder _checkBoxBuilder;
         private readonly IUIRibbonScanner? _ribbonScanner;
         private readonly UIApplication _uiApp;
         private readonly BuildContext _buildContext;
@@ -87,6 +88,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             IButtonBuilderFactory buttonBuilderFactory,
             IStackBuilder stackBuilder,
             IComboBoxBuilder comboBoxBuilder,
+            ICheckBoxBuilder checkBoxBuilder,
             BuildContext buildContext,
             IUIRibbonScanner? ribbonScanner = null)
         {
@@ -98,6 +100,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             _buttonBuilderFactory = buttonBuilderFactory ?? throw new ArgumentNullException(nameof(buttonBuilderFactory));
             _stackBuilder = stackBuilder ?? throw new ArgumentNullException(nameof(stackBuilder));
             _comboBoxBuilder = comboBoxBuilder ?? throw new ArgumentNullException(nameof(comboBoxBuilder));
+            _checkBoxBuilder = checkBoxBuilder ?? throw new ArgumentNullException(nameof(checkBoxBuilder));
             _buildContext = buildContext ?? throw new ArgumentNullException(nameof(buildContext));
             _ribbonScanner = ribbonScanner;
 
@@ -163,23 +166,31 @@ namespace pyRevitAssemblyBuilder.UIManager
             // The OS file cache is already warm from bundle.yaml parsing in PASS 1.
 
             _currentExtension = extension;
+            _buildContext.CurrentExtension = extension;
 
-            // Clear per-build accumulators on shared collaborators so what we capture below
-            // attributes only to this extension's BuildUI window.
-            _buttonPostProcessor.ResetAndGetStats();
-            _buttonPostProcessor.ResetAndGetAddItemStats();
-            _buttonPostProcessor.IconManager?.ResetAndGetStats();
-
-            foreach (var component in extension.Children)
+            try
             {
-                if (component != null)
-                    RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
-            }
+                // Clear per-build accumulators on shared collaborators so what we capture below
+                // attributes only to this extension's BuildUI window.
+                _buttonPostProcessor.ResetAndGetStats();
+                _buttonPostProcessor.ResetAndGetAddItemStats();
+                _buttonPostProcessor.IconManager?.ResetAndGetStats();
 
-            _postProcessorStats = _buttonPostProcessor.ResetAndGetStats();
-            _addItemStats = _buttonPostProcessor.ResetAndGetAddItemStats();
-            _iconStats = _buttonPostProcessor.IconManager?.ResetAndGetStats() ?? (0, 0, 0L);
-            _currentExtension = null;
+                foreach (var component in extension.Children)
+                {
+                    if (component != null)
+                        RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
+                }
+
+                _postProcessorStats = _buttonPostProcessor.ResetAndGetStats();
+                _addItemStats = _buttonPostProcessor.ResetAndGetAddItemStats();
+                _iconStats = _buttonPostProcessor.IconManager?.ResetAndGetStats() ?? (0, 0, 0L);
+            }
+            finally
+            {
+                _currentExtension = null;
+                _buildContext.CurrentExtension = null;
+            }
         }
 
         /// <summary>
@@ -234,8 +245,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             ParsedComponent? parentComponent,
             RibbonPanel? parentPanel,
             string tabName,
-            ExtensionAssemblyInfo assemblyInfo,
-            string? renamedTabTitle = null)
+            ExtensionAssemblyInfo assemblyInfo)
         {
             if (component == null)
             {
@@ -269,7 +279,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     break;
 
                 case CommandComponentType.Panel:
-                    HandlePanel(component, tabName, assemblyInfo, renamedTabTitle);
+                    HandlePanel(component, tabName, assemblyInfo);
                     break;
 
                 default:
@@ -294,57 +304,43 @@ namespace pyRevitAssemblyBuilder.UIManager
             // script), or null if no rename detected.
             var renamedTabTitle = _tabBuilder.CreateTab(component);
 
-            // Get tab name for children using localized title
-            var tabText = ExtensionParser.GetComponentTitle(component);
+            var tabName = component.DisplayName;
 
             // Mark tab as touched in the registry (matching Python's set_dirty_flag behavior)
-            _ribbonScanner?.MarkElementTouched("tab", tabText);
+            _ribbonScanner?.MarkElementTouched("tab", tabName);
 
             // If CreateTab detected a rename, also mark the current (renamed) Title
             // so CleanupOrphanedElements() doesn't deactivate the tab (#3167).
             if (!string.IsNullOrEmpty(renamedTabTitle))
             {
                 _ribbonScanner?.MarkElementTouched("tab", renamedTabTitle!);
-                _logger.Debug($"Tab '{tabText}' has current Title '{renamedTabTitle}' — marked both as touched.");
+                _logger.Debug($"Tab '{tabName}' has current Title '{renamedTabTitle}' — marked both as touched.");
             }
 
-            // Recursively build children, passing the renamed title so panels can dual-mark too.
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
                 if (child == null)
                     continue;
 
-                RecursivelyBuildUI(child, component, null, tabText, assemblyInfo, renamedTabTitle);
+                RecursivelyBuildUI(child, component, null, tabName, assemblyInfo);
             }
         }
 
-        private void HandlePanel(ParsedComponent component, string tabName,
-            ExtensionAssemblyInfo assemblyInfo, string? renamedTabTitle = null)
+        private void HandlePanel(ParsedComponent component, string tabName, ExtensionAssemblyInfo assemblyInfo)
         {
             // Use PanelBuilder to create the panel
             var panel = _panelBuilder.CreatePanel(component, tabName);
 
-            // Get panel name for registry (using localized title)
-            var panelText = ExtensionParser.GetComponentTitle(component);
+            var panelName = component.DisplayName;
 
             // Mark panel as touched in the registry (matching Python's set_dirty_flag behavior)
-            _ribbonScanner?.MarkElementTouched("panel", panelText, tabName);
-
-            // If the parent tab was renamed (e.g. by a translation script), the scanner
-            // registered this panel under "panel:{renamedTab}:{panelText}". Mark that
-            // key as touched too so cleanup doesn't hide the panel.
-            if (!string.IsNullOrEmpty(renamedTabTitle))
-            {
-                _ribbonScanner?.MarkElementTouched("panel", panelText, renamedTabTitle);
-            }
+            _ribbonScanner?.MarkElementTouched("panel", panelName, tabName);
 
             // Apply background colors if specified
             _panelBuilder.ApplyPanelBackgroundColors(panel, component, tabName);
 
-            // Recursively build children — propagate renamedTabTitle so any nested
-            // components that depend on the tab name for registry keys stay consistent.
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo, renamedTabTitle);
+                RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
         }
 
         private void EnsureSlideOutApplied(ParsedComponent? parentComponent, RibbonPanel? parentPanel)
@@ -379,24 +375,19 @@ namespace pyRevitAssemblyBuilder.UIManager
                     break;
 
                 case CommandComponentType.Stack:
-                    var visibleChildren = (component.Children ?? Enumerable.Empty<ParsedComponent>())
-                        .Where(IsStackChildVisible)
-                        .ToList();
+                    var stackItems = StackItemSplit.Of(
+                        (component.Children ?? Enumerable.Empty<ParsedComponent>()).Where(IsStackChildVisible));
 
-                    var itemChildren = visibleChildren
-                        .Where(child => child.Type != CommandComponentType.Separator)
-                        .ToList();
-
-                    if (itemChildren.Count == 1)
+                    if (stackItems.IsSingleItem)
                     {
-                        HandleComponentBuilding(itemChildren[0], parentPanel, tabName, assemblyInfo);
+                        HandleComponentBuilding(stackItems.OtherItems[0], parentPanel, tabName, assemblyInfo);
                         break;
                     }
 
-                    _stackBuilder.BuildStack(component, parentPanel!, assemblyInfo);
+                    var stackedCheckBoxIds = BuildStackItems(component, stackItems, parentPanel, tabName, assemblyInfo);
                     // Mark all children in the stack as touched
-                    foreach (var child in visibleChildren)
-                        _ribbonScanner?.MarkElementTouched("button", child.DisplayName, panelName);
+                    foreach (var scannerKey in stackItems.ScannerKeys(stackedCheckBoxIds))
+                        _ribbonScanner?.MarkElementTouched("button", scannerKey, panelName);
                     break;
 
                 case CommandComponentType.ComboBox:
@@ -409,6 +400,12 @@ namespace pyRevitAssemblyBuilder.UIManager
                         _comboBoxBuilder.CreateComboBox(component, parentPanel!);
                     }
                     _ribbonScanner?.MarkElementTouched("button", component.DisplayName, panelName);
+                    break;
+
+                case CommandComponentType.CheckBox:
+                    var checkBoxId = _checkBoxBuilder.CreateOrUpdateCheckBox(component, parentPanel!, tabName);
+                    if (checkBoxId != null)
+                        _ribbonScanner?.MarkElementTouched("button", checkBoxId, panelName);
                     break;
 
                 default:
@@ -476,6 +473,33 @@ namespace pyRevitAssemblyBuilder.UIManager
                 settings.CurrentVersion,
                 settings.LoadBeta,
                 _logger);
+        }
+
+        /// <summary>
+        /// Builds a stack's items as <see cref="StackItemSplit"/> splits them. The caller builds a
+        /// stack's only item itself unless it is a checkbox.
+        /// </summary>
+        /// <returns>The ids of the stacked checkboxes it shows, which the ribbon scanner tracks instead
+        /// of their names, because a standalone checkbox in the same panel can share a name.</returns>
+        private IReadOnlyCollection<string> BuildStackItems(
+            ParsedComponent stack,
+            StackItemSplit stackItems,
+            RibbonPanel? parentPanel,
+            string tabName,
+            ExtensionAssemblyInfo assemblyInfo)
+        {
+            if (stackItems.IsMixed)
+                _logger.Warning($"Stack '{stack.DisplayName}' mixes checkboxes with other items; its checkboxes are placed beside the stack because they can only be stacked with other checkboxes.");
+
+            if (stackItems.LoneOtherItem != null)
+                HandleComponentBuilding(stackItems.LoneOtherItem, parentPanel, tabName, assemblyInfo);
+            else if (stackItems.HasRevitApiStack)
+                _stackBuilder.BuildStack(stack, parentPanel!, assemblyInfo);
+
+            if (stackItems.CheckBoxes.Count == 0)
+                return Array.Empty<string>();
+
+            return _checkBoxBuilder.CreateOrUpdateCheckBoxStack(stack, stackItems.CheckBoxes, parentPanel!, tabName);
         }
     }
 }

@@ -308,6 +308,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly ILogger _logger;
         private readonly UIApplication _uiApp;
         private readonly RevitThemeDetector _themeDetector;
+        private readonly BuildContext _buildContext;
         private static Assembly _pyRevitLoaderAssembly;
         private static Type _executorType;
         private static bool _staticInitialized;
@@ -318,10 +319,11 @@ namespace pyRevitAssemblyBuilder.UIManager
         private bool _instanceInitialized;
         private bool _instanceInitializationFailed;
 
-        public SmartButtonScriptInitializer(UIApplication uiApp, ILogger logger)
+        public SmartButtonScriptInitializer(UIApplication uiApp, ILogger logger, BuildContext buildContext = null)
         {
             _uiApp = uiApp;
             _logger = logger;
+            _buildContext = buildContext;
             _themeDetector = new RevitThemeDetector(logger);
 
             // Do static initialization once
@@ -406,6 +408,12 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <summary>
         /// Executes the __selfinit__ function for a SmartButton.
         /// </summary>
+        /// <remarks>
+        /// Note: self-init always runs under IronPython, also for a button whose click runs under CPython.
+        /// A failure of such a button's script is not reported as an error, because syntax or imports that
+        /// only CPython supports fail here on every start-up while the button works; the executor's debug
+        /// log still has the reason, and its <c>__selfinit__</c> does not run when the script fails.
+        /// </remarks>
         public bool ExecuteSelfInit(ParsedComponent component, PushButton pushButton)
         {
             EnsureInstanceInitialized();
@@ -456,7 +464,9 @@ namespace pyRevitAssemblyBuilder.UIManager
             try
             {
                 // Call SmartButtonExecutor.ExecuteSelfInit(scriptPath, context, additionalPaths)
-                var result = _executeMethod.Invoke(_executor, new object[] { scriptPath, context, additionalPaths });
+                var result = _executeMethod.Invoke(_executor, new object[] { scriptPath, context, additionalPaths, ScriptIdentityScope.Build(component) });
+                if (!CPythonScriptDetector.RunsOnCPython(component, _buildContext?.CurrentExtension))
+                    ExecutorFailure.ReportIfFailed(_executor, "SmartButton", component.DisplayName, _logger);
                 return result is bool boolResult ? boolResult : true;
             }
             catch (TargetInvocationException ex)

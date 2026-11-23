@@ -259,6 +259,9 @@
     <system:String x:Key="UI-UX.SelectLanguage">选择 UI 语言：</system:String>
     <system:String x:Key="UI-UX.RegionSettingsLink">帮助翻译 pyRevit</system:String>
 
+    <system:String x:Key="UI-UX.Ribbon">功能区</system:String>
+    <system:String x:Key="UI-UX.ShowTabIcons">在 pyRevit 功能区选项卡上显示图标</system:String>
+
     <system:String x:Key="UI-UX.TabColoring">选项卡着色</system:String>
     <system:String x:Key="UI-UX.ColoringStyle">着色样式</system:String>
     <system:String x:Key="UI-UX.ColorizeOpenDocuments">为打开的文档着色</system:String>

@@ -379,7 +379,7 @@ class LinkPattern(Pattern):
         """Sanitize a url against xss attacks in "safe_mode".
 
         Rather than specifically blacklisting `javascript:alert("XSS")` and all
-        its aliases (see <http://ha.ckers.org/xss.html>), we whitelist known
+        its aliases (see the OWASP XSS filter evasion cheat sheet), we whitelist known
         safe url formats. Most urls contain a network location, however some
         are known not to (i.e.: mailto links). Script urls do not contain a
         location. Additionally, for `javascript:...`, the scheme would be

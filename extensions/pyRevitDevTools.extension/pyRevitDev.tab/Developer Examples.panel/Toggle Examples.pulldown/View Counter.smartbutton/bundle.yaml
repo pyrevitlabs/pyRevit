@@ -1,0 +1,9 @@
+title: View Counter
+tooltip: >-
+  Smart button example - listens to a Revit event while it is on.
+
+  __selfinit__ subscribes a ViewActivated handler with events.replace_handler,
+  so a pyRevit reload replaces it instead of adding a second one. While the
+  toggle is on, the handler counts activated views; turning it off reports the
+  count. The state lasts for the Revit session.
+context: zero-doc

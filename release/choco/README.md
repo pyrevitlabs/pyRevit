@@ -1,15 +1,18 @@
-# Publishing a new version:
+# Chocolatey packages
 
-Open `tools/chocolateyinstall.ps1`
-Edit `$url64` to the download path of the new exe installer
+Two packages are built from this folder on every release:
 
-Run `checksum -t sha256 -f ./new/installer` on the new installer and grab checksum
-Replace `checksum` and `checksum64` with new checksum
+| Package | Folder | Wraps |
+|---|---|---|
+| `pyrevit-cli` | this folder | `pyRevit_CLI_<version>_admin_signed.exe` |
+| `pyrevit` | [`pyrevit/`](pyrevit) | `pyRevit_<version>_admin_signed.exe`, which includes the CLI |
 
+The build rewrites `$url64` and `checksum64` in each `tools/chocolateyinstall.ps1` and stamps the version and copyright of each `.nuspec` (`dotnet run -c Release -- pack`), so do not edit those values by hand. The release job signs and attaches the `.nupkg` files to the draft GitHub release. After the release is published, `.github/workflows/choco.yml` pushes them to Chocolatey.
 
-Run `choco-test.sh` and test the install
+## Testing a package locally
 
-export choco api key to `$chocoapikey` env var
-export choco package name to `$chocopkg` env var (e.g. pyrevit-cli.0.9.0.0.nupkg)
+Run `choco-test.sh [pyrevit-cli|pyrevit]` from an elevated shell. It uninstalls the package, packs it from the folder and installs it from there. The committed install scripts point at an already published release.
 
-Run `choco-push.sh`
+## Pushing again
+
+Run the `Push Chocolatey packages` workflow with the tag of the published release. Versions the feed already has are skipped.

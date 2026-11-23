@@ -166,6 +166,56 @@ t.Commit()
 - **Associate a nested parameter** with a host parameter and the host drives it: a host `Width` of 6 resized the nested instance to 6. `IS_VISIBLE_PARAM` takes a Yes/No host parameter and shows or hides the instance.
 - **`instance.GetReferenceByName("Left")`** returns the nested family's plane for alignment when the child flagged it with `reference="left"`.
 
+## Preview the family without loading it
+
+`capture_view` only shows the active document. A family from `NewFamilyDocument` or `EditFamily` has no window, so the host closes it when the run ends and no later `capture_view` can reach it. Look at it inside the run instead: export a temporary isometric 3D view into `export_dir`, then read the PNG listed in `exports`. A family the user has open and active needs none of this: `capture_view` works on it directly.
+
+```python
+import os
+from System.Collections.Generic import List
+
+group = DB.TransactionGroup(fam_doc, "Preview")
+group.Start()
+try:
+    t = DB.Transaction(fam_doc, "Preview view")
+    t.Start()
+    try:
+        view_type = [x for x in DB.FilteredElementCollector(fam_doc).OfClass(DB.ViewFamilyType)
+                     if x.ViewFamily == DB.ViewFamily.ThreeDimensional][0]
+        view = DB.View3D.CreateIsometric(fam_doc, view_type.Id)
+        forward = DB.XYZ(1, -1, -1).Normalize()
+        right = forward.CrossProduct(DB.XYZ.BasisZ)
+        if right.IsZeroLength():
+            right = DB.XYZ.BasisX
+        up = right.Normalize().CrossProduct(forward).Normalize()
+        view.SetOrientation(DB.ViewOrientation3D(forward.Negate().Multiply(1000), up, forward))
+        view.DisplayStyle = DB.DisplayStyle.ShadingWithEdges
+        t.Commit()
+    finally:
+        if t.GetStatus() == DB.TransactionStatus.Started:
+            t.RollBack()
+
+    options = DB.ImageExportOptions()
+    options.ExportRange = DB.ExportRange.SetOfViews
+    options.SetViewsAndSheets(List[DB.ElementId]([view.Id]))
+    options.FilePath = os.path.join(export_dir, "family")
+    options.HLRandWFViewsFileType = DB.ImageFileType.PNG
+    options.ShadowViewsFileType = DB.ImageFileType.PNG
+    options.ZoomType = DB.ZoomFitType.FitToPage
+    options.FitDirection = DB.FitDirectionType.Horizontal
+    options.PixelSize = 800
+    fam_doc.ExportImage(options)
+finally:
+    group.RollBack()
+```
+
+- **Use a new view.** The template's own `View 1` exported as an empty dark image, because it has never been shown. A view created in the run renders.
+- **Roll the view back.** The group removes it again, so a family you then load into the project carries no preview view. The PNG stays.
+- **Export before `Close`**, and again after each geometry change you want to check: the image shows the model as it is at that moment. Revit appends ` - 3D View - <view name>` to the `FilePath` prefix.
+- **Commit your own transaction first.** `group.Start()` fails while a transaction of yours is still open on `fam_doc`, so finish the geometry edit before the preview.
+- **Other angles:** change `forward`; `up` stays perpendicular to it, and a straight-up or straight-down `forward` such as `DB.XYZ(0, 0, -1)` falls back to the X axis.
+- **Run in Revit 2026 on IronPython 2.7.12 only, and only the isometric 3D view.** The image is framed tightly on the geometry, so its edges touch the model.
+
 ## Limits that fail
 
 | What you try | What Revit does |
@@ -180,7 +230,7 @@ t.Commit()
 
 ## Before you report done
 
-- [ ] The parameters were flexed to other values and the geometry followed, checked by bounding box or `capture_view` on a placed instance.
+- [ ] The parameters were flexed to other values and the geometry followed, checked by bounding box, by the preview above, or by `capture_view` on a placed instance.
 - [ ] Each hidden form was checked on an instance, not in the family editor.
 - [ ] `app.SharedParametersFilename` is back to what it was.
 - [ ] Nested families have the names the user expects, not the default title of an unsaved family (`Family24`).

@@ -12,6 +12,7 @@ namespace Build.Modules;
 
 [DependsOn<SeedProductDataModule>]
 [DependsOn<SetProductDataModule>]
+[DependsOn<SetCopyrightYearModule>]
 public sealed class BuildLabsModule(IOptions<BuildOptions> buildOptions) : Module
 {
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
@@ -32,6 +33,7 @@ public sealed class BuildLabsModule(IOptions<BuildOptions> buildOptions) : Modul
         {
             await PublishProject(context, PyRevitPaths.LabsCliProject, cliDir, configuration, cancellationToken);
             await PublishProject(context, PyRevitPaths.LabsDoctorProject, doctorDir, configuration, cancellationToken);
+            StandaloneDoctorHelper.EnsureSingleFilePublish(doctorDir);
             MergePublishOutput(doctorDir, PyRevitPaths.BinPath);
             MergePublishOutput(cliDir, PyRevitPaths.BinPath);
         }

@@ -16,3 +16,5 @@ layout:
   - DockablePane[title:Dockable\nPane]
   - ExportIFC
   - AVF
+  - CheckBox Examples
+  - Toggle Examples[title:Toggle\nExamples]

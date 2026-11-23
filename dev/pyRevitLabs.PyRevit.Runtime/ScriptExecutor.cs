@@ -1,9 +1,11 @@
+using System;
 using System.IO;
 using System.Threading;
 
 using Autodesk.Revit.UI;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public static class ScriptExecutorResultCodes {
@@ -24,32 +26,137 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static int ExecutorNotInitialized = 14;
     }
 
+    /// <summary>
+    /// One script run requested from a non-main thread. Each request carries its own events and
+    /// result, so a request that was withdrawn or replaced can never signal or corrupt the next one.
+    /// </summary>
+    public sealed class ScriptRequest {
+        internal ScriptRequest(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeConfigs) {
+            ScriptData = scriptData;
+            ScriptRuntimeConfigs = scriptRuntimeConfigs;
+        }
+
+        /// <summary>
+        /// The script to run.
+        /// </summary>
+        public ScriptData ScriptData { get; }
+
+        /// <summary>
+        /// The runtime configuration of the run. The main-thread <c>UIApp</c> is filled in when Revit
+        /// starts the request.
+        /// </summary>
+        public ScriptRuntimeConfigs ScriptRuntimeConfigs { get; }
+
+        /// <summary>
+        /// Result code of the run. Stays <see cref="ScriptExecutorResultCodes.FailedDelayedExecutionRequest"/>
+        /// when the request never ran, and becomes <see cref="ScriptExecutorResultCodes.DelayedExecutionException"/>
+        /// when the run threw.
+        /// </summary>
+        public int Result { get; internal set; } = ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
+
+        /// <summary>
+        /// Set when Revit begins the request, so a caller can bound how long it waits for Revit to
+        /// start it without bounding the script's own run time.
+        /// </summary>
+        public ManualResetEventSlim Started { get; } = new ManualResetEventSlim(false);
+
+        /// <summary>
+        /// Set when the request has finished, so a waiting caller blocks on it instead of polling
+        /// <see cref="ExternalEvent.IsPending"/>. Waiting for it after <see cref="Started"/> is
+        /// unbounded on purpose: the script is running and its run time is the user's.
+        /// </summary>
+        public ManualResetEventSlim Completed { get; } = new ManualResetEventSlim(false);
+
+        internal void Abandon() {
+            Result = ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
+            Started.Set();
+            Completed.Set();
+        }
+
+        internal void Run(UIApplication uiApp) {
+            Started.Set();
+            try {
+                // provide the given uiapp
+                ScriptRuntimeConfigs.UIApp = uiApp;
+
+                // request execution and set results
+                Result = ScriptExecutor.ExecuteScript(ScriptData, ScriptRuntimeConfigs);
+            }
+            catch {
+                Result = ScriptExecutorResultCodes.DelayedExecutionException;
+                throw;
+            }
+            finally {
+                Completed.Set();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Holds at most one pending <see cref="ScriptRequest"/>. Submitting another before the first is
+    /// taken abandons the first, which then completes with
+    /// <see cref="ScriptExecutorResultCodes.FailedDelayedExecutionRequest"/> rather than being run
+    /// or silently dropped.
+    /// </summary>
+    public sealed class ScriptRequestSlot {
+        private ScriptRequest pending;
+
+        /// <summary>
+        /// Makes a new request the pending one, abandoning any request that was not taken.
+        /// </summary>
+        public ScriptRequest Submit(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeConfigs) {
+            var request = new ScriptRequest(scriptData, scriptRuntimeConfigs);
+            Interlocked.Exchange(ref pending, request)?.Abandon();
+            return request;
+        }
+
+        /// <summary>
+        /// Takes the request back so <see cref="Take"/> cannot return it. Returns false when it was
+        /// already taken or abandoned. A taken script is running and the caller must wait for
+        /// <see cref="ScriptRequest.Completed"/> instead of reporting a failure.
+        /// </summary>
+        public bool TryWithdraw(ScriptRequest request) {
+            return Interlocked.CompareExchange(ref pending, null, request) == request;
+        }
+
+        /// <summary>
+        /// Claims the pending request for running, or returns null when there is none.
+        /// </summary>
+        public ScriptRequest Take() {
+            return Interlocked.Exchange(ref pending, null);
+        }
+    }
+
+    /// <summary>
+    /// Runs script requests on the Revit main thread through one process-wide ExternalEvent.
+    /// </summary>
     public class ScriptExecutorExternalEventHandler : IExternalEventHandler {
-        public ScriptData ScriptData;
-        public ScriptRuntimeConfigs ScriptRuntimeConfigs;
-        public int Result = ScriptExecutorResultCodes.DelayedExecutionException;
+        private readonly ScriptRequestSlot slot = new ScriptRequestSlot();
+
+        /// <summary>
+        /// Queues a request for the next time Revit raises the external event. Submitting replaces a
+        /// request that was not yet claimed; the replaced request completes with
+        /// <see cref="ScriptExecutorResultCodes.FailedDelayedExecutionRequest"/>.
+        /// </summary>
+        public ScriptRequest Submit(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeConfigs) {
+            return slot.Submit(scriptData, scriptRuntimeConfigs);
+        }
+
+        /// <summary>
+        /// Cancels a request that has not started. Returns false when withdrawal is no longer
+        /// possible because execution already claimed the request or a newer submission replaced it;
+        /// a claimed request is running and the caller must wait for
+        /// <see cref="ScriptRequest.Completed"/>.
+        /// </summary>
+        public bool TryWithdraw(ScriptRequest request) {
+            return slot.TryWithdraw(request);
+        }
 
         public void Execute(UIApplication uiApp) {
-            if (ScriptData != null && ScriptRuntimeConfigs != null) {
-                try {
-                    // provide the given uiapp
-                    ScriptRuntimeConfigs.UIApp = uiApp;
-
-                    // request execution and set results
-                    Result = ScriptExecutor.ExecuteScript(ScriptData, ScriptRuntimeConfigs);
-                }
-                finally {
-                    // release the executed script's references; this handler lives
-                    // for the whole process and would otherwise pin the previous
-                    // session's runtime objects (UIApp, documents) across reloads.
-                    // NOTE: these fields are a singleton and not thread-safe. A
-                    // concurrent non-blocking RequestExecuteScript can overwrite a
-                    // pending script before Execute() fires for it; this is a
-                    // pre-existing limitation of the single-handler design.
-                    ScriptData = null;
-                    ScriptRuntimeConfigs = null;
-                }
-            }
+            // release the executed script's references; this handler lives
+            // for the whole process and would otherwise pin the previous
+            // session's runtime objects (UIApp, documents) across reloads.
+            slot.Take()?.Run(uiApp);
         }
 
         public string GetName() {
@@ -64,9 +171,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     /// Executes a script
     public class ScriptExecutor {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static int mainThreadId;
         private static ScriptExecutorExternalEventHandler extExecEventHandler;
         private static ExternalEvent extExecEvent;
+
+        /// <summary>
+        /// How long a request from a non-main thread waits for Revit to start it before failing
+        /// with <see cref="ScriptExecutorResultCodes.FailedDelayedExecutionRequest"/>. The default
+        /// is 30 seconds. Revit does not start the request while it is busy, for example in a
+        /// long command, a modal dialog or a regeneration, so a request made then can fail where an
+        /// unbounded wait would have run it once Revit became idle. The bound does not limit the
+        /// script's own run time. Set <see cref="Timeout.InfiniteTimeSpan"/> to wait without limit.
+        /// </summary>
+        public static TimeSpan ExternalEventStartTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
         public static void Initialize() {
             // Idempotent on purpose. The ExternalEvent is scoped to the add-in
@@ -85,12 +203,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // The check-then-create below is intentionally unlocked: both call
             // sites run on the Revit main thread during init, so there is no
             // concurrent entry to guard against.
-            if (extExecEvent != null)
-                return;
+            if (extExecEvent == null) {
+                mainThreadId = Thread.CurrentThread.ManagedThreadId;
+                extExecEventHandler = new ScriptExecutorExternalEventHandler();
+                extExecEvent = ExternalEvent.Create(extExecEventHandler);
+            }
 
-            mainThreadId = Thread.CurrentThread.ManagedThreadId;
-            extExecEventHandler = new ScriptExecutorExternalEventHandler();
-            extExecEvent = ExternalEvent.Create(extExecEventHandler);
+            try {
+                ApiContextQueue.Initialize();
+            }
+            catch (Exception ex) {
+                logger.Error(ex, "Could not create the shared API context queue.");
+            }
         }
 
         internal static bool IsOnMainThread =>
@@ -120,7 +244,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private static int ExecuteScriptNow(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
+            var endRecorded = false;
+            try {
+                return ExecuteScriptRecorded(scriptData, scriptRuntimeCfg, scriptExecConfigs, ref endRecorded);
+            }
+            catch (System.Exception ex) {
+                if (!endRecorded)
+                    Agent.AgentRecorder.RecordCommand(
+                        "end", scriptData?.CommandName, scriptData?.CommandUniqueId,
+                        ScriptExecutorResultCodes.UnknownException, ex.ToString());
+                throw;
+            }
+        }
+
+        private static int ExecuteScriptRecorded(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs, ref bool endRecorded) {
             // create runtime
+            Agent.AgentRecorder.RecordCommand("start", scriptData?.CommandName, scriptData?.CommandUniqueId, null, null);
             var runtime = new ScriptRuntime(scriptData, scriptRuntimeCfg);
 
             // determine which engine to use, and execute
@@ -178,6 +317,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             int result = runtime.ExecutionResult;
             if (scriptExecConfigs.SendTelemetry)
                 ScriptTelemetry.LogScriptTelemetryRecord(ref runtime);
+            Agent.AgentRecorder.RecordCommand("end", scriptData?.CommandName, scriptData?.CommandUniqueId, result, runtime.TraceMessage);
+            endRecorded = true;
 
             // Drain any output still buffered by the engine (trailing prints,
             // logger records, uncaught tracebacks) to the live window before the
@@ -200,16 +341,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private static int RequestExecuteScript(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
             if (extExecEventHandler != null) {
-                extExecEventHandler.ScriptData = scriptData;
-                extExecEventHandler.ScriptRuntimeConfigs = scriptRuntimeCfg;
+                var request = extExecEventHandler.Submit(scriptData, scriptRuntimeCfg);
 
                 // request command exec now
-                extExecEvent.Raise();
+                var raised = extExecEvent.Raise();
+                if (raised != ExternalEventRequest.Accepted && raised != ExternalEventRequest.Pending) {
+                    if (extExecEventHandler.TryWithdraw(request))
+                        return ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
+                }
 
                 // wait until the script is executed
                 if (scriptExecConfigs.WaitForResult) {
-                    while (extExecEvent.IsPending) ;
-                    return extExecEventHandler.Result;
+                    if (!request.Started.Wait(ExternalEventStartTimeout)
+                        && extExecEventHandler.TryWithdraw(request)) {
+                        logger.Warn("Revit did not start the external event within {0}s for script: {1}",
+                            ExternalEventStartTimeout.TotalSeconds, scriptData.ScriptPath);
+                        return ScriptExecutorResultCodes.FailedDelayedExecutionRequest;
+                    }
+                    request.Completed.Wait();
+                    return request.Result;
                 }
                 // otherwise
                 return ScriptExecutorResultCodes.DelayedExecutionRequested;

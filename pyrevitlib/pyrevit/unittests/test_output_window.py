@@ -124,12 +124,13 @@ class OutputWindowPrintTests(unittest.TestCase):
 
     def test_linkify_registers_ids_that_do_not_fit_in_a_link(self):
         """Element ids beyond the url limit resolve through the output window."""
-        from pyrevit import DB
+        from pyrevit.compat import get_elementid_from_value_func
 
         token = self.output.register_element_ids("1,2,3")
         self.assertTrue(token.isdigit(), "token: {}".format(token))
 
-        element_ids = [DB.ElementId(1000000 + i) for i in range(500)]
+        elementid_from_value = get_elementid_from_value_func()
+        element_ids = [elementid_from_value(1000000 + i) for i in range(500)]
         link = self.output.linkify(element_ids)
         self.assertNotIn("element[]=", link)
         self.assertIn("elements=", link)
@@ -139,8 +140,8 @@ class OutputWindowPrintTests(unittest.TestCase):
         """Clicking a token link selects every registered element, and only those."""
         import re
         from System import Array
-        from System.Collections.Generic import List
         from pyrevit import DB, HOST_APP
+        from pyrevit.framework import to_clr_list
         from pyrevit.compat import get_elementid_value_func
 
         if HOST_APP.uidoc is None:
@@ -164,7 +165,7 @@ class OutputWindowPrintTests(unittest.TestCase):
             process_url.Invoke(None, Array[object]([HOST_APP.uiapp, url, window]))
 
         def select(ids):
-            HOST_APP.uidoc.Selection.SetElementIds(List[DB.ElementId](ids))
+            HOST_APP.uidoc.Selection.SetElementIds(to_clr_list(DB.ElementId, ids))
 
         get_value = get_elementid_value_func()
 

@@ -200,7 +200,7 @@ def get_parameter_names(element):
 def get_parameter_value(element, parameter_name):
     """Safely get parameter value as string."""
     if parameter_name in ["Type Name", "Nom du type", "Type"]:
-        return DB.Element.Name.GetValue(element)
+        return revit.query.get_name(element)
     param = element.LookupParameter(parameter_name)
     if param:
         value = param.AsValueString()

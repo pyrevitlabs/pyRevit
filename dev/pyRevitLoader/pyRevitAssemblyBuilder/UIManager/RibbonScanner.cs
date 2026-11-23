@@ -114,11 +114,11 @@ namespace pyRevitAssemblyBuilder.UIManager
                             var panel = panelObj as RibbonPanel;
                             if (panel == null) continue;
 
-                            var panelName = panel.Source?.Title ?? panel.Source?.Id ?? "";
+                            var panelName = RibbonPanelNaming.GetStableName(panel);
                             if (string.IsNullOrEmpty(panelName))
                                 continue;
 
-                            var panelKey = BuildKey("panel", panelName, tabName);
+                            var panelKey = BuildKey("panel", panelName, tab.Id);
                             _elementRegistry[panelKey] = false;
                             panelCount++;
 
@@ -223,31 +223,45 @@ namespace pyRevitAssemblyBuilder.UIManager
             return count;
         }
 
+        private static string GetButtonIdentifier(RibbonItem item)
+        {
+            return GetButtonIdentifier(item.Id, item is RibbonCheckBox, item.AutomationName);
+        }
+
         /// <summary>
         /// Gets the identifier for a ribbon item used for tracking.
         /// Extracts the button's internal name from the Id property.
         /// </summary>
-        private static string GetButtonIdentifier(RibbonItem item)
+        /// <param name="automationName">The item's AutomationName, used when it has no id.</param>
+        /// <remarks>
+        /// Invariant: a checkbox is tracked by its full id, which is what <see cref="UIManagerService"/>
+        /// marks for checkboxes. Revit keeps button names unique within a panel, but a standalone
+        /// checkbox and a stacked one can share a name there, so their last id segments collide.
+        /// Important: keep this overload free of AdWindows types, so it is tested without Revit.
+        /// </remarks>
+        internal static string GetButtonIdentifier(string? id, bool isCheckBox, string? automationName)
         {
             // The Id property contains the control ID in format like:
             // "CustomCtrl_%CustomCtrl_%Add-Ins%TabName%ButtonName" or just "ButtonName"
             // We need to extract the last segment which is the button's DisplayName
             // This matches what UIManagerService.MarkElementTouched() uses (DisplayName from folder basename)
 
-            var id = item.Id;
-            if (!string.IsNullOrEmpty(id))
+            if (id == null || id.Length == 0)
             {
-                // Extract the last segment after the last '%' character
-                var lastPercentIndex = id.LastIndexOf('%');
-                if (lastPercentIndex >= 0 && lastPercentIndex < id.Length - 1)
-                {
-                    return id.Substring(lastPercentIndex + 1);
-                }
-                return id; // Return as-is if no '%' found
+                // Fallback to AutomationName if Id is not available
+                return automationName ?? "";
             }
 
-            // Fallback to AutomationName if Id is not available
-            return item.AutomationName ?? "";
+            if (isCheckBox)
+                return id;
+
+            // Extract the last segment after the last '%' character
+            var lastPercentIndex = id.LastIndexOf('%');
+            if (lastPercentIndex >= 0 && lastPercentIndex < id.Length - 1)
+            {
+                return id.Substring(lastPercentIndex + 1);
+            }
+            return id; // Return as-is if no '%' found
         }
 
         /// <summary>
@@ -348,8 +362,8 @@ namespace pyRevitAssemblyBuilder.UIManager
                             var panel = panelObj as RibbonPanel;
                             if (panel == null) continue;
 
-                            var panelName = panel.Source?.Title ?? panel.Source?.Id ?? "";
-                            var panelKey = BuildKey("panel", panelName, tab.Title);
+                            var panelName = RibbonPanelNaming.GetStableName(panel);
+                            var panelKey = BuildKey("panel", panelName, tab.Id);
 
                             if (untouchedElements.Contains(panelKey))
                             {
@@ -435,7 +449,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     if (tab?.Panels == null) continue;
 
                     // Only process pyRevit tabs (matching Python behavior)
-                    if (!IsPyRevitTab(tab))
+                    if (!IsPyRevitTabByTag(tab))
                         continue;
 
                     foreach (var panelObj in tab.Panels)
@@ -474,22 +488,6 @@ namespace pyRevitAssemblyBuilder.UIManager
             if (string.IsNullOrEmpty(parentId))
                 return $"{elementType}:{elementId}";
             return $"{elementType}:{parentId}:{elementId}";
-        }
-
-        /// <summary>
-        /// Checks if a tab is a pyRevit tab (not native Revit).
-        /// </summary>
-        private bool IsPyRevitTab(RibbonTab tab)
-        {
-            // Check if this tab is in our registry
-            var tabKey = BuildKey("tab", tab.Title ?? tab.Id, null);
-            if (_elementRegistry.ContainsKey(tabKey))
-                return true;
-
-            // Also check for tabs created by pyRevit based on naming or other heuristics
-            // In Python, pyRevit tabs are identified by having the pyRevit addin ID
-            // For now, we'll rely on the registry
-            return false;
         }
 
         /// <summary>

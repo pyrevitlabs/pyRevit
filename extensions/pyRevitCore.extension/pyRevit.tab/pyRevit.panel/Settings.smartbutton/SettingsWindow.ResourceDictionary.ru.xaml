@@ -262,6 +262,9 @@
     <system:String x:Key="UI-UX.SelectLanguage">Выберите язык UI:</system:String>
     <system:String x:Key="UI-UX.RegionSettingsLink">Помощь в переводе pyRevit</system:String>
 
+    <system:String x:Key="UI-UX.Ribbon">Лента</system:String>
+    <system:String x:Key="UI-UX.ShowTabIcons">Показывать значки на вкладках ленты pyRevit</system:String>
+
     <system:String x:Key="UI-UX.TabColoring">Раскраска в вкладок</system:String>
     <system:String x:Key="UI-UX.ColoringStyle">Стиль раскраски</system:String>
     <system:String x:Key="UI-UX.ColorizeOpenDocuments">Раскрасить открытые документы</system:String>

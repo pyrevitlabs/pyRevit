@@ -34,7 +34,7 @@ def count_unpinned_revit_links(revitlinks_elements):
     Returns the number of unpinned Revit links in the document.
 
     Args:
-        rvtlinks_elements (list): A list of Revit link elements.
+        revitlinks_elements (list): A list of Revit link elements.
 
     Returns:
         int: The number of unpinned Revit links in the document.
@@ -120,7 +120,8 @@ def count_unused_view_templates(views_list, document):
     Returns the count of unused view templates in the given list of views.
 
     Args:
-        views (list): A list of views to check for unused view templates.
+        views_list (list): A list of views to check for unused view templates.
+        document (DB.Document): The document the views belong to.
 
     Returns:
         int: The count of unused view templates.
@@ -146,7 +147,7 @@ def count_unused_filters_in_views(view_list, filters):
         view_list (list): A list of Revit view objects to check for filter usage.
         filters (list): A list of filter objects to check against the views.
 
-        Returns:
+    Returns:
         int: The number of filters that are not used in any of the provided views.
     """
     used_filters_set = set()
@@ -294,7 +295,7 @@ def count_unnamed_reference_planes(reference_planes):
     Returns the count of unnamed reference planes in the given document.
 
     Args:
-        document (DB.Document): The document to search for reference planes. Defaults to the active document.
+        reference_planes (list): The reference planes to check.
 
     Returns:
         int: The count of unnamed reference planes.
