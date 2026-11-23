@@ -11334,8 +11334,9 @@ the WPF Dispatcher, where it could terminate Revit.</p>
 for real WPF/pythonnet tests on .NET Framework 4.8, .NET 8 and .NET 10 using the
 shipped CPython interpreter. The fixture substitutes Revit dependencies; it does
 not validate Revit ownership or host events. The proxies have their own real-WPF
-tests in <code>dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Binding.Tests</code>. Portable tests run with
-<code>python -m unittest discover -s dev/scripts -p 'test_standalone_forms*.py'</code>.
+tests in <code>dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Binding.Tests</code>. Portable tests
+live in <code>dev/tests/python/library/test_forms_*.py</code> and run through the shared runner
+with <code>pipenv run test --language python</code>; <code>pytest</code> on one of those files suits a focused run.
 The sibling <code>pyRevitLabs.PyRevit.Forms.IronPython.Tests</code> project drives the same
 interactive cases with the shipped IronPython 2.7 and 3 engines (select with
 <code>-p:IronPythonVersion=IPY2712PR</code> or <code>IPY342</code>). The build pipeline's test gate

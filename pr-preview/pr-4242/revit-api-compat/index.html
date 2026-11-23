@@ -10929,7 +10929,7 @@
 <p>pyRevit scripts run unchanged across many Revit years, but the Revit API
 does not stay put: members are added, deprecated, and removed (for example
 <code>ElementId.IntegerValue</code> disappears in 2026, <code>DisplayUnitType</code> after 2021,
-<code>BuiltInParameterGroup</code> after 2024). <code>dev/scripts/check_revit_api_compat.py</code>
+<code>BuiltInParameterGroup</code> after 2024). <code>dev/checks/check_revit_api_compat.py</code>
 is a static checker that finds uses of such APIs that are not protected for
 every Revit year the code can run in.</p>
 <p>It is plain CPython 3.10+ with no dependencies. It parses code with <code>ast</code>
@@ -10942,7 +10942,7 @@ from 3.10.</p>
 after version stamping, so a local build gates on it too and CI needs no extra
 step. The module also fails when <code>catalog.json</code> does not cover exactly the
 Revit years <code>dev/Directory.Build.targets</code> builds for. Its tests live in
-<code>dev/scripts/test_standalone_revit_api_compat.py</code>, which CI runs with the
+<code>dev/tests/python/tooling/test_check_revit_api_compat.py</code>, which CI runs with the
 other standalone suites.</p>
 <h2 id="running-it">Running it</h2>
 <table>
@@ -10958,7 +10958,7 @@ other standalone suites.</p>
 <td>The CI targets, <code>extensions/pyRevitTools.extension</code> and <code>pyrevitlib</code>, against the committed baseline</td>
 </tr>
 <tr>
-<td><code>python dev/scripts/check_revit_api_compat.py path/to/My.extension</code></td>
+<td><code>python dev/checks/check_revit_api_compat.py path/to/My.extension</code></td>
 <td>Any files or folders</td>
 </tr>
 <tr>
@@ -11114,15 +11114,15 @@ the name does not hide its use on any other receiver.</p>
 </span></code></pre></div>
 <p>A pragma without a reason is an error, and an unused one is a warning.</p>
 <h2 id="baseline">Baseline</h2>
-<p><code>dev/scripts/revit_api_catalog/baseline.json</code> lists the findings that existed when the
+<p><code>dev/checks/revit_api_catalog/baseline.json</code> lists the findings that existed when the
 lint was introduced, so CI fails only on new ones. Entries match on path,
 code and message, not line numbers. After fixing some, run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>dev/scripts/check_revit_api_compat.py<span class="w"> </span>--baseline<span class="w"> </span>--update-baseline
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>dev/checks/check_revit_api_compat.py<span class="w"> </span>--baseline<span class="w"> </span>--update-baseline
 </span></code></pre></div>
 <p>Don't add entries by hand. A new finding needs a fix or a justified
 suppression.</p>
 <h2 id="the-api-catalog">The API catalog</h2>
-<p>The checker reads two files in <code>dev/scripts/revit_api_catalog/</code>:</p>
+<p>The checker reads two files in <code>dev/checks/revit_api_catalog/</code>:</p>
 <ul>
 <li><code>catalog.json</code> is <strong>generated</strong>. It holds facts read from Autodesk's own
   assemblies. For every Revit year from 2021, the earliest and the newest
@@ -11153,9 +11153,9 @@ Overload changes are read from each year's latest update only.</p>
 <p>Regeneration is a maintenance step, never part of a lint run. Do it when a
 new Revit release (or an update that deprecates API) ships:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>dnfile
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>python<span class="w"> </span>dev/scripts/build_revit_api_catalog.py
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>python<span class="w"> </span>-m<span class="w"> </span>unittest<span class="w"> </span>discover<span class="w"> </span>-s<span class="w"> </span>dev/scripts<span class="w"> </span>-p<span class="w"> </span>test_standalone_revit_api_compat.py
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>python<span class="w"> </span>dev/scripts/check_revit_api_compat.py<span class="w"> </span>--baseline
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>python<span class="w"> </span>dev/checks/build_revit_api_catalog.py
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>dev/tests/python/tooling/test_check_revit_api_compat.py
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>python<span class="w"> </span>dev/checks/check_revit_api_compat.py<span class="w"> </span>--baseline
 </span></code></pre></div>
 <p>It downloads about 100 MB of packages (cached under the system temp dir,
 <code>--cache-dir</code> to change) and takes a few minutes. <code>dnfile</code> is deliberately
@@ -11183,7 +11183,7 @@ don't ship <code>dev/</code>.</p>
 <li>IronPython 2-only syntax (<code>print "x"</code>) cannot be parsed by CPython's <code>ast</code>.
   Those files are reported as <code>PARSE</code> warnings and skipped.</li>
 <li>The Python 2 vs 3 language axis is covered by
-  <code>dev/scripts/check_py3_compat.py</code>, not here.</li>
+  <code>dev/checks/check_py3_compat.py</code>, not here.</li>
 </ul>
 
 

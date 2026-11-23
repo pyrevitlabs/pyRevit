@@ -10895,6 +10895,7 @@
 </span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">extensions</span> <span class="n">help</span> <span class="n">apex</span>      <span class="c"># open help page</span>
 </span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">extensions</span> <span class="n">open</span> <span class="n">apex</span>      <span class="c"># open path in file explorer</span>
 </span></code></pre></div>
+<p><code>info</code> and <code>help</code> search the extension sources first and then the installed extensions, so they also answer for an installed extension that no source lists.</p>
 <h4 id="updating-extensions">Updating Extensions</h4>
 <div class="language-powershell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">pyrevit</span> <span class="n">extensions</span> <span class="n">update</span> <span class="p">(-</span><span class="n">-all</span> <span class="p">|</span> <span class="p">&lt;</span><span class="n">extension_name</span><span class="p">&gt;)</span> <span class="p">[-</span><span class="n">-log</span><span class="p">=&lt;</span><span class="n">log_file</span><span class="p">&gt;]</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
@@ -10910,7 +10911,7 @@
 </span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">extensions</span> <span class="n">sources</span> <span class="n">add</span> <span class="s2">"https://www.github.com/me/extensions.json"</span>
 </span></code></pre></div>
 <ul>
-<li><code>&lt;source_json_or_url&gt;</code>: Can be a <code>json</code> file path or web url</li>
+<li><code>&lt;source_json_or_url&gt;</code>: Can be a <code>json</code> file path or web url. <code>add</code> registers it, then reads it once and prints a warning when it cannot be reached or holds no extension list; the source stays registered.</li>
 </ul>
 
 

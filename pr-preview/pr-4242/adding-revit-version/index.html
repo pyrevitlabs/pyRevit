@@ -11825,8 +11825,8 @@ Once the new year's <code>Nice3point.Revit.Api.RevitAPI</code> package is on NuG
 its catalog so CI knows the new year's additions and removals (the build fails
 until the catalog's years match the <code>REVIT&lt;year&gt;</code> constants):</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>pip<span class="w"> </span>install<span class="w"> </span>dnfile
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>python<span class="w"> </span>dev/scripts/build_revit_api_catalog.py
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>python<span class="w"> </span>dev/scripts/check_revit_api_compat.py<span class="w"> </span>--baseline
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>python<span class="w"> </span>dev/checks/build_revit_api_catalog.py
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>python<span class="w"> </span>dev/checks/check_revit_api_compat.py<span class="w"> </span>--baseline
 </span></code></pre></div>
 <p>Then run <strong>Revit API Catalog Tests</strong> from DevTools in the new Revit to confirm the
 catalog against the live API.</p>

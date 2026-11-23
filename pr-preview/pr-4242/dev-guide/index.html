@@ -10059,6 +10059,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#trying-cli-commands-without-touching-your-own-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trying CLI commands without touching your own setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#debugging-code" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11069,6 +11080,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#trying-cli-commands-without-touching-your-own-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trying CLI commands without touching your own setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#debugging-code" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11342,7 +11364,7 @@
 <p>Repeat <code>git submodule update</code> when you switch branches or when <code>develop</code> updates submodule pointers.</p>
 </div>
 <h2 id="initialize-the-pipenv-environment">Initialize the pipenv environment</h2>
-<p>This will create a python environment for the repository's Python tooling: the documentation build, linting (<code>ruff</code>), the compatibility checkers in <code>dev/scripts</code>, and the pre-commit hooks.</p>
+<p>This will create a python environment for the repository's Python tooling: the documentation build, linting (<code>ruff</code>), the compatibility checkers in <code>dev/checks</code>, and the pre-commit hooks.</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>pipenv<span class="w"> </span>install<span class="w"> </span>--dev
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>pipenv<span class="w"> </span>run<span class="w"> </span>install-hooks
 </span></code></pre></div>
@@ -11393,14 +11415,55 @@
 <li>Sessions of the same Revit year are told apart by clone: <code>pyrevit agent context --revit=&lt;clone name&gt;</code>, or <code>revit: "&lt;clone name&gt;"</code> in the MCP tools. See <a href="../agent-runtime/#running-several-clones-side-by-side">Running several clones side by side</a>.</li>
 <li>A plain Revit start, and <code>pyrevit attach</code> or <code>detach</code>, keep working as before and ignore launched sessions.</li>
 </ul>
+<h2 id="trying-cli-commands-without-touching-your-own-setup">Trying CLI commands without touching your own setup</h2>
+<p>Commands such as <code>pyrevit clones add</code>, <code>configs</code> or <code>extensions</code> read and write your pyRevit user folder and read the all-users config. To test them against scratch folders, set these environment variables for the call, each pointing at its own empty folder:</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nv">$env:PYREVIT_PATH_OVERRIDE</span> <span class="p">=</span> <span class="s1">'C:\scratch\appdata'</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="nv">$env:PYREVIT_PROGRAMDATA_PATH_OVERRIDE</span> <span class="p">=</span> <span class="s1">'C:\scratch\programdata'</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="nv">$env:PYREVIT_AGENT_DIR</span> <span class="p">=</span> <span class="s1">'C:\scratch\agent'</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="nv">$env:PYREVIT_IGNORE_LOCAL_CONFIG</span> <span class="p">=</span> <span class="s1">'1'</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">pyrevit</span> <span class="n">clones</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="nb">Remove-Item</span> <span class="n">Env</span><span class="p">:</span><span class="n">PYREVIT_PATH_OVERRIDE</span><span class="p">,</span> <span class="n">Env</span><span class="p">:</span><span class="n">PYREVIT_PROGRAMDATA_PATH_OVERRIDE</span><span class="p">,</span> <span class="n">Env</span><span class="p">:</span><span class="n">PYREVIT_AGENT_DIR</span><span class="p">,</span> <span class="n">Env</span><span class="p">:</span><span class="n">PYREVIT_IGNORE_LOCAL_CONFIG</span>
+</span></code></pre></div>
+<p>The variables stay set in the shell until removed, as in the last line, so use a throwaway shell if some of them were already set.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Replaces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PYREVIT_PATH_OVERRIDE</code></td>
+<td><code>%APPDATA%\pyRevit</code>: user config, caches and logs.</td>
+</tr>
+<tr>
+<td><code>PYREVIT_PROGRAMDATA_PATH_OVERRIDE</code></td>
+<td><code>%PROGRAMDATA%\pyRevit</code>: the all-users config.</td>
+</tr>
+<tr>
+<td><code>PYREVIT_AGENT_DIR</code></td>
+<td>The folder for agent instance records, run records and captures. It follows <code>PYREVIT_PATH_OVERRIDE</code> unless set.</td>
+</tr>
+<tr>
+<td><code>PYREVIT_IGNORE_LOCAL_CONFIG</code></td>
+<td>Set to <code>1</code> to ignore a config stored inside the clone.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title"><code>PYREVIT_PATH_OVERRIDE</code> alone does not isolate the clone registry</p>
+<p>The first non-elevated CLI call fills a fresh user folder from the all-users config, so <code>pyrevit clones</code> lists the clones registered there, and non-elevated commands edit only the copy. On an all-users install, an elevated command edits the all-users config directly. Set <code>PYREVIT_PROGRAMDATA_PATH_OVERRIDE</code> as well, especially before running elevated clone commands. <code>pyrevit launch --isolated</code> deliberately leaves it alone, because the launched Revit still loads the all-users config.</p>
+</div>
+<p>These variables do not cover places the OS decides: the Revit add-in manifests that <code>attach</code> and <code>detach</code> write under <code>%APPDATA%\Autodesk\Revit\Addins</code> (and, with <code>--allusers</code>, under <code>%PROGRAMDATA%\Autodesk\Revit\Addins</code> through Revit 2026 or <code>%PROGRAMFILES%\Autodesk\Revit\Addins</code> from Revit 2027), and the <code>PATH</code> entries of <code>pyrevit env path</code>. Run those only against a Revit year you have no real attachment for, or not at all.</p>
 <h2 id="debugging-code">Debugging Code</h2>
 <p>Currently, you cannot use Visual Studio's "Run" button to debug pyRevit because of some build issues. Instead, follow this approach:</p>
 <ol>
 <li><strong>Build the Project</strong>: Open a command prompt or PowerShell, navigate to your git directory, and build in Debug mode:</li>
 </ol>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">cd</span><span class="w"> </span>build
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>dotnet<span class="w"> </span>run<span class="w"> </span>-c<span class="w"> </span>Debug<span class="w"> </span>--<span class="w"> </span>ci
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="nb">cd</span><span class="w"> </span>..
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nb">cd</span><span class="w"> </span>build
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>dotnet<span class="w"> </span>run<span class="w"> </span>-c<span class="w"> </span>Debug<span class="w"> </span>--<span class="w"> </span>ci
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="nb">cd</span><span class="w"> </span>..
 </span></code></pre></div>
 <ol>
 <li>
@@ -11413,8 +11476,8 @@
 </ol>
 <h2 id="building-the-documentation">Building the documentation</h2>
 <p>The website is built with mkdocs. The reference API pages are generated from the docstrings under <code>pyrevitlib/pyrevit</code> by <code>docs/gen_ref_pages.py</code>, which also copies the <code>*.md</code> files of the repository root into the site.</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>pipenv<span class="w"> </span>run<span class="w"> </span>docs
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>pipenv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>check<span class="w"> </span>pyrevitlib/pyrevit
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>pipenv<span class="w"> </span>run<span class="w"> </span>docs
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>pipenv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>check<span class="w"> </span>pyrevitlib/pyrevit
 </span></code></pre></div>
 <p><code>pipenv run docs</code> is <code>mkdocs build</code>. Adding <code>--strict</code> makes warnings fail the build, but the build currently reports existing warnings (relative links to files outside <code>docs/</code> and docstring cross-references), so check that your change adds none. <code>pipenv run check-docstrings</code> runs the same <code>ruff check</code> and only reports findings. <code>pipenv run fix-docstrings</code> adds <code>--fix</code> and can rewrite files under <code>pyrevitlib/pyrevit</code>, so run it deliberately and review the diff. The <code>pyRevitDocsCI</code> workflow (<code>docs.yml</code>) publishes the site with <code>mkdocs gh-deploy</code> when the <code>docs</code> branch changes. It also runs on pull requests into <code>master</code> and on manual dispatch. Do not push to the <code>docs</code> branch directly.</p>
 <h2 id="conclusion">Conclusion</h2>

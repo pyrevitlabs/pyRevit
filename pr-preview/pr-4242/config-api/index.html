@@ -10926,7 +10926,7 @@
 
 
 <h1 id="python-config-api">Python config API</h1>
-<p>How scripts read and write pyRevit settings from Python: the typed sections, the flat <code>snake_case</code> aliases, and the raw escape hatches. <code>dev/scripts/check_config_api.py</code> checks the Python code against the C# section schemas and the contract constants in the checker, and fails the commit on drift when Python files under <code>pyrevitlib/</code> or <code>extensions/</code> change (a pre-commit hook; CI and the build do not run it).</p>
+<p>How scripts read and write pyRevit settings from Python: the typed sections, the flat <code>snake_case</code> aliases, and the raw escape hatches. <code>dev/checks/check_config_api.py</code> checks the Python code against the C# section schemas and the contract constants in the checker, and fails the commit on drift when Python files under <code>pyrevitlib/</code> or <code>extensions/</code> change (a pre-commit hook; CI and the build do not run it).</p>
 <h2 id="two-ways-to-reach-a-setting">Two ways to reach a setting</h2>
 <p><code>PyRevitConfig</code> exposes three typed sections — <code>core</code>, <code>routes</code>, <code>telemetry</code> — whose property names come from the C# records in
 <code>dev/pyRevitLabs/pyRevitLabs.Configurations/Sections/</code>. Those names are
@@ -10948,9 +10948,9 @@ PascalCase, so a setting can be reached two ways:</p>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">user_config</span><span class="o">.</span><span class="n">routes</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s2">"port"</span><span class="p">,</span> <span class="mi">8080</span><span class="p">)</span>   <span class="c1"># escape hatch</span>
 </span></code></pre></div>
 <h2 id="inventory">Inventory</h2>
-<p><code>PyRevitConfig</code> has 35 flat aliases. <code>dev/scripts/check_config_api.py</code> derives
+<p><code>PyRevitConfig</code> has 35 flat aliases. <code>dev/checks/check_config_api.py</code> derives
 this table from the source; the counts below are asserted by
-<code>dev/scripts/test_check_config_api.py</code> so the two cannot drift.</p>
+<code>dev/tests/python/tooling/test_check_config_api.py</code> so the two cannot drift.</p>
 <h3 id="31-direct-delegations">31 direct delegations</h3>
 <p>The getter is a bare read of one typed property, and the setter a bare write of
 it. For 20 of them, the property name is what the alias name converts to
@@ -11301,7 +11301,7 @@ part of the contract and the checker fails if one is removed.</p>
 <h2 id="enforcing-this-page">Enforcing this page</h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pipenv<span class="w"> </span>run<span class="w"> </span>check-config-api<span class="w">            </span><span class="c1"># same check as the pre-commit hook, on demand</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>pipenv<span class="w"> </span>run<span class="w"> </span>check-config-api<span class="w"> </span>--census<span class="w">   </span><span class="c1"># first-party read/write cost per alias</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>pipenv<span class="w"> </span>run<span class="w"> </span>test-config-api<span class="w">             </span><span class="c1"># tests for the checker itself</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>pipenv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>dev/tests/python/tooling/test_check_config_api.py<span class="w">  </span><span class="c1"># tests for the checker itself</span>
 </span></code></pre></div>
 <p>The checker is pure source analysis: no pyRevit import, no Revit, no labs
 assemblies. It cross-references the Python aliases against the C# section

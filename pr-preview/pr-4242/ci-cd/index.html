@@ -10139,6 +10139,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#test-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docs-previews" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10924,6 +10935,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#test-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docs-previews" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11260,7 +11282,7 @@
 <tr>
 <td><strong><code>pyRevit CI</code></strong></td>
 <td><a href="https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/ci.yml"><code>ci.yml</code></a></td>
-<td>Runs <code>dotnet run -- ci</code> to build unsigned DLLs, runs <code>dotnet test</code> on the build project, uploads <code>unsigned-bin-&lt;sha&gt;</code> (Actions artifact for WIP/release), and publishes the same zip to the public <strong><code>ci-binaries</code></strong> GitHub Release (for <code>pyrevit clone</code>). Runs on every push to <code>develop</code> / <code>master</code> / <code>v*</code> tag (with a path filter), on PRs to those branches, and on manual dispatch. Tag pushes also refresh <code>unsigned-bin-master-latest.zip</code>.</td>
+<td>Runs the API-free Python tests, runs <code>dotnet run -- ci</code> to build unsigned DLLs, runs the API-free C# tests through <code>dev/tests/run_tests.py</code>, uploads <code>unsigned-bin-&lt;sha&gt;</code> (Actions artifact for WIP/release), and publishes the same zip to the public <strong><code>ci-binaries</code></strong> GitHub Release (for <code>pyrevit clone</code>). Runs on every push to <code>develop</code> / <code>master</code> / <code>release/**</code> / <code>v*</code> tag (with a path filter), on PRs targeting any branch, and on manual dispatch. Tag pushes also refresh <code>unsigned-bin-master-latest.zip</code>.</td>
 </tr>
 <tr>
 <td><strong><code>pyRevit WIP</code></strong></td>
@@ -11317,6 +11339,9 @@
 <li>the <code>.nupkg</code>'s embedded checksum matches the signed installer users actually download, and</li>
 <li>the <code>.nupkg</code> itself carries a NuGet author signature so Chocolatey clients can verify it.</li>
 </ul>
+<h2 id="test-execution">Test execution</h2>
+<p><code>ci.yml</code> installs the pinned testing dependencies from <code>Pipfile.lock</code>, runs the unified Python selection before the product build, and runs the unified C# selection afterward. <code>dev/tests/run_tests.py</code> discovers suites, validates tags, checks per-module coverage baselines, and produces unique reports under <code>.test-results/</code>. Artifacts are uploaded even when a test or coverage gate fails.</p>
+<p>Tests using the Revit API or requiring installed/running Revit are excluded from the CI test runner and run locally; see <a href="../testing/#revit-integration-tests">local Revit tests</a>. The self-hosted Revit load check is a separate workflow, described in <a href="#revit-integration-tests">Revit integration tests</a>. Product building does not execute test fixtures; local and CI validation use the same shared test entry point.</p>
 <h2 id="docs-previews">Docs previews</h2>
 <p>A pull request that changes <code>docs/</code> or <code>mkdocs.yml</code> gets a preview of the whole site at <code>https://docs.pyrevitlabs.io/pr-preview/pr-&lt;number&gt;/</code>. A bot comment on the pull request carries the link and is updated on every push. The preview is deleted when the pull request is closed or merged.</p>
 <p>Two workflows do this, because building the docs runs the pull request's own code (<code>docs/gen_ref_pages.py</code>):</p>
@@ -11349,10 +11374,6 @@
 <p>Changes that only touch <code>pyrevitlib/</code> do not trigger a preview, even though the API reference is generated from it.</p>
 <p>Production deploys (<a href="https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs.yml"><code>docs.yml</code></a>) replace everything on <code>gh-pages</code> except <code>pr-preview/</code>. Do not go back to <code>mkdocs gh-deploy</code>: it rewrites the whole branch and deletes every open preview. <code>docs/robots.txt</code> keeps search engines out of <code>/pr-preview/</code>.</p>
 <h2 id="revit-integration-tests">Revit integration tests</h2>
-<div class="admonition warning">
-<p class="admonition-title">Existing workflow differs from testing policy</p>
-<p>The <a href="../testing/#repository-testing-policy">repository testing policy</a> requires every test using the Revit API or requiring installed/running Revit to run locally outside CI. All other first-party automated suites must be discovered and run in CI. The workflow described below still launches Revit on pushes to <code>develop</code>; moving Revit testing entirely out of CI is pending implementation. This section records current wiring, not the target policy.</p>
-</div>
 <p>GitHub-hosted runners cannot run Revit, so <a href="https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml"><code>revit-integration.yml</code></a> targets a self-hosted runner labelled <code>self-hosted, windows, revit</code>. It answers one question the unit tests cannot: <strong>does Revit load the build without the unsigned add-in dialog?</strong></p>
 <p>The job builds <code>bin/</code>, signs it with a throwaway certificate via <code>dotnet run -- sign-test</code>, then launches each Revit year and reads the outcome out of that session's journal:</p>
 <table>
@@ -11418,12 +11439,12 @@
 <h3 id="ciyml-triggers-and-path-filter"><code>ci.yml</code> triggers and path filter</h3>
 <p><code>ci.yml</code> runs when changes touch build-related paths:</p>
 <ul>
-<li><code>.github/workflows/</code>, <code>build/</code>, <code>dev/</code>, <code>extensions/</code>, <code>pyrevitlib/</code>, <code>release/</code>, <code>site-packages/</code></li>
+<li><code>.github/workflows/</code>, <code>build/</code>, <code>dev/</code>, <code>extensions/</code>, <code>pyrevitlib/</code>, <code>release/</code>, <code>site-packages/</code>, and root <code>Pipfile</code>, <code>Pipfile.lock</code>, <code>pyproject.toml</code>, <code>conftest.py</code></li>
 </ul>
 <p>It is triggered by:</p>
 <ul>
-<li><strong>Push</strong> to <code>develop</code>, <code>master</code>, or any <code>v*</code> tag (with the path filter above).</li>
-<li><strong>Pull request</strong> (<code>opened</code>, <code>reopened</code>, <code>synchronize</code>) targeting <code>develop</code> or <code>master</code> (with the path filter).</li>
+<li><strong>Push</strong> to <code>develop</code>, <code>master</code>, a <code>release/**</code> branch, or any <code>v*</code> tag (with the path filter above).</li>
+<li><strong>Pull request</strong> (<code>opened</code>, <code>reopened</code>, <code>synchronize</code>) targeting any branch, including a stacked PR's parent branch (with the path filter).</li>
 <li><strong><code>workflow_dispatch</code></strong> for manual runs.</li>
 </ul>
 <p>Doc-only or other out-of-scope changes skip CI entirely.</p>
@@ -11433,7 +11454,7 @@
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Anything the <code>build</code> job runs must be inside the filter</p>
-<p>The filter decides whether a change is verified at all. The host-free suites live under <code>dev/scripts</code>, which the filter covers. A suite outside the filter could be broken or deleted without triggering a run, and on a <code>v*</code> tag a missing CI run also blocks <code>release.yml</code>, since it polls for that CI run. When adding a step to the <code>build</code> job, add its inputs to both <code>paths:</code> lists in the same change.</p>
+<p>The filter decides whether a change is verified at all. Shared test infrastructure and Python suites live under <code>dev/tests</code>, covered by <code>dev/**</code>. Add every new CI entry point and configuration input to both <code>paths:</code> lists. Missing inputs can leave changes unverified or block <code>release.yml</code>, which waits for the CI run.</p>
 </div>
 <h3 id="official-repository-vs-forks">Official repository vs forks</h3>
 <p>The version, year, and product-data stamping modules only run when <code>Build__Channel</code> is <code>wip</code> or <code>release</code> <strong>and</strong> <code>GITHUB_REPOSITORY</code> is the main repo (<code>pyrevitlabs/pyRevit</code>). The downstream <code>wip</code> job and the whole <code>release.yml</code> workflow are similarly gated on the main repo so secrets are never exposed to forks. Forks still get checkout and an <strong>unsigned</strong> product build via <code>ci.yml</code> (useful for PR validation). Unsigned builds (<code>Channel=none</code>) still seed <code>bin/pyrevit-products.json</code> from <code>release/</code> before the labs build so fork PR validation succeeds.</p>
@@ -11658,12 +11679,12 @@
 <td>Build-project unit tests (also run in CI)</td>
 </tr>
 <tr>
-<td><code>python -m unittest discover -s dev/scripts -p 'test_standalone_*.py'</code></td>
-<td>Host-free CPython suites for <code>pyrevitlib</code> modules (also run in CI, and as <code>pipenv run test-standalone</code>). They live in <code>dev/scripts</code> because every test in <code>pyrevitlib/pyrevit/unittests/</code> imports <code>pyrevit</code> and needs a Revit host, so a suite that gates CI cannot live beside the code it covers. Same reason for the load-by-path at the top of each file.</td>
+<td><code>python dev/tests/run_tests.py</code></td>
+<td>Shared API-free C#/Python discovery, reports, and per-module coverage gates; CI uses the same language selections.</td>
 </tr>
 <tr>
-<td><code>python dev/scripts/check_revit_api_compat.py --baseline</code></td>
-<td>Revit API version-compatibility lint of <code>pyRevitTools.extension</code> and <code>pyrevitlib</code>. Run by <code>dotnet run -- ci</code> (<code>CheckRevitApiCompatModule</code>), and as <code>pipenv run check-revit-api</code>. Fails only on findings missing from the committed baseline. The module uses the first <code>python</code>, <code>python3</code> or <code>py</code> on <code>PATH</code> that is 3.10 or newer, so <code>ci.yml</code> has no Python setup step for it. See <a href="../revit-api-compat/">Revit API compatibility lint</a>.</td>
+<td><code>python dev/checks/check_revit_api_compat.py --baseline</code></td>
+<td>Revit API version-compatibility lint of <code>pyRevitTools.extension</code> and <code>pyrevitlib</code>. Run by <code>dotnet run -- ci</code> (<code>CheckRevitApiCompatModule</code>), and as <code>pipenv run check-revit-api</code>. Fails only on findings missing from the committed baseline. The module uses the first <code>python</code>, <code>python3</code> or <code>py</code> on <code>PATH</code> that is 3.10 or newer; in CI, that is the Python 3.14 set up by <code>ci.yml</code>. See <a href="../revit-api-compat/">Revit API compatibility lint</a>.</td>
 </tr>
 <tr>
 <td><code>dotnet run -- pack sign</code></td>
