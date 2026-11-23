@@ -6,7 +6,8 @@ namespace pyRevitCLI.Tests;
 /// <summary>
 ///     Verifies that values the CLI cannot use are rejected with an error instead of being skipped silently:
 ///     <c>caches clear abc</c>, <c>agent runs --limit=abc</c>, <c>configs outputcss &lt;missing file&gt;</c>
-///     and <c>configs telemetry file &lt;missing folder&gt;</c> exited 0 without doing anything.
+///     and <c>configs telemetry file &lt;missing folder&gt;</c> exited 0 without doing anything. Issue #4214 is the
+///     same for <c>run &lt;script&gt; --revit=&lt;year&gt;</c> when pyRevit is not attached to that year.
 /// </summary>
 [Trait("Environment", "HostFree")]
 [Trait("Level", "Unit")]
@@ -44,6 +45,13 @@ public class CliInputValidationTests {
         var error = Assert.Throws<PyRevitException>(() => PyRevitCLIArguments.Limit(text, defaultLimit: 20));
 
         Assert.Contains("Invalid limit", error.Message);
+    }
+
+    [Fact]
+    public void RunRefusesARevitYearWithoutAttachment() {
+        var error = Assert.Throws<PyRevitException>(() => PyRevitCLIArguments.RequireAttachment(null, 2021));
+
+        Assert.Contains("pyRevit is not attached to Revit \"2021\"", error.Message);
     }
 
     [Fact]
