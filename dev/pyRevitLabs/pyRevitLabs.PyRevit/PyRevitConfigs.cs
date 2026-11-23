@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Principal;
 using System.Security.AccessControl;
@@ -70,7 +71,7 @@ namespace pyRevitLabs.PyRevit {
                 extensionsRoot = Path.Combine(clonePath, PyRevitConsts.ExtensionsDirName);
             }
             else {
-                foreach (var clone in PyRevitClones.GetRegisteredClones()) {
+                foreach (var clone in PyRevitClones.GetRegisteredClones(pruneStoredList: false)) {
                     if (CommonUtils.VerifyPath(clone.ExtensionsPath)) {
                         extensionsRoot = clone.ExtensionsPath;
                         break;
@@ -121,6 +122,61 @@ namespace pyRevitLabs.PyRevit {
             catch (Exception ex) {
                 throw new PyRevitException($"Failed deleting config file \"{PyRevitConsts.ConfigFilePath}\"", ex);
             }
+        }
+
+        /// <summary>
+        /// Returns the loaded config to its declared defaults by removing stored
+        /// settings (see <see cref="IConfigurationService.ResetToDefaults"/>), so
+        /// the defaults are never duplicated outside the section records. The
+        /// config is copied to the Documents folder first, and nothing is changed
+        /// when that copy fails. A reset of the whole config then re-seeds the
+        /// shipped extension defaults, leaving a fresh-install state.
+        /// </summary>
+        /// <param name="sectionName">Section to reset, or null for every section.</param>
+        /// <param name="dryRun">Report what would be removed without backing up or changing anything.</param>
+        /// <param name="backupPath">Where the config was copied, or null when no copy was made.</param>
+        /// <returns>What was (or with <paramref name="dryRun"/>, would be) removed.</returns>
+        /// <exception cref="PyRevitException">The config is read-only or could not be backed up.</exception>
+        public static IReadOnlyList<string> ResetConfig(string sectionName, bool dryRun, out string backupPath) {
+            backupPath = null;
+            var cfg = GetConfigFile();
+            var planned = cfg.ResetToDefaults(sectionName, dryRun: true);
+            if (dryRun || planned.Count == 0)
+                return planned;
+
+            if (cfg.ReadOnly || cfg.Configuration.ReadOnly || HasReadOnlyAttribute(cfg.Configuration.ConfigurationPath))
+                throw new PyRevitException($"Config file \"{cfg.Configuration.ConfigurationPath}\" is read-only.");
+
+            backupPath = BackUpConfig(cfg.Configuration.ConfigurationPath);
+            var removed = cfg.ResetToDefaults(sectionName);
+            ReloadConfig();
+            if (sectionName is null)
+                SeedShippedExtensionDefaults();
+            return removed;
+        }
+
+        private static bool HasReadOnlyAttribute(string configPath) {
+            return File.Exists(configPath) && (File.GetAttributes(configPath) & FileAttributes.ReadOnly) != 0;
+        }
+
+        private static string BackUpConfig(string configPath) {
+            if (!File.Exists(configPath))
+                return null;
+
+            string backupFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            if (string.IsNullOrEmpty(backupFolder))
+                backupFolder = Path.GetDirectoryName(Path.GetFullPath(configPath));
+            string backupPath = Path.Combine(
+                backupFolder,
+                $"pyRevit_config.reset.{DateTime.Now:yyyyMMdd-HHmmss-fff}.ini");
+            try {
+                File.Copy(configPath, backupPath, overwrite: false);
+            }
+            catch (Exception ex) {
+                throw new PyRevitException($"Failed backing up config file to \"{backupPath}\"; nothing was reset", ex);
+            }
+            _logger.Info("Backed up config to {@BackupPath}", backupPath);
+            return backupPath;
         }
 
         /// <summary>

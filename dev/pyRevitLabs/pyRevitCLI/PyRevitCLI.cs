@@ -1018,6 +1018,19 @@ namespace pyRevitCLI {
                 else if (all("seedshippeddefaults"))
                     PyRevitConfigs.SeedShippedExtensionDefaults();
 
+                else if (all("reset")) {
+                    bool dryRun = arguments["--dryrun"].IsTrue;
+                    var removed = PyRevitConfigs.ResetConfig(TryGetValue("<section>"), dryRun, out string backupPath);
+                    if (removed.Count == 0)
+                        Console.WriteLine("Nothing to reset.");
+                    else {
+                        if (backupPath != null)
+                            Console.WriteLine(string.Format("Backed up config to \"{0}\"", backupPath));
+                        foreach (var item in removed)
+                            Console.WriteLine(string.Format("{0} {1}", dryRun ? "Would reset" : "Reset", item));
+                    }
+                }
+
                 else if (any("enable", "disable")) {
                     if (arguments["<option_path>"] != null) {
                         // extract section and option names

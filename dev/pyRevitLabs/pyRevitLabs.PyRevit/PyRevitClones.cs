@@ -103,6 +103,17 @@ namespace pyRevitLabs.PyRevit {
         // return list of registered clones
         // @handled @logs
         public static List<PyRevitClone> GetRegisteredClones() {
+            return GetRegisteredClones(pruneStoredList: true);
+        }
+
+        /// <summary>
+        /// Returns the registered clones that pass verification.
+        /// </summary>
+        /// <param name="pruneStoredList">
+        /// When false, registrations that fail verification are skipped but stay in the config, so a
+        /// clone on an unavailable drive is not unregistered by a caller that only needs to read.
+        /// </param>
+        public static List<PyRevitClone> GetRegisteredClones(bool pruneStoredList) {
             // safely get clone list
             var cfg = PyRevitConfigs.GetConfigFile();
             var clonesDict = MergeMachineRegisteredClones(cfg, cfg.Environment.Clones);
@@ -151,7 +162,7 @@ namespace pyRevitLabs.PyRevit {
             }
             foreach (var staleKey in reportedRejectedClones.Keys.Where(k => !registrationKeys.Contains(k)).ToList())
                 reportedRejectedClones.TryRemove(staleKey, out _);
-            if (listChanged) {
+            if (listChanged && pruneStoredList) {
                 foreach (var duplicate in duplicates)
                     logger.Info("Registered clone \"{0}\" points to the same path as clone \"{1}\" and is dropped from the clones list",
                                 duplicate.Name, validatedClones.Find(c => c.Equals(duplicate)).Name);
