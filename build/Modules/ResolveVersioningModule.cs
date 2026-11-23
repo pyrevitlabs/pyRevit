@@ -17,6 +17,7 @@ public sealed class ResolveVersioningModule(IOptions<BuildOptions> buildOptions)
             buildOptions.Value.Channel,
             VersionHelper.IsVersionTagBuild());
         var versionInfo = VersionHelper.CreateVersionInfo(buildVersion);
+        VersionHelper.ExportBuildVersion(versionInfo.BuildVersion);
         context.Summary.KeyValue("Build", "Version", versionInfo.BuildVersion);
         context.Summary.KeyValue("Build", "InstallVersion", versionInfo.InstallVersion);
         return Task.FromResult<VersionInfo?>(versionInfo);

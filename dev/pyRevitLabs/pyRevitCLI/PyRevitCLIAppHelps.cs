@@ -140,7 +140,7 @@ namespace pyRevitCLI {
                             { "<origin_url>",           "New clone remote origin url" },
                             { "--force",                "Just do it; I know what I am doing" },
                             { "--all",                  "All clones" },
-                            { "--clearconfigs",         "Clear pyRevit configurations." },
+                            { "--clearconfigs",         "Delete the whole user configuration file, including settings unrelated to the deleted clones. Only applies with --all" },
                             { "--reset",                "Reset remote origin url to default" },
                             { "--skip-bin",             "Skip downloading CI binaries on update" },
                             { "--username=<username>",  "Username to access private repo. Must be specified with --password" },
@@ -279,7 +279,7 @@ namespace pyRevitCLI {
                 case PyRevitCLICommandType.Releases:
                     BuildHelp(
                         new List<string>() { "releases" },
-                        header: "Info on pyRevit Releases",
+                        header: "Info on pyRevit Releases, listed newest version first",
                         commands: new Dictionary<string, string>() {
                             { "open",                   "Open release page in default browser" },
                             { "download installer",     "Download EXE installer for given release, if exists" },
@@ -417,10 +417,10 @@ namespace pyRevitCLI {
                             { "<run_id>",               "Run id printed by 'agent run' or 'agent runs', or the request id (req-...) of a request that got no answer" },
                             { "<action>",               "start, stop or status, for 'agent record'" },
                             { "--no-screenshots",       "Record without screenshots" },
-                            { "--screenshot-interval=<seconds>", "Minimum seconds between screenshots (default 5)" },
-                            { "--max-screenshots=<count>", "Most screenshots in one recording (default 20, max 100)" },
-                            { "--max-events=<count>",   "Most events in one recording (default 5000, max 20000)" },
-                            { "--max-duration=<seconds>", "Stop the recording after this long (default 1800, max 14400)" },
+                            { "--screenshot-interval=<seconds>", "Minimum seconds between screenshots, 0 to 3600 (default 5); 0 takes one at every opportunity until --max-screenshots is reached" },
+                            { "--max-screenshots=<count>", "Most screenshots in one recording, 0 to 100 (default 20)" },
+                            { "--max-events=<count>",   "Most events in one recording, 1 to 20000 (default 5000)" },
+                            { "--max-duration=<seconds>", "Stop the recording after this long, 1 to 14400 (default 1800)" },
                         });
                     break;
 
@@ -538,6 +538,22 @@ namespace pyRevitCLI {
                             { "enable | disable",       "Enable/Disable script telemetry" },
                             { "yes | no",               "Activate/Deactivate config option" },
                             { "<dest_path>",            "Telemetry folder for file, telemetry server url for server" },
+                        });
+                    break;
+
+                case PyRevitCLICommandType.ConfigsAppTelemetry:
+                    BuildHelp(
+                        new List<string>() { "configs apptelemetry" },
+                        header: "Configure application telemetry.\n"
+                                + "Run a command without a value to print the current setting.",
+                        commands: new Dictionary<string, string>() {
+                            { "flags",                  "Application telemetry event flags" },
+                            { "server",                 "Url of the application telemetry server" },
+                        },
+                        options: new Dictionary<string, string>() {
+                            { "enable | disable",       "Enable/Disable application telemetry" },
+                            { "<flags>",                "Event flags value" },
+                            { "<server_path>",          "Application telemetry server url" },
                         });
                     break;
             }
