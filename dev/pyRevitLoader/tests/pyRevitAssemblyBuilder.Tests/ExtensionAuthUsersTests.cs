@@ -135,7 +135,6 @@ namespace pyRevitAssemblyBuilder.Tests
         }
 
         [Test]
-        [Category("Revit")]
         public void GetInstalledUIExtensions_ExcludesExtensionsRestrictedByRegistryAuth()
         {
             var extPath = TestExtensionBuilder.CreateMinimalExtension(TestTempDir, "UnauthorizedRegistryExt");
