@@ -307,6 +307,15 @@ namespace pyRevitLabs.Common {
             }
         }
 
+        /// <summary>
+        /// Reads the url of a named remote of a git repository.
+        /// </summary>
+        /// <param name="repoPath">The repository folder.</param>
+        /// <param name="remoteName">The remote name, such as <c>origin</c>.</param>
+        /// <returns>
+        /// The remote url, or null when the folder is not a valid repository or the remote does not exist.
+        /// </returns>
+        /// <exception cref="PyRevitException">The repository could not be read.</exception>
         public static string GetRemoteUrl(string repoPath, string remoteName) {
             if (IsValidRepo(repoPath)) {
                 try {
@@ -329,7 +338,9 @@ namespace pyRevitLabs.Common {
         /// <returns>
         /// True when both resolve to the same host and path, ignoring credentials, scheme, a trailing
         /// <c>.git</c>, trailing slashes, backslash use and host case. The path case is significant for
-        /// remote URLs. Local sources compare as full paths, ignoring case. False when either is empty.
+        /// remote URLs. Local sources compare as full paths, ignoring case; relative local paths resolve
+        /// against the process working directory and <c>file://</c> URLs compare as their local path.
+        /// A different port or a different path case counts as a different remote. False when either is empty.
         /// </returns>
         public static bool AreSameRemote(string first, string second) {
             if (string.IsNullOrWhiteSpace(first) || string.IsNullOrWhiteSpace(second))
@@ -337,12 +348,25 @@ namespace pyRevitLabs.Common {
             return NormalizeRemote(first) == NormalizeRemote(second);
         }
 
+        private static readonly Regex DrivePathPattern = new Regex("^[a-z]:(/|$)", RegexOptions.IgnoreCase);
+        private static readonly Regex UrlRemotePattern =
+            new Regex("^[a-z][a-z0-9+.-]+://(?:[^/@]*@)?([^/]+)/?(.*)$", RegexOptions.IgnoreCase);
+        private static readonly Regex ScpRemotePattern = new Regex(@"^(?:[^@/\s]+@)?([^/:@\s]+):(?!//)(.+)$");
+
         private static string NormalizeRemote(string source) {
             var value = source.Trim().Replace('\\', '/');
-            var isDrivePath = Regex.IsMatch(value, "^[a-z]:(/|$)", RegexOptions.IgnoreCase);
-            var match = Regex.Match(value, "^[a-z][a-z0-9+.-]+://(?:[^/@]*@)?([^/]+)/?(.*)$", RegexOptions.IgnoreCase);
+            if (value.StartsWith("file:", StringComparison.OrdinalIgnoreCase)) {
+                try {
+                    value = new Uri(value).LocalPath.Replace('\\', '/');
+                }
+                catch (UriFormatException) {
+                    return "raw:" + value.ToLowerInvariant();
+                }
+            }
+            var isDrivePath = DrivePathPattern.IsMatch(value);
+            var match = UrlRemotePattern.Match(value);
             if (!match.Success)
-                match = Regex.Match(value, "^(?:[^@/\\s]+@)?([^/:@\\s]+):(?!//)(.+)$");
+                match = ScpRemotePattern.Match(value);
             if (match.Success && !isDrivePath) {
                 var path = match.Groups[2].Value.Trim('/');
                 if (path.EndsWith(".git", StringComparison.OrdinalIgnoreCase))

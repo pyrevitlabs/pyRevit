@@ -97,9 +97,10 @@ namespace pyRevitLabs.Common {
             string repoUrl,
             BinArtifactInstallMode mode,
             string branchName = null) {
-            var repoId = GithubRepoHelper.ParseRepoId(repoUrl ?? GitInstaller.GetRemoteUrl(
-                clonePath,
-                PyRevitLabsConsts.DefaultRemoteName));
+            var effectiveUrl = repoUrl ?? GitInstaller.GetRemoteUrl(clonePath, PyRevitLabsConsts.DefaultRemoteName);
+            if (effectiveUrl == null)
+                throw new PyRevitException(string.Format("Clone \"{0}\" has no origin remote.", clonePath));
+            var repoId = GithubRepoHelper.ParseRepoId(effectiveUrl);
             var resolvedBranch = !string.IsNullOrWhiteSpace(branchName)
                 ? branchName
                 : (GitInstaller.GetCheckedoutBranch(clonePath) ?? PyRevitLabsConsts.TargetBranch);
