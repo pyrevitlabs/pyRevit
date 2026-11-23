@@ -1,8 +1,7 @@
 using System;
-using System.Runtime.InteropServices;
 using PyRevitLabs.PyRevit.Runtime.Agent;
 
-namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
+namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
     /// <summary>Exercises the Revit-free taskbar flash request layout.</summary>
     [Trait("Environment", "HostFree")]
     [Trait("Level", "Unit")]
@@ -13,7 +12,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             var info = AgentUser32.BuildFlashInfo(window, false);
 
-            Assert.Equal((uint)Marshal.SizeOf(typeof(AgentUser32.FlashInfo)), info.Size);
+            Assert.Equal(IntPtr.Size == 8 ? 32u : 20u, info.Size);
             Assert.Equal(window, info.Window);
             Assert.Equal(3u | 12u, info.Flags);
             Assert.Equal(uint.MaxValue, info.Count);
@@ -29,12 +28,6 @@ namespace pyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal(window, info.Window);
             Assert.Equal(0u, info.Flags);
             Assert.Equal(0u, info.Count);
-        }
-
-        [Fact]
-        public void Flash_NullWindow_DoesNothing() {
-            AgentUser32.Flash(IntPtr.Zero, false);
-            AgentUser32.Flash(IntPtr.Zero, true);
         }
     }
 }

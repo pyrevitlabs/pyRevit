@@ -3,8 +3,8 @@ using System.Runtime.InteropServices;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
-    /// The user32 window enumeration calls shared by <see cref="AgentWindows"/> and
-    /// <see cref="AgentCapture"/>.
+    /// The user32 calls shared by <see cref="AgentWindows"/>, <see cref="AgentCapture"/> and
+    /// <see cref="AgentApproval"/>: window enumeration and the taskbar flash.
     /// </summary>
     internal static class AgentUser32 {
         private const uint FlashStop = 0;
