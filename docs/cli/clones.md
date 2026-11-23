@@ -39,6 +39,17 @@ $ pyrevit clone dev --dest="C:\pyRevit\dev" --branch=develop
 
 - `--branch=`: Specify a specific branch to be cloned
 
+#### Retrying an interrupted clone
+
+When the git clone succeeds but the pre-built binaries for the branch are not available yet, `pyrevit clone` keeps the cloned folder and reports a warning without registering it. Running the same command again (same `<clone_name>`, `--dest` and `--source`) resumes: it installs the binaries into the kept folder and registers it, without deleting or resetting anything in it.
+
+If the existing folder is not a clone of the requested source, or it was created from a `--image` archive, the command stops with an error. Register the folder and update it once binaries are available, delete the folder, or choose another `--dest`:
+
+```powershell
+$ pyrevit clones add <clone_name> "<path_to_kept_folder>"
+$ pyrevit clones update <clone_name>
+```
+
 #### Installing Custom Clones
 
 You can also use the clone command to install your own pyRevit clones from any git url. Provide `--source=<repo_url>` to clone from a git repo, or `--image=<archive_url>` to install from a ZIP archive. If you are cloning from a private repository, you can provide the `--username` and `--password` to the repo account as well.
