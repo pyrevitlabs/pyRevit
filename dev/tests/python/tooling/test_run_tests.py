@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -420,6 +421,64 @@ class SelectionTests(unittest.TestCase):
         )
         with self.assertRaises(pytest.UsageError):
             conftest.classification(item)
+
+    def test_class_cannot_downgrade_a_revit_module(self):
+        """A class default is held to the same guard as a method marker."""
+        item = SimpleNamespace(
+            module=SimpleNamespace(TEST_ENVIRONMENT="Revit", TEST_LEVEL="Integration"),
+            cls=SimpleNamespace(TEST_ENVIRONMENT="HostFree"),
+            nodeid="hosted",
+            get_closest_marker=lambda name: None,
+        )
+        with self.assertRaises(pytest.UsageError):
+            conftest.classification(item)
+
+    def test_non_literal_classification_names_the_file(self):
+        """A computed tag fails with the module path, not a bare AST message."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "test_computed.py"
+            path.write_text(
+                'TEST_ENVIRONMENT = "Host" + "Free"\nTEST_LEVEL = "Unit"\n',
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "test_computed.py.*literal"):
+                run_tests.python_metadata(path)
+
+    def test_project_evaluations_never_exceed_the_cpu_count(self):
+        """Each evaluation is an MSBuild process, so the pool stays bounded."""
+        lock = threading.Lock()
+        running = peak = 0
+
+        def fake_evaluate(path, framework=None):
+            nonlocal running, peak
+            with lock:
+                running += 1
+                peak = max(peak, running)
+            time.sleep(0.05)
+            with lock:
+                running -= 1
+            return {
+                "Properties": {
+                    "IsTestProject": "false",
+                    "TargetFrameworks": "",
+                    "TargetFramework": "",
+                },
+                "Items": {"PackageReference": []},
+            }
+
+        paths = [Path(f"Tests{index}.csproj") for index in range(8)]
+        with (
+            patch.object(run_tests.os, "cpu_count", return_value=2),
+            patch.object(
+                run_tests,
+                "first_party_files",
+                side_effect=lambda root, *_: paths if root.name == "dev" else [],
+            ),
+            patch.object(run_tests, "evaluate_project", side_effect=fake_evaluate),
+            self.assertRaises(ValueError),
+        ):
+            run_tests.find_dotnet_projects()
+        self.assertEqual(2, peak)
 
     def test_baseline_update_replaces_only_the_selected_language(self):
         """Renamed modules drop out; the other language's floors are untouched."""
