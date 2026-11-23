@@ -71,7 +71,7 @@ namespace pyRevitLabs.PyRevit {
                 extensionsRoot = Path.Combine(clonePath, PyRevitConsts.ExtensionsDirName);
             }
             else {
-                foreach (var clone in PyRevitClones.GetRegisteredClones()) {
+                foreach (var clone in PyRevitClones.GetRegisteredClones(pruneStoredList: false)) {
                     if (CommonUtils.VerifyPath(clone.ExtensionsPath)) {
                         extensionsRoot = clone.ExtensionsPath;
                         break;
