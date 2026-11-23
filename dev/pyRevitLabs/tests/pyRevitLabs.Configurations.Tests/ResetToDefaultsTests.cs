@@ -123,6 +123,26 @@ public class ResetToDefaultsTests {
     }
 
     [Fact]
+    public void ResetToDefaults_UserExtensions_AreKept() {
+        var service = BuildService(config => {
+            config.SetValue("core", "rocketmode", false);
+            config.SetValue("core", "userextensions", "[\"C:\\Extensions\"]");
+        });
+
+        var removed = service.ResetToDefaults("core");
+
+        Assert.Equal(new[] { "core:rocketmode" }, removed);
+        Assert.True(service.Configuration.HasSectionKey("core", "userextensions"));
+    }
+
+    [Fact]
+    public void ResetToDefaults_UnknownSection_Throws() {
+        var service = BuildService(_ => { });
+
+        Assert.Throws<ArgumentException>(() => service.ResetToDefaults("nosuch"));
+    }
+
+    [Fact]
     public void ResetToDefaults_MissingSection_ReturnsEmpty() {
         var service = BuildService(_ => { });
 

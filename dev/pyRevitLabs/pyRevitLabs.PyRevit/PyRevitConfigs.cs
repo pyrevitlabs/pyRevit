@@ -144,7 +144,7 @@ namespace pyRevitLabs.PyRevit {
             if (dryRun || planned.Count == 0)
                 return planned;
 
-            if (cfg.ReadOnly || cfg.Configuration.ReadOnly)
+            if (cfg.ReadOnly || cfg.Configuration.ReadOnly || HasReadOnlyAttribute(cfg.Configuration.ConfigurationPath))
                 throw new PyRevitException($"Config file \"{cfg.Configuration.ConfigurationPath}\" is read-only.");
 
             backupPath = BackUpConfig(cfg.Configuration.ConfigurationPath);
@@ -155,12 +155,19 @@ namespace pyRevitLabs.PyRevit {
             return removed;
         }
 
+        private static bool HasReadOnlyAttribute(string configPath) {
+            return File.Exists(configPath) && (File.GetAttributes(configPath) & FileAttributes.ReadOnly) != 0;
+        }
+
         private static string BackUpConfig(string configPath) {
             if (!File.Exists(configPath))
                 return null;
 
+            string backupFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            if (string.IsNullOrEmpty(backupFolder))
+                backupFolder = Path.GetDirectoryName(Path.GetFullPath(configPath));
             string backupPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                backupFolder,
                 $"pyRevit_config.reset.{DateTime.Now:yyyyMMdd-HHmmss-fff}.ini");
             try {
                 File.Copy(configPath, backupPath, overwrite: false);

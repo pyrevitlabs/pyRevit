@@ -99,7 +99,8 @@ public interface IConfigurationService {
     /// so the defaults stay declared once, on the section records, and reads fall
     /// back to them. For a typed section only the keys its record binds (and
     /// their legacy names) are removed, so bookkeeping keys such as
-    /// <c>config_version</c> survive; any other section is removed whole. A
+    /// <c>config_version</c> and user-registered state such as the user
+    /// extension folders survive; any other section is removed whole. A
     /// section left without keys is removed too. Flushes to disk unless
     /// <paramref name="dryRun"/> is set.
     /// <para>
@@ -113,7 +114,10 @@ public interface IConfigurationService {
     /// What was removed, as <c>section:key</c> for single keys and <c>section</c>
     /// for whole sections.
     /// </returns>
-    /// <exception cref="ArgumentException"><paramref name="sectionName"/> is the environment section.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="sectionName"/> is the environment section, or names a section that is
+    /// neither a known typed section nor present in the configuration.
+    /// </exception>
     /// <exception cref="Exceptions.ConfigurationReadOnlyException">The configuration is read-only and <paramref name="dryRun"/> is false.</exception>
     IReadOnlyList<string> ResetToDefaults(string? sectionName = null, bool dryRun = false);
 

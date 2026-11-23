@@ -14,8 +14,7 @@ namespace pyRevitLabs.Configurations.Sections;
 /// </para>
 /// </summary>
 [SectionName("core")]
-public sealed record CoreSection
-{
+public sealed record CoreSection {
     /// <summary>Whether extension metadata is cached in binary form between sessions. Default true.</summary>
     [KeyName("bincache")]
     [DefaultValue(true)]
@@ -182,5 +181,6 @@ public sealed record CoreSection
     /// sparse-section save; read back as an empty list when unset.
     /// </summary>
     [KeyName("userextensions")]
+    [PreserveOnReset]
     public List<string>? UserExtensions { get; set; }
 }

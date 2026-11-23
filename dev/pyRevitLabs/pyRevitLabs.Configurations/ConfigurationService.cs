@@ -195,8 +195,11 @@ public sealed class ConfigurationService : IConfigurationService {
                 : new List<string> { sectionName };
 
             foreach (string target in targets) {
-                if (!_configuration.HasSection(target))
+                if (!_configuration.HasSection(target)) {
+                    if (sectionName is not null && FindSectionType(target) is null)
+                        throw new ArgumentException($"Section \"{target}\" is not a known config section and is not in the config file.");
                     continue;
+                }
 
                 Type? sectionType = FindSectionType(target);
                 if (sectionType is null || !_configuration.GetSectionOptionNames(target).Any()) {
@@ -233,6 +236,8 @@ public sealed class ConfigurationService : IConfigurationService {
 
     private static IEnumerable<string> GetBoundKeyNames(Type sectionType) {
         foreach (var propertyInfo in GetProperties(sectionType)) {
+            if (GetCustomAttribute<PreserveOnResetAttribute>(propertyInfo) is not null)
+                continue;
             yield return GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
             if (GetCustomAttribute<LegacyKeyNameAttribute>(propertyInfo) is { } legacyKeyName)
                 yield return legacyKeyName.KeyName;
