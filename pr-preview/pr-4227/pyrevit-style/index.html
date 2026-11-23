@@ -11228,7 +11228,7 @@
 <li>Look a function up before writing it: search <code>pyrevitlib/pyrevit/revit/db/{query,create,update}.py</code>, or use the MCP <code>lookup_pyrevit_api</code> tool.</li>
 <li>Scripts you run through the MCP runtime (<code>run_query</code>, <code>run_modify</code>) follow the agent skills, which override this guide where they differ, for example no <code>pyrevit.forms</code> there. See <a href="../agent-runtime/">Agent runtime</a>.</li>
 <li>Match the surrounding file's style over this guide when they conflict, and keep pre-existing comments.</li>
-<li>Before finishing: <code>pipenv run ruff check --fix &lt;path&gt;</code>, <code>pipenv run check-py3 &lt;path&gt;</code>, <code>python dev/scripts/check_revit_api_compat.py &lt;path&gt;</code> (see <a href="../revit-api-compat/">Revit API compatibility lint</a>), and test the button in Revit with a dev clone (see <a href="../dev-guide/">Developer guide</a>).</li>
+<li>Before finishing: <code>pipenv run ruff check --fix &lt;path&gt;</code>, <code>pipenv run check-py3 &lt;path&gt;</code>, <code>python dev/checks/check_revit_api_compat.py &lt;path&gt;</code> (see <a href="../revit-api-compat/">Revit API compatibility lint</a>), and test the button in Revit with a dev clone (see <a href="../dev-guide/">Developer guide</a>).</li>
 </ul>
 
 
