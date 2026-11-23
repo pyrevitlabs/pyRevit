@@ -51,6 +51,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 PyRevitConfigService.Reload();
             }
             finally {
+                PyRevitClones.BinariesInstallHook = null;
                 PyRevitInstallScope.ClearCachedInstallScope();
                 PyRevitInstallScope.SetRuntimeInstallRoot(null);
                 Environment.SetEnvironmentVariable(
@@ -359,7 +360,89 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(PyRevitClones.GetRegisteredClones(pruneStoredList: false), Is.Empty);
         }
 
-        /// <summary>An image deploy into an existing folder is not resumed and the error explains recovery.</summary>
+        /// <summary>A leftover repo that has no origin remote gets the recovery message instead of a null reference error.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheKeptFolderHasNoOriginRemote_ThrowsWithRecoveryMessage() {
+            var source = CreateSourceRepo();
+            var dest = Path.Combine(_tempRoot, "repoDest");
+            var leftover = Path.Combine(dest, CloneName);
+            Directory.CreateDirectory(leftover);
+            Repository.Init(leftover);
+            using (var repository = new Repository(leftover))
+                repository.Network.Remotes.Add("upstream", source);
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false));
+
+            Assert.That(ex.Message, Does.Contain("not a registered clone"));
+            Assert.That(ex.Message, Does.Contain("pyrevit clones add"));
+            Assert.That(Repository.IsValid(leftover), Is.True);
+        }
+
+        /// <summary>A kept clone checked out at another branch than the requested one is refused, not silently resumed.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheRequestedBranchDiffersFromTheKeptClone_Refuses() {
+            var source = CreateSourceRepo();
+            var dest = Path.Combine(_tempRoot, "repoDest");
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false);
+            PyRevitClones.UnregisterClone(PyRevitClones.GetRegisteredClone(CloneName));
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(
+                    CloneName,
+                    branchName: "no-such-branch",
+                    repoUrl: source,
+                    destPath: dest,
+                    installBinaries: false));
+
+            Assert.That(ex.Message, Does.Contain("no-such-branch"));
+            Assert.That(ex.Message, Does.Contain("pyrevit clones add"));
+            Assert.That(PyRevitClones.GetRegisteredClones(pruneStoredList: false), Is.Empty);
+        }
+
+        /// <summary>A second clone into a folder that is already registered says so and points at update.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheFolderIsAlreadyRegistered_PointsAtUpdate() {
+            var source = CreateSourceRepo();
+            var dest = Path.Combine(_tempRoot, "repoDest");
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false);
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false));
+
+            Assert.That(ex.Message, Does.Contain("already registered"));
+            Assert.That(ex.Message, Does.Contain("pyrevit clones update " + CloneName));
+            Assert.That(ex.Message, Does.Not.Contain("not a registered clone"));
+        }
+
+        /// <summary>When the resume fails again on missing binaries the kept folder, its files and its repo survive and nothing is registered.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheResumeFailsAgain_KeepsTheFolderAndRegistersNothing() {
+            var source = CreateSourceRepo();
+            var dest = Path.Combine(_tempRoot, "repoDest");
+            var keptClone = Path.Combine(dest, CloneName);
+
+            PyRevitClones.BinariesInstallHook = _ => throw new pyRevitBinArtifactNotFoundException("no binaries");
+            try {
+                Assert.Throws<pyRevitBinArtifactNotFoundException>(
+                    () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
+                var marker = Path.Combine(keptClone, "marker.txt");
+                File.WriteAllText(marker, "keep me");
+
+                Assert.Throws<pyRevitBinArtifactNotFoundException>(
+                    () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
+
+                Assert.That(File.Exists(marker), Is.True);
+                Assert.That(Directory.Exists(Path.Combine(keptClone, ".git")), Is.True);
+                Assert.That(Repository.IsValid(keptClone), Is.True);
+                Assert.That(PyRevitClones.GetRegisteredClones(pruneStoredList: false), Is.Empty);
+            }
+            finally {
+                PyRevitClones.BinariesInstallHook = null;
+            }
+        }
+
+        /// <summary>An image deploy into an existing folder is not resumed and the error says so and explains recovery.</summary>
         [Test]
         public void DeployFromImage_WhenTheDestinationExists_ThrowsWithRecoveryMessage() {
             var zipPath = Path.Combine(_tempRoot, "clone.zip");
@@ -371,6 +454,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 () => PyRevitClones.DeployFromImage(CloneName, imagePath: zipPath, destPath: dest, installBinaries: false));
 
             Assert.That(ex.Message, Does.Contain("not a registered clone"));
+            Assert.That(ex.Message, Does.Contain("never resumed"));
             Assert.That(ex.Message, Does.Contain("pyrevit clones add"));
         }
 
