@@ -11,7 +11,12 @@ def classification(item):
     environment = getattr(item.module, "TEST_ENVIRONMENT", None)
     level = getattr(item.module, "TEST_LEVEL", None)
     if item.cls is not None:
-        environment = getattr(item.cls, "TEST_ENVIRONMENT", environment)
+        class_environment = getattr(item.cls, "TEST_ENVIRONMENT", environment)
+        if environment == "Revit" and class_environment != "Revit":
+            raise pytest.UsageError(
+                f"{item.nodeid}: a Revit fixture cannot become HostFree"
+            )
+        environment = class_environment
         level = getattr(item.cls, "TEST_LEVEL", level)
     environment_marker = item.get_closest_marker("environment")
     level_marker = item.get_closest_marker("level")

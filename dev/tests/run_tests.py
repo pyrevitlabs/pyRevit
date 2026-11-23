@@ -51,7 +51,12 @@ def python_metadata(path):
                 "TEST_ENVIRONMENT",
                 "TEST_LEVEL",
             }:
-                values[target.id] = ast.literal_eval(node.value)
+                try:
+                    values[target.id] = ast.literal_eval(node.value)
+                except ValueError as error:
+                    raise ValueError(
+                        f"{path}: {target.id} must be a literal value"
+                    ) from error
     for name, allowed in (("TEST_ENVIRONMENT", ENVIRONMENTS), ("TEST_LEVEL", LEVELS)):
         if values.get(name) not in allowed:
             raise ValueError(
@@ -159,7 +164,7 @@ def find_dotnet_projects():
         for root in (ROOT / "dev", ROOT / "build")
         for path in first_party_files(root, "*.csproj", ROOT)
     ]
-    with ThreadPoolExecutor() as pool:
+    with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as pool:
         targets = []
         for path, data in zip(paths, pool.map(evaluate_project, paths)):
             properties = data["Properties"]
@@ -385,7 +390,6 @@ def run_dotnet(project, results, engine=None):
             "-f",
             project["framework"],
             "-p:SkipPyRevitDeploy=true",
-            "-p:PermitDeploy=true",
             "-p:DebugSymbols=true",
             "-p:DebugType=portable",
             "-m:1",

@@ -83,6 +83,26 @@ public class TestMetadataTests {
         StringAssert.Contains(error.Message, "Cats.HostFree");
     }
 
+    /// <summary>Tags on a base class are not read; the failure tells the author to tag the class itself.</summary>
+    [TestMethod]
+    public void InheritedCategoryFailsWithActionableMessage() {
+        var error = Assert.ThrowsExactly<InvalidDataException>(() => TestMetadata.Read("""
+            class DerivedTests : BaseTests { [Test] public void Case() { } }
+            """, "fixture.cs"));
+        StringAssert.Contains(error.Message, "DerivedTests.Case");
+        StringAssert.Contains(error.Message, "on the class itself");
+    }
+
+    /// <summary>A [Test] on an abstract base is cataloged under the base, which the HostFree count check treats as a minimum.</summary>
+    [TestMethod]
+    public void AbstractBaseTestIsCatalogedUnderTheBase() {
+        var tests = TestMetadata.Read("""
+            [Category("HostFree"), Category("Unit")]
+            abstract class BaseTests { [Test] public void Shared() { } }
+            """, "fixture.cs");
+        Assert.AreEqual("BaseTests", tests.Single().ClassName);
+    }
+
     /// <summary>A method override the catalog cannot read cannot leave the class's HostFree tag in place.</summary>
     [TestMethod]
     public void NonLiteralMethodCategoryFailsClosed() {

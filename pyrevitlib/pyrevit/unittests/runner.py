@@ -256,11 +256,24 @@ class PyRevitTestResult(TestResult):
         mlogger.debug(details)
         self.writer.write("<pre>{}</pre>".format(escape(details)))
 
-    # def addExpectedFailure(self, test, err):
-    #     super(PyRevitTestResult, self).addExpectedFailure(test, err)
+    def addExpectedFailure(self, test, err):
+        """Adds an expected failure, reported as skipped.
 
-    # def addUnexpectedSuccess(self, test):
-    #     super(PyRevitTestResult, self).addUnexpectedSuccess(test)
+        Args:
+            test (TestCase): unit test case
+            err (OptExcInfo): test exception info
+        """
+        super(PyRevitTestResult, self).addExpectedFailure(test, err)
+        self._report("skipped", test, message="expected failure")
+
+    def addUnexpectedSuccess(self, test):
+        """Adds an unexpected success, reported as a failure.
+
+        Args:
+            test (TestCase): unit test case
+        """
+        super(PyRevitTestResult, self).addUnexpectedSuccess(test)
+        self._report("failure", test, message="unexpected success")
 
 
 class PyRevitTestRunner(object):

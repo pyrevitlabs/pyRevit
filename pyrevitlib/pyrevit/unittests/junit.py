@@ -70,8 +70,8 @@ def report_path():
 class JUnitReport(object):
     """Accumulates test outcomes and renders them as a JUnit XML document.
 
-    One report describes one `<testsuite>`. A suite that reports more than once appends,
-    see `write`.
+    One report describes one `<testsuite>`. Writing it replaces any earlier result for
+    the same suite name and keeps the other suites in the file, see `write`.
 
     Args:
         name (str): `<testsuite>` name. Defaults to `DEFAULT_SUITE_NAME`.

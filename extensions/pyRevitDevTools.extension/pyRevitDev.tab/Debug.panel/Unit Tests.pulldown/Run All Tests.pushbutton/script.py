@@ -1,4 +1,4 @@
-"""Run all hosted unit tests from pyrevit.unittests."""
+"""Run all hosted test modules from pyrevit.unittests at any level, except the opt-in modules."""
 
 import pkgutil
 import traceback
