@@ -83,6 +83,13 @@ namespace pyRevitExtensionParser
         public bool LoadBeta => AsService().Core.LoadBeta ?? false;
 
         /// <summary>
+        /// Gets whether the experimental isolated UI host is enabled through the
+        /// <c>[core] isolated_ui</c> key (default false).
+        /// </summary>
+        public bool IsolatedUi =>
+            AsService().GetSectionKeyValueOrDefault<bool?>("core", "isolated_ui") ?? false;
+
+        /// <summary>
         /// Gets whether ribbon tabs show their tab bundle icon (default true).
         /// </summary>
         public bool ShowTabIcons => AsService().Core.ShowTabIcons ?? true;
