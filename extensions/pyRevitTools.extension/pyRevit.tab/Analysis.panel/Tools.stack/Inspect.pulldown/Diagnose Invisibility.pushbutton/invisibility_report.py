@@ -12,10 +12,13 @@ ignored.
 Page -> Python actions: ``select``, ``zoom``, ``open_view``, ``fix``,
 ``fix_all``, ``recheck``, ``scene``, ``ghost``, ``add_selection``,
 ``add_pick``, ``add_views``, ``remove_element``, ``remove_view``,
-``set_hidden``.
+``set_hidden``, ``add_ids``, ``reveal``, ``reveal_refresh``, ``reveal_filter``,
+``reveal_select``, ``reveal_follow``, ``reveal_focus``, ``reveal_inspect``,
+``reveal_add_selection``.
 Python -> page events: ``view`` (refreshed view section), ``state`` (the
-element and view lists changed), ``result`` (outcome of a request), ``scene``
-(3D preview data), ``error``.
+element and view lists changed), ``reveal`` (overlay built or removed),
+``inspect`` (diagnosis of one overlay element), ``result`` (outcome of a
+request), ``scene`` (3D preview data), ``error``.
 """
 
 import io
@@ -24,21 +27,32 @@ import os
 import uuid
 
 from pyrevit import DB, HOST_APP, forms, revit, script
-from pyrevit.compat import get_elementid_from_value_func
+from pyrevit.compat import IRONPY, get_elementid_from_value_func
 from pyrevit.framework import List
 from pyrevit.revit import events
 
 import invisibility_fixes as fixes
 import invisibility_scene as scene
-from invisibility_ghost import GhostPreview
+from scene3d import read_asset as read_lib_asset
+from scene3d.bridge import PageBridge
+from scene3d.meshing import scene_to_json
+from invisibility_ghost import GhostPreview, zoom_to
+from invisibility_reveal import (
+    REASON_COLORS,
+    SUPPORTED_VIEW_TYPES,
+    RevealPreview,
+    color_hex,
+)
 from invisibility_checks import collect_visible_ids, diagnose, id_value, t
 
 logger = script.get_logger()
 
 get_elementid_from_value = get_elementid_from_value_func()
 
+_WEBVIEW2_ENGINE = "WebView2/Chromium"
 _BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 _ASSETS = ("viewer3d.js", "report.js")
+_LIB_ASSETS = ("gl.js",)
 _STYLESHEET = "report.css"
 
 _ELEMENT_SCOPED_ACTIONS = frozenset(
@@ -88,7 +102,8 @@ _UI_STRINGS = {
     "sceneHelp": (
         "ui_scene_help",
         "Drag to orbit, Shift+drag or right-drag to pan, wheel to zoom,"
-        " double-click to frame. Click an element to find its card.",
+        " double-click to frame. Click an element to find its card, right-click"
+        " it for more actions.",
     ),
     "layerHidden": ("ui_layer_hidden", "Not visible"),
     "layerVisible": ("ui_layer_visible", "Visible"),
@@ -133,6 +148,71 @@ _UI_STRINGS = {
     "reloadBlocked": (
         "ui_reload_blocked",
         "Reloading would erase this report. Use Re-check instead.",
+    ),
+    "reveal": ("ui_reveal", "Reveal hidden"),
+    "revealHint": (
+        "ui_reveal_hint",
+        "Draw every element that is hidden in this view's screen area in Revit,"
+        " in one color per reason. Click again to remove.",
+    ),
+    "revealRefresh": ("ui_reveal_refresh", "Refresh overlay"),
+    "revealFollow": ("ui_reveal_follow", "Follow viewport"),
+    "revealSelect": ("ui_reveal_select", "Select"),
+    "revealSummary": ("ui_reveal_summary", "{0} hidden element(s) drawn"),
+    "revealLeftOut": (
+        "ui_reveal_left_out",
+        "{0} more not drawn. Zoom in to see them.",
+    ),
+    "revealSmallSkipped": (
+        "ui_reveal_skipped",
+        "{0} tiny element(s) skipped.",
+    ),
+    "revealNone": ("ui_reveal_none", "Nothing is hidden in the visible area."),
+    "revealSearch": (
+        "ui_reveal_search",
+        "Filter by name, category, level, mark or id",
+    ),
+    "revealAllLevels": ("ui_reveal_all_levels", "All levels"),
+    "revealClearFilter": ("ui_reveal_clear_filter", "Clear filter"),
+    "revealSelectShown": ("ui_reveal_select_shown", "Select shown"),
+    "revealFiltered": ("ui_reveal_filtered", "Drawing {0} of {1} in Revit"),
+    "revealMoreRows": (
+        "ui_reveal_more_rows",
+        "{0} more. Narrow the filter to list them.",
+    ),
+    "revealRowHint": (
+        "ui_reveal_row_hint",
+        "Show this element in Revit and explain why it is not visible."
+        " Ctrl-click or Shift-click to select several.",
+    ),
+    "revealAddSelection": ("ui_reveal_add_selection", "Add Revit selection"),
+    "revealAddSelectionHint": (
+        "ui_reveal_add_selection_hint",
+        "Diagnose the elements selected in Revit in this view and draw them,"
+        " whatever their size. Select the missing element where it is visible,"
+        " for example in another view or a schedule.",
+    ),
+    "revealAddToReport": ("ui_reveal_add_to_report", "Add to report"),
+    "menuShowCard": ("ui_menu_show_card", "Go to card"),
+    "menuFrame": ("ui_menu_frame", "Frame in 3D"),
+    "menuZoom": ("ui_menu_zoom", "Show in Revit"),
+    "menuSelect": ("ui_menu_select", "Select in Revit"),
+    "menuRemove": ("ui_menu_remove", "Remove from report"),
+    "revealSearchAll": ("ui_reveal_search_all", "Evaluate matching elements"),
+    "revealSearchAllHint": (
+        "ui_reveal_search_all_hint",
+        "Diagnose every element that matches the filter, not only the biggest"
+        " ones the time budget reached. Searches category, type, level, mark"
+        " and id.",
+    ),
+    "revealScoped": (
+        "ui_reveal_scoped",
+        "Only elements matching the filter were evaluated. Refresh the overlay"
+        " to evaluate all.",
+    ),
+    "revealColumns": (
+        "ui_reveal_columns",
+        "Reason|Category|Type|Level|Mark|Id",
     ),
     "inTemplate": (
         "ui_in_template_hint",
@@ -212,16 +292,19 @@ class DiagnosisSession(object):
         engine; a cleaned-up engine would leave dangling callbacks.
     """
 
-    def __init__(self, output, doc, elements, views):
+    def __init__(self, output, doc, elements, views, reveal=False):
         self.output = output
+        self.reveal_on_start = reveal
         self.doc = doc
         self.element_ids = [e.Id for e in elements]
         self.view_ids = [v.Id for v in views]
-        self.channel = "invisibility-{}".format(uuid.uuid4().hex)
+        self.bridge = PageBridge(output, "invisibility")
+        self.channel = self.bridge.channel
         self.root_id = "invisibility-app-{}".format(uuid.uuid4().hex[:8])
         self.interactive = False
-        self._handlers = {}
+        self._handlers = self.bridge.handlers
         self.ghost = GhostPreview(doc)
+        self.reveal = RevealPreview(doc)
 
     def _elements(self):
         resolved = []
@@ -257,6 +340,40 @@ class DiagnosisSession(object):
             )
         return uidoc
 
+    def element_payload(self, element, view, visible_ids):
+        """Diagnose ``element`` in ``view`` and describe it for the page."""
+        try:
+            findings = diagnose(element, view, visible_ids)
+            error = None
+        except Exception as ex:
+            logger.debug("Diagnosis failed: %s", ex)
+            findings, error = [], str(ex)
+        entries = []
+        for finding in findings:
+            entry = {
+                "code": finding.code,
+                "message": finding.message,
+                "informational": finding.informational,
+                "speculative": finding.speculative,
+                "fix": None,
+            }
+            if finding.fix:
+                try:
+                    entry["fix"] = dict(fixes.describe(view, finding.fix))
+                    entry["fix"]["descriptor"] = finding.fix
+                except Exception as ex:
+                    logger.debug("Cannot describe fix: %s", ex)
+            entries.append(entry)
+        category = element.Category
+        return {
+            "id": id_value(element.Id),
+            "label": format_element_label(element),
+            "category": category.Name if category else "",
+            "visible": not any(not f.informational for f in findings),
+            "findings": entries,
+            "error": error,
+        }
+
     def view_payload(self, view):
         """Diagnose every element in ``view`` and describe it for the page."""
         visible_ids = collect_visible_ids(view)
@@ -266,41 +383,10 @@ class DiagnosisSession(object):
             if template_id != DB.ElementId.InvalidElementId
             else None
         )
-        elements = []
-        for element in self._elements():
-            try:
-                findings = diagnose(element, view, visible_ids)
-                error = None
-            except Exception as ex:
-                logger.debug("Diagnosis failed: %s", ex)
-                findings, error = [], str(ex)
-            entries = []
-            for finding in findings:
-                entry = {
-                    "code": finding.code,
-                    "message": finding.message,
-                    "informational": finding.informational,
-                    "speculative": finding.speculative,
-                    "fix": None,
-                }
-                if finding.fix:
-                    try:
-                        entry["fix"] = dict(fixes.describe(view, finding.fix))
-                        entry["fix"]["descriptor"] = finding.fix
-                    except Exception as ex:
-                        logger.debug("Cannot describe fix: %s", ex)
-                entries.append(entry)
-            category = element.Category
-            elements.append(
-                {
-                    "id": id_value(element.Id),
-                    "label": format_element_label(element),
-                    "category": category.Name if category else "",
-                    "visible": not any(not f.informational for f in findings),
-                    "findings": entries,
-                    "error": error,
-                }
-            )
+        elements = [
+            self.element_payload(element, view, visible_ids)
+            for element in self._elements()
+        ]
         return {
             "id": id_value(view.Id),
             "name": view.Name,
@@ -324,6 +410,8 @@ class DiagnosisSession(object):
             "channel": self.channel,
             "bridge": self.interactive,
             "document": self.doc.Title,
+            "revealColors": dict((code, color_hex(code)) for code in REASON_COLORS),
+            "autoReveal": id_value(self.view_ids[0]) if self.reveal_on_start else None,
             "strings": dict(
                 (name, t(key, default)) for name, (key, default) in _UI_STRINGS.items()
             ),
@@ -341,7 +429,7 @@ class DiagnosisSession(object):
         Must run in the command, in API context. Falls back to a read-only
         report when the output window cannot receive page messages.
         """
-        if self.output.on_message(self._on_page_message):
+        if self.bridge.start():
             self.interactive = True
             for action, handler in (
                 ("select", self._on_select),
@@ -358,11 +446,22 @@ class DiagnosisSession(object):
                 ("remove_element", self._on_remove_element),
                 ("remove_view", self._on_remove_view),
                 ("set_hidden", self._on_set_hidden),
+                ("reveal", self._on_reveal),
+                ("reveal_refresh", self._on_reveal_refresh),
+                ("reveal_filter", self._on_reveal_filter),
+                ("reveal_select", self._on_reveal_select),
+                ("reveal_follow", self._on_reveal_follow),
+                ("reveal_focus", self._on_reveal_focus),
+                ("reveal_inspect", self._on_reveal_inspect),
+                ("reveal_add_selection", self._on_reveal_add_selection),
+                ("add_ids", self._on_add_ids),
             ):
                 self._handlers[action] = handler
             self.output.window.Closed += self._on_window_closed
         self.output.set_title(t("report_title", "Visibility Diagnosis"))
         self.output.add_style(_read_asset(_STYLESHEET))
+        for asset in _LIB_ASSETS:
+            self.output.inject_script(read_lib_asset(asset))
         for asset in _ASSETS:
             self.output.inject_script(_read_asset(asset))
         self.output.inject_to_body("div", "", {"id": self.root_id})
@@ -374,47 +473,15 @@ class DiagnosisSession(object):
             body=True,
         )
 
-    def _on_page_message(self, message):
-        if not isinstance(message, dict) or message.get("channel") != self.channel:
-            return
-        action = message.get("action")
-        handler = self._handlers.get(action)
-        if handler is None:
-            logger.debug("No handler for action '%s'", action)
-            return
-        request_id = message.get("requestId")
-        try:
-            handler(message.get("payload") or {}, request_id)
-        except Exception as ex:
-            logger.debug("Handler '%s' failed: %s", action, ex)
-            self._send(
-                "error",
-                {"action": action, "requestId": request_id, "message": str(ex)},
-            )
-
     def _on_window_closed(self, sender, args):
         self.interactive = False
         self._close_ghosts()
 
     def _send(self, event, payload=None, raw_payload=None):
-        """Post ``{channel, event, payload}`` to the page.
-
-        ``raw_payload`` is pre-encoded JSON used instead of ``payload``, for
-        large bodies serialized by a faster custom encoder than ``json.dumps``.
-        """
-        if raw_payload is None:
-            self.output.post_message(
-                {"channel": self.channel, "event": event, "payload": payload}
-            )
-            return
-        self.output.window.PostWebMessage(
-            '{{"channel":{},"event":{},"payload":{}}}'.format(
-                json.dumps(self.channel), json.dumps(event), raw_payload
-            )
-        )
+        self.bridge.send(event, payload, raw_payload)
 
     def _reply(self, request_id, ok, message=None):
-        self._send("result", {"requestId": request_id, "ok": ok, "message": message})
+        self.bridge.reply(request_id, ok, message)
 
     def _push_views(self, view_ids=None):
         for view_id in view_ids or self.view_ids:
@@ -647,6 +714,8 @@ class DiagnosisSession(object):
     def _on_remove_view(self, payload, request_id):
         value = int(payload["viewId"])
         self.view_ids = [i for i in self.view_ids if id_value(i) != value]
+        if self.reveal.view_id is not None and id_value(self.reveal.view_id) == value:
+            self.reveal.close()
         self._push_state()
         self._reply(request_id, True)
 
@@ -720,8 +789,149 @@ class DiagnosisSession(object):
             message += " " + "; ".join(errors)
         self._reply(request_id, True, message)
 
+    def _on_reveal(self, payload, request_id):
+        view = self._view(payload["viewId"])
+        view_id = id_value(view.Id)
+        previous = self.reveal.view_id
+        if not payload.get("on", True):
+            if previous is not None and id_value(previous) == view_id:
+                self.reveal.close()
+            self._send("reveal", {"viewId": view_id, "active": False})
+            self._reply(request_id, True)
+            return
+        uidoc = self._uidoc()
+        if view.ViewType not in SUPPORTED_VIEW_TYPES:
+            self._reply(
+                request_id,
+                False,
+                t(
+                    "reveal_unsupported",
+                    "The reveal overlay is not available in {} views.",
+                ).format(self._view_type_label(view)),
+            )
+            return
+        if previous is not None and id_value(previous) != view_id:
+            self._send("reveal", {"viewId": id_value(previous), "active": False})
+        self.reveal.show(uidoc, view, self._send_reveal)
+        self._reply(request_id, True)
+
+    def _send_reveal(self, summary):
+        self._send("reveal", summary)
+
+    def _view_type_label(self, view):
+        return str(view.ViewType)
+
+    def _on_reveal_refresh(self, payload, request_id):
+        """Rebuild the overlay, optionally evaluating only a filter's matches."""
+        self.reveal.refresh(self._uidoc(), payload.get("filter"))
+        self._reply(request_id, True)
+
+    def _on_reveal_filter(self, payload, request_id):
+        self.reveal.set_code_visible(
+            self._uidoc(), payload["code"], bool(payload.get("visible"))
+        )
+        self._reply(request_id, True)
+
+    def _on_reveal_select(self, payload, request_id):
+        ids = List[DB.ElementId](
+            [
+                get_elementid_from_value(value)
+                for value in self.reveal.ids_for(payload["code"])
+            ]
+        )
+        self._uidoc().Selection.SetElementIds(ids)
+        self._reply(request_id, True)
+
+    def _on_reveal_follow(self, payload, request_id):
+        self.reveal.follow(bool(payload.get("on")))
+        self._reply(request_id, True)
+
+    def _on_reveal_focus(self, payload, request_id):
+        """Draw only the listed elements in the overlay; null draws all.
+
+        A request for a view other than the revealed one is stale (the page
+        sent it before the overlay moved) and is ignored.
+        """
+        view = self._view(payload["viewId"])
+        if self.reveal.view_id == view.Id:
+            self.reveal.set_focus(self._uidoc(), payload.get("ids"))
+        self._reply(request_id, True)
+
+    def _on_reveal_inspect(self, payload, request_id):
+        """Diagnose one overlay element and send its card to the page.
+
+        Zooms the view to the element unless the page asks not to, which it
+        does when it only refreshes a card after a fix.
+        """
+        self._send_inspect(
+            self._view(payload["viewId"]),
+            self._element(payload["elementId"]),
+            payload.get("zoom", True),
+            payload.get("token"),
+        )
+        self._reply(request_id, True)
+
+    def _send_inspect(self, view, element, zoom, token):
+        """Send the diagnosis of ``element`` to the page, echoing ``token``.
+
+        The page numbers its inspect requests and shows only the answer to the
+        newest one, so a late answer cannot replace a newer card.
+        """
+        uidoc = self._uidoc()
+        if zoom and uidoc.ActiveView.Id == view.Id:
+            zoom_to(uidoc, view, element)
+        self._send(
+            "inspect",
+            {
+                "viewId": id_value(view.Id),
+                "token": token,
+                "element": self.element_payload(
+                    element, view, collect_visible_ids(view)
+                ),
+            },
+        )
+
+    def _on_reveal_add_selection(self, payload, request_id):
+        """Draw the Revit selection in the revealed view and open its first card.
+
+        A request for a view other than the revealed one is stale and ignored.
+        """
+        uidoc = self._uidoc()
+        if self.reveal.view_id != self._view(payload["viewId"]).Id:
+            self._reply(request_id, True)
+            return
+        selected = [self.doc.GetElement(i) for i in uidoc.Selection.GetElementIds()]
+        if not selected:
+            self._reply(
+                request_id,
+                True,
+                t("add_no_selection", "Nothing is selected in Revit."),
+            )
+            return
+        added, already_visible = self.reveal.add_elements(uidoc, selected)
+        message = t("reveal_added", "Drew {0} selected element(s).").format(len(added))
+        if already_visible:
+            message += " " + t(
+                "reveal_added_visible",
+                "{0} already visible in this view.",
+            ).format(already_visible)
+        if added:
+            self._send_inspect(
+                self._view(payload["viewId"]),
+                self._element(added[0]),
+                True,
+                payload.get("token"),
+            )
+        self._reply(request_id, True, message)
+
+    def _on_add_ids(self, payload, request_id):
+        self._add_elements(
+            [self._element(value) for value in payload.get("elementIds", [])],
+            request_id,
+        )
+
     def _close_ghosts(self):
-        events.execute_in_revit_context(_close_ghost_preview, self.ghost)
+        events.execute_in_revit_context(_close_previews, self.ghost, self.reveal)
 
     def _on_scene(self, payload, request_id):
         view = self._view(payload["viewId"])
@@ -734,7 +944,7 @@ class DiagnosisSession(object):
         if data is None:
             self._send("scene", {"viewId": id_value(view.Id), "meshes": []})
         else:
-            self._send("scene", raw_payload=scene.scene_to_json(data))
+            self._send("scene", raw_payload=scene_to_json(data))
         self._reply(request_id, True)
 
 
@@ -752,18 +962,40 @@ def _try_describe_fix(view, fix):
         return None, t("fix_describe_failed", "Could not describe fix: {}").format(ex)
 
 
-def _close_ghost_preview(ghost):
-    """Unregister a report's ghost preview; runs through an ExternalEvent."""
+def _close_previews(ghost, reveal):
+    """Unregister a report's ghost and reveal previews; runs through an ExternalEvent."""
     ghost.close()
+    reveal.close()
 
 
-def show_report(output, elements, views):
+def supports_interactive_report(output):
+    """Return True when ``output`` can show the interactive report.
+
+    It needs IronPython and the WebView2 output renderer.
+    """
+    try:
+        return IRONPY and output.renderer_engine == _WEBVIEW2_ENGINE
+    except Exception:
+        return False
+
+
+def show_report(output, elements, views, reveal=False):
     """Diagnose ``elements`` in ``views`` and show the interactive report.
+
+    Args:
+        output (PyRevitOutputWindow): the command's output window.
+        elements (list[DB.Element]): elements to diagnose.
+        views (list[DB.View]): views to diagnose them in; the first one is
+            revealed when ``reveal`` is set.
+        reveal (bool): also start the reveal-hidden overlay on the first view
+            once the page is ready. ``elements`` may then be empty.
 
     Returns:
         (DiagnosisSession): the live session (kept alive by its output window
         subscriptions).
     """
-    session = DiagnosisSession(output, elements[0].Document, elements, views)
+    session = DiagnosisSession(
+        output, views[0].Document, elements, views, reveal=reveal
+    )
     session.show()
     return session

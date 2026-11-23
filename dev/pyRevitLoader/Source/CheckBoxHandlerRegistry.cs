@@ -72,7 +72,8 @@ namespace PyRevitLoader
         /// <summary>
         /// Detaches every handler, drops what it kept alive and refuses later wiring.
         /// </summary>
-        /// <param name="onError">Receives each handler that failed to detach; the others are still detached.</param>
+        /// <param name="onError">Receives each handler that failed to detach; the others are still detached,
+        /// even when it throws.</param>
         public void Release(Action<string> onError)
         {
             lock (_aliveReferencesLock)
@@ -87,11 +88,22 @@ namespace PyRevitLoader
                     }
                     catch (Exception ex)
                     {
-                        onError?.Invoke($"Failed to detach CheckBox handler: {ex.Message}");
+                        ReportWithoutThrowing(onError, $"Failed to detach CheckBox handler: {ex.Message}");
                     }
                     _aliveReferences.Remove(wired.Key);
                 }
                 _wiredHandlers.Clear();
+            }
+        }
+
+        private static void ReportWithoutThrowing(Action<string> onError, string message)
+        {
+            try
+            {
+                onError?.Invoke(message);
+            }
+            catch (Exception)
+            {
             }
         }
     }

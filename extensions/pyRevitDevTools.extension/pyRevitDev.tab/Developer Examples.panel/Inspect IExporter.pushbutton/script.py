@@ -106,6 +106,8 @@ def log_node(doc, node):
 
 
 class ExporterWatcher(DB.IExportContext):
+    __namespace__ = "pyrevitdevtools.inspect_iexporter"
+
     def __init__(self, doc):
         self._doc = doc
 

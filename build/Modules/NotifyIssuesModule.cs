@@ -78,7 +78,7 @@ public sealed class NotifyIssuesModule(
         var skipped = 0;
         var failed = 0;
         var stoppedEarly = false;
-        var issues = context.GitHub().Client.Issue.Comment;
+        var issues = GitHubClientFactory.Create(context).Issue.Comment;
 
         foreach (var ticket in tickets)
         {

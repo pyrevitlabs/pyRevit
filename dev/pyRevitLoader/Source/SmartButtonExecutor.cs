@@ -42,6 +42,13 @@ namespace PyRevitLoader
             _logger = logger;
         }
 
+        /// <summary>
+        /// Why the last <see cref="ExecuteSelfInit"/> call did not run its script or <c>__selfinit__</c>
+        /// to completion; null when it did.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: read by reflection from <c>SmartButtonScriptInitializer</c>; keep the name.
+        /// </remarks>
         public string Message { get; private set; } = null;
 
         private void Log(string message)
@@ -73,12 +80,20 @@ namespace PyRevitLoader
         /// <param name="context">The SmartButtonContext to pass to the script.</param>
         /// <param name="additionalSearchPaths">The bundle's ancestor <c>lib</c> folders and the installed library
         /// extensions' paths; they go before <c>pyrevitlib</c> and <c>site-packages</c>.</param>
+        /// <param name="scopeVariables">Values set in the script's own module scope before it runs, such as
+        /// <c>__commandname__</c>, so <c>EXEC_PARAMS</c> resolves this button's identity while its module
+        /// level and <c>__selfinit__</c> run. Without them <c>EXEC_PARAMS.command_name</c> is None.</param>
         /// <returns>True if initialization succeeded, false if the button should be deactivated.</returns>
+        /// <remarks>
+        /// Invariant: called by reflection from <c>SmartButtonScriptInitializer</c>; keep the name and signature.
+        /// </remarks>
         public bool ExecuteSelfInit(
             string scriptPath,
             SmartButtonContext context,
-            IEnumerable<string> additionalSearchPaths = null)
+            IEnumerable<string> additionalSearchPaths = null,
+            IDictionary<string, object> scopeVariables = null)
         {
+            Message = null;
 
             if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath))
             {
@@ -104,6 +119,11 @@ namespace PyRevitLoader
 
                 // Set __file__ variable
                 scope.SetVariable("__file__", scriptPath);
+                if (scopeVariables != null)
+                {
+                    foreach (var variable in scopeVariables)
+                        scope.SetVariable(variable.Key, variable.Value);
+                }
                 var bundle = _isolation.CreateBundle(context.name);
 
                 // Execute the script file to define __selfinit__

@@ -5,6 +5,7 @@
 
     <system:String x:Key="pyRevit.Title">pyRevit</system:String>
     <system:String x:Key="pyRevit.Engine">Running on IronPython {} (cpython {})</system:String>
+    <system:String x:Key="pyRevit.Engine.CPython">Running on cpython {}</system:String>
     <system:String x:Key="pyRevit.RocketMode.Enabled">Rocket-mode enabled</system:String>
     <system:String x:Key="pyRevit.RocketMode.Disabled">Rocket-mode disabled</system:String>
 

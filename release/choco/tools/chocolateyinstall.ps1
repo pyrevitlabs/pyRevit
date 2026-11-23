@@ -10,7 +10,7 @@ $packageArgs = @{
   fileType      = 'exe'
   url64bit      = $url64
 
-  softwareName  = 'pyrevit-cli*'
+  softwareName  = 'pyRevit CLI version*'
 
   checksum64    = '1A46DAD7AF5ADB3BD0C9E589B6E51FBCF06BD6348CF520E8142FA3781456FECA'
   checksumType64= 'sha256'

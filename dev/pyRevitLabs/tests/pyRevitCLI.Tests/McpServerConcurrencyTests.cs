@@ -6,6 +6,8 @@ using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public partial class McpServerTests {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
@@ -212,7 +214,7 @@ public partial class McpServerTests {
 
     /// <summary>A call that finishes within the grace period after stdin ended is still answered (#4050).</summary>
     [Fact]
-    public void ACallFinishingWithinTheGraceAfterInputEndsStillGetsItsAnswer() {
+    public async Task ACallFinishingWithinTheGraceAfterInputEndsStillGetsItsAnswer() {
         using var release = new ManualResetEventSlim(false);
         var runStarted = BlockRunsUntil(release);
         using var session = new LiveSession(inputClosedGracePeriod: Patience);
@@ -227,7 +229,7 @@ public partial class McpServerTests {
         release.Set();
         var run = session.Next();
 
-        Assert.True(closing.Result);
+        Assert.True(await closing);
         Assert.Equal(1, run.Value<int>("id"));
         Assert.False(IsError(run));
     }
@@ -278,11 +280,12 @@ public partial class McpServerTests {
     [Fact]
     public async Task RevitSessionsServingAnotherClientAreListedBusyWithoutWaitingForEachOther() {
         host.AddInstance("2091");
+        host.AddInstance("2092");
         using var release = new ManualResetEventSlim(false);
-        using var received = new CountdownEvent(2);
+        using var received = new CountdownEvent(3);
         host.Handler = request => {
             received.Signal();
-            release.Wait(Patience);
+            release.Wait(TimeSpan.FromSeconds(30));
             return RunResponse(request);
         };
         PyRevitAgentClient.PingConnectTimeoutMs = 3000;
@@ -301,8 +304,8 @@ public partial class McpServerTests {
             Assert.True(entry.Value<bool>("busy"));
             Assert.Null(entry["responding"]);
         });
-        Assert.Equal(2, Payload(listed)["instances"].Count());
-        Assert.InRange(watch.Elapsed, TimeSpan.FromSeconds(2.9), TimeSpan.FromSeconds(5.5));
+        Assert.Equal(3, Payload(listed)["instances"].Count());
+        Assert.InRange(watch.Elapsed, TimeSpan.FromSeconds(2.9), TimeSpan.FromSeconds(8));
     }
 
     [Fact]

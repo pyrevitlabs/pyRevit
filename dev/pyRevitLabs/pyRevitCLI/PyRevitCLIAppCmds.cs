@@ -292,6 +292,9 @@ namespace pyRevitCLI {
                         else
                             logger.Debug("Failed getting latest release list OR no CLI releases.");
                     }
+                    catch (pyRevitGithubApiException githubEx) {
+                        Console.WriteLine(string.Format("Could not check for updates. {0}", githubEx.Message));
+                    }
                     catch (Exception getRelEx) {
                         Console.WriteLine(getRelEx.Message);
                     }
@@ -307,8 +310,11 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        RunDoctor(string args, bool dryRun = false) {
+        RunDoctor(string args, bool dryRun = false, bool force = false, bool keepConfig = false, bool keepExtensions = false) {
             if (dryRun) args += " --dryrun";
+            if (force) args += " --force";
+            if (keepConfig) args += " --keep-config";
+            if (keepExtensions) args += " --keep-extensions";
 
             string doctorExe = Path.Combine(GetProcessPath(), "pyrevit-doctor.exe");
             ProcessStartInfo cpyProcessInfo = new ProcessStartInfo(doctorExe) {

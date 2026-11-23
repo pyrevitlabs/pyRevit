@@ -1,7 +1,8 @@
 title: Test CheckBox
-help_url: https://pyrevitlabs.notion.site/Developer-Docs
-tooltip: Test CheckBox - demonstrates the pyRevit CheckBox bundle
-tooltip_ext: >
+help_url: https://docs.pyrevitlabs.io/extensions/#bundle-structure
+tooltip: >-
+  Test CheckBox - demonstrates the pyRevit CheckBox bundle
+
   This CheckBox demonstrates:
 
   - The checked key for the initial state

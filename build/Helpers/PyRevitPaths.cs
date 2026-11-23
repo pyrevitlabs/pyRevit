@@ -1,3 +1,5 @@
+using Build.Models;
+
 namespace Build.Helpers;
 
 /// <summary>
@@ -30,17 +32,6 @@ public static class PyRevitPaths
     public static string Loader342Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitLoader.342", "pyRevitLoader.342.csproj");
     public static string Runner2712Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitRunner.2712PR", "pyRevitRunner.2712PR.csproj");
     public static string Runner342Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitRunner.342", "pyRevitRunner.342.csproj");
-    public static string ExtensionParserTestProject => Path.Combine(DevPath, "pyRevitLoader", "pyRevitExtensionParserTester", "pyRevitExtensionParserTest.csproj");
-    public static string ConfigurationsTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.Configurations.Tests", "pyRevitLabs.Configurations.Tests.csproj");
-    public static string IniConfigurationsTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.Configurations.Ini.Tests", "pyRevitLabs.Configurations.Ini.Tests.csproj");
-    public static string CPythonRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.CPython.Tests", "pyRevitLabs.PyRevit.Runtime.CPython.Tests.csproj");
-    public static string EnvVarsRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.EnvVars.Tests", "pyRevitLabs.PyRevit.Runtime.EnvVars.Tests.csproj");
-    public static string CliTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitCLI.Tests", "pyRevitCLI.Tests.csproj");
-    public static string AgentRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests.csproj");
-    public static string RendererTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Renderer.Tests", "pyRevitLabs.PyRevit.Renderer.Tests.csproj");
-    public static string DoctorTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitDoctor.Tests", "pyRevitDoctor.Tests.csproj");
-    public static string ShellTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Shell.Tests", "pyRevitLabs.PyRevit.Shell.Tests.csproj");
-    public static string PyRevitUnitTestProject => Path.Combine(DevPath, "pyRevitLabs", "pyRevitLabs.UnitTests", "pyRevitLabs.UnitTests.csproj");
 
     public static string IronPython2Solution => Path.Combine(DevPath, "modules", "pyRevitLabs.IronPython2.sln");
     public static string IronPython2LibProject => Path.Combine(DevPath, "modules", "pyRevitLabs.ironpython2", "Src", "IronPython", "IronPython.csproj");
@@ -74,8 +65,8 @@ public static class PyRevitPaths
 
     public static string VersionFile => Path.Combine(Root, "pyrevitlib", "pyrevit", "version");
     public static string DirectoryBuildTargets => Path.Combine(DevPath, "Directory.Build.targets");
-    public static string RevitApiCompatScript => Path.Combine(DevPath, "scripts", "check_revit_api_compat.py");
-    public static string RevitApiCatalog => Path.Combine(DevPath, "scripts", "revit_api_catalog", "catalog.json");
+    public static string RevitApiCompatScript => Path.Combine(DevPath, "checks", "check_revit_api_compat.py");
+    public static string RevitApiCatalog => Path.Combine(DevPath, "checks", "revit_api_catalog", "catalog.json");
     public static string AgentSkillsPath => Path.Combine(Root, "pyrevitlib", "pyrevit", "agent", "skills");
     public static string InstallVersionFile => Path.Combine(ReleasePath, "version");
     public static string ProductsTemplateFile => Path.Combine(ReleasePath, "pyrevit-products.json");
@@ -104,14 +95,25 @@ public static class PyRevitPaths
     public static string PyRevitCommonMsiProps => Path.Combine(ReleasePath, "pyrevit-common.props");
     public static string PyRevitCliMsiProps => Path.Combine(ReleasePath, "pyrevit-cli.props");
     public static string PyRevitCliMsiProject => Path.Combine(ReleasePath, "pyrevit-cli.wixproj");
-    public static string PyRevitChocoNuspec => Path.Combine(ReleasePath, "choco", "pyrevit-cli.nuspec");
-    public static string PyRevitChocoInstallScript => Path.Combine(ReleasePath, "choco", "tools", "chocolateyinstall.ps1");
 
     public static string PyRevitInstallerName => "pyRevit_{0}_signed";
     public static string PyRevitAdminInstallerName => "pyRevit_{0}_admin_signed";
     public static string PyRevitCliInstallerName => "pyRevit_CLI_{0}_signed";
     public static string PyRevitCliAdminInstallerName => "pyRevit_CLI_{0}_admin_signed";
-    public static string PyRevitChocoNupkgName => "pyrevit-cli.{0}.nupkg";
+
+    public static IReadOnlyList<ChocoPackage> ChocoPackages =>
+    [
+        new(
+            "pyrevit-cli",
+            Path.Combine(ReleasePath, "choco", "pyrevit-cli.nuspec"),
+            Path.Combine(ReleasePath, "choco", "tools", "chocolateyinstall.ps1"),
+            PyRevitCliAdminInstallerName),
+        new(
+            "pyrevit",
+            Path.Combine(ReleasePath, "choco", "pyrevit", "pyrevit.nuspec"),
+            Path.Combine(ReleasePath, "choco", "pyrevit", "tools", "chocolateyinstall.ps1"),
+            PyRevitAdminInstallerName),
+    ];
 
     public static IReadOnlyList<string> VersionFiles =>
     [
@@ -147,7 +149,7 @@ public static class PyRevitPaths
         PyRevitCliInstallerScript,
         PyRevitCliAdminInstallerScript,
         PyRevitCommonMsiProps,
-        PyRevitChocoNuspec,
+        .. ChocoPackages.Select(package => package.Nuspec),
     ];
 
     public static string IsccPath =>

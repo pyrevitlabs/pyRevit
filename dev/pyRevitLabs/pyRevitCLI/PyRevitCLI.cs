@@ -33,39 +33,6 @@ namespace pyRevitCLI {
         Debug,
     }
 
-    internal enum PyRevitCLICommandType {
-        Main,
-        Version,
-        Wiki,
-        Blog,
-        Docs,
-        Source,
-        YouTube,
-        Support,
-        Env,
-        Update,
-        Clone,
-        Clones,
-        Attach,
-        Attached,
-        Switch,
-        Detach,
-        Extend,
-        Extensions,
-        ExtensionsPaths,
-        ExtensionsSources,
-        Releases,
-        Revits,
-        Run,
-        Caches,
-        Config,
-        Configs,
-        Doctor,
-        Agent,
-        Mcp,
-        Launch,
-    }
-
     internal static class PyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -117,22 +84,11 @@ namespace pyRevitCLI {
             // setup logger
             // process arguments for hidden debug mode switch
             PyRevitCLILogLevel logLevel = PyRevitCLILogLevel.InfoMessages;
-            var config = new LoggingConfiguration();
-            var logconsole = new ConsoleTarget("logconsole") { Layout = @"${level}: ${message} ${exception}" };
-            config.AddTarget(logconsole);
-            config.AddRule(LogLevel.Error, LogLevel.Fatal, logconsole);
-
-            if (argsList.Contains("--verbose")) {
-                argsList.Remove("--verbose");
-                logLevel = PyRevitCLILogLevel.InfoMessages;
-                config.AddRule(LogLevel.Info, LogLevel.Info, logconsole);
-            }
-
-            if (argsList.Contains("--debug")) {
-                argsList.Remove("--debug");
+            var verbose = argsList.Remove("--verbose");
+            var debug = argsList.Remove("--debug");
+            if (debug)
                 logLevel = PyRevitCLILogLevel.Debug;
-                config.AddRule(LogLevel.Debug, LogLevel.Debug, logconsole);
-            }
+            var config = PyRevitCLILogging.CreateConsoleConfiguration(verbose, debug);
 
             // config logger
             LogManager.Configuration = config;
@@ -594,6 +550,29 @@ namespace pyRevitCLI {
                 else if (all("context"))
                     PyRevitCLIAgentCmds.PrintContext(TryGetValue("--revit"));
 
+                else if (all("capture"))
+                    PyRevitCLIAgentCmds.CaptureView(
+                        view: TryGetValue("<view>"),
+                        viewType: TryGetValue("--view-type"),
+                        mode: TryGetValue("--mode"),
+                        width: TryGetValue("--width"),
+                        outFile: TryGetValue("--out"),
+                        revitSelector: TryGetValue("--revit")
+                        );
+
+                else if (all("inspect"))
+                    PyRevitCLIAgentCmds.InspectElements(
+                        elementIds: PyRevitCLIArguments.Values(arguments, "<element_id>"),
+                        includeParameters: arguments["--no-parameters"].IsFalse,
+                        revitSelector: TryGetValue("--revit")
+                        );
+
+                else if (all("lookup"))
+                    PyRevitCLIAgentCmds.LookupApi(
+                        name: TryGetValue("<api_name>"),
+                        revitSelector: TryGetValue("--revit")
+                        );
+
                 else if (all("run"))
                     PyRevitCLIAgentCmds.RunScript(
                         scriptFile: TryGetValue("<script_file>"),
@@ -736,7 +715,7 @@ namespace pyRevitCLI {
 
             else if (all("configs")) {
                 if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Configs);
+                    PyRevitCLIAppHelps.PrintHelp(ConfigsHelpType(arguments));
 
                 else if (all("bincache")) {
                     if (any("enable", "disable"))
@@ -1052,7 +1031,7 @@ namespace pyRevitCLI {
                                 configSection, configOption, arguments["enable"].IsTrue);
                         }
                         else
-                            PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
+                            ReportInvalidOptionPath(orignalOptionValue);
                     }
                 }
 
@@ -1079,7 +1058,7 @@ namespace pyRevitCLI {
                             }
                         }
                         else
-                            PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
+                            ReportInvalidOptionPath(orignalOptionValue);
                     }
                 }
             }
@@ -1089,7 +1068,7 @@ namespace pyRevitCLI {
                     PyRevitCLIAppCmds.RunDoctor("--wrappedhelp");
 
                 else if (TryGetValue("<doctor_command>") is var doctorCommand && doctorCommand != null)
-                    PyRevitCLIAppCmds.RunDoctor(doctorCommand, dryRun: arguments["--dryrun"].IsTrue);
+                    PyRevitCLIAppCmds.RunDoctor(doctorCommand, dryRun: arguments["--dryrun"].IsTrue, force: arguments["--force"].IsTrue, keepConfig: arguments["--keep-config"].IsTrue, keepExtensions: arguments["--keep-extensions"].IsTrue);
 
                 else if (all("doctor", "--list"))
                     PyRevitCLIAppCmds.RunDoctor("--list");
@@ -1102,6 +1081,24 @@ namespace pyRevitCLI {
         }
 
         // internal helper functions:
+        private static PyRevitCLICommandType ConfigsHelpType(IDictionary<string, ValueObject> parsedArguments) {
+            return PyRevitCLIArguments.Values(parsedArguments, "<config_words>").FirstOrDefault() switch {
+                "routes" => PyRevitCLICommandType.ConfigsRoutes,
+                "agent" => PyRevitCLICommandType.ConfigsAgent,
+                "telemetry" => PyRevitCLICommandType.ConfigsTelemetry,
+                "apptelemetry" => PyRevitCLICommandType.ConfigsAppTelemetry,
+                _ => PyRevitCLICommandType.Configs,
+            };
+        }
+
+        private static void ReportInvalidOptionPath(string optionPath) {
+            System.Console.Error.WriteLine(
+                "Error: \"{0}\" is neither a configs command nor a \"section:option\" path. "
+                + "Run 'pyrevit configs --help' to list the configs commands.",
+                optionPath);
+            Environment.ExitCode = -1;
+        }
+
         private static bool all(params string[] keywords) {
             logger.Debug("Checking for all: {0}", string.Join(",", keywords));
             foreach (var keyword in keywords)

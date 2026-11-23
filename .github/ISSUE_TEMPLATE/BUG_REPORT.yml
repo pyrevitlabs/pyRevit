@@ -29,7 +29,7 @@ body:
         - label: I have checked that my antivirus or endpoint protection software is not blocking pyRevit (see above for the solution)
         - label: I have **searched in the issues** (open and closed) but couldn't find a similar issue
         - label: I have **searched in the [pyRevit Forum](https://discourse.pyrevitlabs.io)** for similar issues
-        - label: I already **followed the [installation troubleshooting guide](https://pyrevitlabs.notion.site/Installation-issues-f6495adb56254e9e8021f8a68e3b2ab7) thoroughly**
+        - label: I already **followed the [installation troubleshooting guide](https://docs.pyrevitlabs.io/help/installation-issues/) thoroughly**
         - label: I am using the **latest pyRevit Version**
   - type: textarea
     id: description

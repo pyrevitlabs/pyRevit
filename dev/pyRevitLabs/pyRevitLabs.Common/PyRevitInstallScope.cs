@@ -144,8 +144,10 @@ namespace pyRevitLabs.Common {
         public static bool IsElevatedProcess() {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return false;
-            return UserEnv.IsRunAsElevated();
+            return ElevatedProcessDetector();
         }
+
+        internal static Func<bool> ElevatedProcessDetector { get; set; } = UserEnv.IsRunAsElevated;
 
         private static ActiveConfigInfo GetUserConfig(string seedConfig, bool createIfMissing) {
             var userRoot = PyRevitLabsConsts.PyRevitPath;

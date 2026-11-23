@@ -57,9 +57,12 @@ namespace pyRevitExtensionParser
                 logger.Error(message);
         }
 
-        private static List<string> ReadAuthList(
+        /// <summary>
+        /// Reads an authusers/authgroups value. Sets <paramref name="authDefinitionUnreadable"/>
+        /// for a non-list value or a list with only blank entries; the caller logs it.
+        /// </summary>
+        internal static List<string> ReadAuthList(
             JToken token,
-            string extensionJsonPath,
             ref bool authDefinitionUnreadable)
         {
             if (token == null || token.Type == JTokenType.Null)
@@ -69,7 +72,6 @@ namespace pyRevitExtensionParser
             if (array == null)
             {
                 authDefinitionUnreadable = true;
-                LogAuthDefinitionUnreadable(extensionJsonPath);
                 return null;
             }
 
@@ -87,7 +89,6 @@ namespace pyRevitExtensionParser
             if (values.Count == 0)
             {
                 authDefinitionUnreadable = true;
-                LogAuthDefinitionUnreadable(extensionJsonPath);
                 return null;
             }
 
@@ -101,9 +102,9 @@ namespace pyRevitExtensionParser
                     || jsonContent.IndexOf("authgroups", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
-        private static void LogAuthDefinitionUnreadable(string extensionJsonPath)
+        internal static void LogAuthDefinitionUnreadable(string definitionLocation)
         {
-            LogError("Access list in " + extensionJsonPath +
+            LogError("Access list in " + definitionLocation +
                 " could not be read; the extension will not be loaded until it is fixed.");
         }
 
@@ -573,6 +574,7 @@ namespace pyRevitExtensionParser
             }
             // Read extension.json for additional templates and rocket_mode_compatible
             bool rocketModeCompatible = false;
+            string declaredPythonEngine = null;
             List<string> authUsers = null;
             List<string> authGroups = null;
             string manifestName = null;
@@ -609,6 +611,8 @@ namespace pyRevitExtensionParser
                         }
                     }
 
+                    declaredPythonEngine = ReadDeclaredPythonEngine(json["engine"], extensionJsonPath);
+
                     // Read rocket_mode_compatible setting
                     var rocketModeValue = json["rocket_mode_compatible"]?.ToString();
                     if (!string.IsNullOrEmpty(rocketModeValue))
@@ -616,8 +620,10 @@ namespace pyRevitExtensionParser
                         rocketModeCompatible = rocketModeValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     }
 
-                    authUsers = ReadAuthList(json["authusers"], extensionJsonPath, ref authDefinitionUnreadable);
-                    authGroups = ReadAuthList(json["authgroups"], extensionJsonPath, ref authDefinitionUnreadable);
+                    authUsers = ReadAuthList(json["authusers"], ref authDefinitionUnreadable);
+                    authGroups = ReadAuthList(json["authgroups"], ref authDefinitionUnreadable);
+                    if (authDefinitionUnreadable)
+                        LogAuthDefinitionUnreadable(extensionJsonPath);
                 }
                 catch (Exception ex)
                 {
@@ -630,7 +636,7 @@ namespace pyRevitExtensionParser
                 }
             }
 
-            ExtensionRegistryAuth.ApplyRegistryAuthorization(
+            authDefinitionUnreadable |= ExtensionRegistryAuth.ApplyRegistryAuthorization(
                 extDir,
                 extName,
                 manifestName,
@@ -663,6 +669,7 @@ namespace pyRevitExtensionParser
                 Engine = parsedBundle?.Engine,
                 Config = extConfig,
                 RocketModeCompatible = rocketModeCompatible,
+                DeclaredPythonEngine = declaredPythonEngine,
                 AuthorizedUsers = authUsers,
                 AuthorizedGroups = authGroups,
                 AuthDefinitionUnreadable = authDefinitionUnreadable
@@ -671,6 +678,30 @@ namespace pyRevitExtensionParser
             ReorderByLayout(parsedExtension, parsedExtension, null);
 
             return parsedExtension;
+        }
+
+        /// <summary>
+        /// Reads the extension-level Python engine from <c>"engine": "cpython"</c> or the
+        /// bundle-style <c>"engine": {"type": "cpython"}</c>; unsupported values, including
+        /// a non-string <c>type</c>, declare nothing and are logged as a warning, matching the
+        /// Python loader. A mapping without <c>type</c> declares nothing silently.
+        /// </summary>
+        private static string ReadDeclaredPythonEngine(JToken engine, string manifestPath)
+        {
+            var declared = engine is JObject engineObject ? engineObject["type"] : engine;
+            if (declared == null || declared.Type == JTokenType.Null)
+                return null;
+            if (declared.Type != JTokenType.String)
+            {
+                LogWarning($"Ignoring unsupported extension Python engine declaration: {declared} ({manifestPath})");
+                return null;
+            }
+            var normalized = declared.ToString().Trim().ToLowerInvariant();
+            if (normalized == ParsedExtension.CPythonEngineDeclaration
+                || normalized == ParsedExtension.IronPythonEngineDeclaration)
+                return normalized;
+            LogWarning($"Ignoring unsupported extension Python engine declaration: {declared} ({manifestPath})");
+            return null;
         }
 
         /// <summary>

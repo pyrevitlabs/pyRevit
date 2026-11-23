@@ -296,6 +296,8 @@ class Pick(BaseObject):
 
 
 class SelectionFilter(UI.Selection.ISelectionFilter):
+    __namespace__ = "rpw.ui.selection"
+
     # http://www.revitapidocs.com/2017.1/d552f44b-221c-0ecd-d001-41a5099b2f9f.htm
     # Also See Ehsan's implementation on pyrevit
     # TODO: Implement ISelectFilter overload

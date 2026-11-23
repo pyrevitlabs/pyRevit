@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Dynamic Settings Window for pyRevit
+"""Dynamic Settings Window for pyRevit.
+
 Creates a reusable WPF window for managing script configurations.
 
 Usage:
@@ -30,6 +31,7 @@ Usage:
 """
 
 from pyrevit import script, forms, op
+from pyrevit.forms import _backend
 from pyrevit.framework import Color, SolidColorBrush
 from pyrevit.coreutils.configparser import open_config_file
 from pyrevit.coreutils import appdata
@@ -53,6 +55,7 @@ class SettingsWindow(forms.WPFWindow):
     """Dynamic settings window that generates UI from schema."""
 
     resolve_theme = True
+    _binding_exclude = True
 
     def __init__(
         self,
@@ -102,9 +105,13 @@ class SettingsWindow(forms.WPFWindow):
         self.Title = self.window_title
         self._populate_values()
 
-        self.save_button.Click += self.save_clicked
-        self.cancel_button.Click += self.cancel_clicked
-        self.reset_button.Click += self.reset_clicked
+        _backend.bind_control_event(self, self.save_button, "Click", self.save_clicked)
+        _backend.bind_control_event(
+            self, self.cancel_button, "Click", self.cancel_clicked
+        )
+        _backend.bind_control_event(
+            self, self.reset_button, "Click", self.reset_clicked
+        )
 
     # ------------------------------------------------------------------
     # XAML helpers
@@ -143,7 +150,6 @@ class SettingsWindow(forms.WPFWindow):
 
     def _generate_xaml(self):
         """Generate XAML string based on settings schema."""
-
         xaml_parts = [
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"',
             '        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"',
@@ -340,7 +346,7 @@ class SettingsWindow(forms.WPFWindow):
 
             elif setting_type == "choice":
                 options = setting.get("options", [])
-                control.ItemsSource = options
+                control.ItemsSource = _backend.items_source(options)
                 if current_value in options:
                     control.SelectedItem = current_value
                 elif options:
@@ -364,8 +370,11 @@ class SettingsWindow(forms.WPFWindow):
                 display = getattr(self, name + "_display", None)
                 if display:
                     self._update_slider_display(name)
-                    control.ValueChanged += lambda s, e, n=name: (
-                        self._on_slider_changed(n)
+                    _backend.bind_control_event(
+                        self,
+                        control,
+                        "ValueChanged",
+                        lambda s, e, n=name: self._on_slider_changed(n),
                     )
 
             elif setting_type in ["int", "float", "string", "color", "folder", "file"]:
@@ -373,22 +382,38 @@ class SettingsWindow(forms.WPFWindow):
 
                 if setting_type == "color":
                     self._update_color_preview(name, control.Text)
-                    control.TextChanged += lambda s, e, n=name: (
-                        self._on_color_text_changed(n)
+                    _backend.bind_control_event(
+                        self,
+                        control,
+                        "TextChanged",
+                        lambda s, e, n=name: self._on_color_text_changed(n),
                     )
 
                 if setting_type in ["color", "folder", "file"]:
                     button = getattr(self, name + "_button", None)
                     if button:
                         if setting_type == "color":
-                            button.Click += lambda s, e, n=name: self._pick_color(n)
+                            _backend.bind_control_event(
+                                self,
+                                button,
+                                "Click",
+                                lambda s, e, n=name: self._pick_color(n),
+                            )
                         elif setting_type == "folder":
-                            button.Click += lambda s, e, n=name, st=setting: (
-                                self._pick_folder(n, st)
+                            _backend.bind_control_event(
+                                self,
+                                button,
+                                "Click",
+                                lambda s, e, n=name, st=setting: self._pick_folder(
+                                    n, st
+                                ),
                             )
                         elif setting_type == "file":
-                            button.Click += lambda s, e, n=name, st=setting: (
-                                self._pick_file(n, st)
+                            _backend.bind_control_event(
+                                self,
+                                button,
+                                "Click",
+                                lambda s, e, n=name, st=setting: self._pick_file(n, st),
                             )
 
     # ------------------------------------------------------------------

@@ -113,17 +113,17 @@ begin
   RunPyRevitCommand('caches clear --all', True);
   RunPyRevitCommand('detach --all', True);
   if not RunPyRevitCommand('clones add this master --force', False) then
-    MsgBox(
+    SuppressibleMsgBox(
       'The pyRevit admin installer could not register the installed clone (pyrevit clones add).' + #13#10 + #13#10 +
       'Run the following from an elevated command prompt in the install bin folder:' + #13#10 +
       '  pyrevit clones add this master --force',
-      mbError, MB_OK);
+      mbError, MB_OK, MB_OK);
   if not RunPyRevitCommand('attach master default --installed --allusers', False) then
-    MsgBox(
+    SuppressibleMsgBox(
       'The pyRevit admin installer could not attach pyRevit to Revit for all users.' + #13#10 + #13#10 +
       'Run the following from an elevated command prompt in the install bin folder:' + #13#10 +
       '  pyrevit attach master default --installed --allusers',
-      mbError, MB_OK);
+      mbError, MB_OK, MB_OK);
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

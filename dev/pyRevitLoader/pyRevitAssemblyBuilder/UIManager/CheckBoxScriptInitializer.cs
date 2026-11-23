@@ -156,7 +156,8 @@ namespace pyRevitAssemblyBuilder.UIManager
             {
                 var result = _executeMethod!.Invoke(
                     _executor,
-                    new object?[] { scriptPath, context, checkBox, searchPaths, BuildExecutionScope(component) });
+                    new object?[] { scriptPath, context, checkBox, searchPaths, ScriptIdentityScope.Build(component) });
+                ExecutorFailure.ReportIfFailed(_executor!, "CheckBox", component.DisplayName, _logger);
                 return result is bool succeeded ? succeeded : true;
             }
             catch (TargetInvocationException ex)
@@ -221,33 +222,6 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return componentScript;
 
             return null;
-        }
-
-        private static Dictionary<string, object?> BuildExecutionScope(ParsedComponent component)
-        {
-            var bundleDirectory = component.Directory ?? string.Empty;
-            return new Dictionary<string, object?>
-            {
-                ["__scriptruntime__"] = null,
-                ["__commandpath__"] = bundleDirectory,
-                ["__commandname__"] = component.DisplayName,
-                ["__commandbundle__"] = Path.GetFileName(bundleDirectory),
-                ["__commandextension__"] = FindExtensionName(bundleDirectory),
-                ["__commanduniqueid__"] = component.UniqueId,
-            };
-        }
-
-        private static string FindExtensionName(string bundleDirectory)
-        {
-            var current = string.IsNullOrEmpty(bundleDirectory) ? null : new DirectoryInfo(bundleDirectory);
-            while (current != null)
-            {
-                if (current.Name.EndsWith(".extension", StringComparison.OrdinalIgnoreCase))
-                    return Path.GetFileNameWithoutExtension(current.Name);
-                current = current.Parent;
-            }
-
-            return string.Empty;
         }
 
         private static List<string> CollectLibPaths(ParsedComponent component)

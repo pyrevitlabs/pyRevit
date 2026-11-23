@@ -1,15 +1,23 @@
-"""Run all hosted unit tests from pyrevit.unittests."""
+"""Run all hosted test modules from pyrevit.unittests at any level, except the opt-in modules."""
 
 import pkgutil
 import traceback
 import unittest
 
 import pyrevit.unittests as tests_pkg
-from pyrevit.unittests.runner import run_module_tests
+from pyrevit.unittests.runner import run_module_tests, was_successful
 
 TEST_MODULE_PREFIX = "test_"
-OPT_IN_MODULES = frozenset(["test_revit_api_catalog"])
-RUN_ALL_TEST_LEVEL = "Unit"
+OPT_IN_MODULES = frozenset(
+    [
+        "test_config_roundtrip",
+        "test_create_view_helpers",
+        "test_dynamo_execution",
+        "test_forms_parity",
+        "test_revit_api_catalog",
+        "test_ribbon_control_ids",
+    ]
+)
 
 
 def _discover_test_modules():
@@ -67,12 +75,8 @@ for module_name in test_modules:
     print("\nRunning {}".format(qualified_name))
     try:
         module = __import__(qualified_name, fromlist=["*"])
-        test_level = getattr(module, "TEST_LEVEL", RUN_ALL_TEST_LEVEL)
-        if test_level != RUN_ALL_TEST_LEVEL:
-            print("{}: SKIPPED (Level={})".format(qualified_name, test_level))
-            continue
         result = run_module_tests(module)
-        if not result.wasSuccessful():
+        if not was_successful(result):
             _print_result_details(qualified_name, result)
             failures.append((qualified_name, result))
         else:

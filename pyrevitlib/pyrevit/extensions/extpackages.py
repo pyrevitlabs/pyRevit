@@ -6,7 +6,7 @@ import codecs
 import json
 from collections import defaultdict
 
-from pyrevit import PyRevitException, HOST_APP
+from pyrevit import PyRevitException, HOST_APP, EXTENSIONS_DEFAULT_DIR
 from pyrevit import labs
 from pyrevit.compat import safe_strtype
 from pyrevit.coreutils.logger import get_logger
@@ -63,6 +63,16 @@ class DependencyGraph:
                     return True
         else:
             return False
+
+
+def _normalized(path):
+    return op.normcase(op.normpath(path))
+
+
+def _definition_order(def_path):
+    shipped_prefix = _normalized(EXTENSIONS_DEFAULT_DIR) + os.sep
+    normalized = _normalized(def_path)
+    return (normalized.startswith(shipped_prefix), normalized)
 
 
 class ExtensionPackage:
@@ -191,17 +201,32 @@ class ExtensionPackage:
     def is_installed(self):
         """Installation directory.
 
+        An existing definition file of the package decides first, those
+        outside the shipped root before those inside it, each group in path
+        order, so the result does not depend on set iteration order. Otherwise
+        the package matches by directory name, searching user extension roots
+        in order and the shipped root last, so a same-named user copy wins as
+        a fallback rule only.
+
         Returns:
             (str): Installed directory path or empty string if not installed.
         """
         # Package loaded from on-disk extension.json: installed dir is the def file's parent
-        for def_path in self.def_file_path:
+        for def_path in sorted(self.def_file_path, key=_definition_order):
             if op.exists(def_path):
                 parent = op.dirname(def_path)
                 if any(op.basename(parent).endswith(p) for p in EXTENSION_POSTFIXES):
                     return parent
         # Fallback: match by ext_dirname (name from manifest + postfix)
-        for ext_dir in user_config.get_ext_root_dirs():
+        shipped_dir = _normalized(EXTENSIONS_DEFAULT_DIR)
+        search_dirs = [
+            ext_dir
+            for ext_dir in user_config.get_thirdparty_ext_root_dirs()
+            if _normalized(ext_dir) != shipped_dir
+        ]
+        if op.exists(EXTENSIONS_DEFAULT_DIR):
+            search_dirs.append(EXTENSIONS_DEFAULT_DIR)
+        for ext_dir in search_dirs:
             if op.exists(ext_dir):
                 for sub_dir in os.listdir(ext_dir):
                     if (
@@ -489,9 +514,11 @@ def get_ext_packages(authorized_only=True):
     for ext_dir in user_config.get_ext_root_dirs():
         # make a list of all availabe extension definition sources
         # default is under the extensions directory that ships with pyrevit
-        extpkg_def_files = {op.join(ext_dir, PLUGIN_EXT_DEF_FILE)}
+        extpkg_def_files = [op.join(ext_dir, PLUGIN_EXT_DEF_FILE)]
         # add other sources added by the user (using the cli)
-        extpkg_def_files.update(user_config.get_ext_sources())
+        for ext_source in user_config.get_ext_sources():
+            if ext_source not in extpkg_def_files:
+                extpkg_def_files.append(ext_source)
         for extpkg_def_file in extpkg_def_files:
             mlogger.debug("Looking for %s", extpkg_def_file)
             # check for external ext def file

@@ -26,7 +26,7 @@ public sealed class GenerateReleaseNotesModule : Module<string>
         var changes = await CollectChangesAsync(
             context,
             previousTag,
-            context.GitHub().Client,
+            GitHubClientFactory.Create(context),
             owner,
             repo,
             warning => context.Summary.Warning(warning),

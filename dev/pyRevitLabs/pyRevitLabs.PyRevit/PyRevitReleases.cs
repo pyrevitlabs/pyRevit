@@ -25,9 +25,21 @@ namespace pyRevitLabs.PyRevit {
         public static List<PyRevitRelease> FilterPyRevitReleases(IEnumerable<PyRevitRelease> releases, bool includePreRelease) =>
             releases.Where(r => r.IsPyRevitRelease && (includePreRelease || !r.PreRelease)).ToList();
 
-        // Find releases
+        /// <summary>
+        /// Orders releases by version, newest first, and by creation time among equal versions.
+        /// </summary>
+        /// <remarks>
+        /// The creation time alone is not a version order: GitHub dates a release from when it was created, so an old
+        /// tag published late sorts among the new ones.
+        /// </remarks>
+        public static List<PyRevitRelease> SortNewestFirst(IEnumerable<PyRevitRelease> releases) =>
+            releases.OrderByDescending(r => r.Version).ThenByDescending(r => r.CreatedTimeStamp, StringComparer.Ordinal).ToList();
+
+        /// <summary>
+        /// Every release of the repository, newest version first (see <see cref="SortNewestFirst"/>).
+        /// </summary>
         public static List<PyRevitRelease> GetReleases() =>
-            GithubAPI.GetReleases<PyRevitRelease>(PyRevitLabsConsts.OriginalRepoId).OrderByDescending(r => r.CreatedTimeStamp).ToList();
+            SortNewestFirst(GithubAPI.GetReleases<PyRevitRelease>(PyRevitLabsConsts.OriginalRepoId));
 
         public static List<PyRevitRelease> FindReleases(string searchPattern, bool includePreRelease = false) {
             return FilterPyRevitReleases(GetReleases(), includePreRelease)

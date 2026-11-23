@@ -485,10 +485,12 @@ class Extension(GenericUIContainer):
 
     type_id = exts.ExtensionTypes.UI_EXTENSION.POSTFIX
     allowed_sub_cmps = [Tab]
+    script_engine = None
 
     def __init__(self, cmp_path=None):
         self.pyrvt_version = None
         self.dir_hash_value = None
+        self.script_engine = None
         # using classname otherwise exceptions in superclasses won't show
         GenericUIContainer.__init__(self, cmp_path=cmp_path)
 
@@ -544,6 +546,22 @@ class Extension(GenericUIContainer):
     def _update_from_directory(self):  # pylint: disable=W0221
         # using classname otherwise exceptions in superclasses won't show
         GenericUIContainer._update_from_directory(self)
+        try:
+            manifest = self.get_manifest()
+        except (IOError, OSError) as manifest_err:
+            mlogger.warning(
+                "Can not read extension manifest: %s | %s",
+                self.get_manifest_file(),
+                manifest_err,
+            )
+            manifest = None
+        self.script_engine = exts.get_declared_python_engine(manifest)
+        declared_engine = exts.get_declared_engine_value(manifest)
+        if declared_engine is not None and self.script_engine is None:
+            mlogger.warning(
+                "Ignoring unsupported extension Python engine declaration: %s",
+                declared_engine,
+            )
         self.pyrvt_version = versionmgr.get_pyrevit_version().get_formatted()
 
         # extensions can store event hooks under
@@ -590,11 +608,16 @@ class Extension(GenericUIContainer):
                     manifest_cfg = json.load(mfile)
                     return manifest_cfg
                 except Exception as manfload_err:
-                    print(
-                        "Can not parse ext manifest file: {} | {}".format(
-                            manifest_file, manfload_err
-                        )
+                    reported = self.__dict__.setdefault(
+                        "_reported_manifest_errors", set()
                     )
+                    if manifest_file not in reported:
+                        reported.add(manifest_file)
+                        print(
+                            "Can not parse ext manifest file: {} | {}".format(
+                                manifest_file, manfload_err
+                            )
+                        )
                     return
 
     def configure(self):

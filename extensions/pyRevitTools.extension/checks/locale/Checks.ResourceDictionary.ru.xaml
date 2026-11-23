@@ -257,8 +257,6 @@
     <system:String x:Key="CADAuditInstances">Проверка экземпляров CAD:</system:String>
     <system:String x:Key="CADAuditInProject">в этом проекте</system:String>
     <system:String x:Key="CADAuditInActiveView">только в активном виде</system:String>
-    <system:String x:Key="CADAuditCancel">ОТМЕНА</system:String>
-    <system:String x:Key="CADAuditOK">ОК</system:String>
     <system:String x:Key="CADAuditTitle">Проверка экземпляров CAD в текущем проекте</system:String>
     <system:String x:Key="CADAuditNoInstances">Экземпляры CAD не найдены</system:String>
     <system:String x:Key="CADAuditSelect">Выбрать</system:String>

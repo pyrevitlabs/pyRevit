@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using DocoptNet;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.PyRevit;
 
 namespace pyRevitCLI {
     internal static class PyRevitCLIArguments {
@@ -19,6 +21,16 @@ namespace pyRevitCLI {
             if (arguments is null || !arguments.TryGetValue(key, out var value) || value is null)
                 return defaultValue;
             return value.Value as string ?? defaultValue;
+        }
+
+        /// <summary>
+        /// Returns the texts docopt parsed for a repeated positional argument such as <c>&lt;element_id&gt;...</c>,
+        /// in command line order, or an empty list when none was given.
+        /// </summary>
+        internal static IReadOnlyList<string> Values(IDictionary<string, ValueObject> arguments, string key) {
+            if (arguments is null || !arguments.TryGetValue(key, out var value) || value is null || !value.IsList)
+                return new List<string>();
+            return value.AsList.Cast<object>().Select(item => item.ToString()).ToList();
         }
 
         /// <summary>
@@ -41,6 +53,14 @@ namespace pyRevitCLI {
             if (int.TryParse(text, out var limit) && limit > 0)
                 return limit;
             throw new PyRevitException(string.Format("Invalid limit \"{0}\": expected a positive whole number", text));
+        }
+
+        internal static PyRevitAttachment RequireAttachment(PyRevitAttachment attachment, int revitYear) {
+            if (attachment != null)
+                return attachment;
+            throw new PyRevitException(string.Format(
+                "pyRevit is not attached to Revit \"{0}\". " +
+                "Runner needs to use the attached clone and engine to execute the script.", revitYear));
         }
 
         /// <summary>

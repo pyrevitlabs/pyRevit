@@ -36,7 +36,7 @@ The `ci` pipeline mode builds all product DLLs, tools, and engines into `bin/`:
 ```powershell
 cd build
 
-# Unsigned product build (no version stamping; Channel=none by default)
+# Unsigned product build (Channel=none by default: committed version files stay untouched, assemblies still carry the printed build version)
 dotnet run -c Release -- ci
 
 # WIP-style stamping + product build (matches a develop or release/* push on the main repo)
@@ -104,24 +104,25 @@ CI publishes `unsigned-bin-<sha>.zip` to the **`ci-binaries`** release and mirro
 Run unit tests:
 
 ```powershell
-dotnet test tests/Build.Tests.csproj -c Release
+python dev/tests/run_tests.py --language dotnet
 ```
 
-The `ci` pipeline also runs the configuration core, INI backend, parser parity, and Python shell tests. Shell tests use the built IronPython engine assemblies after the runners build; they do not add engine source builds to Labs.
+Product builds do not execute tests. The runner, run from the repository root, provides shared C#/Python discovery, reports, and per-module coverage gates; CI runs the same language selections. Revit API tests remain local; see `docs/testing.md`.
 
 ### Pipeline modes
 
 | Args | Purpose |
 |------|---------|
 | `ci` (default) | Stamp versions, build products, verify LibGit2, stage release metadata (tag builds preserve the committed version; branch builds re-stamp) |
-| `pack` | Restore CI-stamped metadata (if present), build Inno/MSI installers and Chocolatey package, and stage `dist/pyrevit-doctor.exe` as the standalone doctor download (requires `bin/`) |
+| `pack` | Restore CI-stamped metadata (if present), build Inno/MSI installers and the `pyrevit` and `pyrevit-cli` Chocolatey packages, and stage `dist/pyrevit-doctor.exe` as the standalone doctor download (requires `bin/`) |
 | `sign` | Sign binaries, installers, and `.nupkg` via `sign code trusted-signing` |
 | `local` | Run `ci`, then sign `bin/` with a per-machine developer certificate so Revit loads it without the unsigned add-in dialog. Local only; refuses when `CI` is set or the channel is `wip`/`release` |
 | `sign-test` | Sign `bin/` with the certificate whose SHA-256 fingerprint is in `TestSigning__Fingerprint` (CI test runners). The certificate must be in `CurrentUser\My` and its subject must start with `CN=pyRevit CI Test` so packaging can detect it. Refuses `wip`/`release` and cannot be combined with `pack`, `sign` or `publish` |
 | `--trust-cert` | Create and trust the developer certificate for the current user. Separate from `local` because trusting a new self-signed root raises a modal Windows prompt, which belongs in its own step rather than in the middle of a build. Refuses when `CI` is set |
 | `--remove-cert` | Delete the developer certificate created by `local` from `CurrentUser\My`, `Root` and `TrustedPublisher` |
-| `publish` | Generate release notes, create draft GitHub release, push Chocolatey |
+| `publish` | Generate release notes, create draft GitHub release with the signed installers and `.nupkg` files |
 | `winget` | Generate WinGet manifests (machine-scope installers only), strip `elevationProhibited` if present, submit PRs to winget-pkgs |
+| `choco` | Push the signed `.nupkg` files found in `dist/` to Chocolatey. Run after the GitHub release is published, with the `.nupkg` files downloaded from it (see `choco.yml`) |
 | `notify` | Comment on linked GitHub issues |
 
 `local` signs with `CN=pyRevit Local Dev (<machine>)` — one year, non-exportable key, renewed when near expiry. Trust it once first; Windows asks you to confirm the new root, and `local` refuses to start until you have:

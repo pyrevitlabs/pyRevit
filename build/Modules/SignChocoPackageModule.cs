@@ -19,20 +19,23 @@ public sealed class SignChocoPackageModule(
     protected override async Task ExecuteModuleAsync(IModuleContext context, CancellationToken cancellationToken)
     {
         var versionInfo = VersionHelper.ReadVersionInfo();
-        var nupkgPath = Path.Combine(
-            PyRevitPaths.DistPath,
-            string.Format(PyRevitPaths.PyRevitChocoNupkgName, versionInfo.InstallVersion));
-
-        if (!File.Exists(nupkgPath))
+        var nupkgPaths = new List<string>();
+        foreach (var package in PyRevitPaths.ChocoPackages)
         {
-            throw new FileNotFoundException("Chocolatey package was not found for signing.", nupkgPath);
+            var nupkgPath = Path.Combine(PyRevitPaths.DistPath, package.NupkgName(versionInfo.InstallVersion));
+            if (!File.Exists(nupkgPath))
+            {
+                throw new FileNotFoundException("Chocolatey package was not found for signing.", nupkgPath);
+            }
+
+            nupkgPaths.Add(nupkgPath);
         }
 
         await SigningHelper.SignFilesAsync(
             context,
             signingOptions.Value,
             buildOptions.Value,
-            [nupkgPath],
+            nupkgPaths,
             "Choco",
             cancellationToken);
     }

@@ -17,6 +17,7 @@ from sectionbox_navigation import (
     find_next_grid_in_direction,
 )
 from sectionbox_utils import (
+    format_amount,
     is_2d_view,
     get_view_range_and_crop,
     section_box_from_crop,
@@ -24,6 +25,7 @@ from sectionbox_utils import (
     align_crop_by_shape,
 )
 from sbox.sbox_actions import toggle, hide, align_to_face, temp_switch
+from sectionbox_preview import PreviewSession
 from sectionbox_sources import create_box_from_chosen_source
 from sectionbox_geometry import (
     get_box_info,
@@ -126,7 +128,8 @@ def on_view_or_doc_changed(sender, args):
             return
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_window_title))
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
-        logger.info("Form updated due to view or document change.")
+        sb_form.sync_preview_view()
+        logger.debug("Form updated due to view or document change.")
     except Exception as ex:
         logger.exception("Failed to update form: {}".format(ex))
 
@@ -215,6 +218,18 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
+        self.syncing_preview = False
+        self.preview = PreviewSession(
+            output,
+            self,
+            self.get_locale_string,
+            DATAFILENAME,
+            lambda: bool(self.chkIncludeLinks.IsChecked),
+            lambda: (self.all_levels, self.all_grids),
+            self.sync_after_preview_change,
+            self.on_preview_hidden,
+            config=my_config,
+        )
 
         self.chkIncludeLinks.IsChecked = my_config.get_option("chkLinks_state", False)
         self.chkPreview.IsChecked = my_config.get_option("chkPreview_state", True)
@@ -251,6 +266,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.Closed += self.form_closed
         script.restore_window_position(self)
         self.show()
+        if my_config.get_option("chkShow3D_state", False):
+            self.chkShow3D.IsChecked = True
 
     def update_window_title(self):
         view = revit.active_view
@@ -275,11 +292,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         else:
             self.hide_element(self.project_unit_text)
 
-        self.txtLevelNudgeAmount.Text = str(round(level_nudge_value, 3))
+        self.txtLevelNudgeAmount.Text = format_amount(level_nudge_value)
         self.txtLevelNudgeUnit.Text = length_unit_symbol_label or ""
-        self.txtExpandAmount.Text = str(round(expand_nudge_value, 3))
+        self.txtExpandAmount.Text = format_amount(expand_nudge_value)
         self.txtExpandUnit.Text = length_unit_symbol_label or ""
-        self.txtGridNudgeAmount.Text = str(round(grid_nudge_value, 3))
+        self.txtGridNudgeAmount.Text = format_amount(grid_nudge_value)
         self.txtGridNudgeUnit.Text = length_unit_symbol_label or ""
 
     def update_dropdown_visibility(self):
@@ -597,6 +614,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def _on_no_document(self):
         """Disable all controls and clear status when no documents are open."""
         self.Content.IsEnabled = False
+        self.preview.close()
+        self.on_preview_hidden()
         self.hide_element(self.project_unit_text)
         self.txtVerticalStatus.Text = ""
         self.txtGridStatus.Text = ""
@@ -682,6 +701,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.do_grid_move(params)
 
             self.Dispatcher.Invoke(System.Action(self.update_info))
+            self.preview.sync_box(revit.active_view)
 
         except Exception as ex:
             logger.exception("Error executing action: {}".format(ex))
@@ -981,7 +1001,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         """Move section box side to next grid line or by nudge amount."""
         target = params.get("target")  # 'north', 'south', 'east', 'west'
         direction = params.get("direction")  # 'in', 'out'
-        direction_name = str(target + direction)
+        direction_name = "{} {}".format(target, direction)
         nudge_amount = params.get("nudge_amount", 0)
         do_not_apply = params.get("do_not_apply", False)
 
@@ -1982,6 +2002,67 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         """Refresh levels and grids when checkbox is toggled."""
         self.update_grids_and_levels()
         self.update_info()
+        events.execute_in_revit_context(self.preview.sync_links)
+
+    def chkShow3D_changed(self, sender, e):
+        """Open or hide the 3D preview window."""
+        if self.syncing_preview:
+            return
+        if self.chkShow3D.IsChecked:
+            events.execute_in_revit_context(self.open_preview)
+        else:
+            self.preview.close()
+
+    def open_preview(self):
+        """Open the 3D preview in API context, or explain why it cannot open.
+
+        Runs after the toggle was ticked, so it does nothing when the toggle
+        was unticked again or the navigator closed in the meantime.
+        """
+        if not self.chkShow3D.IsChecked or self.preview.shutting_down:
+            return
+        reason = None
+        try:
+            view = revit.active_view
+            if not self.preview.supported:
+                reason = "PreviewNeedsWebView2"
+            elif not (isinstance(view, DB.View3D) or is_2d_view(view)):
+                reason = "UnsupportedViewTypeTitle"
+            elif not get_box_info(view, DATAFILENAME):
+                reason = "PreviewNeedsBox"
+            elif not self.preview.open(view):
+                reason = "PreviewNeedsWebView2"
+        except Exception as ex:
+            logger.exception("Could not open the 3D preview: {}".format(ex))
+            reason = "PreviewNeedsWebView2"
+        if reason:
+            self.Dispatcher.Invoke(System.Action(lambda: self.reject_preview(reason)))
+
+    def reject_preview(self, reason):
+        """Untick the preview toggle and say why it could not open."""
+        self.on_preview_hidden()
+        self.show_status_message(3, self.get_locale_string(reason), "warning")
+
+    def on_preview_hidden(self):
+        """Untick the preview toggle without reacting to the change."""
+
+        def untick():
+            self.syncing_preview = True
+            self.chkShow3D.IsChecked = False
+            self.syncing_preview = False
+
+        self.Dispatcher.Invoke(System.Action(untick))
+
+    def sync_after_preview_change(self):
+        """Refresh the navigator after the preview moved the box."""
+        self.Dispatcher.Invoke(System.Action(self.update_info))
+
+    def sync_preview_view(self):
+        """Show the active view in the preview, in API context."""
+        try:
+            self.preview.sync_view(revit.active_view)
+        except Exception as ex:
+            logger.exception("Could not update the 3D preview: {}".format(ex))
 
     # Grid Navigation Button Handlers
 
@@ -2069,6 +2150,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             events.stop_events()
 
             script.save_window_position(self)
+            self.preview.shutdown()
 
             # Cleanup form - shouldn't be necessary?
             global sb_form
@@ -2105,6 +2187,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             my_config.set_option("rbGrid_state", self.rbGrid.IsChecked)
             my_config.set_option("chkLinks_state", self.chkIncludeLinks.IsChecked)
             my_config.set_option("chkPreview_state", self.chkPreview.IsChecked)
+            my_config.set_option("chkShow3D_state", self.chkShow3D.IsChecked)
             script.save_config()
 
         except Exception:

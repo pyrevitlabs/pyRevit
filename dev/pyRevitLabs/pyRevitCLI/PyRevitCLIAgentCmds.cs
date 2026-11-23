@@ -37,7 +37,7 @@ namespace pyRevitCLI {
                 return;
             }
 
-            Console.WriteLine(string.Format("Agent host: {0} (policy: {1}, default engine: {2}, user skills: {3}{4})",
+            Console.WriteLine(string.Format("CLI config: agent host {0} (policy: {1}, default engine: {2}, user skills: {3}{4}); a running session can differ, see 'pyrevit agent context'",
                 PyRevitConfigs.GetAgentEnabled() ? "enabled" : "disabled",
                 PyRevitConfigs.GetAgentPolicy(),
                 PyRevitConfigs.GetAgentEngine(),
@@ -86,6 +86,103 @@ namespace pyRevitCLI {
         public static void PrintContext(string revitSelector) {
             var instance = PyRevitAgentClient.Resolve(revitSelector);
             Console.WriteLine(PyRevitAgentClient.Call(instance, "get_context").ToString(Formatting.Indented));
+        }
+
+        /// <summary>
+        /// <c>pyrevit agent capture</c>: asks the host for a PNG of a view and prints the host's answer
+        /// without the image data.
+        /// </summary>
+        /// <param name="view">View name, sheet number, view id, <c>active</c> or <c>3d</c>; null captures the active view.</param>
+        /// <param name="viewType">
+        /// A Revit <c>ViewType</c> name such as <c>FloorPlan</c> that keeps only views of that type when a name is shared;
+        /// the host refuses it together with <c>active</c> or <c>3d</c>.
+        /// </param>
+        /// <param name="mode"><c>export</c>, <c>viewport</c> or <c>screen</c>; null leaves the choice to the host.</param>
+        /// <param name="width">Image width in pixels; the host enforces its range.</param>
+        /// <param name="outFile">
+        /// Where to write the PNG. Without it, the printed <c>path</c> is the file the host saved under
+        /// <c>%APPDATA%\pyRevit\agent\captures</c>.
+        /// </param>
+        /// <exception cref="PyRevitException">
+        /// <paramref name="width"/> is not a whole number, <paramref name="outFile"/> is not a usable path, or the host's
+        /// answer carries no image.
+        /// </exception>
+        /// <remarks>
+        /// With <paramref name="outFile"/> the printed <c>path</c> is that file, not the host's copy.
+        /// </remarks>
+        public static void CaptureView(string view, string mode, string width, string outFile, string revitSelector, string viewType = null) {
+            var parameters = new JObject();
+            if (view != null)
+                parameters["view"] = view;
+            if (viewType != null)
+                parameters["view_type"] = viewType;
+            if (mode != null)
+                parameters["mode"] = mode;
+            if (width != null)
+                parameters["width"] = ParseWholeNumber(width, "--width");
+            var destination = outFile == null ? null : FullOutputPath(outFile);
+
+            var instance = PyRevitAgentClient.Resolve(revitSelector);
+            var result = CallCapture(instance, parameters) as JObject
+                ?? throw new PyRevitException("The agent host answered the capture request without a result.");
+            var image = result.Value<string>("image_base64")
+                ?? throw new PyRevitException("The agent host answered the capture request without an image.");
+            result.Remove("image_base64");
+
+            if (destination != null) {
+                Directory.CreateDirectory(Path.GetDirectoryName(destination));
+                File.WriteAllBytes(destination, Convert.FromBase64String(image));
+                result["path"] = destination;
+            }
+            Console.WriteLine(result.ToString(Formatting.Indented));
+        }
+
+        private static JToken CallCapture(AgentInstance instance, JObject parameters) {
+            try {
+                return PyRevitAgentClient.Call(instance, "capture", parameters);
+            }
+            catch (AgentClientException ex) when (ex.Details?["views"] is JArray views) {
+                var candidates = views.OfType<JObject>().Select(view => string.Format("  {0}  {1}  {2}{3}",
+                    view.Value<string>("id"),
+                    view.Value<string>("type"),
+                    view.Value<string>("name"),
+                    string.IsNullOrEmpty(view.Value<string>("number")) ? string.Empty : " (sheet " + view.Value<string>("number") + ")"));
+                throw new PyRevitException(ex.Message + Environment.NewLine + string.Join(Environment.NewLine, candidates));
+            }
+        }
+
+        /// <summary>
+        /// <c>pyrevit agent inspect</c>: prints the host's description of elements in the active document.
+        /// </summary>
+        /// <exception cref="PyRevitException">An id is not a whole number.</exception>
+        public static void InspectElements(IReadOnlyList<string> elementIds, bool includeParameters, string revitSelector) {
+            var ids = new JArray(elementIds.Select(id => ParseWholeNumber(id, "element id")));
+            var parameters = new JObject { ["ids"] = ids, ["parameters"] = includeParameters };
+            var instance = PyRevitAgentClient.Resolve(revitSelector);
+            Console.WriteLine(PyRevitAgentClient.Call(instance, "inspect_elements", parameters).ToString(Formatting.Indented));
+        }
+
+        /// <summary>
+        /// <c>pyrevit agent lookup</c>: prints what the running Revit knows about a Revit API type or member.
+        /// </summary>
+        public static void LookupApi(string name, string revitSelector) {
+            var instance = PyRevitAgentClient.Resolve(revitSelector);
+            Console.WriteLine(PyRevitAgentClient.Call(instance, "lookup_api", new JObject { ["name"] = name }).ToString(Formatting.Indented));
+        }
+
+        private static long ParseWholeNumber(string text, string description) {
+            if (long.TryParse(text, System.Globalization.NumberStyles.AllowLeadingSign, System.Globalization.CultureInfo.InvariantCulture, out var number))
+                return number;
+            throw new PyRevitException($"{description} must be a whole number: {text}");
+        }
+
+        private static string FullOutputPath(string path) {
+            try {
+                return Path.GetFullPath(path);
+            }
+            catch (Exception ex) when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException) {
+                throw new PyRevitException("--out is not a usable file path: " + path);
+            }
         }
 
         public static void RunScript(string scriptFile, string mode, string engine, string title, string inputsJson, string revitSelector, string timeoutSeconds = null, string workspace = null) {
@@ -140,19 +237,36 @@ namespace pyRevitCLI {
             }
         }
 
+        private static readonly (string Parameter, string Option)[] RecordOptions = {
+            ("screenshot_interval_s", "--screenshot-interval"),
+            ("max_screenshots", "--max-screenshots"),
+            ("max_events", "--max-events"),
+            ("max_duration_s", "--max-duration"),
+        };
+
+        /// <summary>
+        /// <c>pyrevit agent record</c>: starts, stops or reports a session recording in the running Revit.
+        /// </summary>
+        /// <exception cref="PyRevitException">
+        /// The action is unknown, or a start option is not a number or is outside the range the host accepts;
+        /// the message names the command line option, not the host's parameter.
+        /// </exception>
         public static void Record(string action, bool screenshots, string screenshotInterval, string maxScreenshots, string maxEvents, string maxDuration, string revitSelector) {
             var normalizedAction = (action ?? string.Empty).ToLowerInvariant();
             if (normalizedAction != "start" && normalizedAction != "stop" && normalizedAction != "status")
                 throw new PyRevitException("The record action must be start, stop or status: " + action);
+            JObject parameters = null;
+            if (normalizedAction == "start") {
+                parameters = new JObject { ["screenshots"] = screenshots };
+                AddNumber(parameters, "screenshot_interval_s", screenshotInterval);
+                AddNumber(parameters, "max_screenshots", maxScreenshots);
+                AddNumber(parameters, "max_events", maxEvents);
+                AddNumber(parameters, "max_duration_s", maxDuration);
+            }
             var instance = PyRevitAgentClient.Resolve(revitSelector);
             switch (normalizedAction) {
                 case "start":
-                    var parameters = new JObject { ["screenshots"] = screenshots };
-                    AddNumber(parameters, "screenshot_interval_s", screenshotInterval);
-                    AddNumber(parameters, "max_screenshots", maxScreenshots);
-                    AddNumber(parameters, "max_events", maxEvents);
-                    AddNumber(parameters, "max_duration_s", maxDuration);
-                    Console.WriteLine(PyRevitAgentClient.Call(instance, "recording_start", parameters).ToString(Formatting.Indented));
+                    Console.WriteLine(StartRecording(instance, parameters).ToString(Formatting.Indented));
                     break;
                 case "stop":
                     Console.WriteLine(PyRevitAgentClient.Call(instance, "recording_stop").ToString(Formatting.Indented));
@@ -163,11 +277,22 @@ namespace pyRevitCLI {
             }
         }
 
+        private static JToken StartRecording(AgentInstance instance, JObject parameters) {
+            try {
+                return PyRevitAgentClient.Call(instance, "recording_start", parameters);
+            }
+            catch (AgentClientException ex) when (ex.Code == "invalid_params") {
+                throw new PyRevitException(RecordOptions.Aggregate(ex.Message, (message, name) => message.Replace($"'{name.Parameter}'", name.Option)));
+            }
+        }
+
         private static void AddNumber(JObject parameters, string name, string value) {
             if (value == null)
                 return;
-            var parsed = double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number);
-            parameters[name] = parsed ? (JToken)number : value;
+            if (!double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number)
+                || double.IsNaN(number) || double.IsInfinity(number))
+                throw new PyRevitException($"{RecordOptions.First(option => option.Parameter == name).Option} must be a number: {value}");
+            parameters[name] = number;
         }
 
         public static void PrintRecordings(string limit) {

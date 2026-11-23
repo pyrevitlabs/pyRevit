@@ -11,12 +11,19 @@ Invariant:
     far from the internal origin.
 """
 
-import array
-import base64
-import json
-import re
-
 from pyrevit import DB
+from scene3d.meshing import (
+    BOX_EDGES,
+    FloatArray,
+    IntArray,
+    box_corners,
+    element_bbox,
+    flat,
+    relative,
+    tessellate_element,
+    union_bbox,
+    vector,
+)
 
 from invisibility_checks import (
     format_length_with_symbol,
@@ -29,234 +36,19 @@ from invisibility_checks import (
 
 MAX_SCENE_VERTICES = 60000
 MAX_ELEMENT_VERTICES = 20000
-_BOX_POINT_COUNT = 8 + 2 * 12
-_PACKED_TOKEN = re.compile(r"@@PACKED(\d+)@@")
 _MIN_PLANE_HALF_SIZE_FT = 10.0
 
 
-class _BudgetExceeded(Exception):
-    pass
-
-
-class _FloatArray(object):
-    """Marker for a large float list serialized with fixed precision."""
-
-    __slots__ = ("values",)
-
-    def __init__(self, values):
-        self.values = values
-
-
-class _IntArray(object):
-    __slots__ = ("values",)
-
-    def __init__(self, values):
-        self.values = values
-
-
-class _MeshBuilder(object):
-    """Accumulates triangles and edge segments in scene-relative coordinates.
-
-    Invariant:
-        ``budget`` caps ``point_count``, which counts mesh vertices and edge
-        endpoints alike, so curve-heavy elements cannot bypass the limits.
-    """
-
-    def __init__(self, origin, budget):
-        self.origin = origin
-        self.budget = budget
-        self.positions = []
-        self.indices = []
-        self.edges = []
-
-    @property
-    def vertex_count(self):
-        return len(self.positions) // 3
-
-    @property
-    def point_count(self):
-        return self.vertex_count + len(self.edges) // 3
-
-    def _reserve(self, count):
-        if self.point_count + count > self.budget:
-            raise _BudgetExceeded()
-
-    def _push_vertex(self, point):
-        self._reserve(1)
-        self.positions.extend(
-            (
-                point.X - self.origin.X,
-                point.Y - self.origin.Y,
-                point.Z - self.origin.Z,
-            )
-        )
-        return self.vertex_count - 1
-
-    def add_mesh(self, mesh):
-        base = self.vertex_count
-        for vertex in mesh.Vertices:
-            self._push_vertex(vertex)
-        for index in range(mesh.NumTriangles):
-            triangle = mesh.get_Triangle(index)
-            self.indices.extend(
-                (
-                    base + triangle.get_Index(0),
-                    base + triangle.get_Index(1),
-                    base + triangle.get_Index(2),
-                )
-            )
-
-    def add_polyline(self, points):
-        points = list(points)
-        self._reserve(2 * max(len(points) - 1, 0))
-        for start, end in zip(points, points[1:]):
-            self.edges.extend(
-                (
-                    start.X - self.origin.X,
-                    start.Y - self.origin.Y,
-                    start.Z - self.origin.Z,
-                    end.X - self.origin.X,
-                    end.Y - self.origin.Y,
-                    end.Z - self.origin.Z,
-                )
-            )
-
-    def add_box(self, bbox):
-        corners = _box_corners(bbox.Min, bbox.Max)
-        base = self.vertex_count
-        for corner in corners:
-            self._push_vertex(corner)
-        for a, b, c in _BOX_TRIANGLES:
-            self.indices.extend((base + a, base + b, base + c))
-        for a, b in _BOX_EDGES:
-            self.add_polyline((corners[a], corners[b]))
-
-
-_BOX_TRIANGLES = (
-    (0, 2, 1),
-    (1, 2, 3),
-    (4, 5, 6),
-    (5, 7, 6),
-    (0, 1, 4),
-    (1, 5, 4),
-    (2, 6, 3),
-    (3, 6, 7),
-    (0, 4, 2),
-    (2, 4, 6),
-    (1, 3, 5),
-    (3, 7, 5),
-)
-
-_BOX_EDGES = (
-    (0, 1),
-    (1, 3),
-    (3, 2),
-    (2, 0),
-    (4, 5),
-    (5, 7),
-    (7, 6),
-    (6, 4),
-    (0, 4),
-    (1, 5),
-    (2, 6),
-    (3, 7),
-)
-
-
-def _box_corners(low, high, transform=None):
-    """Return the 8 corners ordered x-fastest, then y, then z."""
-    corners = [
-        DB.XYZ(x, y, z)
-        for z in (low.Z, high.Z)
-        for y in (low.Y, high.Y)
-        for x in (low.X, high.X)
-    ]
-    if transform is not None:
-        corners = [transform.OfPoint(c) for c in corners]
-    return corners
-
-
-def _walk_geometry(geometry, builder):
-    for item in geometry:
-        if isinstance(item, DB.Solid):
-            if item.Faces.Size == 0:
-                continue
-            for face in item.Faces:
-                builder.add_mesh(face.Triangulate())
-            for edge in item.Edges:
-                builder.add_polyline(edge.Tessellate())
-        elif isinstance(item, DB.Mesh):
-            builder.add_mesh(item)
-        elif isinstance(item, DB.GeometryInstance):
-            _walk_geometry(item.GetInstanceGeometry(), builder)
-        elif isinstance(item, DB.GeometryElement):
-            _walk_geometry(item, builder)
-        elif isinstance(item, DB.Curve):
-            builder.add_polyline(item.Tessellate())
-        elif isinstance(item, DB.PolyLine):
-            builder.add_polyline(item.GetCoordinates())
-
-
-def _element_geometry(element):
-    options = DB.Options()
-    owner_id = element.OwnerViewId
-    if owner_id != DB.ElementId.InvalidElementId:
-        options.View = element.Document.GetElement(owner_id)
-    else:
-        options.DetailLevel = DB.ViewDetailLevel.Medium
-    return element.get_Geometry(options)
-
-
-def _element_bbox(element):
-    bbox = element.get_BoundingBox(None)
-    if bbox is None and element.OwnerViewId != DB.ElementId.InvalidElementId:
-        bbox = element.get_BoundingBox(element.Document.GetElement(element.OwnerViewId))
-    return bbox
-
-
-def _union_bbox(boxes):
-    boxes = [b for b in boxes if b is not None]
-    if not boxes:
-        return None
-    union = DB.BoundingBoxXYZ()
-    union.Min = DB.XYZ(
-        min(b.Min.X for b in boxes),
-        min(b.Min.Y for b in boxes),
-        min(b.Min.Z for b in boxes),
-    )
-    union.Max = DB.XYZ(
-        max(b.Max.X for b in boxes),
-        max(b.Max.Y for b in boxes),
-        max(b.Max.Z for b in boxes),
-    )
-    return union
-
-
-def _relative(point, origin):
-    return [point.X - origin.X, point.Y - origin.Y, point.Z - origin.Z]
-
-
-def _vector(xyz):
-    return [xyz.X, xyz.Y, xyz.Z]
-
-
-def _flat(points, origin):
-    values = []
-    for point in points:
-        values.extend(_relative(point, origin))
-    return _FloatArray(values)
-
-
 def _wire_box(kind, label, low, high, transform, origin):
-    corners = _box_corners(low, high, transform)
+    corners = box_corners(low, high, transform)
     segments = []
-    for a, b in _BOX_EDGES:
+    for a, b in BOX_EDGES:
         segments.extend((corners[a], corners[b]))
-    return {"kind": kind, "label": label, "lines": _flat(segments, origin)}
+    return {"kind": kind, "label": label, "lines": flat(segments, origin)}
 
 
 def _quad(kind, label, corners, origin):
-    return {"kind": kind, "label": label, "corners": _flat(corners, origin)}
+    return {"kind": kind, "label": label, "corners": flat(corners, origin)}
 
 
 def _plane_rect(transform, scene_bbox, clip=None):
@@ -347,7 +139,7 @@ def _plan_overlays(view, scene_bbox, origin):
             {
                 "kind": "crop",
                 "label": t("overlay_crop", "Crop region"),
-                "lines": _flat(segments, origin),
+                "lines": flat(segments, origin),
             }
         )
     return overlays
@@ -410,7 +202,7 @@ def _section_overlays(view, scene_bbox, origin):
             for index in range(4):
                 segments.extend((ring[index], ring[(index + 1) % 4]))
             overlays["boxes"].append(
-                {"kind": "crop", "label": label, "lines": _flat(segments, origin)}
+                {"kind": "crop", "label": label, "lines": flat(segments, origin)}
             )
     return overlays
 
@@ -434,16 +226,16 @@ def _three_d_overlays(view, origin):
 
 def _camera(view, origin):
     camera = {
-        "forward": _vector(view.ViewDirection.Negate()),
-        "up": _vector(view.UpDirection),
+        "forward": vector(view.ViewDirection.Negate()),
+        "up": vector(view.UpDirection),
         "perspective": False,
     }
     if isinstance(view, DB.View3D):
         try:
             orientation = view.GetOrientation()
-            camera["forward"] = _vector(orientation.ForwardDirection)
-            camera["up"] = _vector(orientation.UpDirection)
-            camera["eye"] = _relative(orientation.EyePosition, origin)
+            camera["forward"] = vector(orientation.ForwardDirection)
+            camera["up"] = vector(orientation.UpDirection)
+            camera["eye"] = relative(orientation.EyePosition, origin)
             camera["perspective"] = bool(view.IsPerspective)
         except Exception:
             pass
@@ -465,10 +257,9 @@ def build_scene(view, element_states, label_for):
         scene budget, are drawn as their bounding box with ``approx`` set.
     """
     boxes = [
-        (element, visible, _element_bbox(element))
-        for element, visible in element_states
+        (element, visible, element_bbox(element)) for element, visible in element_states
     ]
-    scene_bbox = _union_bbox([b for _, _, b in boxes])
+    scene_bbox = union_bbox([b for _, _, b in boxes])
     if scene_bbox is None:
         return None
     origin = (scene_bbox.Min + scene_bbox.Max) * 0.5
@@ -478,21 +269,9 @@ def build_scene(view, element_states, label_for):
     for element, visible, bbox in boxes:
         if bbox is None:
             continue
-        builder = _MeshBuilder(origin, min(MAX_ELEMENT_VERTICES, remaining))
-        approx = remaining <= _BOX_POINT_COUNT
-        if not approx:
-            try:
-                geometry = _element_geometry(element)
-                if geometry is not None:
-                    _walk_geometry(geometry, builder)
-            except _BudgetExceeded:
-                approx = True
-            except Exception:
-                approx = True
-        if approx or (not builder.indices and not builder.edges):
-            approx = True
-            builder = _MeshBuilder(origin, _BOX_POINT_COUNT)
-            builder.add_box(bbox)
+        builder, approx = tessellate_element(
+            element, bbox, origin, min(MAX_ELEMENT_VERTICES, remaining)
+        )
         remaining = max(remaining - builder.point_count, 0)
         meshes.append(
             {
@@ -500,9 +279,9 @@ def build_scene(view, element_states, label_for):
                 "label": label_for(element),
                 "visible": visible,
                 "approx": approx,
-                "positions": _FloatArray(builder.positions),
-                "indices": _IntArray(builder.indices),
-                "edges": _FloatArray(builder.edges),
+                "positions": FloatArray(builder.positions),
+                "indices": IntArray(builder.indices),
+                "edges": FloatArray(builder.edges),
             }
         )
 
@@ -517,47 +296,13 @@ def build_scene(view, element_states, label_for):
 
     return {
         "viewId": id_value(view.Id),
-        "origin": _vector(origin),
+        "origin": vector(origin),
         "bounds": {
-            "min": _relative(scene_bbox.Min, origin),
-            "max": _relative(scene_bbox.Max, origin),
+            "min": relative(scene_bbox.Min, origin),
+            "max": relative(scene_bbox.Max, origin),
         },
         "camera": _camera(view, origin),
         "meshes": meshes,
         "planes": overlays["planes"],
         "boxes": overlays["boxes"],
     }
-
-
-def scene_to_json(scene):
-    """Serialize a scene with large arrays packed as base64 binary.
-
-    Float arrays become little-endian Float32 and index arrays Uint32, each
-    base64-encoded into a string that ``viewer3d.js`` decodes into typed
-    arrays. Formatting hundreds of thousands of numbers as JSON text takes
-    over a minute on IronPython, and even ``json.dumps`` escaping megabytes
-    of base64 takes seconds, so packed strings are spliced into the encoded
-    skeleton by token; base64 never needs JSON escaping.
-
-    Note:
-        Non-ASCII text such as element names is kept as is, not escaped as
-        unicode sequences: IronPython 2's ASCII-escaping ``json.dumps`` raises
-        on names that mix Cyrillic with Latin-1 characters such as guillemets.
-    """
-    packed = []
-
-    def pack(value):
-        if isinstance(value, (_FloatArray, _IntArray)):
-            typecode = "f" if isinstance(value, _FloatArray) else "I"
-            packed.append(
-                base64.b64encode(array.array(typecode, value.values).tostring())
-            )
-            return "@@PACKED{}@@".format(len(packed) - 1)
-        if isinstance(value, dict):
-            return dict((k, pack(v)) for k, v in value.items())
-        if isinstance(value, (list, tuple)):
-            return [pack(v) for v in value]
-        return value
-
-    skeleton = json.dumps(pack(scene), ensure_ascii=False)
-    return _PACKED_TOKEN.sub(lambda match: packed[int(match.group(1))], skeleton)

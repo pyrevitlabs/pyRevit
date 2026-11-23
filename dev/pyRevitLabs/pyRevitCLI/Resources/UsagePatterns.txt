@@ -48,13 +48,13 @@ Usage:
 	pyrevit extensions origin <extension_name> --reset [--log=<log_file>]
 	pyrevit extensions origin <extension_name> [<origin_url>] [--log=<log_file>]
 	pyrevit extensions paths [(-h | --help)]
-	pyrevit extensions paths forget --all [--log=<log_file>]
 	pyrevit extensions paths (add | forget) <extensions_path> [--log=<log_file>]
+	pyrevit extensions paths forget --all [--log=<log_file>]
 	pyrevit extensions (enable | disable) <extension_name> [--log=<log_file>]
 	pyrevit extensions (enable | disable) <clone_name> <extension_name> [--log=<log_file>]
 	pyrevit extensions sources [(-h | --help)]
-	pyrevit extensions sources forget --all [--log=<log_file>]
 	pyrevit extensions sources (add | forget) <source_json_or_url> [--log=<log_file>]
+	pyrevit extensions sources forget --all [--log=<log_file>]
 	pyrevit extensions update (--all | <extension_name>) [--log=<log_file>] [(--username=<username> --password=<password> | --token=<auth_token>)]
 	pyrevit releases (-h | --help)
 	pyrevit releases [--pre] [--notes]
@@ -82,6 +82,9 @@ Usage:
 	pyrevit agent (-h | --help)
 	pyrevit agent status [--json]
 	pyrevit agent context [--revit=<revit_year>]
+	pyrevit agent capture [<view>] [--view-type=<view_type>] [--mode=<capture_mode>] [--width=<pixels>] [--out=<png_file>] [--revit=<revit_year>]
+	pyrevit agent inspect <element_id>... [--no-parameters] [--revit=<revit_year>]
+	pyrevit agent lookup <api_name> [--revit=<revit_year>]
 	pyrevit agent run <script_file> [--mode=<run_mode>] [--engine=<engine_name>] [--title=<run_title>] [--inputs=<inputs_json>] [--revit=<revit_year>] [--timeout=<seconds>] [--workspace=<folder>]
 	pyrevit agent runs [--limit=<count>]
 	pyrevit agent show <run_id>
@@ -96,7 +99,7 @@ Usage:
 	pyrevit caches [bim360] clear (--all | <revit_year>) [--log=<log_file>]
 	pyrevit config (-h | --help)
 	pyrevit config --from=<template_config_path> [--log=<log_file>]
-	pyrevit configs (-h | --help)
+	pyrevit configs [<config_words>...] (-h | --help)
 	pyrevit configs bincache [(enable | disable)] [--log=<log_file>]
 	pyrevit configs checkupdates [(enable | disable)] [--log=<log_file>]
 	pyrevit configs autoupdate [(enable | disable)] [--log=<log_file>]
@@ -111,21 +114,19 @@ Usage:
 	pyrevit configs usercanconfig [(yes | no)] [--log=<log_file>]
 	pyrevit configs colordocs [(enable | disable)] [--log=<log_file>]
 	pyrevit configs tooltipdebuginfo [(enable | disable)] [--log=<log_file>]
-	pyrevit configs routes [(-h | --help)]
 	pyrevit configs routes [(enable | disable)] [--log=<log_file>]
 	pyrevit configs routes port [<port_number>] [--log=<log_file>]
 	pyrevit configs routes coreapi [(enable | disable)] [--log=<log_file>]
-	pyrevit configs agent [(-h | --help)]
 	pyrevit configs agent [(enable | disable)] [--log=<log_file>]
 	pyrevit configs agent policy [(readonly | ask | auto)] [--log=<log_file>]
 	pyrevit configs agent engine [(ironpython | cpython)] [--log=<log_file>]
 	pyrevit configs agent skills [(enable | disable)] [--log=<log_file>]
 	pyrevit configs agent reckless [(enable | disable)] [--log=<log_file>]
-	pyrevit configs telemetry [(-h | --help)]
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry utc [(yes | no)] [--log=<log_file>]
 	pyrevit configs telemetry (file | server) [<dest_path>] [--log=<log_file>]
 	pyrevit configs telemetry hooks [(yes | no)] [--log=<log_file>]
+	pyrevit configs apptelemetry [(-h | --help)]
 	pyrevit configs apptelemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs apptelemetry flags [<flags>] [--log=<log_file>]
 	pyrevit configs apptelemetry server [<server_path>] [--log=<log_file>]
@@ -136,4 +137,4 @@ Usage:
 	pyrevit configs <option_path> [<option_value>] [--log=<log_file>]
     pyrevit doctor (-h | --help)
     pyrevit doctor [--list]
-    pyrevit doctor <doctor_command> [--dryrun]
+    pyrevit doctor <doctor_command> [--dryrun] [--force] [--keep-config] [--keep-extensions]

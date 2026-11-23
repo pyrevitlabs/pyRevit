@@ -1,0 +1,52 @@
+name: pyRevit Docs Check
+# Fails a pull request that adds a warning to the mkdocs build: a docstring
+# griffe cannot parse, or a link to a page that does not exist.
+#
+# Covers pyrevitlib as well as the docs, because the API reference is generated
+# from docstrings. It runs the pull request's own code (mkdocs executes
+# docs/gen_ref_pages.py), so it gets a read-only token and no secrets, and
+# publishes nothing; docs-preview.yml builds the preview.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/docs-check.yml'
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'pyrevitlib/pyrevit/**'
+      - '*.md'
+      - 'Pipfile.lock'
+      - 'pyRevitfile'
+      - 'dev/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt'
+      - 'dev/pyRevitLabs.PyRevit.Runtime/ScriptExecutor.cs'
+
+permissions:
+  contents: read
+
+jobs:
+  strict-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: docs-check-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Prepare Python 3.14
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.14'
+
+      - name: Prepare pipenv
+        run: |
+          pip install pipenv
+          pipenv sync
+
+      - name: Build docs, failing on warnings
+        env:
+          DISABLE_MKDOCS_2_WARNING: 'true'
+          NO_MKDOCS_2_WARNING: '1'
+        run: pipenv run mkdocs build --strict --site-dir "$RUNNER_TEMP/site"
