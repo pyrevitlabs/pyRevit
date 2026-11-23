@@ -518,6 +518,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// selected and temporarily isolated in the live active view while the user decides.
     /// Invariant: the preview never outlives the prompt. Isolation is switched off again
     /// before this returns, so a kept change set never leaves the view isolated.
+    /// While the prompt is open the Revit taskbar button flashes until Revit is foregrounded.
     /// Important: the prompt is a native Windows message box, not a Revit <c>TaskDialog</c>.
     /// Revit raises <c>DialogBoxShowing</c> for a <c>TaskDialog</c>, so a handler the script
     /// subscribed could answer the prompt for the user.
@@ -589,9 +590,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 + "Keep these changes? Yes commits them as a single undoable operation. "
                 + "No rolls the model back to its state before the run.";
             var dismissal = new PromptDismissal(GetCurrentThreadId());
+            var mainWindow = uidoc.Application.MainWindowHandle;
             bool approved;
             using (callerGone.Register(() => Task.Run(dismissal.Run))) {
-                approved = MessageBox(uidoc.Application.MainWindowHandle, text, PromptCaption, YesNoQuestionDefaultNo) == Yes;
+                FlashTaskbar(mainWindow, false);
+                try {
+                    approved = MessageBox(mainWindow, text, PromptCaption, YesNoQuestionDefaultNo) == Yes;
+                }
+                finally {
+                    FlashTaskbar(mainWindow, true);
+                }
                 dismissal.PromptClosed();
             }
             try {
@@ -609,6 +617,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (approved)
                 return AgentApprovalAnswer.Approved;
             return dismissal.Sent ? AgentApprovalAnswer.CallerGone : AgentApprovalAnswer.Declined;
+        }
+
+        private static void FlashTaskbar(IntPtr window, bool stop) {
+            try {
+                AgentUser32.Flash(window, stop);
+            }
+            catch (Exception ex) {
+                logger.Debug("Could not {0} the taskbar flash: {1}", stop ? "stop" : "start", ex.Message);
+            }
         }
 
         /// <summary>
