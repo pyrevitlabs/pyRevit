@@ -10703,7 +10703,8 @@
 <li><code>--purge</code>: Runner creates a temporary directory under <code>%TEMP%</code> for this execution. Specifying this option, will clear the temporary files after completion. This is helpful when running a script over many files.</li>
 </ul>
 <p>If <code>--revit</code> option is not specified, the run command will use the newest installed version of Revit to run the command. You can however specify the version of Revit e.g. <code>--revit=2026</code></p>
-<p>At either case, pyRevit uses the clone and engine verison that is attached to Revit, to run the script; So make sure that pyRevit is already attached to the Revit version you are intending to use.</p>
+<p>At either case, pyRevit uses the clone and engine verison that is attached to Revit, to run the script; So make sure that pyRevit is already attached to the Revit version you are intending to use.
+If it is not attached to that Revit version, the command prints an error and exits with a non-zero exit code without running the script.</p>
 <p>All the pyrevit modules are accessible inside the script.</p>
 <h4 id="running-a-script-on-revit-models">Running a Script on Revit Models</h4>
 <p>You can also specify a single or multiple models to <code>pyrevit run</code> command. If a model is specified, the run command selects a version of Revit that is used to create that model by default. As the previous example, you can still manually specify which version of Revit to use. be aware that Revit will fail if the model version is newer, or needs to upgrade the model if it is an older version.</p>
