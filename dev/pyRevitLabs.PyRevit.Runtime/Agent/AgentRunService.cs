@@ -518,7 +518,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// selected and temporarily isolated in the live active view while the user decides.
     /// Invariant: the preview never outlives the prompt. Isolation is switched off again
     /// before this returns, so a kept change set never leaves the view isolated.
-    /// While the prompt is open the Revit taskbar button flashes until Revit is foregrounded.
     /// Important: the prompt is a native Windows message box, not a Revit <c>TaskDialog</c>.
     /// Revit raises <c>DialogBoxShowing</c> for a <c>TaskDialog</c>, so a handler the script
     /// subscribed could answer the prompt for the user.
@@ -593,13 +592,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var mainWindow = uidoc.Application.MainWindowHandle;
             bool approved;
             using (callerGone.Register(() => Task.Run(dismissal.Run))) {
-                FlashTaskbar(mainWindow, false);
-                try {
-                    approved = MessageBox(mainWindow, text, PromptCaption, YesNoQuestionDefaultNo) == Yes;
-                }
-                finally {
-                    FlashTaskbar(mainWindow, true);
-                }
+                approved = ShowPrompt(mainWindow, text);
                 dismissal.PromptClosed();
             }
             try {
@@ -617,6 +610,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (approved)
                 return AgentApprovalAnswer.Approved;
             return dismissal.Sent ? AgentApprovalAnswer.CallerGone : AgentApprovalAnswer.Declined;
+        }
+
+        /// <summary>
+        /// Shows the approval message box and returns whether the user answered Yes. While it is
+        /// open the Revit taskbar button flashes until Revit is foregrounded, and the flash is
+        /// stopped before this returns, even when the message box throws.
+        /// </summary>
+        private static bool ShowPrompt(IntPtr window, string text) {
+            FlashTaskbar(window, false);
+            try {
+                return MessageBox(window, text, PromptCaption, YesNoQuestionDefaultNo) == Yes;
+            }
+            finally {
+                FlashTaskbar(window, true);
+            }
         }
 
         private static void FlashTaskbar(IntPtr window, bool stop) {
