@@ -323,7 +323,8 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <summary>
         /// Initializes a new instance of the <see cref="SmartButtonScriptInitializer"/> class.
         /// </summary>
-        /// <param name="libraryPathsProvider">Supplies the search paths of the installed library extensions; read once, on first use.</param>
+        /// <param name="libraryPathsProvider">Supplies the search paths of the installed library extensions; read once, on first use.
+        /// When it throws, the reason is logged once and this initializer's scripts get no library-extension paths.</param>
         public SmartButtonScriptInitializer(
             UIApplication uiApp,
             ILogger logger,
@@ -334,8 +335,9 @@ namespace pyRevitAssemblyBuilder.UIManager
             _logger = logger;
             _buildContext = buildContext;
             _themeDetector = new RevitThemeDetector(logger);
-            _libraryExtensionPaths = new Lazy<List<string>>(
-                () => new List<string>(libraryPathsProvider?.Invoke() ?? Array.Empty<string>()));
+            _libraryExtensionPaths = LibraryExtensionSearchPaths.ReadOnFirstUse(
+                libraryPathsProvider,
+                ex => _logger.Warning($"Reading the library extensions' paths failed, so smart buttons cannot import from them until pyRevit reloads: {ex.Message}"));
 
             // Do static initialization once
             EnsureStaticInitialized();

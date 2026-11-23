@@ -399,7 +399,8 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <summary>
         /// Initializes a new instance of the <see cref="ComboBoxScriptInitializer"/> class.
         /// </summary>
-        /// <param name="libraryPathsProvider">Supplies the search paths of the installed library extensions; read once, on first use.</param>
+        /// <param name="libraryPathsProvider">Supplies the search paths of the installed library extensions; read once, on first use.
+        /// When it throws, the reason is logged once and this initializer's scripts get no library-extension paths.</param>
         public ComboBoxScriptInitializer(
             UIApplication uiApp,
             SessionManager.ILogger logger,
@@ -407,8 +408,9 @@ namespace pyRevitAssemblyBuilder.UIManager
         {
             _uiApp = uiApp;
             _logger = logger;
-            _libraryExtensionPaths = new Lazy<List<string>>(
-                () => new List<string>(libraryPathsProvider?.Invoke() ?? Array.Empty<string>()));
+            _libraryExtensionPaths = LibraryExtensionSearchPaths.ReadOnFirstUse(
+                libraryPathsProvider,
+                ex => _logger.Warning($"Reading the library extensions' paths failed, so ComboBoxes cannot import from them until pyRevit reloads: {ex.Message}"));
             EnsureStaticInitialized();
             ReleasePreviousSessionExecutor();
         }
