@@ -28,6 +28,10 @@ config, no disk, no labs assemblies, so this runs identically under IronPython
 Run from Revit via the pyRevit DevTools "Config Module Tests" button.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import json
 import unittest
 

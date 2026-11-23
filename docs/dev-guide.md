@@ -194,7 +194,7 @@ git submodule update --init --recursive
 
 ## Initialize the pipenv environment
 
-This will create a python environment for the repository's Python tooling: the documentation build, linting (`ruff`), the compatibility checkers in `dev/scripts`, and the pre-commit hooks.
+This will create a python environment for the repository's Python tooling: the documentation build, linting (`ruff`), the compatibility checkers in `dev/checks`, and the pre-commit hooks.
 
 ```shell
 pipenv install --dev

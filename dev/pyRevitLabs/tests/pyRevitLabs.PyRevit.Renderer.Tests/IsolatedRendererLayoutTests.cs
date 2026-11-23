@@ -15,6 +15,8 @@ namespace PyRevitLabs.PyRevit.Renderer.Tests {
     /// the installation does not look the way it is expected to.
     /// </summary>
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Integration")]
     public class IsolatedRendererLayoutTests {
         private string _root;
 

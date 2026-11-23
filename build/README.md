@@ -104,10 +104,10 @@ CI publishes `unsigned-bin-<sha>.zip` to the **`ci-binaries`** release and mirro
 Run unit tests:
 
 ```powershell
-dotnet test tests/Build.Tests.csproj -c Release
+python dev/tests/run_tests.py --language dotnet
 ```
 
-The `ci` pipeline also runs the configuration core, INI backend, parser parity, and Python shell tests. Shell tests use the built IronPython engine assemblies after the runners build; they do not add engine source builds to Labs.
+Product builds do not execute tests. The runner, run from the repository root, provides shared C#/Python discovery, reports, and per-module coverage gates; CI runs the same language selections. Revit API tests remain local; see `docs/testing.md`.
 
 ### Pipeline modes
 

@@ -10,6 +10,8 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// into a standard user's per-user config on an all-users install (#3908).
 /// Operates on explicit temp files, so it needs no install-scope state.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class PyRevitConfigServiceExtensionSyncTests {
     private const string MachineExt = @"C:\Shared\MachineExt";
     private const string OtherMachineExt = @"C:\Shared\OtherExt";

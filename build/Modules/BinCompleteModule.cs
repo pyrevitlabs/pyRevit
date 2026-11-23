@@ -14,7 +14,7 @@ namespace Build.Modules;
 /// </remarks>
 [DependsOn<WriteCiBinManifestModule>]
 [DependsOn<BuildShellModule>]
-[DependsOn<TestConfigurationsModule>]
+[DependsOn<BuildRunnersModule>]
 [DependsOn<VerifyLibGit2Module>]
 public sealed class BinCompleteModule : Module
 {

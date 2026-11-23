@@ -2,6 +2,8 @@ using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public partial class McpServerTests {
     private static JObject DocumentContext(JObject request, string title = "Model", string path = null) {
         var document = new JObject { ["title"] = title };
