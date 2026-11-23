@@ -472,6 +472,7 @@ func main() {
 				},
 				Flags: complete.Flags{
 					"--allowdialogs": complete.PredictNothing,
+					"--clone":        complete.PredictNothing,
 					"--help":         complete.PredictNothing,
 					"--import":       complete.PredictNothing,
 					"--inputs":       complete.PredictNothing,
@@ -1214,6 +1215,13 @@ func main() {
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
 							"--log": complete.PredictNothing,
+						},
+					},
+					"reset": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--dryrun": complete.PredictNothing,
+							"--log":    complete.PredictNothing,
 						},
 					},
 					"enable": complete.Command{

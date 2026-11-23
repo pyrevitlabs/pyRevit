@@ -266,17 +266,23 @@ namespace PyRevitRunner
             if (!string.IsNullOrEmpty(revitVersion))
                 int.TryParse(revitVersion, out revitYear);
 
-            PyRevitAttachment attachment = null;
-            if (revitYear != 0)
-                attachment = PyRevitAttachments.GetAttached(revitYear);
+            var runnerPath = typeof(PyRevitRunnerCommand).Assembly.Location;
+            var clone = PyRevitClones.FindContaining(runnerPath);
+            var engine = clone != null ? PyRevitEngines.FindContaining(clone, runnerPath) : null;
+            if (clone == null && revitYear != 0)
+            {
+                var attachment = PyRevitAttachments.GetAttached(revitYear);
+                clone = attachment?.Clone;
+                engine = attachment?.Engine;
+            }
 
-            var cloneName = attachment?.Clone?.Name ?? "Unknown";
-            var pyRevitVersion = attachment?.Clone == null
+            var cloneName = clone?.Name ?? "Unknown";
+            var pyRevitVersion = clone == null
                 ? "Unknown"
                 : PyRevitClone.GetDeployedVersion(
-                    attachment.Clone.ClonePath,
-                    attachment.Engine?.IsNetCore);
-            var ipyVersion = attachment?.Engine != null ? attachment.Engine.Version.Version.ToString() : "0";
+                    clone.ClonePath,
+                    engine?.IsNetCore);
+            var ipyVersion = engine != null ? engine.Version.Version.ToString() : "0";
             var cpyVersion = PyRevitConfigs.GetCpythonEngineVersion().ToString();
 
             if (!envData.Contains(EnvDictionaryKeys.SessionUUID)
@@ -300,7 +306,7 @@ namespace PyRevitRunner
 
             envData[EnvDictionaryKeys.AutoUpdating] = PyRevitConfigs.GetAutoUpdate();
             envData[EnvDictionaryKeys.OutputStyleSheet] =
-                ResolveOutputStyleSheet(PyRevitConfigs.GetOutputStyleSheet(), attachment?.Clone?.ClonePath);
+                ResolveOutputStyleSheet(PyRevitConfigs.GetOutputStyleSheet(), clone?.ClonePath);
 
             if (!envData.Contains(EnvDictionaryKeys.Hooks))
                 envData[EnvDictionaryKeys.Hooks] = new Dictionary<string, Dictionary<string, string>>();

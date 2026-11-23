@@ -323,6 +323,8 @@ namespace pyRevitCLI {
                             { "--revit=<revit_year>",   "Target Revit year e.g. " + RevitProductData.MinimumSupportedProductYear },
                             { "--models=<model_list_file>",
                                                         "Text file listing the model files to run the script on; requires --revit" },
+                            { "--clone=<clone_name_or_path>",
+                                                        "Run on this clone's default engine instead of the attached clone, without attaching it" },
                             { "--inputs=<inputs_json>", "JSON object exposed to the script as JSON text in `__inputs__`" },
                             { "--inputs-file=<inputs_file>",
                                                         "Path of a JSON file whose object is exposed to the script as JSON text in `__inputs__`" },
@@ -460,6 +462,7 @@ namespace pyRevitCLI {
                             { "outputcss",              "Output window styling" },
                             { "seed",                   "Seed existing configuration file to %PROGRAMDATA%" },
                             { "seedshippeddefaults",    "Write disabled flags for shipped extensions with default_enabled=False" },
+                            { "reset",                  "Reset settings to their defaults, optionally for one section" },
                         },
                         options: new Dictionary<string, string>() {
                             { "none | verbose | debug", "Debug log levels" },
@@ -475,6 +478,8 @@ namespace pyRevitCLI {
                             { "<server_path>",          "Application telemetry server url" },
                             { "<css_path>",             "Target css file path for output styling" },
                             { "--lock",                 "Lock seed file by admin user" },
+                            { "<section>",              "Config section to reset; all sections except environment when omitted" },
+                            { "--dryrun",               "List what would be reset without changing the config" },
                             { "<option_path>",          "Custom option path formatted as \"section:option\"" },
                             { "<option_value>",         "Custom option value" },
                         });

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using pyRevitLabs.Configurations.Abstractions;
@@ -138,6 +139,8 @@ public class PyRevitConfigStoreTests : IDisposable {
         public void SaveSection<T>(T sectionValue) => throw new NotImplementedException();
         public void ApplySection<T>(T sectionValue) => throw new NotImplementedException();
         public void SetSectionKeyValue<T>(string sectionName, string keyName, T keyValue)
+            => throw new NotImplementedException();
+        public IReadOnlyList<string> ResetToDefaults(string? sectionName = null, bool dryRun = false)
             => throw new NotImplementedException();
         public T? GetSectionKeyValueOrDefault<T>(string sectionName, string keyName, T? defaultValue = default)
             => throw new NotImplementedException();
