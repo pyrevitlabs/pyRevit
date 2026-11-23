@@ -135,6 +135,19 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(2, responses[2].Value<int>("id"));
     }
 
+    [Fact]
+    public void AFullClientHandshakeIsAnsweredInOrderWithNothingForTheNotification() {
+        var responses = Serve(
+            Request(1, "initialize", new JObject { ["protocolVersion"] = "2025-06-18" }),
+            new JObject { ["jsonrpc"] = "2.0", ["method"] = "notifications/initialized" },
+            Request(2, "tools/list"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(1, responses[0].Value<int>("id"));
+        Assert.NotNull(responses[0]["result"]);
+        Assert.Equal(2, responses[1].Value<int>("id"));
+    }
+
     /// <summary>A request line past the 16 MB limit is refused without ending the session (issue #3922).</summary>
     [Fact]
     public void OverLongRequestLineIsRefusedAndTheSessionContinues() {
