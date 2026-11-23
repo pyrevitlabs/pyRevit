@@ -4,3 +4,31 @@ ignore = ["D107", "D105"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.pytest.ini_options]
+testpaths = ["dev/tests/python"]
+pythonpath = ["."]
+cache_dir = ".test-results/pytest-cache"
+addopts = "--strict-markers"
+junit_family = "xunit2"
+markers = [
+    "regression: reproduces a previously incorrect behavior",
+    "environment(name): HostFree or Revit method override",
+    "level(name): Unit, Integration, E2E, or Performance method override",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["dev/checks", "dev/tests", "pyrevitlib"]
+omit = ["*/test_*.py", "*/conftest.py"]
+
+[tool.coverage.report]
+include = [
+    "dev/checks/check_*.py",
+    "dev/tests/run_tests.py",
+    "pyrevitlib/pyrevit_automation.py",
+    "pyrevitlib/pyrevit/coreutils/logger.py",
+    "pyrevitlib/pyrevit/unittests/junit.py",
+    "pyrevitlib/pyrevit/unittests/runner.py",
+    "pyrevitlib/pyrevit/revit/events.py",
+]

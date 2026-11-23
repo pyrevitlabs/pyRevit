@@ -13,6 +13,8 @@ namespace pyRevitLabs.Configurations.Tests;
 /// is static global state, so each test resets it and the class is non-parallel.
 /// </summary>
 [Collection("PyRevitConfigStore")]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class PyRevitConfigStoreTests : IDisposable {
     public PyRevitConfigStoreTests() => PyRevitConfigStore.Reset();
     public void Dispose() => PyRevitConfigStore.Reset();
@@ -54,17 +56,20 @@ public class PyRevitConfigStoreTests : IDisposable {
     }
 
     /// <summary>
-    /// Building seeds, migrates and backs up files; two threads must not both do it.
-    /// The factory sleeps briefly to widen the window a racing caller could slip
-    /// through.
+    /// Concurrent callers must share one configuration build before any can return.
     /// </summary>
     [Fact]
     public void GetShared_ConcurrentFirstAccess_BuildsOnce() {
         int builds = 0;
         using var start = new ManualResetEventSlim();
+        using var factoryEntered = new ManualResetEventSlim();
+        using var releaseFactory = new ManualResetEventSlim();
+        using var ready = new CountdownEvent(8);
         PyRevitConfigStore.SetFactory(() => {
             Interlocked.Increment(ref builds);
-            Thread.Sleep(50);
+            factoryEntered.Set();
+            if (!releaseFactory.Wait(TimeSpan.FromSeconds(10)))
+                throw new TimeoutException("Configuration build was not released.");
             return new StubService();
         });
 
@@ -73,16 +78,23 @@ public class PyRevitConfigStoreTests : IDisposable {
         for (int i = 0; i < threads.Length; i++) {
             int index = i;
             threads[i] = new Thread(() => {
+                ready.Signal();
                 start.Wait();
                 results[index] = PyRevitConfigStore.GetShared();
             });
+            threads[i].IsBackground = true;
             threads[i].Start();
         }
 
+        bool allReady = ready.Wait(TimeSpan.FromSeconds(10));
         start.Set();
+        bool entered = factoryEntered.Wait(TimeSpan.FromSeconds(10));
+        releaseFactory.Set();
         foreach (Thread thread in threads)
-            thread.Join();
+            Assert.True(thread.Join(TimeSpan.FromSeconds(10)), "A concurrent caller did not complete.");
 
+        Assert.True(allReady);
+        Assert.True(entered);
         Assert.Equal(1, builds);
         Assert.All(results, item => Assert.Same(results[0], item));
     }

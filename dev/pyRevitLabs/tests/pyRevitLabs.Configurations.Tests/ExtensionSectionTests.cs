@@ -10,6 +10,8 @@ namespace pyRevitLabs.Configurations.Tests;
 /// the dynamic per-extension section, ".extension" precedence over ".lib",
 /// declared defaults for absent keys, and the null result when no section exists.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class ExtensionSectionTests {
     private static IConfigurationService BuildService(Action<InMemoryConfiguration> seed) {
         var configuration = new InMemoryConfiguration();

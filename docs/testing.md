@@ -1,24 +1,105 @@
 # Testing
 
-This page maps every test surface in the repository: where it lives, how it is triggered, whether CI runs it, and what is still uncovered. It exists because the surfaces are spread across four languages and three runtimes, and it is easy to add a test that nothing executes.
+**All first-party automated tests run in CI unless they use the Revit API or require installed/running Revit.** This includes dependencies and fixtures. Revit-dependent tests run locally; vendored tests are outside this policy. The self-hosted [`revit-integration.yml`](ci-cd.md#revit-integration-tests) workflow is a separate release-gate load check, not part of the shared test runner.
 
 To run a change locally, see the workflow in [`dev-guide.md`](dev-guide.md). For how CI/CD is wired, see [`ci-cd.md`](ci-cd.md). For the checks that gate a release, see [`release-qualification.md`](release-qualification.md).
 
-## Repository testing policy
+## Running API-free tests
 
-CI must discover and execute every first-party automated test that does not use the Revit API or require installed or running Revit. Every test that uses the Revit API runs locally outside CI, even if it could execute without launching Revit. This includes API use through a fixture or dependency. Parser, version-metadata, and source-contract tests remain eligible for CI only when they do not use the Revit API. A module's name or architectural role does not determine eligibility.
+From the repository root on Windows, with the product's .NET SDKs installed:
 
-The inventory below describes existing wiring, including gaps against this policy. Discovery, tags and coverage gates are not implemented. In particular, the `revit-integration.yml` workflow launches Revit on pushes to `develop`, which the policy does not allow.
+```powershell
+python dev/tests/run_tests.py --install-dependencies
+python dev/tests/run_tests.py --list
+python dev/tests/run_tests.py
+```
 
-### Ownership and placement
+Dependencies are pinned in `Pipfile.lock`. An existing development environment can use `pipenv run test`. Add `--language python` or `--language dotnet` for one language. `--list` inventories Revit suites without executing them. Several C# suites test the deployed `bin` tree, so build the product (`cd build && dotnet run -c Release -- ci`) before running the C# selection; the runner stops with that instruction when `bin` is missing.
 
-C# test projects may live beside their owning module, for example `dev/<area>/<Module>.Tests/`. Existing test projects do not need to move. Keep tests in separate test assemblies so test dependencies and fixtures are not shipped with the product. `build/tests/` stays beside the build pipeline.
+CI uses the same runner: Python checks, product build, then C# tests. Product builds do not execute fixtures. Results, inventory and coverage go into a fresh `.test-results/<run>/` directory and are uploaded even on failure. See [CI/CD](ci-cd.md).
 
-Centralize discovery conventions, metadata vocabulary, reporting, and coverage policy. Keep module-specific fixtures, helpers, and framework choices with their owners. Do not introduce a mandatory common test base class or convert existing NUnit, MSTest, and xUnit suites solely for uniformity.
+## Implemented test suites
 
-Host-free Python tooling tests currently live in `dev/scripts/test_*.py`. Keep a documented discovery root for each Python suite and shared fixtures within the owning suite. Hosted tests stay importable through `pyrevit.unittests` until their launchers are decoupled. Do not recursively collect arbitrary Python files across the repository: importing hosted tests requires Revit, and vendored tests are outside this policy.
+```mermaid
+flowchart LR
+    Runner["run_tests.py<br/>CI and local API-free execution"] --> Python["Python<br/>test_*.py under dev/, pyrevitlib/pyrevit/unittests/, extensions/<br/>*_tests.py under extensions/"]
+    Runner --> Loader
+    Runner --> Runtime
+    Runner --> Labs
+    Runner --> Build["Build.Tests"]
 
-### Test levels and regression coverage
+    subgraph Loader["Loader tests"]
+        Parser["pyRevitExtensionParser.Tests"]
+        Builder["pyRevitAssemblyBuilder.Tests"]
+        Integration["pyRevitLoader.Integration.Tests"]
+    end
+
+    subgraph Runtime["Shared scripting runtime"]
+        SharedRuntime["pyRevitLabs.PyRevit.Runtime.Tests"]
+        RuntimeInterop["pyRevitLabs.PyRevit.Runtime.Shared.Tests"]
+    end
+
+    subgraph Labs["Labs tests"]
+        CLI["pyRevitCLI.Tests"]
+        Doctor["pyRevitDoctor.Tests"]
+        Common["pyRevitLabs.Common.Tests"]
+        Emojis["pyRevitLabs.Emojis.Tests"]
+        Config["pyRevitLabs.Configurations.Tests"]
+        INI["pyRevitLabs.Configurations.Ini.Tests"]
+        Facade["pyRevitLabs.PyRevit.Tests"]
+        Deployment["pyRevitLabs.PyRevit.Integration.Tests"]
+        Products["pyRevitLabs.TargetApps.Revit.Tests"]
+        Agent["pyRevitLabs.PyRevit.Runtime.Agent.Tests"]
+        CPython["pyRevitLabs.PyRevit.Runtime.CPython.Tests"]
+        EnvVars["pyRevitLabs.PyRevit.Runtime.EnvVars.Tests"]
+        Renderer["pyRevitLabs.PyRevit.Renderer.Tests"]
+        Shell["pyRevitLabs.PyRevit.Shell.Tests"]
+        Forms["pyRevitLabs.PyRevit.Forms.Tests"]
+        FormsBinding["pyRevitLabs.PyRevit.Forms.Binding.Tests"]
+        FormsIronPython["pyRevitLabs.PyRevit.Forms.IronPython.Tests"]
+    end
+
+    Local["Local Revit validation<br/>Outside CI"] --> Hosted["Python library and agent suites<br/>DevTools commands"]
+    Local --> Fixtures["Revit-tagged C# fixtures<br/>Fixture-specific host setup"]
+```
+
+The implemented CI selection has **23 C# projects across 39 runs** (37 project/framework runs plus a second IronPython engine for the shell and IronPython forms suites, which declare both engines in their csproj `PyRevitTestEngines` property) and the API-free Python suite. The legacy mixed suite is split by owner with its former MSTest cases converted to NUnit. Local validation on 2026-11-21: **3,970 C# cases and 818 Python cases, zero skips**. Counts include each framework and engine run. The three forms suites open real WPF windows, so they need an interactive desktop session; the hosted Windows runner provides one. Local Revit results are separate; a general C# in-Revit runner is not implemented.
+
+Level describes the test; Environment determines where it runs:
+
+| Level | Tests |
+|---|---|
+| Unit | Isolated behavior |
+| Integration | Boundaries such as files, configuration, subprocesses or interpreters |
+| E2E | A built product completing a user workflow |
+| Performance | Repeatable workloads compared with an explicit baseline |
+
+Regression is a purpose, not a level. Bug fixes need a reproducer at the lowest useful level, an issue reference, and a `regression` marker (pytest), `Regression` category (NUnit/MSTest), or `Purpose=Regression` trait (xUnit).
+
+## Ownership and placement
+
+Keep C# tests in separate assemblies beside their owning area, normally `dev/<area>/tests/<Module>.Tests/`. NUnit, MSTest and xUnit are supported. A reviewed framework migration must preserve cases, effective tags, fixture isolation and coverage floors. Share discovery and policy; keep fixtures with their owners. Cross-component tests belong in an explicit integration suite.
+
+| Area | Suite locations |
+|---|---|
+| Parser | `dev/pyRevitLoader/tests/pyRevitExtensionParser.Tests/` |
+| Assembly builder, session services, hooks and ribbon | `dev/pyRevitLoader/tests/pyRevitAssemblyBuilder.Tests/` |
+| Parser-to-command integration | `dev/pyRevitLoader/tests/pyRevitLoader.Integration.Tests/` |
+| Shared scripting runtime | `dev/pyRevitLabs.PyRevit.Runtime/tests/pyRevitLabs.PyRevit.Runtime.Tests/` |
+| CLI, doctor, Common, Emojis, configuration, PyRevit facade, agent, CPython and env-var adapters | Named projects under `dev/pyRevitLabs/tests/` |
+| Deployment, config seeding and install-scope integration | `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Integration.Tests/` |
+| Product metadata, add-on paths and cache files | `dev/pyRevitLabs/tests/pyRevitLabs.TargetApps.Revit.Tests/` |
+| Dynamo interop and graph contracts | `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.Shared.Tests/` |
+| Build pipeline | `build/tests/` |
+| API-free Python tooling/library checks | `dev/tests/python/**/test_*.py` |
+| Hosted Python library tests | `pyrevitlib/pyrevit/unittests/` |
+| Hosted agent tests and manual checks | DevTools command bundles under `extensions/` |
+
+Each suite's README owns its fixtures, maintainer, frameworks/engines and focused commands. Small repository helpers live in `dev/tests/csharp/`; loader helpers live in `dev/pyRevitLoader/tests/TestSupport/`. A shared base class is not mandatory.
+
+Reorganized C# suites appear in area solutions for navigation, without default solution-build selection. The shared runner builds them explicitly; product builds must not build tests for every interpreter configuration.
+
+## Test levels and regression coverage
 
 | Level | Contract | Execution |
 |---|---|---|
@@ -29,60 +110,69 @@ Host-free Python tooling tests currently live in `dev/scripts/test_*.py`. Keep a
 
 Regression describes a test's purpose and can apply at any level. A bug fix must include a reproducer at the lowest effective level, with the issue reference recorded in test metadata or its contract documentation. A source-inspection assertion may guard a structural contract but does not replace execution of changed behavior.
 
-### Discovery and classification
+## Tags and discovery
 
-The following metadata contract is required policy. Current projects do not implement it consistently, and no enforcement exists yet. In this policy, `HostFree` means both free of Revit API use and independent of installed or running Revit.
+Every automated test needs literal Environment and Level metadata. Class/module defaults and method overrides are supported:
 
-- Discover C# projects under first-party `dev/` and `build/` roots by evaluated `IsTestProject=true`, regardless of directory or project name. Normalize existing projects to declare that property explicitly. Do not discover vendored projects under `dev/modules/`.
-- Within discovered projects, use the test framework's native discovery. Remove class-name and method-name allowlists after excluded tests have been triaged.
-- Discover Python tests using `test_*.py` within documented roots. All host-free roots participate in CI, including checker tests beside repository scripts.
-- Prefer class/module defaults for test metadata and explicit method overrides. A discovery validator must resolve effective metadata consistently for each framework before applying CI filters.
-- Every automated test must declare effective `Level=Unit|Integration|E2E|Performance` and `Environment=HostFree|Revit` metadata. Class/module defaults are allowed. Optional capability metadata includes network and elevation requirements. Any Revit API use or requirement for installed/running Revit mandates `Environment=Revit`, even without an application launch. Method overrides must not downgrade an actual Revit dependency to `HostFree`.
-- Map this vocabulary to xUnit traits, NUnit properties/categories, and MSTest properties/categories without requiring a new framework. A Python runner adapter must preserve equivalent metadata for hosted `unittest` tests without introducing incompatible pytest imports.
-- CI must fail on unclassified tests once metadata enforcement is enabled, an undiscovered first-party suite, or an expected suite/framework selecting zero tests. A Revit-only project is an explicit local selection, not an empty CI success.
-- Capability tags describe provisioning requirements; they must not silently exempt host-free tests from CI. Provision isolated dependencies or redesign nondeterministic external dependencies.
-
-Adding an ordinary test or an adjacent test project must not require editing a central list of test names. Local and CI commands must use the same discovery and selection rules. Document each suite's owner, supported frameworks/engines, fixtures, and local invocation in its nearby README; central documentation records conventions rather than duplicating those lists.
-
-| Effective metadata | Selection |
+| Framework | Example defaults |
 |---|---|
-| `Level=Unit`, `Environment=HostFree` | CI and local host-free runs |
-| `Level=Integration`, `Environment=HostFree` | CI and local host-free runs |
-| `Level=Integration`, `Environment=Revit` | Local Revit integration tests only |
-| `Level=E2E`, `Environment=Revit` | Local Revit E2E tests only |
+| NUnit | `[Category("HostFree")]`, `[Category("Unit")]` |
+| MSTest | `[TestCategory("HostFree")]`, `[TestCategory("Unit")]` |
+| xUnit | `[Trait("Environment", "HostFree")]`, `[Trait("Level", "Unit")]` |
+| Python | `TEST_ENVIRONMENT = "HostFree"`, `TEST_LEVEL = "Unit"` |
 
-Discovery must classify tests before executing fixtures or importing Revit-dependent modules. Split mixed Python modules or C# fixtures where API-dependent initialization would otherwise execute during CI collection. CI eligibility must not be inferred solely from whether `revit.exe` is launched.
+Use `Revit` for any Revit dependency and one of the four levels above. Every Python module declares the module-level literals; a class may refine them with class attributes. A class or method cannot downgrade a Revit fixture to HostFree. A C# category must be an Environment, a Level or the `Regression` purpose; any other value, such as a misspelled `Revti`, fails discovery instead of silently inheriting the class defaults. C# tags are read only from the method, its class and enclosing types, never from a base class, so a derived fixture must repeat its tags; a `[Test]` declared on an abstract base is cataloged once under the base, not per derived class. HostFree Python modules must be safe to import; isolate API-dependent imports and fixture initialization. Hosted `unittest` modules use plain assignments without importing pytest. API-free pytest cases can override defaults with `@pytest.mark.environment(...)` and `@pytest.mark.level(...)`.
 
-### Isolation and trustworthy outcomes
+- **C#:** evaluated `IsTestProject=true` projects under `dev/` and `build/`, all declared frameworks, and native discovery. No class/project allowlist.
+- **Python:** `test_*.py` under first-party `dev/`, `pyrevitlib/pyrevit/unittests/`, and `extensions/`, plus `*_tests.py` under `extensions/` only (the extensions' in-Revit suite convention; elsewhere it would match the runner and manual scripts), each module listed once. Discovery skips only `dev/modules/`, `.git`, `.venv`, `site-packages`, and `bin`/`obj` beside a project file; any other folder, such as `lib/modules`, is first-party. Metadata is read before imports; pytest runs eligible `unittest` cases too.
+- **Fail closed:** missing/invalid metadata, missing reports, empty selected suites/frameworks, a C# run executing fewer tests than its cataloged HostFree methods, and skipped/expected-failure HostFree cases fail validation. Every explicitly selected Python module needs eligible cases, even when its neighbors pass. Revit cases are excluded before fixtures run. The skip and expected-failure rejection applies when the runner invokes pytest (it sets `PYREVIT_STRICT_SKIPS`); ad hoc `pytest` runs keep normal skip semantics.
 
-Tests must restore environment variables, module imports, process-wide caches, and configuration they change. Use temporary files and dedicated fixtures rather than a developer's active clone or mutable DevTools layout. Test builds must not deploy into a running clone.
+Adding a test or adjacent project must not require changing a central list. Network/elevation requirements must be provisioned or isolated, not used to silently exempt HostFree tests from CI.
 
-Use bounded synchronization for concurrency tests. Sleeps must not be the sole evidence that a competing operation occurred, and waits must have timeouts. Parallelize only suites whose shared state and output paths are isolated.
+`dev/tests/python/library/test_diagnose_invisibility_page.py` runs the real `report.js` of the Diagnose Invisibility report in a headless Edge or Chrome, through `fixtures/diagnose_invisibility_page/harness.html`, with a stubbed WebView2 bridge. Set `PYREVIT_TEST_BROWSER` to a browser executable to override the lookup. A missing browser fails the module when `CI` is set and skips it otherwise.
 
-An automated test must assert its result and propagate failure to the runner. Interactive dialogs, debugger launchers, printed comparisons, and demonstrations are manual checks, with documented expected outcomes. Required missing fixtures fail the selected run; expected environment exclusions are reported separately.
+## Test quality
 
-Temporary exclusions and quarantines require an owner, issue, reason, and review deadline. The default owner is the owning module's maintainer; if none is designated, the change author owns the quarantine until a maintainer accepts reassignment. The default review deadline is 14 calendar days after quarantine. Expiry requires resolution or an explicitly reviewed extension recorded in the issue. Report quarantines visibly. Retrying a failure for diagnosis must preserve the original outcome rather than silently passing an unstable suite.
+- Assert outcomes and propagate failures. Printed comparisons, dialogs and debugger launchers are manual checks.
+- Use private temporary fixtures. Restore configuration, environment, imports and process-wide caches; never deploy test builds into an active clone.
+- Bound subprocesses and concurrent waits. Sleeps alone do not prove synchronization. Parallelize only isolated fixtures.
+- Test failure, cleanup, rollback and concurrency behavior where applicable. Source inspection does not replace execution tests.
+- Missing required fixtures fail. Quarantines need an issue, reason, owner and review within **14 days**. The module maintainer owns them; otherwise the author does. Extensions require recorded review, and retries must preserve the original failure.
 
-### Reporting and coverage rules
+## Coverage baselines
 
-Publish test results with passed, failed, and skipped counts for each project/module and framework/engine. Reports must have unique paths so parallel runs and hosted modules cannot overwrite one another. CI must fail when a required report is absent or cannot be written. Local Revit evidence must record the commit, Revit year, engine, fixtures, command, and result; it is not CI coverage.
+`dev/tests/coverage-baselines.json` sets **line and branch floors per module/framework**, not a repository-wide target. Normal runs fail on decreases, missing established modules, or new measured modules without a baseline. Review scope/denominator changes as well as percentages. Raise floors as coverage improves.
 
-Measure host-free C# and Python line and branch coverage per owning component. Include eligible unexecuted production files in the denominator. Exclude vendored dependencies, generated code, and test fixtures through reviewed configuration; every additional exclusion needs a justification. Keep source-contract checks and tests of linked source distinguishable from execution of deployed assemblies. Do not combine language percentages or claim Revit coverage from host-free runs.
+```powershell
+python dev/tests/run_tests.py --update-baselines
+```
 
-Coverage gates use per-module baselines rather than a repository-wide percentage. First publish reproducible line and branch baselines for each eligible module, recording its production-source scope, tool configuration, and framework. Then enforce that subsequent changes do not decrease either baseline without a reviewed exception explaining the uncovered behavior and follow-up. Modules without a baseline must establish one on their first measured run; adding a module must not evade reporting. Raise baselines as coverage improves, and review denominator changes so deleting covered code cannot conceal newly untested behavior. Do not invent a numeric target before measurement. Critical failure, cleanup, rollback, and concurrency scenarios require explicit tests regardless of the percentage. Collection and baseline enforcement are not implemented.
+This explicit update can lower floors: review its diff and explain every reduction with a reason and follow-up. Never remove source from reporting to make a gate pass.
 
-## Test surfaces at a glance
+Python scope is explicit in `pyproject.toml`, including unexecuted files. C# coverage includes instrumented first-party assemblies and their unexecuted code; assemblies never loaded by tests still need dedicated suites. Exclude vendor/generated/test code, normalize Windows document paths, and merge line/branch identities without duplicate deployment copies. `dotnet-linked/` measures production source compiled into test assemblies. Source inspection does not establish execution coverage of the inspected code. Keep language and local Revit results separate.
 
-| Surface | Location | How it runs | In CI |
-|---|---|---|---|
-| In-Revit Python unit tests | `pyrevitlib/pyrevit/unittests/` | DevTools `Debug > Unit Tests` buttons, inside Revit | No |
-| Standalone Python tests | `dev/scripts/test_standalone_*.py` | `python -m unittest discover -s dev/scripts -p 'test_standalone_*.py'` | Yes — `ci.yml` |
-| C# unit tests | `dev/pyRevitLabs/tests/`, `dev/pyRevitLoader/pyRevitExtensionParserTester/`, `dev/pyRevitLabs/pyRevitLabs.UnitTests/` | `build/` pipeline (`dotnet run -- ci`) | Yes — `ci.yml`; two projects run a filtered subset |
-| Build pipeline tests | `build/tests/Build.Tests.csproj` | `dotnet test build/tests/Build.Tests.csproj` | Yes — `ci.yml` |
-| Revit integration | [`.github/workflows/revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) | Self-hosted Revit runner, journal inspection | Yes — self-hosted runner |
-| DevTools end-to-end buttons | `extensions/pyRevitDevTools.extension/` | Manual, inside Revit | No |
+`dev/tests/README.md` records collector details and initial baseline calibration.
 
-## In-Revit Python unit tests
+## Revit integration tests
+
+Revit-dependent tests run locally, outside the shared test runner. Attach a development clone:
+
+```powershell
+pyrevit clones add dev <path-to-repo>
+pyrevit attach dev default --installed
+```
+
+In Revit, use DevTools **Debug > Unit Tests > Run All Tests**, a specific library module, or Agent Tests. `Run All Tests` runs every `test_` module in `pyrevitlib/pyrevit/unittests` whatever its `TEST_LEVEL`, except the opt-in modules that have their own entry point: `test_revit_api_catalog` (**Revit API Catalog Tests**), `test_config_roundtrip` (**Config Module Tests**), `test_create_view_helpers` (**Create View Helpers Tests**), `test_dynamo_execution` (**Dynamo Module Tests**), `test_ribbon_control_ids` (**Ribbon Control Id Tests**) and `test_forms_parity` (**Debug > Forms Tests**). Record required models/elements, engine capabilities and actual skips. IronPython 3 needs a separate clone attachment.
+
+Set `PYREVIT_TEST_JUNIT_PATH` before launching Revit for XML evidence. Use a fresh destination per year/engine/run. Module results aggregate; rerunning a module replaces its result. Requested report-write failures and unexpected successes must fail the command, including on IronPython 2.7. Record the commit, Revit year, engine, fixture, command and outcome.
+
+**C# host setup remains fixture-specific:** installing Revit does not make `dotnet test` a Revit host. API-dependent fixtures need suitable assembly resolution; live document/UI scenarios need execution inside Revit. There is no C# in-Revit runner yet. Document a validated invocation before claiming a fixture passed.
+
+For local load/signing smoke checks, launch the intended Revit year and inspect its journal and dialogs. Loading successfully does not prove functional correctness or contribute to CI coverage. Never publish locally test-signed binaries.
+
+[`revit-integration.yml`](ci-cd.md#revit-integration-tests) signs `bin/` with a throwaway certificate, launches Revit 2022–2027 by default on a self-hosted runner, and fails if any session shows the unsigned add-in dialog. Its accepted year range excludes supported Revit 2021. It answers whether Revit loads the build cleanly; it does not run the Python unit tests.
+
+**Remaining coverage gaps:** assemblies outside the instrumented scope need dedicated tests; no general performance budget has been established. Suite READMEs should record fixture-specific gaps as they are found.
 
 ### Dynamo execution check
 
@@ -97,84 +187,3 @@ pyrevit run C:/path/to/pyRevit/dev/tests/revit/run_dynamo.py --revit=2026 --purg
 The journal launches a separate Revit process, creates a disposable project, checks cold and repeat execution with different tokens, and exits. Evidence is written to `.test-results/dynamo/<year>/<run-id>/result.json`, including actual Revit/Dynamo versions and a test-source hash. Each invocation preserves earlier results. Project filenames also include the run ID. The project lives in the journal's working directory; `--purge` deletes that directory after Revit exits and releases file locks. Omit `--purge` only to retain the journal and model for diagnosis. These tests stay outside CI. The test exercises the Dynamo bundled with the Revit host it runs in; independently installed Dynamo packages and patch versions are not covered.
 
 Invoke this entry point once per journal process; its cold/repeat checks share one project. Use a fresh `pyrevit run` process for retries. Invoking it twice in one Revit process is not supported: the second invocation can fail graph-output verification after a new document is activated.
-
-`pyrevitlib/pyrevit/unittests/` holds the hosted suite. `runner.py` is the shared entry point; module buttons call `run_module_tests` (report only) or `assert_module_tests_successful` (raise on failure, so the button fails visibly).
-
-The suite only runs inside a Revit session, through the DevTools **Unit Tests** pulldown. Those buttons come in two kinds, and the naming does not distinguish them:
-
-| Buttons backed by `pyrevit.unittests` | Other module buttons (assertions or manual probes) |
-|---|---|
-| Run All Tests, Config Module Tests, Credentials Module Tests, Dynamo Module Tests, Output Window Tests, Query get_name Tests, Revit API Catalog Tests, Revit Module Tests, Routes Module Tests, Script Module Tests, Py3 Compat Tests, Py3 Compat Tests (CPython) | CoreUtils Module Tests (increment/decrement parsing), pyRevitLabs Module Tests, Appdata Module Tests |
-
-`Run All Tests` discovers every `test_` module in the package except the opt-in `test_revit_api_catalog` (it resolves hundreds of types; run it with its own **Revit API Catalog Tests** button). `test_forms_parity` declares `TEST_LEVEL = "Integration"`, so `Run All Tests` skips it; the DevTools **Debug → Forms Tests** pulldown and the forms C# test projects run it. Modules without a dedicated button (`test_context_conditions`, `test_coreutils_escape`, `test_keynote_locks`, `test_revit_handle_contract`, `test_sys_path`, `test_versionmgr`) are only reached through `Run All Tests`.
-
-An open project does not guarantee that every case runs. Some cases require particular model content or family fixtures injected by the individual compatibility buttons. CoreUtils prints comparisons without failing the command on a mismatch, and Forms opens interactive dialogs; neither provides an automated suite result.
-
-`Py3 Compat Tests` runs `test_py3_compat` on whichever IronPython engine the clone is attached with; `Py3 Compat Tests (CPython)` runs it on the CPython engine. A bundle cannot select an engine *version* — engine identity is only `ironpython` or `cpython` — so the `IRONPY3`-gated cases in `test_py3_compat.py` are only reachable by attaching the clone with the IronPython 3 engine.
-
-Nothing in CI runs this suite; it needs an installed Revit.
-
-## Standalone Python tests
-
-`dev/scripts/test_standalone_*.py` are plain `unittest` modules that do not need Revit. CI runs them with:
-
-```bash
-python -m unittest discover -s dev/scripts -p 'test_standalone_*.py' -v
-```
-
-`test_standalone_diagnose_invisibility_page.py` runs the real `report.js` of the Diagnose Invisibility report in a headless Edge or Chrome, through `dev/scripts/fixtures/diagnose_invisibility_page/harness.html`, with a stubbed WebView2 bridge. Set `PYREVIT_TEST_BROWSER` to a browser executable to override the lookup. A missing browser fails the module when `CI` is set and skips it otherwise.
-
-`test_standalone_sectionbox_preview_page.py` does the same for the Section Box Navigator 3D preview page: the box, snapping, rotation and hover math and the page's DOM behaviour in `preview.js`, through `dev/scripts/fixtures/sectionbox_preview_page/harness.html`. The page logic does not need a GL context, so those tests run with WebGL disabled; only one smoke test creates a real context. It does not retry and skips, with the reason reported, when the headless browser has no WebGL2 or does not start one in time, because hosted runners stall at WebGL startup. `test_standalone_scene3d.py` loads `lib/scene3d/meshing.py` with a stubbed Revit API and checks the packed scene JSON, the point budget, the Coarse-detail retry for over-budget elements and non-ASCII text. The same harness loads the opt-in `lib/scene3d/viewcube.js` and checks its hit testing and camera targets. `test_standalone_sectionbox_guides.py` loads the bundle's Revit-free `sectionbox_guides.py` and checks which link levels and grids count as repeating the host's.
-
-Two other host-free modules live beside them: `test_check_config_api.py` and `test_check_py3_compat.py`. They have separate `Pipfile` commands (`pipenv run test-config-api`, `pipenv run test-py3-compat`), and the `dotnet run -- ci` test step discovers every `test_check_*.py` module. To run every module in the folder locally:
-
-```bash
-python -m unittest discover -s dev/scripts -p 'test_*.py' -v
-```
-
-## C# test suites
-
-The `build/` pipeline runs these after the build outputs exist. The runner is [`build/Modules/TestConfigurationsModule.cs`](https://github.com/pyrevitlabs/pyRevit/blob/develop/build/Modules/TestConfigurationsModule.cs), reached through `dotnet run -- ci`, which `ci.yml` and `revit-integration.yml` invoke.
-
-| Project | Scope run in CI |
-|---|---|
-| `pyRevitLabs.Configurations.Tests` | all |
-| `pyRevitLabs.Configurations.Ini.Tests` | all |
-| `pyRevitLabs.PyRevit.Runtime.CPython.Tests` | all |
-| `pyRevitLabs.PyRevit.Runtime.EnvVars.Tests` | all |
-| `pyRevitLabs.PyRevit.Runtime.Agent.Tests` | all |
-| `pyRevitCLI.Tests` | all |
-| `pyRevitDoctor.Tests` | all |
-| `pyRevitLabs.PyRevit.Renderer.Tests` | all |
-| `pyRevitLabs.PyRevit.Shell.Tests` | all, once per IronPython engine (`IPY2712PR`, `IPY342`) |
-| `pyRevitLabs.UnitTests` | filtered (net48 and net8.0-windows) |
-| `pyRevitExtensionParserTester` | filtered (net8.0-windows) |
-
-The two filtered projects carry the filters inline in `TestConfigurationsModule.cs`. Test classes outside a filter compile and can be run by hand, but CI never executes them.
-
-## Build pipeline tests
-
-`build/tests/Build.Tests.csproj` tests the pipeline itself and is run separately from the pipeline:
-
-```bash
-dotnet test build/tests/Build.Tests.csproj -c Release
-```
-
-## Revit integration tests
-
-[`revit-integration.yml`](ci-cd.md#revit-integration-tests) signs `bin/` with a throwaway certificate, launches Revit 2022–2027 by default on a self-hosted runner, and fails if any session shows the unsigned add-in dialog. Its accepted year range excludes supported Revit 2021. It answers whether Revit loads the build cleanly; it does not run the Python unit tests.
-
-## DevTools end-to-end buttons
-
-`extensions/pyRevitDevTools.extension/pyRevitDev.tab/` is not a test suite. It mixes runnable assertions with demos, interactive probes, and debugger launchers — about 140 command bundles across five panels. Only the `Debug` panel buttons participate in testing, and only the module tests have an objective pass/fail; the rest are judged per button, and several block on user input by design (input stream, XAML forms, progress bars, debugger attach).
-
-## Known issues and things to address
-
-1. **Hosted Python execution needs a documented local procedure.** Its exclusion from CI is intentional. Record fixtures, Revit year, engine, and outcomes for local runs.
-2. **Two C# projects run only a filtered subset.** `pyRevitExtensionParserTester` has far more test classes than the filter selects, including the parser, layout, and bundle-metadata tests. Excluded tests need triage before expanding CI: some expectations track mutable DevTools layouts and titles, while others require Revit assemblies. New classes are excluded unless they carry the `HostFree` category, which the filter selects, or someone updates the allowlist. The project [README](https://github.com/pyrevitlabs/pyRevit/blob/develop/dev/pyRevitLoader/pyRevitExtensionParserTester/README.md) lists its fixtures that need a local Revit.
-3. **`IRONPY3` coverage requires a separate attachment.** Engine identity is `ironpython` / `cpython` only, so no bundle can select IronPython 3 directly. Attach the clone with that engine before running its ribbon tests.
-4. **The Python and C# component-tree parsers disagree on layout.** The Python path (`pyrevit.extensions.genericcomps`) drops components not listed in `layout`; the C# path (`pyRevitExtensionParser`) appends them. The ribbon uses C#, so the Python rule only shows up in other consumers.
-5. **Some test bundles depend on a CDN at runtime.** `Test Vue` and `Test D3` load their JavaScript from `unpkg.com`, so they fail without network access.
-6. **Some tests are skipped on a .NET 8+ host.** A few cases need interop assemblies not shipped for .NET 8+, sit behind an opt-in flag, or rely on fixtures that a single button injects.
-7. **Test builds can deploy into the active clone.** Shared build targets copy assemblies into `bin/`; a running Revit session can lock these files and prevent a test build from completing.
-
