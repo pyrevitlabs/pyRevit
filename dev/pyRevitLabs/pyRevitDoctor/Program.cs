@@ -10,7 +10,7 @@ using pyRevitDoctor.Properties;
 
 namespace pyRevitDoctor {
     class Program {
-        const string helpMessage = @"Fix potential or real problems
+        const string helpUsage = @"Fix potential or real problems
 
 Usage:
     pyrevit-doctor (-V | --version)
@@ -18,7 +18,10 @@ Usage:
     pyrevit-doctor [--list]
     pyrevit-doctor <doctor_command> [--dryrun] [--force] [--keep-config] [--keep-extensions]
 
-    Arguments & Options:
+";
+
+        const string helpOptions = @"    Arguments & Options:
+        --list                   List the doctor commands
         <doctor_command>         Doctor command to run
         --dryrun                 Report what would be removed without changing anything
         --force                  Also purge uninstall entries whose install is still present
@@ -53,6 +56,14 @@ Usage:
             }
         };
 
+        static string HelpMessage => helpUsage + CommandsHelp() + helpOptions;
+
+        static string CommandsHelp() {
+            var lines = Commands.Select(command => $"        {command.Name,-25}{command.HelpMsg}");
+            return string.Join(Environment.NewLine, new[] { "    Commands:" }.Concat(lines))
+                + Environment.NewLine + Environment.NewLine;
+        }
+
         public static Version DoctorVersion => Assembly.GetExecutingAssembly().GetName().Version;
 
         static void Main(string[] args) {
@@ -66,9 +77,9 @@ Usage:
             if (args.Contains("--version") || args.Contains("-V"))
                 Console.WriteLine(DoctorVersion);
             else if (args.Contains("--help") || args.Contains("-h"))
-                Console.WriteLine(helpMessage + standaloneDownloadNote);
+                Console.WriteLine(HelpMessage + standaloneDownloadNote);
             else if (args.Contains("--wrappedhelp"))
-                Console.WriteLine(WrappedHelp.From(helpMessage) + standaloneDownloadNote);
+                Console.WriteLine(WrappedHelp.From(HelpMessage) + standaloneDownloadNote);
             else if (args.Contains("--list"))
                 PrintCommands();
 
