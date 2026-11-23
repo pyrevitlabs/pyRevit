@@ -774,7 +774,7 @@
                                 ToolTip="Find in model" IsEnabled="False" Click="show_keynote"/>
                         <Button x:Name="placeBtn" Style="{StaticResource ToolbarButton}"
                                 Content="&#xE718;" FontSize="12" FontFamily="Segoe MDL2 Assets"
-                                ToolTip="Place in model (or Shift+Click a keynote)"
+                                ToolTip="Place in model (or Alt+Click a keynote)"
                                 IsEnabled="False" Click="place_keynote"/>
                     </StackPanel>
                 </DockPanel>

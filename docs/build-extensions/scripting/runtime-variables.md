@@ -51,8 +51,8 @@ __commandpath__           # folder of the main script
 __configcommandpath__     # folder of the config script
 __commandname__           # command name
 __commandbundle__         # command bundle name
-__commandextension__      # command bundle name
-__commanduniqueid__       # command bundle name
+__commandextension__      # command extension name
+__commanduniqueid__       # command unique id
 __commandcontrolid__      # command control id
 ```
 
@@ -115,9 +115,9 @@ EXEC_PARAMS.command_path         # folder of the main script
 EXEC_PARAMS.command_config_path  # folder of the config script
 EXEC_PARAMS.command_name         # command name
 EXEC_PARAMS.command_bundle       # command bundle name
-EXEC_PARAMS.command_extension    # command bundle name
-EXEC_PARAMS.command_uniqueid     # command bundle name
-EXEC_PARAMS.command_controlid    # command bundle name
+EXEC_PARAMS.command_extension    # command extension name
+EXEC_PARAMS.command_uniqueid     # command unique id
+EXEC_PARAMS.command_controlid    # command control id
 ```
 
 ```python

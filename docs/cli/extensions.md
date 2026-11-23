@@ -97,6 +97,8 @@ $ pyrevit extensions help apex      # open help page
 $ pyrevit extensions open apex      # open path in file explorer
 ```
 
+`info` and `help` search the extension sources first and then the installed extensions, so they also answer for an installed extension that no source lists.
+
 #### Updating Extensions
 
 ```powershell
@@ -118,4 +120,4 @@ pyrevit extensions sources (add | forget) <source_json_or_url> [--log=<log_file>
 $ pyrevit extensions sources add "https://www.github.com/me/extensions.json"
 ```
 
-- `<source_json_or_url>`: Can be a `json` file path or web url
+- `<source_json_or_url>`: Can be a `json` file path or web url. `add` registers it, then reads it once and prints a warning when it cannot be reached or holds no extension list; the source stays registered.

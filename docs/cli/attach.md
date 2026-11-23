@@ -3,15 +3,16 @@
 `pyrevit` can detect the exact installed Revit versions on your machine. You can use the commands below to attach any pyRevit clone to any or all installed Revits. Make sure to specify the clone to be attached and the desired engine version:
 
 ```powershell
-pyrevit attach <clone_name> (DEFAULT | <engine_version>) (<revit_year> | --installed | --attached) [--allusers] [--log=<log_file>]
+pyrevit attach <clone_name> (default | <engine_version>) (<revit_year> | --installed | --attached) [--allusers] [--log=<log_file>]
 
-$ pyrevit attach dev DEFAULT --installed    # attach `dev` clone to all installed Revits using defaultengine
-$ pyrevit attach dev 2712 --installed       # attach `dev` clone to all installed Revits using 277 engine
-$ pyrevit attach dev DEFAULT 2018       # attach `dev` clone to Revit 2018 using an engine that has no conflicts with Dynamo BIM
+$ pyrevit attach dev default --installed    # attach `dev` clone to all installed Revits using the default engine
+$ pyrevit attach dev 342 --installed        # attach `dev` clone to all installed Revits using the IronPython 3.4.2 engine
+$ pyrevit attach dev default 2026           # attach `dev` clone to Revit 2026 using the default engine
 ```
 
-- `--``allusers`: Use this switch to attach for all users. It creates the manifest files inside the `%PROGRAMDATA%/Autodesk/Revit/Addons` instead of `%APPDATA%/Autodesk/Revit/Addons`
-- `--attached`: This options is helpful when updating existing attachments e.g. specifying a new engine but keeping the same attachments as before
+- `<engine_version>`: the id of a runtime engine, see [Engines](../runtime/engines.md)
+- `--allusers`: attach for all users. The manifest is written to the all-users add-ins folder instead of `%APPDATA%\Autodesk\Revit\Addins`. See [Where Revit loads add-ins from](../help/installation-issues.md#where-revit-loads-add-ins-from)
+- `--attached`: This option is helpful when updating existing attachments e.g. specifying a new engine but keeping the same attachments as before
 
 List all the attachments:
 
@@ -19,13 +20,10 @@ List all the attachments:
 $ pyrevit attached
 
 ==> Attachments
-dev | Product: "Autodesk Revit 2020.0.1" | Engine: 277 | Path: "C:\pyRevitDev" | Manifest: "C:\..\2020\pyRevit.addin"
-dev | Product: "Autodesk Revit 2019.2.1" | Engine: 277 | Path: "C:\pyRevitDev" | Manifest: "C:\..\2019\pyRevit.addin"
-dev | Product: "Autodesk Revit 2018.3.3 Security Fix" | Engine: 277 | Path: "C:\pyRevitDev" | Manifest: "C:\..\2018\pyRevit.addin"
-dev | Product: "Autodesk Revit 2017.2.5 Security Fix" | Engine: 277 | Path: "C:\pyRevitDev" | Manifest: "C:\..\2017\pyRevit.addin"
-dev | Product: "Autodesk Revit 2016 Update 7 for R2" | Engine: 277 | Path: "C:\pyRevitDev" | Manifest: "C:\..\2016\pyRevit.addin"
-dev | Product: "Autodesk Revit 2014 First Customer Ship" | Engine: 277 | Path: "C:\pyRevitDev" | Manifest: "C:\..\2014\pyRevit.addin"
+dev | Product: "<Revit product name>" | Engine: IPY2712PR (2712) | Path: "C:\pyRevit\dev"
 ```
+
+An attachment for all users ends with `| AllUsers`.
 
 You can also switch between the attached clones using the switch command:
 
@@ -33,12 +31,9 @@ You can also switch between the attached clones using the switch command:
 pyrevit switch <clone_name>
 
 $ pyrevit switch main
-
-==> Attachments
-main | Product: "Autodesk Revit 2020.0.1" | Engine: 277 | Path: "C:\pyRevitMain" | Manifest: "C:\..\2020\pyRevit.addin"
 ```
 
-The switch command with detect all the existing attachments and will remap them to the new clone using the same engine.
+The switch command will detect all the existing attachments and will remap them to the new clone using the same engine.
 
 Detaching pyRevit from a specific Revit version or all installed:
 

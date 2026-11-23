@@ -13,15 +13,14 @@
 
     ```text
     ==> Attachments
-    master | Product: "2020.1 Update" | Engine: IPY2712 (2712) | Path: "....."
-    master | Product: "2019.2.2 Hotfix" | Engine: IPY2712 (2712) | Path: "....."
+    master | Product: "<Revit product name>" | Engine: IPY2712PR (2712) | Path: "....."
     ```
 - If nothing is listed then run `pyrevit clones` and check to make sure `master` is listed as the installed clone
 
     ```text
     ==> Registered Clones (full git repos)
     ==> Registered Clones (deployed from archive/image)
-    master | Deploy: "basepublic" | Version: "4.8.5" | Path: "......"
+    master | Deploy: "basepublic" | Branch: "master" | Version: "<version>" | Path: "......"
 
     ```
 - If it is listed, then run `pyrevit attach master default --installed` and check again to make sure it is attached.
@@ -35,17 +34,18 @@ See an example of this fix here
 What seems to work in most cases:
 
 1. **Uninstall pyRevit**
-1. **Delete** C:\\ProgramData and \\%AppData%\\ pyRevit folders
+1. **Delete** the `pyRevit` folders under `%ProgramData%` and `%AppData%`
 1. **Move all Revit addins** to a temporary location. Usual addins locations include:
 
     1. %AppData%\\Autodesk\\Revit\\Addins\\\<year\>
     1. %AppData%\\Autodesk\\ApplicationPlugins
     1. %ProgramData%\\Autodesk\\Revit\\Addins\\\<year\>
     1. %ProgramData%\\Autodesk\\ApplicationPlugins
+    1. For Revit 2027 and later, the all-users folders under `C:\Program Files\Autodesk`, see [Where Revit loads add-ins from](#where-revit-loads-add-ins-from)
 1. \[Reboot computer\]
 1. **Reinstall pyRevit**
-1. Started **each version** of Revit confirming pyRevit successfully compiled at startup.
-1. **Moved all Revit addin**s that were moved in step 3 back to their original location.
+1. Start **each version** of Revit and confirm pyRevit loads.
+1. **Move the Revit addins** from step 3 back to their original location.
 
     1. you may want to add them one at a time and start a revit session everytime to figure out which ones are causing the issue.
 
@@ -55,20 +55,17 @@ What seems to work in most cases:
 
 ### Favorite solution
 
-More chirurgical:
-
-- Excluded SentinelOne from scanning the Hash of Revit.  
-  to get the SHA1 from each revit version (example for 2020):  
+The most targeted one: exclude Revit from SentinelOne by the hash of its executable. To get the SHA1 of a Revit version (example for 2026):
 
 ```powershell
-C:\Program Files\Autodesk\Revit 2020>certutil -hashfile "Revit.exe" SHA1
+certutil -hashfile "C:\Program Files\Autodesk\Revit 2026\Revit.exe" SHA1
 ```
 
 ### Strategies that worked
 
 #### #1
 
-[\[Bug\]: Can't install pyRevit\_5.0.0.25034\_signed.exe Revit 2025 · Issue #2577 · pyrevitlabs/pyRevit](https://github.com/pyrevitlabs/pyRevit/issues/2577#issuecomment-2797937457) — ✈ Pre-Flight checks I don&#39;t have SentinelOne antivirus installed (see above for the solution) I have searched in the issues (open and closed) but couldn&#39;t find a similar issue I have search...
+[\[Bug\]: Can't install pyRevit\_5.0.0.25034\_signed.exe Revit 2025 · Issue #2577 · pyrevitlabs/pyRevit](https://github.com/pyrevitlabs/pyRevit/issues/2577#issuecomment-2797937457)
 
 - Exclude pyRevitLoader.dll and Revit exe file
 
@@ -78,13 +75,7 @@ C:\Program Files\Autodesk\Revit 2020>certutil -hashfile "Revit.exe" SHA1
 
 `%APPDATA%\pyRevit-Master\bin\netfx\engines\IPY2712PR\pyRevitLoader.dll`
 
----
-
----
-
----
-
-[\[Bug\]: Can't install pyRevit\_5.0.0.25034\_signed.exe Revit 2025 · Issue #2577 · pyrevitlabs/pyRevit](https://github.com/pyrevitlabs/pyRevit/issues/2577#issuecomment-2659097860) — ✈ Pre-Flight checks I don&#39;t have SentinelOne antivirus installed (see above for the solution) I have searched in the issues (open and closed) but couldn&#39;t find a similar issue I have search...
+[\[Bug\]: Can't install pyRevit\_5.0.0.25034\_signed.exe Revit 2025 · Issue #2577 · pyrevitlabs/pyRevit](https://github.com/pyrevitlabs/pyRevit/issues/2577#issuecomment-2659097860)
 
 ![](../assets/help/installation-issues/image-2.png)
 
@@ -125,7 +116,7 @@ OR
 
 ## Extensions not installing
 
-- Check with your IT if the [github.com](http://github.com) url are not blocked
+- Check with your IT that `github.com` is not blocked
 
 [PyRevit Extensions Not Installing](https://discourse.pyrevitlabs.io/t/pyrevit-extensions-not-installing/9374/12)
 

@@ -14,7 +14,7 @@ See the guide below to configure pyRevit using the CLI tool
 
     Preferably use the [pyRevit CLI](../cli/index.md) to make configuration changes to this file.
 
-pyRevit configuration file is a standards INI file that contains various sections for each pyRevit component or tool.
+pyRevit configuration file is a standard INI file that contains various sections for each pyRevit component or tool.
 
 ## Which file pyRevit uses
 
@@ -39,17 +39,23 @@ autoupdate = false
 verbose = true
 debug = false
 filelogging = false
-startuplogtimeout = 0
+startuplogtimeout = 10
 bincache = true
 userextensions = []
 loadbeta = false
 rocketmode = true
 requiredhostbuild = ""
-cpyengine = 372
+cpyengine = 3123
 minhostdrivefreespace = 0
-outputstylesheet = "C:\\Users\\eirannejad\\Desktop\\gits\\pyRevitDev\\pyrevitlib\\pyrevit\\output\\outputstyles.css"
+closeotheroutputs = false
+closeoutputmode = "currentcommand"
+outputstylesheet = "C:\\Standards\\pyRevit\\outputstyles.css"
 user_locale = "en_us"
+colorize_docs = false
+tooltip_debug_info = false
 ```
+
+`cpyengine` is the id of the CPython engine, see [Engines](../runtime/engines.md).
 
 The settings below control the availability of the **Update**, **Extension Manager** and **Settings** tools (UI buttons) in pyRevit. If set to `false` the tool will be removed from the UI and won’t be availabe to the user:
 
@@ -78,11 +84,14 @@ These configs options are for the [pyRevit Routes (HTTP API)](routes.md)
 ```text
 [routes]
 enabled = true
+host = "127.0.0.1"
 core_api = true
 port = 48884
 ```
 
-### Telemetery Configs
+`host` is the address the server listens on. When it is empty or missing, the server listens on every network interface. The server does not authenticate callers, so only open it to the network on purpose.
+
+### Telemetry Configs
 
 These configs options are for the  [Telemetry System](telemetry.md)
 
@@ -94,7 +103,8 @@ telemetry_server_url = ""
 active_app = false
 apptelemetry_server_url = ""
 apptelemetry_event_flags = "0x1d17e7f7ff59"
-utc_timestamps = false
+utc_timestamps = true
+include_hooks = false
 ```
 
 ### Tab Coloring Configs

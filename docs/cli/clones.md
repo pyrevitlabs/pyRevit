@@ -17,7 +17,7 @@ Let’s create the master clone first. This will be a full git repo of the maste
 ```powershell
 # master is <clone_name> that we're providing to pyrevit cli
 # we're not providing any value for <dest_path>, therefore pyrevit cli will clone
-# pyRevit into the default path (%APPDATA%/pyRevit)
+# pyRevit into the default path
 $ pyrevit clone master
 ```
 
@@ -29,7 +29,7 @@ Now let’s create the main clone. This one does not include the full repository
 $ pyrevit clone main base --dest="C:\pyRevit\main"
 ```
 
-- `<deployment_name>`: When provided the tool installs from the ZIP archive and NOT the complete git repo. This is the preferred method and is used with the native pyRevit installer. pyRevit has multiple deployments. These deployments are defined in pyRevitFile the inside the pyRevit repo. Each deployment, only deploys a subset of directories.
+- `<deployment_name>`: When provided the tool installs from the ZIP archive and NOT the complete git repo. This is the preferred method and is used with the native pyRevit installer. pyRevit has multiple deployments. These deployments are defined in the `pyRevitfile` inside the pyRevit repo, see [Deployments](../teams/deployments.md). Each deployment only deploys a subset of directories.
 
 Now let’s create the final development clone. This is a full git repo.
 
@@ -61,11 +61,11 @@ You can see a list of registered clones using. Notice the full clones and the no
 $ pyrevit clones
 
 ==> Registered Clones (full git repos)
-Name: "master" | Path: "%APPDATA%\pyRevit\pyRevit"
-Name: "dev" | Path: "C:\pyRevit\dev"
+master | Branch: "master" | Version: "<version>" | Path: "<path>"
+dev | Branch: "develop" | Version: "<version>" | Path: "C:\pyRevit\dev"
 
-==> Registered Clones (deployed from archive)
-Name: "main" | Path: "C:\pyRevit\main"
+==> Registered Clones (deployed from archive/image)
+main | Deploy: "base" | Branch: "master" | Version: "<version>" | Path: "C:\pyRevit\main"
 ```
 
 Get info on a clone or open the path in file explorer:
@@ -91,7 +91,7 @@ Add existing clones (created without using `pyrevit`), remove, rename, and delet
 
 ```powershell
 pyrevit clones add <clone_name> <clone_path> [--log=<log_file>]
-$ pyrevit clones add newclone "C:Some\Path"     # register existing clone
+$ pyrevit clones add newclone "C:\Some\Path"     # register existing clone
 
 pyrevit clones forget (--all | <clone_name>) [--log=<log_file>]
 $ pyrevit clones forget newclone     # forget a clone (does not delete)
@@ -103,8 +103,10 @@ $ pyrevit clones rename main base   # rename clone `main` to `base`
 pyrevit clones delete [(--all | <clone_name>)] [--clearconfigs] [--log=<log_file>]
 $ pyrevit clones delete base        # delete clone `base`
 $ pyrevit clones delete --all       # delete all clones
-$ pyrevit clones delete --all --clearconfigs    # delete all clones and clear configurations
+$ pyrevit clones delete --all --clearconfigs    # delete all clones and the whole user configuration file
 ```
+
+`--clearconfigs` deletes the entire user `pyRevit_config.ini`, including settings unrelated to the clones, so it only applies together with `--all`. Deleting a single clone always keeps the configuration and only removes that clone's registration; `--clearconfigs` is ignored there with a warning on stderr.
 
 #### Managing Git Clones
 
@@ -130,7 +132,7 @@ Setting current version:
 ```powershell
 pyrevit clones version <clone_name> [<tag_name>] [--log=<log_file>]
 
-$ pyrevit clones version dev v4.6  # changing current version to v4.6 for `dev` clone
+$ pyrevit clones version dev <tag_name>  # changing current version of the `dev` clone to a release tag
 ```
 
 Setting current head commit:

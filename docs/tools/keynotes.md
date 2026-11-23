@@ -1,8 +1,6 @@
 # Keynotes
 
-pyRevit has a built in **Keynote Manager**. The keynote manager, uses a trick to store information inside the standard Revit keynote text files. Let's create an empty model and configure to use the pyRevit Keynote Manager. You can find the tool here
-
-![](../assets/tools/keynotes/2019-08-28-08-56-05-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png)
+pyRevit has a built in **Keynote Manager**. It stores its own information inside the standard Revit keynote text file, so the file stays usable by Revit without pyRevit. The tool is **Manage Keynotes** in the **Drawing Set** panel of the pyRevit tab. Shift-click it to reset the window configuration and open.
 
 ## Setting Up the Keynote File
 
@@ -27,21 +25,13 @@ A7.0	INTERIOR
 7.01	08 0000 - STOREFRONT WINDOW SYSTEM	A7.0
 ```
 
-Now create an empty test model, and launch the **Manage Keynotes** tool. The tool will inspect the keynote file attached to the model and will notify you that it doesn't have any attached to it. The tool will help you attach a keynote and configure that for the pyRevit Keynote Manager.
+Now create an empty test model, and launch the **Manage Keynotes** tool. When the keynote file of the model cannot be found, the tool says *Keynote file not found* and asks you to select one. Select the keynote file we just created.
 
-![](../assets/tools/keynotes/2019-08-28-08-56-30-keynotes.png)
+Keynote Manager then tells you that the file needs to be converted for this tool. Click **Convert**.
 
-Click **OK** and select the keynote file we just created
+![Keynote Manager offering to convert a keynote file](../assets/tools/keynotes/keynotes-convert-prompt.png)
 
-![](../assets/tools/keynotes/2019-08-28-09-01-21-open.png)
-
-Keynote manager will notify you that the file needs to be configured for this tool. Click **Convert**
-
-![](../assets/tools/keynotes/2019-08-28-09-01-36-keynotes.png)
-
-Keynote manager configures the text file, saves it back, and will update you. It also saves a `.bak` file as a backup of the main keynote file in the same directory.
-
-![](../assets/tools/keynotes/2019-08-28-09-02-19-keynotes.png)
+Keynote Manager converts the text file in place and opens it. It copies the file to the pyRevit data folder before converting, and keeps that copy. When the conversion fails, the original content is restored, or the path of the copy is shown when it cannot be restored.
 
 Take a look at the converted keynote file. It should look similar to this
 
@@ -76,128 +66,83 @@ All the lines that start with `#` are invisible to Revit. So this keynote text f
 - Coordinate changes to the keynote text file when multiple users are making changes to the keynotes at the same time
 - Store history of changes to keynotes
 
-!!! note ""
-
-    If you are interested in more advanced information, see DeFFRel DB API for more information about the API that manages this text file.
-
 ## Manage Keynotes Window
 
-The keynote manager window
+The window shows the keynote file as one tree. The top-level rows are groups (the categories of the keynote file) and the rows under them are keynotes, which can have child keynotes of their own. The status bar shows the keynote file and how many groups and keynotes it holds, and how many keynotes are used in the model.
 
-- Has a pretty advanced search
-- Helps you manage all the keynotes and categories
-- Export and Import keynotes
-- Create keynotes of different kinds
-- Is smart about the location and size of the window, by project!
+![Keynote Manager window](../assets/tools/keynotes/keynote-manager.png)
 
-![](../assets/tools/keynotes/2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-only.png)
+### File toolbar
+
+![File toolbar](../assets/tools/keynotes/keynote-manager-file-toolbar.png)
+
+| Button | What it does |
+|---|---|
+| **Import** | Imports keynotes from a standard Revit keynote `.txt` file (Ctrl+I) |
+| **Export All**, **Export Visible** | Writes all the keynotes, or only the listed ones, to a clean Revit keynote file |
+| **Change File** | Attaches another keynote file to the project |
+| Show in Explorer | Shows the keynote file in Explorer |
+| **Refresh** | Reloads the keynote file (F5) |
+| **Update Model** | Reloads the keynote file in Revit, so the model shows the changes |
+| Release locks | Releases the locks a closed or crashed Revit session left behind, see [Edit Locks](#edit-locks) |
 
 ### Search
 
-The search bar at the top of the window, helps you search the keynotes effectively and would filter down the results. The
+The search bar filters the tree as you type. **Filters** adds a ready-made filter to the search: used or unused keynotes, locked or unlocked ones, element, material or user keynotes only, a regular expression, or a CSI MasterFormat division number. The regular expression and division filters also have an *Exclude* form.
 
-![](../assets/tools/keynotes/2019-08-28-09-08-53-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png)
+### Editing the tree
 
-The filter button on the left side, gives you more options to search
+The toolbar above the tree works on the selected rows. Most of them are also in the right-click menu.
 
-![](../assets/tools/keynotes/2019-08-28-09-11-08-select-filter.png)
+![Tree toolbar](../assets/tools/keynotes/keynote-manager-tree-toolbar.png)
 
-### Keynote Management
+| Command | Shortcut |
+|---|---|
+| Expand all, Collapse all | |
+| Add group (top-level category) | |
+| Add keynote | Ctrl+N |
+| Indent: make the keynote a child of the sibling above | Tab |
+| Promote: move the keynote up one level | Shift+Tab |
+| Move up, Move down | Ctrl+Up, Ctrl+Down |
+| Edit | F2, or double-click the row |
+| Duplicate | Ctrl+D |
+| Copy, Paste here | Ctrl+C, Ctrl+V |
+| Change key | |
+| Change text capitalization | |
+| Delete | Del |
+| Find in model | |
 
-The buttons on the top right, help you refresh the keynotes, find or change the keynote file. Hover over the keys for tooltips.
+Drag a row onto another one to move it under a new parent. Ctrl+click and Shift+click select several rows.
 
-![](../assets/tools/keynotes/2019-08-28-09-09-11-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png)
+Every group and every keynote needs a unique key. When you add one, the window lists the keys that are already taken.
 
-The Categories and Keynote tools help with creating and editing keynotes and categories. Hover over the keys for tooltips.
+A group that still has keynotes, and a keynote that has child keynotes or is used in the model, cannot be deleted.
 
-![](../assets/tools/keynotes/2019-08-28-09-09-42-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png)
+### Copying keynotes between projects
 
-### Browsing Keynotes
+**Copy** and **Paste here** also work between two projects that use different keynote files. Before anything is written, the **Paste Keynotes** window lists every copied row with what is currently in the target file and the result: added, text replaced, already there, or locked by another user. Only the ticked rows are written. Taking a row that conflicts replaces the text of the target keynote and keeps its place in the tree.
 
-The category selector helps filtering down the keynotes shown in the window to a specific category
-
-![](../assets/tools/keynotes/2019-08-28-09-09-24-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png)
-
-The main keynote box, shows the keynotes inside the selected keynote category
-
-![](../assets/tools/keynotes/2019-08-28-09-09-32-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png)
-
-### Creating Categories
-
-Click on the new category button
-
-![](../assets/tools/keynotes/2019-08-28-09-28-11-autodesk-revit-2019-2-project1-floor-plan-wip-level-01.png)
-
-The most important step is to select a unique key for this category.
-
-![](../assets/tools/keynotes/2019-08-28-09-28-28-manage-keynotes-beta-use-for-testing-only.png)
-
-The tool shows all the reserved (already used, in Red) keys in the window. Select a key until there are no items shown in reserved list.
-
-![](../assets/tools/keynotes/2019-08-28-09-29-03-manage-keynotes-beta-use-for-testing-only.png)
-
-![](../assets/tools/keynotes/2019-08-28-09-29-43-manage-keynotes-beta-use-for-testing-only.png)
-
-Now type the name of the category in the box. Use the buttons on the side to change the casing if necessary.
-
-![](../assets/tools/keynotes/2019-08-28-09-30-03-manage-keynotes-beta-use-for-testing-only.png)
-
-Click **Add Category** and the category will be added to the keynote file. The category selector will automatically switch to this new category
-
-![](../assets/tools/keynotes/2019-08-28-09-30-11-manage-keynotes-beta-use-for-testing-only.png)
-
-### Creating Keynotes
-
-Create keynotes similar to the categories. Remember that every keynote, needs a parent category. The parent category key is shown at the bottom of the **Add**  **Keynote** window.
-
-![](../assets/tools/keynotes/2019-08-28-09-30-22-manage-keynotes-beta-use-for-testing-only.png)
-
-![](../assets/tools/keynotes/2019-08-28-09-30-38-manage-keynotes-beta-use-for-testing-only.png)
-
-![](../assets/tools/keynotes/2019-08-28-09-30-52-manage-keynotes-beta-use-for-testing-only.png)
-
-![](../assets/tools/keynotes/2019-08-28-09-31-01-manage-keynotes-beta-use-for-testing-only.png)
-
-You can also create child keynotes for the selected keynote. Follow the same workflow as creating keynotes. The child keynotes' parent, is the selected parent keynote.
-
-![](../assets/tools/keynotes/2019-08-28-09-31-13-autodesk-revit-2019-2-project1-floor-plan-wip-level-01.png)
-
-![](../assets/tools/keynotes/2019-08-28-09-37-50-manage-keynotes-beta-use-for-testing-only.png)
+![Paste Keynotes window](../assets/tools/keynotes/paste-keynotes.png)
 
 ### Placing Keynotes
 
-Double-Click on any of the keynotes shown in the main window, to place in your model. You can place multiple keynotes in the model. Hit **Escape** when done and the tool will apply the correct keynote number to the keynotes.
+Select the kind of keynote to place under **Place**: **User**, **Element** or **Material**. Then select a keynote and click the place button, or Alt+click the keynote in the tree. Revit starts its keynote tool with that key.
 
-The type selector on the side, determines which type of keynote is placed by the tool
+Groups cannot be placed, and neither can a keynote that another user has locked.
 
-![](../assets/tools/keynotes/2019-08-28-09-09-51-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png)
+**Find in model** lists the places where the selected keynote is used in the pyRevit output window, one line per keynote tag. Click an element id in the list to go to that keynote. In a workshared model, the line also names the last user who edited the tag.
 
-![↑ Example of placing multiple keynotes at the same time](../assets/tools/keynotes/2019-08-28-09-18-06.gif)
+```text
+Keynote: 2157876 | Source: User | View: Level 1
+Keynote: 2157877 | Source: User | View: Level 1
+```
 
-*Example of placing multiple keynotes at the same time*
-
-From now on, the tool will show the number of times a keynote is used in a model
-
-![](../assets/tools/keynotes/2019-08-28-09-18-11-manage-keynotes-beta-use-for-testing-only.png)
-
-You can click on the Find Keynote Instances to get a list of these keynotes
-
-![](../assets/tools/keynotes/2019-08-28-09-19-11-autodesk-revit-2019-2-project1-floor-plan-wip-level-01.png)
-
-Click on the Keynote Ids (the numbers) and pyRevit will take you to that specific keynote.
-
-![](../assets/tools/keynotes/2019-08-28-09-19-23-keynotes.png)
-
-### Import & Export
-
-You can use the import and export tools to import new keynotes from another file, or export all the keynotes (or visible ones) to a clean new keynote text file.
-
-![](../assets/tools/keynotes/2019-08-28-09-09-57-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png)
+## Working with a shared keynote file
 
 Keynote Manager can operate in two modes:
 
 - ***Local Network:*** in this mode, Keynote Manager is working with `.txt` keynote file that is shared between Revit users on a local network. This means that the same keynote file is being used and modified by multiple users.
-- ***BIM360:*** *in this mode,* Keynote Manager is working with `.txt` keynote file that is hosted on BIM360 and is made available locally by the **Autodesk Desktop Connector.**
+- ***Autodesk cloud:*** in this mode, Keynote Manager is working with `.txt` keynote file that is hosted on BIM 360 or Autodesk Construction Cloud and is made available locally by the **Autodesk Desktop Connector**. The connector must be installed and running.
 
 In either of these modes, Keynote Manager needs to ensure multiple users do not overwrite each others’ work. To achieve that:
 
@@ -206,7 +151,7 @@ In either of these modes, Keynote Manager needs to ensure multiple users do not 
     !!! warning ""
 
         Deleting an orphaned `.lock` file when there are no users active, should solve the stuck Keynote Manager problem
-- ***BIM360:***  Keynote Manager uses the **Autodesk Desktop Connector** API to ask BIM360 to lock the keynote file when a user opens Keynote Manager.
+- ***Autodesk cloud:*** Keynote Manager asks the **Autodesk Desktop Connector** to lock the keynote file when a user opens Keynote Manager. When the connector cannot sync or lock the file, the manager still opens, so check the lock on the file before a long editing session.
 
     ![](../assets/tools/keynotes/screen-shot-2021-12-30-at-21-13-30.png)
 
@@ -214,11 +159,13 @@ In either of these modes, Keynote Manager needs to ensure multiple users do not 
 
     !!! warning ""
 
-        You can unlock the keynote file from BIM360 portal
+        You can unlock the keynote file from the Autodesk web portal
 
 ## Edit Locks
 
-When a user edits a keynote, Keynote Manager will write some info inside the keynote file (hidden to Revit) that a user has borrowed that specific keynote for editing. If you have a sticky lock on a specific keynote, manually clear the content of `Locks Table` in the keynote file. These locks are written in between the two lines below
+When a user edits a keynote, Keynote Manager will write some info inside the keynote file (hidden to Revit) that a user has borrowed that specific keynote for editing. When a Revit session closes or crashes while a keynote is being edited, its lock stays in the file. Use the release locks button in the file toolbar: it names every lock holder and asks you to check with them first, because it cannot tell an abandoned lock from one a colleague holds right now.
+
+If that is not possible, clear the content of `Locks Table` in the keynote file by hand. These locks are written in between the two lines below
 
 ```text
 # --------------------- @table(locks_table:"Locks Table")
@@ -230,10 +177,10 @@ When a user edits a keynote, Keynote Manager will write some info inside the key
 For example a lock with id `tf5n6dURvk+JrZQ5r3gD5g==` exists in this keynote file example:
 
 ```text
-# @datastore("txt") @source("C:\Users\ehsan\Desktop\Keynotes.txt") ...
+# @datastore("txt") @source("C:\Projects\Keynotes.txt") ...
 # ===================== @db(txn_db:"Internal DB")
 # --------------------- @table(locks_table:"Locks Table")
-# tf5n6dURvk+JrZQ5r3gD5g==	leo-wx-rir	eirannejad	w8/8rO/UOUyP0vs1oS53zA== ...
+# tf5n6dURvk+JrZQ5r3gD5g==	workstation-01	jdoe	w8/8rO/UOUyP0vs1oS53zA== ...
 # ===================== @db(keynotesdb:"pyRevit Keynotes Manager DB")
 C1	CATEGORY ONE
 C2	OTHER CATEGORY

@@ -20,10 +20,10 @@ public class CliLoggingTests {
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, true)]
-    public void ErrorAndFatalLinesGoOnlyToStderr(bool verbose, bool debug) {
+    public void WarnErrorAndFatalLinesGoOnlyToStderr(bool verbose, bool debug) {
         var config = PyRevitCLILogging.CreateConsoleConfiguration(verbose, debug);
 
-        foreach (var level in new[] { LogLevel.Error, LogLevel.Fatal }) {
+        foreach (var level in new[] { LogLevel.Warn, LogLevel.Error, LogLevel.Fatal }) {
             var targets = ConsoleTargetsFor(config, level);
             var target = Assert.Single(targets);
             Assert.True(target.StdErr);

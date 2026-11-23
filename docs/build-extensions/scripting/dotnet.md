@@ -4,10 +4,6 @@
 
     Start with the short introduction to scripts at [Create Your First Command](../tutorials/first-command.md) and [Create Your First .NET Command](../tutorials/first-dotnet-command.md)  
 
-!!! tip ""
-
-    See .NET Script Facilities  for information about the script support module
-
 ## Accessing Script Data
 
 pyRevit provides access to some data about the .NET script being executed. To gain access to this data, import the `pyRevitLabs.PyRevit.Runtime.Shared` in your script, and define a public field on your command class with the type `ExecParams`

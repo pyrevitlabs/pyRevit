@@ -12,9 +12,9 @@ Command bundles are the smallest unit of executable code in pyRevit. In most cas
 
 The requirements and conventions below are shared among all command bundles
 
-### Button Highlighting Directives (Revit ≥ 2018)
+### Button Highlighting Directives
 
-You can use provide highlighting directives inside the command bundle metadata. Revit will highlight the button and the tooltip in the interface.
+You can provide highlighting directives inside the command bundle metadata. Revit will highlight the button and the tooltip in the interface.
 
 ```yaml
 # highlight as new
@@ -47,7 +47,7 @@ optional:
     - *config.*           # optional config scripts. Revit UI will show a ● in front of the button name e.g. "Match ●"
                           # Shift-Clicking the button, launches this config.* script instead
     - icon.png            # for Revit UI icons
-    - icon.png            # for Revit UI icons in Dark mode
+    - icon.dark.png       # for Revit UI icons in Dark mode
     - tooltip.png         # for Revit UI button tooltip image
     - tooltip.mp4         # for Revit UI button tooltip video
     - *help.*             # for Revit UI button help, opening with F1 key
@@ -65,7 +65,7 @@ See [Configure pyRevit](../../get-started/configure.md) for more information abo
 
 ### CPython Scripts
 
-Push-Button bundles can contain a CPython  `*.py` file as their main script. pyRevit will run the script with the active CPython engine.
+Push-Button bundles can contain a CPython  `*.py` file as their main script. pyRevit runs the script with the active CPython engine when its first line is `#! python3`. An `engine: type` set in the bundle file takes precedence over that line.
 
 See [Anatomy of CPython Scripts](../scripting/cpython.md)  for more detail on CPython scripts.
 
@@ -75,7 +75,7 @@ See [Configure pyRevit](../../get-started/configure.md) for more information abo
 
 Push-Button bundles can contain a C#  `*.cs` , or a VB.NET `*.vb` file as their main script. pyRevit will compile and run the script.
 
-See [Anatomy of .NET (C#, VB) Scripts](../scripting/dotnet.md)  for more detail on CPython scripts.
+See [Anatomy of .NET (C#, VB) Scripts](../scripting/dotnet.md)  for more detail on .NET scripts.
 
 ### DynamoBIM Scripts
 
@@ -111,58 +111,42 @@ engine:
 
 ### Grasshopper Scripts
 
-Push-Button bundles can contain a Grasshopper `*.gh` file as their main script. pyRevit will launch the installed [Rhino.Inside.Revit](http://rhino3d.com/inside/revit/) on the host Revit and asks to run the bundle script.
+Push-Button bundles can contain a Grasshopper `*.gh` file as their main script. pyRevit will launch the installed [Rhino.Inside.Revit](https://www.rhino3d.com/inside/revit/) on the host Revit and asks to run the bundle script.
 
 ## Content-Button Bundle
 
-Content Bundles carry contents for Revit, and help with reducing modeling errors by making it easy to place specific contents inside Revit models. This bundle automatically places the specified Revit family file `.rfa` inside the active Revit document.
+Content Bundles carry contents for Revit, and help with reducing modeling errors by making it easy to place specific contents inside Revit models. This bundle places a Revit family file `.rfa` inside the active Revit document.
+
+Set the family in the bundle file. The path can be absolute or relative to the bundle folder:
 
 ```yaml
-content: "..\\A.rfa" # absolute or relative path supported
-content_alt: "C:\\Users\\Local Admin\\Documents\\GitHub\\pyRevit\\extensions\\pyRevitDevTools.extension\\pyRevitDev.tab\\Debug.panel\\Bundle Tests.pulldown\\B.rfa" # absolute or relative path supported
+content: "..\\A.rfa"                              # family placed when the button is clicked
+content_alt: "C:\\Standards\\Families\\B.rfa"       # optional family placed on SHIFT+Click
 ```
 
 ```text
 extension: .content
 requires:
-    - *.rfa        # Revit family file to be placed in Revit model when this button is clicked
-    - bundle.yaml  # includes bundle metadata e.g. tooltip message
-								   # metadata supported for file path to
-                   # relative path for main family: content: "..\\A.rfa"
-                   # absolute path for main family: content: "C:\\Users\\Local Admin\\Documents\\GitHub\\pyRevit\\extensions\\pyRevitDevTools.extension\\pyRevitDev.tab\\Debug.panel\\Bundle Tests.pulldown\\B.rfa"
-                   # relative path for alternative family (SHIFT+Click): content_alt: "..\\A.rfa"
-                   # absolute path for alternative family (SHIFT+Click): content_alt: "C:\\Users\\Local Admin\\Documents\\GitHub\\pyRevit\\extensions\\pyRevitDevTools.extension\\pyRevitDev.tab\\Debug.panel\\Bundle Tests.pulldown\\B.rfa"
+    - bundle.yaml         # with the content key, or a family file named by convention (see below)
 
 optional:
-    - *.rfa               # optional content file. Revit UI will show a ● in front of the button name e.g. "Marker ●"
-                          # Shift-Clicking the button, places this content inside active Revit model
     - icon.png            # for Revit UI icons
     - icon.dark.png       # for Dark Theme Revit UI
     - tooltip.png         # for Revit UI button tooltip image
     - tooltip.mp4         # for Revit UI button tooltip video
 ```
 
+When the bundle file has no `content` key, pyRevit looks for the family inside the bundle folder, in this order:
+
+1. the first file named `content_*.rfa`
+1. `content.rfa`
+1. any other `.rfa` file
+
+The alternative family follows the same convention with `other_*.rfa` and `other.rfa`.
+
 !!! warning ""
 
-    ⚠️ Legacy way
-
-    Content Bundles carry contents for Revit, and help with reducing modeling errors by making it easy to place specific contents inside Revit models. This bundle automatically places the included Revit family file `.rfa` inside the active Revit document. The current implementation only allows Revit families but this will be extended in the future to more content types.
-
-    ```text
-    extension: .content
-    requires:
-        - *content.rfa        # Revit family file to be placed in Revit model when this button is clicked
-        - *content_XXXX.rfa   # content file for specific Revit version e.g. North Symbol_content_2020.rfa
-        - bundle.yaml         # includes bundle metadata e.g. tooltip message
-
-    optional:
-        - *other.rfa          # optional content file. Revit UI will show a ● in front of the button name e.g. "Marker ●"
-                              # Shift-Clicking the button, places this content inside active Revit model
-        - *other_XXXX.rfa     # optional content file for specific Revit version e.g. North Symbol_other_2020.rfa
-        - icon.png            # for Revit UI icons
-        - tooltip.png         # for Revit UI button tooltip image
-        - tooltip.mp4         # for Revit UI button tooltip video
-    ```
+    The suffix after `content_` or `other_` is not compared with the running Revit version. Keep one such file per bundle, or set `content` and `content_alt` in the bundle file. When a bundle has an alternative family, Revit UI shows a ● in front of the button name e.g. "Marker ●".
 
 ## URL-Button Bundle
 

@@ -734,24 +734,31 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
-        // uninstall primary or specified clone, has option for clearing configs
+        /// <summary>
+        /// Unregisters the clone and deletes its directory. The user config file is left
+        /// untouched: it is shared by every clone and holds no clone-specific settings
+        /// beyond the registry entry removed here.
+        /// </summary>
         // @handled @logs
-        public static void Delete(PyRevitClone clone, bool clearConfigs = false) {
+        public static void Delete(PyRevitClone clone) {
             logger.Debug("Unregistering clone \"{0}\"", clone);
             UnregisterClone(clone);
 
             logger.Debug("Removing directory \"{0}\"", clone.ClonePath);
             CommonUtils.DeleteDirectory(clone.ClonePath);
-
-            if (clearConfigs)
-                PyRevitConfigs.DeleteConfig();
         }
 
-        // uninstall all registered clones
+        /// <summary>
+        /// Unregisters and deletes every registered clone.
+        /// </summary>
+        /// <param name="clearConfigs">
+        /// Also deletes the whole user config file, including every setting unrelated to the
+        /// clones.
+        /// </param>
         // @handled @logs
         public static void DeleteAllClones(bool clearConfigs = false) {
             foreach (var clone in GetRegisteredClones())
-                Delete(clone, clearConfigs: false);
+                Delete(clone);
 
             if (clearConfigs)
                 PyRevitConfigs.DeleteConfig();

@@ -5,68 +5,64 @@ UI Extensions can contain a `hooks/` subdirectory. This directory can contain es
 - Under current implementation, Python, CPython, C#, and VB.NET hook scripts are supported.
 - The hooks scripts are only active if the Extension containing them is active and loaded. Disabling the extension, disables all the hook scripts in that extension.
 - For performance reasons, multiple hooks scripts for the same event are NOT supported under the same `hooks/` directory. There are many events firing when working with Revit and having too many hooks will reduce performance dramatically due to the overhead of reading, compiling, and executing an external code file every time an event occurs.
-- Hooks that are not supported under a specific Revit version, will not be activated. See the table below.
-
-Read the guide below for information on how to write hook scripts
-
-- Anatomy of Hook Scripts
+- Hooks that are not supported under the running Revit version will not be activated.
 
 **Hook Script Types**
 
-| Hook Script Name | Revit | Revit Event Type | Comments |
-|---|---|---|---|
-| options-showing.\* | \>=2013 | UIApplication.DisplayingOptionsDialog |  |
-| app-init.\* | \>=2013 | Application.ApplicationInitialized |  |
-| app-closing.\* | \>=2013 | UIApplication.ApplicationClosing |  |
-| app-idling.\* | \>=2013 | UIApplication.Idling |  |
-| dialog-showing.\* | \>=2013 | UIApplication.DialogBoxShowing |  |
-| doc-changed.\* | \>=2013 | Application.DocumentChanged |  |
-| doc-closed.\* | \>=2013 | Application.DocumentClosed |  |
-| doc-closing.\* | \>=2013 | Application.DocumentClosing |  |
-| doc-created.\* | \>=2013 | Application.DocumentCreated |  |
-| doc-creating.\* | \>=2013 | Application.DocumentCreating |  |
-| doc-opened.\* | \>=2013 | Application.DocumentOpened |  |
-| doc-opening.\* | \>=2013 | Application.DocumentOpening |  |
-| doc-printed.\* | \>=2013 | Application.DocumentPrinted |  |
-| doc-printing.\* | \>=2013 | Application.DocumentPrinting |  |
-| doc-saved-as.\* | \>=2013 | Application.DocumentSavedAs |  |
-| doc-saved.\* | \>=2013 | Application.DocumentSaved |  |
-| doc-saving-as.\* | \>=2013 | Application.DocumentSavingAs |  |
-| doc-saving.\* | \>=2013 | Application.DocumentSaving |  |
-| doc-synced.\* | \>=2013 | Application.DocumentSynchronizedWithCentral |  |
-| doc-syncing.\* | \>=2013 | Application.DocumentSynchronizingWithCentral |  |
-| doc-worksharing-enabled.\* | \>=2015 | Application.DocumentWorksharingEnabled |  |
-| dock-focus-changed.\* | \>=2015 | UIApplication.DockableFrameFocusChanged |  |
-| dock-visibility-changed.\* | \>=2015 | UIApplication.DockableFrameVisibilityChanged |  |
-| fabparts-browser-changed.\* | \>=2017 | UIApplication.FabricationPartBrowserChanged |  |
-| failure-processing.\* | \>=2013 | Application.FailuresProcessing |  |
-| family-loaded.\* | \>=2015 | Application.FamilyLoadedIntoDocument |  |
-| family-loading.\* | \>=2015 | Application.FamilyLoadingIntoDocument |  |
-| file-exported.\* | \>=2013 | Application.FileExported |  |
-| file-exporting.\* | \>=2013 | Application.FileExporting |  |
-| file-imported.\* | \>=2013 | Application.FileImported |  |
-| file-importing.\* | \>=2013 | Application.FileImporting |  |
-| formula-editing.\* | \>=2019 | UIApplication.FormulaEditing |  |
-| link-opened.\* | \>=2018 | Application.LinkedResourceOpened |  |
-| link-opening.\* | \>=2018 | Application.LinkedResourceOpening |  |
-| progress-changed.\* | \>=2013 | Application.ProgressChanged | Fires a lot and reduces performance. Use only when absolutely needed. |
-| transferred-project-standards.\* | \>=2018 | UIApplication.TransferredProjectStandards |  |
-| transferring-project-standards.\* | \>=2018 | UIApplication.TransferringProjectStandards |  |
-| type-duplicated.\* | \>=2015 | Application.ElementTypeDuplicated |  |
-| type-duplicating.\* | \>=2015 | Application.ElementTypeDuplicating |  |
-| view-activated.\* | \>=2013 | UIApplication.ViewActivated |  |
-| view-activating.\* | \>=2013 | UIApplication.ViewActivating |  |
-| view-exported.\* | \>=2018 | Application.ViewExported |  |
-| view-exporting.\* | \>=2018 | Application.ViewExporting |  |
-| view-printed.\* | \>=2013 | Application.ViewPrinted |  |
-| view-printing.\* | \>=2013 | Application.ViewPrinting |  |
-| worksharing-ops-progress-changed.\* | \>=2018 | Application.WorksharedOperationProgressChanged |  |
-| command-before-exec\[\<cmd-id\>\].\* | \>=2014 | AddInCommandBinding.BeforeExecuted | Executed before the original command is executed.<br>**See Notes** |
-| command-can-exec\[\<cmd-id\>\].\* | \>=2013 | AddInCommandBinding.CanExecute | Executed when Revit needs to know whether a tool is available in the GUI or not. **See Notes** |
-| command-exec\[\<cmd-id\>\].\* | \>=2013 | AddInCommandBinding.Executed | Overrides the normal function of the tool |
-| journal-updated.\* | Any | N/A (This is a pyRevit-provided hook) | Executed when the current Journal is updated.<br>**See Notes** |
-| doc-updater.\* | Any | N/A (This is a pyRevit-provided hook) |  |
-| journal-command-exec.\* | Any | N/A (This is a pyRevit-provided hook) | Executed when a new command execution is detected in the journal file. **See Notes** |
+| Hook Script Name | Revit Event Type | Comments |
+|---|---|---|
+| options-showing.\* | UIApplication.DisplayingOptionsDialog |  |
+| app-init.\* | Application.ApplicationInitialized |  |
+| app-closing.\* | UIApplication.ApplicationClosing |  |
+| app-idling.\* | UIApplication.Idling |  |
+| dialog-showing.\* | UIApplication.DialogBoxShowing |  |
+| doc-changed.\* | Application.DocumentChanged |  |
+| doc-closed.\* | Application.DocumentClosed |  |
+| doc-closing.\* | Application.DocumentClosing |  |
+| doc-created.\* | Application.DocumentCreated |  |
+| doc-creating.\* | Application.DocumentCreating |  |
+| doc-opened.\* | Application.DocumentOpened |  |
+| doc-opening.\* | Application.DocumentOpening |  |
+| doc-printed.\* | Application.DocumentPrinted |  |
+| doc-printing.\* | Application.DocumentPrinting |  |
+| doc-saved-as.\* | Application.DocumentSavedAs |  |
+| doc-saved.\* | Application.DocumentSaved |  |
+| doc-saving-as.\* | Application.DocumentSavingAs |  |
+| doc-saving.\* | Application.DocumentSaving |  |
+| doc-synced.\* | Application.DocumentSynchronizedWithCentral |  |
+| doc-syncing.\* | Application.DocumentSynchronizingWithCentral |  |
+| doc-worksharing-enabled.\* | Application.DocumentWorksharingEnabled |  |
+| dock-focus-changed.\* | UIApplication.DockableFrameFocusChanged |  |
+| dock-visibility-changed.\* | UIApplication.DockableFrameVisibilityChanged |  |
+| fabparts-browser-changed.\* | UIApplication.FabricationPartBrowserChanged |  |
+| failure-processing.\* | Application.FailuresProcessing |  |
+| family-loaded.\* | Application.FamilyLoadedIntoDocument |  |
+| family-loading.\* | Application.FamilyLoadingIntoDocument |  |
+| file-exported.\* | Application.FileExported |  |
+| file-exporting.\* | Application.FileExporting |  |
+| file-imported.\* | Application.FileImported |  |
+| file-importing.\* | Application.FileImporting |  |
+| formula-editing.\* | UIApplication.FormulaEditing |  |
+| link-opened.\* | Application.LinkedResourceOpened |  |
+| link-opening.\* | Application.LinkedResourceOpening |  |
+| progress-changed.\* | Application.ProgressChanged | Fires a lot and reduces performance. Use only when absolutely needed. |
+| transferred-project-standards.\* | UIApplication.TransferredProjectStandards |  |
+| transferring-project-standards.\* | UIApplication.TransferringProjectStandards |  |
+| type-duplicated.\* | Application.ElementTypeDuplicated |  |
+| type-duplicating.\* | Application.ElementTypeDuplicating |  |
+| view-activated.\* | UIApplication.ViewActivated |  |
+| view-activating.\* | UIApplication.ViewActivating |  |
+| view-exported.\* | Application.ViewExported |  |
+| view-exporting.\* | Application.ViewExporting |  |
+| view-printed.\* | Application.ViewPrinted |  |
+| view-printing.\* | Application.ViewPrinting |  |
+| worksharing-ops-progress-changed.\* | Application.WorksharedOperationProgressChanged |  |
+| command-before-exec\[\<cmd-id\>\].\* | AddInCommandBinding.BeforeExecuted | Executed before the original command is executed.<br>**See Notes** |
+| command-can-exec\[\<cmd-id\>\].\* | AddInCommandBinding.CanExecute | Executed when Revit needs to know whether a tool is available in the GUI or not. **See Notes** |
+| command-exec\[\<cmd-id\>\].\* | AddInCommandBinding.Executed | Overrides the normal function of the tool |
+| journal-updated.\* | N/A (This is a pyRevit-provided hook) | Executed when the current Journal is updated.<br>**See Notes** |
+| doc-updater.\* | N/A (This is a pyRevit-provided hook) |  |
+| journal-command-exec.\* | N/A (This is a pyRevit-provided hook) | Executed when a new command execution is detected in the journal file. **See Notes** |
 
 !!! tip ""
 
@@ -82,7 +78,7 @@ Read the guide below for information on how to write hook scripts
 
 !!! tip ""
 
-    The examples here are all part of the `pyRevitDevHooks.extension` (Part of the BASEEX deployment. See [Deployments](../../teams/deployments.md) )
+    The examples here are all part of the `pyRevitDevHooks.extension` (part of the `basex` deployment, see [Deployments](../../teams/deployments.md))
 
 ## Python Hook Scripts
 
@@ -122,7 +118,7 @@ See the Revit API documentation for the event argument types provided by `EXEC_P
 
     pyRevit caches the IronPython engine that is used for event hooks. Reload pyRevit if you are making changes to the modules being imported by the hook scripts to refresh the IronPython engine
 
-The IronPython hook scripts are almost identical to
+IronPython hook scripts are written like any other IronPython script.
 
 ```python
 from pyrevit import EXEC_PARAMS

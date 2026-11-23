@@ -6,10 +6,6 @@
 
 UI Extension Bundles can define a startup script in their root directory. This script gets executed once when pyRevit is first starting and on every reload. You can use these scripts to set up your development or user environment. The current implementation supports IronPython, CPython, C#, and VB.Net scripts.
 
-See this page for more information
-
-- Anatomy of Extension Startup Script
-
 !!! warning ""
 
     For setting up your own event handlers, its suggested to use [Extension Hooks/](hooks.md)  
