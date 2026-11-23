@@ -10607,10 +10607,6 @@
 
 <h1 id="cli">CLI</h1>
 <p><code>pyrevit</code> is the command-line tool, developed specifically to install and configure pyRevit in your production/development environment. There is a lot of commands and options available in the CLI tool. This document will guide you in using these commands and options based on what you’re trying to achieve. Each section below showcases a specific set of functionality of the command-line tool.</p>
-<p>This pages shows how to get help, check CLI version, and redirect command results to log file</p>
-<ul>
-<li>Help, Version, &amp; Logs</li>
-</ul>
 <h2 id="environment-management">Environment Management</h2>
 <ul>
 <li><a href="environment/">Get Environment Info</a></li>
@@ -10624,7 +10620,6 @@
 <ul>
 <li><a href="run/">Batch Process Revit Models</a></li>
 <li><a href="revits/">Manage Installed Revit</a></li>
-<li><a href="revits/">Extract Model Metadata</a></li>
 <li><a href="releases/">Get Release Info</a></li>
 </ul>
 <p>List the help for each command,<br />
@@ -10637,14 +10632,13 @@ by adding the <code>--help</code> flag</p>
 </span></code></pre></div>
 <p>To access a variety of online resource, use these commands</p>
 <div class="language-powershell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">wiki</span>      <span class="c"># pyRevit wiki page</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">blog</span>      <span class="c"># pyRevit blog page</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">docs</span>      <span class="c"># pyRevit documentation</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">source</span>    <span class="c"># pyRevit source code</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">youtube</span>   <span class="c"># pyRevit YouTube channel</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">support</span>   <span class="c"># pyRevit suppport page for pyRevit patrons</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">docs</span>      <span class="c"># pyRevit documentation</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">source</span>    <span class="c"># pyRevit source code</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">youtube</span>   <span class="c"># pyRevit YouTube channel</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">support</span>   <span class="c"># pyRevit suppport page for pyRevit patrons</span>
 </span></code></pre></div>
 <p>With most commands you can log the complete results to a log file using the <code>--log=</code> option</p>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">clone</span> <span class="n">master</span> <span class="p">-</span><span class="n">-log</span><span class="p">=</span><span class="s2">"C:\logfile.txt"</span>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">clones</span> <span class="n">update</span> <span class="p">-</span><span class="n">-all</span> <span class="p">-</span><span class="n">-log</span><span class="p">=</span><span class="s2">"C:\logfile.txt"</span>
 </span></code></pre></div>
 <h2 id="pages-in-this-section">Pages in this section</h2>
 <ul>

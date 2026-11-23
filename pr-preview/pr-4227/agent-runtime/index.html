@@ -12081,6 +12081,7 @@ explicit user actions, so the agent can read the sequence that led to a bug.</p>
 </span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>record<span class="w"> </span>status
 </span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>recordings<span class="w"> </span><span class="o">[</span>--limit<span class="o">=</span>&lt;count&gt;<span class="o">]</span>
 </span></code></pre></div>
+<p>The options take numbers in these ranges: <code>--screenshot-interval</code> 0 to 3600 seconds (<code>0</code> allows a screenshot at every opportunity until <code>--max-screenshots</code> is reached), <code>--max-screenshots</code> 0 to 100 (<code>0</code> takes none), <code>--max-events</code> 1 to 20000 and <code>--max-duration</code> 1 to 14400 seconds. All but the interval must be whole numbers. A value that is not a number or is outside its range is refused with the option's name.</p>
 <p>The user starts a recording, reproduces the problem and stops it. Then the agent calls
 <code>get_recording</code> (with <code>recording_id</code>, <code>offset</code> and <code>limit</code> to page the timeline). There is no
 always-on mode: nothing is captured outside a recording, and every hook is a no-op then. It needs

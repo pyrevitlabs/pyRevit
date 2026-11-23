@@ -2322,30 +2322,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#environment-data" class="md-nav__link">
+  <a href="#environment-data-as-json" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Environment Data
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Environment Data">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example
+        Environment data as JSON
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#sharing-the-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sharing the report
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-path-entry-of-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The PATH entry of the CLI
+      
+    </span>
+  </a>
   
 </li>
       
@@ -10730,30 +10735,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#environment-data" class="md-nav__link">
+  <a href="#environment-data-as-json" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Environment Data
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Environment Data">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example
+        Environment data as JSON
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#sharing-the-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sharing the report
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-path-entry-of-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The PATH entry of the CLI
+      
+    </span>
+  </a>
   
 </li>
       
@@ -10826,32 +10836,29 @@
 
 
 <h1 id="environment-info">Environment info</h1>
-<p>Use <code>env</code> command to get info about the current <code>pyrevit</code> environment:</p>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">pyrevit</span> <span class="n">env</span>
+<p>Use the <code>env</code> command to get a report about the current pyRevit environment. It is the first thing to attach to a bug report.</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">pyrevit</span> <span class="n">env</span> <span class="p">[-</span><span class="n">-json</span><span class="p">]</span> <span class="p">[-</span><span class="n">-redact</span><span class="p">]</span> <span class="p">[-</span><span class="n">-log</span><span class="p">=&lt;</span><span class="n">log_file</span><span class="p">&gt;]</span>
 </span></code></pre></div>
+<p>The report has one block per topic. Values between <code>&lt;</code> and <code>&gt;</code> below stand for your own.</p>
 <h4 id="registered-clones">Registered Clones</h4>
-<p>The command shows a list of registered clones (deployed or full git repositories). <code>dev</code> is the name of the registered clone in the example below.</p>
+<p>The registered clones, full git repositories and deployed copies separately. <code>dev</code> and <code>main</code> are the clone names in this example.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>==&gt; Registered Clones (full git repos)
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>dev | Branch: "develop/newexec" | Version: "4.7-beta:0ed38ee" | Path: "C:\pyRevit"
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>dev | Branch: "develop" | Version: "&lt;version&gt;" | Path: "C:\pyRevit\dev"
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>==&gt; Registered Clones (deployed from archive/image)
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>main | Deploy: "base" | Branch: "master" | Version: "&lt;version&gt;" | Path: "C:\pyRevit\main"
 </span></code></pre></div>
 <h4 id="attachments">Attachments</h4>
-<p>The command shows pyRevit attachments to installed Revits. <code>dev</code> is the name of the attached clone in the example below.</p>
+<p>Which clone and engine each installed Revit loads.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>==&gt; Attachments
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>dev | Product: "2020.1 Update" | Engine: 277 | Path: "C:\pyRevit" | Manifest: "C:\Users\pyrevitlabs\AppData\Roaming\Autodesk\Revit\Addins\2020\pyRevit.addin"
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>dev | Product: "2019.2.2 Hotfix" | Engine: 277 | Path: "C:\pyRevit" | Manifest: "C:\Users\pyrevitlabs\AppData\Roaming\Autodesk\Revit\Addins\2019\pyRevit.addin"
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>dev | Product: "2018.3.3 Security Fix" | Engine: 277 | Path: "C:\pyRevit" | Manifest: "C:\Users\pyrevitlabs\AppData\Roaming\Autodesk\Revit\Addins\2018\pyRevit.addin"
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>dev | Product: "2017.2.5 Security Fix" | Engine: 277 | Path: "C:\pyRevit" | Manifest: "C:\Users\pyrevitlabs\AppData\Roaming\Autodesk\Revit\Addins\2017\pyRevit.addin"
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>dev | Product: "2016.1.9 Security Fix" | Engine: 277 | Path: "C:\pyRevit" | Manifest: "C:\Users\pyrevitlabs\AppData\Roaming\Autodesk\Revit\Addins\2016\pyRevit.addin"
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>dev | Product: "2014 First Customer Ship" | Engine: 277 | Path: "C:\pyRevit" | Manifest: "C:\Users\pyrevitlabs\AppData\Roaming\Autodesk\Revit\Addins\2014\pyRevit.addin"
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>dev | Product: "&lt;Revit product name&gt;" | Engine: IPY2712PR (2712) | Path: "C:\pyRevit\dev"
 </span></code></pre></div>
 <h4 id="extensions">Extensions</h4>
-<p>The command shows a list of installed extensions, search paths, and lookup sources.</p>
+<p>The installed extensions, the search paths and the lookup sources.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>==&gt; Installed Extensions
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>==&gt; Default Extension Search Path
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>C:\Users\pyrevitlabs\AppData\Roaming\pyRevit\Extensions
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>C:\Users\&lt;user&gt;\AppData\Roaming\pyRevit\Extensions
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>==&gt; Extension Search Paths
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
@@ -10861,138 +10868,45 @@
 </span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>==&gt; Extension Sources - Additional
 </span></code></pre></div>
 <h4 id="installed-revit">Installed Revit</h4>
-<p>The command shows a list of installed Revit versions and running Revit instances</p>
+<p>The installed Revit versions and the running Revit instances.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>==&gt; Installed Revits
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>2020.1 Update | Version: 20.1.0.81 | Build: 20190725_1135(x64) | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2020"
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>2019.2.2 Hotfix | Version: 19.2.20.24 | Build: 20190808_0900(x64) | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2019"
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>2018.3.3 Security Fix | Version: 18.3.3.18 | Build: 20190510_1515(x64) | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2018"
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>2017.2.5 Security Fix | Version: 17.0.1169.0 | Build: 20190508_0315(x64) | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2017"
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>2016.1.9 Security Fix | Version: 16.0.1218.0 | Build: 20190508_0715(x64) | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2016"
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>2014 First Customer Ship | Version: 13.3.8151 | Build: 20130308_1515(x64) | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2014"
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>==&gt; Running Revit Instances
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>PID: 27532 | 2019.2.2 Hotfix | Version: 19.2.20.24 | Build: 20190808_0900(x64) | Language: 0 | Path: "C:\Program Files\Autodesk\Revit 2019"
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>&lt;Revit product name&gt; | Version: &lt;version&gt; | Build: &lt;build&gt;(&lt;target&gt;) | Language: &lt;language code&gt; | Path: "C:\Program Files\Autodesk\Revit &lt;year&gt;"
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>==&gt; Running Revit Instances
 </span></code></pre></div>
 <h4 id="user-environment">User Environment</h4>
-<p>The command shows a series of useful information about the user environment</p>
+<p>The Windows version, the user, the install scope and configuration file in use, and the installed .NET versions.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>==&gt; User Environment
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>Microsoft Windows 10 [Version 10.0.18362]
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>Executing User: **\pyrevitlabs
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>Active User: **\pyrevitlabs
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>Adming Access: Yes
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>%APPDATA%: "C:\Users\pyrevitlabs\AppData\Roaming"
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>Latest Installed .Net Framework: 4.8
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>Installed .Net Target Packs: v3.5 v4.0 v4.5 v4.5.1 v4.5.2 v4.6 v4.6.1 v4.7.1 v4.7.2 v4.X
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>Installed .Net-Core Target Packs: v2.1.401 v2.1.402 v2.1.403 v2.1.500 v2.1.502 v2.1.503 v2.1.504 v2.1.505 v2.1.507 v2.1.508
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>pyRevit CLI 0.14.0.0
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>&lt;Windows version&gt;
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>Executing User: &lt;domain&gt;\&lt;user&gt;
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>Active User: &lt;domain&gt;\&lt;user&gt;
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>Admin Access: No
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>Install Scope: PerUser
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>Active Config: "&lt;path of pyRevit_config.ini&gt;"
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>%APPDATA%: "C:\Users\&lt;user&gt;\AppData\Roaming"
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>Latest Installed .Net Framework: &lt;version&gt;
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>Installed .Net Target Packs: &lt;versions&gt;
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>Installed .Net-Core Target Packs: &lt;versions&gt;
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>Active CPython Engine Version: &lt;engine id&gt;
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>pyRevit CLI v&lt;version&gt;
 </span></code></pre></div>
-<h2 id="environment-data">Environment Data</h2>
-<p>The environment information can also be exported into JSON</p>
+<h2 id="environment-data-as-json">Environment data as JSON</h2>
 <div class="language-powershell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">pyrevit</span> <span class="n">env</span> <span class="p">-</span><span class="n">-json</span>
 </span></code></pre></div>
-<h4 id="example">Example</h4>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="nt">"meta"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">      </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.1.0"</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="p">},</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="nt">"clones"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">      </span><span class="p">{</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dev"</span><span class="p">,</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">        </span><span class="nt">"clonePath"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Users\\eirannejad\\Desktop\\gits\\pyRevitDev"</span><span class="p">,</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">        </span><span class="nt">"extensionsPath"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Users\\eirannejad\\Desktop\\gits\\pyRevitDev\\extensions"</span><span class="p">,</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">        </span><span class="nt">"isRepoDeploy"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">        </span><span class="nt">"isValid"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">        </span><span class="nt">"hasDeployments"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">        </span><span class="nt">"moduleVersion"</span><span class="p">:</span><span class="w"> </span><span class="s2">"4.7-beta"</span><span class="p">,</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">        </span><span class="nt">"branch"</span><span class="p">:</span><span class="w"> </span><span class="s2">"develop/newexec"</span><span class="p">,</span>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">        </span><span class="nt">"commit"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0ed38ee4e58a3da5c3bf08eaffca58fbd6fcb1a1"</span><span class="p">,</span>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">        </span><span class="nt">"shortCommit"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0ed38ee"</span><span class="p">,</span>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">        </span><span class="nt">"origin"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://github.com/pyrevitlabs/pyRevit.git"</span>
-</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">      </span><span class="p">}</span>
-</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">    </span><span class="p">],</span>
-</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">    </span><span class="nt">"attachments"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">      </span><span class="p">{</span>
-</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="w">        </span><span class="nt">"manifest"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="w">          </span><span class="nt">"filePath"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Users\\eirannejad\\AppData\\Roaming\\Autodesk\\Revit\\Addins\\2020\\pyRevit.addin"</span><span class="p">,</span>
-</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PyRevitLoader"</span><span class="p">,</span>
-</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="w">          </span><span class="nt">"assembly"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Users\\eirannejad\\Desktop\\gits\\pyRevitDev\bin\\engines\\277\\pyRevitLoader.dll"</span><span class="p">,</span>
-</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="w">          </span><span class="nt">"addInId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"B39107C3-A1D7-47F4-A5A1-532DDF6EDB5D"</span><span class="p">,</span>
-</span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="w">          </span><span class="nt">"fullClassName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PyRevitLoader.PyRevitLoaderApplication"</span><span class="p">,</span>
-</span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="w">          </span><span class="nt">"vendorId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"eirannejad"</span>
-</span><span id="__span-7-29"><a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a><span class="w">        </span><span class="p">},</span>
-</span><span id="__span-7-30"><a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a><span class="w">        </span><span class="nt">"product"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-7-31"><a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a><span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2020.1 Update"</span><span class="p">,</span>
-</span><span id="__span-7-32"><a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a><span class="w">          </span><span class="nt">"productYear"</span><span class="p">:</span><span class="w"> </span><span class="mi">2020</span><span class="p">,</span>
-</span><span id="__span-7-33"><a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a><span class="w">          </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"20.1.0.81"</span><span class="p">,</span>
-</span><span id="__span-7-34"><a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a><span class="w">          </span><span class="nt">"buildNumber"</span><span class="p">:</span><span class="w"> </span><span class="s2">"20190725_1135"</span><span class="p">,</span>
-</span><span id="__span-7-35"><a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a><span class="w">          </span><span class="nt">"buildTarget"</span><span class="p">:</span><span class="w"> </span><span class="s2">"x64"</span><span class="p">,</span>
-</span><span id="__span-7-36"><a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a><span class="w">          </span><span class="nt">"defaultInstallLocation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Program Files"</span><span class="p">,</span>
-</span><span id="__span-7-37"><a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a><span class="w">          </span><span class="nt">"installLocation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Program Files\\Autodesk\\Revit 2020"</span><span class="p">,</span>
-</span><span id="__span-7-38"><a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a><span class="w">          </span><span class="nt">"executiveLocation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Program Files\\Autodesk\\Revit 2020\\Revit.exe"</span><span class="p">,</span>
-</span><span id="__span-7-39"><a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a><span class="w">          </span><span class="nt">"languageCode"</span><span class="p">:</span><span class="w"> </span><span class="mi">1033</span>
-</span><span id="__span-7-40"><a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a><span class="w">        </span><span class="p">},</span>
-</span><span id="__span-7-41"><a id="__codelineno-7-41" name="__codelineno-7-41" href="#__codelineno-7-41"></a><span class="w">        </span><span class="nt">"attachmentType"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-7-42"><a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a><span class="w">        </span><span class="nt">"clone"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-7-43"><a id="__codelineno-7-43" name="__codelineno-7-43" href="#__codelineno-7-43"></a><span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dev"</span><span class="p">,</span>
-</span><span id="__span-7-44"><a id="__codelineno-7-44" name="__codelineno-7-44" href="#__codelineno-7-44"></a><span class="w">          </span><span class="nt">"clonePath"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Users\\eirannejad\\Desktop\\gits\\pyRevitDev"</span><span class="p">,</span>
-</span><span id="__span-7-45"><a id="__codelineno-7-45" name="__codelineno-7-45" href="#__codelineno-7-45"></a><span class="w">          </span><span class="nt">"extensionsPath"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Users\\eirannejad\\Desktop\\gits\\pyRevitDev\\extensions"</span><span class="p">,</span>
-</span><span id="__span-7-46"><a id="__codelineno-7-46" name="__codelineno-7-46" href="#__codelineno-7-46"></a><span class="w">          </span><span class="nt">"isRepoDeploy"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-7-47"><a id="__codelineno-7-47" name="__codelineno-7-47" href="#__codelineno-7-47"></a><span class="w">          </span><span class="nt">"isValid"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-7-48"><a id="__codelineno-7-48" name="__codelineno-7-48" href="#__codelineno-7-48"></a><span class="w">          </span><span class="nt">"hasDeployments"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-7-49"><a id="__codelineno-7-49" name="__codelineno-7-49" href="#__codelineno-7-49"></a><span class="w">          </span><span class="nt">"moduleVersion"</span><span class="p">:</span><span class="w"> </span><span class="s2">"4.7-beta"</span><span class="p">,</span>
-</span><span id="__span-7-50"><a id="__codelineno-7-50" name="__codelineno-7-50" href="#__codelineno-7-50"></a><span class="w">          </span><span class="nt">"branch"</span><span class="p">:</span><span class="w"> </span><span class="s2">"develop/newexec"</span><span class="p">,</span>
-</span><span id="__span-7-51"><a id="__codelineno-7-51" name="__codelineno-7-51" href="#__codelineno-7-51"></a><span class="w">          </span><span class="nt">"commit"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0ed38ee4e58a3da5c3bf08eaffca58fbd6fcb1a1"</span><span class="p">,</span>
-</span><span id="__span-7-52"><a id="__codelineno-7-52" name="__codelineno-7-52" href="#__codelineno-7-52"></a><span class="w">          </span><span class="nt">"shortCommit"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0ed38ee"</span><span class="p">,</span>
-</span><span id="__span-7-53"><a id="__codelineno-7-53" name="__codelineno-7-53" href="#__codelineno-7-53"></a><span class="w">          </span><span class="nt">"origin"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://github.com/pyrevitlabs/pyRevit.git"</span>
-</span><span id="__span-7-54"><a id="__codelineno-7-54" name="__codelineno-7-54" href="#__codelineno-7-54"></a><span class="w">        </span><span class="p">},</span>
-</span><span id="__span-7-55"><a id="__codelineno-7-55" name="__codelineno-7-55" href="#__codelineno-7-55"></a><span class="w">        </span><span class="nt">"engine"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-7-56"><a id="__codelineno-7-56" name="__codelineno-7-56" href="#__codelineno-7-56"></a><span class="w">          </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">277</span><span class="p">,</span>
-</span><span id="__span-7-57"><a id="__codelineno-7-57" name="__codelineno-7-57" href="#__codelineno-7-57"></a><span class="w">          </span><span class="nt">"runtime"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-7-58"><a id="__codelineno-7-58" name="__codelineno-7-58" href="#__codelineno-7-58"></a><span class="w">          </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Users\\eirannejad\\Desktop\\gits\\pyRevitDev\bin\\engines\\277"</span><span class="p">,</span>
-</span><span id="__span-7-59"><a id="__codelineno-7-59" name="__codelineno-7-59" href="#__codelineno-7-59"></a><span class="w">          </span><span class="nt">"assemblyName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pyRevitLoader.dll"</span><span class="p">,</span>
-</span><span id="__span-7-60"><a id="__codelineno-7-60" name="__codelineno-7-60" href="#__codelineno-7-60"></a><span class="w">          </span><span class="nt">"kernelName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"IronPython"</span><span class="p">,</span>
-</span><span id="__span-7-61"><a id="__codelineno-7-61" name="__codelineno-7-61" href="#__codelineno-7-61"></a><span class="w">          </span><span class="nt">"assemblyPath"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Users\\eirannejad\\Desktop\\gits\\pyRevitDev\bin\\engines\\277\\pyRevitLoader.dll"</span><span class="p">,</span>
-</span><span id="__span-7-62"><a id="__codelineno-7-62" name="__codelineno-7-62" href="#__codelineno-7-62"></a><span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Compatible with RevitPythonShell"</span><span class="p">,</span>
-</span><span id="__span-7-63"><a id="__codelineno-7-63" name="__codelineno-7-63" href="#__codelineno-7-63"></a><span class="w">          </span><span class="nt">"compatibleProducts"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
-</span><span id="__span-7-64"><a id="__codelineno-7-64" name="__codelineno-7-64" href="#__codelineno-7-64"></a><span class="w">        </span><span class="p">},</span>
-</span><span id="__span-7-65"><a id="__codelineno-7-65" name="__codelineno-7-65" href="#__codelineno-7-65"></a><span class="w">        </span><span class="nt">"allUsers"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-</span><span id="__span-7-66"><a id="__codelineno-7-66" name="__codelineno-7-66" href="#__codelineno-7-66"></a><span class="w">      </span><span class="p">}</span>
-</span><span id="__span-7-67"><a id="__codelineno-7-67" name="__codelineno-7-67" href="#__codelineno-7-67"></a><span class="w">    </span><span class="p">],</span>
-</span><span id="__span-7-68"><a id="__codelineno-7-68" name="__codelineno-7-68" href="#__codelineno-7-68"></a><span class="w">    </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-</span><span id="__span-7-69"><a id="__codelineno-7-69" name="__codelineno-7-69" href="#__codelineno-7-69"></a><span class="w">    </span><span class="nt">"searchPaths"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"C:\\Users\\eirannejad\\AppData\\Roaming\\pyRevit\\Extensions"</span><span class="p">],</span>
-</span><span id="__span-7-70"><a id="__codelineno-7-70" name="__codelineno-7-70" href="#__codelineno-7-70"></a><span class="w">    </span><span class="nt">"lookupSources"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"https://github.com/pyrevitlabs/pyRevit/raw/master/extensions/extensions.json"</span><span class="p">],</span>
-</span><span id="__span-7-71"><a id="__codelineno-7-71" name="__codelineno-7-71" href="#__codelineno-7-71"></a><span class="w">    </span><span class="nt">"installed"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-7-72"><a id="__codelineno-7-72" name="__codelineno-7-72" href="#__codelineno-7-72"></a><span class="w">      </span><span class="p">{</span>
-</span><span id="__span-7-73"><a id="__codelineno-7-73" name="__codelineno-7-73" href="#__codelineno-7-73"></a><span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2020.1 Update"</span><span class="p">,</span>
-</span><span id="__span-7-74"><a id="__codelineno-7-74" name="__codelineno-7-74" href="#__codelineno-7-74"></a><span class="w">        </span><span class="nt">"productYear"</span><span class="p">:</span><span class="w"> </span><span class="mi">2020</span><span class="p">,</span>
-</span><span id="__span-7-75"><a id="__codelineno-7-75" name="__codelineno-7-75" href="#__codelineno-7-75"></a><span class="w">        </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"20.1.0.81"</span><span class="p">,</span>
-</span><span id="__span-7-76"><a id="__codelineno-7-76" name="__codelineno-7-76" href="#__codelineno-7-76"></a><span class="w">        </span><span class="nt">"buildNumber"</span><span class="p">:</span><span class="w"> </span><span class="s2">"20190725_1135"</span><span class="p">,</span>
-</span><span id="__span-7-77"><a id="__codelineno-7-77" name="__codelineno-7-77" href="#__codelineno-7-77"></a><span class="w">        </span><span class="nt">"buildTarget"</span><span class="p">:</span><span class="w"> </span><span class="s2">"x64"</span><span class="p">,</span>
-</span><span id="__span-7-78"><a id="__codelineno-7-78" name="__codelineno-7-78" href="#__codelineno-7-78"></a><span class="w">        </span><span class="nt">"defaultInstallLocation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Program Files"</span><span class="p">,</span>
-</span><span id="__span-7-79"><a id="__codelineno-7-79" name="__codelineno-7-79" href="#__codelineno-7-79"></a><span class="w">        </span><span class="nt">"installLocation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Program Files\\Autodesk\\Revit 2020"</span><span class="p">,</span>
-</span><span id="__span-7-80"><a id="__codelineno-7-80" name="__codelineno-7-80" href="#__codelineno-7-80"></a><span class="w">        </span><span class="nt">"executiveLocation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Program Files\\Autodesk\\Revit 2020\\Revit.exe"</span><span class="p">,</span>
-</span><span id="__span-7-81"><a id="__codelineno-7-81" name="__codelineno-7-81" href="#__codelineno-7-81"></a><span class="w">        </span><span class="nt">"languageCode"</span><span class="p">:</span><span class="w"> </span><span class="mi">1033</span>
-</span><span id="__span-7-82"><a id="__codelineno-7-82" name="__codelineno-7-82" href="#__codelineno-7-82"></a><span class="w">      </span><span class="p">}</span>
-</span><span id="__span-7-83"><a id="__codelineno-7-83" name="__codelineno-7-83" href="#__codelineno-7-83"></a><span class="w">    </span><span class="p">],</span>
-</span><span id="__span-7-84"><a id="__codelineno-7-84" name="__codelineno-7-84" href="#__codelineno-7-84"></a><span class="w">    </span><span class="nt">"running"</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-</span><span id="__span-7-85"><a id="__codelineno-7-85" name="__codelineno-7-85" href="#__codelineno-7-85"></a><span class="w">    </span><span class="nt">"pyrevitDataDir"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Users\\eirannejad\\AppData\\Roaming\\pyRevit"</span><span class="p">,</span>
-</span><span id="__span-7-86"><a id="__codelineno-7-86" name="__codelineno-7-86" href="#__codelineno-7-86"></a><span class="w">    </span><span class="nt">"userEnv"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-7-87"><a id="__codelineno-7-87" name="__codelineno-7-87" href="#__codelineno-7-87"></a><span class="w">      </span><span class="nt">"osVersion"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Microsoft Windows 10 [Version 10.0.18362]"</span><span class="p">,</span>
-</span><span id="__span-7-88"><a id="__codelineno-7-88" name="__codelineno-7-88" href="#__codelineno-7-88"></a><span class="w">      </span><span class="nt">"execUser"</span><span class="p">:</span><span class="w"> </span><span class="s2">"**\\eirannejad"</span><span class="p">,</span>
-</span><span id="__span-7-89"><a id="__codelineno-7-89" name="__codelineno-7-89" href="#__codelineno-7-89"></a><span class="w">      </span><span class="nt">"activeUser"</span><span class="p">:</span><span class="w"> </span><span class="s2">"**\\eirannejad"</span><span class="p">,</span>
-</span><span id="__span-7-90"><a id="__codelineno-7-90" name="__codelineno-7-90" href="#__codelineno-7-90"></a><span class="w">      </span><span class="nt">"isAdmin"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-7-91"><a id="__codelineno-7-91" name="__codelineno-7-91" href="#__codelineno-7-91"></a><span class="w">      </span><span class="nt">"userAppdata"</span><span class="p">:</span><span class="w"> </span><span class="s2">"C:\\Users\\eirannejad\\AppData\\Roaming"</span><span class="p">,</span>
-</span><span id="__span-7-92"><a id="__codelineno-7-92" name="__codelineno-7-92" href="#__codelineno-7-92"></a><span class="w">      </span><span class="nt">"latestFramework"</span><span class="p">:</span><span class="w"> </span><span class="s2">"4.8"</span><span class="p">,</span>
-</span><span id="__span-7-93"><a id="__codelineno-7-93" name="__codelineno-7-93" href="#__codelineno-7-93"></a><span class="w">      </span><span class="nt">"targetPacks"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-7-94"><a id="__codelineno-7-94" name="__codelineno-7-94" href="#__codelineno-7-94"></a><span class="w">        </span><span class="s2">"C:\\Program Files (x86)\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework3.5"</span><span class="p">,</span>
-</span><span id="__span-7-95"><a id="__codelineno-7-95" name="__codelineno-7-95" href="#__codelineno-7-95"></a><span class="w">        </span><span class="s2">"C:\\Program Files (x86)\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework4.0"</span><span class="p">,</span>
-</span><span id="__span-7-96"><a id="__codelineno-7-96" name="__codelineno-7-96" href="#__codelineno-7-96"></a><span class="w">        </span><span class="s2">"C:\\Program Files (x86)\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework4.7.2"</span><span class="p">,</span>
-</span><span id="__span-7-97"><a id="__codelineno-7-97" name="__codelineno-7-97" href="#__codelineno-7-97"></a><span class="w">      </span><span class="p">],</span>
-</span><span id="__span-7-98"><a id="__codelineno-7-98" name="__codelineno-7-98" href="#__codelineno-7-98"></a><span class="w">      </span><span class="nt">"targetPacksCore"</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-</span><span id="__span-7-99"><a id="__codelineno-7-99" name="__codelineno-7-99" href="#__codelineno-7-99"></a><span class="w">      </span><span class="nt">"cliVersion"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.14.0.0"</span>
-</span><span id="__span-7-100"><a id="__codelineno-7-100" name="__codelineno-7-100" href="#__codelineno-7-100"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-7-101"><a id="__codelineno-7-101" name="__codelineno-7-101" href="#__codelineno-7-101"></a><span class="w">  </span><span class="p">}</span>
+<p>prints the same information as JSON, with these top-level keys: <code>meta</code>, <code>clones</code>, <code>attachments</code>, <code>extensions</code>, <code>searchPaths</code>, <code>lookupSources</code>, <code>installed</code>, <code>running</code>, <code>pyrevitDataDir</code>, <code>activeCpythonEngineVersion</code> and <code>userEnv</code>.</p>
+<h2 id="sharing-the-report">Sharing the report</h2>
+<p>The report contains your user name and local paths. Add <code>--redact</code> to mask user names, user profile folders, server names and Git URLs before you post the report in an issue. The masking is best effort: it cannot know that a folder name or a repository path is confidential, so read the result before you share it:</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">pyrevit</span> <span class="n">env</span> <span class="p">-</span><span class="n">-redact</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">pyrevit</span> <span class="n">env</span> <span class="p">-</span><span class="n">-json</span> <span class="p">-</span><span class="n">-redact</span>
 </span></code></pre></div>
+<h2 id="the-path-entry-of-the-cli">The PATH entry of the CLI</h2>
+<p><code>pyrevit env path</code> inspects and repairs the <code>PATH</code> entry that makes the <code>pyrevit</code> command available:</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">pyrevit</span> <span class="n">env</span> <span class="n">path</span> <span class="n">list</span> <span class="p">[-</span><span class="n">-scope</span><span class="p">=&lt;</span><span class="n">scope</span><span class="p">&gt;]</span>             <span class="c"># list the PATH entries</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">pyrevit</span> <span class="n">env</span> <span class="n">path</span> <span class="n">which</span>                              <span class="c"># show which pyrevit the command prompt runs</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">pyrevit</span> <span class="n">env</span> <span class="n">path</span> <span class="n">ensure</span> <span class="p">&lt;</span><span class="n">dir</span><span class="p">&gt;</span> <span class="p">[-</span><span class="n">-scope</span><span class="p">=&lt;</span><span class="n">scope</span><span class="p">&gt;]</span> <span class="p">[-</span><span class="n">-first</span><span class="p">]</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">pyrevit</span> <span class="n">env</span> <span class="n">path</span> <span class="n">remove</span> <span class="p">&lt;</span><span class="n">dir</span><span class="p">&gt;</span> <span class="p">[-</span><span class="n">-scope</span><span class="p">=&lt;</span><span class="n">scope</span><span class="p">&gt;]</span>
+</span></code></pre></div>
+<p><code>--scope</code> is <code>user</code> (the default) or <code>machine</code>. <code>--first</code> makes <code>&lt;dir&gt;</code> the first entry of that <code>PATH</code>.</p>
 
 
 

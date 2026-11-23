@@ -10977,7 +10977,7 @@
 </span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">get_option</span><span class="p">(</span><span class="s1">'firstparam'</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
 </span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>        <span class="n">do_task_A</span><span class="p">()</span>
 </span></code></pre></div>
-<p>These configs are saved into the pyRevit’s user configuration file, alongside pyRevit's internal configs and the configurations for other tools. The configs for your tool will be saved under their own config section. A section can also be defined as <code>script.get_config(”MySection”)</code> to be reused for multiple tools.</p>
+<p>These configs are saved into the pyRevit’s user configuration file, alongside pyRevit's internal configs and the configurations for other tools. The configs for your tool will be saved under their own config section. A section can also be defined as <code>script.get_config("MySection")</code> to be reused for multiple tools.</p>
 <p>The example below shows the configs for the <strong><em>Match</em></strong> tool (partial). Note that all the options are saved under the <code>[Match_config]</code> config section that belongs to the <strong><em>Match</em></strong> tool.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>[Match_config]
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>halftone = true
@@ -10994,7 +10994,7 @@
 </span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>...
 </span></code></pre></div>
 <p>If multiple parameters of different types have to be configured, the <code>settings_window</code> library can be used to avoid having to build a UI for that. It will dynamically generate a window based on the chosen setting types. Currently the following types are supported:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>"bool", "choice", "int", "float", "string", "color", "folder", or "file”
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>"bool", "choice", "int", "float", "string", "color", "folder", or "file"
 </span></code></pre></div>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit.forms</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings_window</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
@@ -11027,13 +11027,14 @@
 </span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Orange</span>
 </span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Apple</span>
 </span></code></pre></div>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit.forms</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings_window</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit.coreutils.yaml</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_as_dict</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">settings_in_yaml</span> <span class="o">=</span> <span class="n">load_as_dict</span><span class="p">(</span><span class="n">script</span><span class="o">.</span><span class="n">get_bundle_file</span><span class="p">(</span><span class="s2">"settings.yaml"</span><span class="p">))</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">settings</span> <span class="o">=</span> <span class="n">settings_in_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"settings"</span><span class="p">,</span> <span class="p">[])</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">settings_window</span><span class="o">.</span><span class="n">show_settings</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">script</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit.forms</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings_window</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit.coreutils.yaml</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_as_dict</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">settings_in_yaml</span> <span class="o">=</span> <span class="n">load_as_dict</span><span class="p">(</span><span class="n">script</span><span class="o">.</span><span class="n">get_bundle_file</span><span class="p">(</span><span class="s2">"settings.yaml"</span><span class="p">))</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">settings</span> <span class="o">=</span> <span class="n">settings_in_yaml</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"settings"</span><span class="p">,</span> <span class="p">[])</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">settings_window</span><span class="o">.</span><span class="n">show_settings</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="using-temporary-files">Using Temporary Files</h2>
 <p>Scripts can create four  different types of data files:</p>
@@ -11078,7 +11079,7 @@
 </span></code></pre></div>
 <h4 id="document-data-files">Document Data files</h4>
 <ul>
-<li>These files are marked by host Revit version and name of Active Project and could be shared between instances of host Revit version.</li>
+<li>These files are marked by host Revit version and the name of the active project, and could be shared between instances of host Revit version.</li>
 <li>Data files are saved in pyRevit’s appdata directory and are NOT cleaned  up when Revit restarts.</li>
 </ul>
 <div class="admonition warning">
@@ -11090,9 +11091,8 @@
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Method will return full path of the data file</span>
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">script</span><span class="o">.</span><span class="n">get_document_data_file</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">file_ext</span><span class="p">)</span>
 </span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1"># You can also pass a document object to get a data file for that</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="c1"># document (use document name in file naming)</span>
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="n">script</span><span class="o">.</span><span class="n">get_document_data_file</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">file_ext</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1"># add_cmd_name=True adds the command name to the file name</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="n">script</span><span class="o">.</span><span class="n">get_document_data_file</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">file_ext</span><span class="p">,</span> <span class="n">add_cmd_name</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="sending-custom-data-to-telemetry-server">Sending Custom Data to Telemetry Server</h2>
 <p>See <a href="../custom-telemetry/">Sending Custom Telemetry Data</a>  </p>

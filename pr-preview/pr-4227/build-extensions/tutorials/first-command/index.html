@@ -10889,7 +10889,7 @@ Why can’t I just add my scripts to the current pyRevit tools?
 <p><strong>Answer</strong></p>
 <div class="language-text highlight"><pre><span></span><code>By creating separate extension bundles, you will have all your precious scripts and tools in a safe place and away from the changes being made to the pyRevit core tools. Your extension bundles can even live somewhere on your company shared drives and be shared between your teams as well.
 </code></pre></div>
-<p>Let's create a folder under <code>~/Documents</code>. <code>~</code> means "user home directory". <a href="https://en.wikipedia.org/wiki/Tilde#Computing">It's a Unix convention</a>  and a special character in directory paths. We are going to use this convention on this wiki because it is simpler. But if you love Windows, you can use <code>%HOMEPATH%</code> instead e.g. <code>%HOMEPATH%/Documents</code>. See footnotes for more info.</p>
+<p>Let's create a folder under <code>~/Documents</code>. <code>~</code> means "user home directory". <a href="https://en.wikipedia.org/wiki/Tilde#Computing">It's a Unix convention</a>  and a special character in directory paths. We are going to use this convention in this guide because it is simpler. On Windows you can use <code>%USERPROFILE%</code> instead e.g. <code>%USERPROFILE%\Documents</code>.</p>
 <p>Create the folder structure as shown here.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>MyExtensions/
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>└── MyFirstExtension.extension/
@@ -10899,8 +10899,7 @@ Why can’t I just add my scripts to the current pyRevit tools?
 <p>Other than the bundle types, you can change the rest of the bundle directory names to whatever you want. Notice that we are introducing two more bundle types here. <strong>Tab</strong> and <strong>Panel</strong> bundles (respectively <code>.tab</code> and <code>.panel</code>). We are using this bundles since Revit buttons can only be placed inside a panel that is inside a Revit tab.</p>
 <h4 id="telling-pyrevit-where-to-find-our-extension">Telling pyRevit Where to Find Our Extension</h4>
 <p>Now we need to tell pyRevit where to find this extension. Let's launch Revit, go to pyRevit tab and open the pyRevit <strong>Settings</strong>.</p>
-<p><img alt="" src="../../../assets/build-extensions/tutorials/first-command/2019-08-28-08-21-38.png" /></p>
-<p>Add the extension path to the list of <strong>Custom User Extensions</strong></p>
+<p>Add the <code>MyExtensions</code> folder to the list of <strong>Custom Extension Directories</strong>. Add the folder that contains the extension, not the <code>.extension</code> folder itself.</p>
 <p><img alt="" src="../../../assets/build-extensions/tutorials/first-command/2019-08-28-18-13-17-pyrevit-settings.png" /></p>
 <h4 id="creating-the-command-bundle">Creating the Command Bundle</h4>
 <div class="admonition warning">

@@ -826,6 +826,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#file-toolbar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File toolbar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#search" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -837,10 +848,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#keynote-management" class="md-nav__link">
+  <a href="#editing-the-tree" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keynote Management
+        Editing the tree
       
     </span>
   </a>
@@ -848,32 +859,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#browsing-keynotes" class="md-nav__link">
+  <a href="#copying-keynotes-between-projects" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Browsing Keynotes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#creating-categories" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Creating Categories
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#creating-keynotes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Creating Keynotes
+        Copying keynotes between projects
       
     </span>
   </a>
@@ -891,19 +880,19 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#import-export" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#working-with-a-shared-keynote-file" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Import &amp; Export
+        Working with a shared keynote file
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -10731,6 +10720,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#file-toolbar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File toolbar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#search" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10742,10 +10742,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#keynote-management" class="md-nav__link">
+  <a href="#editing-the-tree" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keynote Management
+        Editing the tree
       
     </span>
   </a>
@@ -10753,32 +10753,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#browsing-keynotes" class="md-nav__link">
+  <a href="#copying-keynotes-between-projects" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Browsing Keynotes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#creating-categories" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Creating Categories
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#creating-keynotes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Creating Keynotes
+        Copying keynotes between projects
       
     </span>
   </a>
@@ -10796,19 +10774,19 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#import-export" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#working-with-a-shared-keynote-file" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Import &amp; Export
+        Working with a shared keynote file
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -10892,8 +10870,7 @@
 
 
 <h1 id="keynotes">Keynotes</h1>
-<p>pyRevit has a built in <strong>Keynote Manager</strong>. The keynote manager, uses a trick to store information inside the standard Revit keynote text files. Let's create an empty model and configure to use the pyRevit Keynote Manager. You can find the tool here</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-08-56-05-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png" /></p>
+<p>pyRevit has a built in <strong>Keynote Manager</strong>. It stores its own information inside the standard Revit keynote text file, so the file stays usable by Revit without pyRevit. The tool is <strong>Manage Keynotes</strong> in the <strong>Drawing Set</strong> panel of the pyRevit tab. Shift-click it to reset the window configuration and open.</p>
 <h2 id="setting-up-the-keynote-file">Setting Up the Keynote File</h2>
 <p>Let's create a keynote text file for this test similar to what is shown below.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>A0.0    SITE
@@ -10913,14 +10890,10 @@
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>6.01    &lt;placeholder&gt;   A6.0
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>7.01    08 0000 - STOREFRONT WINDOW SYSTEM  A7.0
 </span></code></pre></div>
-<p>Now create an empty test model, and launch the <strong>Manage Keynotes</strong> tool. The tool will inspect the keynote file attached to the model and will notify you that it doesn't have any attached to it. The tool will help you attach a keynote and configure that for the pyRevit Keynote Manager.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-08-56-30-keynotes.png" /></p>
-<p>Click <strong>OK</strong> and select the keynote file we just created</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-01-21-open.png" /></p>
-<p>Keynote manager will notify you that the file needs to be configured for this tool. Click <strong>Convert</strong></p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-01-36-keynotes.png" /></p>
-<p>Keynote manager configures the text file, saves it back, and will update you. It also saves a <code>.bak</code> file as a backup of the main keynote file in the same directory.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-02-19-keynotes.png" /></p>
+<p>Now create an empty test model, and launch the <strong>Manage Keynotes</strong> tool. When the keynote file of the model cannot be found, the tool says <em>Keynote file not found</em> and asks you to select one. Select the keynote file we just created.</p>
+<p>Keynote Manager then tells you that the file needs to be converted for this tool. Click <strong>Convert</strong>.</p>
+<p><img alt="Keynote Manager offering to convert a keynote file" src="../../assets/tools/keynotes/keynotes-convert-prompt.png" /></p>
+<p>Keynote Manager converts the text file in place and opens it. It copies the file to the pyRevit data folder before converting, and keeps that copy. When the conversion fails, the original content is restored, or the path of the copy is shown when it cannot be restored.</p>
 <p>Take a look at the converted keynote file. It should look similar to this</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># @datastore("txt") @source("..\My Project\MyKeynotes.txt") @version("0.1") @encoding("UTF-16")
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a># ===================== @db(txn_db:"Internal DB")
@@ -10951,74 +10924,134 @@
 <li>Coordinate changes to the keynote text file when multiple users are making changes to the keynotes at the same time</li>
 <li>Store history of changes to keynotes</li>
 </ul>
-<div class="admonition note">
-<p>If you are interested in more advanced information, see DeFFRel DB API for more information about the API that manages this text file.</p>
-</div>
 <h2 id="manage-keynotes-window">Manage Keynotes Window</h2>
-<p>The keynote manager window</p>
-<ul>
-<li>Has a pretty advanced search</li>
-<li>Helps you manage all the keynotes and categories</li>
-<li>Export and Import keynotes</li>
-<li>Create keynotes of different kinds</li>
-<li>Is smart about the location and size of the window, by project!</li>
-</ul>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-only.png" /></p>
+<p>The window shows the keynote file as one tree. The top-level rows are groups (the categories of the keynote file) and the rows under them are keynotes, which can have child keynotes of their own. The status bar shows the keynote file and how many groups and keynotes it holds, and how many keynotes are used in the model.</p>
+<p><img alt="Keynote Manager window" src="../../assets/tools/keynotes/keynote-manager.png" /></p>
+<h3 id="file-toolbar">File toolbar</h3>
+<p><img alt="File toolbar" src="../../assets/tools/keynotes/keynote-manager-file-toolbar.png" /></p>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Import</strong></td>
+<td>Imports keynotes from a standard Revit keynote <code>.txt</code> file (Ctrl+I)</td>
+</tr>
+<tr>
+<td><strong>Export All</strong>, <strong>Export Visible</strong></td>
+<td>Writes all the keynotes, or only the listed ones, to a clean Revit keynote file</td>
+</tr>
+<tr>
+<td><strong>Change File</strong></td>
+<td>Attaches another keynote file to the project</td>
+</tr>
+<tr>
+<td>Show in Explorer</td>
+<td>Shows the keynote file in Explorer</td>
+</tr>
+<tr>
+<td><strong>Refresh</strong></td>
+<td>Reloads the keynote file (F5)</td>
+</tr>
+<tr>
+<td><strong>Update Model</strong></td>
+<td>Reloads the keynote file in Revit, so the model shows the changes</td>
+</tr>
+<tr>
+<td>Release locks</td>
+<td>Releases the locks a closed or crashed Revit session left behind, see <a href="#edit-locks">Edit Locks</a></td>
+</tr>
+</tbody>
+</table>
 <h3 id="search">Search</h3>
-<p>The search bar at the top of the window, helps you search the keynotes effectively and would filter down the results. The</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-08-53-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png" /></p>
-<p>The filter button on the left side, gives you more options to search</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-11-08-select-filter.png" /></p>
-<h3 id="keynote-management">Keynote Management</h3>
-<p>The buttons on the top right, help you refresh the keynotes, find or change the keynote file. Hover over the keys for tooltips.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-09-11-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png" /></p>
-<p>The Categories and Keynote tools help with creating and editing keynotes and categories. Hover over the keys for tooltips.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-09-42-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png" /></p>
-<h3 id="browsing-keynotes">Browsing Keynotes</h3>
-<p>The category selector helps filtering down the keynotes shown in the window to a specific category</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-09-24-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png" /></p>
-<p>The main keynote box, shows the keynotes inside the selected keynote category</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-09-32-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png" /></p>
-<h3 id="creating-categories">Creating Categories</h3>
-<p>Click on the new category button</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-28-11-autodesk-revit-2019-2-project1-floor-plan-wip-level-01.png" /></p>
-<p>The most important step is to select a unique key for this category.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-28-28-manage-keynotes-beta-use-for-testing-only.png" /></p>
-<p>The tool shows all the reserved (already used, in Red) keys in the window. Select a key until there are no items shown in reserved list.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-29-03-manage-keynotes-beta-use-for-testing-only.png" /></p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-29-43-manage-keynotes-beta-use-for-testing-only.png" /></p>
-<p>Now type the name of the category in the box. Use the buttons on the side to change the casing if necessary.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-30-03-manage-keynotes-beta-use-for-testing-only.png" /></p>
-<p>Click <strong>Add Category</strong> and the category will be added to the keynote file. The category selector will automatically switch to this new category</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-30-11-manage-keynotes-beta-use-for-testing-only.png" /></p>
-<h3 id="creating-keynotes">Creating Keynotes</h3>
-<p>Create keynotes similar to the categories. Remember that every keynote, needs a parent category. The parent category key is shown at the bottom of the <strong>Add</strong>  <strong>Keynote</strong> window.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-30-22-manage-keynotes-beta-use-for-testing-only.png" /></p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-30-38-manage-keynotes-beta-use-for-testing-only.png" /></p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-30-52-manage-keynotes-beta-use-for-testing-only.png" /></p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-31-01-manage-keynotes-beta-use-for-testing-only.png" /></p>
-<p>You can also create child keynotes for the selected keynote. Follow the same workflow as creating keynotes. The child keynotes' parent, is the selected parent keynote.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-31-13-autodesk-revit-2019-2-project1-floor-plan-wip-level-01.png" /></p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-37-50-manage-keynotes-beta-use-for-testing-only.png" /></p>
+<p>The search bar filters the tree as you type. <strong>Filters</strong> adds a ready-made filter to the search: used or unused keynotes, locked or unlocked ones, element, material or user keynotes only, a regular expression, or a CSI MasterFormat division number. The regular expression and division filters also have an <em>Exclude</em> form.</p>
+<h3 id="editing-the-tree">Editing the tree</h3>
+<p>The toolbar above the tree works on the selected rows. Most of them are also in the right-click menu.</p>
+<p><img alt="Tree toolbar" src="../../assets/tools/keynotes/keynote-manager-tree-toolbar.png" /></p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Shortcut</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Expand all, Collapse all</td>
+<td></td>
+</tr>
+<tr>
+<td>Add group (top-level category)</td>
+<td></td>
+</tr>
+<tr>
+<td>Add keynote</td>
+<td>Ctrl+N</td>
+</tr>
+<tr>
+<td>Indent: make the keynote a child of the sibling above</td>
+<td>Tab</td>
+</tr>
+<tr>
+<td>Promote: move the keynote up one level</td>
+<td>Shift+Tab</td>
+</tr>
+<tr>
+<td>Move up, Move down</td>
+<td>Ctrl+Up, Ctrl+Down</td>
+</tr>
+<tr>
+<td>Edit</td>
+<td>F2, or double-click the row</td>
+</tr>
+<tr>
+<td>Duplicate</td>
+<td>Ctrl+D</td>
+</tr>
+<tr>
+<td>Copy, Paste here</td>
+<td>Ctrl+C, Ctrl+V</td>
+</tr>
+<tr>
+<td>Change key</td>
+<td></td>
+</tr>
+<tr>
+<td>Change text capitalization</td>
+<td></td>
+</tr>
+<tr>
+<td>Delete</td>
+<td>Del</td>
+</tr>
+<tr>
+<td>Find in model</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Drag a row onto another one to move it under a new parent. Ctrl+click and Shift+click select several rows.</p>
+<p>Every group and every keynote needs a unique key. When you add one, the window lists the keys that are already taken.</p>
+<p>A group that still has keynotes, and a keynote that has child keynotes or is used in the model, cannot be deleted.</p>
+<h3 id="copying-keynotes-between-projects">Copying keynotes between projects</h3>
+<p><strong>Copy</strong> and <strong>Paste here</strong> also work between two projects that use different keynote files. Before anything is written, the <strong>Paste Keynotes</strong> window lists every copied row with what is currently in the target file and the result: added, text replaced, already there, or locked by another user. Only the ticked rows are written. Taking a row that conflicts replaces the text of the target keynote and keeps its place in the tree.</p>
+<p><img alt="Paste Keynotes window" src="../../assets/tools/keynotes/paste-keynotes.png" /></p>
 <h3 id="placing-keynotes">Placing Keynotes</h3>
-<p>Double-Click on any of the keynotes shown in the main window, to place in your model. You can place multiple keynotes in the model. Hit <strong>Escape</strong> when done and the tool will apply the correct keynote number to the keynotes.</p>
-<p>The type selector on the side, determines which type of keynote is placed by the tool</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-09-51-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png" /></p>
-<p><img alt="↑ Example of placing multiple keynotes at the same time" src="../../assets/tools/keynotes/2019-08-28-09-18-06.gif" /></p>
-<p><em>Example of placing multiple keynotes at the same time</em></p>
-<p>From now on, the tool will show the number of times a keynote is used in a model</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-18-11-manage-keynotes-beta-use-for-testing-only.png" /></p>
-<p>You can click on the Find Keynote Instances to get a list of these keynotes</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-19-11-autodesk-revit-2019-2-project1-floor-plan-wip-level-01.png" /></p>
-<p>Click on the Keynote Ids (the numbers) and pyRevit will take you to that specific keynote.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-19-23-keynotes.png" /></p>
-<h3 id="import-export">Import &amp; Export</h3>
-<p>You can use the import and export tools to import new keynotes from another file, or export all the keynotes (or visible ones) to a clean new keynote text file.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-09-57-2019-08-28-09-02-40-manage-keynotes-beta-use-for-testing-o.png" /></p>
+<p>Select the kind of keynote to place under <strong>Place</strong>: <strong>User</strong>, <strong>Element</strong> or <strong>Material</strong>. Then select a keynote and click the place button, or Alt+click the keynote in the tree. Revit starts its keynote tool with that key.</p>
+<p>Groups cannot be placed, and neither can a keynote that another user has locked.</p>
+<p><strong>Find in model</strong> lists the places where the selected keynote is used in the pyRevit output window, one line per keynote tag. Click an element id in the list to go to that keynote. In a workshared model, the line also names the last user who edited the tag.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Keynote: 2157876 | Source: User | View: Level 1
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Keynote: 2157877 | Source: User | View: Level 1
+</span></code></pre></div>
+<h2 id="working-with-a-shared-keynote-file">Working with a shared keynote file</h2>
 <p>Keynote Manager can operate in two modes:</p>
 <ul>
 <li><strong><em>Local Network:</em></strong> in this mode, Keynote Manager is working with <code>.txt</code> keynote file that is shared between Revit users on a local network. This means that the same keynote file is being used and modified by multiple users.</li>
-<li><strong><em>BIM360:</em></strong> <em>in this mode,</em> Keynote Manager is working with <code>.txt</code> keynote file that is hosted on BIM360 and is made available locally by the <strong>Autodesk Desktop Connector.</strong></li>
+<li><strong><em>Autodesk cloud:</em></strong> in this mode, Keynote Manager is working with <code>.txt</code> keynote file that is hosted on BIM 360 or Autodesk Construction Cloud and is made available locally by the <strong>Autodesk Desktop Connector</strong>. The connector must be installed and running.</li>
 </ul>
 <p>In either of these modes, Keynote Manager needs to ensure multiple users do not overwrite each others’ work. To achieve that:</p>
 <ul>
@@ -11028,30 +11061,31 @@
 <p>Deleting an orphaned <code>.lock</code> file when there are no users active, should solve the stuck Keynote Manager problem</p>
 </div>
 <ul>
-<li><strong><em>BIM360:</em></strong>  Keynote Manager uses the <strong>Autodesk Desktop Connector</strong> API to ask BIM360 to lock the keynote file when a user opens Keynote Manager.</li>
+<li><strong><em>Autodesk cloud:</em></strong> Keynote Manager asks the <strong>Autodesk Desktop Connector</strong> to lock the keynote file when a user opens Keynote Manager. When the connector cannot sync or lock the file, the manager still opens, so check the lock on the file before a long editing session.</li>
 </ul>
 <p><img alt="" src="../../assets/tools/keynotes/screen-shot-2021-12-30-at-21-13-30.png" /></p>
 <p>This effectively stops others from writing their changes until the first user has closed Keynote Manager and released the file.</p>
 <div class="admonition warning">
-<p>You can unlock the keynote file from BIM360 portal</p>
+<p>You can unlock the keynote file from the Autodesk web portal</p>
 </div>
 </li>
 </ul>
 <h2 id="edit-locks">Edit Locks</h2>
-<p>When a user edits a keynote, Keynote Manager will write some info inside the keynote file (hidden to Revit) that a user has borrowed that specific keynote for editing. If you have a sticky lock on a specific keynote, manually clear the content of <code>Locks Table</code> in the keynote file. These locks are written in between the two lines below</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a># --------------------- @table(locks_table:"Locks Table")
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>&gt;&gt;&gt; locks are listed here...
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a># ===================== @db(keynotesdb:"pyRevit Keynotes Manager DB")
+<p>When a user edits a keynote, Keynote Manager will write some info inside the keynote file (hidden to Revit) that a user has borrowed that specific keynote for editing. When a Revit session closes or crashes while a keynote is being edited, its lock stays in the file. Use the release locks button in the file toolbar: it names every lock holder and asks you to check with them first, because it cannot tell an abandoned lock from one a colleague holds right now.</p>
+<p>If that is not possible, clear the content of <code>Locks Table</code> in the keynote file by hand. These locks are written in between the two lines below</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a># --------------------- @table(locks_table:"Locks Table")
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>&gt;&gt;&gt; locks are listed here...
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a># ===================== @db(keynotesdb:"pyRevit Keynotes Manager DB")
 </span></code></pre></div>
 <p>For example a lock with id <code>tf5n6dURvk+JrZQ5r3gD5g==</code> exists in this keynote file example:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a># @datastore("txt") @source("C:\Users\ehsan\Desktop\Keynotes.txt") ...
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a># ===================== @db(txn_db:"Internal DB")
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a># --------------------- @table(locks_table:"Locks Table")
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a># tf5n6dURvk+JrZQ5r3gD5g==  leo-wx-rir  eirannejad  w8/8rO/UOUyP0vs1oS53zA== ...
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a># ===================== @db(keynotesdb:"pyRevit Keynotes Manager DB")
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>C1  CATEGORY ONE
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>C2  OTHER CATEGORY
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a># --------------------- @table(keynotes:"Keynotes Table")
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a># @datastore("txt") @source("C:\Projects\Keynotes.txt") ...
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a># ===================== @db(txn_db:"Internal DB")
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a># --------------------- @table(locks_table:"Locks Table")
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a># tf5n6dURvk+JrZQ5r3gD5g==  workstation-01  jdoe    w8/8rO/UOUyP0vs1oS53zA== ...
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a># ===================== @db(keynotesdb:"pyRevit Keynotes Manager DB")
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>C1  CATEGORY ONE
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>C2  OTHER CATEGORY
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a># --------------------- @table(keynotes:"Keynotes Table")
 </span></code></pre></div>
 <p>So to clear the locks, remove the lock lines. Coordinate this with your team so you are the only person changing the file</p>
 

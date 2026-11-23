@@ -1337,10 +1337,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#button-highlighting-directives-revit-2018" class="md-nav__link">
+  <a href="#button-highlighting-directives" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Button Highlighting Directives (Revit ≥ 2018)
+        Button Highlighting Directives
       
     </span>
   </a>
@@ -10740,10 +10740,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#button-highlighting-directives-revit-2018" class="md-nav__link">
+  <a href="#button-highlighting-directives" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Button Highlighting Directives (Revit ≥ 2018)
+        Button Highlighting Directives
       
     </span>
   </a>
@@ -10944,8 +10944,8 @@ The other bundle types are on <a href="../ui-bundles/">UI bundles</a> and <a hre
 <p>Command bundles are the smallest unit of executable code in pyRevit. In most cases, they show up as a button on the Revit UI, and can be executed in a variety of ways.</p>
 <h2 id="all-command-bundles">All Command Bundles</h2>
 <p>The requirements and conventions below are shared among all command bundles</p>
-<h3 id="button-highlighting-directives-revit-2018">Button Highlighting Directives (Revit ≥ 2018)</h3>
-<p>You can use provide highlighting directives inside the command bundle metadata. Revit will highlight the button and the tooltip in the interface.</p>
+<h3 id="button-highlighting-directives">Button Highlighting Directives</h3>
+<p>You can provide highlighting directives inside the command bundle metadata. Revit will highlight the button and the tooltip in the interface.</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># highlight as new</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">highlight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">new</span>
 </span></code></pre></div>
@@ -10968,7 +10968,7 @@ The other bundle types are on <a href="../ui-bundles/">UI bundles</a> and <a hre
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    - *config.*           # optional config scripts. Revit UI will show a ● in front of the button name e.g. "Match ●"
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>                          # Shift-Clicking the button, launches this config.* script instead
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    - icon.png            # for Revit UI icons
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    - icon.png            # for Revit UI icons in Dark mode
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    - icon.dark.png       # for Revit UI icons in Dark mode
 </span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    - tooltip.png         # for Revit UI button tooltip image
 </span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    - tooltip.mp4         # for Revit UI button tooltip video
 </span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    - *help.*             # for Revit UI button help, opening with F1 key
@@ -10980,12 +10980,12 @@ The other bundle types are on <a href="../ui-bundles/">UI bundles</a> and <a hre
 <p>See <a href="../../scripting/ironpython/">Anatomy of IronPython Scripts</a>  for more detail on IronPython scripts.</p>
 <p>See <a href="../../../get-started/configure/">Configure pyRevit</a> for more information about setting the active IronPython engine version.</p>
 <h3 id="cpython-scripts">CPython Scripts</h3>
-<p>Push-Button bundles can contain a CPython  <code>*.py</code> file as their main script. pyRevit will run the script with the active CPython engine.</p>
+<p>Push-Button bundles can contain a CPython  <code>*.py</code> file as their main script. pyRevit runs the script with the active CPython engine when its first line is <code>python3</code>. An <code>engine: type</code> set in the bundle file takes precedence over that line.</p>
 <p>See <a href="../../scripting/cpython/">Anatomy of CPython Scripts</a>  for more detail on CPython scripts.</p>
 <p>See <a href="../../../get-started/configure/">Configure pyRevit</a> for more information about setting the active CPython engine version.</p>
 <h3 id="c-vbnet-scripts">C#, VB.NET Scripts</h3>
 <p>Push-Button bundles can contain a C#  <code>*.cs</code> , or a VB.NET <code>*.vb</code> file as their main script. pyRevit will compile and run the script.</p>
-<p>See <a href="../../scripting/dotnet/">Anatomy of .NET (C#, VB) Scripts</a>  for more detail on CPython scripts.</p>
+<p>See <a href="../../scripting/dotnet/">Anatomy of .NET (C#, VB) Scripts</a>  for more detail on .NET scripts.</p>
 <h3 id="dynamobim-scripts">DynamoBIM Scripts</h3>
 <p>Push-Button bundles can contain a DynamoBIM <code>*.dyn</code> file as their main script. pyRevit will launch the installed DynamoBIM on the host Revit and asks to run the bundle script.</p>
 <p><strong>DynamoBIM Engine Configs</strong></p>
@@ -11006,61 +11006,46 @@ The other bundle types are on <a href="../ui-bundles/">UI bundles</a> and <a hre
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">dynamo_model_nodes_info</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">String</span>
 </span></code></pre></div>
 <h3 id="grasshopper-scripts">Grasshopper Scripts</h3>
-<p>Push-Button bundles can contain a Grasshopper <code>*.gh</code> file as their main script. pyRevit will launch the installed <a href="http://rhino3d.com/inside/revit/">Rhino.Inside.Revit</a> on the host Revit and asks to run the bundle script.</p>
+<p>Push-Button bundles can contain a Grasshopper <code>*.gh</code> file as their main script. pyRevit will launch the installed <a href="https://www.rhino3d.com/inside/revit/">Rhino.Inside.Revit</a> on the host Revit and asks to run the bundle script.</p>
 <h2 id="content-button-bundle">Content-Button Bundle</h2>
-<p>Content Bundles carry contents for Revit, and help with reducing modeling errors by making it easy to place specific contents inside Revit models. This bundle automatically places the specified Revit family file <code>.rfa</code> inside the active Revit document.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">"..\\A.rfa"</span><span class="w"> </span><span class="c1"># absolute or relative path supported</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">content_alt</span><span class="p">:</span><span class="w"> </span><span class="s">"C:\\Users\\Local</span><span class="nv"> </span><span class="s">Admin\\Documents\\GitHub\\pyRevit\\extensions\\pyRevitDevTools.extension\\pyRevitDev.tab\\Debug.panel\\Bundle</span><span class="nv"> </span><span class="s">Tests.pulldown\\B.rfa"</span><span class="w"> </span><span class="c1"># absolute or relative path supported</span>
+<p>Content Bundles carry contents for Revit, and help with reducing modeling errors by making it easy to place specific contents inside Revit models. This bundle places a Revit family file <code>.rfa</code> inside the active Revit document.</p>
+<p>Set the family in the bundle file. The path can be absolute or relative to the bundle folder:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">"..\\A.rfa"</span><span class="w">                              </span><span class="c1"># family placed when the button is clicked</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">content_alt</span><span class="p">:</span><span class="w"> </span><span class="s">"C:\\Standards\\Families\\B.rfa"</span><span class="w">       </span><span class="c1"># optional family placed on SHIFT+Click</span>
 </span></code></pre></div>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>extension: .content
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>requires:
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    - *.rfa        # Revit family file to be placed in Revit model when this button is clicked
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    - bundle.yaml  # includes bundle metadata e.g. tooltip message
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>                                   # metadata supported for file path to
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>                   # relative path for main family: content: "..\\A.rfa"
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>                   # absolute path for main family: content: "C:\\Users\\Local Admin\\Documents\\GitHub\\pyRevit\\extensions\\pyRevitDevTools.extension\\pyRevitDev.tab\\Debug.panel\\Bundle Tests.pulldown\\B.rfa"
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>                   # relative path for alternative family (SHIFT+Click): content_alt: "..\\A.rfa"
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>                   # absolute path for alternative family (SHIFT+Click): content_alt: "C:\\Users\\Local Admin\\Documents\\GitHub\\pyRevit\\extensions\\pyRevitDevTools.extension\\pyRevitDev.tab\\Debug.panel\\Bundle Tests.pulldown\\B.rfa"
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>optional:
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    - *.rfa               # optional content file. Revit UI will show a ● in front of the button name e.g. "Marker ●"
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>                          # Shift-Clicking the button, places this content inside active Revit model
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>    - icon.png            # for Revit UI icons
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>    - icon.dark.png       # for Dark Theme Revit UI
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>    - tooltip.png         # for Revit UI button tooltip image
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>    - tooltip.mp4         # for Revit UI button tooltip video
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    - bundle.yaml         # with the content key, or a family file named by convention (see below)
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>optional:
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    - icon.png            # for Revit UI icons
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    - icon.dark.png       # for Dark Theme Revit UI
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    - tooltip.png         # for Revit UI button tooltip image
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    - tooltip.mp4         # for Revit UI button tooltip video
 </span></code></pre></div>
+<p>When the bundle file has no <code>content</code> key, pyRevit looks for the family inside the bundle folder, in this order:</p>
+<ol>
+<li>the first file named <code>content_*.rfa</code></li>
+<li><code>content.rfa</code></li>
+<li>any other <code>.rfa</code> file</li>
+</ol>
+<p>The alternative family follows the same convention with <code>other_*.rfa</code> and <code>other.rfa</code>.</p>
 <div class="admonition warning">
-<p>⚠️ Legacy way</p>
-<p>Content Bundles carry contents for Revit, and help with reducing modeling errors by making it easy to place specific contents inside Revit models. This bundle automatically places the included Revit family file <code>.rfa</code> inside the active Revit document. The current implementation only allows Revit families but this will be extended in the future to more content types.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>extension: .content
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>requires:
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    - *content.rfa        # Revit family file to be placed in Revit model when this button is clicked
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    - *content_XXXX.rfa   # content file for specific Revit version e.g. North Symbol_content_2020.rfa
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    - bundle.yaml         # includes bundle metadata e.g. tooltip message
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>optional:
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    - *other.rfa          # optional content file. Revit UI will show a ● in front of the button name e.g. "Marker ●"
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>                          # Shift-Clicking the button, places this content inside active Revit model
-</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    - *other_XXXX.rfa     # optional content file for specific Revit version e.g. North Symbol_other_2020.rfa
-</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    - icon.png            # for Revit UI icons
-</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    - tooltip.png         # for Revit UI button tooltip image
-</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>    - tooltip.mp4         # for Revit UI button tooltip video
-</span></code></pre></div>
+<p>The suffix after <code>content_</code> or <code>other_</code> is not compared with the running Revit version. Keep one such file per bundle, or set <code>content</code> and <code>content_alt</code> in the bundle file. When a bundle has an alternative family, Revit UI shows a ● in front of the button name e.g. "Marker ●".</p>
 </div>
 <h2 id="url-button-bundle">URL-Button Bundle</h2>
 <p>URL Bundles open the URL link specified in the bundle file, in the default browser. They are great for creating intranet shortcut buttons.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>extension: .urlbutton
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>requires:
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    - bundle.yaml         # includes bundle metadata e.g. tooltip message
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>optional:
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    - icon.png            # for Revit UI icons
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    - tooltip.png         # for Revit UI button tooltip image
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    - tooltip.mp4         # for Revit UI button tooltip video
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>extension: .urlbutton
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>requires:
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    - bundle.yaml         # includes bundle metadata e.g. tooltip message
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>optional:
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    - icon.png            # for Revit UI icons
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    - tooltip.png         # for Revit UI button tooltip image
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    - tooltip.mp4         # for Revit UI button tooltip video
 </span></code></pre></div>
 <p>URL buttons need to provide the target URL in the bundle file</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">hyperlink</span><span class="p">:</span><span class="w"> </span><span class="s">"https://www.youtube.com/pyrevit"</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">hyperlink</span><span class="p">:</span><span class="w"> </span><span class="s">"https://www.youtube.com/pyrevit"</span>
 </span></code></pre></div>
 
 

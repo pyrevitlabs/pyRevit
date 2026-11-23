@@ -11436,7 +11436,7 @@
 <p>Well done. Our API endpoint is ready. Let's fire up Revit and the HTTP server now...</p>
 <h3 id="starting-up-the-routes-server">Starting Up The Routes Server</h3>
 <p>Let's start Revit. The Routes server is disabled by default. After Revit is fully loaded, open pyRevit Settings, and under the <strong>Routes</strong> section, turn on the server.</p>
-<p><img alt="" src="../../assets/teams/routes/revit-8nanoyb1yi.png" /></p>
+<p><img alt="Routes section of the Settings window" src="../../assets/teams/routes/settings-routes.png" /></p>
 <p>The default port for the server is set to <code>48884</code> . The first instance of Revit will use the port <code>48884</code>, the next Revit instance will use <code>48885</code> and so on. See below for information about the <strong>pyRevit Routes Core API</strong> that could be used to inspect the running Revit instances and their port numbers remotely.</p>
 <p>Now Restart Revit. This time Revit will run the <code>startup.py</code> in your extension and will attemp to start the Routes Server.</p>
 <p>Your operating system might ask you if you want to allow the Routes server (now running inside Revit) to open a connection to the outside and start listening on the predefined port number.</p>
@@ -11562,7 +11562,7 @@
 </span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">configs</span> <span class="n">routes</span> <span class="n">coreapi</span> <span class="n">enable</span>
 </span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="p">$</span> <span class="n">pyrevit</span> <span class="n">configs</span> <span class="n">routes</span> <span class="n">coreapi</span> <span class="n">disable</span>
 </span></code></pre></div>
-<p><img alt="" src="../../assets/teams/routes/revit-8nanoyb1yi.png" /></p>
+<p><img alt="Routes section of the Settings window" src="../../assets/teams/routes/settings-routes.png" /></p>
 <div class="admonition warning">
 <p>Runtime REST API is a <strong>DRAFT</strong> and is subject to change<br />
     There is no authentication required<br />
@@ -11577,7 +11577,7 @@
 <p>Get the status of Routes Server</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="p">{</span>
 </span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">    </span><span class="nt">"host"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Autodesk Revit 2019.2 build: 20190808_0900(x64)"</span><span class="p">,</span>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">    </span><span class="nt">"username"</span><span class="p">:</span><span class="w"> </span><span class="s2">"eirannejad"</span><span class="p">,</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">    </span><span class="nt">"username"</span><span class="p">:</span><span class="w"> </span><span class="s2">"jdoe"</span><span class="p">,</span>
 </span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">    </span><span class="nt">"session_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"07ba444f-0494-4c63-ba25-512b099c756e"</span>
 </span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="p">}</span>
 </span></code></pre></div>

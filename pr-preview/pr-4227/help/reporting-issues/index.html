@@ -10833,7 +10833,7 @@
 <p>Follow the instructions below to collect the debug logs from your pyRevit installation and submit to the developers to help identifying the problem.</p>
 <h2 id="collecting-a-debug-log">Collecting a debug log</h2>
 <h3 id="activating-file-logging">Activating file logging</h3>
-<p>If pyRevit runs normally, and you can access the pyRevit settings, open the Settings → Reporting Levels and activate the <strong>File Debug Logging</strong> option</p>
+<p>If pyRevit runs normally, and you can access the pyRevit settings, open <strong>Settings</strong> → <strong>Reporting Levels</strong> and activate the <strong>File debug logging</strong> option</p>
 <p><img alt="" src="../../assets/help/reporting-issues/screen-shot-2020-05-08-at-07-55-31.png" /></p>
 <p>But if pyRevit fails to run and crashes Revit for some reason, go to <code>%APPDATA%/pyRevit</code> directory and open the pyRevit configuration file <code>pyRevit_config.ini</code>. Make sure the file logging is activated (<code>filelogging = true</code>) under the <code>[core]</code> section. When the CLI works, <code>pyrevit configs filelogging enable</code> does the same.</p>
 <p>If the file does not exist, create an empty text file matching the name and extension (<code>pyRevit_config.ini</code>) and place the content below inside the file</p>

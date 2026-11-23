@@ -10783,7 +10783,7 @@
 <div class="admonition tip">
 <p><strong>Command Availability</strong>: Revit commands use standard <code>IExternalCommandAvailability</code> class to let Revit know if they are available in different contexts. For example, if a command needs to work on a set of elements, it can tell Revit to deactivate the button unless the user has selected one or more elements.</p>
 </div>
-<p>In pyRevit, command availability is set through the <code>context</code> key in bundle file. Currently, pyRevit support three types of command availability types.</p>
+<p>In pyRevit, command availability is set through the <code>context</code> key in bundle file. The basic ones are:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Tools are active even when there are no documents available/open in Revit</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">zero-doc</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -10816,7 +10816,7 @@
 <p>Bundle can also require a specific type of document to be active. Here are the available options</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">doc-project</span><span class="w">                    </span><span class="c1"># bundle is active when the active document is a Project</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">doc-workshared</span><span class="w">                 </span><span class="c1"># bundle is active when the active document is a Workshared Project</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">doc-cloud</span><span class="w">                      </span><span class="c1"># bundle is active when the active document is a Cloud Project (Revit &gt;=2019.1)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">doc-cloud</span><span class="w">                      </span><span class="c1"># bundle is active when the active document is a Cloud Project</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">doc-family</span><span class="w">                     </span><span class="c1"># bundle is active when the active document is a Family</span>
 </span></code></pre></div>
 <h3 id="active-view-context">Active View Context</h3>

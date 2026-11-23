@@ -10892,13 +10892,12 @@
 <li>
 <p>Take a look the <code>==&gt; Attachments</code> section. It should look similar to this. It should show that <code>master</code> is attached to all your installed Revit versions. The report looks similar to this:</p>
 <p><div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>==&gt; Attachments
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>master | Product: "2020.1 Update" | Engine: IPY2712 (2712) | Path: "....."
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>master | Product: "2019.2.2 Hotfix" | Engine: IPY2712 (2712) | Path: "....."
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>master | Product: "&lt;Revit product name&gt;" | Engine: IPY2712PR (2712) | Path: "....."
 </span></code></pre></div>
 - If nothing is listed then run <code>pyrevit clones</code> and check to make sure <code>master</code> is listed as the installed clone</p>
 <p><div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>==&gt; Registered Clones (full git repos)
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>==&gt; Registered Clones (deployed from archive/image)
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>master | Deploy: "basepublic" | Version: "4.8.5" | Path: "......"
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>master | Deploy: "basepublic" | Branch: "master" | Version: "&lt;version&gt;" | Path: "......"
 </span></code></pre></div>
 - If it is listed, then run <code>pyrevit attach master default --installed</code> and check again to make sure it is attached.
 - If it is not listed, then find the installed pyRevit path (default is <code>%APPDATA%/pyRevit-Master</code> ) and manually register the master clone by running <code>pyrevit clones add master &lt;installed path&gt;</code>. Then check <code>pyrevit clones</code> to make sure it is registered. Now you can attach it using the command in previous step.</p>
@@ -10910,7 +10909,7 @@
 <p>What seems to work in most cases:</p>
 <ol>
 <li><strong>Uninstall pyRevit</strong></li>
-<li><strong>Delete</strong> C:\ProgramData and \%AppData%\ pyRevit folders</li>
+<li><strong>Delete</strong> the <code>pyRevit</code> folders under <code>%ProgramData%</code> and <code>%AppData%</code></li>
 <li>
 <p><strong>Move all Revit addins</strong> to a temporary location. Usual addins locations include:</p>
 <ol>
@@ -10918,11 +10917,12 @@
 <li>%AppData%\Autodesk\ApplicationPlugins</li>
 <li>%ProgramData%\Autodesk\Revit\Addins\\&lt;year&gt;</li>
 <li>%ProgramData%\Autodesk\ApplicationPlugins</li>
+<li>For Revit 2027 and later, the all-users folders under <code>C:\Program Files\Autodesk</code>, see <a href="#where-revit-loads-add-ins-from">Where Revit loads add-ins from</a></li>
 <li>[Reboot computer]</li>
 <li><strong>Reinstall pyRevit</strong></li>
-<li>Started <strong>each version</strong> of Revit confirming pyRevit successfully compiled at startup.</li>
+<li>Start <strong>each version</strong> of Revit and confirm pyRevit loads.</li>
 <li>
-<p><strong>Moved all Revit addin</strong>s that were moved in step 3 back to their original location.</p>
+<p><strong>Move the Revit addins</strong> from step 3 back to their original location.</p>
 </li>
 <li>
 <p>you may want to add them one at a time and start a revit session everytime to figure out which ones are causing the issue.</p>
@@ -10933,26 +10933,19 @@
 <p><a href="https://github.com/pyrevitlabs/pyRevit/issues/1948">Error Loading pyRevit: Error dynamically compiling pyRevit runtime · Issue #1948 · pyrevitlabs/pyRevit</a></p>
 <h2 id="sentinel-one-related-issues">Sentinel One related issues</h2>
 <h3 id="favorite-solution">Favorite solution</h3>
-<p>More chirurgical:</p>
-<ul>
-<li>Excluded SentinelOne from scanning the Hash of Revit.<br />
-  to get the SHA1 from each revit version (example for 2020):  </li>
-</ul>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">C</span><span class="p">:\</span><span class="n">Program</span> <span class="n">Files</span><span class="p">\</span><span class="n">Autodesk</span><span class="p">\</span><span class="n">Revit</span> <span class="n">2020</span><span class="p">&gt;</span><span class="n">certutil</span> <span class="n">-hashfile</span> <span class="s2">"Revit.exe"</span> <span class="n">SHA1</span>
+<p>The most targeted one: exclude Revit from SentinelOne by the hash of its executable. To get the SHA1 of a Revit version (example for 2026):</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">certutil</span> <span class="n">-hashfile</span> <span class="s2">"C:\Program Files\Autodesk\Revit 2026\Revit.exe"</span> <span class="n">SHA1</span>
 </span></code></pre></div>
 <h3 id="strategies-that-worked">Strategies that worked</h3>
 <h4 id="1">#1</h4>
-<p><a href="https://github.com/pyrevitlabs/pyRevit/issues/2577#issuecomment-2797937457">[Bug]: Can't install pyRevit_5.0.0.25034_signed.exe Revit 2025 · Issue #2577 · pyrevitlabs/pyRevit</a> — ✈ Pre-Flight checks I don&#39;t have SentinelOne antivirus installed (see above for the solution) I have searched in the issues (open and closed) but couldn&#39;t find a similar issue I have search...</p>
+<p><a href="https://github.com/pyrevitlabs/pyRevit/issues/2577#issuecomment-2797937457">[Bug]: Can't install pyRevit_5.0.0.25034_signed.exe Revit 2025 · Issue #2577 · pyrevitlabs/pyRevit</a></p>
 <ul>
 <li>Exclude pyRevitLoader.dll and Revit exe file</li>
 </ul>
 <p><code>C:\Program Files\Autodesk\Revit 20XX\Revit.exe</code></p>
 <p><code>%APPDATA%\pyRevit-Master\bin\netfx\engines\IPY342\pyRevitLoader.dll</code></p>
 <p><code>%APPDATA%\pyRevit-Master\bin\netfx\engines\IPY2712PR\pyRevitLoader.dll</code></p>
-<hr />
-<hr />
-<hr />
-<p><a href="https://github.com/pyrevitlabs/pyRevit/issues/2577#issuecomment-2659097860">[Bug]: Can't install pyRevit_5.0.0.25034_signed.exe Revit 2025 · Issue #2577 · pyrevitlabs/pyRevit</a> — ✈ Pre-Flight checks I don&#39;t have SentinelOne antivirus installed (see above for the solution) I have searched in the issues (open and closed) but couldn&#39;t find a similar issue I have search...</p>
+<p><a href="https://github.com/pyrevitlabs/pyRevit/issues/2577#issuecomment-2659097860">[Bug]: Can't install pyRevit_5.0.0.25034_signed.exe Revit 2025 · Issue #2577 · pyrevitlabs/pyRevit</a></p>
 <p><img alt="" src="../../assets/help/installation-issues/image-2.png" /></p>
 <p>OR</p>
 <ul>
@@ -10991,7 +10984,7 @@
 <p><a href="https://github.com/pyrevitlabs/pyRevit/issues/1724">v4.8.12.22247 not allowing any of my Revit products to launch - Sentinel One related · Issue #1724 · pyrevitlabs/pyRevit</a></p>
 <h2 id="extensions-not-installing">Extensions not installing</h2>
 <ul>
-<li>Check with your IT if the <a href="http://github.com">github.com</a> url are not blocked</li>
+<li>Check with your IT that <code>github.com</code> is not blocked</li>
 </ul>
 <p><a href="https://discourse.pyrevitlabs.io/t/pyrevit-extensions-not-installing/9374/12">PyRevit Extensions Not Installing</a></p>
 <h2 id="if-nothing-works">If Nothing Works</h2>

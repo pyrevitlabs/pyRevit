@@ -10987,18 +10987,13 @@
 <li>Under current implementation, Python, CPython, C#, and VB.NET hook scripts are supported.</li>
 <li>The hooks scripts are only active if the Extension containing them is active and loaded. Disabling the extension, disables all the hook scripts in that extension.</li>
 <li>For performance reasons, multiple hooks scripts for the same event are NOT supported under the same <code>hooks/</code> directory. There are many events firing when working with Revit and having too many hooks will reduce performance dramatically due to the overhead of reading, compiling, and executing an external code file every time an event occurs.</li>
-<li>Hooks that are not supported under a specific Revit version, will not be activated. See the table below.</li>
-</ul>
-<p>Read the guide below for information on how to write hook scripts</p>
-<ul>
-<li>Anatomy of Hook Scripts</li>
+<li>Hooks that are not supported under the running Revit version will not be activated.</li>
 </ul>
 <p><strong>Hook Script Types</strong></p>
 <table>
 <thead>
 <tr>
 <th>Hook Script Name</th>
-<th>Revit</th>
 <th>Revit Event Type</th>
 <th>Comments</th>
 </tr>
@@ -11006,313 +11001,261 @@
 <tbody>
 <tr>
 <td>options-showing.*</td>
-<td>&gt;=2013</td>
 <td>UIApplication.DisplayingOptionsDialog</td>
 <td></td>
 </tr>
 <tr>
 <td>app-init.*</td>
-<td>&gt;=2013</td>
 <td>Application.ApplicationInitialized</td>
 <td></td>
 </tr>
 <tr>
 <td>app-closing.*</td>
-<td>&gt;=2013</td>
 <td>UIApplication.ApplicationClosing</td>
 <td></td>
 </tr>
 <tr>
 <td>app-idling.*</td>
-<td>&gt;=2013</td>
 <td>UIApplication.Idling</td>
 <td></td>
 </tr>
 <tr>
 <td>dialog-showing.*</td>
-<td>&gt;=2013</td>
 <td>UIApplication.DialogBoxShowing</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-changed.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentChanged</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-closed.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentClosed</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-closing.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentClosing</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-created.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentCreated</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-creating.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentCreating</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-opened.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentOpened</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-opening.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentOpening</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-printed.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentPrinted</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-printing.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentPrinting</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-saved-as.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentSavedAs</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-saved.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentSaved</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-saving-as.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentSavingAs</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-saving.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentSaving</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-synced.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentSynchronizedWithCentral</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-syncing.*</td>
-<td>&gt;=2013</td>
 <td>Application.DocumentSynchronizingWithCentral</td>
 <td></td>
 </tr>
 <tr>
 <td>doc-worksharing-enabled.*</td>
-<td>&gt;=2015</td>
 <td>Application.DocumentWorksharingEnabled</td>
 <td></td>
 </tr>
 <tr>
 <td>dock-focus-changed.*</td>
-<td>&gt;=2015</td>
 <td>UIApplication.DockableFrameFocusChanged</td>
 <td></td>
 </tr>
 <tr>
 <td>dock-visibility-changed.*</td>
-<td>&gt;=2015</td>
 <td>UIApplication.DockableFrameVisibilityChanged</td>
 <td></td>
 </tr>
 <tr>
 <td>fabparts-browser-changed.*</td>
-<td>&gt;=2017</td>
 <td>UIApplication.FabricationPartBrowserChanged</td>
 <td></td>
 </tr>
 <tr>
 <td>failure-processing.*</td>
-<td>&gt;=2013</td>
 <td>Application.FailuresProcessing</td>
 <td></td>
 </tr>
 <tr>
 <td>family-loaded.*</td>
-<td>&gt;=2015</td>
 <td>Application.FamilyLoadedIntoDocument</td>
 <td></td>
 </tr>
 <tr>
 <td>family-loading.*</td>
-<td>&gt;=2015</td>
 <td>Application.FamilyLoadingIntoDocument</td>
 <td></td>
 </tr>
 <tr>
 <td>file-exported.*</td>
-<td>&gt;=2013</td>
 <td>Application.FileExported</td>
 <td></td>
 </tr>
 <tr>
 <td>file-exporting.*</td>
-<td>&gt;=2013</td>
 <td>Application.FileExporting</td>
 <td></td>
 </tr>
 <tr>
 <td>file-imported.*</td>
-<td>&gt;=2013</td>
 <td>Application.FileImported</td>
 <td></td>
 </tr>
 <tr>
 <td>file-importing.*</td>
-<td>&gt;=2013</td>
 <td>Application.FileImporting</td>
 <td></td>
 </tr>
 <tr>
 <td>formula-editing.*</td>
-<td>&gt;=2019</td>
 <td>UIApplication.FormulaEditing</td>
 <td></td>
 </tr>
 <tr>
 <td>link-opened.*</td>
-<td>&gt;=2018</td>
 <td>Application.LinkedResourceOpened</td>
 <td></td>
 </tr>
 <tr>
 <td>link-opening.*</td>
-<td>&gt;=2018</td>
 <td>Application.LinkedResourceOpening</td>
 <td></td>
 </tr>
 <tr>
 <td>progress-changed.*</td>
-<td>&gt;=2013</td>
 <td>Application.ProgressChanged</td>
 <td>Fires a lot and reduces performance. Use only when absolutely needed.</td>
 </tr>
 <tr>
 <td>transferred-project-standards.*</td>
-<td>&gt;=2018</td>
 <td>UIApplication.TransferredProjectStandards</td>
 <td></td>
 </tr>
 <tr>
 <td>transferring-project-standards.*</td>
-<td>&gt;=2018</td>
 <td>UIApplication.TransferringProjectStandards</td>
 <td></td>
 </tr>
 <tr>
 <td>type-duplicated.*</td>
-<td>&gt;=2015</td>
 <td>Application.ElementTypeDuplicated</td>
 <td></td>
 </tr>
 <tr>
 <td>type-duplicating.*</td>
-<td>&gt;=2015</td>
 <td>Application.ElementTypeDuplicating</td>
 <td></td>
 </tr>
 <tr>
 <td>view-activated.*</td>
-<td>&gt;=2013</td>
 <td>UIApplication.ViewActivated</td>
 <td></td>
 </tr>
 <tr>
 <td>view-activating.*</td>
-<td>&gt;=2013</td>
 <td>UIApplication.ViewActivating</td>
 <td></td>
 </tr>
 <tr>
 <td>view-exported.*</td>
-<td>&gt;=2018</td>
 <td>Application.ViewExported</td>
 <td></td>
 </tr>
 <tr>
 <td>view-exporting.*</td>
-<td>&gt;=2018</td>
 <td>Application.ViewExporting</td>
 <td></td>
 </tr>
 <tr>
 <td>view-printed.*</td>
-<td>&gt;=2013</td>
 <td>Application.ViewPrinted</td>
 <td></td>
 </tr>
 <tr>
 <td>view-printing.*</td>
-<td>&gt;=2013</td>
 <td>Application.ViewPrinting</td>
 <td></td>
 </tr>
 <tr>
 <td>worksharing-ops-progress-changed.*</td>
-<td>&gt;=2018</td>
 <td>Application.WorksharedOperationProgressChanged</td>
 <td></td>
 </tr>
 <tr>
 <td>command-before-exec[\&lt;cmd-id&gt;].*</td>
-<td>&gt;=2014</td>
 <td>AddInCommandBinding.BeforeExecuted</td>
 <td>Executed before the original command is executed.<br><strong>See Notes</strong></td>
 </tr>
 <tr>
 <td>command-can-exec[\&lt;cmd-id&gt;].*</td>
-<td>&gt;=2013</td>
 <td>AddInCommandBinding.CanExecute</td>
 <td>Executed when Revit needs to know whether a tool is available in the GUI or not. <strong>See Notes</strong></td>
 </tr>
 <tr>
 <td>command-exec[\&lt;cmd-id&gt;].*</td>
-<td>&gt;=2013</td>
 <td>AddInCommandBinding.Executed</td>
 <td>Overrides the normal function of the tool</td>
 </tr>
 <tr>
 <td>journal-updated.*</td>
-<td>Any</td>
 <td>N/A (This is a pyRevit-provided hook)</td>
 <td>Executed when the current Journal is updated.<br><strong>See Notes</strong></td>
 </tr>
 <tr>
 <td>doc-updater.*</td>
-<td>Any</td>
 <td>N/A (This is a pyRevit-provided hook)</td>
 <td></td>
 </tr>
 <tr>
 <td>journal-command-exec.*</td>
-<td>Any</td>
 <td>N/A (This is a pyRevit-provided hook)</td>
 <td>Executed when a new command execution is detected in the journal file. <strong>See Notes</strong></td>
 </tr>
@@ -11328,7 +11271,7 @@ See <a href="../../scripting/cpython/">Anatomy of CPython Scripts</a>  for more 
 See <a href="../../scripting/dotnet/">Anatomy of .NET (C#, VB) Scripts</a>  for more information about .NET scripts and the support modules</p>
 </div>
 <div class="admonition tip">
-<p>The examples here are all part of the <code>pyRevitDevHooks.extension</code> (Part of the BASEEX deployment. See <a href="../../../teams/deployments/">Deployments</a> )</p>
+<p>The examples here are all part of the <code>pyRevitDevHooks.extension</code> (part of the <code>basex</code> deployment, see <a href="../../../teams/deployments/">Deployments</a>)</p>
 </div>
 <h2 id="python-hook-scripts">Python Hook Scripts</h2>
 <p>Both IronPython and CPython engines provide the two <code>__eventsender__</code> and <code>__eventargs__</code> global variables to give you access to the event sender and arguments provided by Revit. Avoid using these variables directly though. The <code>pyrevit</code> module gives you safe access to them using <code>EXEC_PARAMS</code> as shown below. This way you will mask your scripts against interal pyRevit runtime changes should the name of these global variables ever change.</p>
@@ -11356,7 +11299,7 @@ See <a href="../../scripting/dotnet/">Anatomy of .NET (C#, VB) Scripts</a>  for 
 <div class="admonition warning">
 <p>pyRevit caches the IronPython engine that is used for event hooks. Reload pyRevit if you are making changes to the modules being imported by the hook scripts to refresh the IronPython engine</p>
 </div>
-<p>The IronPython hook scripts are almost identical to</p>
+<p>IronPython hook scripts are written like any other IronPython script.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">EXEC_PARAMS</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># hooks_logger is a helper module to provide write methods to hooks.log</span>

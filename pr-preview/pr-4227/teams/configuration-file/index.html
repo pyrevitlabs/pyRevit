@@ -2764,10 +2764,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#telemetery-configs" class="md-nav__link">
+  <a href="#telemetry-configs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Telemetery Configs
+        Telemetry Configs
       
     </span>
   </a>
@@ -10764,10 +10764,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#telemetery-configs" class="md-nav__link">
+  <a href="#telemetry-configs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Telemetery Configs
+        Telemetry Configs
       
     </span>
   </a>
@@ -10882,7 +10882,7 @@
 <div class="admonition warning">
 <p>Preferably use the <a href="../../cli/">pyRevit CLI</a> to make configuration changes to this file.</p>
 </div>
-<p>pyRevit configuration file is a standards INI file that contains various sections for each pyRevit component or tool.</p>
+<p>pyRevit configuration file is a standard INI file that contains various sections for each pyRevit component or tool.</p>
 <h2 id="which-file-pyrevit-uses">Which file pyRevit uses</h2>
 <ul>
 <li><strong>Installed for the current user</strong>: <code>%APPDATA%\pyRevit\pyRevit_config.ini</code>.</li>
@@ -10900,17 +10900,22 @@
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>verbose = true
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>debug = false
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>filelogging = false
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>startuplogtimeout = 0
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>startuplogtimeout = 10
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>bincache = true
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>userextensions = []
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>loadbeta = false
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>rocketmode = true
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>requiredhostbuild = ""
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>cpyengine = 372
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>cpyengine = 3123
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>minhostdrivefreespace = 0
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>outputstylesheet = "C:\\Users\\eirannejad\\Desktop\\gits\\pyRevitDev\\pyrevitlib\\pyrevit\\output\\outputstyles.css"
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>user_locale = "en_us"
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>closeotheroutputs = false
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>closeoutputmode = "currentcommand"
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>outputstylesheet = "C:\\Standards\\pyRevit\\outputstyles.css"
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>user_locale = "en_us"
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>colorize_docs = false
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>tooltip_debug_info = false
 </span></code></pre></div>
+<p><code>cpyengine</code> is the id of the CPython engine, see <a href="../../runtime/engines/">Engines</a>.</p>
 <p>The settings below control the availability of the <strong>Update</strong>, <strong>Extension Manager</strong> and <strong>Settings</strong> tools (UI buttons) in pyRevit. If set to <code>false</code> the tool will be removed from the UI and won’t be availabe to the user:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>[core]
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>usercanupdate = true
@@ -10928,10 +10933,12 @@
 <p>These configs options are for the <a href="../routes/">pyRevit Routes (HTTP API)</a>  </p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>[routes]
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>enabled = true
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>core_api = true
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>port = 48884
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>host = "127.0.0.1"
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>core_api = true
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>port = 48884
 </span></code></pre></div>
-<h3 id="telemetery-configs">Telemetery Configs</h3>
+<p><code>host</code> is the address the server listens on. When it is empty or missing, the server listens on every network interface. The server does not authenticate callers, so only open it to the network on purpose.</p>
+<h3 id="telemetry-configs">Telemetry Configs</h3>
 <p>These configs options are for the  <a href="../telemetry/">Telemetry System</a></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>[telemetry]
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>active = false
@@ -10940,7 +10947,8 @@
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>active_app = false
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>apptelemetry_server_url = ""
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>apptelemetry_event_flags = "0x1d17e7f7ff59"
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>utc_timestamps = false
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>utc_timestamps = true
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>include_hooks = false
 </span></code></pre></div>
 <h3 id="tab-coloring-configs">Tab Coloring Configs</h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>[tabcoloring]

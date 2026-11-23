@@ -1037,10 +1037,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pyrevit-bundles" class="md-nav__link">
+  <a href="#bundles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        pyRevit Bundles
+        Bundles
       
     </span>
   </a>
@@ -1048,10 +1048,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyrevit-runtime" class="md-nav__link">
+  <a href="#loader-and-runtime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        pyRevit Runtime
+        Loader and runtime
       
     </span>
   </a>
@@ -1059,10 +1059,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyrevit-core" class="md-nav__link">
+  <a href="#command-line-and-services" class="md-nav__link">
     <span class="md-ellipsis">
       
-        pyRevit Core
+        Command line and services
       
     </span>
   </a>
@@ -10637,10 +10637,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pyrevit-bundles" class="md-nav__link">
+  <a href="#bundles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        pyRevit Bundles
+        Bundles
       
     </span>
   </a>
@@ -10648,10 +10648,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyrevit-runtime" class="md-nav__link">
+  <a href="#loader-and-runtime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        pyRevit Runtime
+        Loader and runtime
       
     </span>
   </a>
@@ -10659,10 +10659,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pyrevit-core" class="md-nav__link">
+  <a href="#command-line-and-services" class="md-nav__link">
     <span class="md-ellipsis">
       
-        pyRevit Core
+        Command line and services
       
     </span>
   </a>
@@ -10738,16 +10738,16 @@
 
 
 <h1 id="how-pyrevit-works">How pyRevit works</h1>
-<p>pyRevit's architecture has three major components. Each of of these components are documented under <a href="../">Developer Docs</a>  </p>
-<h2 id="pyrevit-bundles">pyRevit Bundles</h2>
-<hr />
-<p>Bundles are single, or collection of tools, scripts, libraries, and other content. pyRevit Core decides how to incorporate these bundles into the Revit environment, depending on the bundle type. The most basic bundle is a <strong>Command Button</strong> bundle (<code>.pushbutton</code>). Each command bundle is a folder that contains a script file (<code>script.*</code>) and might also include an icon (<code>icon.*</code>) and is named similar to <code>MyButton.pushbutton</code></p>
-<p>Command bundles are grouped and organized inside <strong>UI Bundles</strong> and then placed inside an <strong>Extension</strong> (<code>.extension</code>) bundle. Extensions are collection of bundles - of many types - that make these bundles accessible through the Revit user interface.</p>
-<h2 id="pyrevit-runtime">pyRevit Runtime</h2>
-<hr />
-<p>Runtime is the part that is in charge of parsing the bundles, creating necessary assembly files, preparing the user interface, and executing the commands. pyRevit runtime is currently a combination of C#, and IronPython code (see <code>pyrevit/runtime/</code> directory under pyRevit files). The C# code is dynamically compiled on launch time and is cached for performance. This allows dynamic changes to the runtime code that gets reflected when pyRevit reloads. pyRevit can reload without restarting Revit.</p>
-<h2 id="pyrevit-core">pyRevit Core</h2>
-<p>The core is a collection of tools (e.g. <a href="../../cli/">pyRevit CLI</a>  or Telemetry System ) and libraries (e.g. Labs API Overview ) that assist the Bundles and Runtime. See <code>bin/</code> directory under pyRevit files.</p>
+<p>pyRevit has three parts you meet when you build tools for it.</p>
+<h2 id="bundles">Bundles</h2>
+<p>A bundle is a folder with a special name that holds a tool, a group of tools, or other content. pyRevit decides how to show a bundle in Revit from its type. The most common one is the <strong>command bundle</strong> (<code>.pushbutton</code>): a folder such as <code>MyButton.pushbutton</code> that contains a script (<code>script.*</code>) and usually an icon (<code>icon.*</code>).</p>
+<p>Command bundles are grouped inside <strong>UI bundles</strong> (tabs, panels, pull-downs, stacks), and everything lives inside an <strong>extension</strong> (<code>.extension</code>). See <a href="../bundles/command-bundles/">Command bundles</a>, <a href="../bundles/ui-bundles/">UI bundles</a> and <a href="../extensions/structure/">Extension structure</a>.</p>
+<h2 id="loader-and-runtime">Loader and runtime</h2>
+<p>When Revit starts, the pyRevit add-in reads the extensions, builds the ribbon and creates a command for every bundle. When a button is clicked, the runtime runs its script on the right engine: IronPython, CPython, C#, VB.NET, Dynamo or Grasshopper.</p>
+<p>pyRevit can reload without restarting Revit, so new or changed bundles show up after <strong>Reload</strong>.</p>
+<p><a href="../../architecture/">Understanding pyRevit Architecture</a> describes these components in detail.</p>
+<h2 id="command-line-and-services">Command line and services</h2>
+<p>The <a href="../../cli/">pyRevit CLI</a> installs, configures and repairs pyRevit from a command prompt. <a href="../../teams/telemetry/">Telemetry</a> and <a href="../../teams/routes/">Routes</a> are optional services for teams.</p>
 
 
 

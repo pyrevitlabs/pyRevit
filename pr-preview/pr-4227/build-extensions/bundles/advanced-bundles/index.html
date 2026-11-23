@@ -1497,6 +1497,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#checkbox-bundle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CheckBox Bundle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#smart-button-command-bundle" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10893,6 +10904,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#checkbox-bundle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CheckBox Bundle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#smart-button-command-bundle" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11420,54 +11442,58 @@ The other bundle types are on <a href="../command-bundles/">Command bundles</a> 
 <li>Verify icon file exists and is a valid PNG</li>
 <li>Use 16x16 pixels for member icons</li>
 </ol>
+<h2 id="checkbox-bundle">CheckBox Bundle</h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>extension: .checkbox
+</span></code></pre></div>
+<p>CheckBox bundles add a checkbox to the ribbon. Their <code>script.py</code> can define <code>__chk_init__(ctx)</code> and <code>__chk_on_change__(sender, args, ctx)</code>. See <a href="../../../extensions/">Extensions</a> for the handlers and the context object. They require pyRevit 7.2.0 or later.</p>
 <h2 id="smart-button-command-bundle">Smart-Button Command Bundle</h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>extension: .smartbutton
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>extension: .smartbutton
 </span></code></pre></div>
 <p>Smart buttons are python scripts that are written like modules. They should define <code>__selfinit__</code> function as shown below. This function gets executed at startup time to give a chance to the button to initialize itself (e.g set its icon based on its state, or run necessary pre-initializations).</p>
 <p>The <code>__selfinit__</code> must return <code>True</code> if the initialization is successful and <code>False</code> if it is not. pyRevit will not create the button if the initialization returns <code>False</code> and is determined unsuccessful. This allows the tools to decide whether they want to be available in UI or not depending on conditions.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">__selfinit__</span><span class="p">(</span><span class="n">script_cmp</span><span class="p">,</span> <span class="n">ui_button_cmp</span><span class="p">,</span> <span class="n">__rvt__</span><span class="p">):</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="sd">"""</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="sd">    Args:</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="sd">        script_cmp: script component that contains info on this script</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="sd">        ui_button_cmp: this is the UI button component</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="sd">        __rvt__: Revit UIApplication</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="sd">    Returns:</span>
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="sd">                    bool: Return True if successful, False if not</span>
-</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="sd">    """</span>
-</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>
-</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="n">run_self_initialization</span><span class="p">()</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">__selfinit__</span><span class="p">(</span><span class="n">script_cmp</span><span class="p">,</span> <span class="n">ui_button_cmp</span><span class="p">,</span> <span class="n">__rvt__</span><span class="p">):</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span><span class="sd">"""</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="sd">    Args:</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="sd">        script_cmp: script component that contains info on this script</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="sd">        ui_button_cmp: this is the UI button component</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="sd">        __rvt__: Revit UIApplication</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="sd">    Returns:</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="sd">                    bool: Return True if successful, False if not</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="sd">    """</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>    <span class="n">run_self_initialization</span><span class="p">()</span>
 </span></code></pre></div>
 <h2 id="no-button-bundle">No-Button Bundle</h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>extension: .nobutton
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>extension: .nobutton
 </span></code></pre></div>
 <p>No-Button bundles are just like Push Button bundles except that they will never show up inside Revit UI and thus don’t need any icons. The only way to run these commands is through pyRevit <strong><em>Search</em></strong> tool. These commands are meant for more advanced commands that not every user needs, and so they remain fairly hidden.</p>
 <p>Open the pyRevit <strong><em>Search</em></strong> and run <code>testcmdargs -h</code> and see what happens.</p>
 <p><img alt="" src="../../../assets/build-extensions/bundles/command-bundles/2019-08-30-10-42-19-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png" /></p>
 <p><img alt="" src="../../../assets/build-extensions/bundles/command-bundles/2019-08-30-10-42-28-testcmdargs.png" /></p>
 <p>This is the source for this test command that uses the <code>docopt</code> module to process the input arguments</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="sd">"""Test docopt argument processing.</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="sd">Usage:</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="sd">    testdocopt (-h | --help)</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="sd">    testdocopt (-V | --version)</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="sd">    testdocopt -e &lt;encod&gt; &lt;src_file&gt;</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="sd">Options:</span>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="sd">    -h, --help                          Show this help</span>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="sd">    -V, --version                       Show command version</span>
-</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="sd">    -e &lt;encod&gt;, --encode &lt;encod&gt;        File encoding [default: utf-8]</span>
-</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="sd">"""</span>
-</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>
-</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="kn">import</span><span class="w"> </span><span class="nn">docopt</span>
-</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>
-</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="n">args</span> <span class="o">=</span> <span class="n">docopt</span><span class="o">.</span><span class="n">docopt</span><span class="p">(</span><span class="vm">__doc__</span><span class="p">,</span>
-</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>                     <span class="n">version</span><span class="o">=</span><span class="s1">'testdocopt </span><span class="si">{}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">'v0.1'</span><span class="p">),</span>
-</span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>                     <span class="n">help</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="sd">"""Test docopt argument processing.</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="sd">Usage:</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="sd">    testdocopt (-h | --help)</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="sd">    testdocopt (-V | --version)</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="sd">    testdocopt -e &lt;encod&gt; &lt;src_file&gt;</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="sd">Options:</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="sd">    -h, --help                          Show this help</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="sd">    -V, --version                       Show command version</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="sd">    -e &lt;encod&gt;, --encode &lt;encod&gt;        File encoding [default: utf-8]</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="sd">"""</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="kn">import</span><span class="w"> </span><span class="nn">docopt</span>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="n">args</span> <span class="o">=</span> <span class="n">docopt</span><span class="o">.</span><span class="n">docopt</span><span class="p">(</span><span class="vm">__doc__</span><span class="p">,</span>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>                     <span class="n">version</span><span class="o">=</span><span class="s1">'testdocopt </span><span class="si">{}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">'v0.1'</span><span class="p">),</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>                     <span class="n">help</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="panel-button-bundle">Panel-Button Bundle</h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>extension: .panelbutton
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>extension: .panelbutton
 </span></code></pre></div>
 <p>Panel Button bundles are just like Push Button bundles except that they will be set as the panel configuration button (small arrow at the corner of UI Panels).</p>
 <ul>
@@ -11475,45 +11501,45 @@ The other bundle types are on <a href="../command-bundles/">Command bundles</a> 
 <li>Panel Buttons do not read context directives. Their context is automatically set, so they are available at all times.</li>
 </ul>
 <h2 id="invoke-button-bundle">Invoke-Button Bundle</h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>extension: .invokebutton
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>extension: .invokebutton
 </span></code></pre></div>
 <p>Invoke buttons can call an external command (implementing <strong>IExternalCommand</strong>) from another dll. However, they run the external command without loading the assembly in Revit context so the dll file can be modified while Revit is running. They are a great method to incorporate your high-performance C# dlls into your pyRevit extensions. Invoke Buttons, need the parameters below defined in the bundles' metadata file.<br />
 See <a href="../metadata/">Bundle Metadata</a>  for more information on these files.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># include the key:values below in the bundle metadata file</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="nt">assembly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyRevitTestInvokeCommand.dll</span><span class="w">              </span><span class="c1"># full path to dll. if the dll is included in the bundle lib/</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">                                                    </span><span class="c1"># or the parent bundle lib/ directory just enter the full dll name</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">                                                    </span><span class="c1"># pyRevit will find the dll in the parent lib/ directories</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="nt">command_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyRevitTestInvokeExternalCommand</span><span class="w">     </span><span class="c1"># name of the external command class</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># include the key:values below in the bundle metadata file</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="nt">assembly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyRevitTestInvokeCommand.dll</span><span class="w">              </span><span class="c1"># full path to dll. if the dll is included in the bundle lib/</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">                                                    </span><span class="c1"># or the parent bundle lib/ directory just enter the full dll name</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">                                                    </span><span class="c1"># pyRevit will find the dll in the parent lib/ directories</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="nt">command_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyRevitTestInvokeExternalCommand</span><span class="w">     </span><span class="c1"># name of the external command class</span>
 </span></code></pre></div>
 <p>Invoke Buttons are also smart about the assembly types implementing the IExternalCommand interface. So if there is only one external command inside your dll assembly that implements the IExternalCommand interface, you can skip defining the <code>command_class</code> in the bundle metadata file. pyRevit will automatically find the correct type and will run the <code>Execute</code> method on it.</p>
 <h2 id="link-button-bundle">Link-Button Bundle</h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>extension: .linkbutton
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>extension: .linkbutton
 </span></code></pre></div>
 <p>Link buttons can call an external command (implementing <strong>IExternalCommand</strong>) from another loaded Addin. Link buttons are good for adding shortcuts to other addin functionality in your pyRevit extensions to improve user experience. Link Buttons, need the parameters below defined in the bundles metadata file.<br />
 See <a href="../metadata/">Bundle Metadata</a>  for more information on these files.</p>
 <div class="admonition warning">
 <p><strong>Note:</strong> For Link Buttons to work properly, the target addin assembly must be already loaded when this button is being created, otherwise Revit can not tie the UI button to the assembly that is not already loaded.</p>
 </div>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># include the key:values below in the bundle metadata file</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="nt">assembly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyRevitTestLinkCommand.dll</span><span class="w">                </span><span class="c1"># full path to dll. if the dll is included in the bundle lib/</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">                                                    </span><span class="c1"># or the parent bundle lib/ directory just enter the full dll name</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">                                                    </span><span class="c1"># pyRevit will find the dll in the parent lib/ directories</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="nt">command_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyRevitTestLinkExternalCommand</span><span class="w">       </span><span class="c1"># name of the external command class</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># include the key:values below in the bundle metadata file</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="nt">assembly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyRevitTestLinkCommand.dll</span><span class="w">                </span><span class="c1"># full path to dll. if the dll is included in the bundle lib/</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">                                                    </span><span class="c1"># or the parent bundle lib/ directory just enter the full dll name</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">                                                    </span><span class="c1"># pyRevit will find the dll in the parent lib/ directories</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="nt">command_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyRevitTestLinkExternalCommand</span><span class="w">       </span><span class="c1"># name of the external command class</span>
 </span></code></pre></div>
-<p>As of pyRevit 4.8.5, you can also add Accessibility types to the link bundle file. Since Link buttons points to a completely different assembly, pyRevit can not assign its internal zero-doc or other automatic context filters to these buttons. If that is desired, it is better to use Invoke buttons instead.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">availability_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyRevitTestLinkExternalCommandAvail</span>
+<p>You can also add an availability type to the link bundle file. Since Link buttons points to a completely different assembly, pyRevit can not assign its internal zero-doc or other automatic context filters to these buttons. If that is desired, it is better to use Invoke buttons instead.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nt">availability_class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyRevitTestLinkExternalCommandAvail</span>
 </span></code></pre></div>
 <p>The Link buttons assembly needs to implement an instance of the availability class. For example:</p>
-<div class="language-csharp highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PyRevitTestLinkExternalCommandAvail</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IExternalCommandAvailability</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">PyRevitTestLinkExternalCommandAvail</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">IsCommandAvailable</span><span class="p">(</span><span class="n">UIApplication</span><span class="w"> </span><span class="n">uiApp</span><span class="p">,</span><span class="w"> </span><span class="n">CategorySet</span><span class="w"> </span><span class="n">selectedCategories</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">true</span><span class="p">;</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="p">}</span>
+<div class="language-csharp highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PyRevitTestLinkExternalCommandAvail</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IExternalCommandAvailability</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="nf">PyRevitTestLinkExternalCommandAvail</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">IsCommandAvailable</span><span class="p">(</span><span class="n">UIApplication</span><span class="w"> </span><span class="n">uiApp</span><span class="p">,</span><span class="w"> </span><span class="n">CategorySet</span><span class="w"> </span><span class="n">selectedCategories</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">true</span><span class="p">;</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="p">}</span>
 </span></code></pre></div>
 
 

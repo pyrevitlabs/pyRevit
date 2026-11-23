@@ -10929,115 +10929,94 @@
 </span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">John Doe</span>
 </span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ehsan Iran-Nejad</span>
 </span></code></pre></div>
-<p>Use the locale codes here as shown above for various langauges</p>
+<p>Use the locale codes below for the various languages</p>
 <p><strong>Supported Locale Codes</strong></p>
 <table>
 <thead>
 <tr>
-<th>Revit Langauge</th>
-<th>Revit</th>
+<th>Revit Language</th>
 <th>Locale Codes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>English USA</td>
-<td>&gt;=2013</td>
 <td>english,en_us</td>
 </tr>
 <tr>
 <td>English Great Britain</td>
-<td>&gt;=2018</td>
 <td>en_gb</td>
 </tr>
 <tr>
 <td>Deutsch / German</td>
-<td>&gt;=2013</td>
 <td>german,de_de</td>
 </tr>
 <tr>
 <td>español / Spanish</td>
-<td>&gt;=2013</td>
 <td>spanish,es_es</td>
 </tr>
 <tr>
 <td>français / French</td>
-<td>&gt;=2013</td>
 <td>french,fr_fr</td>
 </tr>
 <tr>
 <td>italiano / Italian</td>
-<td>&gt;=2013</td>
 <td>italian,it_it</td>
 </tr>
 <tr>
 <td>Nederlands / Dutch</td>
-<td>&gt;=2013</td>
 <td>dutch,nl_be,nl_nl</td>
 </tr>
 <tr>
 <td>简体中文 / Chinese Simplified</td>
-<td>&gt;=2013</td>
 <td>chinese,chinese_s</td>
 </tr>
 <tr>
 <td>繁體中文 / Chinese Traditional</td>
-<td>&gt;=2013</td>
 <td>chinese,chinese_t</td>
 </tr>
 <tr>
 <td>日本語 / Japanese</td>
-<td>&gt;=2013</td>
 <td>japanese,ja</td>
 </tr>
 <tr>
 <td>한국어 / Korean</td>
-<td>&gt;=2013</td>
 <td>korean,ko</td>
 </tr>
 <tr>
 <td>Русский / Russian</td>
-<td>&gt;=2013</td>
 <td>russian,ru</td>
 </tr>
 <tr>
 <td>Čeština / Czech</td>
-<td>&gt;=2013</td>
 <td>czech,cs</td>
 </tr>
 <tr>
 <td>Polski / Polish</td>
-<td>&gt;=2013</td>
 <td>polish,pl</td>
 </tr>
 <tr>
 <td>Magyar / Hungarian</td>
-<td>&gt;=2013</td>
 <td>hungarian,hu</td>
 </tr>
 <tr>
 <td>Português do Brasil / Brazilian Portuguese</td>
-<td>&gt;=2013</td>
 <td>portuguese_brazil,brazilian,portuguese,pt_br,pt_pt</td>
 </tr>
 <tr>
 <td>Български / Bulgarian</td>
-<td>All</td>
 <td>bulgarian,bg</td>
 </tr>
 <tr>
 <td>فارسی / Farsi</td>
-<td>All</td>
 <td>farsi,persian,fa</td>
 </tr>
 <tr>
 <td>العربیه / Arabic</td>
-<td>All</td>
 <td>arabic,ar</td>
 </tr>
 <tr>
 <td>Українська / Ukrainian</td>
-<td>All</td>
 <td>ukrainian,uk</td>
 </tr>
 </tbody>
@@ -11056,7 +11035,7 @@
 <h3 id="bundle-layout">Bundle Layout</h3>
 <p>The bundle file can also set the order of all the childern bundles in the UI:</p>
 <div class="admonition tip">
-<p>See <a href="../layout/">Bundle Layout</a>  for more information on available context directives:Ï</p>
+<p>See <a href="../layout/">Bundle Layout</a> for more information on the layout directives.</p>
 </div>
 <p><strong>Example</strong></p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">layout</span><span class="p">:</span>
@@ -11066,12 +11045,12 @@
 </span></code></pre></div>
 <h3 id="bundle-environment-configs">Bundle Environment Configs</h3>
 <h4 id="supported-revit-versions">Supported Revit Versions</h4>
-<p>Bundle file can define the range of Revit versions that support the bundle. pyRevit will not load the bundle if it is not supported under the running Revit. In the example below, the bundle will be loaded with Revit 2015 up to 2018 and is expected to work with the APIs for these versions.</p>
+<p>Bundle file can define the range of Revit versions that support the bundle. pyRevit will not load the bundle if it is not supported under the running Revit. In the example below, the bundle will be loaded with Revit 2022 up to 2025 and is expected to work with the APIs for these versions.</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># minimium supported Revit version</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">min_revit_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2015</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">min_revit_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2022</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># maximum supported Revit version</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">max_revit_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2018</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">max_revit_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2025</span>
 </span></code></pre></div>
 <p>Bundle file can also set the state of the bundle. pyRevit user can decide whether to load the <em>Beta</em> bundles when starting Revit or not.</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">is_beta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
@@ -11087,7 +11066,7 @@
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># final help url: https://www.youtube.com/watch?v=H7b8hjHbauE</span>
 </span></code></pre></div>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">help_url</span><span class="p">:</span><span class="w"> </span><span class="s">"{{youtube}}po0lCldSGmk"</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># final help url: https://www.youtube.com/watch?v=po0lCldSGmk proat</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># final help url: https://www.youtube.com/watch?v=po0lCldSGmk</span>
 </span></code></pre></div>
 <p>You can also group all your template values under the <code>templates</code> key. This cleans up the metadata files.</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">templates</span><span class="p">:</span>

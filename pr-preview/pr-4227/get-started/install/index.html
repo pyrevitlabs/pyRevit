@@ -625,10 +625,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#download" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Download
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-the-installer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run the installer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#first-start-in-revit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First start in Revit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#install-errors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install Errors
+        Install errors
       
     </span>
   </a>
@@ -10603,10 +10636,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#download" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Download
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-the-installer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run the installer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#first-start-in-revit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First start in Revit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#install-errors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install Errors
+        Install errors
       
     </span>
   </a>
@@ -10683,59 +10749,35 @@
 
 <h1 id="install-pyrevit">Install pyRevit</h1>
 <div class="admonition warning">
-<p>If you have installed pyrevit previously, please do <strong>uninstall</strong> previous versions first.</p>
+<p>If you have installed pyRevit previously, <strong>uninstall</strong> the previous version first.</p>
 </div>
-<ul>
-<li>Download the installer for the most recent version of pyRevit from here.</li>
-</ul>
-<p><a href="https://github.com/pyrevitlabs/pyRevit/releases">Releases · pyrevitlabs/pyRevit</a></p>
+<h2 id="download">Download</h2>
+<p>Download the installer of the most recent release from <a href="https://github.com/pyrevitlabs/pyRevit/releases">Releases · pyrevitlabs/pyRevit</a>.</p>
 <p>There are two installers. <code>pyRevit_&lt;version&gt;_signed.exe</code> installs for the current user and needs no administrator rights. <code>pyRevit_&lt;version&gt;_admin_signed.exe</code> installs for every user of the machine and needs administrator rights. See <a href="../../installers/">Installers</a>.</p>
-<ul>
-<li>Run the installer on your machine and follow through the steps. The user installer does not require Administrator privileges to your machine. You can choose a different installation path than the default as well.</li>
-</ul>
-<p><img alt="↑ Start the install" src="../../assets/get-started/install/2019-08-28-08-03-09-pyrevit-setup.png" /></p>
-<p><em>Start the install</em></p>
-<p><img alt="↑ Accept the license terms" src="../../assets/get-started/install/2019-08-28-08-03-14-pyrevit-setup.png" /></p>
-<p><em>Accept the license terms</em></p>
-<p><img alt="↑ Select a destination path" src="../../assets/get-started/install/2019-08-28-08-03-18-pyrevit-setup.png" /></p>
-<p><em>Select a destination path</em></p>
-<p><img alt="↑ Click install" src="../../assets/get-started/install/2019-08-28-08-03-21-pyrevit-setup.png" /></p>
-<p><em>Click install</em></p>
-<ul>
-<li>Once completed, Launch any of the installed Revit versions. Revit should show a prompt similar to the one shown below and ask whether you want to load this new addon or not. Say <strong>Always Load</strong> please 🙏</li>
-</ul>
+<h2 id="run-the-installer">Run the installer</h2>
+<p>Close Revit, then run the installer and follow the steps:</p>
+<ol>
+<li>Accept the license.</li>
+<li>Choose the destination folder. The user installer proposes <code>%APPDATA%\pyRevit-Master</code>, the admin installer <code>Program Files\pyRevit-Master</code>.</li>
+<li>Choose the components. <strong>pyRevit Core Tools</strong> is always installed. <strong>pyRevit Extended Extensions</strong>, <strong>pyRevit Developer Extensions</strong> and <strong>pyRevit Tutorials Extension</strong> are optional.</li>
+<li>Click <strong>Install</strong>.</li>
+</ol>
+<p>The installer registers the installed clone and attaches it to the Revit versions it supports. It also installs the <code>pyrevit</code> command line tool, see <a href="../../cli/">CLI</a>.</p>
+<h2 id="first-start-in-revit">First start in Revit</h2>
+<p>Launch any of the installed Revit versions. Revit shows a prompt similar to the one below and asks whether to load the add-in. Choose <strong>Always Load</strong>.</p>
 <p><img alt="" src="../../assets/get-started/install/2018-06-28-16-56-45-window.png" /></p>
+<p>When the load-time report is active, pyRevit opens its output window while it loads. The report lists, in this order:</p>
 <ul>
-<li>If you have not had pyRevit on your machine or disabled the load-time log report, you should see a window similar to this that lets you know pyRevit has loaded successfully and also provides some information about the runtime environment.</li>
+<li>the pyRevit version, and whether Rocket mode is enabled</li>
+<li>the Revit version, build and process id</li>
+<li>the Python engine pyRevit runs on</li>
+<li>the user, the pyRevit home directory and the session id</li>
+<li>the runtime assembly and the configuration file in use</li>
+<li>the extensions it loads, and the total load time</li>
 </ul>
-<p><img alt="" src="../../assets/get-started/install/2019-08-28-08-19-09-pyrevit.png" /></p>
-<p>The samples below come from an older version, so the version numbers and the engine line differ today.</p>
-<p>The first couple of lines tell you about the running pyRevit version, Revit version, Python engine version, and whether Rocket mode is active (Rocket mode makes the python tools run a lot faster by caching them, and is on by default).</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pyRevit version: 4.6.24:1e25e63 - &lt;/&gt; with 💓 in ['pdx', 'hio', 'rno']
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pyRevit Rocket Mode enabled. 🚀
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Host is Autodesk Revit 2019.2 (build: 20190808_0900(x64) id: 20444)
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Running on: 2.7.7 (IronPython 2.7.7 (2.7.7.0) on .NET 4.0.30319.42000 (64-bit))
-</span></code></pre></div>
-<p>Then there is some information about the user environment, the runtime assembly and the configuration file</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>User is: eirannejad
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Home Directory is: C:\pyRevit\
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Session uuid is: 2e35d891-a51d-4759-a90b-f579ec532ffd
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Config file is (User): C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit_config.ini
-</span></code></pre></div>
-<p>Then pyRevit goes on to parsing extensions, finding bundles, creating buttons in the UI.<br />
-When all done, it reports the total load time.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>UI Extension successfuly loaded from cache: pyRevitCore
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Skipping disabled ui extension: pyRevitTags
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>UI Extension successfuly loaded from cache: pyRevitTools
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Skipping disabled ui extension: pyRevitTVAExtension
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>Extension assembly created: pyRevitCore
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>Extension assembly created: pyRevitTools
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>UI created for extension: pyRevitCore
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>UI created for extension: pyRevitTools
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>Load time: 1.10900115967 seconds 👍
-</span></code></pre></div>
-<h3 id="install-errors">Install Errors</h3>
-<p>If you experienced any errors during the install, please see <a href="../../help/installation-issues/">Installation issues</a>  </p>
+<p><a href="../configure/#reporting-levels">Reporting Levels</a> controls whether this window opens.</p>
+<h2 id="install-errors">Install errors</h2>
+<p>If the install fails or pyRevit does not load, see <a href="../../help/installation-issues/">Installation issues</a>.</p>
 
 
 

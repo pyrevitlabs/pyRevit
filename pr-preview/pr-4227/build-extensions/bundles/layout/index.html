@@ -10759,14 +10759,14 @@
 
 <h1 id="bundle-layout">Bundle layout</h1>
 <div class="admonition warning">
-<p>The bundle file (<code>_layout</code>) is deprecated and will be removed in the next pyRevit major version.<br />
-See <a href="../metadata/">Bundle Metadata</a> for directions on defining bundle layouts in bundle metadata files.</p>
+<p>The separate <code>_layout</code> file is no longer read. Define the layout under the <code>layout</code> key of the bundle file (<code>bundle.yaml</code>), as shown here.<br />
+See <a href="../metadata/">Bundle Metadata</a> for the other keys of the bundle file.</p>
 </div>
 <p>Bundle Layout is a method to provide directives on how the child bundles should be ordered in Revit UI.</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="l l-Scalar l-Scalar-Plain">MyCommands.pulldown/</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="l l-Scalar l-Scalar-Plain">├── PushButton A.pushutton</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="l l-Scalar l-Scalar-Plain">├── PushButton B.pushutton</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="l l-Scalar l-Scalar-Plain">├── PushButton C.pushutton</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="l l-Scalar l-Scalar-Plain">├── PushButton A.pushbutton</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="l l-Scalar l-Scalar-Plain">├── PushButton B.pushbutton</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="l l-Scalar l-Scalar-Plain">├── PushButton C.pushbutton</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="l l-Scalar l-Scalar-Plain">└── bundle.yaml</span><span class="w">                  </span><span class="c1"># bundle metadata file contains the layout directives</span>
 </span></code></pre></div>
 <p>For example, below are the layout directives for a UI bundle that includes a few other bundles. Buttons on the Revit UI will be placed according to this layout. The top-most bundles are created first (From left to right in Revit UI), following down the list.</p>

@@ -10942,20 +10942,18 @@ See <a href="../metadata/">Bundle metadata</a> for the <code>bundle.yaml</code> 
 The other bundle types are on <a href="../command-bundles/">Command bundles</a> and <a href="../advanced-bundles/">Advanced bundles</a>.</p>
 </div>
 <p>UI bundles are designed to create easily sharable UI layouts for the <strong>Command Bundles</strong></p>
-<p>A UI bundle is a bundle that can contain command bundles and other UI bundles. There are some limitations depending which version of Revit is being used however pyRevit is usually smart about these differences.</p>
+<p>A UI bundle is a bundle that can contain command bundles and other UI bundles. </p>
 <h2 id="all-ui-bundles">All UI Bundles</h2>
 <p>The requirements and conventions below are shared among all UI bundles</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>requires:
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    - bundle.yaml         # includes bundle metadata e.g. tooltip message
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>optional:
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    - icon.png            # for Revit UI icons
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    - icon.dark.png       # for Revit UI icons in Dark mode
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    - lib/                # can include a lib/ directory that hosts modules required by the commands inside this bundle
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    - bin/                # can include a bin/ directory that hosts binaries required by the commands inside this bundle
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>optional:
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    - bundle.yaml         # includes bundle metadata e.g. layout, title, tooltip
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    - icon.png            # for Revit UI icons
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    - icon.dark.png       # for Revit UI icons in Dark mode
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    - lib/                # can include a lib/ directory that hosts modules required by the commands inside this bundle
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    - bin/                # can include a bin/ directory that hosts binaries required by the commands inside this bundle
 </span></code></pre></div>
 <h3 id="bundle-layout-directives">Bundle Layout Directives</h3>
-<p>UI bundles can provide directives on how the child bundles should be ordered in Revit UI. Since pyRevit 4.7, the primary method to provide these directives is to use the Bundle File. These directives are defined in the bundle file and are limited to UI bundles only.</p>
+<p>UI bundles can provide directives on how the child bundles should be ordered in Revit UI. These directives are defined in the bundle file and are limited to UI bundles only.</p>
 <div class="admonition tip">
 <p>See <a href="../layout/">Bundle Layout</a> for  more information about layout directives</p>
 </div>
@@ -10997,11 +10995,12 @@ The other bundle types are on <a href="../command-bundles/">Command bundles</a> 
 <p>This is how the panels would show up (collaped) and expand when user hovers over the panel.</p>
 <p><img alt="" src="../../../assets/build-extensions/bundles/command-bundles/66415326-338e7200-e9b0-11e9-8c18-2c4b1c6ba2bd.gif" /></p>
 <h2 id="stack-ui-bundle">Stack UI Bundle</h2>
+<p>This bundle creates a stack of 2 or 3 buttons in a panel.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>extension: .stack
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>can_contain:
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    - Pull-down UI bundle
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    - Split-button UI bundle
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    - Split-push-button UI bundle       # Revit 2018 and later
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    - Split-push-button UI bundle
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    - All command bundles
 </span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>max_children: 3 bundles total (of any kind)
@@ -11021,7 +11020,6 @@ The other bundle types are on <a href="../command-bundles/">Command bundles</a> 
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>extension: .splitpushbutton
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>can_contain: Other Command bundles
 </span></code></pre></div>
-<p>This bundle creates a stack of 2 or 3 buttons in a panel.</p>
 
 
 
