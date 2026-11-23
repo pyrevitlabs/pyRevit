@@ -12,6 +12,7 @@ internal sealed record TestCatalogSuite(string Project, string Framework, IReadO
 /// <remarks>
 /// Python tests are classified by <c>dev/tests/run_tests.py</c>; the allowed Environment and Level sets here must stay in sync with it.
 /// Tag arguments must be string literals so the catalog always agrees with the runtime category filter.
+/// Tags are read only from the method, its declaring type and enclosing types; a base class's tags are not inherited. A <c>[Test]</c> on an abstract base is cataloged under the base, not under each derived class.
 /// </remarks>
 internal static class TestMetadata {
     private static readonly HashSet<string> TestAttributes = ["Test", "TestCase", "TestCaseSource", "TestMethod", "DataTestMethod", "Fact", "Theory"];
@@ -36,7 +37,7 @@ internal static class TestMetadata {
             string environment = overrides.GetValueOrDefault("Environment") ?? defaults.GetValueOrDefault("Environment") ?? "";
             string level = overrides.GetValueOrDefault("Level") ?? defaults.GetValueOrDefault("Level") ?? "";
             if (!Environments.Contains(environment) || !Levels.Contains(level))
-                throw new InvalidDataException($"{path}: {type.Identifier}.{method.Identifier} requires Environment and Level metadata.");
+                throw new InvalidDataException($"{path}: {type.Identifier}.{method.Identifier} requires Environment and Level metadata; tags must be on the class itself (or an enclosing type); base class tags are not inherited.");
             if (defaults.GetValueOrDefault("Environment") == "Revit" && environment != "Revit")
                 throw new InvalidDataException($"{path}: a Revit fixture cannot override its environment to HostFree.");
             tests.Add(new(path, type.Identifier.ValueText, method.Identifier.ValueText, environment, level));
