@@ -37,7 +37,7 @@ namespace pyRevitCLI {
                 return;
             }
 
-            Console.WriteLine(string.Format("Agent host: {0} (policy: {1}, default engine: {2}, user skills: {3}{4})",
+            Console.WriteLine(string.Format("CLI config: agent host {0} (policy: {1}, default engine: {2}, user skills: {3}{4}); a running session can differ, see 'pyrevit agent context'",
                 PyRevitConfigs.GetAgentEnabled() ? "enabled" : "disabled",
                 PyRevitConfigs.GetAgentPolicy(),
                 PyRevitConfigs.GetAgentEngine(),
@@ -237,19 +237,36 @@ namespace pyRevitCLI {
             }
         }
 
+        private static readonly (string Parameter, string Option)[] RecordOptions = {
+            ("screenshot_interval_s", "--screenshot-interval"),
+            ("max_screenshots", "--max-screenshots"),
+            ("max_events", "--max-events"),
+            ("max_duration_s", "--max-duration"),
+        };
+
+        /// <summary>
+        /// <c>pyrevit agent record</c>: starts, stops or reports a session recording in the running Revit.
+        /// </summary>
+        /// <exception cref="PyRevitException">
+        /// The action is unknown, or a start option is not a number or is outside the range the host accepts;
+        /// the message names the command line option, not the host's parameter.
+        /// </exception>
         public static void Record(string action, bool screenshots, string screenshotInterval, string maxScreenshots, string maxEvents, string maxDuration, string revitSelector) {
             var normalizedAction = (action ?? string.Empty).ToLowerInvariant();
             if (normalizedAction != "start" && normalizedAction != "stop" && normalizedAction != "status")
                 throw new PyRevitException("The record action must be start, stop or status: " + action);
+            JObject parameters = null;
+            if (normalizedAction == "start") {
+                parameters = new JObject { ["screenshots"] = screenshots };
+                AddNumber(parameters, "screenshot_interval_s", screenshotInterval);
+                AddNumber(parameters, "max_screenshots", maxScreenshots);
+                AddNumber(parameters, "max_events", maxEvents);
+                AddNumber(parameters, "max_duration_s", maxDuration);
+            }
             var instance = PyRevitAgentClient.Resolve(revitSelector);
             switch (normalizedAction) {
                 case "start":
-                    var parameters = new JObject { ["screenshots"] = screenshots };
-                    AddNumber(parameters, "screenshot_interval_s", screenshotInterval);
-                    AddNumber(parameters, "max_screenshots", maxScreenshots);
-                    AddNumber(parameters, "max_events", maxEvents);
-                    AddNumber(parameters, "max_duration_s", maxDuration);
-                    Console.WriteLine(PyRevitAgentClient.Call(instance, "recording_start", parameters).ToString(Formatting.Indented));
+                    Console.WriteLine(StartRecording(instance, parameters).ToString(Formatting.Indented));
                     break;
                 case "stop":
                     Console.WriteLine(PyRevitAgentClient.Call(instance, "recording_stop").ToString(Formatting.Indented));
@@ -260,11 +277,22 @@ namespace pyRevitCLI {
             }
         }
 
+        private static JToken StartRecording(AgentInstance instance, JObject parameters) {
+            try {
+                return PyRevitAgentClient.Call(instance, "recording_start", parameters);
+            }
+            catch (AgentClientException ex) when (ex.Code == "invalid_params") {
+                throw new PyRevitException(RecordOptions.Aggregate(ex.Message, (message, name) => message.Replace($"'{name.Parameter}'", name.Option)));
+            }
+        }
+
         private static void AddNumber(JObject parameters, string name, string value) {
             if (value == null)
                 return;
-            var parsed = double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number);
-            parameters[name] = parsed ? (JToken)number : value;
+            if (!double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number)
+                || double.IsNaN(number) || double.IsInfinity(number))
+                throw new PyRevitException($"{RecordOptions.First(option => option.Parameter == name).Option} must be a number: {value}");
+            parameters[name] = number;
         }
 
         public static void PrintRecordings(string limit) {

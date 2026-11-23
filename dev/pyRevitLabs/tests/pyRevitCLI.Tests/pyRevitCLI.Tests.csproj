@@ -52,6 +52,7 @@
         <Compile Include="..\..\pyRevitCLI\PyRevitCLILogging.cs" Link="Sources\PyRevitCLILogging.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitCLIAppHelps.cs" Link="Sources\PyRevitCLIAppHelps.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitCLICommandType.cs" Link="Sources\PyRevitCLICommandType.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitCLICloneDeletion.cs" Link="Sources\PyRevitCLICloneDeletion.cs"/>
     </ItemGroup>
 
     <ItemGroup>

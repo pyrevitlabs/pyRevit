@@ -1,30 +1,28 @@
 # Tab Coloring
 
-pyRevit can colorize Revit tabs by the open document. Open **pyRevit Settings**, and activate the **Tab Colorizer** under **UI/UX** section.
+pyRevit can colorize Revit tabs by the open document. Open the pyRevit **Settings** and turn on **Colorize Open Documents** under **UI / UX** → **Tab Coloring**.
 
-![](../assets/tools/tab-coloring/revit-y57zkxv9zq.png)
+![Tab Coloring settings](../assets/tools/tab-coloring/settings-tab-coloring.png)
+
+!!! note "Screenshots"
+
+    The screenshots of Revit tabs, of the ribbon button and of the output window on this page come from an older version of pyRevit. The behaviour is the same.
 
 Save settings and the open tabs will be colored by document
 
 ![](../assets/tools/tab-coloring/revit-z7xzjies6z.png)
 
-You can use the Toggle Coloring tool to activate, deactivate the coloring in your current session.
+The **Tab Coloring** button in the **Toggles** panel turns the coloring on and off for the current session.
 
 ![](../assets/tools/tab-coloring/2019-09-07-12-29-33-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png)
 
 ### Setting Colorizer Theme
 
-Select the styling option for *Project* and *Family* tabs separately:
+Select the styling option for *Project* and *Family* tabs separately, in **Project Tab Style** and **Family Tab Style**. The preview below them shows the result.
 
-![](../assets/tools/tab-coloring/revit-cx0hce9v6f.png)
+The color swatches under **By Order** colorize the document tabs as they open. Use **+** and **-** to add and remove colors, and **Reset** to go back to the default colors.
 
-You can select a series of color swatches under the "By Order" section to colorize the document tabs as they open:
-
-![](../assets/tools/tab-coloring/revit-6hgqpazvan.png)
-
-Under "By Filter", you can select a series of colors and Regular expression patterns to colorize tabs by their title. In the example below, all the tabs that match the regex pattern `Level \d`, will be colorized with magenta:
-
-![](../assets/tools/tab-coloring/revit-r8fbzzewep.png)
+Under **By Filter**, you can select a series of colors and regular expression patterns to colorize tabs by their title. For example, with the pattern `Level \d` and a magenta swatch, all the tabs that match the pattern are colorized with magenta:
 
 ![](../assets/tools/tab-coloring/revit-avqufsmsfh.png)
 

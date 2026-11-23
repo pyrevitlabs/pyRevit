@@ -4,7 +4,7 @@
 
     **Command Availability**: Revit commands use standard `IExternalCommandAvailability` class to let Revit know if they are available in different contexts. For example, if a command needs to work on a set of elements, it can tell Revit to deactivate the button unless the user has selected one or more elements.
 
-In pyRevit, command availability is set through the `context` key in bundle file. Currently, pyRevit support three types of command availability types.
+In pyRevit, command availability is set through the `context` key in bundle file. The basic ones are:
 
 ```yaml
 # Tools are active even when there are no documents available/open in Revit
@@ -49,7 +49,7 @@ Bundle can also require a specific type of document to be active. Here are the a
 ```yaml
 context: doc-project                    # bundle is active when the active document is a Project
 context: doc-workshared                 # bundle is active when the active document is a Workshared Project
-context: doc-cloud                      # bundle is active when the active document is a Cloud Project (Revit >=2019.1)
+context: doc-cloud                      # bundle is active when the active document is a Cloud Project
 context: doc-family                     # bundle is active when the active document is a Family
 ```
 

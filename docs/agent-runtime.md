@@ -679,6 +679,10 @@ even while the session that made it is still open.
 
 ### Session recorder
 
+!!! note "pyRevit 7.2.0 or later"
+
+    The session recorder is not part of pyRevit 7.1.0.
+
 An agent only sees a bug through what the user says afterwards. The session recorder records what happens in Revit between two
 explicit user actions, so the agent can read the sequence that led to a bug.
 
@@ -689,6 +693,8 @@ pyrevit agent record stop
 pyrevit agent record status
 pyrevit agent recordings [--limit=<count>]
 ```
+
+The options take numbers in these ranges: `--screenshot-interval` 0 to 3600 seconds (`0` allows a screenshot at every opportunity until `--max-screenshots` is reached), `--max-screenshots` 0 to 100 (`0` takes none), `--max-events` 1 to 20000 and `--max-duration` 1 to 14400 seconds. All but the interval must be whole numbers. A value that is not a number or is outside its range is refused with the option's name.
 
 The user starts a recording, reproduces the problem and stops it. Then the agent calls
 `get_recording` (with `recording_id`, `offset` and `limit` to page the timeline). There is no

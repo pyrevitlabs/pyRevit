@@ -9,14 +9,23 @@ Now let's create another function that installs the pyRevit extensions we need. 
 ```powershell
 # install extensions
 function Install-Extensions() {
-    # make sure paths exits and are clean
+    # make sure the extensions folder exists. installed extensions are kept
     Confirm-Path $pyrevitexts
 
-    # install extensions now
-    Write-Output "Cloning Extensions..."
-    pyrevit extend "pyApex" --dest=$pyrevitexts
+    # update the extension when it is already installed, install it otherwise
+    if (Test-Path -LiteralPath (Join-Path $pyrevitexts "pyApex.extension")) {
+        Write-Output "Updating Extensions..."
+        pyrevit extensions update "pyApex"
+    } else {
+        Write-Output "Cloning Extensions..."
+        pyrevit extend "pyApex" --dest=$pyrevitexts
+    }
 }
 ```
+
+!!! warning ""
+
+    `pyrevit extensions update` overwrites local edits to the tracked files of the extension. Do not edit a deployed extension in place: change it in its repository and deploy again.
 
 ## Customizing pyRevit for Your Team
 

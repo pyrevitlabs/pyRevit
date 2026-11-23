@@ -56,32 +56,32 @@ authors:
   - Ehsan Iran-Nejad
 ```
 
-Use the locale codes here as shown above for various langauges
+Use the locale codes below for the various languages
 
 **Supported Locale Codes**
 
-| Revit Langauge | Revit | Locale Codes |
-|---|---|---|
-| English USA | \>=2013 | english,en\_us |
-| English Great Britain | \>=2018 | en\_gb |
-| Deutsch / German | \>=2013 | german,de\_de |
-| español / Spanish | \>=2013 | spanish,es\_es |
-| français / French | \>=2013 | french,fr\_fr |
-| italiano / Italian | \>=2013 | italian,it\_it |
-| Nederlands / Dutch | \>=2013 | dutch,nl\_be,nl\_nl |
-| 简体中文 / Chinese Simplified | \>=2013 | chinese,chinese\_s |
-| 繁體中文 / Chinese Traditional | \>=2013 | chinese,chinese\_t |
-| 日本語 / Japanese | \>=2013 | japanese,ja |
-| 한국어 / Korean | \>=2013 | korean,ko |
-| Русский / Russian | \>=2013 | russian,ru |
-| Čeština / Czech | \>=2013 | czech,cs |
-| Polski / Polish | \>=2013 | polish,pl |
-| Magyar / Hungarian | \>=2013 | hungarian,hu |
-| Português do Brasil / Brazilian Portuguese | \>=2013 | portuguese\_brazil,brazilian,portuguese,pt\_br,pt\_pt |
-| Български / Bulgarian | All | bulgarian,bg |
-| فارسی / Farsi | All | farsi,persian,fa |
-| العربیه / Arabic | All | arabic,ar |
-| Українська / Ukrainian | All | ukrainian,uk |
+| Revit Language | Locale Codes |
+|---|---|
+| English USA | english,en\_us |
+| English Great Britain | en\_gb |
+| Deutsch / German | german,de\_de |
+| español / Spanish | spanish,es\_es |
+| français / French | french,fr\_fr |
+| italiano / Italian | italian,it\_it |
+| Nederlands / Dutch | dutch,nl\_be,nl\_nl |
+| 简体中文 / Chinese Simplified | chinese,chinese\_s |
+| 繁體中文 / Chinese Traditional | chinese,chinese\_t |
+| 日本語 / Japanese | japanese,ja |
+| 한국어 / Korean | korean,ko |
+| Русский / Russian | russian,ru |
+| Čeština / Czech | czech,cs |
+| Polski / Polish | polish,pl |
+| Magyar / Hungarian | hungarian,hu |
+| Português do Brasil / Brazilian Portuguese | portuguese\_brazil,brazilian,portuguese,pt\_br,pt\_pt |
+| Български / Bulgarian | bulgarian,bg |
+| فارسی / Farsi | farsi,persian,fa |
+| العربیه / Arabic | arabic,ar |
+| Українська / Ukrainian | ukrainian,uk |
 
 #### Context Directives
 
@@ -106,7 +106,7 @@ The bundle file can also set the order of all the childern bundles in the UI:
 
 !!! tip ""
 
-    See [Bundle Layout](layout.md)  for more information on available context directives:Ï
+    See [Bundle Layout](layout.md) for more information on the layout directives.
 
 **Example**
 
@@ -121,14 +121,14 @@ layout:
 
 #### Supported Revit Versions
 
-Bundle file can define the range of Revit versions that support the bundle. pyRevit will not load the bundle if it is not supported under the running Revit. In the example below, the bundle will be loaded with Revit 2015 up to 2018 and is expected to work with the APIs for these versions.
+Bundle file can define the range of Revit versions that support the bundle. pyRevit will not load the bundle if it is not supported under the running Revit. In the example below, the bundle will be loaded with Revit 2022 up to 2025 and is expected to work with the APIs for these versions.
 
 ```yaml
 # minimium supported Revit version
-min_revit_version: 2015
+min_revit_version: 2022
 
 # maximum supported Revit version
-max_revit_version: 2018
+max_revit_version: 2025
 ```
 
 Bundle file can also set the state of the bundle. pyRevit user can decide whether to load the *Beta* bundles when starting Revit or not.
@@ -158,7 +158,7 @@ help_url: "{{youtube}}H7b8hjHbauE"
 
 ```yaml
 help_url: "{{youtube}}po0lCldSGmk"
-# final help url: https://www.youtube.com/watch?v=po0lCldSGmk proat
+# final help url: https://www.youtube.com/watch?v=po0lCldSGmk
 ```
 
 You can also group all your template values under the `templates` key. This cleans up the metadata files.

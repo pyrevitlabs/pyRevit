@@ -10,9 +10,9 @@ $ pyrevit run "C:\myscript.py"
 # the execution environment information will be printed after completion
 ==> Execution Environment
 Execution Id: "51066afe-022c-4dba-bdc5-d35d451b998f"
-Product: Autodesk Revit 2019 First Customer Ship | Version: 19.0.0.405 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2019\"
-Clone: Name: "dev" | Path: "...\pyRevit"
-Engine: KernelName:"IronPython" | Version: "277" | Path: "...\pyRevit\bin\engines\277" | Desc: "Compatible with RevitPythonShell" | Compatible: ""
+Product: <Revit product name> | Version: <version> | Build: <build>(<target>) | Language: <language code> | Path: "C:\Program Files\Autodesk\Revit <year>"
+Clone: dev | Branch: "develop" | Version: "<version>" | Path: "...\pyRevit"
+Engine: IPY2712PR (<folder>) | Kernel: IronPython | Version: 2712 | Runtime: True | Path: "<path of pyRevitLoader.dll>" | Desc: "<description>"
 Script: "C:\myscript.py"
 Working Directory: "...\Temp\51066afe-022c-4dba-bdc5-d35d451b998f"
 Journal File: "...\Temp\51066afe-022c-4dba-bdc5-d35d451b998f\PyRevitRunner_51066afe-022c-4dba-bdc5-d35d451b998f.txt"
@@ -22,9 +22,10 @@ Log File: "...\Temp\51066afe-022c-4dba-bdc5-d35d451b998f\PyRevitRunner_51066afe-
 
 - `--purge`: Runner creates a temporary directory under `%TEMP%` for this execution. Specifying this option, will clear the temporary files after completion. This is helpful when running a script over many files.
 
-If `--revit` option is not specified, the run command will use the newest installed version of Revit to run the command. You can however specify the revsion of Revit e.g. `--revit=2018`
+If `--revit` option is not specified, the run command will use the newest installed version of Revit to run the command. You can however specify the version of Revit e.g. `--revit=2026`
 
 At either case, pyRevit uses the clone and engine verison that is attached to Revit, to run the script; So make sure that pyRevit is already attached to the Revit version you are intending to use.
+If it is not attached to that Revit version, the command prints an error and exits with a non-zero exit code without running the script.
 
 All the pyrevit modules are accessible inside the script.
 
@@ -41,8 +42,8 @@ $ pyrevit run "C:\myscript.py" --models="C:\All-My-Models.txt" --revit=2026
 
 # target models will be listed at the end of env report
 ==> Target Models
-C:\Users\LeoW10\Desktop\batchtest\Project_V19.rvt
-C:\Users\LeoW10\Desktop\batchtest\Project_V18.rvt
+C:\Models\Project_A.rvt
+C:\Models\Project_B.rvt
 ```
 
 - `<model_file>`: Path to a Revit model file.

@@ -12,11 +12,11 @@
 
 !!! tip ""
 
-    pyRevit uses the embedded CPython engine. This engine looks at the PYTHONPATH environment variable for search paths for modules. You can set this variable on your system and pyRevit CPython commands will also find the modules you have installed using python package managers e.g. `pip` or `pipenv`  
+    pyRevit uses the embedded CPython engine. This engine looks at the PYTHONPATH environment variable for search paths for modules. You can set this variable on your system and pyRevit CPython commands will also find the modules you have installed using python package managers e.g. `pip` or `pipenv`. Install them with the same Python version as the pyRevit CPython engine, see [Engines](../../runtime/engines.md).
 
 !!! warning ""
 
-    Revit is a 64-bit application. Please make sure that you are using the 64-bit version of CPython when creating CPython bundles for pyRevit.
+    Revit is a 64-bit application. Packages with compiled code must be the 64-bit builds.
 
 ### Writing The Script
 

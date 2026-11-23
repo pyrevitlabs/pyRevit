@@ -2,16 +2,16 @@
 
 !!! warning ""
 
-    The bundle file (`_layout`) is deprecated and will be removed in the next pyRevit major version.  
-    See [Bundle Metadata](metadata.md) for directions on defining bundle layouts in bundle metadata files.
+    The separate `_layout` file is no longer read. Define the layout under the `layout` key of the bundle file (`bundle.yaml`), as shown here.  
+    See [Bundle Metadata](metadata.md) for the other keys of the bundle file.
 
 Bundle Layout is a method to provide directives on how the child bundles should be ordered in Revit UI.
 
 ```yaml
 MyCommands.pulldown/
-├── PushButton A.pushutton
-├── PushButton B.pushutton
-├── PushButton C.pushutton
+├── PushButton A.pushbutton
+├── PushButton B.pushbutton
+├── PushButton C.pushbutton
 └── bundle.yaml                  # bundle metadata file contains the layout directives
 ```
 

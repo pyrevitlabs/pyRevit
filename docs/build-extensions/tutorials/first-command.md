@@ -46,7 +46,7 @@ pyRevit’s extension bundles are designed to be flexible and easy to work with.
 
     By creating separate extension bundles, you will have all your precious scripts and tools in a safe place and away from the changes being made to the pyRevit core tools. Your extension bundles can even live somewhere on your company shared drives and be shared between your teams as well.
 
-Let's create a folder under `~/Documents`. `~` means "user home directory". [It's a Unix convention](https://en.wikipedia.org/wiki/Tilde#Computing)  and a special character in directory paths. We are going to use this convention on this wiki because it is simpler. But if you love Windows, you can use `%HOMEPATH%` instead e.g. `%HOMEPATH%/Documents`. See footnotes for more info.
+Let's create a folder under `~/Documents`. `~` means "user home directory". [It's a Unix convention](https://en.wikipedia.org/wiki/Tilde#Computing)  and a special character in directory paths. We are going to use this convention in this guide because it is simpler. On Windows you can use `%USERPROFILE%` instead e.g. `%USERPROFILE%\Documents`.
 
 Create the folder structure as shown here.
 
@@ -63,9 +63,7 @@ Other than the bundle types, you can change the rest of the bundle directory nam
 
 Now we need to tell pyRevit where to find this extension. Let's launch Revit, go to pyRevit tab and open the pyRevit **Settings**.
 
-![](../../assets/build-extensions/tutorials/first-command/2019-08-28-08-21-38.png)
-
-Add the extension path to the list of **Custom User Extensions**
+Add the `MyExtensions` folder to the list of **Custom Extension Directories**. Add the folder that contains the extension, not the `.extension` folder itself.
 
 ![](../../assets/build-extensions/tutorials/first-command/2019-08-28-18-13-17-pyrevit-settings.png)
 

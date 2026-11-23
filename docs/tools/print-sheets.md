@@ -2,44 +2,45 @@
 
 pyRevit includes a fairly advanced print tool that allows you to print the sheets in a model or a linked model in order, format the output file names and apply custom print settings on a per sheet basis
 
-With the model open, launch the tool from the ***Drawing Set*** panel
+With the model open, launch **Print Sheets** from the ***Drawing Set*** panel.
 
-![](../assets/tools/print-sheets/2019-11-07-09-09-45.png)
+![Print Sheets window](../assets/tools/print-sheets/print-sheets-window.png)
+
+!!! note "Screenshots"
+
+    The screenshots of [Per-Page Print Settings](#per-page-print-settings-variable-paper-size), [Combining Sheets Into One File](#combining-sheets-into-one-file) and [Starting Print](#starting-print) come from an older version of the tool. The options they show still exist.
 
 ## Selecting Model and Drawing Index
 
-Select the host model first. If the host model has other Revit models linked into it, the drop down menu shows the linked models as well. Printing options for linked models are fairly limited compared to printing from main model due to the challenges in opening the linked model, apply printing changes, and reloading the model back into the host model.
+Select the host model first in **Model**. If the host model has other Revit models linked into it, the list shows the linked models as well, as `Linked: <model name>`. **&lt;All Models&gt;** lists the sheets of the host and of every linked model together. Printing options for linked models are fairly limited compared to printing from main model due to the challenges in opening the linked model, apply printing changes, and reloading the model back into the host model.
 
-![](../assets/tools/print-sheets/2019-11-07-08-58-32-print-sheets.png)
+After selecting the model, **Sheet Index** lists all the drawing indices in the selected model. The drawing index is used to read the order of the sheets. The intention is that you would have one drawing index in your model that is placed on the index sheet and the same drawing index is being used to print the sheets in order. **&lt;All Sheets&gt;** lists every sheet of the model.
 
-Linked modes are shows as `Linked: <model name>`
-
-![](../assets/tools/print-sheets/2019-11-07-08-54-55-print-sheets.png)
-
-After selecting the model, print tools pulls a list of all drawing indices in the selected model. This drawing index is used to read the order of the sheets. The intention is that you would have one drawing index in your model that is placed on the index sheet and the same drawing index is being used to print the sheets in order.
-
-![](../assets/tools/print-sheets/2019-11-07-08-58-44-print-sheets.png)
-
-After the model and the drawing index are seleted, you should see a list of sheets with their corresponding index number. The list shows the final name of the PDF file for each sheet as well.
-
-![](../assets/tools/print-sheets/2019-11-07-08-58-55-print-sheets.png)
+The sheet list then shows each sheet with its index number, and the final name of the PDF file for each sheet.
 
 ## Indexing Configuration
 
 The print tools provides a few options to adjust the indexing
 
-![](../assets/tools/print-sheets/2019-11-07-08-59-08-print-sheets.png)
+![Sheet Ordering options](../assets/tools/print-sheets/print-sheets-indexing.png)
 
 - **Reverse Print Order** reverses the order of the sheets
 - **Show Non-Printable Sheets** lists the non-printable(placeholder) sheets on the list as well and allows you to reserve index numbers for these sheets. The print tool would not attempt to print these sheets and this is an option to help with indexing only.
 - **Index Digits** is the number of digits used as index
 - Set the starting integer for indexing on **Index Start** field. **Reset** to 0 if necessary.
+- **Sheet Lookup** filters the sheet list.
 
 ## Print Configurations
 
 The print tools provides a few options to adjust the printing output
 
-![](../assets/tools/print-sheets/2019-11-07-08-59-14-print-sheets.png)
+![Sheet Printing options](../assets/tools/print-sheets/print-sheets-printing-options.png)
+
+- **Printer**: in Revit 2022 and later the list starts with **Revit Internal Printer**, which exports the PDF files with Revit itself instead of a PDF printer driver.
+- **Export DWG** also exports each sheet to DWG. It is not available when combining into one PDF, for linked models, or for **&lt;All Models&gt;**.
+- **Output Folder** is where the PDF and DWG files are saved. Leave it empty to use `Desktop\pyRevit Print Folder`. An external PDF printer may use its own save location.
+- **Subfolder** saves the files in a subfolder of the output folder. Use `\` for nested folders.
+- Both folder fields accept the `{date}`, `{time}`, `{model}` and `{sheet_index}` tags.
 
 ### Naming Formats
 
@@ -49,13 +50,13 @@ You can define highly customized naming formats for your prints. The Edit Naming
 
 would be translated to Sheet index, Sheet number, and Sheet name for each sheet.
 
-![](../assets/tools/print-sheets/2019-11-07-09-01-15-naming-formats.png)
+![Naming Formats window](../assets/tools/print-sheets/naming-formats.png)
 
 There are a couple of advanced tags (shown in black) that allow you to read values for custom parameters at print time. For example `{tblock_param:PARAM_NAME}` allows you to apply the value of a custom project parameter for titleblocks, or a native titleblock parameter to the final file name.
 
 ### Per-Page Print Settings / Variable Paper Size
 
-The print tool, under **Print Settings** option, allows you to define a custom print setting for each sheet by choosing `<Variable Paper Size>`. Once this option is selected, the print tool reviews the sheets and tries to determine the best print option for that sheet based on its titleblock size.
+The print tool, under **Page Settings**, allows you to define a custom print setting for each sheet by choosing `<Variable Paper Size>`. Once this option is selected, the print tool reviews the sheets and tries to determine the best print option for that sheet based on its titleblock size.
 
 ![](../assets/tools/print-sheets/2019-11-07-08-59-23-print-sheets.png)
 
@@ -76,7 +77,7 @@ Select the appropriate print setting and the sheet list reflects the newly appli
 
 ### Combining Sheets Into One File
 
-The print tool allows you to combine multiple sheets into one file (`Ordered Sheets.pdf`). Under this option, many of the indexing and print settings are not available to the underlying printing mechanism in Autodesk Revit. For full flexibility, it is better to print the sheets individually and combine them later.
+The print tool allows you to combine multiple sheets into one file (`Ordered Sheet Set.pdf`). Under this option, many of the indexing and print settings are not available to the underlying printing mechanism in Autodesk Revit. For full flexibility, it is better to print the sheets individually and combine them later.
 
 ![](../assets/tools/print-sheets/2019-11-07-09-01-57-print-sheets.png)
 
@@ -95,3 +96,12 @@ Once you are happy with the indices, printing configurations, and the output fil
 - If you are sure about starting the print process if there are more than 5 sheets in the print queue
 
 ![](../assets/tools/print-sheets/2019-11-07-09-01-39-print-sheets.png)
+
+- Whether to replace the files the print creates when they already exist in the output folder
+
+## Other options
+
+- A *Print Setting* type parameter (of type Text) on a titleblock family can hold the name of the print setting to use. With `<Variable Paper Size>`, the tool assigns that print setting to the sheets using this titleblock.
+- Right-click a file name in the sheet list to copy the file names.
+- When sheets of different models would get the same file name, add `{index}` to the naming format, or `{proj_number}` when the models have different project numbers.
+- A combined PDF cannot be made when the paper size varies by sheet.

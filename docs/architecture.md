@@ -165,9 +165,16 @@ imported before a Reload survive it. The contract is asserted by the tests in
 
 ### Forms across Python engines
 
+!!! note "pyRevit 7.2.0 or later"
+
+    The CPython column describes pyRevit 7.2.0. In 7.1.0 these forms raise `PyRevitCPythonNotSupported` under CPython.
+
 `pyrevit.forms` exports one engine-neutral API, listed once in
 `forms/_common.py`. IronPython adds the legacy names it exported before the
 module split (`forms/_ipy_legacy.py`, listed in `forms/_legacy_exports.py`).
+`forms.warning` and `forms.set_data_context` are attributes only: they stay
+out of `__all__`, so `from pyrevit.forms import *` cannot shadow a script's
+own `warning`.
 CPython imports any real `pyrevit.forms` submodule on first access and reports
 any other public name as unsupported. Shared behavior lives in `forms/base.py`
 (window resources, loading and ownership), `forms/_theme.py` (palette,

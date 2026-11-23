@@ -36,7 +36,7 @@ The `ci` pipeline mode builds all product DLLs, tools, and engines into `bin/`:
 ```powershell
 cd build
 
-# Unsigned product build (no version stamping; Channel=none by default)
+# Unsigned product build (Channel=none by default: committed version files stay untouched, assemblies still carry the printed build version)
 dotnet run -c Release -- ci
 
 # WIP-style stamping + product build (matches a develop or release/* push on the main repo)

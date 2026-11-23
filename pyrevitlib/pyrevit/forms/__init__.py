@@ -3,6 +3,8 @@
 Both engines export the engine-neutral API defined in ``_common``. IronPython
 adds its legacy names through ``_ipy_legacy``; CPython imports real submodules
 on first access and reports any other public name as unsupported.
+``warning`` and ``set_data_context`` are attributes on both engines but stay
+out of ``__all__``, so a star import does not shadow a script's own names.
 """
 
 from pyrevit.compat import IRONPY
@@ -70,3 +72,6 @@ else:
         if name in _UNPORTED_NAMES:
             raise _NotSupported(qualified)
         raise _unsupported_name(name)
+
+
+from ._common import set_data_context, warning  # noqa: E402,F401

@@ -49,7 +49,7 @@ chart = output.make_doughnut_chart()
 ```
 
 #### Step 1a \[Optional\]
-Setup the chart title, and other options. the full list of options for every chart is available on [Charts.js Documentation](http://www.chartjs.org/docs/) page. Some of the properties have their own sub-properties, for example the `title` option for the charts has multiple sub-properties as shown below. The value for these type of properties should be a dictionary of the sub-properties you’d like to set.
+Setup the chart title, and other options. the full list of options for every chart is available on [Charts.js Documentation](https://www.chartjs.org/docs/) page. Some of the properties have their own sub-properties, for example the `title` option for the charts has multiple sub-properties as shown below. The value for these type of properties should be a dictionary of the sub-properties you’d like to set.
 
 ```python
 chart.set_style('height:150px')

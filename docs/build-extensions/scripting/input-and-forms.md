@@ -82,7 +82,7 @@ forms.toast(
     "Hello World!",
     title="My Script",
     appid="MyAPP",
-    click="https://eirannejad.github.io/pyRevit/",
+    click="https://docs.pyrevitlabs.io/",
     actions={
         "Open Google":"https://google.com",
         "Open Toast64":"https://github.com/go-toast/toast"
@@ -342,10 +342,8 @@ res = forms.SelectFromList.show(ops,
                                 multiselect=False,
                                 name_attr='Name',
                                 button_name='Select Sheet')
-if res:
-    selected_ids = [sheet.Id for sheet in res]
-    if viewsheet1.Id in selected_ids:
-        do_stuff()
+if res and res.Id == viewsheet1.Id:
+    do_stuff()
 ```
 
 The options also support groups of lists. When option groups are used, a combo box group selector will appear on the window
@@ -373,8 +371,10 @@ res = forms.SelectFromList.show(ops,
                                 name_attr='Name',
                                 group_selector_title='Sheet Sets',
                                 button_name='Select Sheets')
-if res.Id == viewsheet1.Id:
-    do_stuff()
+if res:
+    selected_ids = [sheet.Id for sheet in res]
+    if viewsheet1.Id in selected_ids:
+        do_stuff()
 ```
 
 This module also provides a wrapper base class [`TemplateListItem`](https://docs.pyrevitlabs.io/reference/pyrevit/forms/#pyrevit.forms.TemplateListItem) for when the checkbox option is wrapping another element, e.g. a Revit ViewSheet. Derive from this base class and define the name property to customize how the checkbox is named on the dialog.

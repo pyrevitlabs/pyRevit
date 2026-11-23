@@ -1,17 +1,19 @@
 # Checks
 
-![](../../assets/build-extensions/extensions/checks/untitled)
+**Preflight Checks**, in the **Project** panel of the pyRevit tab, runs model checks. Extensions can add their own.
+
+![](../../assets/build-extensions/extensions/checks/preflight-checks.png)
 
 - The ‘checks’ are all located in a ‘checks’ folder at the root of any extension folder (meaning even in a custom extension folder). The basic ones that comes with pyRevit as well:
 
 !!! info ""
 
-    [Preflight Checks - Checks Folder](https://github.com/pyrevitlabs/pyRevit/tree/6aa2c493231f4301125f2570dc5efd644691bbad/extensions/pyRevitTools.extension/checks)  
+    [Preflight Checks - Checks Folder](https://github.com/pyrevitlabs/pyRevit/tree/develop/extensions/pyRevitTools.extension/checks)  
 
 - Start by duplicating any of the suffixed \*\_check.py files, the extension of the filename being the important part
 - In the file itself, the important parts are:
 
-```dart
+```python
 from pyrevit.preflight import PreflightTestCase
 from pyrevit import HOST_APP
 from pyrevit.script import get_output
