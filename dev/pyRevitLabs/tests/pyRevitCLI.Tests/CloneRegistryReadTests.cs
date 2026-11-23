@@ -15,6 +15,7 @@ public class CloneRegistryReadTests : IDisposable {
     private readonly string temp = Path.Combine(Path.GetTempPath(), "pyRevit-clone-registry-tests-" + Guid.NewGuid());
     private readonly string previousPyRevitPath = Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitPathOverrideEnvVar);
     private readonly string previousProgramDataPath = Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar);
+    private readonly string previousIgnoreLocalConfig = Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar);
     private readonly string presentClonePath;
     private readonly string missingClonePath;
 
@@ -24,6 +25,7 @@ public class CloneRegistryReadTests : IDisposable {
     public CloneRegistryReadTests() {
         Environment.SetEnvironmentVariable(PyRevitLabsConsts.PyRevitPathOverrideEnvVar, Path.Combine(temp, "AppDataPyRevit"));
         Environment.SetEnvironmentVariable(PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar, Path.Combine(temp, "ProgramDataPyRevit"));
+        Environment.SetEnvironmentVariable(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar, "1");
         PyRevitInstallScope.ClearCachedInstallScope();
         PyRevitInstallScope.SetRuntimeInstallRoot(null);
         PyRevitConfigService.Reload();
@@ -42,6 +44,7 @@ public class CloneRegistryReadTests : IDisposable {
 
     /// <inheritdoc />
     public void Dispose() {
+        Environment.SetEnvironmentVariable(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar, previousIgnoreLocalConfig);
         PyRevitConfigService.Reload();
         PyRevitInstallScope.ClearCachedInstallScope();
         PyRevitInstallScope.SetRuntimeInstallRoot(null);
