@@ -62,6 +62,6 @@ tooltip:
     Escolher as verificações de avisos críticos e configurar se e para onde os dados coletados serão exportados.
 authors:
   - '{{author}}'
-help_url: https://www.notion.so/pyrevitlabs/Extension-Checks-0cf10ac6717b41f2915fe3341f05a223
+help_url: https://docs.pyrevitlabs.io/build-extensions/extensions/checks/
 context:
   - doc-project

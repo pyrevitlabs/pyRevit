@@ -224,6 +224,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
             }
 
+            AgentWindows.RememberMainWindow(uiApp.MainWindowHandle);
             engineWarmUp.Reset();
             if (IsElevated()) {
                 Stop();

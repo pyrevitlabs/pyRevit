@@ -194,6 +194,16 @@
     <system:String x:Key="PreviewCategories">범주</system:String>
     <system:String x:Key="PreviewAll">모두</system:String>
     <system:String x:Key="PreviewNone">없음</system:String>
+    <system:String x:Key="PreviewCubeBack">뒤</system:String>
+    <system:String x:Key="PreviewCubeBottom">아래</system:String>
+    <system:String x:Key="PreviewCubeLeft">왼쪽</system:String>
+    <system:String x:Key="PreviewCubeRight">오른쪽</system:String>
+    <system:String x:Key="PreviewCompass">북,동,남,서</system:String>
+    <system:String x:Key="PreviewBoxOnly">상자만</system:String>
+    <system:String x:Key="PreviewBoxes">{0}개 상자로 표시</system:String>
+    <system:String x:Key="PreviewNotLoaded">{0}개 미로드</system:String>
+    <system:String x:Key="PreviewLoadGroup">로드</system:String>
+    <system:String x:Key="PreviewSearch">카테고리 검색</system:String>
     <system:String x:Key="PreviewFront">정면</system:String>
     <system:String x:Key="PreviewSide">측면</system:String>
     <system:String x:Key="PreviewAllLevels">모든 레벨</system:String>

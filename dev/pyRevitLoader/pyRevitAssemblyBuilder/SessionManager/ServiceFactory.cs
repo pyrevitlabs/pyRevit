@@ -297,7 +297,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var tabIconDecorator = new TabIconDecorator(path => iconManager.LoadBitmapSource(path), themeDetector.IsDarkTheme);
             var tabBuilder = CreateTabBuilder(uiApplication, logger, tabIconDecorator, ReadShowTabIcons(logger));
             var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager);
-            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
+            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger, buildContext);
             var buttonBuilderFactory = CreateButtonBuilderFactory(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var stackBuilder = CreateStackBuilder(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var comboBoxBuilder = CreateComboBoxBuilder(uiApplication, logger, buttonPostProcessor);

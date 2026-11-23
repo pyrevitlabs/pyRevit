@@ -214,7 +214,7 @@ namespace pyRevitCLI {
         /// Replaces the folder that holds host registrations and run records. Set by tests so
         /// they never read or write the real user profile.
         /// </summary>
-        internal static string AgentDirOverride;
+        internal static string AgentDirOverride = null;
 
         internal static Func<Process, string> ProcessNameReader = process => process.ProcessName;
         internal static Func<Process, DateTime> ProcessStartTimeReader = process => process.StartTime;

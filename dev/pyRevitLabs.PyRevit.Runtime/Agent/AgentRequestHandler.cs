@@ -87,7 +87,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     }
                     return pong;
                 case "get_context":
-                    return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
+                    return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters, failFastOnModalDialog: true);
                 case "run":
                     var runRequest = ParseParameters(() => AgentRunRequest.FromJson(parameters));
                     AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
@@ -188,10 +188,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         /// <remarks>
         /// Dismissed dialogs are added to an object result as <c>dialogs</c>. <c>run</c> doesn't
-        /// use this: its guard captures dialogs itself.
+        /// use this: its guard captures dialogs itself. <paramref name="failFastOnModalDialog"/>
+        /// is for requests that exist to tell the agent what Revit is doing: they answer
+        /// <c>revit_busy</c> naming the dialog as soon as a modal dialog blocks them, instead of
+        /// after the start timeout.
         /// </remarks>
         private static JToken InvokeCapturingDialogs(
-            Func<Autodesk.Revit.UI.UIApplication, AgentDialogCapture, JToken> work, JObject parameters) {
+            Func<Autodesk.Revit.UI.UIApplication, AgentDialogCapture, JToken> work, JObject parameters,
+            bool failFastOnModalDialog = false) {
             return InvokeOnMainThread(app => {
                 using (var dialogs = new AgentDialogCapture(app)) {
                     var result = work(app, dialogs);
@@ -199,7 +203,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         response["dialogs"] = dialogs.Dialogs;
                     return result;
                 }
-            }, parameters);
+            }, parameters, failFastOnModalDialog);
         }
 
         /// <summary>
@@ -218,7 +222,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static JToken InvokeOnMainThread(
-            Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters) {
+            Func<Autodesk.Revit.UI.UIApplication, JToken> work, JObject parameters,
+            bool failFastOnModalDialog = false) {
             var startTimeoutSeconds = AgentParams.Get<double?>(parameters, "start_timeout_s");
             if (startTimeoutSeconds.HasValue
                 && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
@@ -236,7 +241,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 AgentHost.RefreshConfigIfChanged();
                 RequireEnabled();
                 return work(app);
-            }, startTimeout);
+            }, startTimeout, failFastOnModalDialog);
         }
 
         private static string Success(JToken id, JToken result) {

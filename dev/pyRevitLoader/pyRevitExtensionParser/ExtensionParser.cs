@@ -57,9 +57,12 @@ namespace pyRevitExtensionParser
                 logger.Error(message);
         }
 
-        private static List<string> ReadAuthList(
+        /// <summary>
+        /// Reads an authusers/authgroups value. Sets <paramref name="authDefinitionUnreadable"/>
+        /// for a non-list value or a list with only blank entries; the caller logs it.
+        /// </summary>
+        internal static List<string> ReadAuthList(
             JToken token,
-            string extensionJsonPath,
             ref bool authDefinitionUnreadable)
         {
             if (token == null || token.Type == JTokenType.Null)
@@ -69,7 +72,6 @@ namespace pyRevitExtensionParser
             if (array == null)
             {
                 authDefinitionUnreadable = true;
-                LogAuthDefinitionUnreadable(extensionJsonPath);
                 return null;
             }
 
@@ -87,7 +89,6 @@ namespace pyRevitExtensionParser
             if (values.Count == 0)
             {
                 authDefinitionUnreadable = true;
-                LogAuthDefinitionUnreadable(extensionJsonPath);
                 return null;
             }
 
@@ -101,9 +102,9 @@ namespace pyRevitExtensionParser
                     || jsonContent.IndexOf("authgroups", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
-        private static void LogAuthDefinitionUnreadable(string extensionJsonPath)
+        internal static void LogAuthDefinitionUnreadable(string definitionLocation)
         {
-            LogError("Access list in " + extensionJsonPath +
+            LogError("Access list in " + definitionLocation +
                 " could not be read; the extension will not be loaded until it is fixed.");
         }
 
@@ -619,8 +620,10 @@ namespace pyRevitExtensionParser
                         rocketModeCompatible = rocketModeValue.Equals("true", StringComparison.OrdinalIgnoreCase);
                     }
 
-                    authUsers = ReadAuthList(json["authusers"], extensionJsonPath, ref authDefinitionUnreadable);
-                    authGroups = ReadAuthList(json["authgroups"], extensionJsonPath, ref authDefinitionUnreadable);
+                    authUsers = ReadAuthList(json["authusers"], ref authDefinitionUnreadable);
+                    authGroups = ReadAuthList(json["authgroups"], ref authDefinitionUnreadable);
+                    if (authDefinitionUnreadable)
+                        LogAuthDefinitionUnreadable(extensionJsonPath);
                 }
                 catch (Exception ex)
                 {
@@ -633,7 +636,7 @@ namespace pyRevitExtensionParser
                 }
             }
 
-            ExtensionRegistryAuth.ApplyRegistryAuthorization(
+            authDefinitionUnreadable |= ExtensionRegistryAuth.ApplyRegistryAuthorization(
                 extDir,
                 extName,
                 manifestName,

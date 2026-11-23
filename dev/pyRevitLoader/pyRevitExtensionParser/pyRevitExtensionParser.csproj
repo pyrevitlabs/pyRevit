@@ -19,6 +19,7 @@
 
     <ItemGroup>
       <InternalsVisibleTo Include="pyRevitExtensionParser.Tests" />
+      <InternalsVisibleTo Include="pyRevitAssemblyBuilder.Tests" />
       <InternalsVisibleTo Include="pyRevitLabs.UnitTests" />
     </ItemGroup>
 

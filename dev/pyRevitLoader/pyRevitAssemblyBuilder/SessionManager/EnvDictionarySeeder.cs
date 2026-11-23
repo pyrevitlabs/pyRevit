@@ -120,8 +120,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </summary>
         internal static string ResolveOutputStyleSheet(string configuredStyleSheet, string pyRevitRoot)
         {
-            var configured = configuredStyleSheet?.Trim();
-            if (!string.IsNullOrEmpty(configured) && File.Exists(configured))
+            var configured = configuredStyleSheet?.Trim() ?? string.Empty;
+            if (configured.Length > 0 && File.Exists(configured))
                 return configured;
 
             if (string.IsNullOrEmpty(pyRevitRoot))
@@ -185,7 +185,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
         internal static string ReadIPYVersion(string pyRevitRoot)
         {
-            return ReadIPYVersion(pyRevitRoot, Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+            return ReadIPYVersion(pyRevitRoot, Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty);
         }
 
         /// <summary>

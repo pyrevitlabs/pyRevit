@@ -15,6 +15,7 @@ import re
 from pyrevit import DB
 
 BOX_POINT_COUNT = 8 + 2 * 12
+COARSE_LEVEL_OF_DETAIL = 0.1
 _PACKED_TOKEN = re.compile(r"@@PACKED(\d+)@@")
 
 
@@ -91,13 +92,27 @@ class MeshBuilder(object):
         return self.vertex_count - 1
 
     def add_mesh(self, mesh):
-        """Add a ``DB.Mesh`` (vertices and triangles)."""
+        """Add a ``DB.Mesh`` (vertices and triangles).
+
+        Reserves the whole mesh against the budget before reading any vertex,
+        so an oversized mesh is refused without being converted.
+        """
+        vertices = mesh.Vertices
         base = self.vertex_count
-        for vertex in mesh.Vertices:
-            self._push_vertex(vertex)
+        self._reserve(vertices.Count)
+        origin = self.origin
+        ox, oy, oz = origin.X, origin.Y, origin.Z
+        transform = self.transform
+        extend = self.positions.extend
+        for vertex in vertices:
+            if transform is not None:
+                vertex = transform.OfPoint(vertex)
+            extend((vertex.X - ox, vertex.Y - oy, vertex.Z - oz))
+        extend_indices = self.indices.extend
+        get_triangle = mesh.get_Triangle
         for index in range(mesh.NumTriangles):
-            triangle = mesh.get_Triangle(index)
-            self.indices.extend(
+            triangle = get_triangle(index)
+            extend_indices(
                 (
                     base + triangle.get_Index(0),
                     base + triangle.get_Index(1),
@@ -172,7 +187,7 @@ def box_corners(low, high, transform=None):
     return corners
 
 
-def walk_geometry(geometry, builder, edges=True):
+def walk_geometry(geometry, builder, edges=True, level_of_detail=None):
     """Add the solids, meshes, curves and instances of ``geometry`` to ``builder``.
 
     Args:
@@ -180,13 +195,18 @@ def walk_geometry(geometry, builder, edges=True):
         builder (MeshBuilder): receives the triangles and segments.
         edges (bool): also add solid edges. Edges can be most of an element's
             point count, so previews that shade solids skip them.
+        level_of_detail (float | None): triangulation detail from 0 (coarsest)
+            to 1 for solid faces; None keeps Revit's default.
     """
     for item in geometry:
         if isinstance(item, DB.Solid):
             if item.Faces.Size == 0:
                 continue
             for face in item.Faces:
-                triangulated = face.Triangulate()
+                if level_of_detail is None:
+                    triangulated = face.Triangulate()
+                else:
+                    triangulated = face.Triangulate(level_of_detail)
                 if triangulated is not None:
                     builder.add_mesh(triangulated)
             if edges:
@@ -195,9 +215,9 @@ def walk_geometry(geometry, builder, edges=True):
         elif isinstance(item, DB.Mesh):
             builder.add_mesh(item)
         elif isinstance(item, DB.GeometryInstance):
-            walk_geometry(item.GetInstanceGeometry(), builder, edges)
+            walk_geometry(item.GetInstanceGeometry(), builder, edges, level_of_detail)
         elif isinstance(item, DB.GeometryElement):
-            walk_geometry(item, builder, edges)
+            walk_geometry(item, builder, edges, level_of_detail)
         elif isinstance(item, DB.Curve):
             builder.add_polyline(item.Tessellate())
         elif isinstance(item, DB.PolyLine):
@@ -259,6 +279,14 @@ def _has_geometry(element, detail_level):
     return bool(probe.indices or probe.edges)
 
 
+def _tessellate_coarse(element, origin, budget, edges, transform):
+    builder = MeshBuilder(origin, budget, transform)
+    geometry = element_geometry(element, DB.ViewDetailLevel.Coarse)
+    if geometry is not None:
+        walk_geometry(geometry, builder, edges, COARSE_LEVEL_OF_DETAIL)
+    return builder
+
+
 def tessellate_element(
     element,
     bbox,
@@ -268,6 +296,7 @@ def tessellate_element(
     edges=True,
     transform=None,
     box_when_empty=True,
+    coarse_retry=False,
 ):
     """Tessellate ``element`` within ``budget`` points.
 
@@ -286,6 +315,12 @@ def tessellate_element(
             geometry at all (sheets, sketches, rooms without volume). When
             False such an element returns an empty builder, so previews can
             leave it out.
+        coarse_retry (bool): when the geometry exceeds ``budget``, read it
+            again at Coarse detail with coarse face triangulation before
+            falling back to the bounding box. Families that draw less at
+            Coarse and curved faces then fit the budget and keep their shape.
+            A retry that draws nothing the caller wants (no triangles, or no
+            segments either when ``edges`` is set) falls back to the box too.
 
     Returns:
         (tuple[MeshBuilder, bool]): the builder and whether it holds the
@@ -306,8 +341,19 @@ def tessellate_element(
             geometry = element_geometry(element, detail_level)
             if geometry is not None:
                 walk_geometry(geometry, builder, edges)
-        except Exception:
+        except Exception as error:
             approx = True
+            if coarse_retry and isinstance(error, BudgetExceeded):
+                try:
+                    retried = _tessellate_coarse(
+                        element, origin, budget, edges, transform
+                    )
+                    drawn = retried.indices or (edges and retried.edges)
+                    if drawn:
+                        builder = retried
+                        approx = False
+                except Exception:
+                    approx = True
     nothing_drawn = not builder.indices and not builder.edges
     if approx or (nothing_drawn and box_when_empty):
         builder = MeshBuilder(origin, BOX_POINT_COUNT, transform)

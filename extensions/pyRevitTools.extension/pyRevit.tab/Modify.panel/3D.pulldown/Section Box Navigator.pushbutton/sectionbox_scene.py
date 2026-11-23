@@ -16,6 +16,7 @@ import time
 
 from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func
+from pyrevit.framework import List
 from pyrevit.revit import units
 from scene3d.meshing import (
     BOX_POINT_COUNT,
@@ -30,6 +31,7 @@ from scene3d.meshing import (
 )
 
 from sectionbox_geometry import get_box_info, get_crop_edit_blocker
+from sectionbox_guides import drop_repeated_grids, drop_repeated_levels
 from sectionbox_sources import get_scope_boxes, scope_box_to_bounding_box
 from sectionbox_utils import get_view_range_and_crop, is_2d_view
 
@@ -37,6 +39,7 @@ get_elementid_value = get_elementid_value_func()
 
 MAX_ELEMENT_POINTS = 20000
 MAX_TOTAL_POINTS = 3000000
+MAX_FORCED_POINTS = 1500000
 NON_GEOMETRY_CATEGORIES = {
     "Sheets": -2003100,
     "Sketch Lines": -2000045,
@@ -78,32 +81,108 @@ def _category_id(element):
     return int(get_elementid_value(element.Category.Id))
 
 
-def _is_candidate(element):
-    category = element.Category
-    if category is None or category.CategoryType != DB.CategoryType.Model:
-        return False
-    if isinstance(element, DB.Group):
-        return False
-    if element.OwnerViewId != DB.ElementId.InvalidElementId:
-        return False
-    return _category_id(element) not in _EXCLUDED_CATEGORY_IDS
+def _model_category_filter(doc):
+    """Return a native filter passing the elements of drawable model categories."""
+    ids = List[DB.ElementId]()
+    for category in doc.Settings.Categories:
+        if (
+            category.CategoryType == DB.CategoryType.Model
+            and int(get_elementid_value(category.Id)) not in _EXCLUDED_CATEGORY_IDS
+        ):
+            ids.Add(category.Id)
+    return DB.ElementMulticategoryFilter(ids)
+
+
+def _model_element_ids(doc):
+    """Return the ids of the view-independent elements of model categories.
+
+    The ids come from one native collector pass that creates no element
+    objects, so a model with hundreds of thousands of annotations and other
+    non-3D elements never reaches Python.
+    """
+    collector = (
+        DB.FilteredElementCollector(doc)
+        .WhereElementIsNotElementType()
+        .WhereElementIsViewIndependent()
+        .WherePasses(_model_category_filter(doc))
+    )
+    return list(collector.ToElementIds())
 
 
 def _model_elements(doc):
-    collector = DB.FilteredElementCollector(doc).WhereElementIsNotElementType()
-    return [element for element in collector if _is_candidate(element)]
+    for element_id in _model_element_ids(doc):
+        element = doc.GetElement(element_id)
+        if element is not None and not isinstance(element, DB.Group):
+            yield element
 
 
 class _Entry(object):
-    __slots__ = ("element", "bbox", "transform", "group", "source", "size")
+    __slots__ = (
+        "element",
+        "bbox",
+        "transform",
+        "link",
+        "source",
+        "group",
+        "hidden",
+        "size",
+        "near",
+    )
 
-    def __init__(self, element, bbox, transform, group, source):
+    def __init__(self, element, bbox, transform, link, source, group, hidden, near):
         self.element = element
         self.bbox = bbox
         self.transform = transform
-        self.group = group
+        self.link = link
         self.source = source
+        self.group = group
+        self.hidden = hidden
         self.size = (bbox.Max - bbox.Min).GetLength()
+        self.near = near
+
+
+def _near_focus(bbox, transform, focus):
+    """Tell whether ``bbox`` (in its own document) touches the world box ``focus``.
+
+    A host element is tested by its own bounds. A linked element is first
+    tested by the sphere around its transformed center, which costs one point
+    transform, and only a candidate that passes gets its eight corners
+    transformed for the tight test, so a long wall just outside the box does
+    not outrank the geometry inside it.
+    """
+    if focus is None:
+        return False
+    if transform is None:
+        low, high = bbox.Min, bbox.Max
+    else:
+        center = transform.OfPoint((bbox.Min + bbox.Max) * 0.5)
+        radius = (bbox.Max - bbox.Min).GetLength() * 0.5
+        if not _overlaps_box(
+            center - DB.XYZ(radius, radius, radius),
+            center + DB.XYZ(radius, radius, radius),
+            focus,
+        ):
+            return False
+        corners = [transform.OfPoint(c) for c in box_corners(bbox.Min, bbox.Max)]
+        xs, ys, zs = (
+            [c.X for c in corners],
+            [c.Y for c in corners],
+            [c.Z for c in corners],
+        )
+        low = DB.XYZ(min(xs), min(ys), min(zs))
+        high = DB.XYZ(max(xs), max(ys), max(zs))
+    return _overlaps_box(low, high, focus)
+
+
+def _overlaps_box(low, high, focus):
+    return (
+        high.X >= focus.Min.X
+        and low.X <= focus.Max.X
+        and high.Y >= focus.Min.Y
+        and low.Y <= focus.Max.Y
+        and high.Z >= focus.Min.Z
+        and low.Z <= focus.Max.Z
+    )
 
 
 class ModelStream(object):
@@ -112,16 +191,20 @@ class ModelStream(object):
     Args:
         doc (DB.Document): host document.
         origin (DB.XYZ): scene origin.
-        include_links (bool): also stream the geometry of loaded Revit links,
-            grouped one entry per link as "Link: <title>".
+        include_links (bool): also stream the geometry of loaded Revit links.
         links_only (bool): stream only the links, for a page that already
             holds the host model.
+        focus (DB.BoundingBoxXYZ | None): world bounds, normally of the section
+            box. Elements touching it are streamed before the rest, so the
+            region the user cuts appears first and is the last to be left out.
 
     Elements that are not 3D geometry are left out: view-specific elements,
     the categories in ``NON_GEOMETRY_CATEGORIES`` and any element without
-    geometry. Rooms, spaces and parts are streamed for the host model flagged
-    ``hidden`` (the page starts with their category unticked) and skipped in
-    links, whose elements share one group per link.
+    geometry. Each mesh carries its category as ``group`` and, for a linked
+    element, the link's title as ``link``, so the page can toggle a link's walls
+    apart from the host's. Rooms, spaces and parts are streamed for the host
+    model flagged ``hidden`` (the page starts with their category unticked) and
+    skipped in links.
 
     Invariant:
         Chunks are independent: the page appends meshes as they arrive. An
@@ -129,26 +212,40 @@ class ModelStream(object):
         its id, because link element ids can equal host ids.
 
     Note:
-        ``MAX_TOTAL_POINTS`` also covers the bounding boxes drawn for elements
-        that exceed their own budget. Once less than one box fits, the
-        remaining, smallest elements are left out and counted in
-        ``truncated``. Elements deleted between chunks are skipped.
+        Reading the model is time-sliced like streaming it: a chunk during the
+        first phase carries no meshes and ``progress`` counts the elements
+        read. ``MAX_TOTAL_POINTS`` also covers the bounding boxes drawn for
+        elements that exceed their own budget. Once less than one box fits, the
+        remaining, smallest elements are left out; :meth:`dropped_groups`
+        lists them by category and :meth:`load_group` streams one category's
+        share anyway, up to ``MAX_FORCED_POINTS`` more points. Elements deleted
+        between chunks are skipped.
     """
 
-    def __init__(self, doc, origin, include_links, links_only=False):
+    def __init__(self, doc, origin, include_links, links_only=False, focus=None):
         self.doc = doc
         self.origin = origin
         self.include_links = include_links
         self.links_only = links_only
+        self.focus = focus
         self._entries = None
+        self._reading = None
+        self._read_count = 0
+        self._read_total = 0
         self._cursor = 0
         self._points = 0
-        self.truncated = 0
+        self._points_limit = MAX_TOTAL_POINTS
+        self._dropped = []
 
     @property
     def done(self):
         """True once every prepared element has been streamed."""
         return self._entries is not None and self._cursor >= len(self._entries)
+
+    @property
+    def truncated(self):
+        """Number of elements left out because the point limit was reached."""
+        return len(self._dropped)
 
     def _sources(self):
         sources = [(self.doc, None, None)]
@@ -164,45 +261,133 @@ class ModelStream(object):
                     )
         return sources
 
-    def _prepare(self):
-        entries = []
+    def _begin_reading(self):
+        queue = []
         for source, (doc, transform, title) in enumerate(self._sources()):
             if self.links_only and source == 0:
                 continue
-            group = None if title is None else "Link: {}".format(title)
-            for element in _model_elements(doc):
-                if group and _category_id(element) in _HIDDEN_BY_DEFAULT_IDS:
-                    continue
-                bbox = element_bbox(element)
-                if bbox is not None:
-                    entries.append(_Entry(element, bbox, transform, group, source))
-        entries.sort(key=lambda entry: (entry.source, -entry.size))
+            queue.append([source, doc, transform, title, None])
+        self._reading = {"queue": queue, "position": 0, "entries": []}
+
+    def _read_some(self, deadline):
+        """Read elements until ``deadline``; return True once all are read.
+
+        The native id collection of one source cannot be interrupted, so each
+        call collects at most the sources it reaches before the deadline and
+        always at least one, which keeps a model with many large links from
+        blocking its first chunk.
+        """
+        reading = self._reading
+        queue = reading["queue"]
+        while queue:
+            source, doc, transform, title, ids = queue[0]
+            if ids is None:
+                ids = _model_element_ids(doc)
+                queue[0][4] = ids
+                self._read_total += len(ids)
+            position = reading["position"]
+            while position < len(ids):
+                if position % 64 == 0 and time.time() >= deadline:
+                    reading["position"] = position
+                    return False
+                entry = self._read_entry(doc, ids[position], transform, title, source)
+                position += 1
+                self._read_count += 1
+                if entry is not None:
+                    reading["entries"].append(entry)
+            queue.pop(0)
+            reading["position"] = 0
+            if queue and time.time() >= deadline:
+                return False
+        entries = reading["entries"]
+        entries.sort(key=lambda entry: (entry.source, not entry.near, -entry.size))
         self._entries = entries
+        self._reading = None
+        return True
+
+    def _read_entry(self, doc, element_id, transform, title, source):
+        element = doc.GetElement(element_id)
+        if element is None or isinstance(element, DB.Group):
+            return None
+        category = element.Category
+        if category is None:
+            return None
+        hidden = _category_id(element) in _HIDDEN_BY_DEFAULT_IDS
+        if title is not None and hidden:
+            return None
+        bbox = element_bbox(element)
+        if bbox is None:
+            return None
+        return _Entry(
+            element,
+            bbox,
+            transform,
+            title,
+            source,
+            category.Name,
+            hidden,
+            _near_focus(bbox, transform, self.focus),
+        )
 
     @property
     def total(self):
-        """Number of elements to stream, available after the first chunk."""
+        """Number of elements to stream, available once they are read."""
         return len(self._entries or ())
 
+    def dropped_groups(self):
+        """List the elements left out as ``{source, group, link, hidden, count}``."""
+        groups = {}
+        for entry in self._dropped:
+            key = (entry.source, entry.group)
+            if key not in groups:
+                groups[key] = {
+                    "source": entry.source,
+                    "group": entry.group,
+                    "link": entry.link,
+                    "hidden": entry.hidden,
+                    "count": 0,
+                }
+            groups[key]["count"] += 1
+        return list(groups.values())
+
+    def load_group(self, source, group):
+        """Queue the left-out elements of one category and return how many.
+
+        The queued elements stream in the next chunks within
+        ``MAX_FORCED_POINTS`` further points; any that do not fit stay in
+        :meth:`dropped_groups`.
+        """
+        wanted = [e for e in self._dropped if e.source == source and e.group == group]
+        if not wanted:
+            return 0
+        wanted_ids = set(id(entry) for entry in wanted)
+        self._dropped = [e for e in self._dropped if id(e) not in wanted_ids]
+        self._points_limit = self._points + MAX_FORCED_POINTS
+        self._entries.extend(wanted)
+        return len(wanted)
+
     def next_chunk(self, seconds):
-        """Tessellate for about ``seconds`` and return the chunk, or None when done.
+        """Work for about ``seconds`` and return the chunk, or None when done.
 
         Returns:
             (dict | None): ``{"meshes": [...], "progress": [done, total]}``
             ready for :func:`scene3d.meshing.scene_to_json`.
         """
+        deadline = time.time() + seconds
         if self._entries is None:
-            self._prepare()
+            if self._reading is None:
+                self._begin_reading()
+            if not self._read_some(deadline):
+                return {"meshes": [], "progress": [self._read_count, self._read_total]}
         if self._cursor >= len(self._entries):
             return None
-        deadline = time.time() + seconds
         meshes = []
         while self._cursor < len(self._entries) and time.time() < deadline:
             entry = self._entries[self._cursor]
             self._cursor += 1
-            remaining = MAX_TOTAL_POINTS - self._points
+            remaining = self._points_limit - self._points
             if remaining < BOX_POINT_COUNT:
-                self.truncated = len(self._entries) - self._cursor + 1
+                self._dropped.extend(self._entries[self._cursor - 1 :])
                 self._cursor = len(self._entries)
                 break
             if not entry.element.IsValidObject:
@@ -216,18 +401,18 @@ class ModelStream(object):
                 edges=False,
                 transform=entry.transform,
                 box_when_empty=False,
+                coarse_retry=True,
             )
             if not builder.indices:
                 continue
             self._points += builder.point_count
-            category = entry.element.Category
             meshes.append(
                 {
                     "id": int(get_elementid_value(entry.element.Id)),
                     "source": entry.source,
-                    "group": entry.group or category.Name,
-                    "hidden": entry.group is None
-                    and _category_id(entry.element) in _HIDDEN_BY_DEFAULT_IDS,
+                    "group": entry.group,
+                    "link": entry.link,
+                    "hidden": entry.hidden and entry.link is None,
                     "approx": approx,
                     "positions": FloatArray(builder.positions),
                     "indices": IntArray(builder.indices),
@@ -248,6 +433,14 @@ def _world_bounds(box):
         max(c.X for c in corners), max(c.Y for c in corners), max(c.Z for c in corners)
     )
     return bounds
+
+
+def view_focus_bounds(view, datafilename):
+    """Return the world bounds of the view's section or crop box, or None."""
+    if not (isinstance(view, DB.View3D) or is_2d_view(view)):
+        return None
+    info = get_box_info(view, datafilename)
+    return _world_bounds(info["box"]) if info else None
 
 
 def scene_origin(doc, box):
@@ -372,29 +565,27 @@ def levels_payload(levels, origin):
     """Describe levels as ``{name, z, elevation, link}`` entries.
 
     ``z`` is relative to ``origin``, ``elevation`` is the project elevation
-    shown to the user. A linked level with the same name and elevation as one
-    already listed is left out.
+    shown to the user. A linked level at the elevation of one already listed is
+    left out, see :func:`sectionbox_guides.drop_repeated_levels`.
     """
-    entries = []
-    seen = set()
-    for level in levels:
-        key = (level.Name, round(level.ProjectElevation, 4))
-        if key in seen:
-            continue
-        seen.add(key)
-        entries.append(
-            {
-                "name": level.Name,
-                "z": level.ProjectElevation - origin.Z,
-                "elevation": level.ProjectElevation,
-                "link": hasattr(level, "SourceLink"),
-            }
-        )
-    return entries
+    entries = [
+        {
+            "name": level.Name,
+            "z": level.ProjectElevation - origin.Z,
+            "elevation": level.ProjectElevation,
+            "link": hasattr(level, "SourceLink"),
+        }
+        for level in levels
+    ]
+    return drop_repeated_levels(entries)
 
 
 def grids_payload(grids, origin):
-    """Describe grids as ``{name, link, segs}``, segments being ``[x1, y1, x2, y2]``."""
+    """Describe grids as ``{name, link, segs}``, segments being ``[x1, y1, x2, y2]``.
+
+    A linked straight grid on the line of one already listed is left out, see
+    :func:`sectionbox_guides.drop_repeated_grids`.
+    """
     entries = []
     for grid in grids:
         linked = hasattr(grid, "SourceLink")
@@ -418,7 +609,7 @@ def grids_payload(grids, origin):
                 "segs": segments,
             }
         )
-    return entries
+    return drop_repeated_grids(entries)
 
 
 def scope_boxes_payload(doc, origin):
@@ -435,6 +626,18 @@ def scope_boxes_payload(doc, origin):
                 }
             )
     return entries
+
+
+def north_angle(doc):
+    """Return the angle in radians from project north clockwise to true north.
+
+    The preview's compass turns by it. A document whose project position
+    cannot be read counts as unrotated.
+    """
+    try:
+        return doc.ActiveProjectLocation.GetProjectPosition(DB.XYZ.Zero).Angle
+    except Exception:
+        return 0.0
 
 
 def units_payload(doc):

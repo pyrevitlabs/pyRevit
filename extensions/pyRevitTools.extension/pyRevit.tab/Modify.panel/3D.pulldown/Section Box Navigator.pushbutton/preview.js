@@ -21,6 +21,17 @@
   const YAW_SNAP_RAD = (3 * Math.PI) / 180;
   const LIVE_INTERVAL_MS = 250;
   const CLIP_EPSILON_FT = 0.01;
+  const ELEVATION_PITCH = (6 * Math.PI) / 180;
+  const GRID_ALONG_VIEW = (20 * Math.PI) / 180;
+  const GRID_SPAN_PAD = 0.08;
+  const SIDE_MIN_PX = 160;
+  const SIDE_MAX_PX = 1200;
+  const SIDE_MAX_FRACTION = 0.7;
+  const LABEL_PIN_PX = 12;
+  const LABEL_DOT_PX = 9;
+  const LABEL_CHAR_PX = 6.5;
+  const LABEL_PAD_PX = 14;
+  const BOX_ONLY_ALPHA = 0.35;
   const AXIS_NAMES = ["x", "y", "z"];
   const BOX_EDGES = [
     [0, 1], [1, 3], [3, 2], [2, 0], [4, 5], [5, 7], [7, 6], [6, 4], [0, 4], [1, 5], [2, 6], [3, 7],
@@ -246,10 +257,91 @@
     return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
   }
 
+  /** The chord of a grid, {mid, dir} in plan, or null for a grid without length. */
+  function gridChord(grid) {
+    if (!grid.segs.length) return null;
+    const first = grid.segs[0], last = grid.segs[grid.segs.length - 1];
+    const dx = last[2] - first[0], dy = last[3] - first[1];
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-9) return null;
+    return { mid: [(first[0] + last[2]) / 2, (first[1] + last[3]) / 2], dir: [dx / len, dy / len] };
+  }
+
+  /** Indexes of the grids running along the horizontal viewing direction of a camera with this yaw, within maxAngle. */
+  function gridsAlongView(grids, yaw, maxAngle) {
+    const limit = Math.cos(maxAngle);
+    const indexes = [];
+    grids.forEach((grid, index) => {
+      const chord = gridChord(grid);
+      if (chord && Math.abs(chord.dir[0] * Math.cos(yaw) + chord.dir[1] * Math.sin(yaw)) >= limit) indexes.push(index);
+    });
+    return indexes;
+  }
+
+  /** Whether a camera looks level enough that levels collapse to lines and grids to vertical lines. */
+  function isElevationCamera(camera) {
+    return Math.abs(camera.pitch) < ELEVATION_PITCH;
+  }
+
+  /** Where a label of a line running from left to right on screen sits so it stays inside the viewport; null when none of the line shows. */
+  function pinToViewport(left, right, minX) {
+    if (right[0] < minX) return null;
+    if (left[0] >= minX) return { x: left[0], y: left[1] };
+    const span = right[0] - left[0];
+    const t = span > 1e-6 ? (minX - left[0]) / span : 0;
+    return { x: minX, y: left[1] + t * (right[1] - left[1]) };
+  }
+
+  /**
+   * The groups to list for a search term, as [key, group] entries per source, by name.
+   *
+   * A term matches a category name or a link title; a link title keeps all of
+   * that link's categories. An empty term lists everything.
+   */
+  function filterGroups(groups, term) {
+    const needle = term.trim().toLowerCase();
+    const bySource = new Map();
+    for (const [key, group] of groups) {
+      const hit = !needle || group.name.toLowerCase().includes(needle) || (group.link && group.link.toLowerCase().includes(needle));
+      if (!hit) continue;
+      if (!bySource.has(group.source)) bySource.set(group.source, []);
+      bySource.get(group.source).push([key, group]);
+    }
+    for (const entries of bySource.values()) entries.sort((a, b) => a[1].name.localeCompare(b[1].name));
+    return bySource;
+  }
+
+  const SETTING_KEYS = ["model", "levels", "allLevels", "grids", "names", "scope", "cut", "ghost", "live", "snap", "sideWidth"];
+
+  /** The persisted display and box settings in a stored object, with unknown or malformed entries dropped. */
+  function sanitizeSettings(stored) {
+    const clean = {};
+    if (!stored || typeof stored !== "object") return clean;
+    for (const key of SETTING_KEYS) {
+      const value = stored[key];
+      if (key === "cut") {
+        if (["ghost", "hide", "off"].includes(value)) clean.cut = value;
+      } else if (key === "ghost") {
+        if (typeof value === "number" && isFinite(value)) clean.ghost = Math.min(0.6, Math.max(0.02, value));
+      } else if (key === "sideWidth") {
+        if (typeof value === "number" && isFinite(value)) clean.sideWidth = Math.min(SIDE_MAX_PX, Math.max(SIDE_MIN_PX, value));
+      } else if (typeof value === "boolean") {
+        clean[key] = value;
+      }
+    }
+    return clean;
+  }
+
+  /** A group's key: the element source and the group name, so a link's walls stay apart from the host's. */
+  function groupKey(source, name) {
+    return source + "|" + name;
+  }
+
   const api = {
     cloneBox, localToWorld, worldToLocal, boxCorners, boxCenter, faceNormal, faceCenter, parseFace,
     closestOnAxis, snapCandidates, bestSnap, scopePlanes, snapYaw, moveFace, yawOf, setYaw,
     fitToWorldBounds, insideBox, distanceToSegment2d, triangleHit,
+    gridChord, gridsAlongView, isElevationCamera, pinToViewport, groupKey, filterGroups, sanitizeSettings,
   };
 
   const MESH_VS = `#version 300 es
@@ -317,8 +409,8 @@ void main() { outColor = uColor; }`;
     return [r + m, g + m, b + m];
   }
 
-  function groupColor(name) {
-    if (name.startsWith("Link: ")) return hslToRgb(30, 0.45, 0.6);
+  function groupColor(name, link) {
+    if (link) return hslToRgb(30, 0.45, 0.5 + (hashHue(name) % 5) * 0.04);
     return hslToRgb(hashHue(name), 0.28, 0.64);
   }
 
@@ -361,6 +453,7 @@ void main() { outColor = uColor; }`;
       this.units = payload.units;
       this.document = payload.document;
       this.view = payload.view;
+      this.northAngle = payload.northAngle || 0;
       this.guides = { levels: [], grids: [], scopeBoxes: [] };
       this.batches = [];
       this.elements = new Map();
@@ -370,8 +463,11 @@ void main() { outColor = uColor; }`;
       this.loading = true;
       this.flags = {
         model: true, levels: true, grids: true, names: true, scope: true,
-        cut: "ghost", ghost: 0.12, live: false, snap: true, allLevels: false,
+        cut: "ghost", ghost: 0.12, live: false, snap: true, allLevels: false, sideWidth: null,
       };
+      Object.assign(this.flags, sanitizeSettings(payload.settings));
+      this.categoryTerm = "";
+      this.collapsed = new Set();
       this.mode = null;
       this.hover = null;
       this.drag = null;
@@ -383,6 +479,7 @@ void main() { outColor = uColor; }`;
       this._build();
       this._bindBridge();
       this.setCameraPreset(this.view.camera ? "view" : "iso");
+      this._buildViewCube();
       this._post("ready", {});
     }
 
@@ -409,6 +506,18 @@ void main() { outColor = uColor; }`;
       });
     }
 
+    _notify(action, payload) {
+      if (window.chrome && window.chrome.webview) {
+        window.chrome.webview.postMessage({ channel: this.channel, action, payload });
+      }
+    }
+
+    _saveSettings() {
+      const settings = {};
+      for (const key of SETTING_KEYS) settings[key] = this.flags[key];
+      this._notify("save_settings", { settings });
+    }
+
     _bindBridge() {
       if (!(window.chrome && window.chrome.webview)) return;
       this._onMessage = (e) => {
@@ -423,6 +532,7 @@ void main() { outColor = uColor; }`;
       this.disposed = true;
       if (this.resizeObserver) this.resizeObserver.disconnect();
       if (this.pendingFrame) cancelAnimationFrame(this.pendingFrame);
+      if (this.viewCube) this.viewCube.dispose();
       if (this._onKeyDown) window.removeEventListener("keydown", this._onKeyDown);
       if (this._onMessage && window.chrome.webview.removeEventListener) {
         window.chrome.webview.removeEventListener("message", this._onMessage);
@@ -441,7 +551,15 @@ void main() { outColor = uColor; }`;
       else if (event === "sources") this.onSources(payload);
       else if (event === "result") this.onResult(payload);
       else if (event === "error" && payload.requestId) this.onResult({ requestId: payload.requestId, ok: false, message: payload.message });
-      else if (event === "error") this.setStatus(payload.message, "error");
+      else if (event === "error") this._onStreamError(payload.message);
+    }
+
+    _onStreamError(message) {
+      this.loading = false;
+      for (const group of this.groups.values()) group.requested = false;
+      this._renderCategories();
+      this._updateProgress();
+      this.setStatus(message, "error");
     }
 
     onResult(payload) {
@@ -458,6 +576,7 @@ void main() { outColor = uColor; }`;
     onSources(payload) {
       if (payload.done) {
         this.loading = false;
+        this._setDropped(payload.dropped || []);
         const key = payload.truncated ? "PreviewTruncated" : "PreviewLoaded";
         this.setStatus(format(this.t(key), this.elements.size, payload.truncated), "info");
         this._updateProgress();
@@ -467,6 +586,39 @@ void main() { outColor = uColor; }`;
         this._updateProgress();
       }
       if (payload.dropLinks) this.dropLinks();
+    }
+
+    _newGroup(source, name, link, hidden) {
+      return {
+        name, source, link: link || null, color: groupColor(name, link), visible: !hidden,
+        count: 0, boxes: 0, dropped: 0, requested: false,
+      };
+    }
+
+    _setDropped(dropped) {
+      for (const [key, group] of [...this.groups]) {
+        group.dropped = 0;
+        group.requested = false;
+        if (!group.count) this.groups.delete(key);
+      }
+      for (const entry of dropped) {
+        const key = groupKey(entry.source, entry.group);
+        let group = this.groups.get(key);
+        if (!group) {
+          group = this._newGroup(entry.source, entry.group, entry.link, entry.hidden);
+          this.groups.set(key, group);
+        }
+        group.dropped = entry.count;
+      }
+      this._renderCategories();
+    }
+
+    requestGroup(key) {
+      const group = this.groups.get(key);
+      if (!group || group.requested) return;
+      group.requested = true;
+      this.commitRequest("load_group", { source: group.source, group: group.name });
+      this._renderCategories();
     }
 
     _build() {
@@ -483,7 +635,10 @@ void main() { outColor = uColor; }`;
       this.hoverChip = el("div", "sbp-hover-chip");
       this.stage.append(this.canvas, this.overlay, this.labelLayer, this.handleLayer, this.hoverChip);
       this.side = el("div", "sbp-side");
-      this.main.append(this.stage, this.side);
+      this.splitter = el("div", "sbp-splitter");
+      this.main.append(this.stage, this.splitter, this.side);
+      this._bindSplitter();
+      this._applySideWidth();
       this.statusBar = el("div", "sbp-status");
       this.statusText = el("span", "sbp-status-text");
       this.progressText = el("span", "sbp-progress");
@@ -512,6 +667,45 @@ void main() { outColor = uColor; }`;
       this.refreshChrome();
     }
 
+    _sideLimit() {
+      return Math.max(SIDE_MIN_PX, this.main.clientWidth * SIDE_MAX_FRACTION);
+    }
+
+    setSideWidth(pixels) {
+      this.flags.sideWidth = Math.round(Math.min(this._sideLimit(), Math.max(SIDE_MIN_PX, pixels)));
+      this._applySideWidth();
+    }
+
+    _applySideWidth() {
+      if (!this.flags.sideWidth) return;
+      this.side.style.width = Math.min(this.flags.sideWidth, this._sideLimit()) + "px";
+    }
+
+    _bindSplitter() {
+      const splitter = this.splitter;
+      let dragging = false;
+      splitter.addEventListener("pointerdown", (e) => {
+        dragging = true;
+        capture(splitter, e.pointerId, true);
+        e.preventDefault();
+      });
+      splitter.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        this.setSideWidth(this.main.getBoundingClientRect().right - e.clientX);
+      });
+      splitter.addEventListener("pointerup", (e) => {
+        if (!dragging) return;
+        dragging = false;
+        capture(splitter, e.pointerId, false);
+        this._saveSettings();
+      });
+      splitter.addEventListener("dblclick", () => {
+        this.flags.sideWidth = null;
+        this.side.style.width = "";
+        this._saveSettings();
+      });
+    }
+
     _toggle(parent, label, key, onChange) {
       const wrap = el("label", "sbp-toggle");
       const input = el("input");
@@ -520,6 +714,7 @@ void main() { outColor = uColor; }`;
       input.addEventListener("change", () => {
         this.flags[key] = input.checked;
         if (onChange) onChange();
+        this._saveSettings();
         this.requestRender();
       });
       wrap.append(input, el("span", "", label));
@@ -564,8 +759,10 @@ void main() { outColor = uColor; }`;
         o.value = value;
         this.cutSelect.append(o);
       }
+      this.cutSelect.value = this.flags.cut;
       this.cutSelect.addEventListener("change", () => {
         this.flags.cut = this.cutSelect.value;
+        this._saveSettings();
         this.requestRender();
       });
       this.ghostRange = el("input", "sbp-range");
@@ -578,6 +775,7 @@ void main() { outColor = uColor; }`;
         this.flags.ghost = Number(this.ghostRange.value) / 100;
         this.requestRender();
       });
+      this.ghostRange.addEventListener("change", () => this._saveSettings());
       cutGroup.append(this.cutSelect, this.ghostRange);
       this._bar(this.t("PreviewGroupShow"), showGroup, cutGroup);
 
@@ -606,7 +804,27 @@ void main() { outColor = uColor; }`;
       this.scopeList = el("div", "sbp-panel");
       this.bookmarkList = el("div", "sbp-panel");
       this.side.append(this.categoryBox, this.scopeList, this.bookmarkList);
+      this._buildCategoryHead();
       this.refreshSide();
+    }
+
+    _buildCategoryHead() {
+      const head = el("div", "sbp-panel-head");
+      head.append(el("span", "", this.t("PreviewCategories")));
+      const all = el("a", "sbp-link", this.t("PreviewAll"));
+      const none = el("a", "sbp-link", this.t("PreviewNone"));
+      all.addEventListener("click", () => this._setAllGroups(true));
+      none.addEventListener("click", () => this._setAllGroups(false));
+      head.append(all, none);
+      this.categorySearch = el("input", "sbp-input sbp-search");
+      this.categorySearch.type = "search";
+      this.categorySearch.placeholder = this.t("PreviewSearch");
+      this.categorySearch.addEventListener("input", () => {
+        this.categoryTerm = this.categorySearch.value;
+        this._renderCategories();
+      });
+      this.categoryList = el("div", "sbp-category-list");
+      this.categoryBox.append(head, this.categorySearch, this.categoryList);
     }
 
     refreshSide() {
@@ -616,36 +834,74 @@ void main() { outColor = uColor; }`;
     }
 
     _renderCategories() {
-      const box = this.categoryBox;
-      box.replaceChildren();
-      const head = el("div", "sbp-panel-head");
-      head.append(el("span", "", this.t("PreviewCategories")));
-      const all = el("a", "sbp-link", this.t("PreviewAll"));
-      const none = el("a", "sbp-link", this.t("PreviewNone"));
-      all.addEventListener("click", () => this._setAllGroups(true));
-      none.addEventListener("click", () => this._setAllGroups(false));
-      head.append(all, none);
-      box.append(head);
-      const names = [...this.groups.keys()].sort((a, b) => a.localeCompare(b));
-      for (const name of names) {
-        const group = this.groups.get(name);
-        const row = el("label", "sbp-chip");
-        const input = el("input");
-        input.type = "checkbox";
-        input.checked = group.visible;
-        input.addEventListener("change", () => {
-          group.visible = input.checked;
-          this.requestRender();
-        });
-        const swatch = el("i", "sbp-swatch");
-        swatch.style.background = `rgb(${group.color.map((c) => Math.round(c * 255)).join(",")})`;
-        row.append(input, swatch, el("span", "", `${name} (${group.count})`));
-        box.append(row);
+      const list = this.categoryList;
+      list.replaceChildren();
+      const searching = this.categoryTerm.trim() !== "";
+      const bySource = filterGroups(this.groups, this.categoryTerm);
+      for (const [source, entries] of [...bySource].sort((a, b) => a[0] - b[0])) {
+        if (source !== 0) list.append(this._linkHeader(source, entries, searching));
+        if (source !== 0 && !searching && this.collapsed.has(source)) continue;
+        for (const [key, group] of entries) list.append(this._groupRow(key, group));
       }
     }
 
+    _linkHeader(source, entries, searching) {
+      const head = el("div", "sbp-chip sbp-link-head");
+      const collapsed = !searching && this.collapsed.has(source);
+      const chevron = el("span", "sbp-chevron", collapsed ? "▸" : "▾");
+      chevron.addEventListener("click", () => {
+        if (searching) return;
+        if (this.collapsed.has(source)) this.collapsed.delete(source);
+        else this.collapsed.add(source);
+        this._renderCategories();
+      });
+      const label = el("label", "sbp-link-label");
+      const input = el("input");
+      input.type = "checkbox";
+      const visible = entries.filter(([, group]) => group.visible).length;
+      input.checked = visible === entries.length;
+      input.indeterminate = visible > 0 && visible < entries.length;
+      input.addEventListener("change", () => {
+        for (const [, group] of entries) group.visible = input.checked;
+        this._renderCategories();
+        this.requestRender();
+      });
+      label.append(input, el("span", "sbp-link-title", "Link: " + entries[0][1].link), el("span", "sbp-count", `(${entries.length})`));
+      head.append(chevron, label);
+      return head;
+    }
+
+    _groupRow(key, group) {
+      const row = el("label", "sbp-chip" + (group.source !== 0 ? " sbp-indent" : ""));
+      const input = el("input");
+      input.type = "checkbox";
+      input.checked = group.visible;
+      input.addEventListener("change", () => {
+        group.visible = input.checked;
+        if (group.source !== 0) this._renderCategories();
+        this.requestRender();
+      });
+      const swatch = el("i", "sbp-swatch");
+      swatch.style.background = `rgb(${group.color.map((c) => Math.round(c * 255)).join(",")})`;
+      row.append(input, swatch, el("span", "", `${group.name} (${group.count})`));
+      if (group.boxes) row.append(el("span", "sbp-note", format(this.t("PreviewBoxes"), group.boxes)));
+      if (group.dropped) {
+        row.append(el("span", "sbp-note", format(this.t("PreviewNotLoaded"), group.dropped)));
+        const load = el("a", "sbp-link", this.t("PreviewLoadGroup"));
+        load.classList.toggle("sbp-disabled", group.requested);
+        load.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.requestGroup(key);
+        });
+        row.append(load);
+      }
+      return row;
+    }
+
     _setAllGroups(on) {
-      for (const group of this.groups.values()) group.visible = on;
+      for (const entries of filterGroups(this.groups, this.categoryTerm).values()) {
+        for (const [, group] of entries) group.visible = on;
+      }
       this._renderCategories();
       this.requestRender();
     }
@@ -791,7 +1047,7 @@ void main() { outColor = uColor; }`;
     dropLinks() {
       this.batches = this.batches.filter((b) => b.source === 0);
       for (const [key, element] of [...this.elements]) if (element.source !== 0) this.elements.delete(key);
-      for (const [name, group] of [...this.groups]) if (name.startsWith("Link: ")) this.groups.delete(name);
+      for (const [key, group] of [...this.groups]) if (group.source !== 0) this.groups.delete(key);
       this._renderCategories();
       this.requestRender();
     }
@@ -837,20 +1093,24 @@ void main() { outColor = uColor; }`;
             if (positions[i + k] > bounds.max[k]) bounds.max[k] = positions[i + k];
           }
         }
-        this.elements.set(key, { id: mesh.id, source: mesh.source, group: mesh.group, bounds, approx: mesh.approx });
+        const gkey = groupKey(mesh.source, mesh.group);
+        const boxOnly = !!mesh.approx;
+        this.elements.set(key, { id: mesh.id, source: mesh.source, group: gkey, bounds, approx: boxOnly });
         this._extendModelBounds(bounds);
-        if (!byGroup.has(mesh.group)) byGroup.set(mesh.group, { source: mesh.source, parts: [], triangles: 0 });
-        const entry = byGroup.get(mesh.group);
+        const batchKey = gkey + "|" + (boxOnly ? 1 : 0);
+        if (!byGroup.has(batchKey)) byGroup.set(batchKey, { group: gkey, source: mesh.source, approx: boxOnly, parts: [], triangles: 0 });
+        const entry = byGroup.get(batchKey);
         entry.parts.push({ positions, indices, key });
         entry.triangles += indices.length / 3;
-        let group = this.groups.get(mesh.group);
+        let group = this.groups.get(gkey);
         if (!group) {
-          group = { color: groupColor(mesh.group), visible: !mesh.hidden, count: 0 };
-          this.groups.set(mesh.group, group);
+          group = this._newGroup(mesh.source, mesh.group, mesh.link, mesh.hidden);
+          this.groups.set(gkey, group);
         }
         group.count += 1;
+        if (boxOnly) group.boxes += 1;
       }
-      for (const [name, entry] of byGroup) this._addBatch(name, entry);
+      for (const entry of byGroup.values()) this._addBatch(entry.group, entry);
       if (!this.view.box) this._buildGuideBuffers();
       this._renderCategories();
       this._updateProgress();
@@ -896,7 +1156,7 @@ void main() { outColor = uColor; }`;
         ranges.push({ key: part.key, start: rangeStart, end: offset });
       }
       const vao = this.gl ? this._vao(this.meshProgram, this._buffer(pos), this._buffer(nrm)) : null;
-      const batch = { group: name, source: entry.source, vao, count: entry.triangles * 3, pos };
+      const batch = { group: name, source: entry.source, approx: entry.approx, vao, count: entry.triangles * 3, pos };
       this.batches.push(batch);
       for (const range of ranges) {
         const element = this.elements.get(range.key);
@@ -929,6 +1189,8 @@ void main() { outColor = uColor; }`;
       const x0 = ext.min[0] - pad, x1 = ext.max[0] + pad, y0 = ext.min[1] - pad, y1 = ext.max[1] + pad;
       this.guideRect = { x0, x1, y0, y1 };
       this.gridZ = ext.min[2];
+      this.gridChords = this.guides.grids.map(gridChord);
+      this.guideZ = { lo: ext.min[2], hi: ext.max[2] };
       if (!this.gl) return;
       const gl = this.gl;
       const fill = [], lines = [];
@@ -1061,7 +1323,7 @@ void main() { outColor = uColor; }`;
         return {
           kind: "element",
           element,
-          label: `${element.group} · ${element.id}`,
+          label: this._elementLabel(element),
           box: fitToWorldBounds(this.view.box, element.bounds.min, element.bounds.max, 1.0),
         };
       }
@@ -1075,6 +1337,13 @@ void main() { outColor = uColor; }`;
         label: `${this.t("PreviewAlignGrid")}: ${found.grid.name}`,
         box: setYaw(this.view.box, yaw + quarter * (Math.PI / 2)),
       };
+    }
+
+    _elementLabel(element) {
+      const group = this.groups.get(element.group);
+      const name = group ? group.name : element.group;
+      const prefix = group && group.link ? group.link + " · " : "";
+      return `${prefix}${name} · ${element.id}` + (element.approx ? " · " + this.t("PreviewBoxOnly") : "");
     }
 
     _elementAt(ray) {
@@ -1096,22 +1365,59 @@ void main() { outColor = uColor; }`;
       return best;
     }
 
+    _elevation() {
+      return isElevationCamera(this.camera);
+    }
+
+    _gridSpan() {
+      const base = this.guideZ || { lo: 0, hi: 0 };
+      const pad = Math.max(GRID_SPAN_PAD * (base.hi - base.lo), 1);
+      return { lo: base.lo - pad, hi: base.hi + pad };
+    }
+
+    _elevationGridLines() {
+      const grids = this.guides.grids;
+      const span = this._gridSpan();
+      return gridsAlongView(grids, this.camera.yaw, GRID_ALONG_VIEW).map((index) => ({
+        index, mid: this.gridChords[index].mid, lo: span.lo, hi: span.hi,
+      }));
+    }
+
+    _guideSegments() {
+      const grids = this.guides.grids;
+      if (this._elevation()) {
+        return this._elevationGridLines().map((line) => {
+          const segs = grids[line.index].segs;
+          const first = segs[0], last = segs[segs.length - 1];
+          return {
+            grid: grids[line.index],
+            seg: [first[0], first[1], last[2], last[3]],
+            a: [line.mid[0], line.mid[1], line.lo],
+            b: [line.mid[0], line.mid[1], line.hi],
+          };
+        });
+      }
+      const out = [];
+      for (const grid of grids) {
+        for (const s of grid.segs) out.push({ grid, seg: s, a: [s[0], s[1], this.gridZ], b: [s[2], s[3], this.gridZ] });
+      }
+      return out;
+    }
+
     _gridAt(e) {
       if (this.view.kind !== "3d") return null;
       const rect = this.canvas.getBoundingClientRect();
       const px = e.clientX - rect.left, py = e.clientY - rect.top;
       const vp = this._matrices().viewProj;
       let best = null, bestD = 14;
-      for (const grid of this.guides.grids) {
-        for (const s of grid.segs) {
-          const a = this._project(vp, [s[0], s[1], this.gridZ]);
-          const b = this._project(vp, [s[2], s[3], this.gridZ]);
-          if (!a || !b) continue;
-          const d = distanceToSegment2d(px, py, a.x, a.y, b.x, b.y);
-          if (d < bestD) {
-            bestD = d;
-            best = { grid, seg: s };
-          }
+      for (const item of this._guideSegments()) {
+        const a = this._project(vp, item.a);
+        const b = this._project(vp, item.b);
+        if (!a || !b) continue;
+        const d = distanceToSegment2d(px, py, a.x, a.y, b.x, b.y);
+        if (d < bestD) {
+          bestD = d;
+          best = { grid: item.grid, seg: item.seg };
         }
       }
       return best;
@@ -1355,6 +1661,7 @@ void main() { outColor = uColor; }`;
         this.canvas.width = w;
         this.canvas.height = h;
       }
+      this._applySideWidth();
       this.requestRender();
     }
 
@@ -1372,8 +1679,9 @@ void main() { outColor = uColor; }`;
       gl.uniform3fv(program.uniforms.uMax, box.max.map((v) => v + CLIP_EPSILON_FT));
     }
 
-    _drawBatches(gl, program, alphaFor) {
+    _drawBatches(gl, program, alphaFor, approx) {
       for (const batch of this.batches) {
+        if (approx !== undefined && batch.approx !== approx) continue;
         const group = this.groups.get(batch.group);
         if (!group || !group.visible) continue;
         gl.uniform4fv(program.uniforms.uColor, [...group.color, alphaFor]);
@@ -1382,9 +1690,26 @@ void main() { outColor = uColor; }`;
       }
     }
 
+    _buildViewCube() {
+      if (!S3.createViewCube) return;
+      this.viewCube = S3.createViewCube({
+        parent: this.stage,
+        className: "sbp-viewcube",
+        getCamera: () => this.camera,
+        onChange: () => this.requestRender(),
+        labels: {
+          top: this.t("PreviewTop"), bottom: this.t("PreviewCubeBottom"), front: this.t("PreviewFront"),
+          back: this.t("PreviewCubeBack"), left: this.t("PreviewCubeLeft"), right: this.t("PreviewCubeRight"),
+        },
+        compass: this.t("PreviewCompass").split(","),
+        northAngle: this.northAngle,
+      });
+    }
+
     _render() {
       const { eye, viewProj } = this._matrices();
       this.viewProj = viewProj;
+      if (this.viewCube) this.viewCube.update();
       if (this.gl) this._drawScene(eye, viewProj);
       this._renderHover(viewProj);
       this._renderLabels(viewProj);
@@ -1416,9 +1741,10 @@ void main() { outColor = uColor; }`;
         gl.enable(gl.POLYGON_OFFSET_FILL);
         gl.polygonOffset(1, 1);
         this._boxUniforms(gl, mp, cutting ? 1 : 0);
-        this._drawBatches(gl, mp, 1);
+        this._drawBatches(gl, mp, 1, false);
         gl.disable(gl.POLYGON_OFFSET_FILL);
         this._drawHoverElement(gl, mp);
+        this._drawBoxOnlyElements(gl, mp, cutting ? 1 : 0);
         if (cutting && this.flags.cut === "ghost") {
           gl.enable(gl.BLEND);
           gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -1431,6 +1757,17 @@ void main() { outColor = uColor; }`;
       }
       this._renderGuides(gl, viewProj);
       gl.bindVertexArray(null);
+    }
+
+    _drawBoxOnlyElements(gl, mp, mode) {
+      if (!this.batches.some((batch) => batch.approx)) return;
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.depthMask(false);
+      this._boxUniforms(gl, mp, mode);
+      this._drawBatches(gl, mp, BOX_ONLY_ALPHA, true);
+      gl.depthMask(true);
+      gl.disable(gl.BLEND);
     }
 
     _drawHoverElement(gl, mp) {
@@ -1453,9 +1790,10 @@ void main() { outColor = uColor; }`;
       svg.replaceChildren();
       const hover = this.hover;
       if (!hover || hover.kind !== "grid") return;
-      for (const s of hover.grid.segs) {
-        const a = this._project(viewProj, [s[0], s[1], this.gridZ]);
-        const b = this._project(viewProj, [s[2], s[3], this.gridZ]);
+      for (const item of this._guideSegments()) {
+        if (item.grid !== hover.grid) continue;
+        const a = this._project(viewProj, item.a);
+        const b = this._project(viewProj, item.b);
         if (!a || !b) continue;
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", a.x);
@@ -1497,18 +1835,8 @@ void main() { outColor = uColor; }`;
       gl.uniformMatrix4fv(fp.uniforms.uViewProj, false, viewProj);
       const levels = this.guides.levels, grids = this.guides.grids;
       if (this.flags.grids && grids.length) {
-        gl.uniform4fv(fp.uniforms.uColor, [...COLORS.grid, 0.9]);
-        gl.bindVertexArray(this.gridVao);
-        gl.drawArrays(gl.LINES, 0, this.gridRanges.length ? this.gridRanges[this.gridRanges.length - 1].first + this.gridRanges[this.gridRanges.length - 1].count : 0);
-        const snap = this.snapHighlight;
-        if (snap && snap.kind === "grid") {
-          const index = grids.findIndex((g) => g.name === snap.name);
-          if (index >= 0) {
-            const r = this.gridRanges[index];
-            gl.uniform4fv(fp.uniforms.uColor, [...COLORS.snap, 1]);
-            gl.drawArrays(gl.LINES, r.first, r.count);
-          }
-        }
+        if (this._elevation()) this._drawElevationGrids(gl, fp);
+        else this._drawPlanGrids(gl, fp);
       }
       if (this.flags.levels && levels.length) {
         gl.uniform4fv(fp.uniforms.uColor, [...COLORS.level, 0.55]);
@@ -1536,6 +1864,38 @@ void main() { outColor = uColor; }`;
       if (this.view.box) this._drawBoxOverlay(gl, fp);
       if (this.hover) this._drawWireBox(gl, fp, this.hover.box, COLORS.snap, 1);
       gl.enable(gl.DEPTH_TEST);
+    }
+
+    _drawPlanGrids(gl, fp) {
+      const grids = this.guides.grids;
+      gl.uniform4fv(fp.uniforms.uColor, [...COLORS.grid, 0.9]);
+      gl.bindVertexArray(this.gridVao);
+      gl.drawArrays(gl.LINES, 0, this.gridRanges.length ? this.gridRanges[this.gridRanges.length - 1].first + this.gridRanges[this.gridRanges.length - 1].count : 0);
+      const snap = this.snapHighlight;
+      if (snap && snap.kind === "grid") {
+        const index = grids.findIndex((g) => g.name === snap.name);
+        if (index >= 0) {
+          const r = this.gridRanges[index];
+          gl.uniform4fv(fp.uniforms.uColor, [...COLORS.snap, 1]);
+          gl.drawArrays(gl.LINES, r.first, r.count);
+        }
+      }
+    }
+
+    _drawElevationGrids(gl, fp) {
+      const lines = this._elevationGridLines();
+      if (!lines.length) return;
+      const verticals = (subset) => {
+        const data = new Float32Array(subset.length * 6);
+        subset.forEach((line, i) => data.set([line.mid[0], line.mid[1], line.lo, line.mid[0], line.mid[1], line.hi], i * 6));
+        return data;
+      };
+      this._drawDynamic(gl, fp, verticals(lines), gl.LINES, [...COLORS.grid, 0.9]);
+      const snap = this.snapHighlight;
+      if (snap && snap.kind === "grid") {
+        const shown = lines.filter((line) => this.guides.grids[line.index].name === snap.name);
+        if (shown.length) this._drawDynamic(gl, fp, verticals(shown), gl.LINES, [...COLORS.snap, 1]);
+      }
     }
 
     _drawWireBox(gl, fp, box, color, alpha) {
@@ -1584,26 +1944,52 @@ void main() { outColor = uColor; }`;
       void editable;
     }
 
+    _pinnedLevelPoint(viewProj, z, labelWidth) {
+      const r = this.guideRect;
+      const corners = [[r.x0, r.y0], [r.x1, r.y0], [r.x1, r.y1], [r.x0, r.y1]]
+        .map((c) => this._project(viewProj, [c[0], c[1], z]))
+        .filter(Boolean)
+        .sort((a, b) => a.x - b.x);
+      if (!corners.length) return null;
+      const left = corners[0], right = corners[corners.length - 1];
+      return pinToViewport([left.x, left.y], [right.x, right.y], labelWidth + LABEL_PIN_PX + LABEL_DOT_PX);
+    }
+
+    _pinnedGridPoint(viewProj, line) {
+      const top = this._project(viewProj, [line.mid[0], line.mid[1], line.hi]);
+      const bottom = this._project(viewProj, [line.mid[0], line.mid[1], line.lo]);
+      if (!top || !bottom) return null;
+      if (top.y >= LABEL_PIN_PX) return top;
+      return bottom.y >= LABEL_PIN_PX ? { x: top.x, y: LABEL_PIN_PX } : null;
+    }
+
     _renderLabels(viewProj) {
       const candidates = [];
       const width = this.canvas.clientWidth, height = this.canvas.clientHeight;
-      const place = (text, point, className) => {
-        const p = this._project(viewProj, point);
+      const add = (text, p, className, end) => {
         if (!p || p.x < -20 || p.x > width + 20 || p.y < -20 || p.y > height + 20) return;
-        candidates.push({ text, x: p.x, y: p.y, className });
+        candidates.push({ text, x: p.x, y: p.y, className, end: !!end });
       };
+      const place = (text, point, className) => add(text, this._project(viewProj, point), className);
       if (this.flags.names && this.guideRect) {
         const r = this.guideRect;
+        const elevationView = this._elevation();
         const lookingDown = Math.abs(this.camera.pitch) > (70 * Math.PI) / 180;
         if (this.flags.levels && !lookingDown) {
           const levels = this.guides.levels;
           for (const i of this._visibleLevelIndexes()) {
             const level = levels[i];
             const elevation = level.elevation === undefined ? level.z : level.elevation;
-            place(`${level.name} (${this.fmt(elevation)})`, [r.x0, r.y0, level.z], "sbp-label-level");
+            const text = `${level.name} (${this.fmt(elevation)})`;
+            if (elevationView) add(text, this._pinnedLevelPoint(viewProj, level.z, text.length * LABEL_CHAR_PX + LABEL_PAD_PX), "sbp-label-level", true);
+            else place(text, [r.x0, r.y0, level.z], "sbp-label-level");
           }
         }
-        if (this.flags.grids) {
+        if (this.flags.grids && elevationView) {
+          for (const line of this._elevationGridLines()) {
+            add(this.guides.grids[line.index].name, this._pinnedGridPoint(viewProj, line), "sbp-label-grid");
+          }
+        } else if (this.flags.grids) {
           for (const grid of this.guides.grids) {
             if (!grid.segs.length) continue;
             const first = grid.segs[0], last = grid.segs[grid.segs.length - 1];
@@ -1620,13 +2006,14 @@ void main() { outColor = uColor; }`;
       }
       const kept = [];
       for (const item of candidates) {
-        const w = item.text.length * 6.5 + 14;
-        const clash = kept.some((o) => item.x < o.x + o.w && o.x < item.x + w && Math.abs(item.y - o.y) < 15);
-        if (!clash) kept.push({ ...item, w });
+        const w = item.text.length * LABEL_CHAR_PX + LABEL_PAD_PX;
+        const left = item.end ? item.x - w - LABEL_DOT_PX : item.x;
+        const clash = kept.some((o) => left < o.left + o.w && o.left < left + w && Math.abs(item.y - o.y) < 15);
+        if (!clash) kept.push({ ...item, w, left });
       }
       this.labelLayer.replaceChildren(
         ...kept.map((item) => {
-          const node = el("span", "sbp-label " + item.className, item.text);
+          const node = el("span", "sbp-label " + item.className + (item.end ? " sbp-label-end" : ""), item.text);
           node.style.left = item.x + "px";
           node.style.top = item.y + "px";
           return node;

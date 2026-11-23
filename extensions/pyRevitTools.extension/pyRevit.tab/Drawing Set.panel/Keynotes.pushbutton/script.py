@@ -726,7 +726,7 @@ class EditRecordWindow(forms.WPFWindow):
 
     @property
     def active_key(self):
-        if self.recordKey.Content and "\u25cf" not in self.recordKey.Content:
+        if self.recordKey.Content and "●" not in self.recordKey.Content:
             return self.recordKey.Content
 
     @active_key.setter
@@ -1574,15 +1574,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # =========================================================================
 
     def _update_status_bar(self):
-        safe = " \u2014 SAFE MODE (no persistent engine)" if self._modal_mode else ""
+        safe = " — SAFE MODE (no persistent engine)" if self._modal_mode else ""
         if self._follow_error and not self._modal_mode:
-            safe += " \u2014 NOT following ({})".format(self._follow_error)
+            safe += " — NOT following ({})".format(self._follow_error)
         if self._bind_error:
             self.statusLeft.Text = self._bind_error.replace("\n", "  ") + safe
         elif self._kfile:
             fname = op.basename(self._kfile)
             handler = " ( ACC / FORMA )" if self._kfile_handler == "adc" else ""
-            self.statusLeft.Text = "{}{} \u2014 {}{}".format(
+            self.statusLeft.Text = "{}{} — {}{}".format(
                 fname, handler, op.dirname(self._kfile), safe
             )
         else:
@@ -1591,20 +1591,18 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             cats = self.all_categories if self._conn else []
             knotes = self.all_keynotes if self._conn else []
-            # Never print "0 in use" off a map that failed to collect \u2014 the
+            # Never print "0 in use" off a map that failed to collect, the
             # count is the only place the user sees that usage is unknown.
             used = (
                 "usage unverified (F5)"
                 if self._usage_stale
                 else "{} in use".format(len(self._used_keysdict))
             )
-            self.statusRight.Text = "{} groups \u00b7 {} keynotes \u00b7 {}".format(
+            self.statusRight.Text = "{} groups · {} keynotes · {}".format(
                 len(cats), len(knotes), used
             )
             if len(self._sel_keys) > 1:
-                self.statusRight.Text += " \u00b7 {} selected".format(
-                    len(self._sel_keys)
-                )
+                self.statusRight.Text += " · {} selected".format(len(self._sel_keys))
         except Exception:
             self.statusRight.Text = ""
 
@@ -3039,10 +3037,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     self._determine_kfile()
                     continue  # retry in THIS frame — never recurse
                 elif res == "Help":
-                    script.open_url(
-                        "https://www.notion.so/pyrevitlabs/"
-                        "Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da"
-                    )
+                    script.open_url("https://docs.pyrevitlabs.io/tools/keynotes/")
                     raise KeynoteSetupError(
                         "See the help page for converting the keynote file, "
                         "then reopen Keynote Manager."
@@ -3969,7 +3964,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         return None
 
     def tree_preview_mouse_down(self, sender, args):
-        # SHIFT+CLICK a row places that keynote.
+        # ALT+CLICK a row places that keynote.
         self._shift_place_pending = None
 
         ctrl = shift = alt = False
@@ -4838,7 +4833,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         Shared by the toolbar button (on the current selection) and by
         ALT+CLICK on a tree row (on the row clicked).  Takes the record
         explicitly rather than reading self.selected_keynote, so the
-        shift-click path cannot place a keynote other than the one clicked.
+        Alt+Click path cannot place a keynote other than the one clicked.
         """
         if not sel:
             return
@@ -4846,7 +4841,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._hint("%s is locked by another user — cannot place" % sel.key)
             return
         if not sel.parent_key:
-            self._hint("%s is a group — Shift+Click a keynote to place" % sel.key)
+            self._hint("%s is a group — Alt+Click a keynote to place" % sel.key)
             return
 
         if self._modal_mode:

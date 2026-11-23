@@ -536,6 +536,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             {
                 // Call ComboBoxExecutor.ExecuteEventHandlerSetup(scriptPath, context, comboBox, additionalPaths)
                 var result = _executeMethod.Invoke(_executor, new object[] { scriptPath, context, comboBox, additionalPaths });
+                ExecutorFailure.ReportIfFailed(_executor, "ComboBox", component.DisplayName, _logger);
                 return result is bool boolResult ? boolResult : true;
             }
             catch (TargetInvocationException ex)

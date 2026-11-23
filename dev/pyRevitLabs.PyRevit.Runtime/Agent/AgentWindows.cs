@@ -17,6 +17,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// and they block every later request. Naming the window lets the agent ask the user to
     /// answer it instead of guessing, or closing windows it doesn't understand. Read-only:
     /// it never sends messages to the windows. Safe to call from any thread.
+    /// Important: Revit's main window comes from <see cref="RememberMainWindow"/>, never from
+    /// <c>Process.MainWindowHandle</c>. When a dialog has no owner window, Windows reports the
+    /// dialog itself as the process's main window, so the process handle would point at an
+    /// enabled window, hide the modal state, and leave the dialog out of the listing.
     /// Important: window titles are read with <c>InternalGetWindowText</c>, not
     /// <c>GetWindowText</c>. For a window owned by another thread of this process,
     /// <c>GetWindowText</c> sends WM_GETTEXT and waits for that thread to answer, so a busy
@@ -25,18 +29,51 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentWindows {
         private const int MaxWindows = 6;
 
+        private static IntPtr revitMainWindow;
+
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern int InternalGetWindowText(IntPtr window, StringBuilder text, int maxCount);
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern int GetClassName(IntPtr window, StringBuilder className, int maxCount);
 
+        /// <summary>
+        /// Records Revit's own main window, as reported by <c>UIApplication.MainWindowHandle</c>.
+        /// </summary>
+        /// <remarks>
+        /// Call it on the Revit UI thread, for example from <c>AgentHost.Configure</c>. Until it
+        /// has been called, the process's main window stands in.
+        /// </remarks>
+        public static void RememberMainWindow(IntPtr mainWindow) {
+            revitMainWindow = mainWindow;
+        }
+
+        /// <summary>
+        /// Whether a modal dialog is open: Revit's main window is disabled and another visible
+        /// window of the process is showing.
+        /// </summary>
+        /// <remarks>
+        /// Revit disables its main window while a modal dialog runs, which is what stops
+        /// ExternalEvents from firing. Reads window state only and never sends a message.
+        /// A visible window other than the main window always exists, such as the pyRevit one,
+        /// so in practice only the disabled main window decides.
+        /// </remarks>
+        public static bool IsModalDialogOpen() {
+            try {
+                var mainWindow = MainWindow();
+                return mainWindow != IntPtr.Zero && !IsWindowEnabled(mainWindow) && OpenDialogs().Count > 0;
+            }
+            catch (Exception) {
+                return false;
+            }
+        }
+
         public static List<string> OpenDialogs() {
             var found = new List<string>();
             try {
                 var process = Process.GetCurrentProcess();
                 var processId = (uint)process.Id;
-                var mainWindow = process.MainWindowHandle;
+                var mainWindow = MainWindow();
                 EnumWindows((window, _) => {
                     if (window == mainWindow || !IsWindowVisible(window))
                         return true;
@@ -56,6 +93,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception) {
             }
             return found;
+        }
+
+        private static IntPtr MainWindow() {
+            return revitMainWindow != IntPtr.Zero ? revitMainWindow : Process.GetCurrentProcess().MainWindowHandle;
         }
     }
 }

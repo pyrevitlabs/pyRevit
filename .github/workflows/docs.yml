@@ -9,6 +9,9 @@ on:
       - 'docs/**'
       - 'pyrevitlib/**'
       - '*.md'
+      - 'pyRevitfile'
+      - 'dev/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt'
+      - 'dev/pyRevitLabs.PyRevit.Runtime/ScriptExecutor.cs'
   # when PR from develop->master is created
   pull_request:
     branches:
@@ -18,6 +21,9 @@ on:
       - 'docs/**'
       - 'pyrevitlib/**'
       - '*.md'
+      - 'pyRevitfile'
+      - 'dev/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt'
+      - 'dev/pyRevitLabs.PyRevit.Runtime/ScriptExecutor.cs'
   # manual run
   workflow_dispatch:
 

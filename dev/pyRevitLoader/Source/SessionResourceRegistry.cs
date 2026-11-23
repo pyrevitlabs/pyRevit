@@ -1,3 +1,4 @@
+#pragma warning disable CS8600, CS8604, CS8625
 using System;
 using System.Collections.Generic;
 
