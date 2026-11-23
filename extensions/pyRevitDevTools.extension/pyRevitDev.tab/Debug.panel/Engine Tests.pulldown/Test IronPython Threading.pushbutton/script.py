@@ -2,20 +2,12 @@
 import os
 import os.path as op
 from time import sleep
-import clr
 
 import System
-from System import Windows
 from System import EventHandler
 from System import Threading
 
-try:
-    from pyrevit.framework import wpf
-except Exception:
-    clr.AddReference("IronPython.Wpf")
-    import IronPython
-
-    wpf = IronPython.Modules.Wpf
+from pyrevit.framework import Windows, wpf
 
 
 class OutputWindow(Windows.Window):

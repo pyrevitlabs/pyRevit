@@ -10,6 +10,14 @@
   --sbp-warn: #b35c00;
   --sbp-error: #c62828;
   --sbp-ok: #2e7d32;
+  --scene3d-cube-face: #e3e7ec;
+  --scene3d-cube-edge: #c6ced7;
+  --scene3d-cube-hover: #2f80ed;
+  --scene3d-cube-line: #9aa4af;
+  --scene3d-cube-text: #4b5662;
+  --scene3d-cube-ring: rgba(150, 160, 172, 0.55);
+  --scene3d-cube-compass: #3f4852;
+  --scene3d-cube-compass-halo: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,6 +33,14 @@
     --sbp-warn: #ffb74d;
     --sbp-error: #ff8a80;
     --sbp-ok: #81c784;
+    --scene3d-cube-face: #7d8793;
+    --scene3d-cube-edge: #626c77;
+    --scene3d-cube-hover: #6aa8ff;
+    --scene3d-cube-line: #4a525b;
+    --scene3d-cube-text: #eef1f4;
+    --scene3d-cube-ring: rgba(120, 130, 142, 0.6);
+    --scene3d-cube-compass: #eef1f4;
+    --scene3d-cube-compass-halo: #1c1e22;
   }
 }
 
@@ -39,9 +55,12 @@ body {
 }
 
 .sbp-root {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  background: var(--sbp-bg);
 }
 
 .sbp-toolbar {
@@ -300,6 +319,8 @@ body {
 }
 
 .sbp-side {
+  box-sizing: border-box;
+  flex: none;
   width: 210px;
   overflow-y: auto;
   border-left: 1px solid var(--sbp-border);
@@ -392,4 +413,81 @@ body {
 .sbp-progress {
   color: var(--sbp-muted);
   white-space: nowrap;
+}
+
+.sbp-viewcube {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  pointer-events: none;
+}
+
+.sbp-viewcube g {
+  pointer-events: visiblePainted;
+}
+
+.sbp-note {
+  color: var(--sbp-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.sbp-indent {
+  padding-left: 16px;
+}
+
+.sbp-link-head {
+  font-weight: 600;
+}
+
+.sbp-link.sbp-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.sbp-label-end {
+  transform: translate(calc(-100% - 9px), -50%);
+}
+
+.sbp-label-end::before {
+  left: auto;
+  right: -9px;
+}
+
+.sbp-search {
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.sbp-chevron {
+  width: 12px;
+  color: var(--sbp-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.sbp-link-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.sbp-count {
+  color: var(--sbp-muted);
+  font-weight: 400;
+}
+
+.sbp-splitter {
+  flex: none;
+  width: 6px;
+  margin: 0 -3px 0 -3px;
+  z-index: 3;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.sbp-splitter:hover {
+  background: color-mix(in srgb, var(--sbp-accent) 45%, transparent);
 }

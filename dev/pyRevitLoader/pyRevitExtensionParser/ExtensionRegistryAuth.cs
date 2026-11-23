@@ -20,6 +20,7 @@ namespace pyRevitExtensionParser
         {
             public List<string> AuthorizedUsers { get; } = new List<string>();
             public List<string> AuthorizedGroups { get; } = new List<string>();
+            public List<string> UnreadableAccessListLocations { get; } = new List<string>();
         }
 
         internal static void ClearCache()
@@ -28,7 +29,17 @@ namespace pyRevitExtensionParser
             _loadedSourcePaths = null;
         }
 
-        internal static void ApplyRegistryAuthorization(
+        /// <summary>
+        /// Merges the registry access lists naming this extension into
+        /// <paramref name="authUsers"/> and <paramref name="authGroups"/>.
+        /// </summary>
+        /// <returns>
+        /// True when a registry entry naming this extension declares an access list that
+        /// could not be read; the caller must then treat the extension as restricted.
+        /// Each such entry is logged as an error here, so entries naming no loaded
+        /// extension are never reported.
+        /// </returns>
+        internal static bool ApplyRegistryAuthorization(
             string extDir,
             string folderName,
             string manifestName,
@@ -36,7 +47,7 @@ namespace pyRevitExtensionParser
             ref List<string> authGroups)
         {
             if (string.IsNullOrWhiteSpace(extDir))
-                return;
+                return false;
 
             var lookupNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrWhiteSpace(folderName))
@@ -45,10 +56,11 @@ namespace pyRevitExtensionParser
                 lookupNames.Add(manifestName);
 
             if (lookupNames.Count == 0)
-                return;
+                return false;
 
             EnsureRegistryCache(extDir);
 
+            var accessListUnreadable = false;
             foreach (var lookupName in lookupNames)
             {
                 if (!_registryAuthByName.TryGetValue(lookupName, out var entry))
@@ -56,7 +68,14 @@ namespace pyRevitExtensionParser
 
                 MergeAuthList(ref authUsers, entry.AuthorizedUsers);
                 MergeAuthList(ref authGroups, entry.AuthorizedGroups);
+                foreach (var location in entry.UnreadableAccessListLocations)
+                {
+                    ExtensionParser.LogAuthDefinitionUnreadable(location);
+                    accessListUnreadable = true;
+                }
             }
+
+            return accessListUnreadable;
         }
 
         /// <summary>
@@ -147,9 +166,10 @@ namespace pyRevitExtensionParser
                     if (string.IsNullOrWhiteSpace(name))
                         continue;
 
-                    var users = ParseStringArray(entry["authusers"]);
-                    var groups = ParseStringArray(entry["authgroups"]);
-                    if (users.Count == 0 && groups.Count == 0)
+                    var accessListUnreadable = false;
+                    var users = ExtensionParser.ReadAuthList(entry["authusers"], ref accessListUnreadable);
+                    var groups = ExtensionParser.ReadAuthList(entry["authgroups"], ref accessListUnreadable);
+                    if (users == null && groups == null && !accessListUnreadable)
                         continue;
 
                     if (!cache.TryGetValue(name, out var authEntry))
@@ -160,6 +180,9 @@ namespace pyRevitExtensionParser
 
                     MergeAuthList(authEntry.AuthorizedUsers, users);
                     MergeAuthList(authEntry.AuthorizedGroups, groups);
+                    var entryLocation = "registry entry '" + name + "' in " + filePath;
+                    if (accessListUnreadable && !authEntry.UnreadableAccessListLocations.Contains(entryLocation))
+                        authEntry.UnreadableAccessListLocations.Add(entryLocation);
                 }
             }
             catch (Exception ex)
@@ -185,23 +208,6 @@ namespace pyRevitExtensionParser
             yield return json;
         }
 
-        private static List<string> ParseStringArray(JToken token)
-        {
-            var values = new List<string>();
-            var array = token as JArray;
-            if (array == null)
-                return values;
-
-            foreach (var item in array)
-            {
-                var value = item?.ToString();
-                if (!string.IsNullOrWhiteSpace(value))
-                    values.Add(value);
-            }
-
-            return values;
-        }
-
         private static void MergeAuthList(ref List<string> target, List<string> source)
         {
             if (source == null || source.Count == 0)
@@ -215,6 +221,9 @@ namespace pyRevitExtensionParser
 
         private static void MergeAuthList(List<string> target, List<string> source)
         {
+            if (source == null)
+                return;
+
             foreach (var value in source)
             {
                 if (!target.Exists(x => string.Equals(x, value, StringComparison.OrdinalIgnoreCase)))

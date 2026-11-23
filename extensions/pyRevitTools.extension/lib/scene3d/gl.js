@@ -1,7 +1,8 @@
 /*
  * Shared WebGL2 helpers for the pyRevit scene previews (Diagnose Invisibility,
  * Section Box Navigator): vector and matrix math, shader compilation, packed
- * array decoding, ray tests and the orbit camera.
+ * array decoding, ray tests and the orbit camera. Orbiting stops short of the
+ * poles (MAX_PITCH) but a camera may sit exactly on one, as the "top" preset does.
  *
  * Exposes window.pyRevitScene3D. Scene coordinates are Revit feet relative to
  * scene.origin, Z up. Camera functions work on a plain state object
@@ -49,6 +50,14 @@
         x[1], y[1], z[1], 0,
         x[2], y[2], z[2], 0,
         -v3.dot(x, eye), -v3.dot(y, eye), -v3.dot(z, eye), 1,
+      ];
+    },
+    fromBasis(right, up, back, eye) {
+      return [
+        right[0], up[0], back[0], 0,
+        right[1], up[1], back[1], 0,
+        right[2], up[2], back[2], 0,
+        -v3.dot(right, eye), -v3.dot(up, eye), -v3.dot(back, eye), 1,
       ];
     },
     mul(a, b) {
@@ -189,11 +198,21 @@
     camera.pitch = Math.min(MAX_PITCH, Math.max(-MAX_PITCH, camera.pitch + dy * 0.008));
   }
 
+  /**
+   * Right and up unit vectors of the camera on screen.
+   *
+   * Defined for every pitch, also the exact +-90 degrees of a straight top or
+   * bottom view, where screen-up follows the yaw direction instead of the world Z axis.
+   */
+  function cameraBasis(camera) {
+    const cp = Math.cos(camera.pitch);
+    const back = [cp * Math.cos(camera.yaw), cp * Math.sin(camera.yaw), Math.sin(camera.pitch)];
+    const right = [-Math.sin(camera.yaw), Math.cos(camera.yaw), 0];
+    return { right, up: v3.cross(back, right), back };
+  }
+
   function cameraPan(camera, dx, dy, canvasHeight) {
-    const eye = cameraEye(camera);
-    const forward = v3.norm(v3.sub(camera.target, eye));
-    const right = v3.norm(v3.cross(forward, [0, 0, 1]));
-    const up = v3.cross(right, forward);
+    const { right, up } = cameraBasis(camera);
     const perPixel = (2 * camera.dist * Math.tan(FOV / 2)) / Math.max(canvasHeight, 1);
     const shift = v3.add(v3.scale(right, -dx * perPixel), v3.scale(up, dy * perPixel));
     camera.target = v3.add(camera.target, shift);
@@ -206,7 +225,8 @@
   /** Return {eye, viewProj} for a canvas of the given aspect; reach adds to the clip depth. */
   function cameraMatrices(camera, aspect, reach) {
     const eye = cameraEye(camera);
-    const view = m4.lookAt(eye, camera.target, [0, 0, 1]);
+    const basis = cameraBasis(camera);
+    const view = m4.fromBasis(basis.right, basis.up, basis.back, eye);
     const depth = camera.dist + reach;
     let proj;
     if (camera.ortho) {
@@ -233,7 +253,7 @@
     let ortho = false;
     if (name === "top") {
       yaw = -Math.PI / 2;
-      pitch = MAX_PITCH;
+      pitch = Math.PI / 2;
       ortho = true;
     } else if (name === "view" && cam.forward) {
       const back = v3.scale(v3.norm(cam.forward), -1);
@@ -243,7 +263,6 @@
       } else {
         yaw = Math.atan2(back[1], back[0]);
       }
-      pitch = Math.min(MAX_PITCH, Math.max(-MAX_PITCH, pitch));
       ortho = !cam.perspective;
     }
     const camera = { target: v3.scale(v3.add(bounds.min, bounds.max), 0.5), dist: 1, yaw, pitch, ortho };
@@ -263,6 +282,7 @@
     rayTriangle,
     rayBox,
     cameraEye,
+    cameraBasis,
     cameraOrbit,
     cameraPan,
     cameraZoom,

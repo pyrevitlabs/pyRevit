@@ -194,6 +194,16 @@
     <system:String x:Key="PreviewCategories">Категории</system:String>
     <system:String x:Key="PreviewAll">Все</system:String>
     <system:String x:Key="PreviewNone">Нет</system:String>
+    <system:String x:Key="PreviewCubeBack">Сзади</system:String>
+    <system:String x:Key="PreviewCubeBottom">Снизу</system:String>
+    <system:String x:Key="PreviewCubeLeft">Слева</system:String>
+    <system:String x:Key="PreviewCubeRight">Справа</system:String>
+    <system:String x:Key="PreviewCompass">С,В,Ю,З</system:String>
+    <system:String x:Key="PreviewBoxOnly">только габарит</system:String>
+    <system:String x:Key="PreviewBoxes">{0} как габариты</system:String>
+    <system:String x:Key="PreviewNotLoaded">{0} не загружено</system:String>
+    <system:String x:Key="PreviewLoadGroup">Загрузить</system:String>
+    <system:String x:Key="PreviewSearch">Поиск категорий</system:String>
     <system:String x:Key="PreviewFront">Спереди</system:String>
     <system:String x:Key="PreviewSide">Сбоку</system:String>
     <system:String x:Key="PreviewAllLevels">Все уровни</system:String>

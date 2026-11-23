@@ -45,7 +45,7 @@ The `wip`/`release` channel stamping (`Build__Channel` env var) and the other pi
 
 ## Documentation
 
-- [Developer Docs (Notion)](https://pyrevitlabs.notion.site/Developer-Docs-2c88f3ecccde422d9504e20b6b9e04f8)
+- User and extension-author docs: [`docs/`](docs), published at [docs.pyrevitlabs.io](https://docs.pyrevitlabs.io). Start at [`docs/build-extensions/index.md`](docs/build-extensions/index.md) for bundles, extensions and scripting.
 - Technical docs source: [`docs/`](docs) (mkdocs). Reference API is generated from source docstrings.
 
 Build and validate before finishing doc changes:

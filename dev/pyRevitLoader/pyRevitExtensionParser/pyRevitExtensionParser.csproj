@@ -20,6 +20,7 @@
     <ItemGroup>
       <InternalsVisibleTo Include="pyRevitExtensionParser.Tests" />
       <InternalsVisibleTo Include="pyRevitLabs.PyRevit.Integration.Tests" />
+      <InternalsVisibleTo Include="pyRevitAssemblyBuilder.Tests" />
     </ItemGroup>
 
     <ItemGroup>

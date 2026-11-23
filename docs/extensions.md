@@ -32,6 +32,10 @@ Supported bundle types (folder postfix): `pushbutton`, `smartbutton`, `pulldown`
 
     Postfixes and every other constant on this page are defined in [pyrevit.extensions][] (`pyrevitlib/pyrevit/extensions/__init__.py`).
 
+!!! note "pyRevit 7.2.0 or later"
+
+    `checkbox` bundles are not part of pyRevit 7.1.0.
+
 A `checkbox` bundle adds a ribbon checkbox. Its `script.py` can define `__chk_init__(ctx)`, which runs when the ribbon loads, and `__chk_on_change__(sender, args, ctx)`, which runs each time `ctx.is_checked` changes after `__chk_init__` returns. If `__chk_init__` raises or calls `sys.exit()`, `__chk_on_change__` is not connected until pyRevit reloads. If `script.py` or `__chk_init__` raises, the checkbox is also disabled; after `sys.exit()` it stays enabled but does nothing. Both run outside Revit API context, so they must not start transactions. All checkboxes run in one IronPython engine, but each keeps its own copy of the modules it imports from its bundle's `lib` folders and from library extensions, so two checkboxes can ship modules with the same name; pyRevit and the standard library are shared. Checkboxes stack only with other checkboxes: in a `stack` that also holds other items, the checkboxes are placed beside the stack and a warning is logged.
 
 A handler can also come from another module, as in `from chk_handlers import on_change as __chk_on_change__`, so several checkboxes can share one. `EXEC_PARAMS`, and with it `script.get_config()`, still resolves the checkbox the handler runs for.
@@ -79,7 +83,7 @@ Common keys:
 
 - `title`, `tooltip` — either a plain string or a map of locale (`en_us`, `fr_fr`, `ko`, ...) to string, for translations.
 - `author` / `authors`, `help_url`.
-- `context` — restricts when the button is enabled (active view, selected category, workset, etc.); see the context grammar in `pyrevit.extensions.genericcomps._parse_context_directives` or human friendly [here](https://pyrevitlabs.notion.site/Bundle-Context-630fa1f3611f4ee0aa15d290275e7ef3).
+- `context` — restricts when the button is enabled (active view, selected category, workset, etc.); see the context grammar in `pyrevit.extensions.genericcomps._parse_context_directives` or human friendly [here](build-extensions/bundles/context.md).
 - `min_revit_version` / `max_revit_version`.
 - `is_beta`, `highlight` (`new` or `updated`), `collapsed`.
 - `engine` — `clean`, `full_frame`, `persistent`, `mainthread` (plus Dynamo-specific `automate`, `dynamo_path`, `dynamo_path_check_existing`, `dynamo_force_manual_run`, `dynamo_model_nodes_info`).
@@ -186,7 +190,7 @@ This is different from the entry an extension gets in `extensions/extensions.jso
 
 A `hooks/` folder (at the bundle, tab, panel, or extension level) can hold Python scripts named after a Revit/pyRevit event, e.g. `doc-opened.py`, `view-activated.py`, `command-before-exec[ID_INPLACE_COMPONENT].py` (the bracketed suffix scopes the hook to one command id). Each script runs whenever that event fires while the extension is loaded.
 
-There is no exhaustive published list of event names — `extensions/pyRevitDevHooks.extension/hooks/` has one example script per supported event and is the most complete reference. Hook registration is handled by `pyrevitlib/pyrevit/loader/hooks.py`. A more detailed list of event names is published [here](https://pyrevitlabs.notion.site/Extension-Hooks-b771ecf65f6a45fe87ae12beab2a73a6).
+There is no exhaustive published list of event names — `extensions/pyRevitDevHooks.extension/hooks/` has one example script per supported event and is the most complete reference. Hook registration is handled by `pyrevitlib/pyrevit/loader/hooks.py`. A more detailed list of event names is published [here](build-extensions/extensions/hooks.md).
 
 ## Runner commands
 

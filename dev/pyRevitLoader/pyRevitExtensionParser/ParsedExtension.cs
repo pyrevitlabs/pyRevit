@@ -82,8 +82,10 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// True when the extension declares an access list that could not be read
         /// (unparsable extension.json mentioning one, a non-list value, or a list with only
-        /// blank entries). The extension is then treated as restricted for everyone, so a
-        /// broken definition never widens access. Absent or empty lists leave this false.
+        /// blank entries, in extension.json or in a registry entry naming the extension).
+        /// The extension is then treated as restricted for everyone, so a broken definition
+        /// never widens access. Absent or empty lists leave this false. A registry file that
+        /// cannot be parsed at all is logged and skipped, so none of its entries set this.
         /// </summary>
         public bool AuthDefinitionUnreadable { get; set; }
 

@@ -411,8 +411,8 @@ internal static class InterpreterLifecycleProbe {
         }
         string? lcCtypeAfterScope = CrtLocale.Query(CrtLocale.LcCtype);
 
-        Exception pythonDllReassignment = Capture(() => CpyRuntime.PythonDLL = pythonDll);
-        Exception shutdown = Capture(PythonEngine.Shutdown);
+        Exception? pythonDllReassignment = Capture(() => CpyRuntime.PythonDLL = pythonDll);
+        Exception? shutdown = Capture(PythonEngine.Shutdown);
         bool isInitializedAfterShutdown = PythonEngine.IsInitialized;
 
         return new InterpreterLifecycleRecord {

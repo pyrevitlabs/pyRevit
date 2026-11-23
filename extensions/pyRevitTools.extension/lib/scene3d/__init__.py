@@ -5,6 +5,9 @@ Used by the buttons that draw model geometry in a WebView2 output page
 (Diagnose Invisibility, Section Box Navigator): geometry tessellation with
 vertex budgets and packed JSON (``meshing``), the page/Python message channel
 (``bridge``) and the asset loader for the shared page script (``gl.js``).
+
+The optional view cube (``viewcube.js``) is a separate asset: a page gets it only
+by injecting it after ``gl.js`` with :func:`read_asset`.
 """
 
 import io

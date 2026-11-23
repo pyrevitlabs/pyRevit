@@ -82,7 +82,7 @@ except TypeError:
             EarlyListFailed = scope.Get<bool>("early_list_failed");
             PythonBinding.Register(null!, null!);
             scope.Exec("early_holder.Add(early)");
-            var holder = (System.Collections.ArrayList)scope.Get("early_holder").AsManagedObject(typeof(System.Collections.ArrayList));
+            var holder = (System.Collections.ArrayList)scope.Get("early_holder").AsManagedObject(typeof(System.Collections.ArrayList))!;
             EarlyHolderItem = holder[1];
         }
     }

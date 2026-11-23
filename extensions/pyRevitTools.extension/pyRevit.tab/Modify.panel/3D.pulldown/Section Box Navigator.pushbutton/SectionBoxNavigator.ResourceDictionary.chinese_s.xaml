@@ -194,6 +194,16 @@
     <system:String x:Key="PreviewCategories">类别</system:String>
     <system:String x:Key="PreviewAll">全部</system:String>
     <system:String x:Key="PreviewNone">无</system:String>
+    <system:String x:Key="PreviewCubeBack">后</system:String>
+    <system:String x:Key="PreviewCubeBottom">底</system:String>
+    <system:String x:Key="PreviewCubeLeft">左</system:String>
+    <system:String x:Key="PreviewCubeRight">右</system:String>
+    <system:String x:Key="PreviewCompass">北,东,南,西</system:String>
+    <system:String x:Key="PreviewBoxOnly">仅边界框</system:String>
+    <system:String x:Key="PreviewBoxes">{0} 个以边界框显示</system:String>
+    <system:String x:Key="PreviewNotLoaded">{0} 个未加载</system:String>
+    <system:String x:Key="PreviewLoadGroup">加载</system:String>
+    <system:String x:Key="PreviewSearch">搜索类别</system:String>
     <system:String x:Key="PreviewFront">前视</system:String>
     <system:String x:Key="PreviewSide">侧视</system:String>
     <system:String x:Key="PreviewAllLevels">全部标高</system:String>

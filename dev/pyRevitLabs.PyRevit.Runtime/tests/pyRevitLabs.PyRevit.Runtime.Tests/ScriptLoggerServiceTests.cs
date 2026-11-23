@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
 using NUnit.Framework;
@@ -145,8 +144,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Tests {
         public void DeferredForwardedRecordsAreNotHeldByDisposedCommandOutput() {
             var runtime = CreateRuntime(suppressOutput: true);
             SetProperty(runtime, "IsDisposed", true);
-            var output = (ScriptOutput)FormatterServices.GetUninitializedObject(
-                typeof(ScriptOutput));
+            var output = (ScriptOutput)CreateUninitialized(typeof(ScriptOutput));
             var heldRecords = new HeldRecordBuffer(10);
             SetField(output, "_runtime", new WeakReference<ScriptRuntime>(runtime));
             SetField(output, "_heldRecords", heldRecords);
@@ -158,10 +156,8 @@ namespace pyRevitLabs.PyRevit.Runtime.Tests {
 
         [Test]
         public void RuntimeOutputWindowIsTrackedForDeferredWrites() {
-            var output = (ScriptOutput)FormatterServices.GetUninitializedObject(
-                typeof(ScriptOutput));
-            var window = (ScriptConsole)FormatterServices.GetUninitializedObject(
-                typeof(ScriptConsole));
+            var output = (ScriptOutput)CreateUninitialized(typeof(ScriptOutput));
+            var window = (ScriptConsole)CreateUninitialized(typeof(ScriptConsole));
 
             output.TrackRuntimeWindow(window);
 
@@ -197,9 +193,8 @@ namespace pyRevitLabs.PyRevit.Runtime.Tests {
         private static ScriptRuntime CreateRuntime(
             bool debugMode = false,
             bool suppressOutput = false,
-            string logFilePath = null) {
-            var runtime = (ScriptRuntime)FormatterServices.GetUninitializedObject(
-                typeof(ScriptRuntime));
+            string? logFilePath = null) {
+            var runtime = (ScriptRuntime)CreateUninitialized(typeof(ScriptRuntime));
             SetProperty(runtime, "ScriptData", new ScriptData {
                 CommandName = "Test Command",
                 CommandUniqueId = "test-command"
@@ -212,17 +207,25 @@ namespace pyRevitLabs.PyRevit.Runtime.Tests {
             return runtime;
         }
 
+        private static object CreateUninitialized(Type type) {
+#if NETFRAMEWORK
+            return System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
+#else
+            return RuntimeHelpers.GetUninitializedObject(type);
+#endif
+        }
+
         private static void SetProperty(object target, string propertyName, object value) {
             target.GetType().GetProperty(
                 propertyName,
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
                 .SetValue(target, value);
         }
 
         private static void SetField(object target, string fieldName, object value) {
             target.GetType().GetField(
                 fieldName,
-                BindingFlags.Instance | BindingFlags.NonPublic)
+                BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(target, value);
         }
 
@@ -232,8 +235,8 @@ namespace pyRevitLabs.PyRevit.Runtime.Tests {
             string message) {
             return (string)typeof(ScriptLoggerService).GetMethod(
                 "FormatVisibleEntry",
-                BindingFlags.Static | BindingFlags.NonPublic)
-                .Invoke(null, new object[] { level, loggerName, message });
+                BindingFlags.Static | BindingFlags.NonPublic)!
+                .Invoke(null, new object[] { level, loggerName, message })!;
         }
     }
 }
