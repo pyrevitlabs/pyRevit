@@ -211,7 +211,7 @@ function they mark.
     times out, raise its MCP tool timeout (Claude Code: the `MCP_TOOL_TIMEOUT`
     environment variable, in milliseconds).
 
-    While the prompt is open, Revit's taskbar button flashes until Revit comes to the front, and
+    While the prompt is open, Revit's taskbar button flashes while the prompt waits, and
     the flash stops when the prompt closes. The prompt holds Revit's main thread, so other
     ExternalEvent add-ins such as Routes wait until it is answered, and other agent requests wait
     or get `revit_busy`. For unattended automation, set `policy = auto` so no prompt appears.
