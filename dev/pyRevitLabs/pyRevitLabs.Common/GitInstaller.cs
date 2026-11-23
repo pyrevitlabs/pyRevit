@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using pyRevitLabs.Common.Extensions;
@@ -309,7 +311,7 @@ namespace pyRevitLabs.Common {
             if (IsValidRepo(repoPath)) {
                 try {
                     using (var repo = new Repository(repoPath))
-                        return repo.Network.Remotes[remoteName].Url;
+                        return repo.Network.Remotes[remoteName]?.Url;
                 }
                 catch (Exception ex) {
                     logger.Debug("Can not determine remote \"{0}\" url for \"{1}\"", remoteName, repoPath);
@@ -317,6 +319,44 @@ namespace pyRevitLabs.Common {
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Tells whether two clone sources point at the same repository.
+        /// </summary>
+        /// <param name="first">A remote URL, scp-style address or local path, such as a stored remote.</param>
+        /// <param name="second">The source to compare with.</param>
+        /// <returns>
+        /// True when both resolve to the same host and path, ignoring credentials, scheme, a trailing
+        /// <c>.git</c>, trailing slashes, backslash use and host case. The path case is significant for
+        /// remote URLs. Local sources compare as full paths, ignoring case. False when either is empty.
+        /// </returns>
+        public static bool AreSameRemote(string first, string second) {
+            if (string.IsNullOrWhiteSpace(first) || string.IsNullOrWhiteSpace(second))
+                return false;
+            return NormalizeRemote(first) == NormalizeRemote(second);
+        }
+
+        private static string NormalizeRemote(string source) {
+            var value = source.Trim().Replace('\\', '/');
+            var isDrivePath = Regex.IsMatch(value, "^[a-z]:(/|$)", RegexOptions.IgnoreCase);
+            var match = Regex.Match(value, "^[a-z][a-z0-9+.-]+://(?:[^/@]*@)?([^/]+)/?(.*)$", RegexOptions.IgnoreCase);
+            if (!match.Success)
+                match = Regex.Match(value, "^(?:[^@/\\s]+@)?([^/:@\\s]+):(?!//)(.+)$");
+            if (match.Success && !isDrivePath) {
+                var path = match.Groups[2].Value.Trim('/');
+                if (path.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+                    path = path.Substring(0, path.Length - 4).TrimEnd('/');
+                return "remote:" + match.Groups[1].Value.ToLowerInvariant() + "/" + path;
+            }
+            string fullPath;
+            try {
+                fullPath = Path.GetFullPath(value);
+            }
+            catch (Exception) {
+                fullPath = value;
+            }
+            return "local:" + fullPath.Replace('\\', '/').TrimEnd('/').ToLowerInvariant();
         }
 
         // private methods

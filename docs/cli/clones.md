@@ -43,7 +43,7 @@ $ pyrevit clone dev --dest="C:\pyRevit\dev" --branch=develop
 
 When the git clone succeeds but the pre-built binaries for the branch are not available yet, `pyrevit clone` keeps the cloned folder and reports a warning without registering it. Running the same command again (same `<clone_name>`, `--dest` and `--source`) resumes: it installs the binaries into the kept folder and registers it, without deleting or resetting anything in it.
 
-If the existing folder is not a clone of the requested source, or it was created from a `--image` archive, the command stops with an error. Register the folder and update it once binaries are available, delete the folder, or choose another `--dest`:
+Resuming only happens when the kept folder is an unregistered git clone whose `origin` is the requested source. When `--branch` is given it must also match the branch the kept folder has checked out. A folder created from a `--image` archive is never resumed. If the existing folder does not qualify, the command stops with an error. Register the folder and update it once binaries are available, delete the folder, or choose another `--dest`:
 
 ```powershell
 $ pyrevit clones add <clone_name> "<path_to_kept_folder>"
