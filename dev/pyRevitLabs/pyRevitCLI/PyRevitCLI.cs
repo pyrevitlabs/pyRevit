@@ -63,6 +63,7 @@ namespace pyRevitCLI {
         ConfigsRoutes,
         ConfigsAgent,
         ConfigsTelemetry,
+        ConfigsAppTelemetry,
         Doctor,
         Agent,
         Mcp,
@@ -751,11 +752,7 @@ namespace pyRevitCLI {
 
             else if (all("configs")) {
                 if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(
-                        all("routes") ? PyRevitCLICommandType.ConfigsRoutes
-                        : all("agent") ? PyRevitCLICommandType.ConfigsAgent
-                        : all("telemetry") ? PyRevitCLICommandType.ConfigsTelemetry
-                        : PyRevitCLICommandType.Configs);
+                    PyRevitCLIAppHelps.PrintHelp(ConfigsHelpType(arguments));
 
                 else if (all("bincache")) {
                     if (any("enable", "disable"))
@@ -1121,6 +1118,16 @@ namespace pyRevitCLI {
         }
 
         // internal helper functions:
+        private static PyRevitCLICommandType ConfigsHelpType(IDictionary<string, ValueObject> parsedArguments) {
+            return PyRevitCLIArguments.Values(parsedArguments, "<config_words>").FirstOrDefault() switch {
+                "routes" => PyRevitCLICommandType.ConfigsRoutes,
+                "agent" => PyRevitCLICommandType.ConfigsAgent,
+                "telemetry" => PyRevitCLICommandType.ConfigsTelemetry,
+                "apptelemetry" => PyRevitCLICommandType.ConfigsAppTelemetry,
+                _ => PyRevitCLICommandType.Configs,
+            };
+        }
+
         private static void ReportInvalidOptionPath(string optionPath) {
             System.Console.Error.WriteLine(
                 "Error: \"{0}\" is neither a configs command nor a \"section:option\" path. "
