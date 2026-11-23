@@ -12,6 +12,25 @@ public static partial class VersionHelper
     [GeneratedRegex(@"^(\d)\.(\d+)\.(\d+)(\.[a-z0-9+-]+)?")]
     private static partial Regex VersionPartFinder();
 
+    /// <summary>
+    /// Name of the environment variable, and so the MSBuild property, that carries the resolved build version into
+    /// every <c>dotnet</c> child process; <c>dev/Directory.Build.props</c> reads it as <c>$(PyRevitBuildVersion)</c>.
+    /// </summary>
+    public const string BuildVersionVariable = "PyRevitBuildVersion";
+
+    /// <summary>
+    /// Makes the resolved build version the assembly version of everything built afterwards, including channels
+    /// that skip version stamping and so leave the committed <c>Directory.Build.props</c> untouched.
+    /// </summary>
+    /// <remarks>
+    /// Sets process-wide state that child processes inherit, so it must run before the first build module and
+    /// every build must run in this process tree.
+    /// </remarks>
+    public static void ExportBuildVersion(string buildVersion)
+    {
+        Environment.SetEnvironmentVariable(BuildVersionVariable, buildVersion);
+    }
+
     public static string ReadBuildVersion(bool urlSafe = false)
     {
         return ReadVersionFromFile(PyRevitPaths.VersionFile, urlSafe);

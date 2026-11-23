@@ -992,8 +992,7 @@ func main() {
 							},
 						},
 						Flags: complete.Flags{
-							"--help": complete.PredictNothing,
-							"--log":  complete.PredictNothing,
+							"--log": complete.PredictNothing,
 						},
 					},
 					"agent": complete.Command{
@@ -1094,8 +1093,7 @@ func main() {
 							},
 						},
 						Flags: complete.Flags{
-							"--help": complete.PredictNothing,
-							"--log":  complete.PredictNothing,
+							"--log": complete.PredictNothing,
 						},
 					},
 					"telemetry": complete.Command{
@@ -1164,8 +1162,7 @@ func main() {
 							},
 						},
 						Flags: complete.Flags{
-							"--help": complete.PredictNothing,
-							"--log":  complete.PredictNothing,
+							"--log": complete.PredictNothing,
 						},
 					},
 					"apptelemetry": complete.Command{
