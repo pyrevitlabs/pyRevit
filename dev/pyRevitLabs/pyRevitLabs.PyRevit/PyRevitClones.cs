@@ -100,9 +100,46 @@ namespace pyRevitLabs.PyRevit {
                 UnregisterClone(clone);
         }
 
+        /// <summary>
+        /// The nearest valid clone <paramref name="path"/> lies in, so a clone nested inside another
+        /// registered clone is not mistaken for it. The registration of that clone is returned when there
+        /// is one, to keep its name; a path that is inside no valid clone falls back to the registered
+        /// clone containing it, or null.
+        /// </summary>
+        public static PyRevitClone FindContaining(string path) {
+            var registeredClones = GetRegisteredClones(pruneStoredList: false);
+            PyRevitClone nearest;
+            try {
+                nearest = new PyRevitClone(Path.GetDirectoryName(path));
+            }
+            catch (PyRevitException) {
+                return registeredClones.FirstOrDefault(clone => path.IsPathWithin(clone.ClonePath));
+            }
+            var registered = registeredClones.FirstOrDefault(clone => clone.Equals(nearest));
+            if (registered != null)
+                return registered;
+            try {
+                return new PyRevitClone(nearest.ClonePath, name: new DirectoryInfo(nearest.ClonePath).Name);
+            }
+            catch (PyRevitException) {
+                return new PyRevitClone(nearest.ClonePath);
+            }
+        }
+
         // return list of registered clones
         // @handled @logs
         public static List<PyRevitClone> GetRegisteredClones() {
+            return GetRegisteredClones(pruneStoredList: true);
+        }
+
+        /// <summary>
+        /// Returns the registered clones that pass verification.
+        /// </summary>
+        /// <param name="pruneStoredList">
+        /// When false, registrations that fail verification are skipped but stay in the config, so a
+        /// clone on an unavailable drive is not unregistered by a caller that only needs to read.
+        /// </param>
+        public static List<PyRevitClone> GetRegisteredClones(bool pruneStoredList) {
             // safely get clone list
             var cfg = PyRevitConfigs.GetConfigFile();
             var clonesDict = MergeMachineRegisteredClones(cfg, cfg.Environment.Clones);
@@ -151,7 +188,7 @@ namespace pyRevitLabs.PyRevit {
             }
             foreach (var staleKey in reportedRejectedClones.Keys.Where(k => !registrationKeys.Contains(k)).ToList())
                 reportedRejectedClones.TryRemove(staleKey, out _);
-            if (listChanged) {
+            if (listChanged && pruneStoredList) {
                 foreach (var duplicate in duplicates)
                     logger.Info("Registered clone \"{0}\" points to the same path as clone \"{1}\" and is dropped from the clones list",
                                 duplicate.Name, validatedClones.Find(c => c.Equals(duplicate)).Name);
@@ -718,24 +755,31 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
-        // uninstall primary or specified clone, has option for clearing configs
+        /// <summary>
+        /// Unregisters the clone and deletes its directory. The user config file is left
+        /// untouched: it is shared by every clone and holds no clone-specific settings
+        /// beyond the registry entry removed here.
+        /// </summary>
         // @handled @logs
-        public static void Delete(PyRevitClone clone, bool clearConfigs = false) {
+        public static void Delete(PyRevitClone clone) {
             logger.Debug("Unregistering clone \"{0}\"", clone);
             UnregisterClone(clone);
 
             logger.Debug("Removing directory \"{0}\"", clone.ClonePath);
             CommonUtils.DeleteDirectory(clone.ClonePath);
-
-            if (clearConfigs)
-                PyRevitConfigs.DeleteConfig();
         }
 
-        // uninstall all registered clones
+        /// <summary>
+        /// Unregisters and deletes every registered clone.
+        /// </summary>
+        /// <param name="clearConfigs">
+        /// Also deletes the whole user config file, including every setting unrelated to the
+        /// clones.
+        /// </param>
         // @handled @logs
         public static void DeleteAllClones(bool clearConfigs = false) {
             foreach (var clone in GetRegisteredClones())
-                Delete(clone, clearConfigs: false);
+                Delete(clone);
 
             if (clearConfigs)
                 PyRevitConfigs.DeleteConfig();

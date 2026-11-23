@@ -6,6 +6,8 @@ using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public partial class McpServerTests {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 

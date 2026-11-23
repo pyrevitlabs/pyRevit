@@ -36,7 +36,7 @@ The `ci` pipeline mode builds all product DLLs, tools, and engines into `bin/`:
 ```powershell
 cd build
 
-# Unsigned product build (no version stamping; Channel=none by default)
+# Unsigned product build (Channel=none by default: committed version files stay untouched, assemblies still carry the printed build version)
 dotnet run -c Release -- ci
 
 # WIP-style stamping + product build (matches a develop or release/* push on the main repo)
@@ -104,10 +104,10 @@ CI publishes `unsigned-bin-<sha>.zip` to the **`ci-binaries`** release and mirro
 Run unit tests:
 
 ```powershell
-dotnet test tests/Build.Tests.csproj -c Release
+python dev/tests/run_tests.py --language dotnet
 ```
 
-The `ci` pipeline also runs the configuration core, INI backend, parser parity, and Python shell tests. Shell tests use the built IronPython engine assemblies after the runners build; they do not add engine source builds to Labs.
+Product builds do not execute tests. The runner, run from the repository root, provides shared C#/Python discovery, reports, and per-module coverage gates; CI runs the same language selections. Revit API tests remain local; see `docs/testing.md`.
 
 ### Pipeline modes
 

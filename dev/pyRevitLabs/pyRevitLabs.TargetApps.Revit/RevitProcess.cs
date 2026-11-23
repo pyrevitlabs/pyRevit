@@ -36,12 +36,23 @@ namespace pyRevitLabs.TargetApps.Revit {
                         var modulePath = Module;
                         var fileInfo = FileVersionInfo.GetVersionInfo(modulePath);
                         _revitProduct = RevitProduct.ResolveProduct(fileInfo.ProductVersion, modulePath);
+                        if (_revitProduct != null && _revitProduct.LanguageCode == 0)
+                            _revitProduct.LanguageCode = TryFindInstalledLanguageCode(modulePath);
                     }
                     catch {
                         _revitProduct = null;
                     }
                 }
                 return _revitProduct;
+            }
+        }
+
+        private static int TryFindInstalledLanguageCode(string modulePath) {
+            try {
+                return RevitProduct.FindInstalledLanguageCode(modulePath);
+            }
+            catch {
+                return 0;
             }
         }
 

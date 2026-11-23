@@ -48,13 +48,13 @@ Usage:
 	pyrevit extensions origin <extension_name> --reset [--log=<log_file>]
 	pyrevit extensions origin <extension_name> [<origin_url>] [--log=<log_file>]
 	pyrevit extensions paths [(-h | --help)]
-	pyrevit extensions paths forget --all [--log=<log_file>]
 	pyrevit extensions paths (add | forget) <extensions_path> [--log=<log_file>]
+	pyrevit extensions paths forget --all [--log=<log_file>]
 	pyrevit extensions (enable | disable) <extension_name> [--log=<log_file>]
 	pyrevit extensions (enable | disable) <clone_name> <extension_name> [--log=<log_file>]
 	pyrevit extensions sources [(-h | --help)]
-	pyrevit extensions sources forget --all [--log=<log_file>]
 	pyrevit extensions sources (add | forget) <source_json_or_url> [--log=<log_file>]
+	pyrevit extensions sources forget --all [--log=<log_file>]
 	pyrevit extensions update (--all | <extension_name>) [--log=<log_file>] [(--username=<username> --password=<password> | --token=<auth_token>)]
 	pyrevit releases (-h | --help)
 	pyrevit releases [--pre] [--notes]
@@ -74,9 +74,9 @@ Usage:
 	pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>] [--rvt] [--rte] [--rfa] [--rft]
 	pyrevit run (-h | --help)
 	pyrevit run commands
-	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--inputs=<inputs_json> | --inputs-file=<inputs_file>] [--purge] [--allowdialogs] [--import=<import_path>]
-	pyrevit run <script_or_command_name> --models=<model_list_file> --revit=<revit_year> [--inputs=<inputs_json> | --inputs-file=<inputs_file>] [--purge] [--allowdialogs] [--import=<import_path>]
-	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--inputs=<inputs_json> | --inputs-file=<inputs_file>] [--purge] [--allowdialogs] [--import=<import_path>]
+	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--clone=<clone_name_or_path>] [--inputs=<inputs_json> | --inputs-file=<inputs_file>] [--purge] [--allowdialogs] [--import=<import_path>]
+	pyrevit run <script_or_command_name> --models=<model_list_file> --revit=<revit_year> [--clone=<clone_name_or_path>] [--inputs=<inputs_json> | --inputs-file=<inputs_file>] [--purge] [--allowdialogs] [--import=<import_path>]
+	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--clone=<clone_name_or_path>] [--inputs=<inputs_json> | --inputs-file=<inputs_file>] [--purge] [--allowdialogs] [--import=<import_path>]
 	pyrevit launch (-h | --help)
 	pyrevit launch <clone_name_or_path> (default | <engine_version>) <revit_year> [<model_file>] [--isolated] [--language=<code>] [--log=<log_file>]
 	pyrevit agent (-h | --help)
@@ -99,7 +99,7 @@ Usage:
 	pyrevit caches [bim360] clear (--all | <revit_year>) [--log=<log_file>]
 	pyrevit config (-h | --help)
 	pyrevit config --from=<template_config_path> [--log=<log_file>]
-	pyrevit configs (-h | --help)
+	pyrevit configs [<config_words>...] (-h | --help)
 	pyrevit configs bincache [(enable | disable)] [--log=<log_file>]
 	pyrevit configs checkupdates [(enable | disable)] [--log=<log_file>]
 	pyrevit configs autoupdate [(enable | disable)] [--log=<log_file>]
@@ -114,27 +114,26 @@ Usage:
 	pyrevit configs usercanconfig [(yes | no)] [--log=<log_file>]
 	pyrevit configs colordocs [(enable | disable)] [--log=<log_file>]
 	pyrevit configs tooltipdebuginfo [(enable | disable)] [--log=<log_file>]
-	pyrevit configs routes [(-h | --help)]
 	pyrevit configs routes [(enable | disable)] [--log=<log_file>]
 	pyrevit configs routes port [<port_number>] [--log=<log_file>]
 	pyrevit configs routes coreapi [(enable | disable)] [--log=<log_file>]
-	pyrevit configs agent [(-h | --help)]
 	pyrevit configs agent [(enable | disable)] [--log=<log_file>]
 	pyrevit configs agent policy [(readonly | ask | auto)] [--log=<log_file>]
 	pyrevit configs agent engine [(ironpython | cpython)] [--log=<log_file>]
 	pyrevit configs agent skills [(enable | disable)] [--log=<log_file>]
 	pyrevit configs agent reckless [(enable | disable)] [--log=<log_file>]
-	pyrevit configs telemetry [(-h | --help)]
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry utc [(yes | no)] [--log=<log_file>]
 	pyrevit configs telemetry (file | server) [<dest_path>] [--log=<log_file>]
 	pyrevit configs telemetry hooks [(yes | no)] [--log=<log_file>]
+	pyrevit configs apptelemetry [(-h | --help)]
 	pyrevit configs apptelemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs apptelemetry flags [<flags>] [--log=<log_file>]
 	pyrevit configs apptelemetry server [<server_path>] [--log=<log_file>]
 	pyrevit configs outputcss [<css_path>] [--log=<log_file>]
 	pyrevit configs seed [--lock] [--log=<log_file>]
 	pyrevit configs seedshippeddefaults [--log=<log_file>]
+	pyrevit configs reset [<section>] [--dryrun] [--log=<log_file>]
 	pyrevit configs <option_path> [(enable | disable)] [--log=<log_file>]
 	pyrevit configs <option_path> [<option_value>] [--log=<log_file>]
     pyrevit doctor (-h | --help)

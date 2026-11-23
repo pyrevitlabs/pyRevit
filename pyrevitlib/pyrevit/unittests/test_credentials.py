@@ -25,6 +25,10 @@ silent-skip here would hide a real regression.
 Run from Revit via the pyRevit DevTools "Credentials Module Tests" button.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import json
 import os
 import shutil

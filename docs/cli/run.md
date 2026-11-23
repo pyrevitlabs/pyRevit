@@ -24,7 +24,10 @@ Log File: "...\Temp\51066afe-022c-4dba-bdc5-d35d451b998f\PyRevitRunner_51066afe-
 
 If `--revit` option is not specified, the run command will use the newest installed version of Revit to run the command. You can however specify the version of Revit e.g. `--revit=2026`
 
-At either case, pyRevit uses the clone and engine verison that is attached to Revit, to run the script; So make sure that pyRevit is already attached to the Revit version you are intending to use.
+Without `--clone`, pyRevit uses the clone and engine version that is attached to Revit, to run the script; So make sure that pyRevit is already attached to the Revit version you are intending to use.
+If it is not attached to that Revit version, the command prints an error and exits with a non-zero exit code without running the script.
+
+- `--clone=<clone_name_or_path>`: Run on another clone instead, given as the name of a registered clone or the path of a clone. The run uses that clone's default engine and its `pyRevitRunner.dll`, and neither reads nor changes the attachment, so pyRevit does not have to be attached to the Revit version. This is the way to try a runner or loader change from a git worktree. Revit still loads the add-in of the attached clone, if there is one, and an assembly with the same identity as one the attached clone already loaded is shared with it, so the script can run the attached clone's copy. Detach pyRevit from that Revit version to test a change in a loaded assembly.
 
 All the pyrevit modules are accessible inside the script.
 

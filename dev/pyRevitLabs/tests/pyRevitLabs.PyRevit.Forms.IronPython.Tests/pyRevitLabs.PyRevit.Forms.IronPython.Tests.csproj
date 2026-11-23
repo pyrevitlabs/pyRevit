@@ -8,6 +8,7 @@
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
         <PermitDeploy>true</PermitDeploy>
+        <PyRevitTestEngines>IPY2712PR;IPY342</PyRevitTestEngines>
         <FormsStdlibVersion Condition="'$(IronPythonVersion)' == 'IPY342'">342</FormsStdlibVersion>
         <FormsStdlibVersion Condition="'$(IronPythonVersion)' == 'IPY2712PR'">2712pr</FormsStdlibVersion>
         <FormsAssemblyPrefix Condition="'$(IronPythonVersion)' == 'IPY2712PR'">pyRevitLabs.</FormsAssemblyPrefix>
@@ -23,6 +24,7 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
         <PackageReference Include="xunit" Version="2.5.3"/>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
+        <PackageReference Include="coverlet.collector" Version="6.0.0"/>
     </ItemGroup>
     <ItemGroup Condition="'$(IronPythonVersion)' == 'IPY342'">
         <PackageReference Include="IronPython" Version="3.4.2"/>

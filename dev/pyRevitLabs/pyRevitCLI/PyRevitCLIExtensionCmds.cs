@@ -108,7 +108,22 @@ namespace pyRevitCLI {
         internal static void
         ProcessExtensionInfoCommands(string extName, bool info, bool help) {
             if (extName != null) {
-                var extDef = PyRevitExtensions.FindRegisteredExtension(extName);
+                PyRevitExtensionDefinition extDef;
+                try {
+                    extDef = PyRevitExtensions.FindRegisteredExtension(extName);
+                }
+                catch (PyRevitException notRegistered) {
+                    var installed = FindInstalledExtensions(extName);
+                    if (installed.Count == 0)
+                        throw new PyRevitException(string.Format(
+                            "{0} in the extension sources, and no installed extension matches it", notRegistered.Message));
+                    if (installed.Count > 1)
+                        Console.WriteLine(string.Format("More than one installed extension matches \"{0}\": {1}",
+                                                        extName, string.Join(", ", installed.Select(ext => ext.Name))));
+                    else
+                        PrintOrOpenInstalledExtension(installed[0], info, help);
+                    return;
+                }
 
                 if (Errors.LatestError == ErrorCodes.MoreThanOneItemMatched)
                     logger.Warn("More than one extension matches the search pattern \"{0}\"", extName);
@@ -122,6 +137,34 @@ namespace pyRevitCLI {
                             CommonUtils.OpenWithShell(extDef.Website);
                     }
                 }
+            }
+        }
+
+        private static List<PyRevitExtension> FindInstalledExtensions(string extName) {
+            List<PyRevitExtension> matches;
+            try {
+                var matcher = new System.Text.RegularExpressions.Regex(
+                    extName,
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                    | System.Text.RegularExpressions.RegexOptions.IgnorePatternWhitespace);
+                matches = PyRevitExtensions.GetInstalledExtensions().Where(ext => matcher.IsMatch(ext.Name)).ToList();
+            }
+            catch (ArgumentException) {
+                return new List<PyRevitExtension>();
+            }
+
+            var exact = matches.Where(ext => string.Equals(ext.Name, extName, StringComparison.OrdinalIgnoreCase)).ToList();
+            return exact.Count == 1 ? exact : matches;
+        }
+
+        private static void PrintOrOpenInstalledExtension(PyRevitExtension installed, bool info, bool help) {
+            if (info)
+                Console.WriteLine(installed.ToString());
+            else if (help) {
+                if (string.IsNullOrWhiteSpace(installed.Website))
+                    logger.Error("Extension \"{0}\" has no website to open", installed.Name);
+                else
+                    CommonUtils.OpenWithShell(installed.Website);
             }
         }
 
@@ -245,8 +288,16 @@ namespace pyRevitCLI {
 
         internal static void
         AddExtensionLookupSource(string lookupPath) {
-            if (lookupPath != null)
-                PyRevitExtensions.RegisterExtensionLookupSource(lookupPath);
+            if (lookupPath == null)
+                return;
+
+            PyRevitExtensions.RegisterExtensionLookupSource(lookupPath);
+            try {
+                PyRevitExtensions.VerifyExtensionLookupSource(lookupPath);
+            }
+            catch (PyRevitException ex) {
+                Console.WriteLine(string.Format("Warning: source \"{0}\" was added but can not be used yet: {1}", lookupPath, ex.Message));
+            }
         }
 
         internal static void

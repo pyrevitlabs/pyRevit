@@ -3,6 +3,8 @@ using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public sealed class AgentRunRequestTests {
         private static JObject Run(string title = null, string workspace = null) {
             var parameters = new JObject { ["script"] = "pass", ["engine"] = "ironpython" };

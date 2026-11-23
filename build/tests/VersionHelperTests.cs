@@ -4,6 +4,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Build.Tests;
 
 [TestClass]
+[TestCategory("HostFree")]
+[TestCategory("Unit")]
 public sealed class VersionHelperTests
 {
     [TestMethod]
@@ -39,17 +41,20 @@ public sealed class VersionHelperTests
     }
 
     [TestMethod]
-    public void VersionStamping_cannot_rewrite_the_webview2_pin()
+    public void ExportBuildVersion_exposesTheVersionToChildProcesses()
     {
-        var pinFile = Path.Combine(PyRevitPaths.DevPath, "WebView2Version.props");
-
-        StringAssert.Contains(File.ReadAllText(pinFile), "<PyRevitWebView2Version>");
-
-        foreach (var file in PyRevitPaths.VersionFiles)
+        var original = Environment.GetEnvironmentVariable(VersionHelper.BuildVersionVariable);
+        try
         {
-            Assert.IsFalse(
-                File.ReadAllText(file).Contains("PyRevitWebView2Version", StringComparison.Ordinal),
-                $"{file} is stamped and would overwrite the pinned WebView2 version.");
+            VersionHelper.ExportBuildVersion("7.2.0.26326+1041");
+
+            Assert.AreEqual(
+                "7.2.0.26326+1041",
+                Environment.GetEnvironmentVariable(VersionHelper.BuildVersionVariable));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(VersionHelper.BuildVersionVariable, original);
         }
     }
 

@@ -110,21 +110,8 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        DeleteClone(bool allClones, string cloneName, bool clearConfigs) {
-            if (allClones)
-                PyRevitClones.DeleteAllClones(clearConfigs: clearConfigs);
-            else if (cloneName != null) {
-                // lets detach the clone if there is any attachments to it
-                var clone = PyRevitClones.GetRegisteredClone(cloneName);
-                foreach (var attachment in PyRevitAttachments.GetAttachments())
-                    if (attachment.Clone.Equals(clone)) {
-                        logger.Debug($"Detaching existing attachment: {attachment}");
-                        PyRevitAttachments.Detach(attachment.Product.ProductYear, attachment.AllUsers);
-                    }
-
-                PyRevitClones.Delete(clone, clearConfigs: clearConfigs);
-            }
-        }
+        DeleteClone(bool allClones, string cloneName, bool clearConfigs) =>
+            PyRevitCLICloneDeletion.Delete(allClones, cloneName, clearConfigs, System.Console.Error);
 
         internal static void
         GetSetCloneBranch(string cloneName, string branchName) {

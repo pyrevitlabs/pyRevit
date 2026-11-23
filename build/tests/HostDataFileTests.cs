@@ -16,6 +16,8 @@ namespace Build.Tests;
 /// file so that class of mistake fails CI instead.
 /// </summary>
 [TestClass]
+[TestCategory("HostFree")]
+[TestCategory("Integration")]
 public sealed class HostDataFileTests
 {
     private static readonly JsonSerializerOptions Options = new()

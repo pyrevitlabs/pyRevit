@@ -357,6 +357,39 @@ namespace pyRevitLabs.PyRevit {
             return attachments.OrderBy(x => x.AllUsers).ToList();
         }
 
+        /// <summary>
+        /// An attachment of a Revit year to <paramref name="clone"/> that exists only for the caller, so a
+        /// run can use a clone the machine is not attached to.
+        /// </summary>
+        /// <remarks>
+        /// Nothing is written: the attachment has no manifest file and the shared per-year
+        /// attachment is neither read nor changed. It is not returned by <see cref="GetAttachments"/>.
+        /// </remarks>
+        /// <exception cref="PyRevitException">The year is not installed or attachable, or the engine cannot be used as a runtime.</exception>
+        public static PyRevitAttachment ForClone(PyRevitClone clone, PyRevitEngineVersion engineVer, int revitYear) {
+            if (!IsAttachableProductYear(revitYear))
+                throw new PyRevitException($"Can not run on Revit {revitYear}: this pyRevit line supports Revit "
+                                           + $"{RevitProductData.MinimumSupportedProductYear} or newer.");
+
+            var product = SelectProductForAttach(revitYear, RevitProduct.ListInstalledProducts());
+            if (product is null || !IsAttachable(product))
+                throw new PyRevitException($"Can not run on Revit {revitYear}: it is not installed or its executable is missing.");
+
+            var engine = clone.GetEngine(revitYear, engineVer);
+            if (!engine.Runtime)
+                throw new PyRevitException($"Engine {engineVer} can not be used as runtime.");
+
+            var manifest = new RevitAddonManifest(
+                PyRevitConsts.AddinName,
+                engine.AssemblyPath,
+                PyRevitConsts.AddinId,
+                PyRevitConsts.AddinClassName,
+                PyRevitConsts.VendorId);
+            var attachment = new PyRevitAttachment(manifest, product, PyRevitAttachmentType.PerRun);
+            attachment.SetClone(clone);
+            return attachment;
+        }
+
         // get attachment for a revit version
         // @handled @logs
         public static PyRevitAttachment GetAttached(int revitYear) {

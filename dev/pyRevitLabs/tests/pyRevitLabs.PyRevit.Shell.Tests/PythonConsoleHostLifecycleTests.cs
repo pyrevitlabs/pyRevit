@@ -11,6 +11,8 @@ using IronPython.Hosting;
 using PythonConsoleControl;
 
 namespace pyRevitLabs.PyRevit.Shell.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Integration")]
     public class PythonConsoleHostLifecycleTests {
         [Fact]
         public Task DisposeProductionHostEndsWorkersAndShutsDownRuntimeAsync() {

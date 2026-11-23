@@ -157,7 +157,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        RunExtensionCommand(string commandName, string targetFile, string revitYear, PyRevitRunnerOptions runOptions, bool targetIsFileList = false) {
+        RunExtensionCommand(string commandName, string targetFile, string revitYear, PyRevitRunnerOptions runOptions, bool targetIsFileList = false, string cloneNameOrPath = null) {
             // verify command
             if (commandName is null || commandName == string.Empty)
                 throw new Exception("Command name must be provided.");
@@ -221,94 +221,94 @@ namespace pyRevitCLI {
             // now run
             if (revitYearNumber != 0) {
                 // determine attached clone
-                var attachment = PyRevitAttachments.GetAttached(revitYearNumber);
-                if (attachment is null)
-                    logger.Error($"pyRevit is not attached to Revit \"{revitYearNumber}\". " +
-                                  "Runner needs to use the attached clone and engine to execute the script.");
-                else {
-                    // determine script to run
-                    string commandScriptPath = null;
+                var attachment = PyRevitCLIArguments.RequireAttachment(
+                    cloneNameOrPath is null
+                        ? PyRevitAttachments.GetAttached(revitYearNumber)
+                        : PyRevitAttachments.ForClone(ResolveLaunchClone(cloneNameOrPath), PyRevitEngineVersion.Default, revitYearNumber),
+                    revitYearNumber);
 
-                    if (!CommonUtils.VerifyPythonScript(commandName)) {
-                        logger.Debug("Input is not a script file \"{0}\"", commandName);
-                        logger.Debug("Attempting to find run command matching \"{0}\"", commandName);
+                // determine script to run
+                string commandScriptPath = null;
 
-                        // try to find run command in attached clone being used for execution
-                        // if not found, try to get run command from all other installed extensions
-                        var targetExtensions = new List<PyRevitExtension>();
-                        if (attachment.Clone != null) {
-                            targetExtensions.AddRange(attachment.Clone.GetExtensions());
-                        }
-                        targetExtensions.AddRange(PyRevitExtensions.GetInstalledExtensions());
+                if (!CommonUtils.VerifyPythonScript(commandName)) {
+                    logger.Debug("Input is not a script file \"{0}\"", commandName);
+                    logger.Debug("Attempting to find run command matching \"{0}\"", commandName);
 
-                        foreach (PyRevitExtension ext in targetExtensions) {
-                            logger.Debug("Searching for run command in: \"{0}\"", ext.ToString());
-                            if (ext.Type == PyRevitExtensionTypes.UIExtension) {
-                                try {
-                                    var cmdScript = ext.GetCommand(commandName);
-                                    if (cmdScript != null) {
-                                        if (commandScriptPath is null) {
-                                            logger.Debug("Run command matching \"{0}\" found: \"{1}\"",
-                                                            commandName, cmdScript);
-                                            commandScriptPath = cmdScript.Path;
-                                        }
-                                        else
-                                            System.Console.Error.WriteLine(
-                                                "Warning: run command \"{0}\" is also defined in \"{1}\" and is shadowed by \"{2}\"",
-                                                commandName, cmdScript.Path, commandScriptPath);
+                    // try to find run command in attached clone being used for execution
+                    // if not found, try to get run command from all other installed extensions
+                    var targetExtensions = new List<PyRevitExtension>();
+                    if (attachment.Clone != null) {
+                        targetExtensions.AddRange(attachment.Clone.GetExtensions());
+                    }
+                    targetExtensions.AddRange(PyRevitExtensions.GetInstalledExtensions());
+
+                    foreach (PyRevitExtension ext in targetExtensions) {
+                        logger.Debug("Searching for run command in: \"{0}\"", ext.ToString());
+                        if (ext.Type == PyRevitExtensionTypes.UIExtension) {
+                            try {
+                                var cmdScript = ext.GetCommand(commandName);
+                                if (cmdScript != null) {
+                                    if (commandScriptPath is null) {
+                                        logger.Debug("Run command matching \"{0}\" found: \"{1}\"",
+                                                        commandName, cmdScript);
+                                        commandScriptPath = cmdScript.Path;
                                     }
+                                    else
+                                        System.Console.Error.WriteLine(
+                                            "Warning: run command \"{0}\" is also defined in \"{1}\" and is shadowed by \"{2}\"",
+                                            commandName, cmdScript.Path, commandScriptPath);
                                 }
-                                catch {
-                                    // does not include command
-                                    continue;
-                                }
+                            }
+                            catch {
+                                // does not include command
+                                continue;
                             }
                         }
                     }
-                    else
-                        commandScriptPath = commandName;
+                }
+                else
+                    commandScriptPath = commandName;
 
-                    // if command is not found, stop
-                    if (commandScriptPath is null)
-                        throw new PyRevitException(
-                            string.Format("Run command not found: \"{0}\"", commandName)
-                            );
+                // if command is not found, stop
+                if (commandScriptPath is null)
+                    throw new PyRevitException(
+                        string.Format("Run command not found: \"{0}\"", commandName)
+                        );
 
-                    // RUN!
-                    var execEnv = PyRevitRunner.Run(
-                        attachment,
-                        commandScriptPath,
-                        modelFiles,
-                        runOptions
-                    );
+                // RUN!
+                var execEnv = PyRevitRunner.Run(
+                    attachment,
+                    commandScriptPath,
+                    modelFiles,
+                    runOptions
+                );
 
-                    // print results (exec env)
-                    PyRevitCLIAppCmds.PrintHeader("Execution Environment");
-                    Console.WriteLine(string.Format("Execution Id: \"{0}\"", execEnv.ExecutionId));
-                    Console.WriteLine(string.Format("Product: {0}", execEnv.Revit));
-                    Console.WriteLine(string.Format("Clone: {0}", execEnv.Clone));
-                    Console.WriteLine(string.Format("Engine: {0}", execEnv.Engine));
-                    Console.WriteLine(string.Format("Script: \"{0}\"", execEnv.Script));
-                    Console.WriteLine(string.Format("Working Directory: \"{0}\"", execEnv.WorkingDirectory));
-                    Console.WriteLine(string.Format("Journal File: \"{0}\"", execEnv.JournalFile));
-                    Console.WriteLine(string.Format("Manifest File: \"{0}\"", execEnv.PyRevitRunnerManifestFile));
-                    Console.WriteLine(string.Format("Log File: \"{0}\"", execEnv.LogFile));
-                    // report whether the env was purge or not
-                    if (execEnv.Purged)
-                        Console.WriteLine("Execution env is successfully purged.");
+                // print results (exec env)
+                PyRevitCLIAppCmds.PrintHeader("Execution Environment");
+                Console.WriteLine(string.Format("Execution Id: \"{0}\"", execEnv.ExecutionId));
+                Console.WriteLine(string.Format("Product: {0}", execEnv.Revit));
+                Console.WriteLine(string.Format("Clone: {0}", execEnv.Clone));
+                Console.WriteLine(string.Format("Engine: {0}", execEnv.Engine));
+                Console.WriteLine(string.Format("Script: \"{0}\"", execEnv.Script));
+                Console.WriteLine(string.Format("Working Directory: \"{0}\"", execEnv.WorkingDirectory));
+                Console.WriteLine(string.Format("Journal File: \"{0}\"", execEnv.JournalFile));
+                Console.WriteLine(string.Format("Manifest File: \"{0}\"", execEnv.PyRevitRunnerManifestFile));
+                Console.WriteLine(string.Format("Log File: \"{0}\"", execEnv.LogFile));
+                // report whether the env was purge or not
+                if (execEnv.Purged)
+                    Console.WriteLine("Execution env is successfully purged.");
 
-                    // print target models
-                    if (execEnv.ModelPaths.Count() > 0) {
-                        PyRevitCLIAppCmds.PrintHeader("Target Models");
-                        foreach (var modelPath in execEnv.ModelPaths)
-                            Console.WriteLine(modelPath);
-                    }
+                // print target models
+                if (execEnv.ModelPaths.Count() > 0) {
+                    PyRevitCLIAppCmds.PrintHeader("Target Models");
+                    foreach (var modelPath in execEnv.ModelPaths)
+                        Console.WriteLine(modelPath);
+                }
 
-                    // print log file contents if exists
-                    if (File.Exists(execEnv.LogFile)) {
-                        PyRevitCLIAppCmds.PrintHeader("Execution Log");
-                        Console.WriteLine(File.ReadAllText(execEnv.LogFile));
-                    }
+                // print log file contents if exists
+                if (File.Exists(execEnv.LogFile)) {
+                    PyRevitCLIAppCmds.PrintHeader("Execution Log");
+                    Console.WriteLine(File.ReadAllText(execEnv.LogFile));
                 }
             }
 

@@ -201,7 +201,7 @@ items and add `total` and `truncated`.
 The CLI validates the inputs, then sends a fixed script that calls
 `pyrevit.agent._operations.invoke`; the operation's module and function travel in the run's
 inputs, never in the script. `invoke` checks the live marker and the inputs again inside
-Revit. `dev/scripts/test_standalone_automation_marker.py` fails when declared inputs don't match the
+Revit. `dev/tests/python/library/test_automation_marker.py` fails when declared inputs don't match the
 function they mark.
 
 !!! tip "Long approvals"
@@ -694,6 +694,8 @@ pyrevit agent record status
 pyrevit agent recordings [--limit=<count>]
 ```
 
+The options take numbers in these ranges: `--screenshot-interval` 0 to 3600 seconds (`0` allows a screenshot at every opportunity until `--max-screenshots` is reached), `--max-screenshots` 0 to 100 (`0` takes none), `--max-events` 1 to 20000 and `--max-duration` 1 to 14400 seconds. All but the interval must be whole numbers. A value that is not a number or is outside its range is refused with the option's name.
+
 The user starts a recording, reproduces the problem and stops it. Then the agent calls
 `get_recording` (with `recording_id`, `offset` and `limit` to page the timeline). There is no
 always-on mode: nothing is captured outside a recording, and every hook is a no-op then. It needs
@@ -761,7 +763,7 @@ per-year `pyRevit.addin` that the next plain Revit start loads. The steps in bet
 wrong:
 
 1. **Rebuild only for C# changes.** C# files under `dev/` and the build pipeline under `build/`
-   need a rebuild. Python under `pyrevitlib` or `dev/scripts` and the skill markdown don't.
+   need a rebuild. Python under `pyrevitlib` or `dev/tests` and the skill markdown don't.
 2. **Close Revit, stop the MCP servers, then rebuild.** Revit loads pyRevit from the clone's `bin\`
    and keeps its DLLs open, and each client session runs `bin\pyrevit.exe mcp` from there too.
    A build started while either runs fails with "The process cannot access the file ... because it

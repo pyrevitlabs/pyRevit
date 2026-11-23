@@ -6,8 +6,7 @@ namespace pyRevitLabs.Configurations.Abstractions;
 /// Typed access to a configuration: attribute-bound section records over one
 /// backing store, cached until a write advances it.
 /// </summary>
-public interface IConfigurationService
-{
+public interface IConfigurationService {
     /// <summary>
     /// True when the service was built read-only. A write method throws
     /// rather than accepting an edit that could not be persisted.
@@ -94,6 +93,33 @@ public interface IConfigurationService
     /// <exception cref="ArgumentException">A name argument is null or empty.</exception>
     /// <exception cref="Exceptions.ConfigurationReadOnlyException">The configuration is read-only.</exception>
     void SetSectionKeyValue<T>(string sectionName, string keyName, T keyValue);
+
+    /// <summary>
+    /// Returns settings to their declared defaults by removing what is stored,
+    /// so the defaults stay declared once, on the section records, and reads fall
+    /// back to them. For a typed section only the keys its record binds (and
+    /// their legacy names) are removed, so bookkeeping keys such as
+    /// <c>config_version</c> and user-registered state such as the user
+    /// extension folders survive; any other section is removed whole. A
+    /// section left without keys is removed too. Flushes to disk unless
+    /// <paramref name="dryRun"/> is set.
+    /// <para>
+    /// The <c>[environment]</c> section holds machine state (registered clones,
+    /// extension sources) rather than preferences and is never reset.
+    /// </para>
+    /// </summary>
+    /// <param name="sectionName">Section to reset, or null to reset every section.</param>
+    /// <param name="dryRun">Report what would be removed without changing anything.</param>
+    /// <returns>
+    /// What was removed, as <c>section:key</c> for single keys and <c>section</c>
+    /// for whole sections.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="sectionName"/> is the environment section, or names a section that is
+    /// neither a known typed section nor present in the configuration.
+    /// </exception>
+    /// <exception cref="Exceptions.ConfigurationReadOnlyException">The configuration is read-only and <paramref name="dryRun"/> is false.</exception>
+    IReadOnlyList<string> ResetToDefaults(string? sectionName = null, bool dryRun = false);
 
     /// <summary>
     /// Reads a single key, returning <paramref name="defaultValue"/> when it is

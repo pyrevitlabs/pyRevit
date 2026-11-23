@@ -9,6 +9,10 @@ only deleted while it is still the stale one the user agreed to release.
 Breaking any of these lets two writes overlap and lose keynote changes.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import ast
 import os
 import os.path as op

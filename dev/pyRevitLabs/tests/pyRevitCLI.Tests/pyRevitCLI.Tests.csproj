@@ -30,6 +30,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\pyRevitCLI\pyRevitCLI.csproj" ReferenceOutputAssembly="false" />
         <ProjectReference Include="..\..\pyRevitLabs.Common\pyRevitLabs.Common.csproj"/>
         <ProjectReference Include="..\..\pyRevitLabs.PyRevit\pyRevitLabs.PyRevit.csproj"/>
     </ItemGroup>
@@ -50,6 +51,9 @@
         <Compile Include="..\..\pyRevitCLI\PyRevitCLIArguments.cs" Link="Sources\PyRevitCLIArguments.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitCLIConsoleEncoding.cs" Link="Sources\PyRevitCLIConsoleEncoding.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitCLILogging.cs" Link="Sources\PyRevitCLILogging.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitCLIAppHelps.cs" Link="Sources\PyRevitCLIAppHelps.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitCLICommandType.cs" Link="Sources\PyRevitCLICommandType.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitCLICloneDeletion.cs" Link="Sources\PyRevitCLICloneDeletion.cs"/>
     </ItemGroup>
 
     <ItemGroup>

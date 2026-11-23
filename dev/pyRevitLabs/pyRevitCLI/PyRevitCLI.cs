@@ -33,42 +33,6 @@ namespace pyRevitCLI {
         Debug,
     }
 
-    internal enum PyRevitCLICommandType {
-        Main,
-        Version,
-        Wiki,
-        Blog,
-        Docs,
-        Source,
-        YouTube,
-        Support,
-        Env,
-        Update,
-        Clone,
-        Clones,
-        Attach,
-        Attached,
-        Switch,
-        Detach,
-        Extend,
-        Extensions,
-        ExtensionsPaths,
-        ExtensionsSources,
-        Releases,
-        Revits,
-        Run,
-        Caches,
-        Config,
-        Configs,
-        ConfigsRoutes,
-        ConfigsAgent,
-        ConfigsTelemetry,
-        Doctor,
-        Agent,
-        Mcp,
-        Launch,
-    }
-
     internal static class PyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -703,7 +667,8 @@ namespace pyRevitCLI {
                                 AllowDialogs = arguments["--allowdialogs"].IsTrue,
                                 InputsJson = inputsJson
                             },
-                            targetIsFileList: true
+                            targetIsFileList: true,
+                            cloneNameOrPath: TryGetValue("--clone")
                         );
                     }
                     else
@@ -716,7 +681,8 @@ namespace pyRevitCLI {
                                 ImportPath = TryGetValue("--import", null),
                                 AllowDialogs = arguments["--allowdialogs"].IsTrue,
                                 InputsJson = inputsJson
-                            }
+                            },
+                            cloneNameOrPath: TryGetValue("--clone")
                         );
                 }
             }
@@ -751,11 +717,7 @@ namespace pyRevitCLI {
 
             else if (all("configs")) {
                 if (IsHelpMode)
-                    PyRevitCLIAppHelps.PrintHelp(
-                        all("routes") ? PyRevitCLICommandType.ConfigsRoutes
-                        : all("agent") ? PyRevitCLICommandType.ConfigsAgent
-                        : all("telemetry") ? PyRevitCLICommandType.ConfigsTelemetry
-                        : PyRevitCLICommandType.Configs);
+                    PyRevitCLIAppHelps.PrintHelp(ConfigsHelpType(arguments));
 
                 else if (all("bincache")) {
                     if (any("enable", "disable"))
@@ -1058,6 +1020,19 @@ namespace pyRevitCLI {
                 else if (all("seedshippeddefaults"))
                     PyRevitConfigs.SeedShippedExtensionDefaults();
 
+                else if (all("reset")) {
+                    bool dryRun = arguments["--dryrun"].IsTrue;
+                    var removed = PyRevitConfigs.ResetConfig(TryGetValue("<section>"), dryRun, out string backupPath);
+                    if (removed.Count == 0)
+                        Console.WriteLine("Nothing to reset.");
+                    else {
+                        if (backupPath != null)
+                            Console.WriteLine(string.Format("Backed up config to \"{0}\"", backupPath));
+                        foreach (var item in removed)
+                            Console.WriteLine(string.Format("{0} {1}", dryRun ? "Would reset" : "Reset", item));
+                    }
+                }
+
                 else if (any("enable", "disable")) {
                     if (arguments["<option_path>"] != null) {
                         // extract section and option names
@@ -1121,6 +1096,16 @@ namespace pyRevitCLI {
         }
 
         // internal helper functions:
+        private static PyRevitCLICommandType ConfigsHelpType(IDictionary<string, ValueObject> parsedArguments) {
+            return PyRevitCLIArguments.Values(parsedArguments, "<config_words>").FirstOrDefault() switch {
+                "routes" => PyRevitCLICommandType.ConfigsRoutes,
+                "agent" => PyRevitCLICommandType.ConfigsAgent,
+                "telemetry" => PyRevitCLICommandType.ConfigsTelemetry,
+                "apptelemetry" => PyRevitCLICommandType.ConfigsAppTelemetry,
+                _ => PyRevitCLICommandType.Configs,
+            };
+        }
+
         private static void ReportInvalidOptionPath(string optionPath) {
             System.Console.Error.WriteLine(
                 "Error: \"{0}\" is neither a configs command nor a \"section:option\" path. "

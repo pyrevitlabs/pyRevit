@@ -302,16 +302,16 @@ func main() {
 					},
 					"paths": complete.Command{
 						Sub: complete.Commands{
+							"add": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
 							"forget": complete.Command{
 								Sub: complete.Commands{},
 								Flags: complete.Flags{
 									"--all": complete.PredictNothing,
-									"--log": complete.PredictNothing,
-								},
-							},
-							"add": complete.Command{
-								Sub: complete.Commands{},
-								Flags: complete.Flags{
 									"--log": complete.PredictNothing,
 								},
 							},
@@ -335,16 +335,16 @@ func main() {
 					},
 					"sources": complete.Command{
 						Sub: complete.Commands{
+							"add": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
 							"forget": complete.Command{
 								Sub: complete.Commands{},
 								Flags: complete.Flags{
 									"--all": complete.PredictNothing,
-									"--log": complete.PredictNothing,
-								},
-							},
-							"add": complete.Command{
-								Sub: complete.Commands{},
-								Flags: complete.Flags{
 									"--log": complete.PredictNothing,
 								},
 							},
@@ -472,6 +472,7 @@ func main() {
 				},
 				Flags: complete.Flags{
 					"--allowdialogs": complete.PredictNothing,
+					"--clone":        complete.PredictNothing,
 					"--help":         complete.PredictNothing,
 					"--import":       complete.PredictNothing,
 					"--inputs":       complete.PredictNothing,
@@ -992,8 +993,7 @@ func main() {
 							},
 						},
 						Flags: complete.Flags{
-							"--help": complete.PredictNothing,
-							"--log":  complete.PredictNothing,
+							"--log": complete.PredictNothing,
 						},
 					},
 					"agent": complete.Command{
@@ -1094,8 +1094,7 @@ func main() {
 							},
 						},
 						Flags: complete.Flags{
-							"--help": complete.PredictNothing,
-							"--log":  complete.PredictNothing,
+							"--log": complete.PredictNothing,
 						},
 					},
 					"telemetry": complete.Command{
@@ -1164,8 +1163,7 @@ func main() {
 							},
 						},
 						Flags: complete.Flags{
-							"--help": complete.PredictNothing,
-							"--log":  complete.PredictNothing,
+							"--log": complete.PredictNothing,
 						},
 					},
 					"apptelemetry": complete.Command{
@@ -1196,7 +1194,8 @@ func main() {
 							},
 						},
 						Flags: complete.Flags{
-							"--log": complete.PredictNothing,
+							"--help": complete.PredictNothing,
+							"--log":  complete.PredictNothing,
 						},
 					},
 					"outputcss": complete.Command{
@@ -1216,6 +1215,13 @@ func main() {
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
 							"--log": complete.PredictNothing,
+						},
+					},
+					"reset": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--dryrun": complete.PredictNothing,
+							"--log":    complete.PredictNothing,
 						},
 					},
 					"enable": complete.Command{
@@ -1239,9 +1245,9 @@ func main() {
 			"doctor": complete.Command{
 				Sub: complete.Commands{},
 				Flags: complete.Flags{
-					"--dryrun":      complete.PredictNothing,
-					"--force":       complete.PredictNothing,
-					"--help":        complete.PredictNothing,
+					"--dryrun":          complete.PredictNothing,
+					"--force":           complete.PredictNothing,
+					"--help":            complete.PredictNothing,
 					"--keep-config":     complete.PredictNothing,
 					"--keep-extensions": complete.PredictNothing,
 					"--list":            complete.PredictNothing,

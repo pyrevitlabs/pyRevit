@@ -313,8 +313,9 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public override string ToString() {
-            var result = string.Format("{0} | Version: {1} | Build: {2}({3}) | Language: {4} | Path: \"{5}\"",
-                                       Name, Version, BuildNumber, BuildTarget, LanguageCode, InstallLocation);
+            var language = LanguageCode == 0 ? string.Empty : string.Format(" | Language: {0}", LanguageCode);
+            var result = string.Format("{0} | Version: {1} | Build: {2}({3}){4} | Path: \"{5}\"",
+                                       Name, Version, BuildNumber, BuildTarget, language, InstallLocation);
             if (!IsListedInHostsDatabase)
                 result += " | Note: not listed in pyrevit-hosts.json";
             var unsupportedNote = RevitProductData.GetUnsupportedProductNote(ProductYear);
@@ -385,7 +386,31 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
         public string ExecutiveLocation => RevitProductData.GetBinaryLocation(InstallLocation);
+
+        /// <summary>
+        /// Windows language code of the installation, or 0 when unknown.
+        /// </summary>
+        /// <remarks>
+        /// Only the registry carries it, so products resolved from a file version or a running process have 0
+        /// until <see cref="FindInstalledLanguageCode"/> supplies it. <see cref="ToString"/> leaves the field out for 0.
+        /// </remarks>
         public int LanguageCode { get; set; }
+
+        /// <summary>
+        /// Language code of the installed Revit whose executable is <paramref name="binaryFilePath"/>, or 0 when no
+        /// registered installation owns that file.
+        /// </summary>
+        public static int FindInstalledLanguageCode(string binaryFilePath) {
+            if (string.IsNullOrEmpty(binaryFilePath))
+                return 0;
+            var wanted = Path.GetFullPath(binaryFilePath);
+            foreach (var installed in ListInstalledProducts()) {
+                var executive = installed.ExecutiveLocation;
+                if (executive != null && string.Equals(Path.GetFullPath(executive), wanted, StringComparison.OrdinalIgnoreCase))
+                    return installed.LanguageCode;
+            }
+            return 0;
+        }
 
         // static:
         public static RevitProduct LookupRevitProduct(string buildOrVersionString,
@@ -675,7 +700,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        private static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath, string installPath) {
+        internal static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath, string installPath) {
             var identifier = ReadBinaryFileVersion(binaryFilePath) ?? regVersion;
             return ResolveProduct(identifier, binaryFilePath, installPath, ResolvedProductRole.InstalledSibling);
         }
@@ -688,7 +713,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         /// of a product year after an update, so it must not be the identity of an installed product.
         /// </remarks>
         /// <returns>The file version, or null when there is no readable executable.</returns>
-        private static string ReadBinaryFileVersion(string binaryFilePath) {
+        internal static string ReadBinaryFileVersion(string binaryFilePath) {
             if (binaryFilePath is null)
                 return null;
             try {
