@@ -103,8 +103,10 @@ $ pyrevit clones rename main base   # rename clone `main` to `base`
 pyrevit clones delete [(--all | <clone_name>)] [--clearconfigs] [--log=<log_file>]
 $ pyrevit clones delete base        # delete clone `base`
 $ pyrevit clones delete --all       # delete all clones
-$ pyrevit clones delete --all --clearconfigs    # delete all clones and clear configurations
+$ pyrevit clones delete --all --clearconfigs    # delete all clones and the whole user configuration file
 ```
+
+`--clearconfigs` deletes the entire user `pyRevit_config.ini`, including settings unrelated to the clones, so it only applies together with `--all`. Deleting a single clone always keeps the configuration and only removes that clone's registration; `--clearconfigs` is ignored there with a warning on stderr.
 
 #### Managing Git Clones
 
