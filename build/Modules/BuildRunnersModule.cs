@@ -25,11 +25,5 @@ public sealed class BuildRunnersModule(IOptions<BuildOptions> buildOptions) : Mo
             PyRevitPaths.Runner342Project,
             configuration,
             cancellationToken);
-
-        await DotNetBuildHelper.BuildProjectAsync(
-            context,
-            PyRevitPaths.ExtensionParserTestProject,
-            configuration,
-            cancellationToken);
     }
 }

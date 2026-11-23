@@ -6,8 +6,11 @@
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
         <PermitDeploy>true</PermitDeploy>
+        <PyRevitTestEngines>IPY2712PR;IPY342</PyRevitTestEngines>
         <IronPythonVersion Condition="'$(IronPythonVersion)' == ''">IPY2712PR</IronPythonVersion>
         <IronPythonPrefix Condition="'$(IronPythonVersion)' == 'IPY2712PR'">pyRevitLabs.</IronPythonPrefix>
+        <BuiltShellEnginesDirectory>$(MSBuildThisFileDirectory)../../../../bin/netcore/engines</BuiltShellEnginesDirectory>
+        <ShellEnginesDirectory Condition="'$(ShellEnginesDirectory)' == '' and Exists('$(BuiltShellEnginesDirectory)/$(IronPythonVersion)/pyRevitLabs.PyRevit.Shell.dll')">$(BuiltShellEnginesDirectory)</ShellEnginesDirectory>
         <UseWpf>true</UseWpf>
     </PropertyGroup>
 

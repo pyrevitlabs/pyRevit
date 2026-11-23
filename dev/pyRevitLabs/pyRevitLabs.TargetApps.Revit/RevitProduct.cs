@@ -700,7 +700,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        private static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath, string installPath) {
+        internal static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath, string installPath) {
             var identifier = ReadBinaryFileVersion(binaryFilePath) ?? regVersion;
             return ResolveProduct(identifier, binaryFilePath, installPath, ResolvedProductRole.InstalledSibling);
         }
@@ -713,7 +713,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         /// of a product year after an update, so it must not be the identity of an installed product.
         /// </remarks>
         /// <returns>The file version, or null when there is no readable executable.</returns>
-        private static string ReadBinaryFileVersion(string binaryFilePath) {
+        internal static string ReadBinaryFileVersion(string binaryFilePath) {
             if (binaryFilePath is null)
                 return null;
             try {

@@ -32,20 +32,6 @@ public static class PyRevitPaths
     public static string Loader342Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitLoader.342", "pyRevitLoader.342.csproj");
     public static string Runner2712Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitRunner.2712PR", "pyRevitRunner.2712PR.csproj");
     public static string Runner342Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitRunner.342", "pyRevitRunner.342.csproj");
-    public static string ExtensionParserTestProject => Path.Combine(DevPath, "pyRevitLoader", "pyRevitExtensionParserTester", "pyRevitExtensionParserTest.csproj");
-    public static string ConfigurationsTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.Configurations.Tests", "pyRevitLabs.Configurations.Tests.csproj");
-    public static string IniConfigurationsTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.Configurations.Ini.Tests", "pyRevitLabs.Configurations.Ini.Tests.csproj");
-    public static string CPythonRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.CPython.Tests", "pyRevitLabs.PyRevit.Runtime.CPython.Tests.csproj");
-    public static string EnvVarsRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.EnvVars.Tests", "pyRevitLabs.PyRevit.Runtime.EnvVars.Tests.csproj");
-    public static string CliTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitCLI.Tests", "pyRevitCLI.Tests.csproj");
-    public static string AgentRuntimeTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests", "pyRevitLabs.PyRevit.Runtime.Agent.Tests.csproj");
-    public static string RendererTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Renderer.Tests", "pyRevitLabs.PyRevit.Renderer.Tests.csproj");
-    public static string DoctorTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitDoctor.Tests", "pyRevitDoctor.Tests.csproj");
-    public static string ShellTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Shell.Tests", "pyRevitLabs.PyRevit.Shell.Tests.csproj");
-    public static string FormsTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Forms.Tests", "pyRevitLabs.PyRevit.Forms.Tests.csproj");
-    public static string FormsIronPythonTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Forms.IronPython.Tests", "pyRevitLabs.PyRevit.Forms.IronPython.Tests.csproj");
-    public static string FormsBindingTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.PyRevit.Forms.Binding.Tests", "pyRevitLabs.PyRevit.Forms.Binding.Tests.csproj");
-    public static string PyRevitUnitTestProject => Path.Combine(DevPath, "pyRevitLabs", "pyRevitLabs.UnitTests", "pyRevitLabs.UnitTests.csproj");
 
     public static string IronPython2Solution => Path.Combine(DevPath, "modules", "pyRevitLabs.IronPython2.sln");
     public static string IronPython2LibProject => Path.Combine(DevPath, "modules", "pyRevitLabs.ironpython2", "Src", "IronPython", "IronPython.csproj");
@@ -79,8 +65,8 @@ public static class PyRevitPaths
 
     public static string VersionFile => Path.Combine(Root, "pyrevitlib", "pyrevit", "version");
     public static string DirectoryBuildTargets => Path.Combine(DevPath, "Directory.Build.targets");
-    public static string RevitApiCompatScript => Path.Combine(DevPath, "scripts", "check_revit_api_compat.py");
-    public static string RevitApiCatalog => Path.Combine(DevPath, "scripts", "revit_api_catalog", "catalog.json");
+    public static string RevitApiCompatScript => Path.Combine(DevPath, "checks", "check_revit_api_compat.py");
+    public static string RevitApiCatalog => Path.Combine(DevPath, "checks", "revit_api_catalog", "catalog.json");
     public static string AgentSkillsPath => Path.Combine(Root, "pyrevitlib", "pyrevit", "agent", "skills");
     public static string InstallVersionFile => Path.Combine(ReleasePath, "version");
     public static string ProductsTemplateFile => Path.Combine(ReleasePath, "pyrevit-products.json");

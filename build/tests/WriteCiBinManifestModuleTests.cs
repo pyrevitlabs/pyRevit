@@ -5,6 +5,8 @@ using ModularPipelines.Attributes;
 namespace Build.Tests;
 
 [TestClass]
+[TestCategory("HostFree")]
+[TestCategory("Integration")]
 public sealed class WriteCiBinManifestModuleTests
 {
     [TestMethod]

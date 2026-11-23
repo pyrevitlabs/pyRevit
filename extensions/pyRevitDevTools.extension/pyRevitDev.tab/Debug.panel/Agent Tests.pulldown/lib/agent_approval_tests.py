@@ -6,6 +6,10 @@ find the box, the prompt stays on screen; press the button named in the run's
 title to let the test finish.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 from contextlib import contextmanager
 
 from pyrevit import HOST_APP

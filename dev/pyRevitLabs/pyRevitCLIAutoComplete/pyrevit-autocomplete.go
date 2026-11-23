@@ -302,16 +302,16 @@ func main() {
 					},
 					"paths": complete.Command{
 						Sub: complete.Commands{
+							"add": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
 							"forget": complete.Command{
 								Sub: complete.Commands{},
 								Flags: complete.Flags{
 									"--all": complete.PredictNothing,
-									"--log": complete.PredictNothing,
-								},
-							},
-							"add": complete.Command{
-								Sub: complete.Commands{},
-								Flags: complete.Flags{
 									"--log": complete.PredictNothing,
 								},
 							},
@@ -335,16 +335,16 @@ func main() {
 					},
 					"sources": complete.Command{
 						Sub: complete.Commands{
+							"add": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
 							"forget": complete.Command{
 								Sub: complete.Commands{},
 								Flags: complete.Flags{
 									"--all": complete.PredictNothing,
-									"--log": complete.PredictNothing,
-								},
-							},
-							"add": complete.Command{
-								Sub: complete.Commands{},
-								Flags: complete.Flags{
 									"--log": complete.PredictNothing,
 								},
 							},
@@ -1194,7 +1194,8 @@ func main() {
 							},
 						},
 						Flags: complete.Flags{
-							"--log": complete.PredictNothing,
+							"--help": complete.PredictNothing,
+							"--log":  complete.PredictNothing,
 						},
 					},
 					"outputcss": complete.Command{

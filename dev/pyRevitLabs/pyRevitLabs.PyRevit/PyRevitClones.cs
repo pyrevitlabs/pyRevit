@@ -107,7 +107,7 @@ namespace pyRevitLabs.PyRevit {
         /// clone containing it, or null.
         /// </summary>
         public static PyRevitClone FindContaining(string path) {
-            var registeredClones = GetRegisteredClones();
+            var registeredClones = GetRegisteredClones(pruneStoredList: false);
             try {
                 var nearest = new PyRevitClone(Path.GetDirectoryName(path));
                 return registeredClones.FirstOrDefault(clone => clone.Equals(nearest)) ?? nearest;
@@ -117,9 +117,13 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
-        // return list of registered clones
+        /// <summary>
+        /// The registered clones that pass validation.
+        /// </summary>
+        /// <param name="pruneStoredList">When true, a stored clones list holding invalid or duplicate
+        /// entries is rewritten without them. Pass false from lookups that must never write the config.</param>
         // @handled @logs
-        public static List<PyRevitClone> GetRegisteredClones() {
+        public static List<PyRevitClone> GetRegisteredClones(bool pruneStoredList = true) {
             // safely get clone list
             var cfg = PyRevitConfigs.GetConfigFile();
             var clonesDict = MergeMachineRegisteredClones(cfg, cfg.Environment.Clones);
@@ -168,7 +172,7 @@ namespace pyRevitLabs.PyRevit {
             }
             foreach (var staleKey in reportedRejectedClones.Keys.Where(k => !registrationKeys.Contains(k)).ToList())
                 reportedRejectedClones.TryRemove(staleKey, out _);
-            if (listChanged) {
+            if (listChanged && pruneStoredList) {
                 foreach (var duplicate in duplicates)
                     logger.Info("Registered clone \"{0}\" points to the same path as clone \"{1}\" and is dropped from the clones list",
                                 duplicate.Name, validatedClones.Find(c => c.Equals(duplicate)).Name);

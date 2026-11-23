@@ -333,8 +333,9 @@ Run `dotnet test dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Tests/pyRevitLa
 for real WPF/pythonnet tests on .NET Framework 4.8, .NET 8 and .NET 10 using the
 shipped CPython interpreter. The fixture substitutes Revit dependencies; it does
 not validate Revit ownership or host events. The proxies have their own real-WPF
-tests in `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Binding.Tests`. Portable tests run with
-`python -m unittest discover -s dev/scripts -p 'test_standalone_forms*.py'`.
+tests in `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Binding.Tests`. Portable tests
+live in `dev/tests/python/library/test_forms_*.py` and run through the shared runner
+with `pipenv run test --language python`; `pytest` on one of those files suits a focused run.
 The sibling `pyRevitLabs.PyRevit.Forms.IronPython.Tests` project drives the same
 interactive cases with the shipped IronPython 2.7 and 3 engines (select with
 `-p:IronPythonVersion=IPY2712PR` or `IPY342`). The build pipeline's test gate

@@ -33,43 +33,6 @@ namespace pyRevitCLI {
         Debug,
     }
 
-    internal enum PyRevitCLICommandType {
-        Main,
-        Version,
-        Wiki,
-        Blog,
-        Docs,
-        Source,
-        YouTube,
-        Support,
-        Env,
-        Update,
-        Clone,
-        Clones,
-        Attach,
-        Attached,
-        Switch,
-        Detach,
-        Extend,
-        Extensions,
-        ExtensionsPaths,
-        ExtensionsSources,
-        Releases,
-        Revits,
-        Run,
-        Caches,
-        Config,
-        Configs,
-        ConfigsRoutes,
-        ConfigsAgent,
-        ConfigsTelemetry,
-        ConfigsAppTelemetry,
-        Doctor,
-        Agent,
-        Mcp,
-        Launch,
-    }
-
     internal static class PyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 

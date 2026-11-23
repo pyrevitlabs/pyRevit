@@ -8,7 +8,8 @@ repos:
     hooks:
       - id: dotnet-format
         name: dotnet format (C#)
-        entry: python dev/scripts/format_staged_csharp.py
+        require_serial: true
+        entry: python dev/hooks/format_staged_csharp.py
         language: system
         files: \.cs$
         exclude: ^dev/modules/
@@ -20,7 +21,7 @@ repos:
           signatures or calls (pre-PEP-448 grammar). ruff format emits
           this pattern under any supported target-version. This hook removes
           only that incompatible comma after Ruff formats each file.
-        entry: python dev/scripts/check_ipy2_compat.py --fix
+        entry: python dev/checks/check_ipy2_compat.py --fix
         language: system
         files: ^pyrevitlib/.*\.py$
       - id: check-config-api
@@ -31,7 +32,7 @@ repos:
           turned into a dynamic lookup, a section accessor that no longer
           mirrors the C# service, or a new snake_case spelling introduced for a
           setting the schema already declares.
-        entry: python dev/scripts/check_config_api.py
+        entry: python dev/checks/check_config_api.py
         language: system
         files: ^(pyrevitlib/|extensions/).*\.py$
         pass_filenames: false
