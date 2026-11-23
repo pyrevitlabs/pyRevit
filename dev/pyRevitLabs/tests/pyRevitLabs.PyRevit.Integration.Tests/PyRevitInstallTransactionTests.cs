@@ -307,6 +307,89 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             return sourcePath;
         }
 
+        /// <summary>Retrying a clone that stopped on missing binaries resumes the kept folder, registers it and deletes nothing.</summary>
+        [Test]
+        public void DeployFromRepo_WhenRetriedAfterMissingBinaries_ResumesTheKeptClone() {
+            var source = CreateSourceRepo();
+            var dest = Path.Combine(_tempRoot, "repoDest");
+            var keptClone = Path.Combine(dest, CloneName);
+
+            PyRevitClones.BinariesInstallHook = _ => throw new pyRevitBinArtifactNotFoundException("no binaries");
+            try {
+                Assert.Throws<pyRevitBinArtifactNotFoundException>(
+                    () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
+            }
+            finally {
+                PyRevitClones.BinariesInstallHook = null;
+            }
+            var marker = Path.Combine(keptClone, "marker.txt");
+            File.WriteAllText(marker, "keep me");
+            var hookCalls = 0;
+            PyRevitClones.BinariesInstallHook = _ => hookCalls++;
+            try {
+                PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest);
+            }
+            finally {
+                PyRevitClones.BinariesInstallHook = null;
+            }
+
+            Assert.That(hookCalls, Is.EqualTo(1));
+            Assert.That(File.Exists(marker), Is.True, "resume must not delete anything in the kept folder");
+            Assert.That(Repository.IsValid(keptClone), Is.True);
+            Assert.That(
+                PyRevitClones.GetRegisteredClone(CloneName).ClonePath.NormalizeAsPath(),
+                Is.EqualTo(keptClone.NormalizeAsPath()));
+        }
+
+        /// <summary>A kept folder whose origin differs from the requested source is not resumed and the error explains recovery.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheKeptFolderIsAnotherRemote_ThrowsWithRecoveryMessage() {
+            var source = CreateSourceRepo();
+            var otherSource = CreateSourceRepo("otherSource");
+            var dest = Path.Combine(_tempRoot, "repoDest");
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false);
+            PyRevitClones.UnregisterClone(PyRevitClones.GetRegisteredClone(CloneName));
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: otherSource, destPath: dest, installBinaries: false));
+
+            Assert.That(ex.Message, Does.Contain("not a registered clone"));
+            Assert.That(ex.Message, Does.Contain("pyrevit clones add"));
+            Assert.That(ex.Message, Does.Contain("pyrevit clones update"));
+            Assert.That(PyRevitClones.GetRegisteredClones(pruneStoredList: false), Is.Empty);
+        }
+
+        /// <summary>An image deploy into an existing folder is not resumed and the error explains recovery.</summary>
+        [Test]
+        public void DeployFromImage_WhenTheDestinationExists_ThrowsWithRecoveryMessage() {
+            var zipPath = Path.Combine(_tempRoot, "clone.zip");
+            var dest = Path.Combine(_tempRoot, "imageDest");
+            CreateMinimalCloneZip(zipPath);
+            Directory.CreateDirectory(Path.Combine(dest, CloneName));
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromImage(CloneName, imagePath: zipPath, destPath: dest, installBinaries: false));
+
+            Assert.That(ex.Message, Does.Contain("not a registered clone"));
+            Assert.That(ex.Message, Does.Contain("pyrevit clones add"));
+        }
+
+        private string CreateSourceRepo(string folderName = "source") {
+            var source = Path.Combine(_tempRoot, folderName);
+            Directory.CreateDirectory(Path.Combine(source, "pyrevitlib", "pyrevit"));
+            Directory.CreateDirectory(Path.Combine(source, "bin"));
+            File.WriteAllText(Path.Combine(source, "pyrevitlib", "pyrevit", "version"), "7.0.0");
+            File.WriteAllText(Path.Combine(source, "bin", "placeholder.txt"), "bin");
+            File.WriteAllText(Path.Combine(source, "pyRevitfile"), "[deployments]\r\ncore = ['bin', 'pyrevitlib', 'pyRevitfile']\r\n");
+            Repository.Init(source);
+            using (var repository = new Repository(source)) {
+                Commands.Stage(repository, "*");
+                var author = new Signature("Test", "test@example.invalid", DateTimeOffset.UtcNow);
+                repository.Commit("fixture", author, author);
+            }
+            return source;
+        }
+
         private static void CreateMinimalCloneZip(string zipPath) {
             var root = Path.Combine(Path.GetDirectoryName(zipPath), "zipcontent");
             if (Directory.Exists(root))
