@@ -472,6 +472,7 @@ func main() {
 				},
 				Flags: complete.Flags{
 					"--allowdialogs": complete.PredictNothing,
+					"--clone":        complete.PredictNothing,
 					"--help":         complete.PredictNothing,
 					"--import":       complete.PredictNothing,
 					"--inputs":       complete.PredictNothing,

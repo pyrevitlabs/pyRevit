@@ -10,6 +10,18 @@ using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.TargetApps.Revit {
     public class RevitAddonManifest {
+        /// <summary>
+        /// Describes an add-in that exists only in memory, with no manifest file behind it:
+        /// <see cref="FilePath"/> is null.
+        /// </summary>
+        public RevitAddonManifest(string name, string assembly, string addInId, string fullClassName, string vendorId) {
+            Name = name;
+            Assembly = assembly.NormalizeAsPath();
+            AddInId = addInId;
+            FullClassName = fullClassName;
+            VendorId = vendorId;
+        }
+
         public RevitAddonManifest(string manifestFile) {
             FilePath = manifestFile;
 

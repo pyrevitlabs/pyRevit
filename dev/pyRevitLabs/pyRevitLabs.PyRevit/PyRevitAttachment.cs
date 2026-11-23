@@ -13,7 +13,8 @@ namespace pyRevitLabs.PyRevit {
     public enum PyRevitAttachmentType {
         AllUsers,
         CurrentUser,
-        PerLaunch
+        PerLaunch,
+        PerRun
     }
 
     public class PyRevitAttachment {
@@ -94,6 +95,8 @@ namespace pyRevitLabs.PyRevit {
         }
 
         public bool IsReadOnly() {
+            if (AttachmentType == PyRevitAttachmentType.PerRun)
+                return true;
             // determine if attachment can be modified by user
             var us = new UserSecurity();
             return !us.HasAccess(new FileInfo(Manifest.FilePath), FileSystemRights.Write);

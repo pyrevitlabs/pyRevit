@@ -157,7 +157,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        RunExtensionCommand(string commandName, string targetFile, string revitYear, PyRevitRunnerOptions runOptions, bool targetIsFileList = false) {
+        RunExtensionCommand(string commandName, string targetFile, string revitYear, PyRevitRunnerOptions runOptions, bool targetIsFileList = false, string cloneNameOrPath = null) {
             // verify command
             if (commandName is null || commandName == string.Empty)
                 throw new Exception("Command name must be provided.");
@@ -222,7 +222,10 @@ namespace pyRevitCLI {
             if (revitYearNumber != 0) {
                 // determine attached clone
                 var attachment = PyRevitCLIArguments.RequireAttachment(
-                    PyRevitAttachments.GetAttached(revitYearNumber), revitYearNumber);
+                    cloneNameOrPath is null
+                        ? PyRevitAttachments.GetAttached(revitYearNumber)
+                        : PyRevitAttachments.ForClone(ResolveLaunchClone(cloneNameOrPath), PyRevitEngineVersion.Default, revitYearNumber),
+                    revitYearNumber);
 
                 // determine script to run
                 string commandScriptPath = null;

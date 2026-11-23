@@ -100,6 +100,32 @@ namespace pyRevitLabs.PyRevit {
                 UnregisterClone(clone);
         }
 
+        /// <summary>
+        /// The nearest valid clone <paramref name="path"/> lies in, so a clone nested inside another
+        /// registered clone is not mistaken for it. The registration of that clone is returned when there
+        /// is one, to keep its name; a path that is inside no valid clone falls back to the registered
+        /// clone containing it, or null.
+        /// </summary>
+        public static PyRevitClone FindContaining(string path) {
+            var registeredClones = GetRegisteredClones(pruneStoredList: false);
+            PyRevitClone nearest;
+            try {
+                nearest = new PyRevitClone(Path.GetDirectoryName(path));
+            }
+            catch (PyRevitException) {
+                return registeredClones.FirstOrDefault(clone => path.IsPathWithin(clone.ClonePath));
+            }
+            var registered = registeredClones.FirstOrDefault(clone => clone.Equals(nearest));
+            if (registered != null)
+                return registered;
+            try {
+                return new PyRevitClone(nearest.ClonePath, name: new DirectoryInfo(nearest.ClonePath).Name);
+            }
+            catch (PyRevitException) {
+                return new PyRevitClone(nearest.ClonePath);
+            }
+        }
+
         // return list of registered clones
         // @handled @logs
         public static List<PyRevitClone> GetRegisteredClones() {

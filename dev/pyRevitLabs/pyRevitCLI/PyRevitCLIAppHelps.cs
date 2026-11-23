@@ -323,6 +323,8 @@ namespace pyRevitCLI {
                             { "--revit=<revit_year>",   "Target Revit year e.g. " + RevitProductData.MinimumSupportedProductYear },
                             { "--models=<model_list_file>",
                                                         "Text file listing the model files to run the script on; requires --revit" },
+                            { "--clone=<clone_name_or_path>",
+                                                        "Run on this clone's default engine instead of the attached clone, without attaching it" },
                             { "--inputs=<inputs_json>", "JSON object exposed to the script as JSON text in `__inputs__`" },
                             { "--inputs-file=<inputs_file>",
                                                         "Path of a JSON file whose object is exposed to the script as JSON text in `__inputs__`" },
