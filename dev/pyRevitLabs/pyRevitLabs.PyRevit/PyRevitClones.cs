@@ -917,18 +917,18 @@ namespace pyRevitLabs.PyRevit {
             switch (decision.Kind) {
                 case ResumeDecisionKind.RegisteredClone:
                     return string.Format(
-                        "To refresh it run: pyrevit clones update {0}, or choose another --dest.",
+                        "To refresh it run: pyrevit clones update \"{0}\", or choose another --dest.",
                         decision.RegisteredName);
                 case ResumeDecisionKind.RegisteredInvalidClone:
                     return "Move the folder aside, or delete it if it holds nothing you need, which drops its stale registration, or choose another --dest.";
                 case ResumeDecisionKind.NameRegisteredElsewhere:
                     return string.Format(
-                        "Choose another clone name or --dest, or run: pyrevit clones forget {0}.",
+                        "Choose another clone name or --dest, or run: pyrevit clones forget \"{0}\".",
                         decision.RegisteredName);
                 case ResumeDecisionKind.NameRegisteredHidden:
                     return string.Format(
                         "That registration is not listed, so it cannot be forgotten by name. Choose another clone " +
-                        "name or --dest, or replace it with: pyrevit clones add {0} \"{1}\" --force.",
+                        "name or --dest, or replace it with: pyrevit clones add \"{0}\" \"{1}\" --force.",
                         decision.RegisteredName,
                         path);
             }

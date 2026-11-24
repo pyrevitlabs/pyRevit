@@ -523,6 +523,45 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(ex.Message, Does.Contain("already registered at"));
         }
 
+        /// <summary>Recovery commands in the messages quote a clone name that contains spaces, so they can be copied into a shell.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheCloneNameHasSpaces_TheRecoveryCommandsQuoteIt() {
+            const string spacedName = "My Dev Clone";
+            var source = CreateSourceRepo();
+            var keptDest = Path.Combine(_tempRoot, "keptDest");
+            var otherDest = Path.Combine(_tempRoot, "otherDest");
+            PyRevitClones.DeployFromRepo(spacedName, repoUrl: source, destPath: keptDest, installBinaries: false);
+            var registered = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(spacedName, repoUrl: source, destPath: keptDest, installBinaries: false));
+            Assert.That(registered.Message, Does.Contain("clones update \"My Dev Clone\""));
+
+            PyRevitClones.UnregisterClone(PyRevitClones.GetRegisteredClone(spacedName));
+            PyRevitClones.DeployFromRepo(spacedName, repoUrl: source, destPath: otherDest, installBinaries: false);
+            var listed = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(spacedName, repoUrl: source, destPath: keptDest, installBinaries: false));
+            Assert.That(listed.Message, Does.Contain("clones forget \"My Dev Clone\""));
+        }
+
+        /// <summary>The replace command for an unlisted blocking name quotes both the name and the folder.</summary>
+        [Test]
+        public void DeployFromRepo_WhenAnUnlistedNameHasSpaces_TheReplaceCommandQuotesNameAndFolder() {
+            const string spacedName = "My Dev Clone";
+            var source = CreateSourceRepo();
+            var keptDest = Path.Combine(_tempRoot, "keptDest");
+            PyRevitClones.DeployFromRepo(spacedName, repoUrl: source, destPath: keptDest, installBinaries: false);
+            PyRevitClones.UnregisterClone(PyRevitClones.GetRegisteredClone(spacedName));
+            var outerDest = Path.Combine(_tempRoot, "outerDest");
+            PyRevitClones.DeployFromRepo("OuterClone", repoUrl: source, destPath: outerDest, installBinaries: false);
+            var innerDest = Path.Combine(outerDest, "OuterClone", "nested");
+            PyRevitClones.DeployFromRepo(spacedName, repoUrl: source, destPath: innerDest, installBinaries: false);
+            Directory.Delete(Path.Combine(innerDest, spacedName, "pyrevitlib", "pyrevit"), recursive: true);
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(spacedName, repoUrl: source, destPath: keptDest, installBinaries: false));
+
+            Assert.That(ex.Message, Does.Contain("clones add \"My Dev Clone\" \""));
+        }
+
         /// <summary>A resume with --skip-bin registers the folder without scanning bin, even when a build folder cannot be listed.</summary>
         [Test]
         public void DeployFromRepo_WhenResumingWithSkipBin_RegistersWithoutInstalling() {
@@ -806,7 +845,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false));
 
             Assert.That(ex.Message, Does.Contain("already registered"));
-            Assert.That(ex.Message, Does.Contain("pyrevit clones update " + CloneName));
+            Assert.That(ex.Message, Does.Contain("pyrevit clones update \"" + CloneName + "\""));
             Assert.That(ex.Message, Does.Not.Contain("not a registered clone"));
         }
 

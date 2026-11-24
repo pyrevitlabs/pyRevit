@@ -55,7 +55,7 @@ $ pyrevit clones add <clone_name> "<path_to_kept_folder>"
   `clones add` only registers the folder and changes nothing in it. `clones update <clone_name>` discards uncommitted edits to tracked files and merges the remote branch into your local commits; add `--skip-bin` to keep the folder's `bin`.
 - The folder is already registered as a clone that still opens: refresh it with `pyrevit clones update <clone_name>`, or choose another `--dest`.
 - The folder is registered but no longer a valid clone: move it aside, or delete it if it holds nothing you need, which drops its stale registration, or choose another `--dest`.
-- The clone name is registered at another path: choose another name or `--dest`, or run `pyrevit clones forget <clone_name>` first. A registration that `pyrevit clones info` cannot find, because it only opens through its parent clone, cannot be forgotten by name: choose another name, or replace it with `pyrevit clones add <clone_name> "<path_to_kept_folder>" --force`.
+- The clone name is registered at another path: choose another name or `--dest`, or run `pyrevit clones forget <clone_name>` first. A registration that `pyrevit clones info` cannot find, because it only opens through its parent clone, cannot be forgotten by name: choose another name, or replace it with `pyrevit clones add "<clone_name>" "<path_to_kept_folder>" --force`.
 
 #### Installing Custom Clones
 
