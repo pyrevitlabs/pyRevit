@@ -65,6 +65,16 @@ public class ScriptConsoleSourceTests {
         Assert.Contains("PostScriptWhenReady(\"window.scrollTo(0, 0);\");", Source[declaration..end]);
     }
 
+    /// <summary>Queued scripts stay queued until the document is ready, so an early drain cannot drop or reorder them.</summary>
+    [Fact]
+    public void FlushPendingScripts_KeepsQueueUntilDocumentReady() {
+        var body = CSharpSource.MemberBody(Source, "private void FlushPendingScripts()");
+        Assert.True(CSharpSource.IsInBlockOf(body, "lock (_pendingLock)", "!_renderer.IsDocumentReady"));
+        var guard = body.IndexOf("!_renderer.IsDocumentReady", StringComparison.Ordinal);
+        var drain = body.IndexOf("_pendingScripts.Clear();", StringComparison.Ordinal);
+        Assert.True(guard >= 0 && drain > guard);
+    }
+
     /// <summary>The scripting entry point flushes the print stream before asking the window to scroll.</summary>
     [Fact]
     public void ScriptOutput_ScrollToTop_FlushesPrintStreamFirst() {

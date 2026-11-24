@@ -995,7 +995,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void FlushPendingScripts() {
             string[] pendingScripts;
             lock (_pendingLock) {
-                if (_pendingScripts.Count == 0 || ClosedByUser)
+                if (_pendingScripts.Count == 0 || ClosedByUser || !_renderer.IsDocumentReady)
                     return;
                 pendingScripts = _pendingScripts.ToArray();
                 _pendingScripts.Clear();
