@@ -121,6 +121,8 @@ class PropKeyValuePickleTests(unittest.TestCase):
         """An Int64-like value must not pickle as a clr reference."""
         clr_stub = types.ModuleType("clr")
         clr_stub.Deserialize = _clr_deserialize
+        missing = object()
+        original_clr = sys.modules.get("clr", missing)
         sys.modules["clr"] = clr_stub
         try:
             original = self.prop_key_value(
@@ -131,7 +133,10 @@ class PropKeyValuePickleTests(unittest.TestCase):
             )
             payload = pickle.dumps(("Elements", [original]), CROSS_ENGINE_PROTOCOL)
         finally:
-            del sys.modules["clr"]
+            if original_clr is missing:
+                del sys.modules["clr"]
+            else:
+                sys.modules["clr"] = original_clr
         self.assertNotIn(b"clr", payload)
         restored = pickle.loads(payload)[1][0]
         self.assertEqual(593176, restored.value)
