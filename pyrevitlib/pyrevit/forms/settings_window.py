@@ -57,6 +57,7 @@ def _format_setting_value(value):
     IronPython 2.7 renders floats with 12 significant digits while CPython 3
     and IronPython 3.4 use the shortest round-trip form; 12 digits is used
     everywhere so the same value shows the same text.
+    Non-finite values (inf, nan) are returned without a decimal point.
     """
     if value is None:
         return ""
