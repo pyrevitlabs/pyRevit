@@ -419,7 +419,7 @@ def format_age(seconds):
     return "{} days ago".format(hours // 24)
 
 
-def ui_guard(fn, _logger=logger, _alert=forms.alert):
+def ui_guard(fn, _logger=logger, _alert=forms.alert, _em_dash=EM_DASH):
     """Shield a UI-thread entry point so no exception can escape into
     Revit's message pump.  SystemExit (forms.alert(exitscript=True),
     script.exit()) is also intercepted — it is fatal in modeless context.
@@ -465,7 +465,7 @@ def ui_guard(fn, _logger=logger, _alert=forms.alert):
                         _alert(
                             "Keynote Manager lost its script engine "
                             "(pyRevit recycled it).\n\n"
-                            "The window will close " + EM_DASH + " please reopen it. "
+                            "The window will close " + _em_dash + " please reopen it. "
                             "If this happens repeatedly, reload pyRevit.",
                             title="Keynote Manager",
                         )
