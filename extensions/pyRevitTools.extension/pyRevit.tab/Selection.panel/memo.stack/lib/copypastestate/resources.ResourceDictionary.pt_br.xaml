@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="viewzoom_panstate_action_name">Estado de zoom/Deslocamento da vista</sys:String>
+    <sys:String x:Key="sectionbox_3Dstate_action_name">Estado da caixa de corte 3D</sys:String>
+    <sys:String x:Key="visibility_graphics_action_name">Visibilidade/gráficos</sys:String>
+    <sys:String x:Key="crop_region_action_name">Região de corte</sys:String>
+    <sys:String x:Key="viewport_placement_action_name">Posicionamento da janela de visualização na folha</sys:String>
+    <sys:String x:Key="filter_overrides_action_name">Substituições de filtros</sys:String>
+    <sys:String x:Key="copy_prompt">Selecione a propriedade a ser copiada para a memória:</sys:String>
+    <sys:String x:Key="paste_prompt">Selecione a propriedade a ser colada</sys:String>
+    <sys:String x:Key="copy_window_width">700</sys:String>
+    <sys:String x:Key="paste_window_width">700</sys:String>
+    <sys:String x:Key="nothing_to_copy">Nenhuma propriedade pode ser copiada da vista ativa ou da seleção atual.</sys:String>
+    <sys:String x:Key="nothing_to_paste">Não há ações disponíveis para esta vista ou nenhum dado salvo foi encontrado. Use primeiro "Copiar Estado".</sys:String>
+    <sys:String x:Key="view_type_mismatch">O tipo de vista salvo ({0}) é diferente da vista ativa ({1}).</sys:String>
+    <sys:String x:Key="view_orientation_locked">A orientação da vista ativa está bloqueada.</sys:String>
+    <sys:String x:Key="views_not_parallel">As vistas não são paralelas.</sys:String>
+    <sys:String x:Key="crop_region_unreadable">Não é possível ler a região de corte da vista selecionada.</sys:String>
+    <sys:String x:Key="one_viewport_required">Selecione exatamente uma janela de visualização.</sys:String>
+    <sys:String x:Key="no_filters_on_view">A vista ativa ou selecionada não tem filtros aplicados.</sys:String>
+    <sys:String x:Key="no_filters_selected">Nenhum filtro selecionado. Cancelado.</sys:String>
+    <sys:String x:Key="no_suitable_views">Nenhuma vista adequada está selecionada ou ativa.</sys:String>
+    <sys:String x:Key="views_with_template_skipped">Algumas vistas selecionadas usam um modelo de vista que controla os filtros delas. Elas serão ignoradas.</sys:String>
+    <sys:String x:Key="alignment_prompt">Selecione a opção de alinhamento</sys:String>
+    <sys:String x:Key="axis_prompt">Alinhar um eixo específico?</sys:String>
+    <sys:String x:Key="filters_dialog_title">Selecione os filtros a copiar</sys:String>
+    <sys:String x:Key="filters_dialog_button">Selecionar filtros</sys:String>
+    <sys:String x:Key="paste_target_prompt">Onde deseja colar os filtros?</sys:String>
+    <sys:String x:Key="paste_target_view">Vista ativa/selecionada</sys:String>
+    <sys:String x:Key="paste_target_templates">Selecionar modelos de vista</sys:String>
+    <sys:String x:Key="align_crop_box">Alinhar ao CANTO DA REGIÃO DE CORTE ao colar</sys:String>
+    <sys:String x:Key="align_base_point">Alinhar ao PONTO DE BASE ao colar</sys:String>
+    <sys:String x:Key="align_center">Alinhar ao CENTRO da região de corte copiada</sys:String>
+    <sys:String x:Key="align_top_left">Alinhar ao canto SUPERIOR ESQUERDO da região de corte copiada</sys:String>
+    <sys:String x:Key="align_top_right">Alinhar ao canto SUPERIOR DIREITO da região de corte copiada</sys:String>
+    <sys:String x:Key="align_bottom_left">Alinhar ao canto INFERIOR ESQUERDO da região de corte copiada</sys:String>
+    <sys:String x:Key="align_bottom_right">Alinhar ao canto INFERIOR DIREITO da região de corte copiada</sys:String>
+    <sys:String x:Key="paste_section_box">Colar configurações da caixa de corte</sys:String>
+    <sys:String x:Key="paste_visibility_graphics">Colar visibilidade/gráficos</sys:String>
+    <sys:String x:Key="paste_crop_region">Colar região de corte</sys:String>
+    <sys:String x:Key="paste_viewport_location">Colar posição da janela de visualização</sys:String>
+    <sys:String x:Key="paste_filter_overrides">Colar substituições de filtros</sys:String>
+</ResourceDictionary>

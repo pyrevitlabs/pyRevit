@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="viewzoom_panstate_action_name">État du zoom/Panoramique de la vue</sys:String>
+    <sys:String x:Key="sectionbox_3Dstate_action_name">État de la boîte de coupe 3D</sys:String>
+    <sys:String x:Key="visibility_graphics_action_name">Visibilité/graphisme</sys:String>
+    <sys:String x:Key="crop_region_action_name">Région de recadrage</sys:String>
+    <sys:String x:Key="viewport_placement_action_name">Positionnement de la fenêtre sur la feuille</sys:String>
+    <sys:String x:Key="filter_overrides_action_name">Remplacements des filtres</sys:String>
+    <sys:String x:Key="copy_prompt">Sélectionnez la propriété à copier en mémoire:</sys:String>
+    <sys:String x:Key="paste_prompt">Sélectionnez la propriété à coller</sys:String>
+    <sys:String x:Key="copy_window_width">750</sys:String>
+    <sys:String x:Key="paste_window_width">700</sys:String>
+    <sys:String x:Key="nothing_to_copy">Aucune propriété ne peut être copiée depuis la vue active ou la sélection actuelle.</sys:String>
+    <sys:String x:Key="nothing_to_paste">Aucune action disponible pour cette vue ou aucune donnée enregistrée trouvée. Utilisez d’abord "Copier l'état".</sys:String>
+    <sys:String x:Key="view_type_mismatch">Le type de vue enregistré ({0}) est différent de la vue active ({1}).</sys:String>
+    <sys:String x:Key="view_orientation_locked">L'orientation de la vue active est verrouillée.</sys:String>
+    <sys:String x:Key="views_not_parallel">Les vues ne sont pas parallèles.</sys:String>
+    <sys:String x:Key="crop_region_unreadable">La région de recadrage de la vue sélectionnée ne peut pas être lue.</sys:String>
+    <sys:String x:Key="one_viewport_required">Sélectionnez exactement une fenêtre.</sys:String>
+    <sys:String x:Key="no_filters_on_view">Aucun filtre n'est appliqué à la vue active ou sélectionnée.</sys:String>
+    <sys:String x:Key="no_filters_selected">Aucun filtre sélectionné. Annulé.</sys:String>
+    <sys:String x:Key="no_suitable_views">Aucune vue appropriée n'est sélectionnée ou active.</sys:String>
+    <sys:String x:Key="views_with_template_skipped">Certaines vues sélectionnées utilisent un gabarit de vue qui contrôle leurs filtres. Elles seront ignorées.</sys:String>
+    <sys:String x:Key="alignment_prompt">Sélectionnez l'option d'alignement</sys:String>
+    <sys:String x:Key="axis_prompt">Aligner un axe précis ?</sys:String>
+    <sys:String x:Key="filters_dialog_title">Sélectionnez les filtres à copier</sys:String>
+    <sys:String x:Key="filters_dialog_button">Sélectionner les filtres</sys:String>
+    <sys:String x:Key="paste_target_prompt">Où voulez-vous coller les filtres ?</sys:String>
+    <sys:String x:Key="paste_target_view">Vue active/sélectionnée</sys:String>
+    <sys:String x:Key="paste_target_templates">Sélectionner des gabarits de vue</sys:String>
+    <sys:String x:Key="align_crop_box">Aligner sur le COIN DE LA RÉGION DE RECADRAGE lors du collage</sys:String>
+    <sys:String x:Key="align_base_point">Aligner sur le POINT DE BASE lors du collage</sys:String>
+    <sys:String x:Key="align_center">Aligner sur le CENTRE de la région de recadrage copiée</sys:String>
+    <sys:String x:Key="align_top_left">Aligner sur le coin SUPÉRIEUR GAUCHE de la région de recadrage copiée</sys:String>
+    <sys:String x:Key="align_top_right">Aligner sur le coin SUPÉRIEUR DROIT de la région de recadrage copiée</sys:String>
+    <sys:String x:Key="align_bottom_left">Aligner sur le coin INFÉRIEUR GAUCHE de la région de recadrage copiée</sys:String>
+    <sys:String x:Key="align_bottom_right">Aligner sur le coin INFÉRIEUR DROIT de la région de recadrage copiée</sys:String>
+    <sys:String x:Key="paste_section_box">Coller les paramètres de la boîte de coupe</sys:String>
+    <sys:String x:Key="paste_visibility_graphics">Coller la visibilité/le graphisme</sys:String>
+    <sys:String x:Key="paste_crop_region">Coller la région de recadrage</sys:String>
+    <sys:String x:Key="paste_viewport_location">Coller la position de la fenêtre</sys:String>
+    <sys:String x:Key="paste_filter_overrides">Coller les remplacements des filtres</sys:String>
+</ResourceDictionary>

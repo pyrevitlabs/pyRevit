@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="viewzoom_panstate_action_name">View Zoom/Pan State</sys:String>
+    <sys:String x:Key="sectionbox_3Dstate_action_name">3D Section Box State</sys:String>
+    <sys:String x:Key="visibility_graphics_action_name">Visibility Graphics</sys:String>
+    <sys:String x:Key="crop_region_action_name">Crop Region</sys:String>
+    <sys:String x:Key="viewport_placement_action_name">Viewport Placement on Sheet</sys:String>
+    <sys:String x:Key="filter_overrides_action_name">Filter Overrides</sys:String>
+    <sys:String x:Key="copy_prompt">Select property to be copied to memory:</sys:String>
+    <sys:String x:Key="paste_prompt">Select property to be pasted:</sys:String>
+    <sys:String x:Key="copy_window_width">650</sys:String>
+    <sys:String x:Key="paste_window_width">600</sys:String>
+    <sys:String x:Key="nothing_to_copy">No property can be copied from the active view or the current selection.</sys:String>
+    <sys:String x:Key="nothing_to_paste">No available actions for this view or no saved data found. Use "Copy State" first.</sys:String>
+    <sys:String x:Key="view_type_mismatch">Saved view type ({0}) is different from active view ({1}).</sys:String>
+    <sys:String x:Key="view_orientation_locked">The orientation of the active view is locked.</sys:String>
+    <sys:String x:Key="views_not_parallel">The views are not parallel.</sys:String>
+    <sys:String x:Key="crop_region_unreadable">The crop region of the selected view cannot be read.</sys:String>
+    <sys:String x:Key="one_viewport_required">Select exactly one viewport.</sys:String>
+    <sys:String x:Key="no_filters_on_view">The active or selected view has no filters applied.</sys:String>
+    <sys:String x:Key="no_filters_selected">No filters selected. Cancelled.</sys:String>
+    <sys:String x:Key="no_suitable_views">No suitable views are selected or active.</sys:String>
+    <sys:String x:Key="views_with_template_skipped">Some selected views use a view template that controls their filters. They will be skipped.</sys:String>
+    <sys:String x:Key="alignment_prompt">Select Alignment Option</sys:String>
+    <sys:String x:Key="axis_prompt">Align specific axis?</sys:String>
+    <sys:String x:Key="filters_dialog_title">Select filters to copy</sys:String>
+    <sys:String x:Key="filters_dialog_button">Select filters</sys:String>
+    <sys:String x:Key="paste_target_prompt">Where do you want to paste filters?</sys:String>
+    <sys:String x:Key="paste_target_view">Active/Selected View</sys:String>
+    <sys:String x:Key="paste_target_templates">Select View Templates</sys:String>
+    <sys:String x:Key="align_crop_box">Align to CROP BOX CORNER on Paste</sys:String>
+    <sys:String x:Key="align_base_point">Align to BASE POINT on Paste</sys:String>
+    <sys:String x:Key="align_center">Align to CENTER of Copied Crop Box</sys:String>
+    <sys:String x:Key="align_top_left">Align to TOP LEFT Corner of Copied Crop Box</sys:String>
+    <sys:String x:Key="align_top_right">Align to TOP RIGHT Corner of Copied Crop Box</sys:String>
+    <sys:String x:Key="align_bottom_left">Align to BOTTOM LEFT Corner of Copied Crop Box</sys:String>
+    <sys:String x:Key="align_bottom_right">Align to BOTTOM RIGHT Corner of Copied Crop Box</sys:String>
+    <sys:String x:Key="paste_section_box">Paste Section Box Settings</sys:String>
+    <sys:String x:Key="paste_visibility_graphics">Paste Visibility Graphics</sys:String>
+    <sys:String x:Key="paste_crop_region">Paste Crop Region</sys:String>
+    <sys:String x:Key="paste_viewport_location">Paste Viewport Location</sys:String>
+    <sys:String x:Key="paste_filter_overrides">Paste Filter Overrides</sys:String>
+</ResourceDictionary>

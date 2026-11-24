@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="viewzoom_panstate_action_name">视图缩放/平移状态</sys:String>
+    <sys:String x:Key="sectionbox_3Dstate_action_name">3D剖面框状态</sys:String>
+    <sys:String x:Key="visibility_graphics_action_name">可见性/图形</sys:String>
+    <sys:String x:Key="crop_region_action_name">裁剪区域</sys:String>
+    <sys:String x:Key="viewport_placement_action_name">视口在图纸上的位置</sys:String>
+    <sys:String x:Key="filter_overrides_action_name">过滤器替换</sys:String>
+    <sys:String x:Key="copy_prompt">选择要复制到内存的属性:</sys:String>
+    <sys:String x:Key="paste_prompt">选择要粘贴的属性</sys:String>
+    <sys:String x:Key="copy_window_width">600</sys:String>
+    <sys:String x:Key="paste_window_width">600</sys:String>
+    <sys:String x:Key="nothing_to_copy">无法从活动视图或当前选择中复制任何属性。</sys:String>
+    <sys:String x:Key="nothing_to_paste">此视图没有可用的操作，或未找到已保存的数据。请先使用 "复制状态"</sys:String>
+    <sys:String x:Key="view_type_mismatch">已保存的视图类型（{0}）与活动视图（{1}）不同。</sys:String>
+    <sys:String x:Key="view_orientation_locked">活动视图的方向已锁定。</sys:String>
+    <sys:String x:Key="views_not_parallel">这两个视图不平行。</sys:String>
+    <sys:String x:Key="crop_region_unreadable">无法读取所选视图的裁剪区域。</sys:String>
+    <sys:String x:Key="one_viewport_required">请只选择一个视口。</sys:String>
+    <sys:String x:Key="no_filters_on_view">活动视图或所选视图未应用任何过滤器。</sys:String>
+    <sys:String x:Key="no_filters_selected">未选择过滤器。已取消。</sys:String>
+    <sys:String x:Key="no_suitable_views">没有选择或激活合适的视图。</sys:String>
+    <sys:String x:Key="views_with_template_skipped">所选视图中有些使用了控制其过滤器的视图样板，这些视图将被跳过。</sys:String>
+    <sys:String x:Key="alignment_prompt">选择对齐选项</sys:String>
+    <sys:String x:Key="axis_prompt">仅对齐特定轴？</sys:String>
+    <sys:String x:Key="filters_dialog_title">选择要复制的过滤器</sys:String>
+    <sys:String x:Key="filters_dialog_button">选择过滤器</sys:String>
+    <sys:String x:Key="paste_target_prompt">要将过滤器粘贴到哪里？</sys:String>
+    <sys:String x:Key="paste_target_view">活动/所选视图</sys:String>
+    <sys:String x:Key="paste_target_templates">选择视图样板</sys:String>
+    <sys:String x:Key="align_crop_box">粘贴时对齐到裁剪区域的角点</sys:String>
+    <sys:String x:Key="align_base_point">粘贴时对齐到基点</sys:String>
+    <sys:String x:Key="align_center">对齐到已复制裁剪区域的中心</sys:String>
+    <sys:String x:Key="align_top_left">对齐到已复制裁剪区域的左上角</sys:String>
+    <sys:String x:Key="align_top_right">对齐到已复制裁剪区域的右上角</sys:String>
+    <sys:String x:Key="align_bottom_left">对齐到已复制裁剪区域的左下角</sys:String>
+    <sys:String x:Key="align_bottom_right">对齐到已复制裁剪区域的右下角</sys:String>
+    <sys:String x:Key="paste_section_box">粘贴剖面框设置</sys:String>
+    <sys:String x:Key="paste_visibility_graphics">粘贴可见性/图形</sys:String>
+    <sys:String x:Key="paste_crop_region">粘贴裁剪区域</sys:String>
+    <sys:String x:Key="paste_viewport_location">粘贴视口位置</sys:String>
+    <sys:String x:Key="paste_filter_overrides">粘贴过滤器替换</sys:String>
+</ResourceDictionary>
