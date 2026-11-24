@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using LibGit2Sharp;
 using NUnit.Framework;
 using pyRevitLabs.Common;
@@ -441,6 +442,46 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(
                 PyRevitClones.DescribeKeptFolderRecovery(keptClone, source, PyRevitLabsConsts.TargetBranch, CloneName),
                 Does.Not.Contain("resumes"));
+        }
+
+        /// <summary>A name registered at an inner clone that now opens only through its valid parent still blocks the resume, so the registration is not moved.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheNameIsRegisteredAtAnInnerCloneOpenedThroughItsParent_RefusesAndKeepsIt() {
+            var source = CreateSourceRepo();
+            var keptDest = Path.Combine(_tempRoot, "keptDest");
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: keptDest, installBinaries: false);
+            PyRevitClones.UnregisterClone(PyRevitClones.GetRegisteredClone(CloneName));
+            var outerDest = Path.Combine(_tempRoot, "outerDest");
+            PyRevitClones.DeployFromRepo("OuterClone", repoUrl: source, destPath: outerDest, installBinaries: false);
+            var innerDest = Path.Combine(outerDest, "OuterClone", "nested");
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: innerDest, installBinaries: false);
+            PyRevitClones.UnregisterClone(PyRevitClones.GetRegisteredClone("OuterClone"));
+            Directory.Delete(Path.Combine(innerDest, CloneName, "pyrevitlib", "pyrevit"), recursive: true);
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: keptDest, installBinaries: false));
+
+            Assert.That(ex.Message, Does.Contain("already registered at"));
+            var kept = Path.Combine(keptDest, CloneName).NormalizeAsPath();
+            Assert.That(
+                PyRevitClones.GetRegisteredClones(pruneStoredList: false)
+                    .Any(clone => clone.ClonePath.IsSamePathAs(kept)),
+                Is.False);
+        }
+
+        /// <summary>A resume with --skip-bin registers the folder without inspecting or installing binaries.</summary>
+        [Test]
+        public void DeployFromRepo_WhenResumingWithSkipBin_RegistersWithoutInstalling() {
+            var keptClone = CreateKeptClone(out var source, out var dest);
+            var build = Path.Combine(keptClone, "bin", "netfx", "pyrevit.exe");
+            Directory.CreateDirectory(Path.GetDirectoryName(build));
+            File.WriteAllText(build, "local");
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new InvalidOperationException("binaries must not be installed");
+
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false);
+
+            Assert.That(File.Exists(build), Is.True);
+            Assert.That(PyRevitClones.GetRegisteredClone(CloneName), Is.Not.Null);
         }
 
         /// <summary>A kept folder whose remote branch ref is gone is refused instead of throwing, and the tracking helpers treat it as untracked.</summary>
