@@ -89,14 +89,28 @@ class PropKeyValue(object):
         return state
 
     def __setstate__(self, state):
-        """Restore the state and convert the stored name back to DB.StorageType."""
+        """Restore the state and convert a stored datatype name to DB.StorageType.
+
+        A datatype already stored as the enum, as older builds wrote it, is kept.
+        """
         self.__dict__.update(state)
         if isinstance(self.datatype, PLAIN_TYPES):
             self.datatype = getattr(DB.StorageType, self.datatype)
 
 
 def match_prop(dest_inst, dest_type, src_props):
-    """Match given properties on target instance or type"""
+    """Match given properties on target instance or type.
+
+    Args:
+        dest_inst (DB.Element): element receiving the instance properties.
+        dest_type (DB.ElementType): element type receiving the type properties.
+        src_props (list[PropKeyValue]): properties to apply.
+
+    Note:
+        An ElementId property carries a saved integer id, rebuilt through
+        get_elementid_from_value() because DB.ElementId(int) can be rejected as
+        an ambiguous overload for a plain int on IronPython 2.7 with Revit 2024+.
+    """
     mlogger = get_logger(__name__)
     for pkv in src_props:
         mlogger.debug("Applying %s", pkv.name)
