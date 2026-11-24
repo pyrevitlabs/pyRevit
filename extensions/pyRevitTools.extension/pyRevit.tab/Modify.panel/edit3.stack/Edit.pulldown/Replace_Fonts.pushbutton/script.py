@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 import System
 import re
+from collections import OrderedDict
 
 from pyrevit import script, DB, HOST_APP, revit
 from pyrevit import forms
@@ -12,6 +13,10 @@ output = script.get_output()
 logger = script.get_logger()
 
 get_elementid_value = get_elementid_value_func()
+
+SWITCH_FAMILIES = "Fonts used in Families"
+SWITCH_TEXT_NOTES = "Text Notes Fonts in Project"
+SWITCH_DIMENSIONS = "Dimensions Fonts in Project"
 
 
 def rename_element_type_if_needed(element_type, old_font, new_font_name):
@@ -321,11 +326,13 @@ def main():
 
     choice, switches = forms.CommandSwitchWindow.show(
         ["Replace Fonts"],
-        switches={
-            "Fonts used in Families": True,
-            "Text Notes Fonts in Project": True,
-            "Dimensions Fonts in Project": True,
-        },
+        switches=OrderedDict(
+            [
+                (SWITCH_FAMILIES, True),
+                (SWITCH_TEXT_NOTES, True),
+                (SWITCH_DIMENSIONS, True),
+            ]
+        ),
         title="Change Font in Elements",
         message="Updates fonts in families, dimensions and text notes. "
         "Schedules and tags are not updated.",
@@ -336,7 +343,7 @@ def main():
 
     output.print_md("# Update Fonts To: **{}**".format(selected_font))
 
-    if switches["Fonts used in Families"]:
+    if switches[SWITCH_FAMILIES]:
         families = [
             family
             for family in DB.FilteredElementCollector(doc)
@@ -376,7 +383,7 @@ def main():
 
     text_types = []
     dim_types = []
-    if switches["Text Notes Fonts in Project"]:
+    if switches[SWITCH_TEXT_NOTES]:
         text_types = (
             DB.FilteredElementCollector(doc).OfClass(DB.TextNoteType).ToElements()
         )
@@ -386,7 +393,7 @@ def main():
             logger.debug("Updated text note type: {}: {} → {}".format(r[0], r[1], r[2]))
         output.print_md("\n**Total text types updated: {}**".format(len(result)))
 
-    if switches["Dimensions Fonts in Project"]:
+    if switches[SWITCH_DIMENSIONS]:
         dim_types = (
             DB.FilteredElementCollector(doc).OfClass(DB.DimensionType).ToElements()
         )
