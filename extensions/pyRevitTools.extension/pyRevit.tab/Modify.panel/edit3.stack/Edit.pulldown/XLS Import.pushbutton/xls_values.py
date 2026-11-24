@@ -21,6 +21,8 @@ except NameError:
 
 TEXT_TYPES = (basestring,)
 WHITESPACE_PATTERN = re.compile(r"\s+", re.UNICODE)
+GROUPED_INTEGER_PATTERN = re.compile(r"^(?:\d+|\d{1,3}(?:([ ,.])\d{3}(?:\1\d{3})*))$")
+GROUP_SEPARATOR_PATTERN = re.compile(r"[ ,.]")
 
 YES_LABELS = frozenset("yes true 1 y ja oui sí si sim да 예 是".split())
 NO_LABELS = frozenset("no false 0 n nein non não nao нет 아니요 否".split())
@@ -31,8 +33,8 @@ def parse_number(value):
 
     Text cells accept a decimal point or a decimal comma. When both
     separators appear, the last one is the decimal separator and the other
-    groups thousands. A lone comma followed by exactly three digits
-    (``1,234``) is ambiguous and rejected.
+    groups thousands; groups must be exactly three digits wide. A lone comma
+    followed by exactly three digits (``1,234``) is ambiguous and rejected.
 
     Args:
         value: A float from a numeric cell, or the text of a cell.
@@ -129,21 +131,38 @@ def format_text_value(value):
 
 
 def _parse_number_text(text):
-    text = text.strip().replace(" ", "").replace(" ", "")
-    has_dot = "." in text
-    has_comma = "," in text
-    if has_dot and has_comma:
-        decimal_separator = "." if text.rfind(".") > text.rfind(",") else ","
-        group_separator = "," if decimal_separator == "." else "."
-        text = text.replace(group_separator, "").replace(decimal_separator, ".")
-    elif has_comma:
-        digits_after_last_comma = len(text) - text.rfind(",") - 1
-        if text.count(",") == 1 and digits_after_last_comma == 3:
+    text = WHITESPACE_PATTERN.sub(" ", text.strip())
+    if "," not in text and " " not in text and text.count(".") <= 1:
+        return float(text)
+
+    sign = ""
+    if text[:1] in ("+", "-"):
+        sign, text = text[0], text[1:]
+    decimal_separator = _find_decimal_separator(text)
+    integer_part, fraction = text, ""
+    if decimal_separator:
+        integer_part, _, fraction = text.rpartition(decimal_separator)
+    if not GROUPED_INTEGER_PATTERN.match(integer_part) or (
+        decimal_separator and not fraction.isdigit()
+    ):
+        raise ValueError("'{}' is not a number".format(text))
+    digits = GROUP_SEPARATOR_PATTERN.sub("", integer_part)
+    return float("{}{}.{}".format(sign, digits, fraction or "0"))
+
+
+def _find_decimal_separator(text):
+    last_dot = text.rfind(".")
+    last_comma = text.rfind(",")
+    if last_dot >= 0 and last_comma >= 0:
+        return "." if last_dot > last_comma else ","
+    if last_comma >= 0:
+        if text.count(",") > 1:
+            return None
+        if len(text) - last_comma - 1 == 3:
             raise ValueError(
                 "'{}' is ambiguous: write it with a decimal point".format(text)
             )
-        if text.count(",") == 1:
-            text = text.replace(",", ".")
-        else:
-            text = text.replace(",", "")
-    return float(text)
+        return ","
+    if text.count(".") == 1:
+        return "."
+    return None

@@ -109,6 +109,22 @@ class NumberTests(unittest.TestCase):
         self.assertEqual(1234.5, xls_values.parse_number("1 234,5"))
         self.assertEqual(1234.5, xls_values.parse_number("1 234,5"))
 
+    def test_group_separators_must_group_three_digits(self):
+        for value in (
+            "1,23,45",
+            "12 34",
+            "1.23.456",
+            "1,234.56,7",
+            "1,234 567",
+        ):
+            with self.assertRaises(ValueError, msg=value):
+                xls_values.parse_number(value)
+
+    def test_signs_and_grouped_decimals(self):
+        self.assertEqual(-1234.5, xls_values.parse_number("-1.234,5"))
+        self.assertEqual(1234567.0, xls_values.parse_number("1.234.567"))
+        self.assertEqual(0.5, xls_values.parse_number(".5"))
+
     def test_lone_comma_before_three_digits_is_ambiguous(self):
         with self.assertRaises(ValueError):
             xls_values.parse_number("1,234")

@@ -95,6 +95,7 @@ def load_metadata(workbook):
 
 def parse_column(header):
     """Split a header cell into the parameter name and its unit tag."""
+    header = xls_values.format_text_value(header)
     tag_match = unit_tag_pattern.search(header)
     unit_tag = tag_match.group(1).strip() if tag_match else ""
     return Column(unit_postfix_pattern.sub("", header).strip(), unit_tag)
@@ -117,7 +118,7 @@ class ImportSummary(object):
     def skip(self, reason, param_name):
         self.skipped[reason][param_name] += 1
 
-    def print_report(self, has_metadata):
+    def print_report(self):
         lines = [
             "**Import complete.**",
             "",
@@ -134,7 +135,7 @@ class ImportSummary(object):
             counts = self.skipped[reason]
             if counts:
                 names = ", ".join(
-                    "`{}` ({})".format(name, count)
+                    "`{}` ({})".format(name.replace("`", "'"), count)
                     for name, count in sorted(counts.items(), key=lambda item: item[0])
                 )
                 lines.append(
@@ -147,13 +148,10 @@ class ImportSummary(object):
                 self.blank_cells
             )
         )
-        if has_metadata:
-            lines.append("- Units: read from the `_metadata` sheet")
-        else:
-            lines.append(
-                "- Units: no `_metadata` sheet, taken from the column header "
-                "symbols, project units where a header has none"
-            )
+        lines.append(
+            "- Units: from the `_metadata` sheet where it lists one, otherwise "
+            "from the column header symbol, otherwise project units"
+        )
         output.print_md("\n".join(lines))
 
 
@@ -392,7 +390,7 @@ def main():
             except Exception as e:
                 logger.error("Error processing row {}: {}".format(row_idx + 1, e))
 
-    summary.print_report(has_metadata=bool(metadata))
+    summary.print_report()
 
 
 if __name__ == "__main__":
