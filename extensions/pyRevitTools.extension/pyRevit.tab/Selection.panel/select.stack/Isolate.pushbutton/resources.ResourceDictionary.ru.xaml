@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="favourites_title">Выбор избранных категорий</sys:String>
+    <sys:String x:Key="favourites_button">Применить</sys:String>
+    <sys:String x:Key="window_title">Изолировать элементы</sys:String>
+    <sys:String x:Key="window_message">Временно изолировать:</sys:String>
+    <sys:String x:Key="option_room_tags">Марки помещений</sys:String>
+    <sys:String x:Key="option_model_groups">Группы модели</sys:String>
+    <sys:String x:Key="option_painted_elements">Раскрашенные элементы</sys:String>
+    <sys:String x:Key="option_model_elements">Элементы модели</sys:String>
+    <sys:String x:Key="transaction_isolate">Изолировать: {}</sys:String>
+    <sys:String x:Key="transaction_reset_isolate">Сброс временного скрытия/изоляции</sys:String>
+    <sys:String x:Key="nothing_to_isolate">Нечего изолировать. В активном виде нет элементов для «{}».</sys:String>
+</ResourceDictionary>

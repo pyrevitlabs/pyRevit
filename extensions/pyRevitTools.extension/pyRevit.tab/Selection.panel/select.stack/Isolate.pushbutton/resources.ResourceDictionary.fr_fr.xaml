@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="favourites_title">Sélectionner les catégories favorites</sys:String>
+    <sys:String x:Key="favourites_button">Appliquer</sys:String>
+    <sys:String x:Key="window_title">Isoler des éléments</sys:String>
+    <sys:String x:Key="window_message">Isoler temporairement :</sys:String>
+    <sys:String x:Key="option_room_tags">Étiquettes de pièce</sys:String>
+    <sys:String x:Key="option_model_groups">Groupes de modèles</sys:String>
+    <sys:String x:Key="option_painted_elements">Éléments peints</sys:String>
+    <sys:String x:Key="option_model_elements">Éléments de modèle</sys:String>
+    <sys:String x:Key="transaction_isolate">Isoler {}</sys:String>
+    <sys:String x:Key="transaction_reset_isolate">Réinitialiser le masquage/isolement temporaire</sys:String>
+    <sys:String x:Key="nothing_to_isolate">Rien à isoler. La vue active ne contient aucun élément pour « {} ».</sys:String>
+</ResourceDictionary>

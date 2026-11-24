@@ -9,54 +9,47 @@ title:
   pt_br: Isolar
 tooltip:
   en_us: |-
-    Temporarily isolate elements of a chosen category or type in the active view.
+    Choose a favorite category, or Room Tags, Model Groups, Painted Elements or Model Elements, and temporarily isolate those elements in the active view. Room Tags includes the rooms, Model Groups includes the group members, and an isolate that is already active is reset first.
 
     Shift-click:
-    Choose favorite categories for the isolate tool.
+    Choose your favorite categories from all categories of the project. The Pick button uses the same list.
   ko: |-
-    활성 뷰에서 선택한 카테고리 또는 유형의 요소를 임시로 격리합니다.
+    즐겨찾기 카테고리 또는 룸 태그, 모델 그룹, 페인트된 요소, 모델 요소를 선택하여 활성 뷰에서 해당 요소를 임시로 격리합니다. 룸 태그에는 룸이, 모델 그룹에는 그룹 구성원이 포함되며, 이미 활성화된 임시 격리는 먼저 재설정됩니다.
 
     Shift 키를 누르고 클릭:
-    격리 도구에서 사용할 즐겨찾기 카테고리를 선택합니다.
+    프로젝트의 모든 카테고리 중에서 즐겨찾기 카테고리를 선택합니다. 선택 버튼도 같은 목록을 사용합니다.
   fr_fr: |-
-    Isole temporairement dans la vue active les éléments d'une catégorie ou d'un type choisi.
+    Choisissez une catégorie favorite, ou Étiquettes de pièce, Groupes de modèles, Éléments peints ou Éléments de modèle, et isolez temporairement ces éléments dans la vue active. Étiquettes de pièce inclut les pièces, Groupes de modèles inclut les membres des groupes, et un isolement déjà actif est d'abord réinitialisé.
 
     Maj+clic :
-    Choisir les catégories favorites de l'outil d'isolation.
+    Choisir vos catégories favorites parmi toutes les catégories du projet. Le bouton Sélectionner utilise la même liste.
   ru: |-
-    Временно изолирует в текущем виде элементы выбранной категории или типа.
+    Выберите избранную категорию либо «Марки помещений», «Группы модели», «Раскрашенные элементы» или «Элементы модели» и временно изолируйте эти элементы в текущем виде. «Марки помещений» включает помещения, «Группы модели» включает элементы групп, а уже действующая временная изоляция сначала сбрасывается.
 
     Shift + Щелчок:
-    Выбрать избранные категории для инструмента изоляции.
+    Выбрать избранные категории из всех категорий проекта. Кнопка «Выбрать» использует тот же список.
   chinese_s: |-
-    在活动视图中临时隔离所选类别或类型的图元。
+    选择一个收藏类别，或“房间标记”“模型组”“已涂刷图元”“模型图元”，并在活动视图中临时隔离这些图元。“房间标记”包含房间，“模型组”包含组成员；已启用的临时隔离会先被重设。
 
     按住 Shift 键单击：
-    选择隔离工具的收藏类别。
+    从项目的所有类别中选择收藏类别。“选择”按钮使用同一列表。
   es_es: |-
-    Aísla temporalmente en la vista activa los elementos de una categoría o tipo elegido.
+    Elija una categoría favorita, o Etiquetas de habitación, Grupos de modelo, Elementos pintados o Elementos de modelo, y aísle temporalmente esos elementos en la vista activa. Etiquetas de habitación incluye las habitaciones, Grupos de modelo incluye los miembros del grupo y primero se restablece cualquier aislamiento temporal que ya esté activo.
 
     Mayús-clic:
-    Elegir las categorías favoritas de la herramienta de aislamiento.
+    Elegir las categorías favoritas entre todas las categorías del proyecto. El botón Elegir usa la misma lista.
   de_de: |-
-    Isoliert vorübergehend Elemente einer ausgewählten Kategorie oder eines Typs in der aktiven Ansicht. Folgende Kategorien stehen als Schnellauswahl zur Verfügung:
-    1) Flächenbegrenzungen
-    2) Fenster
-    3) Geschossdecken
-    4) Skelettbau
-    5) Stützen
-    6) Tragwerkstützen
-    7) Türen
-    8) Wände
-    9) Room Tags (Raumbeschriftungen)
-    10) Model Groups (Modellgruppen)
-    11) Painted Elemente (Eingefärbte Elemente)
-    12) Model Elements (Modellelemente)
+    Eine Favoritenkategorie oder Raumbeschriftungen, Modellgruppen, Eingefärbte Elemente oder Modellelemente wählen und diese Elemente in der aktiven Ansicht vorübergehend isolieren. Raumbeschriftungen schließt die Räume ein, Modellgruppen die Gruppenmitglieder; ein bereits aktives temporäres Isolieren wird zuerst zurückgesetzt.
 
     Bei gedrückter Umschalttaste klicken:
-    Favoritenkategorien für das Isolieren auswählen.
+    Die Favoritenkategorien aus allen Kategorien des Projekts auswählen. Die Schaltfläche „Auswahl“ verwendet dieselbe Liste.
   pt_br: |-
-    Isola temporariamente na vista ativa os elementos de uma categoria ou tipo escolhido.
+    Escolha uma categoria favorita, ou Etiquetas de ambiente, Grupos de modelo, Elementos pintados ou Elementos de modelo, e isole temporariamente esses elementos na vista ativa. Etiquetas de ambiente inclui os ambientes, Grupos de modelo inclui os membros dos grupos e qualquer isolamento temporário já ativo é redefinido primeiro.
 
     Clique mantendo a tecla Shift pressionada:
-    Escolher categorias favoritas para a ferramenta de isolamento.
+    Escolher as categorias favoritas entre todas as categorias do projeto. O botão Selecionar usa a mesma lista.
+context:
+  not_any:
+    - active-schedule
+    - active-project-browser
+    - active-system-browser
