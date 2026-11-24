@@ -91,7 +91,7 @@ class PropKeyValue(object):
     def __setstate__(self, state):
         """Restore the state and convert the stored name back to DB.StorageType."""
         self.__dict__.update(state)
-        if isinstance(self.datatype, (str, type(""))):
+        if isinstance(self.datatype, PLAIN_TYPES):
             self.datatype = getattr(DB.StorageType, self.datatype)
 
 
