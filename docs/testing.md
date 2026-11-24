@@ -167,11 +167,12 @@ Run `pipenv run check-py3 <path>` for what it can see (see [Linters](#what-the-l
 | IronPython 2.7 | A non-ASCII character in the source without a `# -*- coding: utf-8 -*-` line is a `SyntaxError` and the button does not load. CPython and IronPython 3 read source as UTF-8 and do not need the line | No |
 | IronPython 2.7 | `io.open(path, encoding="utf-16")` silently returns an empty string instead of the file's text. Check what a read returned, or read bytes and decode them | No |
 | IronPython 2.7 | `str` is bytes and `unicode` is text; `"é"` and `u"é"` are different types, and mixing them raises `UnicodeDecodeError` once a non-ASCII name arrives. `unicode` itself does not exist in Python 3, so use `six.text_type` for code that runs on every engine | Partly: `check-py3` flags the name `unicode` |
-| IronPython 2.7 | `**kwargs,` with a trailing comma in a signature or call does not parse | Yes: `check_ipy2_compat.py`, run by a pre-commit hook |
+| IronPython 2.7 | `**kwargs,` with a trailing comma in a signature or call does not parse | Yes: `check_ipy2_compat.py`, run by a pre-commit hook on `pyrevitlib/` only |
 | IronPython 3.4.2 | `print` in a session without a console fails with `unknown encoding: codepage___0`. Write to `script.get_output()` or a logger | No |
 | IronPython 3.4.2 | A script that leaves a Python worker thread running when it returns can end with `engine_error` and no traceback. Join every thread before the script ends | No |
 | CPython 3.12 | `open()` without `encoding=` uses the Windows ANSI code page (usually cp1252), not UTF-8. Always pass `encoding="utf-8"` | No |
-| CPython 3.12 | pythonnet has no named indexers (`element.Parameter[...]`) and interface-typed properties return the interface; see [Differences from IronPython](build-extensions/scripting/cpython.md#differences-from-ironpython) | Yes: `CLR-NAMED-INDEXER` in `check-py3` |
+| CPython 3.12 | pythonnet has no named indexers (`element.Parameter[...]` or `element.Geometry[...]`) | Yes: `CLR-NAMED-INDEXER` in `check-py3` |
+| CPython 3.12 | Interface-typed properties return the interface, not the concrete object; see [Differences from IronPython](build-extensions/scripting/cpython.md#differences-from-ironpython) | No |
 
 The last column says whether a linter reports the trap. "No" means only a run on that engine finds it.
 
@@ -183,7 +184,7 @@ The last column says whether a linter reports the trap. "No" means only a run on
 | Imperial project | The same with `DB.UnitSystem.Imperial` | Same |
 | Internal feet | Read the raw `Parameter.AsDouble()` of a length, area, volume or angle | No raw internal value reaches a user, a threshold or a written file unless the file's format says it is feet |
 
-Revit stores lengths in feet, areas in square feet, volumes in cubic feet and angles in radians, whatever the project shows. Convert with `UnitUtils.ConvertFromInternalUnits` / `ConvertToInternalUnits` and a `ForgeTypeId`, or use the `pyrevit.revit.units` helpers (`format_length`, `format_area`, `format_slope`, `parse_length`, `parse_slope`), which follow the document's display units. `DisplayUnitType` does not exist on newer Revit years (see [Revit year](#revit-year)). A fixed number in a script, such as `if length > 500`, is a unit bug unless it says which unit it is in. Include area, volume and an angle in the cases, and a value that rounds differently in the two systems.
+Revit stores lengths in feet, areas in square feet, volumes in cubic feet and angles in radians, whatever the project shows. Convert with `UnitUtils.ConvertFromInternalUnits` / `ConvertToInternalUnits` and a `ForgeTypeId`. The `pyrevit.revit.units` helpers `format_length`, `format_area` and `format_slope` follow the document's display units, but `parse_length` and `parse_slope` do not: `parse_length` treats a bare number as feet, so input that should follow the project's units needs explicit units or a parser that reads them. `DisplayUnitType` does not exist on newer Revit years (see [Revit year](#revit-year)). A fixed number in a script, such as `if length > 500`, is a unit bug unless it says which unit it is in. Include area, volume and an angle in the cases, and a value that rounds differently in the two systems.
 
 ### Locale and text
 
@@ -214,7 +215,8 @@ Some API changes alter behaviour instead of removing a member: `ElementId` moved
 | Linked model | A project with a Revit link; select an element of the link | The code uses the link's document and transform, not the host's |
 | Workshared model | A central model with elements owned by another user | A refused edit is reported and does not abort the rest |
 | Design options, phases | A model with a second design option and phase | The code sees the elements it should, not every option's |
-| Read-only or detached model | Open a model read-only or detached | Saving or editing fails with a clear message |
+| Read-only model | Open a model read-only | An edit or save that Revit refuses is reported clearly |
+| Detached model | Open a workshared model with **Detach from Central** | Supported edits and saves work on the separate model without syncing to the original central model |
 
 ### View and selection
 
@@ -245,7 +247,7 @@ Some API changes alter behaviour instead of removing a member: `ElementId` moved
 | Linter | Catches | Does not catch |
 |---|---|---|
 | `pipenv run check-py3 <path>` | Python 2 only names, iterators and modules, CLR APIs that behave differently on CPython (see [`dev/checks/README.md`](https://github.com/pyrevitlabs/pyRevit/blob/develop/dev/checks/README.md)) | Integer division, a missing coding line, file encodings, units, locale |
-| `python dev/checks/check_ipy2_compat.py` | `**kwargs,` | Everything else that IronPython 2.7 cannot parse |
+| `python dev/checks/check_ipy2_compat.py <file.py>` | `**kwargs,` | Everything else that IronPython 2.7 cannot parse |
 | `pipenv run check-revit-api` | Revit API members that do not exist on every year the code runs on | What a changed member returns, units, locale, document state |
 
 Units, locale, document state, the view and selection, the environment and the failure paths need a person or a live test; no linter reaches them.
