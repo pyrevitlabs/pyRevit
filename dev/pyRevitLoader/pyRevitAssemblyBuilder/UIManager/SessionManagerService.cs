@@ -589,12 +589,16 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// per-instance files.
         /// </summary>
         /// <returns>
-        /// False for any other name, including document data files such as
-        /// <c>pyRevit_2025_{id}_{project}.pym</c>, which must survive startup cleanup.
+        /// True if the digits directly after the version are followed by an underscore. Names
+        /// without that shape, such as <c>pyRevit_2025_{id}_{project}.pym</c> with a non-numeric
+        /// id, return false.
         /// </returns>
         /// <remarks>
         /// The pid must directly follow the version. Do not allow a user segment before it: a greedy
         /// pattern would take a digit run from inside a project name as the pid.
+        /// Known limitation: a document data file whose slot name starts with digits and an
+        /// underscore (<c>pyRevit_2025_123_x_{project}.pym</c>) is indistinguishable from an
+        /// instance file and also returns true.
         /// </remarks>
         internal static bool TryGetInstanceFilePid(string fileName, out int pid)
         {
