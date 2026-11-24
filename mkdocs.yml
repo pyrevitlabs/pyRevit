@@ -117,6 +117,8 @@ nav:
     - Tab Coloring: tools/tab-coloring.md
     - Get RVT Info: tools/get-rvt-info.md
     - Packages and Tags: tools/packages-and-tags.md
+    - Selection Memory: tools/selection-memory.md
+    - Copy State and Paste State: tools/copy-paste-state.md
   - Build Extensions:
     - build-extensions/index.md
     - How pyRevit works: build-extensions/how-pyrevit-works.md
