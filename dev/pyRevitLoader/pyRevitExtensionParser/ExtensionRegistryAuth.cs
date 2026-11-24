@@ -14,19 +14,32 @@ namespace pyRevitExtensionParser
         internal const string RegistryFileName = "extensions.json";
 
         private static Dictionary<string, RegistryAuthEntry> _registryAuthByName;
+        private static HashSet<string> _loadedSourcePaths;
 
         internal sealed class RegistryAuthEntry
         {
             public List<string> AuthorizedUsers { get; } = new List<string>();
             public List<string> AuthorizedGroups { get; } = new List<string>();
+            public List<string> UnreadableAccessListLocations { get; } = new List<string>();
         }
 
         internal static void ClearCache()
         {
             _registryAuthByName = null;
+            _loadedSourcePaths = null;
         }
 
-        internal static void ApplyRegistryAuthorization(
+        /// <summary>
+        /// Merges the registry access lists naming this extension into
+        /// <paramref name="authUsers"/> and <paramref name="authGroups"/>.
+        /// </summary>
+        /// <returns>
+        /// True when a registry entry naming this extension declares an access list that
+        /// could not be read; the caller must then treat the extension as restricted.
+        /// Each such entry is logged as an error here, so entries naming no loaded
+        /// extension are never reported.
+        /// </returns>
+        internal static bool ApplyRegistryAuthorization(
             string extDir,
             string folderName,
             string manifestName,
@@ -34,7 +47,7 @@ namespace pyRevitExtensionParser
             ref List<string> authGroups)
         {
             if (string.IsNullOrWhiteSpace(extDir))
-                return;
+                return false;
 
             var lookupNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrWhiteSpace(folderName))
@@ -43,10 +56,11 @@ namespace pyRevitExtensionParser
                 lookupNames.Add(manifestName);
 
             if (lookupNames.Count == 0)
-                return;
+                return false;
 
             EnsureRegistryCache(extDir);
 
+            var accessListUnreadable = false;
             foreach (var lookupName in lookupNames)
             {
                 if (!_registryAuthByName.TryGetValue(lookupName, out var entry))
@@ -54,29 +68,40 @@ namespace pyRevitExtensionParser
 
                 MergeAuthList(ref authUsers, entry.AuthorizedUsers);
                 MergeAuthList(ref authGroups, entry.AuthorizedGroups);
+                foreach (var location in entry.UnreadableAccessListLocations)
+                {
+                    ExtensionParser.LogAuthDefinitionUnreadable(location);
+                    accessListUnreadable = true;
+                }
             }
+
+            return accessListUnreadable;
         }
 
         /// <summary>
-        /// Builds the registry auth cache into a local map and publishes it to
-        /// <see cref="_registryAuthByName"/> only once fully populated. Collecting
-        /// the source paths reads config, which can clear this cache re-entrantly
-        /// (e.g. a locale change during parsing), and that must not leave the field
-        /// null.
+        /// Builds the registry auth cache from every configured extension root and
+        /// lookup source, plus the registry next to <paramref name="extDir"/>, so the
+        /// result does not depend on which extension is parsed first. Sources not yet
+        /// loaded (such as the registry beside a later extension) are added on demand.
+        /// The cache is built into local maps and published only once fully populated.
+        /// Collecting the source paths reads config, which can clear this cache
+        /// re-entrantly (e.g. a locale change during parsing), and that must not leave
+        /// the fields null.
         /// </summary>
         private static void EnsureRegistryCache(string extDir)
         {
-            if (_registryAuthByName != null)
-                return;
+            var sourcePaths = CollectDefinitionSourcePaths(extDir);
+            var cache = _registryAuthByName ?? new Dictionary<string, RegistryAuthEntry>(StringComparer.OrdinalIgnoreCase);
+            var loaded = _loadedSourcePaths ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            var cache = new Dictionary<string, RegistryAuthEntry>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var sourcePath in CollectDefinitionSourcePaths(extDir))
+            foreach (var sourcePath in sourcePaths)
             {
-                LoadRegistryAuthFromFile(sourcePath, cache);
+                if (loaded.Add(sourcePath))
+                    LoadRegistryAuthFromFile(sourcePath, cache);
             }
 
             _registryAuthByName = cache;
+            _loadedSourcePaths = loaded;
         }
 
         internal static IEnumerable<string> CollectDefinitionSourcePaths(string extDir)
@@ -88,10 +113,7 @@ namespace pyRevitExtensionParser
                 var fullExtDir = Path.GetFullPath(extDir);
                 foreach (var root in ExtensionParser.GetExtensionRootsForAuthLookup())
                 {
-                    if (IsUnderRoot(fullExtDir, root))
-                    {
-                        paths.Add(Path.Combine(Path.GetFullPath(root), RegistryFileName));
-                    }
+                    paths.Add(Path.Combine(Path.GetFullPath(root), RegistryFileName));
                 }
 
                 var parentDir = Path.GetDirectoryName(fullExtDir);
@@ -144,9 +166,10 @@ namespace pyRevitExtensionParser
                     if (string.IsNullOrWhiteSpace(name))
                         continue;
 
-                    var users = ParseStringArray(entry["authusers"]);
-                    var groups = ParseStringArray(entry["authgroups"]);
-                    if (users.Count == 0 && groups.Count == 0)
+                    var accessListUnreadable = false;
+                    var users = ExtensionParser.ReadAuthList(entry["authusers"], ref accessListUnreadable);
+                    var groups = ExtensionParser.ReadAuthList(entry["authgroups"], ref accessListUnreadable);
+                    if (users == null && groups == null && !accessListUnreadable)
                         continue;
 
                     if (!cache.TryGetValue(name, out var authEntry))
@@ -157,6 +180,9 @@ namespace pyRevitExtensionParser
 
                     MergeAuthList(authEntry.AuthorizedUsers, users);
                     MergeAuthList(authEntry.AuthorizedGroups, groups);
+                    var entryLocation = "registry entry '" + name + "' in " + filePath;
+                    if (accessListUnreadable && !authEntry.UnreadableAccessListLocations.Contains(entryLocation))
+                        authEntry.UnreadableAccessListLocations.Add(entryLocation);
                 }
             }
             catch (Exception ex)
@@ -182,23 +208,6 @@ namespace pyRevitExtensionParser
             yield return json;
         }
 
-        private static List<string> ParseStringArray(JToken token)
-        {
-            var values = new List<string>();
-            var array = token as JArray;
-            if (array == null)
-                return values;
-
-            foreach (var item in array)
-            {
-                var value = item?.ToString();
-                if (!string.IsNullOrWhiteSpace(value))
-                    values.Add(value);
-            }
-
-            return values;
-        }
-
         private static void MergeAuthList(ref List<string> target, List<string> source)
         {
             if (source == null || source.Count == 0)
@@ -212,20 +221,14 @@ namespace pyRevitExtensionParser
 
         private static void MergeAuthList(List<string> target, List<string> source)
         {
+            if (source == null)
+                return;
+
             foreach (var value in source)
             {
                 if (!target.Exists(x => string.Equals(x, value, StringComparison.OrdinalIgnoreCase)))
                     target.Add(value);
             }
-        }
-
-        private static bool IsUnderRoot(string fullPath, string root)
-        {
-            var fullRoot = Path.GetFullPath(root);
-            if (!fullRoot.EndsWith(Path.DirectorySeparatorChar.ToString()))
-                fullRoot += Path.DirectorySeparatorChar;
-
-            return fullPath.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

@@ -99,23 +99,20 @@ namespace pyRevitLabs.PyRevit {
 
         // equality checks
         public override bool Equals(object obj) {
-            var other = obj as PyRevitClone;
-
-            if (ClonePath != other.ClonePath)
-                return false;
-
-            return true;
+            if (ReferenceEquals(this, obj))
+                return true;
+            return obj is PyRevitClone other && ClonePath.IsSamePathAs(other.ClonePath);
         }
 
         public override int GetHashCode() {
-            return ClonePath.GetHashCode();
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(ClonePath.ToComparablePath() ?? ClonePath);
         }
 
         public bool Matches(string copyNameOrPath) {
             if (Name.ToLower() == copyNameOrPath.ToLower())
                 return true;
             try {
-                return ClonePath == copyNameOrPath.NormalizeAsPath();
+                return ClonePath.IsSamePathAs(copyNameOrPath);
             }
             catch {
                 return false;
@@ -159,8 +156,22 @@ namespace pyRevitLabs.PyRevit {
 
         // static methods ============================================================================================
         // determine if this is a git repo
+        /// <summary>
+        /// True when the clone is a git checkout: its <c>.git</c> is a folder, or, in a git worktree
+        /// or submodule, a file whose <c>gitdir:</c> line points at an existing folder.
+        /// </summary>
         public static bool IsDeployedWithRepo(string clonePath) {
-            return CommonUtils.VerifyPath(Path.Combine(clonePath, PyRevitLabsConsts.DefaultGitDirName));
+            var gitPath = Path.Combine(clonePath, PyRevitLabsConsts.DefaultGitDirName);
+            if (CommonUtils.VerifyPath(gitPath))
+                return true;
+            if (!File.Exists(gitPath))
+                return false;
+            const string gitDirPrefix = "gitdir:";
+            var pointer = File.ReadLines(gitPath).FirstOrDefault()?.Trim();
+            if (pointer is null || !pointer.StartsWith(gitDirPrefix, StringComparison.Ordinal))
+                return false;
+            var gitDir = pointer.Substring(gitDirPrefix.Length).Trim();
+            return gitDir.Length > 0 && Directory.Exists(Path.Combine(clonePath, gitDir));
         }
 
         // get extensions path

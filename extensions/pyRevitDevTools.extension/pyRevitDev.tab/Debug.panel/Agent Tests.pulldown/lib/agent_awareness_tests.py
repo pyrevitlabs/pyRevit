@@ -7,6 +7,9 @@ one request so it starts from a clean slate, and leaves the model, view and
 selection as it found them.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
 from System.Collections.Generic import List
 
 from pyrevit import DB

@@ -8,8 +8,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using pyRevitLabs.Common;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
+using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 
@@ -33,9 +35,14 @@ namespace pyRevitCLI {
     /// Revit. Once a tool call has sent a request, a failure that the host did not report itself
     /// is returned with <c>outcome</c> <c>unknown</c> and that <c>request_id</c>, never as bad
     /// arguments, because the request may have run.
-    /// Calls to one Revit are serialized, because its host serves one connection at a time; calls
+    /// Calls to one Revit are serialized, because its host runs one request at a time and an older
+    /// host also accepts one connection at a time; calls
     /// to different Revit sessions never wait for each other. <c>notifications/cancelled</c> stops
     /// a call that waits for its turn or for Revit's answer, but cannot stop what Revit already runs.
+    /// When input ends, calls still open keep their answer for <see cref="DefaultInputClosedGracePeriod"/>
+    /// (a one-shot client may close stdin and still wait for its answer), then they are cancelled and
+    /// the process waits at most <see cref="AbandonedCallsWait"/> more before exiting anyway, so a
+    /// vanished client can't keep the process, and the folder it locks, alive indefinitely.
     /// </remarks>
     internal sealed class PyRevitMcpServer {
         private const string LatestProtocolVersion = "2025-06-18";
@@ -43,9 +50,13 @@ namespace pyRevitCLI {
             "2025-06-18", "2025-03-26", "2024-11-05",
         };
         private static readonly TimeSpan ProgressInterval = TimeSpan.FromSeconds(10);
+        internal static readonly TimeSpan DefaultInputClosedGracePeriod = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan AbandonedCallsWait = TimeSpan.FromSeconds(10);
         private const int MaxRunResultPage = 200 * 1024;
         private const int MaxTitleLength = 120;
         private const int MaxReasonLength = 300;
+        private const int DefaultRecordingEvents = 200;
+        private const int MaxRecordingEvents = 1000;
 
         private readonly string defaultRevit;
         private readonly object writeLock = new object();
@@ -73,18 +84,31 @@ namespace pyRevitCLI {
         /// <summary>
         /// Serves requests read from <paramref name="input"/> until it ends, writing responses to
         /// <paramref name="output"/>. Lets tests drive the server without a process.
+        /// <paramref name="inputClosedGracePeriod"/> is how long calls still open after the input ended may
+        /// keep running before they are cancelled; <see cref="DefaultInputClosedGracePeriod"/> when omitted.
         /// </summary>
-        internal static void Serve(string defaultRevit, TextReader input, TextWriter output) {
-            new PyRevitMcpServer(defaultRevit).Run(input, output);
+        internal static void Serve(string defaultRevit, TextReader input, TextWriter output, TimeSpan? inputClosedGracePeriod = null) {
+            new PyRevitMcpServer(defaultRevit).Run(input, output, inputClosedGracePeriod ?? DefaultInputClosedGracePeriod);
         }
 
-        private void Run(TextReader input, TextWriter output) {
+        private string ReadRequestLine(BoundedLineReader lines) {
+            try {
+                return lines.ReadLine();
+            }
+            catch (InvalidDataException ex) {
+                Write(Error(null, -32700, "Parse error: " + ex.Message));
+                return string.Empty;
+            }
+        }
+
+        private void Run(TextReader input, TextWriter output, TimeSpan inputClosedGracePeriod) {
             LogManager.Configuration = new LoggingConfiguration();
             this.output = output;
 
-            var inFlight = new List<Task>();
+            var inFlight = new List<(Task Task, CancellationTokenSource Cancellation, string Key)>();
+            var lines = new BoundedLineReader(input);
             string line;
-            while ((line = input.ReadLine()) != null) {
+            while ((line = ReadRequestLine(lines)) != null) {
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
 
@@ -102,7 +126,7 @@ namespace pyRevitCLI {
                 var method = (message["method"] as JValue)?.Value as string;
                 var id = message["id"];
                 if (id == null) {
-                    if (method == "notifications/cancelled")
+                    if (method == "notifications/cancelled" && (message["jsonrpc"] as JValue)?.Value as string == "2.0")
                         Cancel((message["params"] as JObject)?["requestId"]);
                     continue;
                 }
@@ -133,19 +157,19 @@ namespace pyRevitCLI {
                             Write(Result(id, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }));
                             break;
                         case "tools/call":
-                            inFlight.RemoveAll(task => task.IsCompleted);
+                            inFlight.RemoveAll(call => call.Task.IsCompleted);
                             var cancellation = new CancellationTokenSource();
                             var key = id.ToString(Formatting.None);
                             var tracked = pendingCalls.TryAdd(key, cancellation);
-                            inFlight.Add(Task.Run(() => {
+                            inFlight.Add((Task.Run(() => {
                                 try {
-                                    CallTool(id, parameters, cancellation.Token);
+                                    CallTool(id, parameters, cancellation);
                                 }
                                 finally {
                                     if (tracked)
                                         pendingCalls.TryRemove(key, out _);
                                 }
-                            }));
+                            }), cancellation, key));
                             break;
                         default:
                             Write(Error(id, -32601, "Method not found"));
@@ -157,7 +181,15 @@ namespace pyRevitCLI {
                 }
             }
 
-            Task.WaitAll(inFlight.ToArray());
+            var openTasks = inFlight.Select(call => call.Task).ToArray();
+            if (Task.WaitAll(openTasks, inputClosedGracePeriod))
+                return;
+            foreach (var call in inFlight)
+                Cancel(call.Cancellation);
+            if (Task.WaitAll(openTasks, AbandonedCallsWait))
+                return;
+            var abandoned = inFlight.Where(call => !call.Task.IsCompleted).Select(call => call.Key);
+            System.Console.Error.WriteLine("pyrevit mcp: exiting with calls still running (request ids: " + string.Join(", ", abandoned) + ")");
         }
 
         /// <remarks>
@@ -180,13 +212,29 @@ namespace pyRevitCLI {
             };
         }
 
+        /// <remarks>
+        /// A call whose answer is being written holds its lock; the cancel then has nothing left to
+        /// stop, so it is dropped instead of making the reader wait for a slow client's stdout.
+        /// </remarks>
         private void Cancel(JToken requestId) {
-            if (requestId != null && pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
-                cancellation.Cancel();
+            if (requestId == null || !pendingCalls.TryGetValue(requestId.ToString(Formatting.None), out var cancellation))
+                return;
+            Cancel(cancellation);
         }
 
-        private void CallTool(JToken id, JObject parameters, CancellationToken cancellation) {
-            callCancellation.Value = cancellation;
+        private static void Cancel(CancellationTokenSource cancellation) {
+            if (!Monitor.TryEnter(cancellation))
+                return;
+            try {
+                cancellation.Cancel();
+            }
+            finally {
+                Monitor.Exit(cancellation);
+            }
+        }
+
+        private void CallTool(JToken id, JObject parameters, CancellationTokenSource cancellation) {
+            callCancellation.Value = cancellation.Token;
             Timer progress = null;
             sentRequestId.Value = null;
             try {
@@ -194,11 +242,11 @@ namespace pyRevitCLI {
                 try {
                     var name = (parameters["name"] as JValue)?.Value as string;
                     if (string.IsNullOrWhiteSpace(name)) {
-                        WriteUnlessClosed(Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
+                        AnswerUnlessCancelled(cancellation, Error(id, -32602, "Invalid params: missing or invalid 'name'; expected a non-empty string."));
                         return;
                     }
                     if (parameters["arguments"] != null && parameters["arguments"] is not JObject) {
-                        WriteUnlessClosed(Error(id, -32602, "Invalid params: 'arguments' must be an object."));
+                        AnswerUnlessCancelled(cancellation, Error(id, -32602, "Invalid params: 'arguments' must be an object."));
                         return;
                     }
                     var arguments = parameters["arguments"] as JObject ?? new JObject();
@@ -237,10 +285,23 @@ namespace pyRevitCLI {
                 }
                 StopProgress(progress);
                 progress = null;
-                WriteUnlessClosed(Result(id, result));
+                AnswerUnlessCancelled(cancellation, Result(id, result));
             }
             finally {
                 StopProgress(progress);
+            }
+        }
+
+        /// <remarks>
+        /// Takes the output lock before the call's own lock, so while the answer waits for another
+        /// call's answer to be written, <see cref="Cancel"/> can still stop it.
+        /// </remarks>
+        private void AnswerUnlessCancelled(CancellationTokenSource cancellation, JObject message) {
+            lock (writeLock) {
+                lock (cancellation) {
+                    if (!cancellation.IsCancellationRequested)
+                        WriteUnlessClosed(message);
+                }
             }
         }
 
@@ -528,23 +589,63 @@ namespace pyRevitCLI {
                 ?? throw new AgentClientException("run_not_found", "No recorded run with id " + runId);
 
             var responsePath = Path.Combine(runDir, "response.json");
-            var run = File.Exists(responsePath) ? JObject.Parse(File.ReadAllText(responsePath)) : new JObject();
+            var run = File.Exists(responsePath) ? (JObject)JsonText.Parse(File.ReadAllText(responsePath)) : new JObject();
             run["script"] = ReadIfExists(Path.Combine(runDir, "script.py"));
 
             var resultPath = Path.Combine(runDir, "result.json");
             if (File.Exists(resultPath)) {
-                var full = File.ReadAllText(resultPath);
                 var offset = Math.Max(0, arguments.Value<int?>("offset") ?? 0);
                 var length = Math.Min(MaxRunResultPage, Math.Max(1, arguments.Value<int?>("length") ?? MaxRunResultPage));
-                var page = offset < full.Length ? full.Substring(offset, Math.Min(length, full.Length - offset)) : string.Empty;
-                run["result_page"] = new JObject {
-                    ["offset"] = offset,
-                    ["length"] = page.Length,
-                    ["total_length"] = full.Length,
-                    ["text"] = page,
-                };
+                run["result_page"] = ReadResultPage(resultPath, offset, length);
             }
             return run;
+        }
+
+        private static readonly string[] RecordingArguments = { "recording_id", "offset", "limit" };
+
+        private static JToken GetRecording(JObject arguments) {
+            var unknown = arguments.Properties().Select(property => property.Name).FirstOrDefault(name => !RecordingArguments.Contains(name));
+            if (unknown != null)
+                throw new AgentClientException("invalid_params", "Unknown argument '" + unknown + "'. Use recording_id, offset and limit.");
+            var recordingId = arguments.Value<string>("recording_id");
+            if (string.IsNullOrWhiteSpace(recordingId))
+                return new JObject { ["recordings"] = new JArray(AgentRecordingReader.List(PyRevitAgentClient.RecordingsDir, 20)) };
+            var offset = Math.Max(0, OptionalInt(arguments, "offset") ?? 0);
+            var limit = Math.Min(MaxRecordingEvents, Math.Max(1, OptionalInt(arguments, "limit") ?? DefaultRecordingEvents));
+            var directory = AgentRecordingReader.FindDirectory(PyRevitAgentClient.RecordingsDir, recordingId)
+                ?? throw new AgentClientException("recording_not_found", "No recording with id " + recordingId);
+            return AgentRecordingReader.ReadRecording(directory, offset, limit);
+        }
+
+        private static int? OptionalInt(JObject arguments, string name) {
+            var token = arguments[name];
+            if (token == null || token.Type == JTokenType.Null)
+                return null;
+            if (token.Type != JTokenType.Integer || token.Value<long>() > int.MaxValue || token.Value<long>() < int.MinValue)
+                throw new AgentClientException("invalid_params", "'" + name + "' must be an integer.");
+            return token.Value<int>();
+        }
+
+        private static JObject ReadResultPage(string path, int offset, int length) {
+            var page = new StringBuilder();
+            var buffer = new char[64 * 1024];
+            long total = 0;
+            using (var reader = new StreamReader(path)) {
+                int read;
+                while ((read = reader.Read(buffer, 0, buffer.Length)) > 0) {
+                    var from = Math.Max(offset, total);
+                    var to = Math.Min((long)offset + length, total + read);
+                    if (to > from)
+                        page.Append(buffer, (int)(from - total), (int)(to - from));
+                    total += read;
+                }
+            }
+            return new JObject {
+                ["offset"] = offset,
+                ["length"] = page.Length,
+                ["total_length"] = total,
+                ["text"] = page.ToString(),
+            };
         }
 
         private static string ReadIfExists(string path) {
@@ -873,7 +974,7 @@ namespace pyRevitCLI {
                 new McpTool("capture_view", readOnly: false, destructive: false, new[] { "title", "document" },
                     () => ("Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "
                         + "through Revit and works for any view by name or id; a name shared by several views fails with "
-                        + "view_ambiguous listing their ids. mode 'viewport' renders an open view through Revit "
+                        + "view_ambiguous listing their ids; pass 'view_type' to narrow by type. mode 'viewport' renders an open view through Revit "
                         + "cropped to the region its window shows now: the user's zoom, pan and temporary isolate, without "
                         + "selection highlight, and unaffected by other windows. mode 'screen' captures the active view's window "
                         + "exactly as the user sees it, including selection and temporary isolate; it fails with view_not_active "
@@ -886,7 +987,11 @@ namespace pyRevitCLI {
                         new JObject {
                             ["view"] = new JObject {
                                 ["type"] = "string",
-                                ["description"] = "'active' (default), '3d', a view name, or a view id.",
+                                ["description"] = "'active' (default), '3d', a view name, a sheet number, or a view id.",
+                            },
+                            ["view_type"] = new JObject {
+                                ["type"] = "string",
+                                ["description"] = "Optional Revit ViewType name such as FloorPlan, CeilingPlan, Section, ThreeD or DrawingSheet; keeps only views of that type when a name is shared. Not with view 'active' or '3d'.",
                             },
                             ["mode"] = new JObject {
                                 ["type"] = "string",
@@ -943,6 +1048,7 @@ namespace pyRevitCLI {
                         }),
                     arguments => CallRevit(arguments, "capture", WithDocument(arguments, WithTitle(arguments, new JObject {
                         ["view"] = arguments["view"],
+                        ["view_type"] = arguments["view_type"],
                         ["mode"] = arguments["mode"],
                         ["width"] = arguments["width"],
                         ["direction"] = arguments["direction"],
@@ -993,6 +1099,16 @@ namespace pyRevitCLI {
                             ["length"] = new JObject { ["type"] = "integer", ["description"] = "Characters to return (max 204800)." },
                         }),
                     GetRun),
+
+                new McpTool("get_recording", readOnly: true, new string[0],
+                    () => ("Read a session recording the user made with 'pyrevit agent record start' and 'stop': a JSON timeline of element changes per transaction (category, family and type, location), pyRevit commands with their output, log messages and tracebacks, extension breadcrumbs from recorder.mark, view and selection changes, dialogs, warnings and screenshot file references. "
+                        + "Without recording_id it lists recent recordings. Screenshots are files under the recording's directory; the events carry their relative path. A recording still in progress can be read too. Recording files are stored locally; recording data returned to the client may be sent to its model provider.",
+                        new JObject {
+                            ["recording_id"] = new JObject { ["type"] = "string", ["description"] = "Id from the recordings list or from 'record start'." },
+                            ["offset"] = new JObject { ["type"] = "integer", ["description"] = "Index of the first event to return (default 0)." },
+                            ["limit"] = new JObject { ["type"] = "integer", ["description"] = "Events to return (default 200, max 1000)." },
+                        }),
+                    GetRecording),
             };
         }
 

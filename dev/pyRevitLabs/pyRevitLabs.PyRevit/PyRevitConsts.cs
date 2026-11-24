@@ -18,10 +18,6 @@ namespace pyRevitLabs.PyRevit {
 
         public static string ExtensionsDefinitionFileUri = string.Format(@"https://github.com/pyrevitlabs/pyRevit/raw/{0}/extensions/{1}", PyRevitLabsConsts.TargetBranch, ExtensionsDefFileName);
 
-        // cli
-        public const string CLIHelpUrl = @"https://github.com/pyrevitlabs/pyRevit/blob/cli-v{0}/docs/cli.md";
-        public const string CLIHelpUrlDev = @"https://github.com/pyrevitlabs/pyRevit/blob/develop/docs/cli.md";
-
         // api
         public const string ReleasePrefix = "v";
         public const string CLIReleasePrefix = "cli-v";
@@ -180,7 +176,6 @@ namespace pyRevitLabs.PyRevit {
         public const string EnvConfigsExtensionDBFileName = "PyRevitExtensionsDB.json";
         // extensions
         public const string DefaultExtensionRemoteName = PyRevitLabsConsts.DefaultRemoteName;
-        public const string DefaultExtensionRepoDefaultBranch = "master";
         public const string ExtensionsDefaultDirName = "Extensions";
         public const string ExtensionDisabledKey = "disabled";
         /// <summary>

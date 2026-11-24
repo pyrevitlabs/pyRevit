@@ -1,0 +1,8 @@
+title: Saved Setting
+tooltip: >-
+  Checkbox example - stores a setting that a command reads.
+
+  Checkbox handlers run outside Revit API context, so this checkbox only
+  stores its state. Toggle Examples > Show Saved Setting reads it from a
+  command, which is where a tool would change the model.
+checked: false

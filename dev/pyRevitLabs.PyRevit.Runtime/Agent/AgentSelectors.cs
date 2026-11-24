@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using pyRevitLabs.Json.Linq;
+
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
     /// Revit-free rules for turning agent-supplied names into Revit objects and sizes.
@@ -12,7 +14,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentSelectors {
         /// <summary>
         /// Finds what a view selector names: the view with that id when the selector is an id
-        /// of a view, otherwise every view whose name matches, ignoring case.
+        /// of a view, otherwise every view whose name or sheet number matches, ignoring case.
+        /// A non-empty <paramref name="viewType"/> keeps only the matches of that view type,
+        /// ignoring case, whether they were found by id or by name.
         /// </summary>
         /// <returns>
         /// No match, the single match, or several views sharing the name, which the caller must
@@ -20,13 +24,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </returns>
         /// <remarks>
         /// A digits-only selector that is not a view id falls back to the name, so a view named
-        /// "12345" stays reachable.
+        /// "12345" stays reachable. <paramref name="numberOf"/> returns the sheet number of a
+        /// sheet and null for any other view.
         /// </remarks>
-        internal static List<T> FindView<T>(string selector, Func<long, T> byId, IEnumerable<T> views, Func<T, string> nameOf)
+        internal static List<T> FindView<T>(string selector, Func<long, T> byId, IEnumerable<T> views, Func<T, string> nameOf, Func<T, string> numberOf, Func<T, string> typeOf = null, string viewType = null)
             where T : class {
-            if (long.TryParse(selector, out var id) && byId(id) is T found)
-                return new List<T> { found };
-            return views.Where(view => string.Equals(nameOf(view), selector, StringComparison.OrdinalIgnoreCase)).ToList();
+            var matches = long.TryParse(selector, out var id) && byId(id) is T found
+                ? new List<T> { found }
+                : views.Where(view =>
+                    string.Equals(nameOf(view), selector, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(numberOf(view), selector, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (string.IsNullOrEmpty(viewType) || typeOf == null)
+                return matches;
+            return matches.Where(view => string.Equals(typeOf(view), viewType, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
         /// <summary>
@@ -42,6 +52,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return false;
             return Enum.TryParse(name, true, out value)
                 && Enum.GetNames(typeof(TEnum)).Contains(name.Trim(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Parses category names into distinct members, bounding the number of distinct ones
+        /// rather than the number of entries, so a repeated name counts once.
+        /// </summary>
+        /// <exception cref="AgentException"><c>invalid_params</c> for an unknown name or too many distinct members.</exception>
+        internal static List<TEnum> ParseDistinctCategories<TEnum>(IEnumerable<string> names, int max) where TEnum : struct {
+            var result = new List<TEnum>();
+            foreach (var raw in names) {
+                var name = raw ?? string.Empty;
+                var enumName = name.StartsWith("OST_", StringComparison.OrdinalIgnoreCase) ? name : "OST_" + name;
+                if (!TryParseMember(enumName, out TEnum category))
+                    throw new AgentException("invalid_params", $"Unknown category '{name}'. Use BuiltInCategory names such as OST_Windows.");
+                if (result.Contains(category))
+                    continue;
+                if (result.Count >= max)
+                    throw new AgentException("invalid_params", $"At most {max} categories per call.");
+                result.Add(category);
+            }
+            return result;
         }
 
         /// <summary>

@@ -39,7 +39,7 @@ except ImportError:
 import System
 
 from pyrevit.api import DB, UI
-from pyrevit.compat import IRONPY, get_elementid_value_func
+from pyrevit.compat import IRONPY, PY2, get_elementid_value_func
 
 SOURCE_NAME = "<agent-script>"
 IRONPYTHON_TRACED_RECURSION_LIMIT = 500
@@ -57,6 +57,8 @@ _WATCHDOG_ESCALATE_SECONDS = 1.0
 _ESCALATION_TOOL_IDS = (4, 3)
 _START_RECORDER = "__agent_start__"
 _CO_OPTIMIZED = 0x1
+_MAX_OUTPUT_CHARS = 64 * 1024
+_TEXT_TYPES = (type(""), type(b"".decode("ascii")))
 
 _clock = getattr(time, "perf_counter", None) or time.time
 
@@ -85,6 +87,56 @@ class RunTimedOut(BaseException):
     as one reached through an alias, is stopped at the next rewritten loop
     header, or on CPython 3.12+ by the watchdog's jump escalation.
     """
+
+
+class _CappedOutput(StringIO):
+    """Captured stdout/stderr that keeps only the first ``limit`` characters.
+
+    Invariant:
+        Keeps one character past the host's 64 KB output cap
+        (``AgentRunService.MaxOutputChars``), so the host still sees the
+        output as truncated; anything later is dropped as it is written.
+
+    Note:
+        The limit counts every character ever written and none is given
+        back: ``truncate`` shrinks the buffer but frees no room, and
+        ``seek`` is neutralised because writes always append, so a print
+        after the limit was reached is dropped even after ``truncate(0)``.
+        ``writelines`` must stay defined here: IronPython 3.4's StringIO
+        implements it in .NET without calling an overridden ``write``, and
+        ``sys.stdout.writelines`` then raises ``TypeError``.
+    """
+
+    def __init__(self, limit):
+        StringIO.__init__(self)
+        self._room = limit
+        self._end = 0
+        self._lock = threading.Lock()
+
+    def write(self, text):
+        if PY2 and not isinstance(text, _TEXT_TYPES):
+            text = str(text)
+        with self._lock:
+            if self._room > 0:
+                kept = text[: self._room]
+                self._room -= len(kept)
+                if StringIO.tell(self) != self._end:
+                    StringIO.seek(self, self._end)
+                StringIO.write(self, kept)
+                self._end += len(kept)
+        return len(text)
+
+    def writelines(self, lines):
+        for line in lines:
+            self.write(line)
+
+    def truncate(self, size=None):
+        with self._lock:
+            if size is None:
+                size = StringIO.tell(self)
+            result = StringIO.truncate(self, size)
+            self._end = min(self._end, size)
+            return result
 
 
 class _NarrowBroadHandlers(ast.NodeTransformer):
@@ -278,9 +330,11 @@ class _WorkspaceLoopGuard(object):
         2.7) and the PEP 451 one (``find_spec``/``exec_module``) are
         implemented. Modules get the same broad-handler narrowing as the
         script, so a bare ``except`` cannot swallow the timeout. Namespace
-        packages are not rewritten, and on IronPython a workspace module that
-        compiles code at runtime is not line-traced; its loops there are
-        stopped only if the script itself is traced.
+        packages are not rewritten. On engines without
+        ``PyThreadState_SetAsyncExc``, importing a module whose loops the
+        rewrite can't see (code compiled at run time, a loop inside an
+        f-string) calls ``on_unguarded``, which turns on per-line deadline
+        checks for the rest of the run.
     """
 
     def __init__(self, workspace, guards, on_unguarded=lambda: None):
@@ -364,10 +418,12 @@ class _WorkspaceLoopGuard(object):
     def exec_module(self, module):
         with open(module.__file__, "rb") as handle:
             raw = handle.read()
-        code, rewrite_problem, guarded = _compile_source(
-            _decode_source(raw), True, module.__file__
-        )
-        if not guarded:
+        source = _decode_source(raw)
+        code, rewrite_problem, guarded = _compile_source(source, True, module.__file__)
+        if not guarded or (
+            _set_async_exc_function() is None
+            and (_runs_dynamic_code(source) or _hides_loops_in_fstrings(source))
+        ):
             self._on_unguarded()
         if rewrite_problem:
             print(
@@ -752,6 +808,8 @@ def _execution_tracer(
     def raise_if_timed_out(frame):
         if state["timed_out"]:
             _track_stack_transactions(frame, transactions)
+            if frame.f_code.co_filename != _RUNNER_FILENAME:
+                state["interrupted"] = True
             raise RunTimedOut(timeout_s)
 
     def track_module(frame, event, arg):
@@ -806,6 +864,7 @@ def _loop_guards(timeout_s, state, transactions):
             _track_stack_transactions(sys._getframe(2), transactions)
         except Exception:
             pass
+        state["interrupted"] = True
         raise RunTimedOut(timeout_s)
 
     def agent_tick():
@@ -869,6 +928,8 @@ def _start_watchdog(timeout_s, state):
             return
         escalate_at = _clock() + _WATCHDOG_ESCALATE_SECONDS
         while not stopped.is_set() and not state["finished"]:
+            if not state.get("script_ended"):
+                state["interrupted"] = True
             inject(RunTimedOut)
             if _clock() >= escalate_at:
                 escalation.arm()
@@ -956,6 +1017,8 @@ class _JumpEscalation(object):
             and destination < offset
             and threading.get_ident() == self._thread_id
         ):
+            if code.co_filename != _RUNNER_FILENAME:
+                self._state["interrupted"] = True
             raise RunTimedOut(self._timeout_s)
 
 
@@ -1122,7 +1185,7 @@ def run(context):
         _source_lines(source),
         SOURCE_NAME,
     )
-    captured = StringIO()
+    captured = _CappedOutput(_MAX_OUTPUT_CHARS + 1)
     saved_stdout = sys.stdout
     saved_stderr = sys.stderr
     sys.stdout = captured
@@ -1133,9 +1196,16 @@ def run(context):
     workspace_folder = context.Workspace
     namespace = None
     left_open = 0
+    unresolved = []
     reckless = bool(getattr(context, "Reckless", False))
     timeout_s = None if reckless else getattr(context, "TimeoutSeconds", None)
-    state = {"timed_out": False, "finished": False, "check_lines": False}
+    state = {
+        "timed_out": False,
+        "interrupted": False,
+        "script_ended": False,
+        "finished": False,
+        "check_lines": False,
+    }
     script_finished = False
     tracked_transactions = {}
     try:
@@ -1207,6 +1277,7 @@ def run(context):
             except SystemExit as ex:
                 script_exit = ex
             finally:
+                state["script_ended"] = True
                 phases.lap("exec")
 
             script_finished = True
@@ -1245,15 +1316,15 @@ def run(context):
     except BaseException as ex:
         failed = True
         if isinstance(ex, RunTimedOut) and state["timed_out"]:
-            if script_finished:
+            if script_finished and not state["interrupted"]:
                 context.SetError("timeout", _late_timeout_message(timeout_s), "")
             else:
                 context.SetError(
                     "timeout",
-                    "The script ran longer than its {:g} second limit and was "
+                    "The script ran longer than its {} second limit and was "
                     "stopped; its changes were rolled back. Pass a larger timeout_s "
-                    "if the work needs more time.".format(timeout_s),
-                    _format_script_traceback(),
+                    "if the work needs more time.".format(_format_limit(timeout_s)),
+                    "" if script_finished else _format_script_traceback(),
                 )
         else:
             error_type, message = _describe_error(ex)
@@ -1264,7 +1335,9 @@ def run(context):
                 finder for finder in sys.meta_path if finder is not workspace_guard
             ]
         if namespace is not None:
-            left_open = _roll_back_open_transactions(namespace, tracked_transactions)
+            left_open, unresolved = _roll_back_open_transactions(
+                namespace, tracked_transactions
+            )
         _TRANSACTION_RANKS.clear()
         _UNTRACKED_TYPES.clear()
         _TRACKED_TYPES.clear()
@@ -1277,6 +1350,9 @@ def run(context):
         context.SetOutput(captured.getvalue())
         phases.lap("cleanup")
 
+    if unresolved:
+        _report_unresolved_rollbacks(context, unresolved)
+        return
     if left_open and not failed:
         context.SetError(
             "transaction_left_open",
@@ -1289,12 +1365,23 @@ def run(context):
         return
 
 
+def _format_limit(seconds):
+    """Return seconds as text that does not depend on the OS culture.
+
+    Note:
+        ``format(x, "g")`` follows the current culture on IronPython 2.7, so a
+        decimal-comma locale would print "1,5". ``repr`` of a float never does.
+    """
+    text = repr(float(seconds))
+    return text[:-2] if text.endswith(".0") else text
+
+
 def _late_timeout_message(timeout_s):
     return (
-        "The script passed its {:g} second limit inside a call that could not be "
+        "The script passed its {} second limit inside a call that could not be "
         "interrupted, such as a long Revit API call, and was stopped when it "
         "finished; its changes were rolled back. Pass a larger timeout_s if the "
-        "work needs more time.".format(timeout_s)
+        "work needs more time.".format(_format_limit(timeout_s))
     )
 
 
@@ -1328,21 +1415,75 @@ def _roll_back_open_transactions(namespace, tracked_transactions):
     ``pyrevit.revit.Transaction``. A reckless run records nothing while it
     executes, so only the globals are inspected.
 
+    Only a ``RollBack()`` that returns ``TransactionStatus.RolledBack`` counts
+    as rolled back. Revit returns ``Pending`` while failure handling for the
+    transaction is unfinished; the runner never waits for it.
+
     Returns:
-        int: how many transactions were rolled back.
+        tuple: how many transactions were rolled back, and a description of
+        each one that was not, with the status Revit returned or the error
+        ``RollBack()`` raised.
     """
     found = tracked_transactions
     for value in _reachable_values(namespace):
         _track_transaction(value, found)
     rolled_back = 0
+    unresolved = []
     for _, transaction in sorted(found.values(), key=lambda item: item[0]):
         try:
-            if transaction.HasStarted() and not transaction.HasEnded():
-                transaction.RollBack()
-                rolled_back += 1
+            if not transaction.HasStarted() or transaction.HasEnded():
+                continue
         except Exception:
-            pass
-    return rolled_back
+            continue
+        try:
+            status = transaction.RollBack()
+        except Exception as ex:
+            unresolved.append(
+                "{} raised {}".format(
+                    _describe_transaction(transaction), _safe_text(ex)
+                )
+            )
+            continue
+        if status == DB.TransactionStatus.RolledBack:
+            rolled_back += 1
+        else:
+            unresolved.append(
+                "{} returned {}".format(_describe_transaction(transaction), status)
+            )
+    return rolled_back, unresolved
+
+
+def _describe_transaction(transaction):
+    kind = type(transaction).__name__
+    try:
+        name = transaction.GetName()
+    except Exception:
+        return kind
+    return "{} '{}'".format(kind, _safe_text(name))
+
+
+def _report_unresolved_rollbacks(context, unresolved):
+    """Fail the run with the transactions Revit did not roll back.
+
+    Replaces any earlier error, because an unfinished rollback leaves the
+    model's state unknown, and keeps that error's type and message in the
+    new message.
+    """
+    message = (
+        "Revit did not roll back {} transaction(s) the script left open: {}. "
+        "The host still rolls back the run; its 'decision' says whether that "
+        "completed.".format(len(unresolved), "; ".join(unresolved))
+    )
+    earlier_type = getattr(context, "ErrorType", None)
+    if earlier_type:
+        message += " The script had already failed with {}: {}".format(
+            earlier_type, getattr(context, "ErrorMessage", None)
+        )
+    context.SetError(
+        "transaction_rollback_failed",
+        message,
+        getattr(context, "ErrorTraceback", None),
+    )
 
 
 def _track_frame_transactions(frame, transactions):
@@ -1575,6 +1716,7 @@ def _build_namespace(context):
         "DB": DB,
         "UI": UI,
         "inputs": json.loads(context.InputsJson or "{}"),
+        "export_dir": getattr(context, "ExportDir", None),
     }
 
 
@@ -1606,6 +1748,7 @@ def _is_under(module_file, root):
     if not isinstance(module_file, str) or not op.isabs(module_file):
         return False
     try:
+        root = op.normcase(op.abspath(root)).rstrip("/\\") + op.sep
         return (op.normcase(op.abspath(module_file)) + op.sep).startswith(root)
     except Exception:
         return False
@@ -1639,18 +1782,51 @@ def _unload_modules_under(folder):
         clone never unloads the standard library, .NET namespace modules,
         pyrevitlib or this runner from the shared engine, while a folder the
         agent's own scripts put on ``sys.path`` is still reloaded. pyrevitlib
-        stays loaded even when it is the workspace itself.
+        stays loaded even when it is the workspace itself. A namespace package,
+        which has no ``__file__``, is unloaded only when every folder of its
+        ``__path__`` passes the same checks.
     """
     root = _folder_prefix(folder)
     nested = _library_prefixes(root)
-    for name, module in list(sys.modules.items()):
+
+    def in_workspace(path):
+        return (
+            _is_under(path, root)
+            and not any(_is_under(path, prefix) for prefix in nested)
+            and not _is_runtime_module(path)
+        )
+
+    def from_workspace(module):
         module_file = getattr(module, "__file__", None)
-        if (
-            _is_under(module_file, root)
-            and module_file.lower().endswith((".py", ".pyw", ".pyc"))
-            and not any(_is_under(module_file, prefix) for prefix in nested)
-        ):
-            del sys.modules[name]
+        if module_file is None:
+            folders = _namespace_folders(module)
+            return bool(folders) and all(in_workspace(path) for path in folders)
+        return in_workspace(module_file) and module_file.lower().endswith(
+            (".py", ".pyw", ".pyc")
+        )
+
+    unloaded = [
+        name for name, module in list(sys.modules.items()) if from_workspace(module)
+    ]
+    for name in unloaded:
+        sys.modules.pop(name, None)
+
+
+def _namespace_folders(module):
+    try:
+        return list(getattr(module, "__path__", None) or [])
+    except Exception:
+        return []
+
+
+def _is_runtime_module(module_file):
+    prefixes = (
+        getattr(sys, "prefix", None),
+        getattr(sys, "base_prefix", None),
+        getattr(sys, "exec_prefix", None),
+        getattr(sys, "base_exec_prefix", None),
+    )
+    return any(_is_under(module_file, prefix) for prefix in prefixes if prefix)
 
 
 def _leave_workspace(workspace, added_to_path):

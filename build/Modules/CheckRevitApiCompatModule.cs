@@ -9,7 +9,7 @@ namespace Build.Modules;
 
 /// <summary>
 /// Lints the Python sources for Revit API calls missing in some supported Revit year, using
-/// <c>dev/scripts/check_revit_api_compat.py</c> against the committed baseline, and checks that the
+/// <c>dev/checks/check_revit_api_compat.py</c> against the committed baseline, and checks that the
 /// catalog covers every Revit year the projects build for. See <c>docs/revit-api-compat.md</c>.
 /// </summary>
 /// <remarks>

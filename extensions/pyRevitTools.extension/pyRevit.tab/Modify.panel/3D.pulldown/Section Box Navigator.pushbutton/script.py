@@ -17,6 +17,7 @@ from sectionbox_navigation import (
     find_next_grid_in_direction,
 )
 from sectionbox_utils import (
+    format_amount,
     is_2d_view,
     get_view_range_and_crop,
     section_box_from_crop,
@@ -24,7 +25,11 @@ from sectionbox_utils import (
     align_crop_by_shape,
 )
 from sbox.sbox_actions import toggle, hide, align_to_face, temp_switch
+from sectionbox_preview import PreviewSession
+from sectionbox_sources import create_box_from_chosen_source
 from sectionbox_geometry import (
+    get_box_info,
+    get_crop_edit_blocker,
     get_section_box_info,
     get_section_box_face_info,
     select_best_face_for_direction,
@@ -123,7 +128,8 @@ def on_view_or_doc_changed(sender, args):
             return
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_window_title))
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
-        logger.info("Form updated due to view or document change.")
+        sb_form.sync_preview_view()
+        logger.debug("Form updated due to view or document change.")
     except Exception as ex:
         logger.exception("Failed to update form: {}".format(ex))
 
@@ -212,6 +218,18 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
+        self.syncing_preview = False
+        self.preview = PreviewSession(
+            output,
+            self,
+            self.get_locale_string,
+            DATAFILENAME,
+            lambda: bool(self.chkIncludeLinks.IsChecked),
+            lambda: (self.all_levels, self.all_grids),
+            self.sync_after_preview_change,
+            self.on_preview_hidden,
+            config=my_config,
+        )
 
         self.chkIncludeLinks.IsChecked = my_config.get_option("chkLinks_state", False)
         self.chkPreview.IsChecked = my_config.get_option("chkPreview_state", True)
@@ -248,6 +266,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.Closed += self.form_closed
         script.restore_window_position(self)
         self.show()
+        if my_config.get_option("chkShow3D_state", False):
+            self.chkShow3D.IsChecked = True
 
     def update_window_title(self):
         view = revit.active_view
@@ -272,11 +292,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         else:
             self.hide_element(self.project_unit_text)
 
-        self.txtLevelNudgeAmount.Text = str(round(level_nudge_value, 3))
+        self.txtLevelNudgeAmount.Text = format_amount(level_nudge_value)
         self.txtLevelNudgeUnit.Text = length_unit_symbol_label or ""
-        self.txtExpandAmount.Text = str(round(expand_nudge_value, 3))
+        self.txtExpandAmount.Text = format_amount(expand_nudge_value)
         self.txtExpandUnit.Text = length_unit_symbol_label or ""
-        self.txtGridNudgeAmount.Text = str(round(grid_nudge_value, 3))
+        self.txtGridNudgeAmount.Text = format_amount(grid_nudge_value)
         self.txtGridNudgeUnit.Text = length_unit_symbol_label or ""
 
     def update_dropdown_visibility(self):
@@ -425,8 +445,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             is_plan_view = is_2d_view(self.current_view, only_plan=True)
 
             self.levelNavigationGroup.IsEnabled = is_3d_view
-            self.gridNavigationGroup.IsEnabled = is_3d_view
-            self.expansionGroup.IsEnabled = is_3d_view
+            self.gridNavigationGroup.IsEnabled = is_3d_view or is_2d_view_active
+            self.expansionGroup.IsEnabled = is_3d_view or is_2d_view_active
             self.btnToggleBox.IsEnabled = is_3d_view or is_2d_view_active
             self.btnHideBox.IsEnabled = is_3d_view or is_2d_view_active
             self.btnAlignBoxToFace.IsEnabled = is_3d_view
@@ -444,8 +464,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     self.clear_status_message()
 
             if not is_3d_view or not self.current_view.IsSectionBoxActive:
-                self.txtTopLevelAbove.Text = self.get_locale_string(
-                    "NoSectionBoxActive"
+                has_crop_box = is_2d_view_active and self.current_view.CropBoxActive
+                self.txtTopLevelAbove.Text = (
+                    "" if has_crop_box else self._get_no_box_text()
                 )
                 self.txtTopPosition.Text = ""
                 self.txtTopLevelBelow.Text = ""
@@ -537,6 +558,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         except Exception:
             logger.exception("Error updating info.")
 
+    def _get_no_box_text(self):
+        key = "NoSectionBoxActive"
+        if is_2d_view(self.current_view):
+            key = "NoCropBoxActive"
+        return self.get_locale_string(key)
+
     def show_status_message(self, column, message, message_type="info"):
         """
         Display a status message in the appropriate column's status section.
@@ -587,6 +614,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def _on_no_document(self):
         """Disable all controls and clear status when no documents are open."""
         self.Content.IsEnabled = False
+        self.preview.close()
+        self.on_preview_hidden()
         self.hide_element(self.project_unit_text)
         self.txtVerticalStatus.Text = ""
         self.txtGridStatus.Text = ""
@@ -607,11 +636,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         try:
 
             def update_ui():
-                info = get_section_box_info(self.current_view, DATAFILENAME)
+                info = get_box_info(self.current_view, DATAFILENAME)
                 if not info:
-                    self.txtGridStatus.Text = self.get_locale_string(
-                        "NoSectionBoxActive"
-                    )
+                    self.txtGridStatus.Text = self._get_no_box_text()
                     self.txtGridStatus.Foreground = BRUSH_COLORS.get("default_subtle")
                     return
 
@@ -628,11 +655,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         try:
 
             def update_ui():
-                info = get_section_box_info(self.current_view, DATAFILENAME)
+                info = get_box_info(self.current_view, DATAFILENAME)
                 if not info:
-                    self.txtExpandActionsStatus.Text = self.get_locale_string(
-                        "NoSectionBoxActive"
-                    )
+                    self.txtExpandActionsStatus.Text = self._get_no_box_text()
                     self.txtExpandActionsStatus.Foreground = BRUSH_COLORS.get(
                         "default_subtle"
                     )
@@ -676,6 +701,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.do_grid_move(params)
 
             self.Dispatcher.Invoke(System.Action(self.update_info))
+            self.preview.sync_box(revit.active_view)
 
         except Exception as ex:
             logger.exception("Error executing action: {}".format(ex))
@@ -945,13 +971,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         # Calculate the adjustment (negative for shrink)
         adjustment = amount if is_expand else -amount
 
+        depth_adjustment = adjustment if isinstance(self.current_view, DB.View3D) else 0
         if self.adjust_section_box(
             min_x_change=-adjustment,
             max_x_change=adjustment,
             min_y_change=-adjustment,
             max_y_change=adjustment,
-            min_z_change=-adjustment,
-            max_z_change=adjustment,
+            min_z_change=-depth_adjustment,
+            max_z_change=depth_adjustment,
         ):
             # Success - show informative message
             amount_display = units.format_length(amount, doc)
@@ -974,14 +1001,15 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         """Move section box side to next grid line or by nudge amount."""
         target = params.get("target")  # 'north', 'south', 'east', 'west'
         direction = params.get("direction")  # 'in', 'out'
-        direction_name = str(target + direction)
+        direction_name = "{} {}".format(target, direction)
         nudge_amount = params.get("nudge_amount", 0)
         do_not_apply = params.get("do_not_apply", False)
 
-        info = get_section_box_info(self.current_view, DATAFILENAME)
+        info = get_box_info(self.current_view, DATAFILENAME)
         if not info:
             return None if do_not_apply else False
 
+        is_3d_view = isinstance(self.current_view, DB.View3D)
         cardinal_dir = target
 
         # Get cardinal direction vector - this represents which FACE we want to move
@@ -1023,6 +1051,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             # if view is parallel to grid we won't find a solution, check flattened
             flat = DB.XYZ(search_direction.X, search_direction.Y, 0)
             if flat.GetLength() < TOLERANCE:
+                if not is_3d_view and not do_not_apply:
+                    self.show_status_message(
+                        2,
+                        self.get_locale_string("NoGridFoundFormat").format(
+                            direction_name.upper()
+                        ),
+                        "error",
+                    )
                 return
 
             # Find next grid in the search direction
@@ -1079,7 +1115,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             )
             # if view is parallel to grid we won't find a solution, check flattened
             flat = DB.XYZ(movement_direction.X, movement_direction.Y, 0)
-            if flat.GetLength() < TOLERANCE:
+            if is_3d_view and flat.GetLength() < TOLERANCE:
                 return
 
             # Get the movement in local coordinates
@@ -1327,6 +1363,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         """Toggle section or crop box."""
         if isinstance(self.current_view, DB.View3D):
             was_active = self.current_view.IsSectionBoxActive
+            if not was_active and not get_section_box_info(
+                self.current_view, DATAFILENAME
+            ):
+                self.do_create_box_from_source()
+                return
             toggle(doc, DATAFILENAME)
             is_now_active = self.current_view.IsSectionBoxActive
         elif is_2d_view(self.current_view):
@@ -1346,6 +1387,18 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         else:
             self.show_status_message(
                 3, self.get_locale_string("BoxToggleFailed"), "error"
+            )
+
+    def do_create_box_from_source(self):
+        """Create a missing section box from a source the user chooses."""
+        source = create_box_from_chosen_source(
+            self.current_view, self.get_locale_string
+        )
+        if source:
+            self.show_status_message(
+                3,
+                self.get_locale_string("BoxCreatedFormat").format(source),
+                "success",
             )
 
     def do_hide(self):
@@ -1437,9 +1490,25 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         max_z_change=0,
     ):
         """Unified method to adjust the section box in any direction."""
-        info = get_section_box_info(self.current_view, DATAFILENAME)
+        info = get_box_info(self.current_view, DATAFILENAME)
         if not info:
             return False
+
+        if not isinstance(self.current_view, DB.View3D):
+            blocker = get_crop_edit_blocker(self.current_view)
+            if blocker:
+                is_expand_action = min_x_change and min_x_change == -max_x_change
+                blocker_key = (
+                    "CropBoxDrivenByScopeBox"
+                    if blocker == "scope_box"
+                    else "CropBoxHasCustomShape"
+                )
+                self.show_status_message(
+                    3 if is_expand_action else 2,
+                    self.get_locale_string(blocker_key),
+                    "warning",
+                )
+                return False
 
         new_box = create_adjusted_box(
             info,
@@ -1489,14 +1558,21 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 )
             return False
 
-        with revit.Transaction("Adjust Section Box"):
-            self.current_view.SetSectionBox(new_box)
+        if isinstance(self.current_view, DB.View3D):
+            with revit.Transaction("Adjust Section Box"):
+                self.current_view.SetSectionBox(new_box)
+        else:
+            with revit.Transaction("Adjust Crop Box"):
+                self.current_view.CropBox = new_box
 
         return True
 
     def show_preview(self, preview_type="level_nudge", params=None):
         """Show preview of adjusted section box."""
         if not self.preview_server or not self.chkPreview.IsChecked:
+            return
+
+        if not isinstance(self.current_view, DB.View3D):
             return
 
         try:
@@ -1926,6 +2002,67 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         """Refresh levels and grids when checkbox is toggled."""
         self.update_grids_and_levels()
         self.update_info()
+        events.execute_in_revit_context(self.preview.sync_links)
+
+    def chkShow3D_changed(self, sender, e):
+        """Open or hide the 3D preview window."""
+        if self.syncing_preview:
+            return
+        if self.chkShow3D.IsChecked:
+            events.execute_in_revit_context(self.open_preview)
+        else:
+            self.preview.close()
+
+    def open_preview(self):
+        """Open the 3D preview in API context, or explain why it cannot open.
+
+        Runs after the toggle was ticked, so it does nothing when the toggle
+        was unticked again or the navigator closed in the meantime.
+        """
+        if not self.chkShow3D.IsChecked or self.preview.shutting_down:
+            return
+        reason = None
+        try:
+            view = revit.active_view
+            if not self.preview.supported:
+                reason = "PreviewNeedsWebView2"
+            elif not (isinstance(view, DB.View3D) or is_2d_view(view)):
+                reason = "UnsupportedViewTypeTitle"
+            elif not get_box_info(view, DATAFILENAME):
+                reason = "PreviewNeedsBox"
+            elif not self.preview.open(view):
+                reason = "PreviewNeedsWebView2"
+        except Exception as ex:
+            logger.exception("Could not open the 3D preview: {}".format(ex))
+            reason = "PreviewNeedsWebView2"
+        if reason:
+            self.Dispatcher.Invoke(System.Action(lambda: self.reject_preview(reason)))
+
+    def reject_preview(self, reason):
+        """Untick the preview toggle and say why it could not open."""
+        self.on_preview_hidden()
+        self.show_status_message(3, self.get_locale_string(reason), "warning")
+
+    def on_preview_hidden(self):
+        """Untick the preview toggle without reacting to the change."""
+
+        def untick():
+            self.syncing_preview = True
+            self.chkShow3D.IsChecked = False
+            self.syncing_preview = False
+
+        self.Dispatcher.Invoke(System.Action(untick))
+
+    def sync_after_preview_change(self):
+        """Refresh the navigator after the preview moved the box."""
+        self.Dispatcher.Invoke(System.Action(self.update_info))
+
+    def sync_preview_view(self):
+        """Show the active view in the preview, in API context."""
+        try:
+            self.preview.sync_view(revit.active_view)
+        except Exception as ex:
+            logger.exception("Could not update the 3D preview: {}".format(ex))
 
     # Grid Navigation Button Handlers
 
@@ -2013,6 +2150,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             events.stop_events()
 
             script.save_window_position(self)
+            self.preview.shutdown()
 
             # Cleanup form - shouldn't be necessary?
             global sb_form
@@ -2049,6 +2187,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             my_config.set_option("rbGrid_state", self.rbGrid.IsChecked)
             my_config.set_option("chkLinks_state", self.chkIncludeLinks.IsChecked)
             my_config.set_option("chkPreview_state", self.chkPreview.IsChecked)
+            my_config.set_option("chkShow3D_state", self.chkShow3D.IsChecked)
             script.save_config()
 
         except Exception:
@@ -2062,6 +2201,35 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 # Run main
 # ---------
 
+
+def ensure_box_exists(view, get_string):
+    """Make sure the view has a box to navigate, offering to create one.
+
+    Returns:
+        bool: False when the user cancelled instead of providing a box.
+    """
+    if isinstance(view, DB.View3D):
+        if view.IsSectionBoxActive:
+            return True
+        info = get_section_box_info(view, DATAFILENAME)
+        stored_box = info.get("box") if info else None
+        if stored_box:
+            if forms.alert(
+                get_string("StoredSectionBoxFound"),
+                cancel=True,
+                title=get_string("RestoreSectionBox"),
+            ):
+                with revit.Transaction("Restore SectionBox"):
+                    view.SetSectionBox(stored_box)
+            return True
+    elif is_2d_view(view):
+        if view.CropBoxActive:
+            return True
+    else:
+        forms.alert(get_string("UnsupportedViewType"), exitscript=True)
+    return bool(create_box_from_chosen_source(view, get_string))
+
+
 if __name__ == "__main__":
     if not forms.activate_open_window(SBNAV_WINDOW_KEY):
         _xaml_path = script.get_bundle_file("SectionBoxNavigator.xaml")
@@ -2071,23 +2239,8 @@ if __name__ == "__main__":
 
         try:
             initialize_globals()
-            if not active_view.IsSectionBoxActive:
-                info = get_section_box_info(active_view, DATAFILENAME)
-                restored_bbox = info.get("box") if info else None
-                if restored_bbox:
-                    if forms.alert(
-                        _t("StoredSectionBoxFound"),
-                        cancel=True,
-                        title=_t("RestoreSectionBox"),
-                    ):
-                        with revit.Transaction("Restore SectionBox"):
-                            active_view.SetSectionBox(restored_bbox)
-                else:
-                    forms.alert(
-                        _t("NoSectionBoxMessage"),
-                        title=_t("NoSectionBoxTitle"),
-                        exitscript=True,
-                    )
+            if not ensure_box_exists(active_view, _t):
+                script.exit()
 
             sb_form = SectionBoxNavigatorForm("SectionBoxNavigator.xaml")
             script.set_envvar(SBNAV_WINDOW_KEY, sb_form)

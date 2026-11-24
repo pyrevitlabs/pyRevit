@@ -41,6 +41,9 @@ namespace PyRevitRunner
                 if (dataMap.TryGetValue("Models", out var modelPaths) && !string.IsNullOrEmpty(modelPaths))
                     ModelPaths.AddRange(modelPaths.Split(';'));
                 LogFile = dataMap.TryGetValue("LogFile", out var logFile) ? logFile : null;
+                InputsJson = dataMap.TryGetValue("Inputs", out var inputsJson) && !string.IsNullOrWhiteSpace(inputsJson)
+                    ? inputsJson
+                    : "{}";
                 dataMap.TryGetValue("EngineConfigs", out var engineConfigs);
 
                 // add pyrevit library path and script directory path to search paths
@@ -84,6 +87,7 @@ namespace PyRevitRunner
                             {"__batchexec__",  true },
                             {"__logfile__", LogFile ?? string.Empty },
                             {"__models__", ModelPaths },
+                            {"__inputs__", InputsJson },
                         });
                     }
                 }
@@ -121,6 +125,7 @@ namespace PyRevitRunner
         public List<string> ModuleSearchPaths { get; private set; }
         public List<string> ModelPaths { get; private set; }
         public string LogFile { get; private set; }
+        public string InputsJson { get; private set; }
         public bool DebugMode { get; private set; }
 
         private static string GetDeployPath()
@@ -261,17 +266,23 @@ namespace PyRevitRunner
             if (!string.IsNullOrEmpty(revitVersion))
                 int.TryParse(revitVersion, out revitYear);
 
-            PyRevitAttachment attachment = null;
-            if (revitYear != 0)
-                attachment = PyRevitAttachments.GetAttached(revitYear);
+            var runnerPath = typeof(PyRevitRunnerCommand).Assembly.Location;
+            var clone = PyRevitClones.FindContaining(runnerPath);
+            var engine = clone != null ? PyRevitEngines.FindContaining(clone, runnerPath) : null;
+            if (clone == null && revitYear != 0)
+            {
+                var attachment = PyRevitAttachments.GetAttached(revitYear);
+                clone = attachment?.Clone;
+                engine = attachment?.Engine;
+            }
 
-            var cloneName = attachment?.Clone?.Name ?? "Unknown";
-            var pyRevitVersion = attachment?.Clone == null
+            var cloneName = clone?.Name ?? "Unknown";
+            var pyRevitVersion = clone == null
                 ? "Unknown"
                 : PyRevitClone.GetDeployedVersion(
-                    attachment.Clone.ClonePath,
-                    attachment.Engine?.IsNetCore);
-            var ipyVersion = attachment?.Engine != null ? attachment.Engine.Version.Version.ToString() : "0";
+                    clone.ClonePath,
+                    engine?.IsNetCore);
+            var ipyVersion = engine != null ? engine.Version.Version.ToString() : "0";
             var cpyVersion = PyRevitConfigs.GetCpythonEngineVersion().ToString();
 
             if (!envData.Contains(EnvDictionaryKeys.SessionUUID)
@@ -295,7 +306,7 @@ namespace PyRevitRunner
 
             envData[EnvDictionaryKeys.AutoUpdating] = PyRevitConfigs.GetAutoUpdate();
             envData[EnvDictionaryKeys.OutputStyleSheet] =
-                ResolveOutputStyleSheet(PyRevitConfigs.GetOutputStyleSheet(), attachment?.Clone?.ClonePath);
+                ResolveOutputStyleSheet(PyRevitConfigs.GetOutputStyleSheet(), clone?.ClonePath);
 
             if (!envData.Contains(EnvDictionaryKeys.Hooks))
                 envData[EnvDictionaryKeys.Hooks] = new Dictionary<string, Dictionary<string, string>>();

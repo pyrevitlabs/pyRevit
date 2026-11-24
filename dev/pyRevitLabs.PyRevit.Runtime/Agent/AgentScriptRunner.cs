@@ -61,6 +61,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         public bool Reckless { get; }
 
+        /// <summary>
+        /// Host-owned folder inside the run record that Revit exports from this run may write
+        /// into; the runner passes it to the script as <c>export_dir</c>.
+        /// </summary>
+        /// <remarks>
+        /// Ends with a directory separator, because Revit appends the view or sheet name to
+        /// <c>ImageExportOptions.FilePath</c>: without it, <c>FilePath = export_dir</c> would write
+        /// <c>exports - Sheet - A101.png</c> beside the folder instead of inside it.
+        /// </remarks>
+        public string ExportDir { get; internal set; }
+
         public string ResultJson { get; private set; }
         public string Output { get; private set; } = string.Empty;
         public string ErrorType { get; private set; }
@@ -72,6 +83,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string EngineVersionText { get; private set; }
 
         public bool HasError => ErrorType != null;
+
+        /// <summary>
+        /// True once the engine began executing the run's entry script. False after a failure to
+        /// write the entry script or to start the engine, where nothing of the run executed.
+        /// </summary>
+        public bool Started { get; private set; }
+
+        /// <summary>
+        /// Sets <see cref="Started"/>. Only the entry script's first statement calls it, so that
+        /// a run is counted as started exactly when its Python began to execute.
+        /// </summary>
+        public void MarkStarted() {
+            Started = true;
+        }
 
         public void SetEngine(string implementation, string pythonVersion, string versionText) {
             EngineImplementation = implementation;
@@ -202,6 +227,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             };
         }
 
+        /// <summary>
+        /// Writes the run's entry script and executes it on the agent engine.
+        /// </summary>
+        /// <remarks>
+        /// The entry script's first statement calls <see cref="AgentScriptContext.MarkStarted"/>, so a
+        /// failure to write it or to start the engine leaves <see cref="AgentScriptContext.Started"/> false.
+        /// </remarks>
         public static int Execute(
             AgentScriptContext context, AgentRunRequest request, string runDir, IList<string> searchPaths) {
             var entryPath = Path.Combine(runDir, EntryFileName);
@@ -218,6 +250,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var builder = new StringBuilder();
             if (engine == AgentEngine.CPython)
                 builder.Append("#! python3\n");
+            builder.Append("__agent__.MarkStarted()\n");
             builder.Append("try:\n");
             foreach (var line in RunnerImport.TrimEnd('\n').Split('\n'))
                 builder.Append("    ").Append(line).Append('\n');

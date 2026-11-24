@@ -36,6 +36,12 @@ namespace pyRevitAssemblyBuilder.UIManager
     {
         public BuildSettings CurrentSettings { get; private set; } = BuildSettings.Empty;
 
+        /// <summary>
+        /// The extension whose UI is being built, or null between builds. Lets builders
+        /// search extension-level and tab-level <c>bin/</c> and <c>lib/</c> folders.
+        /// </summary>
+        public ParsedExtension? CurrentExtension { get; set; }
+
         public void Update(BuildSettings settings)
         {
             CurrentSettings = settings ?? BuildSettings.Empty;

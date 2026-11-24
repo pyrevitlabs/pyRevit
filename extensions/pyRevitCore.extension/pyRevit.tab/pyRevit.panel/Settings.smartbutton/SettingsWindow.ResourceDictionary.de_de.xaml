@@ -261,6 +261,9 @@
     <system:String x:Key="UI-UX.SelectLanguage">UI-Sprache auswählen:</system:String>
     <system:String x:Key="UI-UX.RegionSettingsLink">Helfen Sie beim Übersetzen von pyRevit</system:String>
 
+    <system:String x:Key="UI-UX.Ribbon">Menüband</system:String>
+    <system:String x:Key="UI-UX.ShowTabIcons">Symbole auf pyRevit-Menüband-Registerkarten anzeigen</system:String>
+
     <system:String x:Key="UI-UX.TabColoring">Registerkartenfärbung</system:String>
     <system:String x:Key="UI-UX.ColoringStyle">Färbungsstil</system:String>
     <system:String x:Key="UI-UX.ColorizeOpenDocuments">Geöffnete Dokumente einfärben</system:String>

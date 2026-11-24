@@ -1,15 +1,18 @@
 using System.Globalization;
 using pyRevitCLI;
+using pyRevitLabs.Common;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI.Tests;
 
 [Collection(CliGlobalState.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public partial class McpServerTests : IDisposable {
     private static readonly string[] ReadOnlyTools = {
         "list_skills", "get_skill", "list_revit_instances", "request_session", "get_context", "inspect_elements", "lookup_pyrevit_api", "list_automation",
-        "run_automation", "lookup_revit_api", "get_run",
+        "run_automation", "lookup_revit_api", "get_run", "get_recording",
     };
 
     private static readonly string[] PresentationTools = { "show_elements", "navigate_revit_link", "capture_view" };
@@ -130,6 +133,16 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(-32700, responses[1]["error"].Value<int>("code"));
         Assert.Equal(JTokenType.Null, responses[1]["id"].Type);
         Assert.Equal(2, responses[2].Value<int>("id"));
+    }
+
+    /// <summary>A request line past the 16 MB limit is refused without ending the session (issue #3922).</summary>
+    [Fact]
+    public void OverLongRequestLineIsRefusedAndTheSessionContinues() {
+        var responses = Serve(new string('x', BoundedLineReader.DefaultMaxLineChars + 2), Request(2, "ping"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(-32700, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(2, responses[1].Value<int>("id"));
     }
 
     [Theory]
@@ -534,7 +547,7 @@ public partial class McpServerTests : IDisposable {
             new[] {
                 "list_skills", "get_skill", "list_revit_instances", "request_session", "get_context", "inspect_elements", "lookup_pyrevit_api",
                 "list_automation", "run_automation", "lookup_revit_api", "show_elements", "navigate_revit_link", "capture_view", "run_query",
-                "run_modify", "get_run",
+                "run_modify", "get_run", "get_recording",
             },
             tools.Select(tool => tool.Value<string>("name")));
         foreach (var tool in tools) {
@@ -962,6 +975,40 @@ public partial class McpServerTests : IDisposable {
     }
 
     [Fact]
+    public void ARecordingIsListedAndReadWithoutRevit() {
+        var directory = Path.Combine(host.AgentDir, "recordings", "20260101-000000-abc12345");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, "events.jsonl"), "{\"seq\":1,\"kind\":\"mark\"}\n{\"seq\":2,\"kind\":\"output\"}\n");
+
+        var listed = Payload(Single(ToolCall(1, "get_recording", new JObject())));
+        var read = Payload(Single(ToolCall(2, "get_recording", new JObject { ["recording_id"] = "abc12345", ["limit"] = 1 })));
+        var missing = Payload(Single(ToolCall(3, "get_recording", new JObject { ["recording_id"] = "nope" })));
+
+        Assert.Equal("abc12345", listed["recordings"][0].Value<string>("id"));
+        Assert.Equal("mark", read["events"][0].Value<string>("kind"));
+        Assert.True(read.Value<bool>("truncated"));
+        Assert.Equal("recording_not_found", missing.Value<string>("error"));
+    }
+
+    [Fact]
+    public void GetRecordingRejectsUnknownArguments() {
+        var payload = Payload(Single(ToolCall(1, "get_recording", new JObject { ["id"] = "abc12345" })));
+
+        Assert.Equal("invalid_params", payload.Value<string>("error"));
+    }
+
+    [Theory]
+    [InlineData("offset", "abc")]
+    [InlineData("limit", "abc")]
+    [InlineData("limit", 99999999999L)]
+    public void GetRecordingRejectsANonIntegerOffsetOrLimit(string name, object value) {
+        var arguments = new JObject { ["recording_id"] = "abc12345", [name] = JToken.FromObject(value) };
+        var payload = Payload(Single(ToolCall(1, "get_recording", arguments)));
+
+        Assert.Equal("invalid_params", payload.Value<string>("error"));
+    }
+
+    [Fact]
     public void ARecordedRunIsReturnedWithItsScriptAndAPageOfItsResult() {
         host.AddRun("abc123def456", response: "{\"status\":\"ok\",\"run_id\":\"abc123def456\"}", script: "result = 1", result: "0123456789");
 
@@ -987,6 +1034,18 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(200 * 1024, capped["result_page"].Value<int>("length"));
         Assert.Equal(0, negative["result_page"].Value<int>("offset"));
         Assert.Equal(0, beyond["result_page"].Value<int>("length"));
+    }
+
+    /// <summary>A page is cut by characters even across read buffers and multi-byte text (issue #3922).</summary>
+    [Fact]
+    public void ResultPagesSpanningReadBuffersKeepCharacterOffsets() {
+        var result = new string('é', 65530) + "0123456789" + new string('x', 70000);
+        host.AddRun("abc123def456", response: "{}", result: result);
+
+        var page = Payload(Single(ToolCall(1, "get_run", new JObject { ["run_id"] = "abc123def456", ["offset"] = 65528, ["length"] = 14 })))["result_page"];
+
+        Assert.Equal(result.Substring(65528, 14), page.Value<string>("text"));
+        Assert.Equal(result.Length, page.Value<int>("total_length"));
     }
 
     [Theory]

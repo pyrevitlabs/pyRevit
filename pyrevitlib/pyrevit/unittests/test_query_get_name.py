@@ -5,6 +5,10 @@ Run from Revit via the pyRevit DevTools "Query get_name Tests" button
 (doc-project context). Validates workset support and IronPython 2 Name fallback.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import unittest
 
 from Autodesk.Revit.DB import Element  # pylint: disable=E0401

@@ -4,8 +4,11 @@
 
     <sys:String x:Key="progress_title">Contando triángulos</sys:String>
     <sys:String x:Key="no_geometry">No se encontraron instancias de familia con geometría sólida.</sys:String>
+    <sys:String x:Key="no_geometry_family">No se encontraron formas con geometría sólida en esta familia.</sys:String>
     <sys:String x:Key="table_title">Triángulos por tipo de familia</sys:String>
+    <sys:String x:Key="table_title_family">Triángulos por forma</sys:String>
     <sys:String x:Key="column_type">Tipo</sys:String>
+    <sys:String x:Key="column_form">Forma</sys:String>
     <sys:String x:Key="column_category">Categoría</sys:String>
     <sys:String x:Key="column_example">Elemento de ejemplo</sys:String>
     <sys:String x:Key="column_coarse">Baja</sys:String>

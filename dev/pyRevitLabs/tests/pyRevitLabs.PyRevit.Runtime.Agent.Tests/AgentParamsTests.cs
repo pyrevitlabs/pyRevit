@@ -81,6 +81,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void AnElementIdBeyondInt64IsRefused() {
+            var error = Assert.Throws<AgentException>(() => AgentParams.ElementIds(JArray.Parse("[99999999999999999999]"), "ids"));
+
+            Assert.Equal("invalid_params", error.Code);
+            Assert.Equal("'ids[0]' is out of range.", error.Message);
+        }
+
+        [Fact]
         public void ElementIdsKeepWholeNumbers() {
             Assert.Equal(new long[] { 1, 2, 3000000000 }, AgentParams.ElementIds(JArray.Parse("[1,2.0,3000000000]"), "ids"));
         }

@@ -31,6 +31,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         AskUser,
         UserApproved,
         UserDiscarded,
+        DiscardedCallerGone,
     }
 
     internal sealed class AgentRunFacts {
@@ -156,6 +157,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return "error";
                 case AgentRunVerdict.PolicyReadOnly:
                 case AgentRunVerdict.UserDiscarded:
+                case AgentRunVerdict.DiscardedCallerGone:
                     return "rejected";
                 default:
                     return "ok";
@@ -169,6 +171,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case AgentRunVerdict.AutoCommit:
                 case AgentRunVerdict.UserApproved: return "committed";
                 case AgentRunVerdict.UserDiscarded: return "discarded";
+                case AgentRunVerdict.DiscardedCallerGone: return "discarded_caller_gone";
                 default: return "rolled_back";
             }
         }
@@ -194,6 +197,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 default:
                     return false;
             }
+        }
+
+        /// <summary>
+        /// The <c>decision</c> of a run the host completed: <c>not_run</c> when the script engine
+        /// failed before the script started, since nothing ran to roll back.
+        /// </summary>
+        public static string Decision(AgentRunVerdict verdict, bool scriptStarted) {
+            return verdict == AgentRunVerdict.ScriptFailed && !scriptStarted ? "not_run" : Decision(verdict);
+        }
+
+        /// <summary>
+        /// The <c>decision</c> of a run the host itself failed: <c>not_run</c> when it failed
+        /// before the script started, such as when Revit refused to start the run's transaction group.
+        /// </summary>
+        public static string AfterHostError(bool committed, bool scriptStarted) {
+            if (committed)
+                return "committed";
+            return scriptStarted ? "rolled_back" : "not_run";
         }
 
         public static string Approval(AgentRunVerdict verdict) {

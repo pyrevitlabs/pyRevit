@@ -258,6 +258,9 @@
     <system:String x:Key="UI-UX.SelectLanguage">UI 언어 선택:</system:String>
     <system:String x:Key="UI-UX.RegionSettingsLink">pyRevit 번역 도움말</system:String>
 
+    <system:String x:Key="UI-UX.Ribbon">리본</system:String>
+    <system:String x:Key="UI-UX.ShowTabIcons">pyRevit 리본 탭에 아이콘 표시</system:String>
+
     <system:String x:Key="UI-UX.TabColoring">탭 색상 지정</system:String>
     <system:String x:Key="UI-UX.ColoringStyle">색상 지정 스타일</system:String>
     <system:String x:Key="UI-UX.ColorizeOpenDocuments">열린 문서에 색상 지정</system:String>

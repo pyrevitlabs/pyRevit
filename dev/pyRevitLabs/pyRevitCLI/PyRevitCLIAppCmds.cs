@@ -53,7 +53,7 @@ namespace pyRevitCLI {
                 );
 
         internal static bool IsRunningInsideClone(PyRevitClone clone) =>
-            GetProcessPath().NormalizeAsPath().Contains(clone.ClonePath.NormalizeAsPath());
+            PyRevitCloneLocation.IsInside(GetProcessPath(), clone.ClonePath);
 
         internal static void
         ClearCaches(bool allCaches, string revitYear, TargetCacheType cachetype) {
@@ -61,24 +61,20 @@ namespace pyRevitCLI {
                 case TargetCacheType.PyRevitCache:
                     if (allCaches)
                         PyRevitCaches.ClearAllCaches();
-                    else {
-                        int revitYearNumber = 0;
-                        if (int.TryParse(revitYear, out revitYearNumber))
-                            PyRevitCaches.ClearCache(revitYearNumber);
-                    }
+                    else
+                        PyRevitCaches.ClearCache(PyRevitCLIArguments.RevitYear(revitYear));
                     break;
 
                 case TargetCacheType.BIM360Cache:
                     if (allCaches)
                         RevitCaches.ClearAllCaches(RevitCacheType.BIM360Cache);
-                    else {
-                        int revitYearNumber = 0;
-                        if (int.TryParse(revitYear, out revitYearNumber))
-                            RevitCaches.ClearCache(revitYearNumber, RevitCacheType.BIM360Cache);
-                    }
+                    else
+                        RevitCaches.ClearCache(PyRevitCLIArguments.RevitYear(revitYear), RevitCacheType.BIM360Cache);
                     break;
             }
         }
+
+        private const string CliExecutableName = "pyrevit.exe";
 
         // env commands
         internal static string
@@ -163,12 +159,31 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        EnsurePathEntry(string dir, string scopeName) {
+        EnsurePathEntry(string dir, string scopeName, bool first = false) {
             var scope = ParsePathScope(scopeName);
-            bool changed = SystemPath.EnsurePathEntry(scope, dir);
-            Console.WriteLine(changed
-                ? string.Format("Added \"{0}\" to the {1} PATH.", dir, ScopeName(scope))
-                : string.Format("\"{0}\" is already in the {1} PATH.", dir, ScopeName(scope)));
+            bool changed = SystemPath.EnsurePathEntry(scope, dir, first);
+            if (first)
+                Console.WriteLine(changed
+                    ? string.Format("Put \"{0}\" first in the {1} PATH.", dir, ScopeName(scope))
+                    : string.Format("\"{0}\" is already first in the {1} PATH.", dir, ScopeName(scope)));
+            else
+                Console.WriteLine(changed
+                    ? string.Format("Added \"{0}\" to the {1} PATH.", dir, ScopeName(scope))
+                    : string.Format("\"{0}\" is already in the {1} PATH.", dir, ScopeName(scope)));
+        }
+
+        /// <summary>
+        /// Prints the full path of every pyRevit CLI found on the machine and user PATH, one per
+        /// line and nothing else, in the order a new terminal resolves <c>pyrevit</c>.
+        /// </summary>
+        /// <remarks>
+        /// The installers read this output to tell whether another install shadows the one they
+        /// just registered, so the first line must stay the copy that runs.
+        /// </remarks>
+        internal static void
+        ListCliCopiesOnPath() {
+            foreach (string cliCopy in SystemPath.FindFileOnPath(CliExecutableName))
+                Console.WriteLine(cliCopy);
         }
 
         internal static void
@@ -277,6 +292,9 @@ namespace pyRevitCLI {
                         else
                             logger.Debug("Failed getting latest release list OR no CLI releases.");
                     }
+                    catch (pyRevitGithubApiException githubEx) {
+                        Console.WriteLine(string.Format("Could not check for updates. {0}", githubEx.Message));
+                    }
                     catch (Exception getRelEx) {
                         Console.WriteLine(getRelEx.Message);
                     }
@@ -292,8 +310,11 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        RunDoctor(string args, bool dryRun = false) {
+        RunDoctor(string args, bool dryRun = false, bool force = false, bool keepConfig = false, bool keepExtensions = false) {
             if (dryRun) args += " --dryrun";
+            if (force) args += " --force";
+            if (keepConfig) args += " --keep-config";
+            if (keepExtensions) args += " --keep-extensions";
 
             string doctorExe = Path.Combine(GetProcessPath(), "pyrevit-doctor.exe");
             ProcessStartInfo cpyProcessInfo = new ProcessStartInfo(doctorExe) {
@@ -303,6 +324,8 @@ namespace pyRevitCLI {
             };
             var utilityProcess = Process.Start(cpyProcessInfo);
             utilityProcess.WaitForExit();
+            if (utilityProcess.ExitCode != 0)
+                Environment.ExitCode = utilityProcess.ExitCode;
         }
     }
 }

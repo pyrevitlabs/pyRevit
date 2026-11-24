@@ -6,6 +6,9 @@ records, and the runs the host refused. The panel's view models are covered by u
 what only Revit can show.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
 import json
 import os.path as op
 

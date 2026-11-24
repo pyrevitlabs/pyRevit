@@ -72,6 +72,6 @@ Create a type with `fm.NewType` before `SetFormula`. To get the parameter and fo
 ## Before you report done
 
 - [ ] The family's types and parameter values, queried after loading, are the ones asked for.
-- [ ] A geometry change was checked on a placed instance or in a view with `capture_view`.
+- [ ] A geometry change was checked on a placed instance or in a view with `capture_view`, or in the family itself with the preview in `family-geometry`.
 - [ ] Every family document you opened is closed, or kept open on purpose for a later call: check `app.Documents`.
 - [ ] The family file on disk is unchanged; any save is left to the user in Revit.

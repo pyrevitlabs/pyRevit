@@ -6,8 +6,11 @@
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
         <PermitDeploy>true</PermitDeploy>
+        <PyRevitTestEngines>IPY2712PR;IPY342</PyRevitTestEngines>
         <IronPythonVersion Condition="'$(IronPythonVersion)' == ''">IPY2712PR</IronPythonVersion>
         <IronPythonPrefix Condition="'$(IronPythonVersion)' == 'IPY2712PR'">pyRevitLabs.</IronPythonPrefix>
+        <BuiltShellEnginesDirectory>$(MSBuildThisFileDirectory)../../../../bin/netcore/engines</BuiltShellEnginesDirectory>
+        <ShellEnginesDirectory Condition="'$(ShellEnginesDirectory)' == '' and Exists('$(BuiltShellEnginesDirectory)/$(IronPythonVersion)/pyRevitLabs.PyRevit.Shell.dll')">$(BuiltShellEnginesDirectory)</ShellEnginesDirectory>
         <UseWpf>true</UseWpf>
     </PropertyGroup>
 
@@ -17,6 +20,10 @@
         <PackageReference Include="xunit" Version="2.5.3"/>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
         <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="..\pyRevitLabs.PyRevit.Forms.Tests\OffscreenWindows.cs" Link="OffscreenWindows.cs"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(ShellEnginesDirectory)' == ''">

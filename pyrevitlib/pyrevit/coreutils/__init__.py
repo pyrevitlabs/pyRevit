@@ -162,7 +162,7 @@ class ScriptFileParser(object):
         if self.ast_tree:
             doc_str = ast.get_docstring(self.ast_tree)
             if doc_str:
-                return doc_str.decode("utf-8")
+                return doc_str if PY3 else doc_str.decode("utf-8")
 
     def extract_param(self, param_name, default_value=None):
         """Find variable and extract its value.

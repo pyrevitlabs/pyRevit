@@ -21,4 +21,8 @@
   <ItemGroup>
     <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="pyRevitCLI.Tests" />
+  </ItemGroup>
 </Project>

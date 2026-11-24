@@ -9,6 +9,9 @@ on:
       - 'docs/**'
       - 'pyrevitlib/**'
       - '*.md'
+      - 'pyRevitfile'
+      - 'dev/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt'
+      - 'dev/pyRevitLabs.PyRevit.Runtime/ScriptExecutor.cs'
   # when PR from develop->master is created
   pull_request:
     branches:
@@ -18,17 +21,28 @@ on:
       - 'docs/**'
       - 'pyrevitlib/**'
       - '*.md'
+      - 'pyRevitfile'
+      - 'dev/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt'
+      - 'dev/pyRevitLabs.PyRevit.Runtime/ScriptExecutor.cs'
   # manual run
   workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pyrevit-docs-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       
       - name: Prepare Python 3.14
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.14'
 
@@ -37,4 +51,20 @@ jobs:
           pip install pipenv
           pipenv sync
 
-      - run: pipenv run mkdocs gh-deploy --force
+      - name: Build docs
+        env:
+          DISABLE_MKDOCS_2_WARNING: 'true'
+          NO_MKDOCS_2_WARNING: '1'
+        run: pipenv run mkdocs build --site-dir site
+
+      - name: Check out gh-pages
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: gh-pages
+          fetch-depth: 1
+
+      - name: Deploy docs
+        env:
+          COMMIT_MESSAGE: "docs: deploy ${{ github.sha }}"
+        run: bash .github/scripts/publish-gh-pages.sh publish site .

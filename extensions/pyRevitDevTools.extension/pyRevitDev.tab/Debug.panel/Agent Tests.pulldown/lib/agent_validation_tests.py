@@ -1,5 +1,9 @@
 """Parameter validation of the agent host requests: what each one refuses to run."""
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import os.path as op
 
 import agent_harness as harness
@@ -13,19 +17,6 @@ NOT_PRINTABLE_VIEW = (
     "    result = views[0].Id.Value if hasattr(views[0].Id, 'Value') else views[0].Id.IntegerValue\n"
 )
 
-UNIQUELY_NAMED_VIEW = (
-    "views = [v for v in DB.FilteredElementCollector(doc).OfClass(DB.View)"
-    " if not v.IsTemplate and v.CanBePrinted]\n"
-    "names = {}\n"
-    "for view in views:\n"
-    "    names[view.Name.lower()] = names.get(view.Name.lower(), 0) + 1\n"
-    "unique = [view for view in views if names[view.Name.lower()] == 1]\n"
-    "result = None\n"
-    "if unique:\n"
-    "    view_id = unique[0].Id.Value if hasattr(unique[0].Id, 'Value') else unique[0].Id.IntegerValue\n"
-    "    result = [view_id, unique[0].Name]\n"
-)
-
 CLOSED_PLAN_VIEW = (
     "open_ids = [uv.ViewId for uv in uidoc.GetOpenUIViews()]\n"
     "plans = [v for v in DB.FilteredElementCollector(doc).OfClass(DB.ViewPlan)"
@@ -33,6 +24,22 @@ CLOSED_PLAN_VIEW = (
     "result = None\n"
     "if plans:\n"
     "    result = plans[0].Id.Value if hasattr(plans[0].Id, 'Value') else plans[0].Id.IntegerValue\n"
+)
+
+UNIQUELY_NAMED_MIXED_CASE_VIEW = (
+    "views = [v for v in DB.FilteredElementCollector(doc).OfClass(DB.View)"
+    " if not v.IsTemplate]\n"
+    "counts = {}\n"
+    "for v in views:\n"
+    "    counts[v.Name.lower()] = counts.get(v.Name.lower(), 0) + 1\n"
+    "candidates = [v for v in views if v.CanBePrinted and counts[v.Name.lower()] == 1"
+    " and v.Name != v.Name.lower() and v.Name.lower() not in ('3d', 'active')"
+    " and all(ord(c) < 128 for c in v.Name)]\n"
+    "result = None\n"
+    "if candidates:\n"
+    "    view_id = candidates[0].Id\n"
+    "    result = {'id': view_id.Value if hasattr(view_id, 'Value') else view_id.IntegerValue,"
+    " 'name': candidates[0].Name}\n"
 )
 
 
@@ -173,18 +180,18 @@ class CaptureValidationTests(TestCase):
             self.assertIn("'width'", raised.exception.message)
 
     def test_a_view_can_be_named_by_id_or_by_name_ignoring_case(self):
-        """A view is found by its numeric id, and by a name no other view has in any case."""
-        active = request("get_context")["active_view"]
-        by_id = request("capture", mode="export", view=str(active["id"]), width=320)
-        named = harness.run(UNIQUELY_NAMED_VIEW)["result"]
-        if named is None:
+        """A view is found by its numeric id and by its name in any case."""
+        view = harness.run(UNIQUELY_NAMED_MIXED_CASE_VIEW)["result"]
+        if view is None:
             self.skipTest(
-                "The scratch project has no printable view with a name of its own."
+                "This Revit has no printable view with a unique mixed-case name."
             )
-        view_id, name = named
-        by_name = request("capture", mode="export", view=name.lower(), width=320)
-        self.assertEqual(active["id"], by_id["view"]["id"])
-        self.assertEqual(view_id, by_name["view"]["id"])
+        by_id = request("capture", mode="export", view=str(view["id"]), width=320)
+        by_name = request(
+            "capture", mode="export", view=view["name"].lower(), width=320
+        )
+        self.assertEqual(view["id"], by_id["view"]["id"])
+        self.assertEqual(view["id"], by_name["view"]["id"])
 
     def test_a_view_that_cannot_be_exported_is_not_supported(self):
         """A view Revit can't print is refused in export mode."""

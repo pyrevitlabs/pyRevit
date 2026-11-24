@@ -1,12 +1,14 @@
 using Build.Helpers;
 using Build.Options;
 using Microsoft.Extensions.Options;
+using ModularPipelines.Attributes;
 using ModularPipelines.Configuration;
 using ModularPipelines.Context;
 using ModularPipelines.Modules;
 
 namespace Build.Modules;
 
+[DependsOn<StampVersionModule>]
 public sealed class SetCopyrightYearModule(IOptions<BuildOptions> buildOptions) : Module
 {
     protected override ModuleConfiguration Configure()
@@ -28,7 +30,11 @@ public sealed class SetCopyrightYearModule(IOptions<BuildOptions> buildOptions) 
         }
 
         XmlHelper.SetMsiCopyright(PyRevitPaths.PyRevitCommonMsiProps, copyright);
-        XmlHelper.SetChocoCopyright(PyRevitPaths.PyRevitChocoNuspec, copyright);
+        foreach (var package in PyRevitPaths.ChocoPackages)
+        {
+            XmlHelper.SetChocoCopyright(package.Nuspec, copyright);
+        }
+
         context.Summary.KeyValue("Build", "Copyright", copyright);
         return Task.CompletedTask;
     }

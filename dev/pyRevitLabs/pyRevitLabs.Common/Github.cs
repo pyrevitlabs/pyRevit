@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 
@@ -60,14 +61,40 @@ namespace pyRevitLabs.Common {
         public string CreatedTimeStamp => created_at;
         public string PublishedTimeStamp => published_at;
 
-        // Extract installer download url from assets.browser_download_url
-        public string InstallerURL {
+        /// <summary>
+        /// Returns the download URL of the first release asset whose file name satisfies
+        /// <paramref name="nameMatches"/>, or null when the release has no such asset.
+        /// </summary>
+        public string FindAssetDownloadUrl(Func<string, bool> nameMatches) {
+            if (assets is null)
+                return null;
+
+            foreach (var asset in assets) {
+                var assetName = asset.Value<string>("name");
+                if (assetName != null && nameMatches(assetName))
+                    return asset.Value<string>("browser_download_url");
+            }
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// The GitHub API answered with an error instead of the requested data, such as a rate limit response.
+    /// </summary>
+    public class pyRevitGithubApiException : PyRevitException {
+        public pyRevitGithubApiException(HttpStatusCode statusCode, string apiMessage) {
+            StatusCode = statusCode;
+            ApiMessage = apiMessage;
+        }
+
+        public HttpStatusCode StatusCode { get; private set; }
+
+        public string ApiMessage { get; private set; }
+
+        public override string Message {
             get {
-                if (assets != null && assets.Count > 0) {
-                    var firstAsset = assets[0];
-                    return firstAsset.SelectToken("browser_download_url").Value<string>();
-                }
-                return string.Empty;
+                var detail = string.IsNullOrWhiteSpace(ApiMessage) ? StatusCode.ToString() : ApiMessage;
+                return string.Format("GitHub API request failed (HTTP {0}): {1}", (int)StatusCode, detail);
             }
         }
     }
@@ -93,7 +120,7 @@ namespace pyRevitLabs.Common {
                 // response.Headers.Add(HttpRequestHeader.Authorization, $"token {AuthToken}");
                 IList<T> releases;
                 using (var reader = new StreamReader(response.Content.ReadAsStreamAsync().GetAwaiter().GetResult())) {
-                    releases = JsonConvert.DeserializeObject<IList<T>>(reader.ReadToEnd());
+                    releases = ParseReleases<T>(reader.ReadToEnd(), response.StatusCode);
                 }
 
                 string linkHeader = null;
@@ -112,6 +139,27 @@ namespace pyRevitLabs.Common {
 
                 return releases;
             }
+        }
+
+        /// <summary>
+        /// Parses the body of a GitHub releases API response into a list of releases.
+        /// </summary>
+        /// <exception cref="pyRevitGithubApiException">
+        /// The response is an error object (for example a rate limit), an unsuccessful status, or not a JSON list.
+        /// </exception>
+        public static IList<T> ParseReleases<T>(string content, HttpStatusCode statusCode) {
+            JToken token;
+            try {
+                token = JToken.Parse(content);
+            }
+            catch (JsonReaderException) {
+                throw new pyRevitGithubApiException(statusCode, null);
+            }
+
+            if (token is JArray list && (int)statusCode < 400)
+                return list.ToObject<IList<T>>();
+
+            throw new pyRevitGithubApiException(statusCode, (token as JObject)?.Value<string>("message"));
         }
 
         public static List<T> GetReleases<T>(string repoId) {

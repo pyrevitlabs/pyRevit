@@ -12,6 +12,8 @@ using Autodesk.Revit.UI;
 
 using pyRevitLabs.Json.Linq;
 
+using static PyRevitLabs.PyRevit.Runtime.Agent.AgentUser32;
+
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
     /// Serves <c>capture</c>: a PNG of a view, so an agent can check what it built.
@@ -42,14 +44,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// views in <c>export</c> and <c>viewport</c> modes, to the view for the capture only: a
     /// view template that controls them is detached inside the rolled-back group. In a workshared
     /// model, a view the user doesn't own is duplicated in the group and the copy is changed.
+    /// A sheet can be named by its sheet number. A schedule is rendered on a temporary sheet in
+    /// the rolled-back group, in <c>export</c> mode only.
     /// A view name shared by several views fails with <c>view_ambiguous</c> listing their ids,
-    /// unless <c>screen</c> mode can take the active view among them.
+    /// types and, for sheets, numbers, unless <c>screen</c> mode can take the active view among
+    /// them. The optional <c>view_type</c>, a <c>ViewType</c> name such as <c>FloorPlan</c>,
+    /// keeps only views of that type, so a name shared across types resolves in one call; it is
+    /// rejected with <c>invalid_params</c> for <c>active</c> and <c>3d</c>.
     /// Invariant: capturing never leaves a change in the model.
     /// </remarks>
     internal static class AgentCapture {
         private const int DefaultWidth = 1280;
         private const int MinWidth = 320;
         private const int MaxWidth = 2400;
+        private const int MaxElements = 20000;
 
         private const double SectionBoxPadding = 2.0;
         private const double DirectionTolerance = 1e-3;
@@ -59,14 +67,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int GwlExStyle = -20;
         private const int WsExTransparent = 0x20;
         private const int WsExLayered = 0x80000;
-
-        private delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
-
-        [DllImport("user32.dll")]
-        private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr parameter);
-
-        [DllImport("user32.dll")]
-        private static extern bool IsWindowVisible(IntPtr window);
 
         [DllImport("user32.dll")]
         private static extern bool IsIconic(IntPtr window);
@@ -79,9 +79,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         [DllImport("user32.dll")]
         private static extern int GetWindowLong(IntPtr window, int index);
-
-        [DllImport("user32.dll")]
-        private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
         [StructLayout(LayoutKind.Sequential)]
         private struct NativeRect {
@@ -132,6 +129,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public sealed class Request {
             public string View;
+            public string ViewType;
             public string Mode;
             public int Width;
             public string Direction;
@@ -158,6 +156,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'direction' must be one of: " + string.Join(", ", Directions.Keys) + ".");
             var request = new Request {
                 View = string.IsNullOrWhiteSpace(AgentParams.Get<string>(parameters, "view")) ? "active" : AgentParams.Get<string>(parameters, "view").Trim(),
+                ViewType = ParseViewType(parameters),
                 Mode = mode,
                 Width = width,
                 Direction = direction,
@@ -172,11 +171,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return request;
         }
 
+        private static string ParseViewType(JObject parameters) {
+            var names = Enum.GetNames(typeof(ViewType)).Where(name => name != "Undefined" && name != "Internal").ToList();
+            var choice = ParseChoice(parameters, "view_type", names.Select(name => name.ToLowerInvariant()));
+            return choice == null ? null : names.First(name => string.Equals(name, choice, StringComparison.OrdinalIgnoreCase));
+        }
+
         private static List<ElementId> ParseElements(JToken token) {
             if (token == null || token.Type == JTokenType.Null)
                 return null;
             var ids = token as JArray
                 ?? throw new AgentException("invalid_params", "'elements' must be an array of element ids.");
+            if (ids.Count > MaxElements)
+                throw new AgentException("invalid_params", $"At most {MaxElements} 'elements' per call.");
             return AgentParams.ElementIds(ids, "elements").Select(AgentIds.FromValue).ToList();
         }
 
@@ -185,6 +192,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'eye' and 'target' must be given together.");
             if (request.Eye != null && request.Eye.DistanceTo(request.Target) < DirectionTolerance)
                 throw new AgentException("invalid_params", "'eye' and 'target' must be different points.");
+            if (request.ViewType != null && (string.Equals(request.View, "active", StringComparison.OrdinalIgnoreCase) || string.Equals(request.View, "3d", StringComparison.OrdinalIgnoreCase)))
+                throw new AgentException("invalid_params", "'view_type' needs a view name, sheet number or id, not 'active' or '3d'.");
             if (request.Eye != null && request.Section != null)
                 throw new AgentException("invalid_params", "'section' and 'eye'/'target' can't be combined; each defines the camera.");
             if ((request.Eye != null || request.Section != null) && !string.Equals(request.View, "3d", StringComparison.OrdinalIgnoreCase))
@@ -274,27 +283,34 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Directory.CreateDirectory(directory);
             var baseName = DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 6);
 
+            var missing = MissingIds(doc, request.Elements);
             string path;
             View captured;
-            if (request.Mode == "screen") {
-                captured = ResolveView(doc, uidoc, request.View, preferActive: true);
-                if (captured.Id != uidoc.ActiveView.Id)
-                    throw new AgentException("view_not_active",
-                        $"Mode 'screen' copies the active view's window, and view '{captured.Name}' is not the active view; "
-                        + "use mode 'export' or 'viewport', or activate the view.");
-                path = CaptureScreen(uidoc, captured, Path.Combine(directory, baseName + ".png"));
+            try {
+                if (request.Mode == "screen") {
+                    captured = ResolveView(doc, uidoc, request, preferActive: true);
+                    if (captured.Id != uidoc.ActiveView.Id)
+                        throw new AgentException("view_not_active",
+                            $"Mode 'screen' copies the active view's window, and view '{captured.Name}' is not the active view; "
+                            + "use mode 'export' or 'viewport', or activate the view.");
+                    path = CaptureScreen(uidoc, captured, Path.Combine(directory, baseName + ".png"));
+                }
+                else if (request.Mode == "viewport") {
+                    captured = ResolveView(doc, uidoc, request);
+                    path = ExportViewport(uidoc, captured, directory, baseName, request);
+                }
+                else if (string.Equals(request.View, "3d", StringComparison.OrdinalIgnoreCase)) {
+                    captured = null;
+                    path = ExportTemporary(doc, directory, baseName, request);
+                }
+                else {
+                    captured = ResolveView(doc, uidoc, request);
+                    path = ExportWithDisplay(doc, captured, directory, baseName, request);
+                }
             }
-            else if (request.Mode == "viewport") {
-                captured = ResolveView(doc, uidoc, request.View);
-                path = ExportViewport(uidoc, captured, directory, baseName, request);
-            }
-            else if (string.Equals(request.View, "3d", StringComparison.OrdinalIgnoreCase)) {
-                captured = null;
-                path = ExportTemporary(doc, directory, baseName, request);
-            }
-            else {
-                captured = ResolveView(doc, uidoc, request.View);
-                path = ExportWithDisplay(doc, captured, directory, baseName, request);
+            catch (AgentException ex) when (missing != null) {
+                ex.Details["missing_ids"] = missing;
+                throw;
             }
 
             ScaleDown(path, request.Width, out var width, out var height);
@@ -316,7 +332,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 result["detail_level"] = request.DetailLevel;
             if (request.DisplayStyle != null)
                 result["display_style"] = request.DisplayStyle;
+            if (missing != null)
+                result["missing_ids"] = missing;
             return result;
+        }
+
+        private static JArray MissingIds(Document doc, List<ElementId> ids) {
+            var missing = ids?.Where(id => doc.GetElement(id) == null).Select(AgentIds.ToValue).Distinct().Take(100).ToList();
+            return missing?.Count > 0 ? new JArray(missing) : null;
         }
 
         private static JObject DescribeTemporary(Request request) {
@@ -339,7 +362,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JArray PointArray(XYZ point) => new JArray(point.X, point.Y, point.Z);
 
-        private static View ResolveView(Document doc, UIDocument uidoc, string selector, bool preferActive = false) {
+        private static View ResolveView(Document doc, UIDocument uidoc, Request request, bool preferActive = false) {
+            var selector = request.View;
             if (string.Equals(selector, "active", StringComparison.OrdinalIgnoreCase))
                 return uidoc.ActiveView;
 
@@ -347,20 +371,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 selector,
                 id => ViewById(doc, id),
                 new FilteredElementCollector(doc).OfClass(typeof(View)).Cast<View>().Where(view => !view.IsTemplate),
-                view => view.Name);
+                view => view.Name,
+                view => (view as ViewSheet)?.SheetNumber,
+                view => view.ViewType.ToString(),
+                request.ViewType);
             if (matches.Count == 0) {
                 var named = long.TryParse(selector, out _) ? $"with id or name '{selector}'" : $"named '{selector}'";
-                throw new AgentException("view_not_found", $"No view {named}. Use 'active', '3d', a view name or a view id.");
+                var ofType = request.ViewType == null ? string.Empty : $" of type {request.ViewType}";
+                throw new AgentException("view_not_found", $"No view {named}{ofType}. Use 'active', '3d', a view name, a sheet number or a view id.");
             }
             if (matches.Count > 1 && preferActive && matches.Any(view => view.Id == uidoc.ActiveView.Id))
                 return uidoc.ActiveView;
             if (matches.Count > 1) {
                 var error = new AgentException("view_ambiguous",
-                    $"{matches.Count} views are named '{selector}'; pass the id of the one to capture.");
+                    $"{matches.Count} views are named '{selector}'; pass the id of the one to capture, or 'view_type' to narrow by type.");
                 error.Details["views"] = new JArray(matches.Select(view => new JObject {
                     ["id"] = AgentIds.ToValue(view.Id),
                     ["name"] = view.Name,
                     ["type"] = view.ViewType.ToString(),
+                    ["number"] = (view as ViewSheet)?.SheetNumber,
                 }));
                 throw error;
             }
@@ -426,32 +455,43 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ?? throw new AgentException("capture_failed", $"Revit did not write an image for view '{view.Name}'.");
         }
 
+        private static string ExportSchedule(Document doc, ViewSchedule schedule, string directory, string baseName, Request request) {
+            if (request.OverridesDisplay)
+                throw new AgentException("view_not_supported",
+                    $"View '{schedule.Name}' ({schedule.ViewType}) has no detail level or display style.");
+#if !(REVIT2021 || REVIT2022)
+            if (schedule.Definition.IsFilteredBySheet)
+                throw new AgentException("view_not_supported",
+                    $"Schedule '{schedule.Name}' is filtered by sheet, so it lists only elements shown on the sheet that hosts it and would be empty on a temporary sheet.");
+#endif
+            if (doc.IsReadOnly)
+                throw new AgentException("document_read_only", "A schedule is captured on a temporary sheet, which a read-only document doesn't allow.");
+
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent schedule sheet", () => {
+                var sheet = ViewSheet.Create(doc, ElementId.InvalidElementId);
+                var appearsInSheetList = sheet.get_Parameter(BuiltInParameter.SHEET_SCHEDULED);
+                if (appearsInSheetList != null && !appearsInSheetList.IsReadOnly)
+                    appearsInSheetList.Set(0);
+                ScheduleSheetInstance.Create(doc, sheet.Id, schedule.Id, XYZ.Zero);
+                return sheet;
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
+                message => $"Schedule '{schedule.Name}' could not be placed on a temporary sheet: {message}");
+        }
+
         private static string ExportWithDisplay(Document doc, View view, string directory, string baseName, Request request) {
+            if (view is ViewSchedule schedule)
+                return ExportSchedule(doc, schedule, directory, baseName, request);
             if (!request.OverridesDisplay)
                 return ExportView(doc, view, directory, baseName, request.Width);
             if (doc.IsReadOnly)
                 throw new AgentException("document_read_only", "'detail_level' and 'display_style' change the view temporarily, which a read-only document doesn't allow.");
 
-            using (var group = new TransactionGroup(doc, "pyRevit Agent capture")) {
-                group.Start();
-                try {
-                    View target;
-                    using (var transaction = new Transaction(doc, "pyRevit Agent display override")) {
-                        transaction.Start();
-                        target = ViewToEdit(doc, view);
-                        OverrideDisplay(target, request.DetailLevel, request.DisplayStyle);
-                        transaction.Commit();
-                    }
-                    return ExportView(doc, target, directory, baseName, request.Width);
-                }
-                catch (Autodesk.Revit.Exceptions.ApplicationException ex) {
-                    throw new AgentException("capture_failed", $"View '{view.Name}' could not be shown with the requested display settings: {ex.Message}");
-                }
-                finally {
-                    if (group.HasStarted() && !group.HasEnded())
-                        group.RollBack();
-                }
-            }
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent display override", () => {
+                var target = ViewToEdit(doc, view);
+                OverrideDisplay(target, request.DetailLevel, request.DisplayStyle);
+                return target;
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
+                message => $"View '{view.Name}' could not be shown with the requested display settings: {message}");
         }
 
         /// <remarks>
@@ -491,28 +531,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     $"View '{view.Name}' is not yours in this workshared model, so 'viewport' would crop a copy without its "
                     + "temporary hide/isolate; use mode 'screen' to capture it as shown.");
             var corners = uiView.GetZoomCorners();
-            using (var group = new TransactionGroup(doc, "pyRevit Agent capture")) {
-                group.Start();
-                try {
-                    View target;
-                    using (var transaction = new Transaction(doc, "pyRevit Agent crop to viewport")) {
-                        transaction.Start();
-                        target = ViewToEdit(doc, view);
-                        OverrideDisplay(target, request.DetailLevel, request.DisplayStyle);
-                        CropToCorners(target, corners[0], corners[1]);
-                        transaction.Commit();
-                    }
-                    return ExportView(doc, target, directory, baseName, request.Width);
-                }
-                catch (Autodesk.Revit.Exceptions.ApplicationException ex) {
-                    throw new AgentException("capture_failed",
-                        $"View '{view.Name}' could not be cropped to its on-screen region: {ex.Message} Use mode 'export' or 'screen'.");
-                }
-                finally {
-                    if (group.HasStarted() && !group.HasEnded())
-                        group.RollBack();
-                }
-            }
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent crop to viewport", () => {
+                var target = ViewToEdit(doc, view);
+                OverrideDisplay(target, request.DetailLevel, request.DisplayStyle);
+                CropToCorners(target, corners[0], corners[1]);
+                return target;
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
+                message => $"View '{view.Name}' could not be cropped to its on-screen region: {message} Use mode 'export' or 'screen'.");
         }
 
         /// <remarks>
@@ -546,27 +571,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc.IsReadOnly)
                 throw new AgentException("document_read_only", "A temporary view can't be created in a read-only document.");
 
-            using (var group = new TransactionGroup(doc, "pyRevit Agent capture")) {
-                group.Start();
-                try {
-                    View view;
-                    using (var transaction = new Transaction(doc, "pyRevit Agent capture view")) {
-                        transaction.Start();
-                        view = CreateTemporary(doc, request);
-                        ApplyDisplay(view, request.DetailLevel ?? "medium", request.DisplayStyle ?? "shaded_edges");
-                        ShowModelOnly(doc, view);
-                        transaction.Commit();
-                    }
-                    return ExportView(doc, view, directory, baseName, request.Width);
-                }
-                catch (Autodesk.Revit.Exceptions.ApplicationException ex) {
-                    throw new AgentException("capture_failed", $"The temporary view could not be created: {ex.Message}");
-                }
-                finally {
-                    if (group.HasStarted() && !group.HasEnded())
-                        group.RollBack();
-                }
-            }
+            return AgentCaptureGroup.Run(doc, "pyRevit Agent capture view", () => {
+                var view = CreateTemporary(doc, request);
+                ApplyDisplay(view, request.DetailLevel ?? "medium", request.DisplayStyle ?? "shaded_edges");
+                ShowModelOnly(doc, view);
+                return view;
+            }, target => ExportView(doc, target, directory, baseName, request.Width),
+                message => $"The temporary view could not be created: {message}");
         }
 
         private static View CreateTemporary(Document doc, Request request) {

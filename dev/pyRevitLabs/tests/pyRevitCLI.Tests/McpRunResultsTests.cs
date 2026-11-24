@@ -3,6 +3,8 @@ using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class McpRunResultsTests {
     private static JObject Error(string type, string message, string failingLine = null) {
         var error = new JObject { ["type"] = type, ["message"] = message };
@@ -43,6 +45,8 @@ public class McpRunResultsTests {
         return run;
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class CompactTests {
         [Fact]
         public void StatusAndRunIdLeadTheResult() {
@@ -65,11 +69,19 @@ public class McpRunResultsTests {
         }
 
         [Fact]
+        public void ARollbackFailureReasonIsKeptForEveryMode() {
+            var extra = new JObject { ["decision"] = "rollback_incomplete", ["rollback_failure"] = "Revit returned Pending." };
+
+            Assert.Equal("Revit returned Pending.", PyRevitMcpRunResults.Compact(Run("query", extra: extra))["rollback_failure"].Value<string>());
+            Assert.Null(PyRevitMcpRunResults.Compact(Run("modify"))["rollback_failure"]);
+        }
+
+        [Fact]
         public void EmptyBookkeepingIsDropped() {
             var compact = PyRevitMcpRunResults.Compact(Run());
 
             foreach (var key in new[] {
-                "changes", "warnings", "failures", "dialogs", "blocked", "output", "result", "approval", "since_last_call",
+                "changes", "warnings", "failures", "dialogs", "blocked", "exports", "output", "result", "approval", "since_last_call",
                 "opened_documents", "closed_documents", "unclosed_documents",
             })
                 Assert.Null(compact[key]);
@@ -94,13 +106,27 @@ public class McpRunResultsTests {
                 ["opened_documents"] = new JArray(new JObject { ["key"] = "doc-5", ["title"] = "Family1" }),
                 ["closed_documents"] = new JArray("background"),
                 ["unclosed_documents"] = new JArray("stuck"),
+                ["exports"] = new JArray(@"C:\runs\exports\A101.png"),
                 ["approval"] = "user",
             }));
 
-            foreach (var key in new[] { "warnings", "failures", "dialogs", "blocked", "opened_documents", "closed_documents", "unclosed_documents" })
+            foreach (var key in new[] {
+                "warnings", "failures", "dialogs", "blocked", "opened_documents", "closed_documents", "unclosed_documents", "exports",
+            })
                 Assert.Single((JArray)compact[key]);
             Assert.Equal("doc-5", compact["opened_documents"][0].Value<string>("key"));
             Assert.Equal("user", compact["approval"].Value<string>());
+        }
+
+        [Fact]
+        public void ExportsAreCappedAtTwentyAndPointToGetRun() {
+            var compact = PyRevitMcpRunResults.Compact(Run(extra: new JObject {
+                ["exports"] = new JArray(Enumerable.Range(0, 25).Select(index => $"sheet-{index}.png")),
+            }));
+
+            Assert.Equal(20, ((JArray)compact["exports"]).Count);
+            Assert.Contains("25", compact.Value<string>("exports_note"));
+            Assert.Contains("get_run", compact.Value<string>("exports_note"));
         }
 
         [Fact]
@@ -164,6 +190,18 @@ public class McpRunResultsTests {
 
             Assert.Equal(new[] { 1, 2, 3 }, compact["added_ids"].Select(id => id.Value<int>()));
             Assert.Equal(new[] { "Desk", "1200x600" }, compact["added_families"].Select(family => family.Value<string>("name")));
+        }
+
+        [Fact]
+        public void TheHostSummaryLeadsTheChanges() {
+            var changes = Changes(added: 25);
+            changes["summary"] = "added 25 elements (Walls)";
+
+            var compact = PyRevitMcpRunResults.Compact(Run("modify", changes))["changes"];
+
+            Assert.Equal("summary", ((JObject)compact).Properties().First().Name);
+            Assert.Equal("added 25 elements (Walls)", compact.Value<string>("summary"));
+            Assert.Equal(20, ((JArray)compact["added_ids"]).Count);
         }
 
         [Fact]
@@ -249,6 +287,8 @@ public class McpRunResultsTests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class HintTests {
         [Fact]
         public void ChangingTheDocumentOutsideATransactionPointsToShowElements() {
@@ -383,6 +423,8 @@ public class McpRunResultsTests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class LookupTests {
         [Theory]
         [InlineData("AttributeError", "'Autodesk.Revit.DB' object has no attribute 'Wal'", "Wal")]

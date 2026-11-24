@@ -1,0 +1,53 @@
+name: Push Chocolatey packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Tag of a published release whose Chocolatey packages to push (e.g. v7.1.0.26319+1907). Packages the feed already has are skipped.
+        type: string
+        required: true
+
+jobs:
+  choco:
+    if: github.repository == 'pyrevitlabs/pyRevit'
+    runs-on: windows-2025
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Download signed packages from the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $encodedTag = [uri]::EscapeDataString($env:RELEASE_TAG)
+          $release = gh api "repos/${{ github.repository }}/releases/tags/$encodedTag" | ConvertFrom-Json
+          if ($release.draft) { throw "Release $($env:RELEASE_TAG) is still a draft; publish it first." }
+          $packages = @($release.assets | Where-Object { $_.name -like '*.nupkg' })
+          foreach ($id in 'pyrevit', 'pyrevit-cli') {
+            $pattern = '^' + [regex]::Escape($id) + '\.\d'
+            if (-not ($packages | Where-Object { $_.name -match $pattern })) {
+              throw "Release $($env:RELEASE_TAG) has no $id .nupkg asset; its upload may have failed."
+            }
+          }
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          foreach ($package in $packages) {
+            Invoke-WebRequest -Uri $package.browser_download_url -OutFile (Join-Path dist $package.name)
+            Write-Host "Downloaded $($package.name)"
+          }
+
+      - name: Push Chocolatey packages
+        working-directory: build
+        env:
+          Publish__ChocoToken: ${{ secrets.CHOCO_TOKEN }}
+        run: dotnet run -c Release -- choco

@@ -1,6 +1,6 @@
 using System;
-using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 
 using Autodesk.Revit.DB;
 
@@ -13,7 +13,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Maps JSON-RPC 2.0 request lines from the pipe to agent operations.
     /// </summary>
     /// <remarks>
-    /// Runs on the pipe thread. Anything that touches the Revit API must go through
+    /// Runs on the pipe's connection threads, up to one per open connection at once, so
+    /// <see cref="Handle"/> and everything it calls before the dispatcher must be thread-safe.
+    /// Anything that touches the Revit API must go through
     /// <see cref="AgentDispatcher.Invoke"/>, except a request made in-process through
     /// <see cref="AgentHost.HandleRequest"/>, which already runs on the Revit main thread and
     /// executes the work directly. Errors reach the client as JSON-RPC errors whose
@@ -22,10 +24,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Only a line that is not JSON is a <c>parse_error</c>; a parameter of the wrong JSON type is
     /// <c>invalid_params</c>, and any other failure is an <c>internal_error</c> with <c>outcome</c>
     /// <c>unknown</c>, since the work may already have run.
-    /// Invariant: every request that needs the Revit main thread reads or changes the model, so
-    /// <see cref="InvokeOnMainThread"/> is the session gate. It checks the session when the
+    /// Invariant: every request that reads or changes the model goes through
+    /// <see cref="InvokeOnMainThread"/>, which is the session gate. It checks the session when the
     /// request arrives and again when Revit picks it up. Requests answered on the pipe thread
-    /// (<c>ping</c>, <c>lookup_api</c> and the session requests) stay open without a session.
+    /// (<c>ping</c>, <c>lookup_api</c>, <c>recording_status</c> and the session requests) stay
+    /// open without a session, and so do <c>recording_start</c> and <c>recording_stop</c>, which
+    /// start and stop the user's own recorder and touch nothing in the model.
     /// The pipe can request and pause a session, and end one the user started, but never start
     /// or resume one, or add a document to it. While sessions start automatically, Revit starts
     /// one when it picks up a request.
@@ -43,7 +47,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
         private const double MaxStartTimeoutSeconds = 3600;
 
-        public static string Handle(string line) {
+        /// <param name="line">One JSON-RPC request line.</param>
+        /// <param name="callerGone">Cancelled when the client disconnects before the answer is sent.
+        /// Only a <c>run</c> request uses it, to discard a change set that waits for approval.</param>
+        public static string Handle(string line, CancellationToken callerGone = default) {
             JToken id = null;
             string method = null;
             var loadAtStart = AgentHost.SessionLoad;
@@ -59,15 +66,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 id = request["id"];
                 method = (request["method"] as JValue)?.Value as string ?? string.Empty;
                 var parameters = request["params"] as JObject ?? new JObject();
-                return Success(id, Dispatch(method, parameters, id));
+                return Success(id, Dispatch(method, parameters, id, callerGone));
             }
             catch (AgentException ex) {
                 return Failure(id, -32000, ex.Message, ex.Code, ex.Details);
             }
             catch (Exception ex) {
                 logger.Error(ex, "Agent request failed");
+                var details = new JObject { ["outcome"] = "unknown" };
+                var rollbackFailure = AgentCaptureGroup.RollbackFailureOf(ex);
+                if (rollbackFailure != null)
+                    details["rollback_failure"] = rollbackFailure;
                 return Failure(id, -32603, "The agent request failed inside Revit; the pyRevit log has the details.",
-                    "internal_error", new JObject { ["outcome"] = "unknown" });
+                    "internal_error", details);
             }
             finally {
                 if (method != null)
@@ -75,20 +86,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
-        private static JToken Dispatch(string method, JObject parameters, JToken id) {
+        private static JToken Dispatch(string method, JObject parameters, JToken id, CancellationToken callerGone) {
             AgentHost.RefreshConfigIfChanged();
             AgentHost.Activity.NoteClient((parameters["client"] as JValue)?.Value as string);
             if (method != "ping")
                 RequireEnabled();
             switch (method) {
                 case "ping":
-                    return new JObject {
+                    var pong = new JObject {
                         ["pong"] = true,
-                        ["pid"] = Process.GetCurrentProcess().Id,
+                        ["pid"] = AgentHost.ProcessId,
                         ["pipe"] = AgentHost.PipeName,
                         ["revit_version"] = AgentHost.RevitVersion,
                         ["session"] = AgentSessions.Describe(),
                     };
+                    if (AgentParams.Get<bool?>(parameters, "identity") == true && int.TryParse(AgentHost.RevitVersion, out var pingYear)) {
+                        var identity = AgentSessionIdentity.Describe(pingYear);
+                        foreach (var key in new[] { "commit", "bin_commit", "bin_stale", "bin_hint" })
+                            if (identity.TryGetValue(key, out var value))
+                                pong[key] = value;
+                    }
+                    return pong;
                 case "session_status":
                     return AgentSessions.Describe();
                 case "request_session":
@@ -108,10 +126,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case "get_context":
                     var keepChanges = AgentParams.Get<bool?>(parameters, "keep_changes") == true;
                     return InvokeCapturingDialogs(
-                        (app, _, __) => AgentContext.Describe(app), parameters, "context", null, keepChanges);
+                        (app, _, __) => AgentContext.Describe(app), parameters, "context", null, keepChanges,
+                        failFastOnModalDialog: true);
                 case "run":
                     var runRequest = ParseParameters(() => AgentRunRequest.FromJson(parameters));
                     runRequest.RequestId = RequestIdOf(id);
+                    runRequest.CallerGone = callerGone;
                     return InvokeRunOnMainThread(runRequest, parameters);
                 case "inspect_elements":
                     var ids = ParseParameters(() => AgentInspector.ParseIds(parameters));
@@ -130,6 +150,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         (app, target, _) => AgentCapture.Capture(app, target, captureRequest), parameters,
                         "capture", AgentRequestText.Title(parameters),
                         describe: result => AgentLogDetails.FromCapture(result as JObject ?? new JObject(), AgentPaths.CapturesDir));
+                case "recording_start":
+                    var recordingOptions = ParseParameters(() => AgentRecordingOptions.FromJson(parameters));
+                    return RunOnMainThread(app => AgentRecorder.Start(app, recordingOptions), StartTimeout(parameters));
+                case "recording_stop":
+                    return RunOnMainThread(_ => AgentRecorder.Stop("user"), StartTimeout(parameters));
+                case "recording_status":
+                    return AgentRecorder.Status();
                 case "lookup_api":
                     var query = AgentParams.Get<string>(parameters, "name");
                     var lookup = AgentApiLookup.Lookup(query);
@@ -210,11 +237,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         /// <remarks>
         /// Dismissed dialogs are added to an object result as <c>dialogs</c>. <c>run</c> doesn't
-        /// use this: its guard captures dialogs itself.
+        /// use this: its guard captures dialogs itself. <paramref name="failFastOnModalDialog"/>
+        /// is for requests that exist to tell the agent what Revit is doing: they answer
+        /// <c>revit_busy</c> naming the dialog as soon as a modal dialog blocks them, instead of
+        /// after the start timeout.
         /// </remarks>
         private static JToken InvokeCapturingDialogs(
             Func<Autodesk.Revit.UI.UIApplication, Document, AgentDialogCapture, JToken> work, JObject parameters, string kind,
-            string title, bool keepChanges = false, Func<JToken, JObject> describe = null) {
+            string title, bool keepChanges = false, Func<JToken, JObject> describe = null,
+            bool failFastOnModalDialog = false) {
             return InvokeOnMainThread((app, target) => {
                 using (var dialogs = new AgentDialogCapture(app)) {
                     var result = work(app, target, dialogs);
@@ -222,7 +253,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         response["dialogs"] = dialogs.Dialogs;
                     return result;
                 }
-            }, parameters, kind, title, AgentRequestText.Reason(parameters), describe: describe, keepChanges: keepChanges);
+            }, parameters, kind, title, AgentRequestText.Reason(parameters), describe: describe, keepChanges: keepChanges,
+                failFastOnModalDialog: failFastOnModalDialog);
         }
 
         /// <summary>
@@ -274,12 +306,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static JToken InvokeOnMainThread(
             Func<Autodesk.Revit.UI.UIApplication, Document, JToken> work, JObject parameters, string kind, string title, string reason,
             AgentRunMode? runMode = null, Func<JToken, JObject> describe = null, Action refuseEarly = null,
-            bool keepChanges = false) {
-            var startTimeoutSeconds = AgentParams.Get<double?>(parameters, "start_timeout_s");
-            if (startTimeoutSeconds.HasValue
-                && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
-                throw new AgentException("invalid_params",
-                    $"'start_timeout_s' must be more than 0 and at most {MaxStartTimeoutSeconds}.");
+            bool keepChanges = false, bool failFastOnModalDialog = false) {
+            var startTimeout = StartTimeout(parameters);
             var documentKey = DocumentKey(parameters);
             var record = AgentHost.Activity.Arrive(kind, title, reason, AgentSessions.Tracker.CurrentSession, DateTime.UtcNow);
             var namesDocument = kind != "context";
@@ -310,22 +338,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         response["since_last_call"] = sinceLastCall;
                     return done;
                 }
-                JToken result;
-                var inline = AgentHost.InlineApplication;
-                if (inline != null)
-                    result = GatedWork(inline);
-                else {
-                    var dispatcher = AgentHost.Dispatcher
-                        ?? throw new AgentException("host_not_ready", "The agent host is not started.");
-                    var startTimeout = startTimeoutSeconds.HasValue
-                        ? TimeSpan.FromSeconds(startTimeoutSeconds.Value)
-                        : DefaultStartTimeout;
-                    result = dispatcher.Invoke(app => {
-                        AgentHost.RefreshConfigIfChanged();
-                        RequireEnabled();
-                        return GatedWork(app);
-                    }, startTimeout);
-                }
+                var result = RunOnMainThread(GatedWork, startTimeout, failFastOnModalDialog);
                 AgentHost.Activity.Finish(record, OutcomeOf(result), DateTime.UtcNow, Describe(describe, result));
                 return result;
             }
@@ -337,6 +350,40 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 AgentHost.Activity.Finish(record, "internal_error", DateTime.UtcNow);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Runs work on the Revit main thread and waits for it, outside the session gate. A request
+        /// made in-process already runs there and executes the work directly.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: only <see cref="InvokeOnMainThread"/> and the recording requests call this.
+        /// Starting or stopping a recording subscribes to Revit events, so it needs the main
+        /// thread, but it reads and changes nothing in the model, so it needs no session.
+        /// </remarks>
+        private static JToken RunOnMainThread(
+            Func<Autodesk.Revit.UI.UIApplication, JToken> work, TimeSpan startTimeout, bool failFastOnModalDialog = false) {
+            var inline = AgentHost.InlineApplication;
+            if (inline != null)
+                return work(inline);
+            var dispatcher = AgentHost.Dispatcher
+                ?? throw new AgentException("host_not_ready", "The agent host is not started.");
+            return dispatcher.Invoke(app => {
+                AgentHost.RefreshConfigIfChanged();
+                RequireEnabled();
+                return work(app);
+            }, startTimeout, failFastOnModalDialog);
+        }
+
+        /// <exception cref="AgentException"><c>invalid_params</c> when <c>start_timeout_s</c> is out of range.</exception>
+        private static TimeSpan StartTimeout(JObject parameters) {
+            var seconds = AgentParams.Get<double?>(parameters, "start_timeout_s");
+            if (!seconds.HasValue)
+                return DefaultStartTimeout;
+            if (double.IsNaN(seconds.Value) || seconds.Value <= 0 || seconds.Value > MaxStartTimeoutSeconds)
+                throw new AgentException("invalid_params",
+                    $"'start_timeout_s' must be more than 0 and at most {MaxStartTimeoutSeconds}.");
+            return TimeSpan.FromSeconds(seconds.Value);
         }
 
         /// <exception cref="AgentException"><c>invalid_params</c> when <c>document</c> isn't a key.</exception>

@@ -78,7 +78,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The open documents that weren't open in <paramref name="openAtStart"/>, links left out:
         /// the ones a run opened or created and left open.
         /// </summary>
-        public static List<Document> OpenedSince(Autodesk.Revit.ApplicationServices.Application app, List<Document> openAtStart) {
+        public static List<Document> OpenedSince(Autodesk.Revit.ApplicationServices.Application app, IReadOnlyCollection<Document> openAtStart) {
             return app.Documents.Cast<Document>()
                 .Where(open => !open.IsLinked && !openAtStart.Any(before => before.Equals(open)))
                 .ToList();
@@ -89,7 +89,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// started. Must run on the Revit main thread after the run guard is disposed.
         /// </summary>
         /// <returns>The closed documents' titles, and any that refused to close.</returns>
-        public static JObject CloseLeftovers(Autodesk.Revit.ApplicationServices.Application app, List<Document> openAtStart) {
+        public static JObject CloseLeftovers(Autodesk.Revit.ApplicationServices.Application app, IReadOnlyCollection<Document> openAtStart) {
             var leftovers = OpenedSince(app, openAtStart).Where(IsBackground).ToList();
             var closed = new JArray();
             var failed = new JArray();

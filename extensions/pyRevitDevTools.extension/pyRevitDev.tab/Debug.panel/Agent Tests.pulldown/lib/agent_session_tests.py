@@ -4,6 +4,9 @@
 project before the modules run. Every test here restores that session when it ends.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
 import agent_harness as harness
 from agent_harness import AgentRequestError, TestCase
 

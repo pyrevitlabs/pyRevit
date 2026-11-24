@@ -39,8 +39,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static List<string> searchPaths = new List<string>();
         private static string revitVersion = string.Empty;
         private static bool exitHandlerRegistered;
-        private static string configWatchedPath;
-        private static DateTime configLastWrite = DateTime.MinValue;
+        private static readonly AgentConfigRefresh configRefresh = new AgentConfigRefresh(
+            PyRevitConfigs.GetLoadedConfigFilePath,
+            path => File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue,
+            PyRevitConfigs.ReloadConfig);
         private static AgentTabHighlight tabHighlight;
         private static AgentTabHighlightVisuals tabHighlightVisuals;
         private static bool tabHighlightDisabled;
@@ -109,7 +111,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         internal static event Action ConfigChanged;
 
-        public static string PipeName => "pyrevit-agent-" + Process.GetCurrentProcess().Id;
+        internal static readonly int ProcessId = ReadProcessId();
+
+        public static string PipeName => "pyrevit-agent-" + ProcessId;
 
         /// <summary>
         /// True while the pipe server is up and accepting connections.
@@ -191,22 +195,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// this before reading it.
         /// </remarks>
         internal static void RefreshConfigIfChanged() {
+            bool reloaded;
             try {
-                var configPath = PyRevitConfigs.GetLoadedConfigFilePath();
-                var lastWrite = File.Exists(configPath) ? File.GetLastWriteTimeUtc(configPath) : DateTime.MinValue;
-                lock (sync) {
-                    if (configPath == configWatchedPath && lastWrite == configLastWrite)
-                        return;
-                    configWatchedPath = configPath;
-                    configLastWrite = lastWrite;
-                }
-                PyRevitConfigs.ReloadConfig();
+                reloaded = configRefresh.RefreshIfChanged();
             }
             catch (Exception ex) {
                 logger.Debug("Could not refresh agent config: {0}", ex.Message);
                 return;
             }
-            ConfigChanged?.Invoke();
+            if (reloaded)
+                ConfigChanged?.Invoke();
         }
 
         private static string ReadSessionStart() {
@@ -265,6 +263,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
             }
 
+            AgentWindows.RememberMainWindow(uiApp.MainWindowHandle);
             engineWarmUp.Reset();
             if (IsElevated()) {
                 Stop();
@@ -284,7 +283,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
                 if (pipeServer == null || !pipeServer.IsListening) {
                     pipeServer?.Dispose();
-                    pipeServer = new AgentPipeServer(PipeName, AgentRequestHandler.Handle);
+                    pipeServer = new AgentPipeServer(PipeName, AgentRequestHandler.Handle, ForgetStoppedPipe);
                     pipeServer.Start();
                     WriteInstanceFile(uiApp);
                     AgentPaths.PruneOldRecordsInBackground();
@@ -308,6 +307,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// The ExternalEvent stays, so a later <see cref="Configure"/> can start the host again.
         /// </summary>
         public static void Stop() {
+            AgentRecorder.StopIfActive("host_stopped");
             AgentSessions.EndForHostStop();
             DisposeTabHighlight();
             var stopped = false;
@@ -325,6 +325,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             StateChanged?.Invoke();
         }
 
+        private static void ForgetStoppedPipe(AgentPipeServer stopped) {
+            lock (sync) {
+                if (ReferenceEquals(pipeServer, stopped))
+                    DeleteInstanceFile();
+            }
+        }
+
         private static bool IsElevated() {
             using (var identity = WindowsIdentity.GetCurrent())
                 return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
@@ -334,7 +341,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             try {
                 Directory.CreateDirectory(AgentPaths.InstancesDir);
                 var instance = new JObject {
-                    ["pid"] = Process.GetCurrentProcess().Id,
+                    ["pid"] = ProcessId,
                     ["pipe"] = PipeName,
                     ["revit_version"] = uiApp.Application.VersionNumber,
                     ["revit_build"] = uiApp.Application.VersionBuild,
@@ -351,6 +358,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception ex) {
                 logger.Warn("Could not register agent instance: {0}", ex.Message);
             }
+        }
+
+        private static int ReadProcessId() {
+            using (var process = Process.GetCurrentProcess())
+                return process.Id;
         }
 
         private static void DeleteInstanceFile() {
@@ -406,54 +418,56 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <remarks>
+    /// Session recordings are pruned by the same pass, by their own retention policy
+    /// (<see cref="AgentRecordingStore.Retention"/> and <see cref="AgentRecordingStore.MaxRecordings"/>).
     /// Run records and captures older than <see cref="RecordRetention"/> are deleted when the
-    /// host starts, so a busy agent doesn't fill the user's profile; one night of evals wrote
-    /// about 140 runs.
+    /// host starts and again, at most once per <see cref="PruneInterval"/>, when a run record is
+    /// created, so a busy agent doesn't fill the user's profile even in a Revit session left open
+    /// for weeks; one night of evals wrote about 140 runs.
     /// </remarks>
     internal static class AgentPaths {
         private static readonly Logger pathsLogger = LogManager.GetCurrentClassLogger();
         public static readonly TimeSpan RecordRetention = TimeSpan.FromDays(14);
+        public static readonly TimeSpan PruneInterval = TimeSpan.FromDays(1);
+        private static readonly object pruneLock = new object();
+        private static DateTime nextPrune = DateTime.MinValue;
 
         public static string RootDir => PyRevitLabsConsts.AgentPath;
         public static string InstancesDir => Path.Combine(RootDir, "instances");
         public static string RunsDir => Path.Combine(RootDir, "runs");
         public static string CapturesDir => Path.Combine(RootDir, "captures");
+        public static string RecordingsDir => Path.Combine(RootDir, "recordings");
         public static string InstanceFile =>
-            Path.Combine(InstancesDir, Process.GetCurrentProcess().Id + ".json");
+            Path.Combine(InstancesDir, AgentHost.ProcessId + ".json");
 
         public static string CreateRunDir(string runId) {
             var runDir = Path.Combine(RunsDir, DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + runId);
             Directory.CreateDirectory(runDir);
+            PruneOldRecordsInBackground();
             return runDir;
         }
 
+        /// <remarks>Does nothing when a prune started less than <see cref="PruneInterval"/> ago.</remarks>
         public static void PruneOldRecordsInBackground() {
+            lock (pruneLock) {
+                if (DateTime.Now < nextPrune)
+                    return;
+                nextPrune = DateTime.Now + PruneInterval;
+            }
             System.Threading.Tasks.Task.Run(() => PruneOldRecords(DateTime.Now - RecordRetention));
         }
 
         private static void PruneOldRecords(DateTime cutoff) {
-            var removed = 0;
+            var failures = new List<string>();
+            var removed = AgentRecordPruner.Prune(RunsDir, CapturesDir, cutoff, failures);
             try {
-                if (Directory.Exists(RunsDir)) {
-                    foreach (var runDir in Directory.GetDirectories(RunsDir)) {
-                        if (Directory.GetLastWriteTime(runDir) >= cutoff)
-                            continue;
-                        Directory.Delete(runDir, recursive: true);
-                        removed++;
-                    }
-                }
-                if (Directory.Exists(CapturesDir)) {
-                    foreach (var capture in Directory.GetFiles(CapturesDir)) {
-                        if (File.GetLastWriteTime(capture) >= cutoff)
-                            continue;
-                        File.Delete(capture);
-                        removed++;
-                    }
-                }
+                removed += AgentRecordingStore.Prune(RecordingsDir, DateTime.Now, null);
             }
             catch (Exception ex) {
-                pathsLogger.Debug("Could not prune agent records: {0}", ex.Message);
+                failures.Add(ex.Message);
             }
+            foreach (var failure in failures)
+                pathsLogger.Debug("Could not prune agent records: {0}", failure);
             if (removed > 0)
                 pathsLogger.Debug("Pruned {0} agent run records and captures older than {1:yyyy-MM-dd}", removed, cutoff);
         }

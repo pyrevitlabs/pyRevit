@@ -293,11 +293,31 @@ def crop_view_to_elements(view, elements=None, padding=3.0, doc=None):
             query.get_model_elements().
         padding (float, optional): clearance around the elements, in feet.
         doc (DB.Document, optional): document, defaults to the view's.
+
+    Raises:
+        PyRevitException: when there is nothing to crop to, or when the
+            view's scope box can't be cleared, for example because its view
+            template controls the parameter.
+
+    Note:
+        Revit ignores the crop box of a view that has a scope box, so the
+        view's scope box is cleared first.
     """
     doc = doc or view.Document
     box = query.get_elements_bounding_box(elements or query.get_model_elements(doc=doc))
     if box is None:
         raise PyRevitException("Nothing to crop to: no elements with a bounding box.")
+    scope_box = view.get_Parameter(DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP)
+    if scope_box is not None and not scope_box.IsReadOnly:
+        scope_box.Set(DB.ElementId.InvalidElementId)
+    if (
+        scope_box is not None
+        and scope_box.AsElementId() != DB.ElementId.InvalidElementId
+    ):
+        raise PyRevitException(
+            "Can't crop view {!r}: its scope box can't be cleared. "
+            "Remove it or the view template that controls it.".format(view.Name)
+        )
     to_view = view.CropBox.Transform.Inverse
     corners = [
         to_view.OfPoint(DB.XYZ(x, y, z))

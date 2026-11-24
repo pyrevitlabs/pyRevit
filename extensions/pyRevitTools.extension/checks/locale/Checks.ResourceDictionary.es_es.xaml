@@ -257,8 +257,6 @@ según lo definido por una lista de tipos de muros en Revit.</system:String>
     <system:String x:Key="CADAuditInstances">Verificar instancias CAD:</system:String>
     <system:String x:Key="CADAuditInProject">en este proyecto</system:String>
     <system:String x:Key="CADAuditInActiveView">solo en la vista activa</system:String>
-    <system:String x:Key="CADAuditCancel">CANCELAR</system:String>
-    <system:String x:Key="CADAuditOK">OK</system:String>
     <system:String x:Key="CADAuditTitle">Auditoría de instancias CAD en el proyecto actual</system:String>
     <system:String x:Key="CADAuditNoInstances">No se encontraron instancias CAD</system:String>
     <system:String x:Key="CADAuditSelect">Seleccionar</system:String>

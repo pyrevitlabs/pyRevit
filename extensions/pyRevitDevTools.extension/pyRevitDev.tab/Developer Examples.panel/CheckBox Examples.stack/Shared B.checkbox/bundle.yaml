@@ -1,0 +1,8 @@
+title: Shared B
+tooltip: >-
+  Checkbox example - handlers imported from a module that Shared A also uses.
+
+  Each change saves this checkbox's state and shows in its label how often it
+  changed since the last reload. Shared A uses the same handlers but keeps its
+  own state and count.
+checked: false

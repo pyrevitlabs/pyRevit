@@ -35,7 +35,7 @@ from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import revit, DB
 from pyrevit import coreutils, framework
 from pyrevit.framework import Windows, Drawing, ObjectModel, Forms, List
-from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import clr_implementation, get_elementid_value_func
 from pyrevit.coreutils import applocales, pathtemplate
 
 
@@ -329,7 +329,7 @@ class PrintUtils:
             a sheet in the other orientation, a sheet larger than the paper, or
             a print setting with a non-zero user-defined origin offset.
         """
-        opts = DB.PDFExportOptions()  # compat-ignore: callers gate on IS_REVIT_2022_OR_NEWER
+        opts = DB.PDFExportOptions()  # compat-ignore: gated on IS_REVIT_2022_OR_NEWER
         opts.HideCropBoundaries = hcb
         opts.HideScopeBoxes = hsb
         opts.HideReferencePlane = hrp
@@ -505,11 +505,10 @@ class ViewSheetListItem(forms.Reactive):
         self.number = (
             self._sheet.SheetNumber if hasattr(self._sheet, "SheetNumber") else ""
         )
-        self.issue_date = (
-            self._sheet.get_Parameter(DB.BuiltInParameter.SHEET_ISSUE_DATE).AsString()
-            if self._sheet.get_Parameter(DB.BuiltInParameter.SHEET_ISSUE_DATE)
-            else ""
+        issue_date_param = self._sheet.get_Parameter(
+            DB.BuiltInParameter.SHEET_ISSUE_DATE
         )
+        self.issue_date = issue_date_param.AsString() if issue_date_param else ""
         self.printable = self._sheet.CanBePrinted
         self.revision_date_sortable = ""
         self._print_index = 0
@@ -792,7 +791,7 @@ class EditNamingFormatsWindow(forms.WPFWindow):
     @selected_naming_format.setter
     def selected_naming_format(self, value):
         self.formats_lb.SelectedItem = value
-        self.namingformat_edit.DataContext = value
+        forms.set_data_context(self.namingformat_edit, value)
 
     def reset_formatters(self):
         self.formatters_wp.ItemsSource = (
@@ -844,7 +843,7 @@ class EditNamingFormatsWindow(forms.WPFWindow):
 
     def namingformat_changed(self, sender, args):
         naming_format = self.selected_naming_format
-        self.namingformat_edit.DataContext = naming_format
+        forms.set_data_context(self.namingformat_edit, naming_format)
 
     def duplicate_namingformat(self, sender, args):
         naming_format = self.selected_naming_format
@@ -1488,15 +1487,14 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.printsettings_cb.ItemsSource = psetting_items
 
         print_mgr = self._get_printmanager()
-        if isinstance(
-            print_mgr.PrintSetup.CurrentPrintSetting, DB.InSessionPrintSetting
-        ):
-            in_session = PrintSettingListItem(print_mgr.PrintSetup.CurrentPrintSetting)
+        current_psetting = clr_implementation(print_mgr.PrintSetup.CurrentPrintSetting)
+        if isinstance(current_psetting, DB.InSessionPrintSetting):
+            in_session = PrintSettingListItem(current_psetting)
             psetting_items.append(in_session)
             self.printsettings_cb.SelectedItem = in_session
         else:
-            self._init_psettings = print_mgr.PrintSetup.CurrentPrintSetting
-            cur_psetting_name = print_mgr.PrintSetup.CurrentPrintSetting.Name
+            self._init_psettings = current_psetting
+            cur_psetting_name = current_psetting.Name
             for psetting_item in psetting_items:
                 if psetting_item.name == cur_psetting_name:
                     self.printsettings_cb.SelectedItem = psetting_item
@@ -2270,9 +2268,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                 [DB.BuiltInCategory.OST_TitleBlocks], doc=model
             )
             rev_cfg = DB.RevisionSettings.GetRevisionSettings(model)
-            current_setting = self._get_printmanager(
-                model
-            ).PrintSetup.CurrentPrintSetting
+            current_setting = clr_implementation(
+                self._get_printmanager(model).PrintSetup.CurrentPrintSetting
+            )
             for sheet in self.selected_sheetlist.get_sheets(doc=model):
                 sheet_items.append(
                     ViewSheetListItem(

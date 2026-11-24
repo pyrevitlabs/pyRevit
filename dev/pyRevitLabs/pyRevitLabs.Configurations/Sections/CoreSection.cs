@@ -14,8 +14,7 @@ namespace pyRevitLabs.Configurations.Sections;
 /// </para>
 /// </summary>
 [SectionName("core")]
-public sealed record CoreSection
-{
+public sealed record CoreSection {
     /// <summary>Whether extension metadata is cached in binary form between sessions. Default true.</summary>
     [KeyName("bincache")]
     [DefaultValue(true)]
@@ -159,6 +158,15 @@ public sealed record CoreSection
     public bool? TooltipDebugInfo { get; set; }
 
     /// <summary>
+    /// Whether ribbon tabs show the icon their tab bundle provides before the
+    /// tab title. Read when the pyRevit session loads, so a change takes effect
+    /// on the next reload. Default true.
+    /// </summary>
+    [KeyName("show_tab_icons")]
+    [DefaultValue(true)]
+    public bool? ShowTabIcons { get; set; }
+
+    /// <summary>
     /// Path to a CSS file styling output windows. Default empty, meaning the
     /// built-in stylesheet is used. Removing the key (rather than storing an
     /// empty string) is what reverts a customized deployment to the built-in one.
@@ -173,5 +181,6 @@ public sealed record CoreSection
     /// sparse-section save; read back as an empty list when unset.
     /// </summary>
     [KeyName("userextensions")]
+    [PreserveOnReset]
     public List<string>? UserExtensions { get; set; }
 }

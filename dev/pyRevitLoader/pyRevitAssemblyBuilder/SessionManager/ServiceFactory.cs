@@ -109,10 +109,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </summary>
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
+        /// <param name="tabIconDecorator">Must be the instance passed to <see cref="SessionManagerService"/>, which resets and refreshes it around each UI build.</param>
+        /// <param name="showTabIcons">Whether tab bundle icons are drawn on the ribbon tabs.</param>
         /// <returns>A new ITabBuilder instance.</returns>
-        public static ITabBuilder CreateTabBuilder(UIApplication uiApplication, ILogger logger)
+        public static ITabBuilder CreateTabBuilder(UIApplication uiApplication, ILogger logger, ITabIconDecorator tabIconDecorator, bool showTabIcons = true)
         {
-            return new TabBuilder(uiApplication, logger);
+            return new TabBuilder(uiApplication, logger, tabIconDecorator, showTabIcons);
         }
 
         /// <summary>
@@ -138,7 +140,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         public static IButtonBuilderFactory CreateButtonBuilderFactory(ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext, SmartButtonScriptInitializer smartButtonScriptInitializer)
         {
             // Create individual button builders
-            var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
+            var linkButtonBuilder = new LinkButtonBuilder(buildContext, logger, buttonPostProcessor);
             var pushButtonBuilder = new PushButtonBuilder(logger, buttonPostProcessor, smartButtonScriptInitializer);
             var panelButtonBuilder = new PanelButtonBuilder(logger, buttonPostProcessor);
             var pulldownButtonBuilder = new PulldownButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
@@ -167,7 +169,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <returns>A new IStackBuilder instance.</returns>
         public static IStackBuilder CreateStackBuilder(ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext, SmartButtonScriptInitializer smartButtonScriptInitializer)
         {
-            var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
+            var linkButtonBuilder = new LinkButtonBuilder(buildContext, logger, buttonPostProcessor);
             var pulldownButtonBuilder = new PulldownButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
             var splitButtonBuilder = new SplitButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
 
@@ -185,6 +187,25 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             var comboBoxScriptInitializer = new ComboBoxScriptInitializer(uiApplication, logger);
             return new ComboBoxBuilder(logger, buttonPostProcessor, comboBoxScriptInitializer);
+        }
+
+        /// <summary>
+        /// Creates the checkbox builder and the script initializer that wires checkbox handlers.
+        /// </summary>
+        /// <param name="panelStyleManager">Resolves the AdWindows panel that hosts each checkbox.</param>
+        /// <param name="libraryPathsProvider">Supplies the installed library extensions' search paths, so checkbox scripts can import from them like commands.</param>
+        /// <remarks>
+        /// Important: creating the initializer releases the checkbox handlers and engine of the
+        /// previous session load, so call this once per load.
+        /// </remarks>
+        public static ICheckBoxBuilder CreateCheckBoxBuilder(
+            UIApplication uiApplication,
+            ILogger logger,
+            IPanelStyleManager panelStyleManager,
+            Func<IEnumerable<string>>? libraryPathsProvider = null)
+        {
+            var checkBoxScriptInitializer = new CheckBoxScriptInitializer(uiApplication, logger, libraryPathsProvider);
+            return new CheckBoxBuilder(logger, panelStyleManager, checkBoxScriptInitializer);
         }
 
         /// <summary>
@@ -216,6 +237,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             IButtonBuilderFactory buttonBuilderFactory,
             IStackBuilder stackBuilder,
             IComboBoxBuilder comboBoxBuilder,
+            ICheckBoxBuilder checkBoxBuilder,
             BuildContext buildContext,
             IUIRibbonScanner? ribbonScanner = null)
         {
@@ -228,6 +250,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 buttonBuilderFactory,
                 stackBuilder,
                 comboBoxBuilder,
+                checkBoxBuilder,
                 buildContext,
                 ribbonScanner);
         }
@@ -270,12 +293,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // so all readers observe the same value within a single BuildUI call.
             var buildContext = new BuildContext();
             var panelStyleManager = CreatePanelStyleManager(logger);
-            var tabBuilder = CreateTabBuilder(uiApplication, logger);
+            var themeDetector = new RevitThemeDetector(logger);
+            var tabIconDecorator = new TabIconDecorator(path => iconManager.LoadBitmapSource(path), themeDetector.IsDarkTheme);
+            var tabBuilder = CreateTabBuilder(uiApplication, logger, tabIconDecorator, ReadShowTabIcons(logger));
             var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager);
-            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
+            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger, buildContext);
             var buttonBuilderFactory = CreateButtonBuilderFactory(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var stackBuilder = CreateStackBuilder(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var comboBoxBuilder = CreateComboBoxBuilder(uiApplication, logger, buttonPostProcessor);
+            var checkBoxBuilder = CreateCheckBoxBuilder(
+                uiApplication,
+                logger,
+                panelStyleManager,
+                () => LibraryExtensionSearchPaths.Collect(extensionManager.GetInstalledLibraryExtensions()));
 
             // Create ribbon scanner for UI cleanup
             var ribbonScanner = CreateUIRibbonScanner(logger);
@@ -290,6 +320,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 buttonBuilderFactory,
                 stackBuilder,
                 comboBoxBuilder,
+                checkBoxBuilder,
                 buildContext,
                 ribbonScanner);
 
@@ -299,7 +330,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 hookManager,
                 uiManager,
                 ribbonScanner,
-                logger);
+                logger,
+                tabIconDecorator);
         }
 
         /// <summary>
@@ -330,6 +362,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 uiManager,
                 ribbonScanner,
                 logger);
+        }
+
+        private static bool ReadShowTabIcons(ILogger logger)
+        {
+            try
+            {
+                return PyRevitConfig.Load().ShowTabIcons;
+            }
+            catch (Exception ex)
+            {
+                logger.Debug($"Failed to read show_tab_icons config; showing tab icons. Exception: {ex.Message}");
+                return true;
+            }
         }
     }
 }

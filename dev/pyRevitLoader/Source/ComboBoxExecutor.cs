@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Autodesk.Revit.UI;
+using Autodesk.Revit.UI.Events;
 using IronPython.Runtime.Exceptions;
 using IronPython.Compiler;
 using Microsoft.Scripting;
@@ -18,6 +19,13 @@ namespace PyRevitLoader
     /// Executes ComboBox event handler scripts using IronPython directly.
     /// Supports: __cmb_on_change__, __cmb_dropdown_close__, __cmb_dropdown_open__
     /// </summary>
+    /// <remarks>
+    /// Note: all ComboBoxes share one engine, so they share <c>sys.path</c> and <c>sys.modules</c>.
+    /// Each script run and handler call therefore enters its ComboBox's bundle of a
+    /// <see cref="BundleModuleIsolation"/>: it starts from that ComboBox's own search paths and modules
+    /// and hands them back when it ends. Two bundles can therefore ship <c>lib</c> modules with the same
+    /// name, while pyRevit and the standard library are still imported once for all ComboBoxes.
+    /// </remarks>
     public class ComboBoxExecutor
     {
         private readonly UIApplication _revit;
@@ -26,6 +34,12 @@ namespace PyRevitLoader
         private ScriptExecutor _scriptExecutor;
         private string _pyrevitLibPath;
         private HashSet<string> _baseSearchPaths;
+        private BundleModuleIsolation _isolation;
+        private object _engineOps;
+        private bool _released;
+        private bool _sessionSlotClaimed;
+        private readonly List<Action> _handlerDetachers = new List<Action>();
+        private readonly List<ComboBox> _wiredComboBoxes = new List<ComboBox>();
 
         // Keep shared runtime objects alive once and keep per-combo references attached
         // to each ComboBox instance. This prevents event handler callables from being
@@ -35,12 +49,34 @@ namespace PyRevitLoader
         private static readonly ConditionalWeakTable<ComboBox, List<object>> _comboBoxAliveReferences =
             new ConditionalWeakTable<ComboBox, List<object>>();
 
+        private const string SessionSlotName = "ComboBoxExecutor";
+
         public ComboBoxExecutor(UIApplication uiApplication, Action<string> logger = null)
         {
             _revit = uiApplication;
             _logger = logger;
         }
 
+        /// <summary>
+        /// Releases the engine and event handlers that the previous session load's executor left
+        /// behind, whether or not this session load creates an executor of its own.
+        /// </summary>
+        /// <param name="onError">Receives the failure of the previous release, if it threw.</param>
+        /// <remarks>
+        /// Called by reflection from <c>ComboBoxScriptInitializer</c> at the start of every
+        /// session load; keep the name and signature.
+        /// </remarks>
+        public static void ReleasePreviousSession(Action<string> onError)
+        {
+            SessionResourceRegistry.Release(SessionSlotName, onError);
+        }
+
+        /// <summary>
+        /// Why the last <see cref="ExecuteEventHandlerSetup"/> call failed; null when it did not.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: read by reflection from <c>ComboBoxScriptInitializer</c>; keep the name.
+        /// </remarks>
         public string Message { get; private set; } = null;
 
         private void Log(string message)
@@ -58,6 +94,12 @@ namespace PyRevitLoader
             if (_engine != null)
                 return;
 
+            if (!_sessionSlotClaimed)
+            {
+                SessionResourceRegistry.Replace(SessionSlotName, ReleaseSessionResources, _logger);
+                _sessionSlotClaimed = true;
+            }
+
             Log("Initializing shared IronPython engine for ComboBoxes");
             _scriptExecutor = new ScriptExecutor(_revit, false);
             _engine = _scriptExecutor.CreateEngine();
@@ -71,6 +113,7 @@ namespace PyRevitLoader
 
             // Cache base search paths
             _baseSearchPaths = new HashSet<string>(_engine.GetSearchPaths());
+            _isolation = new BundleModuleIsolation(_engine, _logger);
         }
 
         /// <summary>
@@ -81,12 +124,20 @@ namespace PyRevitLoader
         /// <param name="comboBox">The Revit ComboBox to wire event handlers to.</param>
         /// <param name="additionalSearchPaths">Additional search paths for imports.</param>
         /// <returns>True if setup succeeded.</returns>
+        /// <remarks>
+        /// Note: all ComboBoxes share one engine, whose <c>sys.path</c> and <c>sys.modules</c> hold what
+        /// the script or handler that ran last left there. The script and each wired handler therefore
+        /// run as this ComboBox's bundle of a <see cref="BundleModuleIsolation"/>, so imports inside them
+        /// find this bundle's <c>lib</c> folder and its own modules, and the paths and modules one
+        /// handler adds stay for this ComboBox's later calls.
+        /// </remarks>
         public bool ExecuteEventHandlerSetup(
             string scriptPath,
             ComboBoxContext context,
             ComboBox comboBox,
             IEnumerable<string> additionalSearchPaths = null)
         {
+            Message = null;
 
             if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath))
             {
@@ -95,6 +146,11 @@ namespace PyRevitLoader
 
             // Only process Python scripts
             if (!scriptPath.EndsWith(".py", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (_released)
             {
                 return true;
             }
@@ -119,6 +175,7 @@ namespace PyRevitLoader
 
                 // Set __file__ variable
                 scope.SetVariable("__file__", scriptPath);
+                var bundle = _isolation.CreateBundle(context.name);
 
                 // Execute the script file to define event handlers
                 var script = _engine.CreateScriptSourceFromFile(scriptPath, Encoding.UTF8, SourceCodeKind.File);
@@ -139,7 +196,10 @@ namespace PyRevitLoader
 
                 try
                 {
-                    script.Execute(scope);
+                    using (_isolation.Enter(bundle))
+                    {
+                        script.Execute(scope);
+                    }
                 }
                 catch (SystemExitException)
                 {
@@ -174,6 +234,7 @@ namespace PyRevitLoader
                 // by session cleanup, so we restore it before each invocation.
                 var engine = _engine;
                 var outStream = _outputStream;
+                var isolation = _isolation;
 
                 // Wire up __cmb_on_change__ handler
                 if (hasOnChange)
@@ -182,19 +243,24 @@ namespace PyRevitLoader
                     if (handler != null)
                     {
                         handlerObjects.Add(handler);
-                        comboBox.CurrentChanged += (sender, args) =>
+                        EventHandler<ComboBoxCurrentChangedEventArgs> onChangeHandler = (sender, args) =>
                         {
                             try
                             {
                                 // Restore stdout in case session cleanup set it to None
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
-                                ops.Invoke(handler, sender, args, context);
+                                using (isolation.Enter(bundle))
+                                {
+                                    ops.Invoke(handler, sender, args, context);
+                                }
                             }
                             catch (Exception ex)
                             {
                                 Log($"Error in __cmb_on_change__: {ex.Message}");
                             }
                         };
+                        comboBox.CurrentChanged += onChangeHandler;
+                        TrackHandler(comboBox, () => comboBox.CurrentChanged -= onChangeHandler);
                         Log("Wired __cmb_on_change__ handler");
                         handlersWired = true;
                     }
@@ -207,18 +273,23 @@ namespace PyRevitLoader
                     if (handler != null)
                     {
                         handlerObjects.Add(handler);
-                        comboBox.DropDownClosed += (sender, args) =>
+                        EventHandler<ComboBoxDropDownClosedEventArgs> dropdownCloseHandler = (sender, args) =>
                         {
                             try
                             {
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
-                                ops.Invoke(handler, sender, args, context);
+                                using (isolation.Enter(bundle))
+                                {
+                                    ops.Invoke(handler, sender, args, context);
+                                }
                             }
                             catch (Exception ex)
                             {
                                 Log($"Error in __cmb_dropdown_close__: {ex.Message}");
                             }
                         };
+                        comboBox.DropDownClosed += dropdownCloseHandler;
+                        TrackHandler(comboBox, () => comboBox.DropDownClosed -= dropdownCloseHandler);
                         Log("Wired __cmb_dropdown_close__ handler");
                         handlersWired = true;
                     }
@@ -231,18 +302,23 @@ namespace PyRevitLoader
                     if (handler != null)
                     {
                         handlerObjects.Add(handler);
-                        comboBox.DropDownOpened += (sender, args) =>
+                        EventHandler<ComboBoxDropDownOpenedEventArgs> dropdownOpenHandler = (sender, args) =>
                         {
                             try
                             {
                                 engine.Runtime.IO.SetOutput(outStream, Encoding.UTF8);
-                                ops.Invoke(handler, sender, args, context);
+                                using (isolation.Enter(bundle))
+                                {
+                                    ops.Invoke(handler, sender, args, context);
+                                }
                             }
                             catch (Exception ex)
                             {
                                 Log($"Error in __cmb_dropdown_open__: {ex.Message}");
                             }
                         };
+                        comboBox.DropDownOpened += dropdownOpenHandler;
+                        TrackHandler(comboBox, () => comboBox.DropDownOpened -= dropdownOpenHandler);
                         Log("Wired __cmb_dropdown_open__ handler");
                         handlersWired = true;
                     }
@@ -255,6 +331,7 @@ namespace PyRevitLoader
                 {
                     lock (_aliveReferencesLock)
                     {
+                        _engineOps = ops;
                         _sharedAliveReferences.Add(_engine);
                         _sharedAliveReferences.Add(ops);
                         _sharedAliveReferences.Add(outStream);
@@ -279,6 +356,70 @@ namespace PyRevitLoader
                 Message = $"ComboBox executor error: {ex.Message}";
                 Log(Message);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Detaches the handlers this executor wired, drops its references and shuts its engine down.
+        /// Registered with <see cref="SessionResourceRegistry"/> so the next session load runs it.
+        /// </summary>
+        private void ReleaseSessionResources()
+        {
+            Log("Releasing ComboBox engine of the previous session");
+            lock (_aliveReferencesLock)
+            {
+                _released = true;
+
+                foreach (var detach in _handlerDetachers)
+                {
+                    try
+                    {
+                        detach();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Failed to detach ComboBox handler: {ex.Message}");
+                    }
+                }
+                _handlerDetachers.Clear();
+
+                foreach (var comboBox in _wiredComboBoxes)
+                    _comboBoxAliveReferences.Remove(comboBox);
+                _wiredComboBoxes.Clear();
+
+                if (_engine != null)
+                    _sharedAliveReferences.Remove(_engine);
+                if (_engineOps != null)
+                    _sharedAliveReferences.Remove(_engineOps);
+                if (_outputStream != null)
+                    _sharedAliveReferences.Remove(_outputStream);
+            }
+
+            var engine = _engine;
+            _engine = null;
+            _engineOps = null;
+            _outputStream = null;
+            _scriptExecutor = null;
+            _baseSearchPaths = null;
+            _isolation?.Release();
+            _isolation = null;
+
+            try
+            {
+                engine?.Runtime.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to shut down ComboBox engine: {ex.Message}");
+            }
+        }
+
+        private void TrackHandler(ComboBox comboBox, Action detach)
+        {
+            lock (_aliveReferencesLock)
+            {
+                _handlerDetachers.Add(detach);
+                _wiredComboBoxes.Add(comboBox);
             }
         }
 
@@ -311,6 +452,7 @@ namespace PyRevitLoader
             if (!string.IsNullOrEmpty(_pyrevitLibPath) && !paths.Contains(_pyrevitLibPath))
             {
                 paths.Add(_pyrevitLibPath);
+                _isolation.AddSharedRoot(_pyrevitLibPath);
 
                 // Add site-packages
                 var pyrevitRoot = Path.GetDirectoryName(_pyrevitLibPath);
@@ -318,7 +460,10 @@ namespace PyRevitLoader
                 {
                     var sitePackages = Path.Combine(pyrevitRoot, "site-packages");
                     if (Directory.Exists(sitePackages) && !paths.Contains(sitePackages))
+                    {
                         paths.Add(sitePackages);
+                        _isolation.AddSharedRoot(sitePackages);
+                    }
                 }
             }
 

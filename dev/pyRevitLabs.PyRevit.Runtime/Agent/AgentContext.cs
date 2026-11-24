@@ -137,9 +137,36 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 #endif
         }
 
+        /// <summary>
+        /// The highest element id value in <paramref name="doc"/>, types included, or 0 for an
+        /// empty document.
+        /// </summary>
+        /// <remarks>
+        /// Revit hands out new element ids from a counter that is never lowered, not even by a
+        /// rollback, so after a clean rollback every id above this value was created by the run.
+        /// Walks every element id of the document, so call it only when that answer is needed.
+        /// </remarks>
+        public static long HighestValue(Document doc) {
+            var highest = 0L;
+            var collectors = new[] {
+                new FilteredElementCollector(doc).WhereElementIsNotElementType(),
+                new FilteredElementCollector(doc).WhereElementIsElementType(),
+            };
+            foreach (var collector in collectors)
+                foreach (var id in collector.ToElementIds())
+                    highest = Math.Max(highest, ToValue(id));
+            return highest;
+        }
+
+        /// <remarks>
+        /// On Revit 2021-2023, whose ids are 32-bit, a value out of that range returns
+        /// <see cref="ElementId.InvalidElementId"/>, which matches no element, instead of throwing.
+        /// </remarks>
         public static ElementId FromValue(long value) {
 #if REVIT2021 || REVIT2022 || REVIT2023
-            return new ElementId(checked((int)value));
+            return value < int.MinValue || value > int.MaxValue
+                ? ElementId.InvalidElementId
+                : new ElementId((int)value);
 #else
             return new ElementId(value);
 #endif

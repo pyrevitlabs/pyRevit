@@ -2,6 +2,8 @@ using pyRevitCLI;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class AgentSkillsTests {
     private const string Core = PyRevitAgentSkills.CoreSkill;
     private const int CharactersClaudeCodeKeeps = 4096;
@@ -117,6 +119,31 @@ public class AgentSkillsTests {
         Assert.Equal("Covers \"this\": that", parsed["description"]);
         Assert.Equal("a: b", parsed["plain"]);
         Assert.False(parsed.ContainsKey("body"));
+    }
+
+    [Fact]
+    public void ASkillNameThatDecodesToATrailingNewlineIsRejected() {
+        var root = Directory.CreateTempSubdirectory("pyrevit-skill-").FullName;
+        try {
+            var skillDir = Directory.CreateDirectory(Path.Combine(root, "foo")).FullName;
+            File.WriteAllText(Path.Combine(skillDir, "SKILL.md"), "---\nname: \"foo\\n\"\ndescription: x\n---\nbody\n");
+
+            Assert.Null(PyRevitAgentSkills.ReadSkill(skillDir, PyRevitAgentSkills.UserSource));
+        }
+        finally {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Theory]
+    [InlineData(@"""C:\\dev\\""", @"C:\dev\")]
+    [InlineData(@"""a\\\""b""", @"a\""b")]
+    [InlineData(@"""one\ntwo\tend""", "one\ntwo\tend")]
+    [InlineData(@"""keeps \q""", @"keeps \q")]
+    public void DoubleQuotedFrontMatterValuesUnescapeInOnePass(string raw, string expected) {
+        var parsed = PyRevitAgentSkills.ParseFrontMatter(new[] { "---", "value: " + raw, "---" });
+
+        Assert.Equal(expected, parsed["value"]);
     }
 
     [Fact]

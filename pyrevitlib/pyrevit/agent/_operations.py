@@ -7,7 +7,8 @@ checked against the live marker, so a stale index or a hand-built request
 cannot call anything that is not a marked, invocable operation.
 
 The run itself is a ``query`` run, so the host still rolls back any model
-change and blocks saves and exports.
+change, blocks document saves wherever they would write, and lets Revit file
+exports through only when their target lies inside the run's ``export_dir``.
 """
 
 import importlib

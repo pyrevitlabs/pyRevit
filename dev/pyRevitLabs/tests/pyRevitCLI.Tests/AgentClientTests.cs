@@ -5,6 +5,8 @@ using pyRevitLabs.Json.Linq;
 namespace pyRevitCLI.Tests;
 
 [Collection(CliGlobalState.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class AgentClientTests : IDisposable {
     private readonly FakeAgentHost host = new FakeAgentHost();
 
@@ -275,7 +277,7 @@ public class AgentClientTests : IDisposable {
 
     [Fact]
     public void ARegisteredCloneIsReadFromTheInstanceRecordAndReportedInJson() {
-        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "review-a", clonePath: @"C:\work\review-a", engine: "IPY342");
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "review-a", clonePath: @"C:\work\review-a", engine: "IPY342", branch: "fix/review-a");
 
         var session = PyRevitAgentClient.Resolve("review-a");
         var json = session.ToJson();
@@ -283,6 +285,7 @@ public class AgentClientTests : IDisposable {
         Assert.Equal("2091", session.RevitVersion);
         Assert.Equal("review-a", json.Value<string>("clone"));
         Assert.Equal("IPY342", json.Value<string>("engine"));
+        Assert.Equal("fix/review-a", json.Value<string>("branch"));
         Assert.True(json.Value<bool>("per_launch"));
     }
 
@@ -366,6 +369,16 @@ public class AgentClientTests : IDisposable {
         Assert.Equal("ping", received.Value<string>("method"));
         Assert.Equal(1, received["params"].Value<int>("x"));
         Assert.Equal("2.0", received.Value<string>("jsonrpc"));
+    }
+
+    [Fact]
+    public void ACallKeepsDateLikeStringsOfTheResultUnchanged() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["day"] = "2024-05-01T10:00:00.50Z" });
+
+        var result = PyRevitAgentClient.Call(ThisHost(), "run", new JObject());
+
+        Assert.Equal(JTokenType.String, result["day"].Type);
+        Assert.Equal("2024-05-01T10:00:00.50Z", result.Value<string>("day"));
     }
 
     [Fact]
@@ -580,6 +593,79 @@ public class AgentClientTests : IDisposable {
 
         Assert.Equal("no_answer", error.Code);
         Assert.Equal(AgentOutcome.Unknown, error.Outcome);
+    }
+
+    [Fact]
+    public void StatusReportsAHostThatIsOnlyBusyAsBusy() {
+        host.Handler = request => FakeAgentHost.Failure(request, "revit_busy", "Revit did not become idle");
+
+        var line = PyRevitCLIAgentCmds.StatusLine(ThisHost());
+
+        Assert.EndsWith(": busy", line);
+    }
+
+    [Fact]
+    public void StatusReportsAHostWithoutAPipeAsNotResponding() {
+        var instance = ThisHost();
+        instance.Pipe = "pyrevit-missing-" + Guid.NewGuid().ToString("N");
+        PyRevitAgentClient.PingConnectTimeoutMs = 200;
+
+        var line = PyRevitCLIAgentCmds.StatusLine(instance);
+
+        Assert.StartsWith("Revit 2090", line);
+        Assert.Contains("not responding (", line);
+    }
+
+    [Fact]
+    public void StatusShowsTheCloneAndEngineOfARespondingHost() {
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, clone: "dev", clonePath: "C:/dev", engine: "CPython");
+
+        var line = PyRevitCLIAgentCmds.StatusLine(PyRevitAgentClient.Resolve("2091"));
+
+        Assert.Equal("Revit 2091 (build build-2091) pid " + Environment.ProcessId + " on dev CPython: responding", line);
+    }
+
+    [Fact]
+    public void StatusShowsTheBinaryCommitAndFlagsStaleBinaries() {
+        var instance = ThisHost();
+        instance.BinCommit = "23266b3";
+        instance.BinStale = true;
+        PyRevitAgentClient.PingConnectTimeoutMs = 200;
+
+        var line = PyRevitCLIAgentCmds.StatusLine(instance);
+
+        Assert.EndsWith(", binaries 23266b3 (stale)", line);
+    }
+
+    [Fact]
+    public void StatusTakesTheBinaryFieldsFromTheLiveHostInsteadOfTheStartupRecord() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject {
+            ["pong"] = true,
+            ["commit"] = "8c0fbdf",
+            ["bin_commit"] = "23266b3",
+            ["bin_stale"] = true,
+        });
+        var instance = ThisHost();
+        instance.Commit = "23266b3";
+        instance.BinCommit = "23266b3";
+        instance.BinStale = false;
+
+        var line = PyRevitCLIAgentCmds.StatusLine(instance);
+
+        Assert.EndsWith(": responding, binaries 23266b3 (stale)", line);
+        Assert.Equal("8c0fbdf", instance.Commit);
+    }
+
+    [Fact]
+    public void StatusKeepsTheStartupBinaryFieldsWhenTheHostDoesNotSendThem() {
+        host.Handler = request => FakeAgentHost.Result(request, new JObject { ["pong"] = true });
+        var instance = ThisHost();
+        instance.BinCommit = "23266b3";
+        instance.BinStale = true;
+
+        var line = PyRevitCLIAgentCmds.StatusLine(instance);
+
+        Assert.EndsWith(": responding, binaries 23266b3 (stale)", line);
     }
 
     [Fact]

@@ -357,6 +357,10 @@
             This class allows to register additional marshalling codecs.
             <para>Python.NET will pick suitable encoder/decoder registered first</para>
             </summary>
+            <remarks>
+            Codecs' <c>CanDecode</c> and <c>CanEncode</c> run outside the registry lock, because a
+            codec may run Python code, which can hand the GIL to a thread already waiting on that lock.
+            </remarks>
         </member>
         <member name="M:Python.Runtime.PyObjectConversions.RegisterEncoder(Python.Runtime.IPyObjectEncoder)">
             <summary>
@@ -396,6 +400,24 @@
             <param name="result">Receives the managed object</param>
             <param name="setError">If true, call <c>Exceptions.SetError</c> with the reason for failure.</param>
             <returns>True on success</returns>
+        </member>
+        <member name="M:Python.Runtime.Converter.ToManagedTruthy(Python.Runtime.BorrowedReference,System.Type,System.Object@,System.Boolean)">
+            <summary>
+            Like <see cref="M:Python.Runtime.Converter.ToManaged(Python.Runtime.BorrowedReference,System.Type,System.Object@,System.Boolean)"/>, but a
+            <see cref="T:System.Boolean"/> or <see cref="T:System.Nullable`1"/> target also accepts any Python
+            object and converts it by truthiness, as IronPython does.
+            </summary>
+            <remarks>
+            Used where the target type is fixed: property and field assignment and delegate
+            return values. Method arguments use it only after no overload matched strictly, so a
+            <see cref="T:System.Boolean"/> overload never wins over an overload that takes the value itself.
+            </remarks>
+        </member>
+        <member name="M:Python.Runtime.Converter.AllowTruthyBooleans">
+            <summary>
+            Lets <see cref="T:System.Boolean"/> targets accept any Python object by truthiness on this thread
+            until the returned scope is disposed.
+            </summary>
         </member>
         <member name="M:Python.Runtime.Converter.ToManagedExplicit(Python.Runtime.BorrowedReference,System.Type,System.Object@)">
             <remarks>
@@ -2995,11 +3017,29 @@
             The referenced python object is returned instead of a new wrapper.
             </summary>
         </member>
-        <member name="M:Python.Runtime.ClassDerivedObject.CreateDerivedType(System.String,System.Type,System.Collections.Generic.IList{System.Type},Python.Runtime.BorrowedReference,System.String,System.String,System.String)">
+        <member name="M:Python.Runtime.ClassDerivedObject.CreateDerivedType(System.String,System.Type,System.Collections.Generic.IList{System.Type},Python.Runtime.BorrowedReference,System.String,System.String,System.String,System.String)">
             <summary>
             Creates a new managed type derived from a base type with any virtual
             methods overridden to call out to python if the associated python
             object has overridden the method.
+            </summary>
+            <param name="definitionSite">
+            Where the Python class was defined, part of the cache key so classes that share a name
+            and shape but come from different sources never share a generated type; null when the
+            caller asks for the type by explicit namespace, which keeps its type shared by name.
+            </param>
+        </member>
+        <member name="M:Python.Runtime.ClassDerivedObject.ExplicitMemberSignature(Python.Runtime.BorrowedReference)">
+            <summary>
+            Describes the explicit CLR members a Python class declares, so a redefinition that
+            adds, removes or retypes them gets a new generated type instead of a cached one.
+            </summary>
+        </member>
+        <member name="M:Python.Runtime.ClassDerivedObject.ReserveTypeName(System.String,System.String,System.String)">
+            <summary>
+            Picks the CLR name for a new generated type. The first shape of a Python class keeps
+            its visible name so it stays importable from its namespace; later shapes with the same
+            name get a short hexadecimal hash suffix because an assembly cannot define a name twice.
             </summary>
         </member>
         <member name="M:Python.Runtime.ClassDerivedObject.AddConstructor(System.Reflection.ConstructorInfo,System.Type,System.Reflection.Emit.TypeBuilder)">
@@ -3404,11 +3444,37 @@
             Metatype initialization. This bootstraps the CLR metatype to life.
             </summary>
         </member>
+        <member name="M:Python.Runtime.MetaType.DefinitionSite">
+            <summary>
+            The <c>__file__</c> of the globals the class statement runs in, so same-named classes
+            from different scripts, which all run as <c>__main__</c>, never share a generated type.
+            </summary>
+        </member>
+        <member name="M:Python.Runtime.MetaType.TryCreateInterfaceSubType(Python.Runtime.BorrowedReference,Python.Runtime.ClassBase,System.Collections.Generic.IList{System.Type},Python.Runtime.PyDict)">
+            <summary>
+            Generates the managed type for a class that only implements .NET interfaces and
+            declares no <c>__namespace__</c>. Unlike an explicit request, a failure here must not
+            break the class statement, so it falls back to a plain Python type as before.
+            </summary>
+            <remarks>
+            The type is shared only by classes of the same name and shape defined from the same
+            file, so re-running a script reuses it while another script's class never takes it over.
+            </remarks>
+        </member>
         <member name="M:Python.Runtime.MetaType.tp_new(Python.Runtime.BorrowedReference,Python.Runtime.BorrowedReference,Python.Runtime.BorrowedReference)">
             <summary>
             Metatype __new__ implementation. This is called to create a new
             class / type when a reflected class is subclassed.
             </summary>
+        </member>
+        <member name="M:Python.Runtime.MetaType.RunClassCreationHooks(Python.Runtime.NewReference,Python.Runtime.BorrowedReference,Python.Runtime.BorrowedReference)">
+            <summary>
+            Finishes a class whose type was generated rather than built by <c>type.__new__</c>, by
+            running the class-creation protocol <c>type.__new__</c> would: <c>__set_name__</c> on
+            every namespace value that defines it, then the parent's <c>__init_subclass__</c> with
+            the class keywords.
+            </summary>
+            <remarks>Takes ownership of <paramref name="type"/>; returns null with the Python error set on failure.</remarks>
         </member>
         <member name="M:Python.Runtime.MetaType.tp_call(Python.Runtime.BorrowedReference,Python.Runtime.BorrowedReference,Python.Runtime.BorrowedReference)">
             <summary>
@@ -3663,6 +3729,18 @@
             <remarks>
             Returned <see cref="T:Python.Runtime.ReflectedClrType"/> might be partially initialized.
             </remarks>
+        </member>
+        <member name="M:Python.Runtime.ReflectedClrType.WrapAsClassMethod(Python.Runtime.BorrowedReference,System.String)">
+            <summary>
+            Makes a plain function stored under <paramref name="name"/> a classmethod, as
+            <c>type.__new__</c> does for <c>__init_subclass__</c> and <c>__class_getitem__</c>.
+            </summary>
+        </member>
+        <member name="M:Python.Runtime.ReflectedClrType.AddInstanceDictDescriptor(Python.Runtime.PyType,Python.Runtime.BorrowedReference)">
+            <summary>
+            Exposes the instance dictionary as <c>__dict__</c>, which <c>type.__new__</c> would have
+            added, so <c>vars()</c> and descriptors such as <c>functools.cached_property</c> work.
+            </summary>
         </member>
         <member name="T:Python.Runtime.CodeGenerator">
             <summary>

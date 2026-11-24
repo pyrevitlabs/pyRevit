@@ -2,6 +2,8 @@ using pyRevitCLI;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class LibraryIndexTests : IDisposable {
     private readonly string root = Directory.CreateTempSubdirectory("pyrevit-index-").FullName;
 
