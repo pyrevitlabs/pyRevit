@@ -2,40 +2,36 @@ title:
   en_us: Elements Hosted On Linked Model
   ko: 링크된 모델에 호스트된 요소
   fr_fr: Eléments hébergés sur un modèle lié
-  ru: Удержать элементы рамещенные на связанной модели
+  ru: Удержать элементы, размещенные на связанной модели
   chinese_s: 基于链接模型的图元
   es_es: Elementos alojados en modelo vinculado
   de_de: Aufwahl auf Elemente mit verknüpftem Modell als Host reduzieren
   pt_br: Elementos Hospedados em Modelo Vinculado
 tooltip:
-  en_us: >-
-    Keeps elements hosted on a linked model surface in current selection.
-    If nothing is selected, pick a region to filter from.
-  ko: 현재 선택 항목에서 링크된 모델 면에 호스트된 요소를 유지합니다.
-  fr_fr: >-
-    Conserve les éléments hébergés sur une surface de modèle lié dans la sélection actuelle.
-    Si rien n'est sélectionné, délimitez une zone à filtrer.
-  ru: >-
-    Сохраняет элементы, размещённые на поверхности связанной модели, в текущем выделении.
-    Если ничего не выбрано, выберите область для фильтрации.
-  chinese_s: >-
-    在当前选择中保留基于链接模型表面的图元。
-    若未选择任何内容，则框选区域进行过滤。
-  es_es: >-
-    Mantiene los elementos alojados en una superficie de modelo vinculado en la selección actual.
-    Si no hay nada seleccionado, delimite una región para filtrar.
-  de_de: >-
-    Behält nur Elemente in der Auswahl, die auf einer Fläche eines verknüpften Modells
-    gehostet sind. Die Elemente werden nicht gelöscht, sondern nur aus der aktuellen
-    Auswahl entfernt.
-    Wenn nichts ausgewählt ist, kann ein Bereich zum Filtern gewählt werden.
-  pt_br: >-
-    Mantém os elementos hospedados em uma superfície de modelo vinculado na seleção atual.
-    Se nada estiver selecionado, selecione uma região para filtrar.
+  en_us: |-
+    Keep only the elements in the current selection that are hosted on a linked model, such as a face-based family placed on a surface of a linked file. With nothing selected, draw a rectangle to select those elements inside it.
+  ko: |-
+    현재 선택 항목에서 링크된 모델에 호스트된 요소(예: 링크된 파일의 표면에 배치된 면 기반 패밀리)만 유지합니다. 선택한 항목이 없으면 사각형을 그려 그 안에서 해당하는 요소를 선택합니다.
+  fr_fr: |-
+    Conservez dans la sélection actuelle uniquement les éléments hébergés sur un modèle lié, par exemple une famille basée sur une face posée sur une surface d'un fichier lié. Si rien n'est sélectionné, tracez un rectangle pour sélectionner ces éléments qu'il contient.
+  ru: |-
+    Оставьте в текущем выборе только элементы, размещённые на связанной модели, например семейство на основе грани, размещённое на поверхности связанного файла. Если ничего не выбрано, нарисуйте прямоугольник, чтобы выбрать такие элементы внутри него.
+  chinese_s: |-
+    在当前选择中仅保留放置在链接模型上的图元，例如放置在链接文件表面上的基于面的族。若未选择任何内容，则绘制矩形，选择其中符合条件的图元。
+  es_es: |-
+    Conserve en la selección actual solo los elementos alojados en un modelo vinculado, como una familia basada en cara colocada sobre una superficie de un archivo vinculado. Si no hay nada seleccionado, dibuje un rectángulo para seleccionar esos elementos que contiene.
+  de_de: |-
+    In der aktuellen Auswahl nur die Elemente behalten, die auf einem verknüpften Modell gehostet sind, z. B. eine flächenbasierte Familie auf einer Fläche einer verknüpften Datei. Ist nichts ausgewählt, ein Rechteck aufziehen, um diese Elemente darin auszuwählen.
+  pt_br: |-
+    Mantenha na seleção atual apenas os elementos hospedados em um modelo vinculado, como uma família baseada em face colocada em uma superfície de um arquivo vinculado. Se nada estiver selecionado, desenhe um retângulo para selecionar esses elementos dentro dele.
 context:
   any:
     - selection
     - active-plan-view
     - active-section-view
-    - active-3d-view
     - active-elevation-view
+    - active-3d-view
+    - active-sheet
+    - active-legend
+    - active-drafting-view
+    - active-detail-view
