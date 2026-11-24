@@ -1,8 +1,15 @@
-"""Check text that must render the same on IronPython 2.7 and CPython 3."""
+"""Regression tests for #4184: text that differs between engines.
+
+IronPython 2.7 shows floats with 12 significant digits and widens the UTF-8
+bytes of non-ASCII byte-string literals one by one (mojibake); CPython 3 and
+IronPython 3.4 do neither. These checks inspect source without loading Revit.
+"""
 
 import ast
 from pathlib import Path
 import unittest
+
+import pytest
 
 
 TEST_ENVIRONMENT = "HostFree"
@@ -19,39 +26,75 @@ COORDINATE_SELECTOR = (
 GRID_BUBBLES = COORDINATE_SELECTOR.with_name("script.py")
 KEYNOTES = TOOLS / "Keynotes.pushbutton/script.py"
 
-NON_ASCII_FUNCTIONS = ("_update_status_bar", "_update_title")
+KEYNOTES_ALLOWED_NON_ASCII = (
+    "KeynoteManager | engine cfgs unavailable",
+    "\N{BLACK CIRCLE}",
+    "paste: %s dropped",
+    "%s: could not read keynote tags",
+    "Cannot connect to this project's keynote file.",
+    "Converted ",
+    "Backup failed ",
+    "Keynote hierarchy cycle detected at key",
+    "ui_guard: %s.%s not found",
+    "KeynoteManager | no persistent engine",
+)
 
 
 def _parse(path):
     return ast.parse(path.read_text(encoding="utf-8"))
 
 
-def _load_format_setting_value():
-    tree = _parse(SETTINGS_WINDOW)
-    tree.body = [
-        node
-        for node in tree.body
-        if getattr(node, "name", "") == "_format_setting_value"
-    ]
+def _load(path, names, kind):
+    tree = _parse(path)
+    nodes = [node for node in tree.body if isinstance(node, kind)]
+    selected = [node for node in nodes if _defined_name(node) in names]
+    missing = set(names) - {_defined_name(node) for node in selected}
+    assert not missing, "%s not found in %s" % (sorted(missing), path.name)
+    tree.body = selected
     namespace = {}
-    exec(compile(tree, str(SETTINGS_WINDOW), "exec"), namespace)
-    return namespace["_format_setting_value"]
+    exec(compile(tree, str(path), "exec"), namespace)
+    return namespace
 
 
-def _non_ascii_literals(tree, function_names):
-    found = []
+def _defined_name(node):
+    if isinstance(node, ast.Assign):
+        return getattr(node.targets[0], "id", "")
+    return node.name
+
+
+def _docstring_nodes(tree):
+    docstrings = set()
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name in function_names:
-            for child in ast.walk(node):
-                if isinstance(child, ast.Constant) and isinstance(child.value, str):
-                    if not child.value.isascii():
-                        found.append((node.name, child.value))
-    return found
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef)):
+            body = node.body
+            if (
+                body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+            ):
+                docstrings.add(id(body[0].value))
+    return docstrings
 
 
+def _non_ascii_literals_outside_docstrings(tree):
+    docstrings = _docstring_nodes(tree)
+    return [
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant)
+        and isinstance(node.value, str)
+        and not node.value.isascii()
+        and id(node) not in docstrings
+    ]
+
+
+@pytest.mark.regression
 class FormatSettingValueTests(unittest.TestCase):
+    """Issue 4184: floats must show the same text on every engine."""
+
     def setUp(self):
-        self.format = _load_format_setting_value()
+        namespace = _load(SETTINGS_WINDOW, {"_format_setting_value"}, ast.FunctionDef)
+        self.format = namespace["_format_setting_value"]
 
     def test_long_float_is_cut_to_twelve_significant_digits(self):
         self.assertEqual(self.format(0.19685039370078738), "0.196850393701")
@@ -81,47 +124,62 @@ class FormatSettingValueTests(unittest.TestCase):
         self.assertEqual(self.format(None), "")
 
 
+@pytest.mark.regression
 class DegreeSignTests(unittest.TestCase):
+    """Issue 4184: the degree sign must not show as mojibake on IronPython 2.7."""
+
     def test_coordinate_selector_uses_unicode_literals(self):
         tree = _parse(COORDINATE_SELECTOR)
-        imports = [
-            node
+        names = [
+            alias.name
             for node in tree.body
             if isinstance(node, ast.ImportFrom) and node.module == "__future__"
+            for alias in node.names
         ]
-        names = [alias.name for node in imports for alias in node.names]
         self.assertIn("unicode_literals", names)
 
-    def test_grid_bubbles_status_does_not_format_a_byte_literal_with_degree(self):
-        offenders = [
-            node.value
-            for node in ast.walk(_parse(GRID_BUBBLES))
-            if isinstance(node, ast.Constant)
-            and isinstance(node.value, str)
-            and "\N{DEGREE SIGN}" in node.value
-            and "tolerance" in node.value
-        ]
-        self.assertEqual(offenders, [])
+    def test_grid_bubbles_degree_constant_decodes_to_the_degree_sign(self):
+        namespace = _load(GRID_BUBBLES, {"DEGREE"}, ast.Assign)
+        self.assertEqual(namespace["DEGREE"], "\N{DEGREE SIGN}")
 
-
-class KeynoteManagerTextTests(unittest.TestCase):
-    def test_constants_decode_to_the_expected_characters(self):
-        tree = _parse(KEYNOTES)
-        wanted = {"EM_DASH", "MIDDOT"}
-        tree.body = [
-            node
-            for node in tree.body
-            if isinstance(node, ast.Assign)
-            and getattr(node.targets[0], "id", "") in wanted
-        ]
-        namespace = {}
-        exec(compile(tree, str(KEYNOTES), "exec"), namespace)
-        self.assertEqual(namespace["EM_DASH"], "\N{EM DASH}")
-        self.assertEqual(namespace["MIDDOT"], "\N{MIDDLE DOT}")
-
-    def test_title_and_status_bar_have_no_non_ascii_literals(self):
-        found = _non_ascii_literals(_parse(KEYNOTES), NON_ASCII_FUNCTIONS)
+    def test_grid_bubbles_has_no_non_ascii_literal_outside_comments(self):
+        found = _non_ascii_literals_outside_docstrings(_parse(GRID_BUBBLES))
         self.assertEqual(found, [])
+
+
+@pytest.mark.regression
+class KeynoteManagerTextTests(unittest.TestCase):
+    """Issue 4184: Keynote Manager text must not show as mojibake on IronPython 2.7."""
+
+    def test_constants_decode_to_the_expected_characters(self):
+        names = {"EM_DASH", "MIDDLE_DOT", "LEFT_DOUBLE_QUOTE", "RIGHT_DOUBLE_QUOTE"}
+        namespace = _load(KEYNOTES, names, ast.Assign)
+        self.assertEqual(namespace["EM_DASH"], "\N{EM DASH}")
+        self.assertEqual(namespace["MIDDLE_DOT"], "\N{MIDDLE DOT}")
+        self.assertEqual(
+            namespace["LEFT_DOUBLE_QUOTE"], "\N{LEFT DOUBLE QUOTATION MARK}"
+        )
+        self.assertEqual(
+            namespace["RIGHT_DOUBLE_QUOTE"], "\N{RIGHT DOUBLE QUOTATION MARK}"
+        )
+
+    def test_only_allowlisted_literals_contain_non_ascii(self):
+        found = _non_ascii_literals_outside_docstrings(_parse(KEYNOTES))
+        unexpected = [
+            literal
+            for literal in found
+            if not literal.startswith(KEYNOTES_ALLOWED_NON_ASCII)
+        ]
+        self.assertEqual(unexpected, [])
+
+    def test_allowlist_has_no_stale_entries(self):
+        found = _non_ascii_literals_outside_docstrings(_parse(KEYNOTES))
+        stale = [
+            prefix
+            for prefix in KEYNOTES_ALLOWED_NON_ASCII
+            if not any(literal.startswith(prefix) for literal in found)
+        ]
+        self.assertEqual(stale, [])
 
 
 if __name__ == "__main__":
