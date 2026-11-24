@@ -49,6 +49,9 @@ import keynotesdb as kdb
 logger = script.get_logger()
 output = script.get_output()
 
+EM_DASH = b"\xe2\x80\x94".decode("utf-8")
+MIDDOT = b"\xc2\xb7".decode("utf-8")
+
 
 def _resolve_bundle_dir():
     """Resolve the bundle directory at module load.
@@ -1218,7 +1221,8 @@ class PastePreviewWindow(forms.WPFWindow):
             1 for b in self._boxes if b.IsChecked and b.Tag["status"] == "Conflict"
         )
         self.summaryText.Text = self._text(
-            "SummaryCounts", "{0} to add · {1} to replace · {2} left alone"
+            "SummaryCounts",
+            "{0} to add " + MIDDOT + " {1} to replace " + MIDDOT + " {2} left alone",
         ).format(adds, overs, len(self._rows) - adds - overs)
         self.pasteBtn.IsEnabled = bool(adds or overs)
 
@@ -1574,16 +1578,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # =========================================================================
 
     def _update_status_bar(self):
-        safe = " — SAFE MODE (no persistent engine)" if self._modal_mode else ""
+        safe = (
+            " " + EM_DASH + " SAFE MODE (no persistent engine)"
+            if self._modal_mode
+            else ""
+        )
         if self._follow_error and not self._modal_mode:
-            safe += " — NOT following ({})".format(self._follow_error)
+            safe += " " + EM_DASH + " NOT following (" + str(self._follow_error) + ")"
         if self._bind_error:
             self.statusLeft.Text = self._bind_error.replace("\n", "  ") + safe
         elif self._kfile:
             fname = op.basename(self._kfile)
             handler = " ( ACC / FORMA )" if self._kfile_handler == "adc" else ""
-            self.statusLeft.Text = "{}{} — {}{}".format(
-                fname, handler, op.dirname(self._kfile), safe
+            self.statusLeft.Text = (
+                fname + handler + " " + EM_DASH + " " + op.dirname(self._kfile) + safe
             )
         else:
             self.statusLeft.Text = "No keynote file loaded" + safe
@@ -1598,11 +1606,21 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 if self._usage_stale
                 else "{} in use".format(len(self._used_keysdict))
             )
-            self.statusRight.Text = "{} groups · {} keynotes · {}".format(
-                len(cats), len(knotes), used
+            self.statusRight.Text = (
+                "{} groups".format(len(cats))
+                + " "
+                + MIDDOT
+                + " "
+                + "{} keynotes".format(len(knotes))
+                + " "
+                + MIDDOT
+                + " "
+                + used
             )
             if len(self._sel_keys) > 1:
-                self.statusRight.Text += " · {} selected".format(len(self._sel_keys))
+                self.statusRight.Text += (
+                    " " + MIDDOT + " " + "{} selected".format(len(self._sel_keys))
+                )
         except Exception:
             self.statusRight.Text = ""
 
@@ -2954,7 +2972,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """
         bits = [self._base_title]
         if self._binding is not None:
-            bits.append("— " + self._binding.title)
+            bits.append(EM_DASH + " " + self._binding.title)
         if self._kfile_handler == "adc":
             bits.append("( ACC / FORMA )")
         if self._modal_mode:
@@ -4650,7 +4668,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             )
             return
         if any(k.locked for k in db_keynotes if k.parent_key == sel.key):
-            forms.alert("Some children are locked — cannot re-key.")
+            forms.alert("Some children are locked " + EM_DASH + " cannot re-key.")
             return
         try:
             from_key = sel.key
@@ -4791,9 +4809,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not kids:
             # an unverified map reports everything as unplaced — don't claim it
             self.statusLeft.Text = (
-                "Keynote '{}' — usage unverified, press F5".format(key)
+                "Keynote '{}' ".format(key) + EM_DASH + " usage unverified, press F5"
                 if self._usage_stale
-                else "Keynote '{}' — not placed in model".format(key)
+                else "Keynote '{}' ".format(key) + EM_DASH + " not placed in model"
             )
             return
 
@@ -4819,7 +4837,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         def _update_status():
             self.statusLeft.Text = (
-                "Keynote '{}' — {} placements shown in output".format(key, len(kids))
+                "Keynote '{}' ".format(key)
+                + EM_DASH
+                + " {} placements shown in output".format(len(kids))
             )
 
         self._revit_run(_do, callback=_update_status, callback_on_error=False)
@@ -4838,17 +4858,23 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not sel:
             return
         if sel.locked:
-            self._hint("%s is locked by another user — cannot place" % sel.key)
+            self._hint(
+                sel.key + " is locked by another user " + EM_DASH + " cannot place"
+            )
             return
         if not sel.parent_key:
-            self._hint("%s is a group — Alt+Click a keynote to place" % sel.key)
+            self._hint(
+                sel.key + " is a group " + EM_DASH + " Alt+Click a keynote to place"
+            )
             return
 
         if self._modal_mode:
             forms.alert(
                 "Placing keynotes needs the modeless window, which requires "
                 "a persistent engine (see SAFE MODE in the status bar).\n\n"
-                "Close the Keynote Manager, then place the tag — or reload "
+                "Close the Keynote Manager, then place the tag "
+                + EM_DASH
+                + " or reload "
                 "pyRevit so the tool gets a persistent engine.",
                 title="Not available in Safe Mode",
             )
@@ -4892,7 +4918,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._update_full_tree()
             self._update_status_bar()
 
-            self._hint("Placing %s — click in the view" % sel_key)
+            self._hint("Placing " + sel_key + " " + EM_DASH + " click in the view")
 
         self._revit_run(_do, callback=_on_placed, callback_on_error=False)
 
