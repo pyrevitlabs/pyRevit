@@ -171,7 +171,7 @@ Run `pipenv run check-py3 <path>` for what it can see (see [Linters](#what-the-l
 | IronPython 3.4.2 | `print` in a session without a console fails with `unknown encoding: codepage___0`. Write to `script.get_output()` or a logger | No |
 | IronPython 3.4.2 | A script that leaves a Python worker thread running when it returns can end with `engine_error` and no traceback. Join every thread before the script ends | No |
 | CPython 3.12 | `open()` without `encoding=` uses the Windows ANSI code page (usually cp1252), not UTF-8. Always pass `encoding="utf-8"` | No |
-| CPython 3.12 | pythonnet has no named indexers (`element.Parameter[...]` or `element.Geometry[...]`) | Yes: `CLR-NAMED-INDEXER` in `check-py3` |
+| CPython 3.12 | pythonnet has no named indexers (`element.Parameter[...]`, `element.Geometry[...]`, `element.BoundingBox[view]`); call the `get_` method instead | Partly: `CLR-NAMED-INDEXER` in `check-py3` flags only `Parameter` and `Geometry` |
 | CPython 3.12 | Interface-typed properties return the interface, not the concrete object; see [Differences from IronPython](build-extensions/scripting/cpython.md#differences-from-ironpython) | No |
 
 The last column says whether a linter reports the trap. "No" means only a run on that engine finds it.
