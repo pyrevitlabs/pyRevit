@@ -2,16 +2,8 @@
 import System
 import re
 
-from rpw.ui.forms import (
-    FlexForm,
-    Label,
-    ComboBox,
-    Separator,
-    Button,
-    CheckBox,
-)
-
 from pyrevit import script, DB, HOST_APP, revit
+from pyrevit import forms
 from pyrevit.forms import alert, ProgressBar
 from pyrevit.revit.db.create import FamilyLoaderOptionsHandler
 from pyrevit.compat import get_elementid_value_func
@@ -285,19 +277,15 @@ def main():
 
     # --- LOGIC FOR FAMILY DOCUMENT ---
     if doc.IsFamilyDocument:
-        components = [
-            Label("Replace all fonts in this family."),
-            Separator(),
-            Label("Select Target Font:"),
-            ComboBox("font", options=font_names, default="Arial"),
-            Button("OK"),
-        ]
-        form = FlexForm("Replace Fonts in Family", components)
-        form.show()
-        if not form.values:
+        selected_font = forms.SelectFromList.show(
+            font_names,
+            title="Replace Fonts in Family",
+            multiselect=False,
+            button_name="Replace Fonts",
+        )
+        if not selected_font:
             return
 
-        selected_font = form.values["font"]
         output.print_md(
             "# Updating fonts in current family to: **{}**".format(selected_font)
         )
@@ -321,32 +309,34 @@ def main():
         return  # End script execution for family document
 
     # --- LOGIC FOR PROJECT DOCUMENT ---
-    components = [
-        Label("Change all text fonts in the project to a new font."),
-        Label("This will update all text fonts in families, dimensions,"),
-        Label("and text notes. This will NOT update fonts in"),
-        Label("schedules or tags."),
-        Separator(),
-        Label("Pick Target Font:"),
-        ComboBox("font", options=font_names, default="Arial"),
-        Separator(),
-        Label("Elements to change:"),
-        CheckBox("families", "Fonts used in Families", default=True),
-        CheckBox("textnotes", "Text Notes Fonts in Project", default=True),
-        CheckBox("dimensions", "Dimensions Fonts in Project", default=True),
-        Button("OK"),
-    ]
-
-    form = FlexForm("Change Font in Elements", components)
-    form.show()
-    if not form.values:
+    selected_font = forms.SelectFromList.show(
+        font_names,
+        title="Pick Target Font",
+        multiselect=False,
+        button_name="Next",
+    )
+    if not selected_font:
         alert("No values selected.")
         return
 
-    selected_font = form.values["font"]
+    choice, switches = forms.CommandSwitchWindow.show(
+        ["Replace Fonts"],
+        switches={
+            "Fonts used in Families": True,
+            "Text Notes Fonts in Project": True,
+            "Dimensions Fonts in Project": True,
+        },
+        title="Change Font in Elements",
+        message="Updates fonts in families, dimensions and text notes. "
+        "Schedules and tags are not updated.",
+    )
+    if not choice:
+        alert("No values selected.")
+        return
+
     output.print_md("# Update Fonts To: **{}**".format(selected_font))
 
-    if form.values["families"]:
+    if switches["Fonts used in Families"]:
         families = [
             family
             for family in DB.FilteredElementCollector(doc)
@@ -386,7 +376,7 @@ def main():
 
     text_types = []
     dim_types = []
-    if form.values["textnotes"]:
+    if switches["Text Notes Fonts in Project"]:
         text_types = (
             DB.FilteredElementCollector(doc).OfClass(DB.TextNoteType).ToElements()
         )
@@ -396,7 +386,7 @@ def main():
             logger.debug("Updated text note type: {}: {} → {}".format(r[0], r[1], r[2]))
         output.print_md("\n**Total text types updated: {}**".format(len(result)))
 
-    if form.values["dimensions"]:
+    if switches["Dimensions Fonts in Project"]:
         dim_types = (
             DB.FilteredElementCollector(doc).OfClass(DB.DimensionType).ToElements()
         )
