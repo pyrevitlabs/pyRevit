@@ -122,6 +122,27 @@ class PropKeyValuePickleTests(unittest.TestCase):
         self.assertEqual(restored[0].categories, [])
         self.assertIs(original.datatype, _StorageType.Double)
 
+    def test_legacy_enum_valued_state_is_kept(self):
+        """State written by older code holds the enum object and loads as is."""
+        restored = self.prop_key_value.__new__(self.prop_key_value)
+        restored.__setstate__(
+            {
+                "name": "Mark",
+                "datatype": _StorageType.Double,
+                "value": 1.5,
+                "istype": False,
+                "display_value": "1.5",
+                "categories": [],
+            }
+        )
+        self.assertIs(restored.datatype, _StorageType.Double)
+
+    def test_name_valued_state_is_resolved(self):
+        """State holding the enum name resolves to the DB.StorageType member."""
+        restored = self.prop_key_value.__new__(self.prop_key_value)
+        restored.__setstate__({"name": "Mark", "datatype": "Integer", "value": 1})
+        self.assertIs(restored.datatype, _StorageType.Integer)
+
     def test_net_numeric_value_is_stored_as_plain_int(self):
         """An Int64-like value must not pickle as a clr reference."""
         clr_stub = types.ModuleType("clr")
