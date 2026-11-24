@@ -567,14 +567,18 @@ namespace pyRevitCLI {
                         mode: TryGetValue("--mode"),
                         width: TryGetValue("--width"),
                         outFile: TryGetValue("--out"),
-                        revitSelector: TryGetValue("--revit")
+                        revitSelector: TryGetValue("--revit"),
+                        document: TryGetValue("--document"),
+                        title: TryGetValue("--title")
                         );
 
                 else if (all("inspect"))
                     PyRevitCLIAgentCmds.InspectElements(
                         elementIds: PyRevitCLIArguments.Values(arguments, "<element_id>"),
                         includeParameters: arguments["--no-parameters"].IsFalse,
-                        revitSelector: TryGetValue("--revit")
+                        revitSelector: TryGetValue("--revit"),
+                        document: TryGetValue("--document"),
+                        title: TryGetValue("--title")
                         );
 
                 else if (all("lookup"))

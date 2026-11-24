@@ -536,6 +536,11 @@
                                                         <TextBox Style="{StaticResource Code}" Text="{Binding Output, Mode=OneWay}" />
                                                     </StackPanel>
 
+                                                    <StackPanel Visibility="{Binding HasExports, Converter={StaticResource Shown}}">
+                                                        <TextBlock Text="{DynamicResource AgentPanel.Log.Exports}" Style="{StaticResource Heading}" />
+                                                        <TextBox Style="{StaticResource Code}" Text="{Binding Exports, Mode=OneWay}" />
+                                                    </StackPanel>
+
                                                     <TextBlock Text="{Binding Engine}" Style="{StaticResource Muted}"
                                                                Visibility="{Binding HasEngine, Converter={StaticResource Shown}}" />
                                                     <TextBox Text="{Binding RunFolder, Mode=OneWay}"

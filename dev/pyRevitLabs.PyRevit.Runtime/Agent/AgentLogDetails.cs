@@ -8,8 +8,8 @@ using pyRevitLabs.Json.Linq;
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
     /// The summary of a request that the agent log keeps in memory. For a run: what it changed,
-    /// what it printed, what went wrong, and the script, cut to sizes the panel can show. For a
-    /// capture: the view and the image it saved.
+    /// what it exported, what it printed, what went wrong, and the script, cut to sizes the panel
+    /// can show. For a capture: the view and the image it saved.
     /// </summary>
     /// <remarks>
     /// A run's full response and script stay in the run folder on disk; <c>run_dir</c> points
@@ -20,11 +20,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public const int MaxOutputChars = 4000;
         public const int MaxTracebackChars = 4000;
         public const int MaxElements = 20;
+        public const int MaxExports = 20;
 
         public static JObject FromRun(JObject response, string script) {
             var changes = response["changes"] as JObject ?? new JObject();
             var error = response["error"] as JObject;
             var engine = response["engine"] as JObject;
+            var exports = (response["exports"] as JArray ?? new JArray())
+                .Select(path => path.Type == JTokenType.String ? path.Value<string>() : null)
+                .Where(path => !string.IsNullOrEmpty(path))
+                .ToList();
             return new JObject {
                 ["mode"] = response["mode"],
                 ["status"] = response["status"],
@@ -43,6 +48,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["other_documents"] = OtherDocumentsOpenBeforeRun(changes).Count(other => other.Value<bool?>("in_session") != true),
                 ["unreverted_documents"] = UnrevertedDocuments(changes),
                 ["kept_documents"] = KeptDocuments(changes),
+                ["rollback_failure"] = Text(response.Value<string>("rollback_failure")),
+                ["exports"] = new JArray(exports.Take(MaxExports)),
+                ["exports_truncated"] = exports.Count > MaxExports,
                 ["warnings"] = response["warnings"] as JArray ?? new JArray(),
                 ["output"] = Text(Cut(response.Value<string>("output"), MaxOutputChars)),
                 ["error"] = error == null ? null : new JObject {

@@ -61,6 +61,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ExportedFilesAndAFailedRollbackReachTheLog() {
+            var response = new JObject {
+                ["document"] = "Tower.rvt",
+                ["rollback_failure"] = "Revit returned Error when rolling back the run's transaction group.",
+                ["exports"] = new JArray(
+                    Enumerable.Range(1, AgentLogDetails.MaxExports + 5).Select(index => "C:\\runs\\abc\\exports\\A" + index + ".pdf")),
+            };
+
+            var details = AgentLogDetails.FromRun(response, null);
+
+            Assert.Equal("Revit returned Error when rolling back the run's transaction group.", details.Value<string>("rollback_failure"));
+            Assert.Equal(AgentLogDetails.MaxExports, ((JArray)details["exports"]).Count);
+            Assert.Equal("C:\\runs\\abc\\exports\\A1.pdf", details["exports"][0].Value<string>());
+            Assert.True(details.Value<bool>("exports_truncated"));
+        }
+
+        [Fact]
+        public void ARunThatExportedNothingAndRolledBackCleanlyHasNeither() {
+            var details = AgentLogDetails.FromRun(new JObject { ["decision"] = "rolled_back" }, null);
+
+            Assert.Equal(JTokenType.Null, details["rollback_failure"].Type);
+            Assert.Empty((JArray)details["exports"]);
+            Assert.False(details.Value<bool>("exports_truncated"));
+        }
+
+        [Fact]
         public void OnlyDocumentsThatStillHoldTheRunsChangesAreUnreverted() {
             var response = new JObject {
                 ["changes"] = new JObject {

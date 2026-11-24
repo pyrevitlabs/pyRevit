@@ -106,6 +106,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             Elements = ElementsOf(details, select);
             Capture = CaptureOf(details, log, images);
             Script = details?.Value<string>("script");
+            Exports = ExportsOf(details);
             Output = details?.Value<string>("output");
             Error = ErrorOf(details);
             Engine = string.IsNullOrEmpty(details?.Value<string>("engine")) ? null : log.Format("AgentPanel.Log.Engine", details.Value<string>("engine"));
@@ -133,6 +134,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public AgentLogCapture Capture { get; }
 
         public string Script { get; }
+
+        /// <summary>
+        /// Paths of the files the run exported, one per line and ending in <c>…</c> when the log
+        /// keeps only the first of them, or null when it exported none.
+        /// </summary>
+        public string Exports { get; }
+
         public string Output { get; }
         public string Error { get; }
         public string Engine { get; }
@@ -145,6 +153,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool HasElements => Elements.Count > 0;
         public bool HasCapture => Capture != null;
         public bool HasScript => !string.IsNullOrEmpty(Script);
+        public bool HasExports => Exports != null;
         public bool HasOutput => !string.IsNullOrEmpty(Output);
         public bool HasError => Error != null;
         public bool HasEngine => Engine != null;
@@ -215,6 +224,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ? log.Format("AgentPanel.Log.Capture", view ?? string.Empty, width.Value, height.Value)
                 : view;
             return new AgentLogCapture(image, caption, images.LoadThumbnail, images.Open);
+        }
+
+        private static string ExportsOf(JObject details) {
+            var paths = (details?["exports"] as JArray)?.Values<string>().ToList();
+            if (paths == null || paths.Count == 0)
+                return null;
+            var listed = string.Join("\n", paths);
+            return details.Value<bool?>("exports_truncated") == true ? listed + "\n…" : listed;
         }
 
         private static string ErrorOf(JObject details) {
@@ -432,11 +449,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var flags = new List<string>();
             if (details == null)
                 return flags;
+            var rollbackFailure = details.Value<string>("rollback_failure");
+            if (!string.IsNullOrEmpty(rollbackFailure))
+                flags.Add(Format("AgentPanel.Log.Flag.RollbackFailed", details.Value<string>("document"), rollbackFailure));
             var unreverted = (details["unreverted_documents"] as JArray)?.Values<string>().ToList() ?? new List<string>();
             if (unreverted.Count > 0)
                 flags.Add(Format("AgentPanel.Log.Flag.CloseWithoutSaving", string.Join(", ", unreverted)));
             else if ((details.Value<int?>("other_documents") ?? 0) > 0)
                 flags.Add(Text("AgentPanel.Log.Flag.OtherDocument"));
+            if (details.Value<string>("decision") == "discarded_caller_gone")
+                flags.Add(Text("AgentPanel.Log.Flag.CallerGone"));
             if (details.Value<string>("mode") == "modify" && details.Value<string>("decision") == "no_changes")
                 flags.Add(Text("AgentPanel.Log.Flag.NoChanges"));
             var warning = (details["warnings"] as JArray)?.FirstOrDefault()?.ToString();

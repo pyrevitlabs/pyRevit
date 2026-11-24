@@ -103,15 +103,27 @@ namespace pyRevitCLI {
         /// Where to write the PNG. Without it, the printed <c>path</c> is the file the host saved under
         /// <c>%APPDATA%\pyRevit\agent\captures</c>.
         /// </param>
+        /// <param name="document">
+        /// Key of the document to capture in, from <c>agent context</c>; null captures in the active document. The host
+        /// captures only in the active document and refuses any other with <c>wrong_document</c>.
+        /// </param>
+        /// <param name="title">What the capture is for, shown in Revit's agent panel.</param>
         /// <exception cref="PyRevitException">
         /// <paramref name="width"/> is not a whole number, <paramref name="outFile"/> is not a usable path, or the host's
         /// answer carries no image.
         /// </exception>
         /// <remarks>
         /// With <paramref name="outFile"/> the printed <c>path</c> is that file, not the host's copy.
+        /// The host refuses the request without an agent session on the document.
         /// </remarks>
-        public static void CaptureView(string view, string mode, string width, string outFile, string revitSelector, string viewType = null) {
+        public static void CaptureView(
+            string view, string mode, string width, string outFile, string revitSelector, string viewType = null,
+            string document = null, string title = null) {
             var parameters = new JObject();
+            if (document != null)
+                parameters["document"] = document;
+            if (title != null)
+                parameters["title"] = title;
             if (view != null)
                 parameters["view"] = view;
             if (viewType != null)
@@ -152,12 +164,23 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// <c>pyrevit agent inspect</c>: prints the host's description of elements in the active document.
+        /// <c>pyrevit agent inspect</c>: prints the host's description of elements in a document.
         /// </summary>
+        /// <param name="document">
+        /// Key of the document the ids belong to, from <c>agent context</c>; null inspects in the active document.
+        /// </param>
+        /// <param name="title">What the inspection is for, shown in Revit's agent panel.</param>
         /// <exception cref="PyRevitException">An id is not a whole number.</exception>
-        public static void InspectElements(IReadOnlyList<string> elementIds, bool includeParameters, string revitSelector) {
+        /// <remarks>The host refuses the request without an agent session on the document.</remarks>
+        public static void InspectElements(
+            IReadOnlyList<string> elementIds, bool includeParameters, string revitSelector, string document = null,
+            string title = null) {
             var ids = new JArray(elementIds.Select(id => ParseWholeNumber(id, "element id")));
             var parameters = new JObject { ["ids"] = ids, ["parameters"] = includeParameters };
+            if (document != null)
+                parameters["document"] = document;
+            if (title != null)
+                parameters["title"] = title;
             var instance = PyRevitAgentClient.Resolve(revitSelector);
             Console.WriteLine(PyRevitAgentClient.Call(instance, "inspect_elements", parameters).ToString(Formatting.Indented));
         }

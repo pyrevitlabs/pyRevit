@@ -110,13 +110,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static AgentRunVerdict CarryOut(
             UIApplication app, AgentRunVerdict verdict, AgentRunGuard guard, AgentScriptContext context, Document doc, UIDocument uidoc,
-            AgentRunRequest request, string runId, string runDir, int exitCode, JObject changes, AgentTabHighlight.Lease highlight,
-            AgentRunTimings timings) {
+            AgentRunRequest request, string runId, string runDir, string sessionId, int exitCode, JObject changes,
+            AgentTabHighlight.Lease highlight, AgentRunTimings timings) {
             switch (verdict) {
                 case AgentRunVerdict.TransactionLeftOpen:
                     SetErrorIfMissing(context, "transaction_left_open",
                         "The script left a transaction open. Commit or roll back every transaction it starts.");
-                    RollBackLeftOpenRun(guard, context, runId);
+                    RollBackLeftOpenRun(guard, context, doc, runId);
                     return verdict;
                 case AgentRunVerdict.ScriptFailed:
                     SetErrorIfMissing(context, "engine_error",
@@ -136,7 +136,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     guard.RollBack();
                     context.SetError("query_modified_model",
                         guard.RollbackFailed
-                            ? "A query run changed the model and the host could not roll the changes back, so they may remain in the active document. "
+                            ? $"A query run changed the model and the host could not roll the changes back, so they may remain in '{doc.Title}'. "
                                 + "Ask the user to undo them in Revit or close the document without saving; use mode 'dry_run' or 'modify' for changes."
                             : "A query run changed the model. The changes were rolled back; use mode 'dry_run' or 'modify'.",
                         null);
@@ -148,7 +148,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     finally {
                         context.SetError("policy_readonly",
                             guard.RollbackFailed
-                                ? "The pyRevit agent policy changed to 'readonly' during the run and the host could not roll its changes back, so they may remain in the active document. "
+                                ? $"The pyRevit agent policy changed to 'readonly' during the run and the host could not roll its changes back, so they may remain in '{doc.Title}'. "
                                     + "Ask the user to undo them in Revit or close the document without saving."
                                 : "The pyRevit agent policy changed to 'readonly' during the run; its changes were rolled back.",
                             null);
@@ -159,7 +159,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return verdict;
                 case AgentRunVerdict.AskUser:
                     timings.Lap("decide");
-                    AgentPendingRecord.Write(request, runId, runDir);
+                    AgentPendingRecord.Write(request, runId, runDir, sessionId, doc?.Title);
                     AgentHost.AwaitTabApproval(highlight);
                     AgentApprovalAnswer answer;
                     using (AgentHost.Activity.BeginApproval())
@@ -203,7 +203,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <see cref="AgentRunGuard.RollbackFailed"/>. The host never holds or finishes the
         /// script's own transactions.
         /// </remarks>
-        private static void RollBackLeftOpenRun(AgentRunGuard guard, AgentScriptContext context, string runId) {
+        private static void RollBackLeftOpenRun(AgentRunGuard guard, AgentScriptContext context, Document doc, string runId) {
             try {
                 guard.RollBack();
             }
@@ -216,7 +216,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 context.SetError(
                     context.ErrorType,
                     context.ErrorMessage + " The host could not roll back the run either, so its changes may remain "
-                        + "in the active document: " + guard.RollbackFailureReason,
+                        + $"in '{doc?.Title}': " + guard.RollbackFailureReason,
                     context.ErrorTraceback);
         }
 
@@ -339,7 +339,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             Policy = AgentRunDecision.Stricter(policyAtStart, policyInForce.Tighten(ReadPolicy())),
                         });
                         timings.Lap("decide");
-                        verdict = CarryOut(app, verdict, guard, context, doc, uidoc, request, runId, runDir, exitCode, changes, highlight, timings);
+                        verdict = CarryOut(
+                            app, verdict, guard, context, doc, uidoc, request, runId, runDir, sessionId, exitCode, changes, highlight,
+                            timings);
                         finalVerdict = verdict;
                         timings.Lap("guard_release");
 
@@ -495,13 +497,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             try {
                 var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
                 var runDir = AgentPaths.CreateRunDir(runId);
-                WriteRequestRecord(runDir, request, AgentSessions.Tracker.SessionId, null);
+                var sessionId = AgentSessions.Tracker.SessionId;
+                WriteRequestRecord(runDir, request, sessionId, null);
                 var record = new JObject {
                     ["run_id"] = runId,
                     ["run_dir"] = runDir,
                     ["request_id"] = request.RequestId,
                     ["mode"] = request.ModeName,
                     ["title"] = request.Title,
+                    ["reason"] = request.Reason,
+                    ["session_id"] = sessionId,
                     ["status"] = "not_run",
                     ["decision"] = "not_run",
                     ["error"] = new JObject { ["type"] = refusal.Code, ["message"] = refusal.Message },
@@ -738,7 +743,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var caption = new StringBuilder(PromptCaption.Length + 2);
                 EnumThreadWindows(threadId, (window, _) => {
                     caption.Clear();
-                    if (GetWindowText(window, caption, caption.Capacity) > 0 && caption.ToString() == PromptCaption && IsWindowVisible(window)) {
+                    if (GetWindowText(window, caption, caption.Capacity) > 0 && caption.ToString() == PromptCaption
+                        && IsWindowVisible(window) && AgentWindows.IsDialog(window)) {
                         found = window;
                         return false;
                     }

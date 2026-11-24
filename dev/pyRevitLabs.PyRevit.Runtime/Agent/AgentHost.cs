@@ -101,8 +101,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         internal static readonly AgentActivity Activity = new AgentActivity();
 
         /// <summary>
-        /// Raised when the host starts or stops, on the thread that configured it.
+        /// Raised when the host starts or stops, on the thread that configured it, and when the
+        /// pipe server stops listening by itself, on the pipe server's thread.
         /// </summary>
+        /// <remarks>
+        /// Important: a handler can't assume the Revit main thread and must queue any UI work.
+        /// </remarks>
         internal static event Action StateChanged;
 
         /// <summary>
@@ -325,11 +329,22 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             StateChanged?.Invoke();
         }
 
+        /// <summary>
+        /// Stops advertising a pipe server that gave up, and tells the agent panel the host no
+        /// longer listens.
+        /// </summary>
+        /// <remarks>
+        /// The agent session stays as it is: the user never ended it, and the next
+        /// <see cref="Configure"/> starts a new pipe server for it. Runs on the pipe server's
+        /// thread.
+        /// </remarks>
         private static void ForgetStoppedPipe(AgentPipeServer stopped) {
             lock (sync) {
-                if (ReferenceEquals(pipeServer, stopped))
-                    DeleteInstanceFile();
+                if (!ReferenceEquals(pipeServer, stopped))
+                    return;
+                DeleteInstanceFile();
             }
+            StateChanged?.Invoke();
         }
 
         private static bool IsElevated() {

@@ -82,11 +82,14 @@
     <system:String x:Key="AgentPanel.Log.AlsoChanged">also changed {0}</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.OtherDocument">It changed an open document outside the session; pyRevit undid those changes.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.CloseWithoutSaving">It changed {0}, and pyRevit couldn't undo that. Close it without saving.</system:String>
+    <system:String x:Key="AgentPanel.Log.Flag.RollbackFailed">pyRevit couldn't undo what it changed in {0}. Undo that in Revit, or close it without saving. ({1})</system:String>
+    <system:String x:Key="AgentPanel.Log.Flag.CallerGone">The agent that asked disconnected, so pyRevit discarded the changes.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.NoChanges">It changed nothing.</system:String>
     <system:String x:Key="AgentPanel.Log.Flag.Warning">The host warned: {0}</system:String>
     <system:String x:Key="AgentPanel.Log.Capture">{0} · {1} × {2} px (click to open)</system:String>
     <system:String x:Key="AgentPanel.Log.Elements">Elements (click to select)</system:String>
     <system:String x:Key="AgentPanel.Log.Script">Script</system:String>
+    <system:String x:Key="AgentPanel.Log.Exports">Exported files</system:String>
     <system:String x:Key="AgentPanel.Log.Output">Output</system:String>
     <system:String x:Key="AgentPanel.Log.Error">Error</system:String>
     <system:String x:Key="AgentPanel.Log.Engine">Engine: {0}</system:String>

@@ -517,9 +517,11 @@ func main() {
 					"capture": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+							"--document":  complete.PredictNothing,
 							"--mode":      complete.PredictNothing,
 							"--out":       complete.PredictNothing,
 							"--revit":     complete.PredictNothing,
+							"--title":     complete.PredictNothing,
 							"--view-type": complete.PredictNothing,
 							"--width":     complete.PredictNothing,
 						},
@@ -527,8 +529,10 @@ func main() {
 					"inspect": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+							"--document":      complete.PredictNothing,
 							"--no-parameters": complete.PredictNothing,
 							"--revit":         complete.PredictNothing,
+							"--title":         complete.PredictNothing,
 						},
 					},
 					"lookup": complete.Command{

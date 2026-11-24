@@ -264,9 +264,10 @@ document to be active, and get `wrong_document` until the user switches to it.
 The panel also shows the policy, the MCP client that called last, the last request, and what a
 waiting request is held up by (the approval prompt or a Revit dialog). Its activity log lists
 the latest 200 requests of this Revit session, grouped by session: title and reason, outcome,
-changes by category, elements to click and select, for runs the script, output, errors and
-engine, and for captures a thumbnail of the image, which opens in the default image viewer
-when clicked. Lookups (`get_context`, `lookup_revit_api`) are hidden unless **Show lookups** is
+changes by category, elements to click and select, for runs the script, output, exported
+files, errors and engine, and for captures a thumbnail of the image, which opens in the
+default image viewer when clicked. A run whose changes pyRevit couldn't undo, and one it
+discarded because the agent that sent it had disconnected, say so in the row. Lookups (`get_context`, `lookup_revit_api`) are hidden unless **Show lookups** is
 on. The log lives in memory; run records stay on disk.
 
 Model requests are refused with these error types. `ping`, `lookup_revit_api` and the
@@ -384,7 +385,7 @@ Rules the host enforces:
   documents. The approval prompt lists each changed document, isolates the changes in a view
   only when the run's document is the active one, and one answer keeps or discards them all.
   Kept, each document gets its changes as one undo entry. Revit can't keep several documents at
-  once: if one fails to keep after others were kept, it is rolled back, the run fails with
+  once: if Revit refuses one, or doesn't report it committed, after others were kept, it is rolled back, the run fails with
   `partial_commit` and decision `partially_committed`, and `changes.other_documents` marks each
   document `kept` or not, with `keep_error`. A query or dry run rolls back every document.
 - Documents a modify run created or opened (not linked, not open when the run started) stay
@@ -699,10 +700,10 @@ The CLI has three ways to get Python into Revit. They differ in who starts Revit
 | Command | Revit lifetime | Target | Audience |
 |---|---|---|---|
 | `pyrevit run` | Starts a new Revit from a generated journal and quits it when the script ends | Model files passed on the command line or listed with `--models` | Batch automation, CI |
-| `pyrevit agent run` | Injects the script into a Revit that is already running | The active document, through the [guarded run](#the-guarded-run): approval policy and [run records](#run-records) | People and shell scripts |
-| `pyrevit mcp` | Same agent host as `agent run`, reached through a stdio server | The active document | MCP clients such as Claude Code; started by the client, not typed by hand |
+| `pyrevit agent run` | Injects the script into a Revit that is already running | The active document, or the one `--document` names, through the [guarded run](#the-guarded-run): approval policy and [run records](#run-records) | People and shell scripts |
+| `pyrevit mcp` | Same agent host as `agent run`, reached through a stdio server | The document each call names | MCP clients such as Claude Code; started by the client, not typed by hand |
 
-`pyrevit run` and `pyrevit agent run` share the verb but not the mechanism: `run` launches its own Revit and never touches a session you have open, while `agent run` needs a Revit with the agent runtime enabled and acts on the model you are looking at. `pyrevit run` is documented under [Runner commands](extensions.md#runner-commands).
+`pyrevit run` and `pyrevit agent run` share the verb but not the mechanism: `run` launches its own Revit and never touches a session you have open, while `agent run` needs a Revit with the agent runtime enabled and acts on a model open in it. `pyrevit run` is documented under [Runner commands](extensions.md#runner-commands).
 
 `pyrevit launch` is not a fourth way to run a script. It starts a Revit session on a clone and engine without changing the attachment (see [Running several clones side by side](#running-several-clones-side-by-side)); `agent run` and `mcp` can then target that session by clone name with `--revit`.
 
@@ -712,8 +713,10 @@ The CLI has three ways to get Python into Revit. They differ in who starts Revit
 pyrevit agent status [--json]              running Revit sessions with the agent host
 pyrevit agent context [--revit=<year|pid|clone>]  get_context of a session
 pyrevit agent capture [<view>] [--view-type=<ViewType>] [--mode=export|viewport|screen] [--width=<pixels>]
-                  [--out=<png_file>] [--revit=<year|pid|clone>]   PNG of a view, like capture_view
-pyrevit agent inspect <element_id>... [--no-parameters] [--revit=<year|pid|clone>]  inspect_elements
+                  [--out=<png_file>] [--revit=<year|pid|clone>]
+                  [--document=<key>] [--title=<t>]   PNG of a view, like capture_view
+pyrevit agent inspect <element_id>... [--no-parameters] [--revit=<year|pid|clone>]
+                  [--document=<key>] [--title=<t>]   inspect_elements
 pyrevit agent lookup <api_name> [--revit=<year|pid|clone>]  lookup_revit_api
 pyrevit agent run <script_file> [--mode=query|dry_run|modify] [--engine=<e>]
                   [--title=<t>] [--inputs=<json>] [--revit=<year|pid|clone>]
@@ -732,7 +735,9 @@ pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --ow
                                            entries that point at another pyRevit install
 ```
 
-`capture`, `inspect` and `lookup` are the CLI forms of the `capture_view`, `inspect_elements` and `lookup_revit_api` tools, for clients without MCP. `capture` takes the view the way the tool does (a name, sheet number or id; the active view without one; `3d` for a temporary 3D view; `--view-type=FloorPlan` and the like keep only views of that type when a name is shared, as `view_type` does) and prints the host's answer without the image data. The host keeps the PNG under `%APPDATA%\pyRevit\agent\captures`; `--out` writes it to a file of your choice as well, and `path` in the output then names that file. `inspect` takes up to 50 element ids of the active document.
+`capture`, `inspect` and `lookup` are the CLI forms of the `capture_view`, `inspect_elements` and `lookup_revit_api` tools, for clients without MCP. `capture` takes the view the way the tool does (a name, sheet number or id; the active view without one; `3d` for a temporary 3D view; `--view-type=FloorPlan` and the like keep only views of that type when a name is shared, as `view_type` does) and prints the host's answer without the image data. The host keeps the PNG under `%APPDATA%\pyRevit\agent\captures`; `--out` writes it to a file of your choice as well, and `path` in the output then names that file. `inspect` takes up to 50 element ids of one document.
+
+`run`, `context`, `capture` and `inspect` read or change the model, so they need an [agent session](#sessions-and-the-agent-panel) like the MCP tools and are refused with `session_inactive` without one; `status`, `lookup`, `runs`, `show` and `session` are not. `run`, `capture` and `inspect` work in the active document unless `--document` names another by its key from `agent context`; `capture` still needs that document to be the active one. `--title` says what a `capture` or `inspect` is for in the agent panel, as it does for `run`.
 
 `--timeout` defaults to 300 and is capped at 3600; [reckless mode](#reckless-mode) ignores it.
 `--workspace` must be an existing local folder; network (UNC) paths are refused.
@@ -756,7 +761,8 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 - `response.json`: status, decision, changes, failures, dialogs, output and result, with the
   same session id and document, and the document's path. While a run waits
   for the user's approval it holds a provisional record with `status` `pending` and `decision`
-  `awaiting_approval`, which the final record replaces. A run folder that keeps it was interrupted at
+  `awaiting_approval`, which the final record replaces. The provisional record carries the same
+  session id and document title. A run folder that keeps it was interrupted at
   the prompt or before the final write (for example Revit exited), so its outcome is unknown: the user
   may have approved and the change committed. Check the model before repeating the run.
   If the client that sent the run disconnects while the prompt is up, the host makes a best-effort
@@ -1049,7 +1055,7 @@ If process metadata or the registration timestamp cannot establish liveness, dis
 Any successful pipe check includes the registration in discovery.
 If all pipe checks fail, discovery excludes the registration from the current result but retains its file for subsequent discovery.
 The host keeps a free pipe instance waiting while fewer than four connections are open, and waits 500 ms after a pipe error; a temporarily absent pipe does not establish that the host has stopped.
-After ten failed attempts in a row to create the pipe, the host stops listening, logs an error, removes its registration and keeps no pipe until pyRevit is reloaded.
+After ten failed attempts in a row to create the pipe, the host stops listening, logs an error, removes its registration and keeps no pipe until pyRevit is reloaded. The agent panel then shows the host as off; the agent session stays as it was and carries on after the reload.
 Excluded registrations do not appear in `ambiguous_revit` messages.
 
 ### Existing pieces this builds on

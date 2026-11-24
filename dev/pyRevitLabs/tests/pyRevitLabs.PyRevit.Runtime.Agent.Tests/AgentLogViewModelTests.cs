@@ -26,6 +26,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Log.AlsoChanged"] = "also {0}",
             ["AgentPanel.Log.Flag.OtherDocument"] = "other document",
             ["AgentPanel.Log.Flag.CloseWithoutSaving"] = "close {0} unsaved",
+            ["AgentPanel.Log.Flag.RollbackFailed"] = "not undone in {0}: {1}",
+            ["AgentPanel.Log.Flag.CallerGone"] = "caller gone",
             ["AgentPanel.Log.Flag.NoChanges"] = "no changes",
             ["AgentPanel.Log.Flag.Warning"] = "warned: {0}",
             ["AgentPanel.Log.Engine"] = "engine {0}",
@@ -196,7 +198,50 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("done", entry.Output);
             Assert.Equal("engine ironpython 2.7.12", entry.Engine);
             Assert.Equal("folder C:\\runs\\abc", entry.RunFolder);
-            Assert.False(entry.HasFlags || entry.HasError);
+            Assert.False(entry.HasFlags || entry.HasError || entry.HasExports);
+        }
+
+        [Fact]
+        public void ARunDiscardedBecauseItsCallerLeftSaysSo() {
+            Finish("modify", "Add walls", "s1", "rejected", Run(new JObject {
+                ["decision"] = "discarded_caller_gone",
+                ["approval"] = null,
+            }));
+            log.Update(activity.History);
+
+            var entry = log.Groups[0].Entries[0];
+            Assert.Equal("rejected", entry.StatusKind);
+            Assert.Equal(new[] { "caller gone" }, entry.Flags);
+        }
+
+        [Fact]
+        public void AFailedRollbackIsFlaggedFirstWithItsDocumentAndReason() {
+            Finish("modify", "Add walls", "s1", "ZeroDivisionError", Run(new JObject {
+                ["decision"] = "rollback_incomplete",
+                ["rollback_failure"] = "Revit returned Error.",
+                ["warnings"] = new JArray("Guard cleanup failed"),
+            }));
+            log.Update(activity.History);
+
+            Assert.Equal(
+                new[] { "not undone in Tower.rvt: Revit returned Error.", "warned: Guard cleanup failed" },
+                log.Groups[0].Entries[0].Flags);
+        }
+
+        [Fact]
+        public void TheFilesARunExportedAreListedOnePerLine() {
+            Finish("modify", "Export sheets", "s1", "committed", Run(new JObject {
+                ["exports"] = new JArray("C:\\runs\\abc\\exports\\A101.pdf", "C:\\runs\\abc\\exports\\A102.pdf"),
+            }));
+            Finish("modify", "Export more", "s1", "committed", Run(new JObject {
+                ["exports"] = new JArray("C:\\runs\\def\\exports\\A201.pdf"),
+                ["exports_truncated"] = true,
+            }));
+            log.Update(activity.History);
+
+            Assert.Equal("C:\\runs\\def\\exports\\A201.pdf\n…", log.Groups[0].Entries[0].Exports);
+            Assert.Equal("C:\\runs\\abc\\exports\\A101.pdf\nC:\\runs\\abc\\exports\\A102.pdf", log.Groups[0].Entries[1].Exports);
+            Assert.All(log.Groups[0].Entries, entry => Assert.True(entry.HasExports));
         }
 
         [Fact]

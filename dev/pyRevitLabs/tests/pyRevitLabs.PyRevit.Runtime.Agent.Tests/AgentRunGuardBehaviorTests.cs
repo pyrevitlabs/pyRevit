@@ -972,6 +972,47 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ASessionDocumentRevitDoesNotConfirmIsReportedNotKept() {
+            var (app, active, session, _) = ThreeDocuments();
+            session.AssimilateStatus = TransactionStatus.RolledBack;
+            using (var guard = new AgentRunGuard(app, active, document => ReferenceEquals(document, session))) {
+                guard.Arm("Test");
+                app.Application.Change(active);
+                app.Application.Change(session, added: Array.Empty<ElementId>(), modified: new[] { new ElementId() });
+
+                guard.Assimilate();
+
+                Assert.True(guard.Committed);
+                var notKept = Assert.Single(guard.NotKept);
+                Assert.Equal("Annex", notKept.Title);
+                Assert.Contains("RolledBack", notKept.KeepError);
+                Assert.Equal(0, session.RollbackCalls);
+                var described = Assert.Single(guard.DescribeOtherDocuments());
+                Assert.False(described.Value<bool>("kept"));
+                Assert.True(described.Value<bool>("rolled_back"));
+                Assert.False(guard.HasUnrevertedOtherDocumentChanges);
+            }
+        }
+
+        [Fact]
+        public void ASessionDocumentRevitRolledBackButStillChangedIsUnreverted() {
+            var (app, active, session, _) = ThreeDocuments();
+            session.AssimilateStatus = TransactionStatus.RolledBack;
+            var deleted = new ElementId();
+            using (var guard = new AgentRunGuard(app, active, document => ReferenceEquals(document, session))) {
+                guard.Arm("Test");
+                app.Application.Change(session, added: Array.Empty<ElementId>(), deleted: new[] { deleted });
+                session.Deleted.Add(deleted);
+
+                guard.Assimilate();
+
+                Assert.Single(guard.NotKept);
+                Assert.False(Assert.Single(guard.DescribeOtherDocuments()).Value<bool>("rolled_back"));
+                Assert.True(guard.HasUnrevertedOtherDocumentChanges);
+            }
+        }
+
+        [Fact]
         public void RollingBackTheRunRollsBackSessionDocumentsToo() {
             var (app, active, session, _) = ThreeDocuments();
             using (var guard = new AgentRunGuard(app, active, document => ReferenceEquals(document, session))) {

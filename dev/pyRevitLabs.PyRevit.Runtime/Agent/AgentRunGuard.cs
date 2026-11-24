@@ -18,7 +18,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// While armed, the guard:
     /// <list type="bullet">
     /// <item>records added, modified and deleted element ids from <c>DocumentChanged</c>, for the
-    /// active document and, separately, for every other document;</item>
+    /// run's document and, separately, for every other document;</item>
     /// <item>holds a group on every other open, editable, non-linked document, so changes a
     /// script makes there through <c>app.Documents</c> can be rolled back;</item>
     /// <item>records failure messages, deletes warnings, and rolls back pending transactions that
@@ -197,7 +197,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             group = new TransactionGroup(doc, groupName);
             if (group.Start() != TransactionStatus.Started)
                 throw new InvalidOperationException(
-                    "Revit did not start the run's transaction group on the active document, so the run could not be rolled back; the script was not run.");
+                    $"Revit did not start the run's transaction group on '{doc.Title}', so the run could not be rolled back; the script was not run.");
         }
 
         private void DisarmDialogCapture() {
@@ -528,7 +528,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <summary>
-    /// A document other than the active one, watched for the length of one agent run.
+    /// A document other than the run's own, watched for the length of one agent run.
     /// </summary>
     /// <remarks>
     /// Invariant: <see cref="HasOpenTransaction"/> reports only a transaction the run left
@@ -606,26 +606,41 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Keeps the run's changes in the document as one undo entry. When Revit refuses, the
-        /// changes are rolled back and <see cref="KeepError"/> says why. Without a group, which a
-        /// document that couldn't take one at the start has, the changes are already in it.
+        /// Keeps the run's changes in the document as one undo entry. When Revit refuses, or does
+        /// not report the changes committed, they are rolled back and <see cref="KeepError"/> says
+        /// why. Without a group, which a document that couldn't take one at the start has, the
+        /// changes are already in it.
         /// </summary>
+        /// <remarks>
+        /// Invariant: <see cref="Kept"/> is true only when Revit returned
+        /// <see cref="TransactionStatus.Committed"/>, as for the run's own document. An
+        /// assimilation Revit turned into a rollback ends the group, so the model is checked for
+        /// the run's changes instead of rolling back again.
+        /// </remarks>
         public void Keep() {
             if (!HasOpenGroup) {
                 Kept = true;
                 return;
             }
+            var status = TransactionStatus.Uninitialized;
             try {
-                group.Assimilate();
-                Kept = true;
+                status = group.Assimilate();
+                if (status != TransactionStatus.Committed)
+                    KeepError = $"Revit did not commit the changes (status {status}).";
             }
             catch (Exception ex) {
                 KeepError = ex.Message;
-                try {
+            }
+            Kept = KeepError == null;
+            if (Kept)
+                return;
+            try {
+                if (HasOpenGroup)
                     RollBack();
-                }
-                catch (Exception) {
-                }
+                else if (status == TransactionStatus.RolledBack)
+                    rolledBack = !Changes.LeavesTracesAfterRollback(Document);
+            }
+            catch (Exception) {
             }
         }
 
