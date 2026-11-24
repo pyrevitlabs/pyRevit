@@ -21,6 +21,8 @@ from attribute_columns import (
     key_for_parameter,
     key_for_parameter_id,
 )
+from attribute_strings import t
+from attribute_values import EditError
 
 logger = script.get_logger()
 
@@ -35,7 +37,7 @@ SCAN_ALL_SAMPLE = 5000
 def list_schedules(doc):
     """Return ``[{id, name}]`` for every usable schedule, sorted by name."""
     listing = [
-        {"id": id_value(schedule.Id), "name": schedule.Name}
+        {"id": id_value(schedule.Id), "name": revit.query.get_name(schedule)}
         for schedule in revit.query.get_all_schedules(doc=doc)
     ]
     return sorted(listing, key=lambda item: item["name"].lower())
@@ -68,6 +70,16 @@ def list_categories(doc):
     return sorted(listing, key=lambda item: item["name"].lower())
 
 
+def _field_format(field):
+    """Return the number format a schedule field overrides the project with, or None."""
+    try:
+        options = field.GetFormatOptions()
+        return None if options.UseDefault else options
+    except Exception as ex:
+        logger.debug("No field format: %s", ex)
+        return None
+
+
 def _scope_of_field_type(field_type):
     if field_type == DB.ScheduleFieldType.Instance:
         return SCOPE_ELEMENT
@@ -84,7 +96,7 @@ class ScheduleSource(object):
     def __init__(self, doc, schedule):
         self.doc = doc
         self.schedule = schedule
-        self.title = schedule.Name
+        self.title = revit.query.get_name(schedule)
 
     def to_json(self):
         return {"kind": self.kind, "id": id_value(self.schedule.Id)}
@@ -108,7 +120,7 @@ class ScheduleSource(object):
             if field.IsHidden or key is None or key in seen:
                 continue
             seen.add(key)
-            columns.append(ColumnSpec(key, field.ColumnHeading))
+            columns.append(ColumnSpec(key, field.ColumnHeading, _field_format(field)))
         return columns
 
     def _key_of_field(self, field):
@@ -119,14 +131,18 @@ class ScheduleSource(object):
             return None
         return key_for_parameter_id(self.doc, field.ParameterId, scope)
 
-    def field_ids_by_key(self):
-        """Return ``{column key: ScheduleFieldId}`` of the visible supported fields."""
+    def field_ids_by_key(self, hidden=False):
+        """Return ``{column key: ScheduleFieldId}`` of the supported fields.
+
+        Args:
+            hidden (bool): list the hidden fields instead of the visible ones.
+        """
         definition = self.schedule.Definition
         by_key = {}
         for field_id in definition.GetFieldOrder():
             field = definition.GetField(field_id)
             key = self._key_of_field(field)
-            if not field.IsHidden and key is not None and key not in by_key:
+            if bool(field.IsHidden) == hidden and key is not None and key not in by_key:
                 by_key[key] = field_id
         return by_key
 
@@ -159,6 +175,11 @@ class ScheduleSource(object):
         return by_key
 
     def available(self, scan_all=False):
+        """Return ``[{key, heading, scope}]`` for every field the schedule can show.
+
+        ``scan_all`` is ignored: a schedule lists its schedulable fields
+        exactly, there is no sample to widen.
+        """
         return sorted(
             (
                 {
@@ -184,14 +205,36 @@ class ScratchSource(object):
         scope = payload.get("scope")
         self.scope = scope if scope in SCRATCH_SCOPES else "model"
         self.types = bool(payload.get("types"))
+        selection = payload.get("selection")
+        self.selection_ids = None if selection is None else [int(v) for v in selection]
 
     def to_json(self):
-        return {
+        description = {
             "kind": self.kind,
             "categories": self.category_ids,
             "scope": self.scope,
             "types": self.types,
         }
+        if self.scope == "selection" and self.selection_ids is not None:
+            description["selection"] = self.selection_ids
+        return description
+
+    def _selected_ids(self):
+        """Return the selection this source works on, read once and then kept.
+
+        A later Pull must not follow whatever Revit has selected by then (Show
+        in Revit changes it), so the ids travel with the source description.
+
+        Raises:
+            EditError: when nothing is selected.
+        """
+        if self.selection_ids is None:
+            self.selection_ids = [
+                id_value(element_id) for element_id in revit.get_selection().element_ids
+            ]
+        if not self.selection_ids:
+            raise EditError(t("err_empty_selection"))
+        return [get_elementid_from_value(value) for value in self.selection_ids]
 
     def default_columns(self):
         return []
@@ -214,9 +257,8 @@ class ScratchSource(object):
         if self.scope == "view":
             return DB.FilteredElementCollector(self.doc, self.doc.ActiveView.Id)
         if self.scope == "selection":
-            ids = list(revit.get_selection().element_ids)
             return DB.FilteredElementCollector(
-                self.doc, framework.to_clr_list(DB.ElementId, ids)
+                self.doc, framework.to_clr_list(DB.ElementId, self._selected_ids())
             )
         return DB.FilteredElementCollector(self.doc)
 
@@ -250,8 +292,28 @@ class ScratchSource(object):
     def elements(self):
         return list(self.iter_elements())
 
+    @staticmethod
+    def _describe_parameter(parameter, scope, no_storage):
+        """Return the ``available`` entry of ``parameter``, or None when unusable.
+
+        Some parameters (material assets, for one) answer with a missing
+        definition or throw; reading them blindly has crashed Revit.
+        """
+        try:
+            definition = parameter.Definition
+            if definition is None or parameter.StorageType == no_storage:
+                return None
+            return {
+                "key": key_for_parameter(parameter, scope),
+                "heading": definition.Name,
+                "scope": scope,
+            }
+        except Exception as ex:
+            logger.debug("Skipping a parameter that cannot be read: %s", ex)
+            return None
+
     def available(self, scan_all=False):
-        """Return the parameters found on a sample of the chosen elements.
+        """Return ``[{key, heading, scope}]`` found on a sample of the chosen elements.
 
         The sample is the first few elements and types, so a parameter that only
         a few families carry can be missed unless ``scan_all`` reads them all.
@@ -267,16 +329,9 @@ class ScratchSource(object):
         for elements, scope in sources:
             for element in elements:
                 for parameter in element.Parameters:
-                    if parameter.StorageType == no_storage:
-                        continue
-                    key = key_for_parameter(parameter, scope)
-                    if key not in found:
-                        found[key] = {
-                            "key": key,
-                            "heading": parameter.Definition.Name,
-                            "scope": scope,
-                            "readOnly": parameter.IsReadOnly,
-                        }
+                    entry = self._describe_parameter(parameter, scope, no_storage)
+                    if entry is not None and entry["key"] not in found:
+                        found[entry["key"]] = entry
         return sorted(found.values(), key=lambda item: item["heading"].lower())
 
 
@@ -284,12 +339,12 @@ def source_from_payload(doc, payload):
     """Build the source a page message describes.
 
     Raises:
-        ValueError: when a schedule id no longer resolves to a schedule.
+        EditError: when a schedule id no longer resolves to a schedule.
     """
     description = payload.get("source") or {}
     if description.get("kind") == "schedule":
         schedule = doc.GetElement(get_elementid_from_value(int(description["id"])))
         if not isinstance(schedule, DB.ViewSchedule):
-            raise ValueError("schedule")
+            raise EditError(t("err_schedule_missing"))
         return ScheduleSource(doc, schedule)
     return ScratchSource(doc, description)

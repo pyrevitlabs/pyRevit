@@ -36,10 +36,17 @@ def _start_source(doc):
     return {"kind": "schedule", "id": id_value(schedule.Id)}
 
 
-def _dispose_previous_session():
+def _replace_previous_session():
     previous = script.get_envvar(SESSION_KEY)
-    if previous is not None:
-        previous.dispose()
+    if previous is None:
+        return
+    if previous.has_unsent_edits() and not forms.alert(
+        t("ui_replace_session").format(previous.pending_edits),
+        yes=True,
+        no=True,
+    ):
+        script.exit()
+    previous.dispose()
 
 
 def main():
@@ -49,7 +56,7 @@ def main():
         return
     doc = revit.doc
     start_source = _start_source(doc)
-    _dispose_previous_session()
+    _replace_previous_session()
     session = AttributeSession(output, doc, start_source)
     if session.show():
         script.set_envvar(SESSION_KEY, session)

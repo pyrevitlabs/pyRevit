@@ -118,4 +118,15 @@
     <sys:String x:Key="transaction_layout">Attribut-Editor: Bauteillistenspalten ändern</sys:String>
     <sys:String x:Key="err_other_document">Jetzt ist ein anderes Projekt aktiv. Aktivieren Sie das Projekt, für das dieser Editor geöffnet wurde.</sys:String>
     <sys:String x:Key="err_not_committed">Revit hat diese Änderung nicht übernommen.</sys:String>
+    <sys:String x:Key="ui_replace_session">Der geöffnete Attribut-Editor enthält {0} nicht gesendete Änderungen. Einen neuen öffnen und sie verwerfen?</sys:String>
+    <sys:String x:Key="ui_request_timeout">Revit hat nicht rechtzeitig geantwortet. Mit „Aus Revit lesen“ sehen Sie, was jetzt im Modell steht.</sys:String>
+    <sys:String x:Key="err_kind_differs">Diese Zelle enthält eine andere Art von Wert als der Rest der Spalte und kann hier nicht bearbeitet werden.</sys:String>
+    <sys:String x:Key="err_spec_differs">Diese Zelle hat eine andere Einheit als die Spalte. Stellen Sie die Einheiten auf „Mit Symbol“, um sie zu bearbeiten.</sys:String>
+    <sys:String x:Key="err_refused">Revit hat die Änderung abgelehnt: {0}</sys:String>
+    <sys:String x:Key="err_owned_by">Dieses Element ist von {0} ausgecheckt.</sys:String>
+    <sys:String x:Key="err_out_of_date">Dieses Element wurde im zentralen Modell geändert. Laden Sie zuerst die neuesten Änderungen.</sys:String>
+    <sys:String x:Key="err_empty_selection">In Revit ist nichts ausgewählt.</sys:String>
+    <sys:String x:Key="err_schedule_missing">Die Bauteilliste existiert nicht mehr.</sys:String>
+    <sys:String x:Key="tokens_yes">ja;j;wahr;1;x</sys:String>
+    <sys:String x:Key="tokens_no">nein;n;falsch;0</sys:String>
 </ResourceDictionary>

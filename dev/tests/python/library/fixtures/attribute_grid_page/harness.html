@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Attribute Editor page harness</title>
-<link rel="stylesheet" href="../../../../extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/edit3.stack/Edit.pulldown/Attribute%20Editor.pushbutton/attribute_grid.css">
+<link rel="stylesheet" href="../../../../../../extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/edit3.stack/Edit.pulldown/Attribute%20Editor.pushbutton/attribute_grid.css">
 </head>
 <body style="margin:0">
 <div id="app"></div>
@@ -39,10 +39,18 @@
     }
   }
 </script>
-<script src="../../../../extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/edit3.stack/Edit.pulldown/Attribute%20Editor.pushbutton/attribute_grid_core.js"></script>
-<script src="../../../../extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/edit3.stack/Edit.pulldown/Attribute%20Editor.pushbutton/attribute_grid.js"></script>
+<script src="../../../../../../extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/edit3.stack/Edit.pulldown/Attribute%20Editor.pushbutton/attribute_grid_core.js"></script>
+<script src="../../../../../../extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/edit3.stack/Edit.pulldown/Attribute%20Editor.pushbutton/attribute_grid.js"></script>
 <script>
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const until = async (condition) => {
+    for (let turn = 0; turn < 400 && !condition(); turn++) await wait(5);
+  };
+  const idle = async () => {
+    await window.__app.ready;
+    await until(() => window.__app.busy === 0);
+    await wait(0);
+  };
   const core = window.pyRevitAttributeGrid.core;
 
   const strings = new Proxy(
@@ -153,6 +161,7 @@
       R.mixed = core.fillSeries(["A1", "B2"], 2);
       R.negative = core.fillSeries(["-1", "-3"], 2);
       R.hyphen_id = core.fillSeries(["A-5"], 2);
+      R.separator_prefix_stays_positive = core.fillSeries(["A-5", "A-3"], 3);
       return R;
     },
 
@@ -182,7 +191,7 @@
     async grid_load() {
       const R = {};
       mount();
-      await wait(100);
+      await idle();
       R.rows = document.querySelectorAll(".ae-row").length;
       R.headings = [...document.querySelectorAll(".ae-hcell .ae-htext")].map((n) => n.textContent);
       R.first_row = [0, 1, 2, 3].map((c) => cellText(0, c));
@@ -198,7 +207,7 @@
     async grid_theme() {
       const R = {};
       mount({ dark: true });
-      await wait(60);
+      await idle();
       R.auto_follows_revit = document.querySelector(".ae-root").dataset.theme;
       [...document.querySelectorAll(".ae-toolbar .ae-seg")].find((b) => b.textContent === "ui_theme_light").click();
       R.forced_light = document.querySelector(".ae-root").dataset.theme;
@@ -211,7 +220,7 @@
     async grid_paste() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       click(1, 0);
       paste("X1\t800\nX2\t850\n");
       R.after_block = [0, 1, 2, 3, 4].map((r) => [cellText(r, 0), cellText(r, 1)]);
@@ -232,7 +241,7 @@
     async grid_type_mirror() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       click(2, 2);
       paste("90");
       R.col2 = texts(2);
@@ -247,7 +256,7 @@
     async grid_edit_keyboard() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       click(0, 0);
       key("x");
       R.editor_open = !document.querySelector(".ae-editor").hidden;
@@ -287,7 +296,7 @@
           ],
         }),
       });
-      await wait(60);
+      await idle();
       click(0, 0);
       const handle = document.querySelector(".ae-fill");
       R.handle_visible = !handle.hidden;
@@ -318,7 +327,7 @@
           ],
         }),
       });
-      await wait(60);
+      await idle();
       mouse(cellAt(0, 0), "mousedown");
       mouse(cellAt(1, 0), "mousemove");
       mouse(cellAt(1, 0), "mouseup");
@@ -335,7 +344,7 @@
     async grid_push_results() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       click(0, 0);
       paste("N1");
       click(1, 0);
@@ -350,7 +359,7 @@
         }),
       });
       document.querySelector(".ae-button.primary").click();
-      await wait(100);
+      await idle();
       R.payload = sent("push")[0].payload.edits.map((e) => [e.row, e.key, e.text, e.base]);
       R.force = sent("push")[0].payload.force;
       R.normalized = cellText(0, 0);
@@ -369,14 +378,14 @@
     async grid_push_type_once() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       click(2, 2);
       paste("90");
       window.__backend.push = (payload) => ({
         results: payload.edits.map((edit) => ({ row: edit.row, key: edit.key, ok: true, value: "90 min", typeId: 12 })),
       });
       document.querySelector(".ae-button.primary").click();
-      await wait(100);
+      await idle();
       R.edits_sent = sent("push")[0].payload.edits.length;
       R.col2 = texts(2);
       R.dirty_left = dirty();
@@ -386,7 +395,7 @@
     async grid_sort_filter() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       document.querySelectorAll(".ae-sort")[0].click();
       document.querySelectorAll(".ae-sort")[0].click();
       R.desc = texts(0);
@@ -401,7 +410,7 @@
     async grid_copy() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       mouse(cellAt(0, 0), "mousedown");
       mouse(cellAt(1, 1), "mousemove");
       mouse(cellAt(1, 1), "mouseup");
@@ -414,7 +423,7 @@
     async grid_find_replace() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       key("f", { ctrlKey: true });
       R.find_open = !document.querySelector(".ae-findbar").hidden;
       const inputs = document.querySelectorAll(".ae-findbar .ae-input");
@@ -429,13 +438,13 @@
     async grid_scratch_switch() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       window.__backend.categories = () => [{ id: -2001330, name: "Structural Columns", instances: 74, types: 13 }];
       R.plan_before = window.__app.plan.length;
       const select = document.querySelector(".ae-toolbar select");
       select.value = "__scratch__";
       select.dispatchEvent(new Event("change", { bubbles: true }));
-      await wait(80);
+      await idle();
       R.plan_after = window.__app.plan.length;
       R.columns_after = document.querySelectorAll(".ae-hcell .ae-htext").length;
       R.rows_after = document.querySelectorAll(".ae-row").length;
@@ -456,10 +465,10 @@
         sort: [],
       });
       [...document.querySelectorAll(".ae-panel .ae-button")].find((b) => b.textContent === "ui_find_parameters").click();
-      await wait(80);
+      await idle();
       document.querySelector(".ae-panel .ae-item.add").click();
       [...document.querySelectorAll(".ae-panel .ae-button.primary")].find((b) => b.textContent === "ui_apply_columns").click();
-      await wait(100);
+      await idle();
       R.load_source = sent("load").pop().payload.source;
       R.load_columns = sent("load").pop().payload.columns;
       R.rows_loaded = document.querySelectorAll(".ae-row").length;
@@ -469,24 +478,24 @@
     async grid_conflict_not_pushed() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       click(0, 0);
       paste("N1");
       const changed = fixtureGrid();
       changed.rows[0].v[0] = "Changed in Revit";
       window.__backend.load = () => changed;
       [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("ui_pull") >= 0).click();
-      await wait(100);
+      await idle();
       R.conflict_cells = document.querySelectorAll(".ae-cell.conflict").length;
       R.cell_text = cellText(0, 0);
       [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("Push") >= 0).click();
-      await wait(100);
+      await idle();
       R.pushes = sent("push").length;
       R.toast = [...document.querySelectorAll(".ae-toast")].map((n) => n.textContent).pop();
       [...document.querySelectorAll(".ae-conflictbar button")][0].click();
       window.__backend.push = (payload) => ({ results: payload.edits.map((e) => ({ row: e.row, key: e.key, ok: true, value: e.text })) });
       [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("Push") >= 0).click();
-      await wait(100);
+      await idle();
       R.pushes_after_keep_mine = sent("push").length;
       R.sent_base = sent("push")[0] ? sent("push")[0].payload.edits[0].base : null;
       return R;
@@ -495,7 +504,7 @@
     async grid_edit_during_push() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       click(0, 0);
       paste("N1");
       window.__backend.push = async (payload) => {
@@ -503,7 +512,7 @@
         return { results: payload.edits.map((e) => ({ row: e.row, key: e.key, ok: true, value: "N1 normalized" })) };
       };
       [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("Push") >= 0).click();
-      await wait(60);
+      await wait(40);
       click(0, 0);
       paste("N2");
       await wait(400);
@@ -539,7 +548,7 @@
     async grid_undo_in_filtered_view() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       const filter = document.querySelectorAll(".ae-filter")[0];
       filter.value = "D5";
       filter.dispatchEvent(new Event("input", { bubbles: true }));
@@ -557,7 +566,7 @@
     async grid_stale_push_reply() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       click(0, 0);
       paste("N1");
       window.__backend.push = async (payload) => {
@@ -581,7 +590,7 @@
       const grid = fixtureGrid();
       grid.rows[0].v[0] = "line one\nline two";
       mount({ grid });
-      await wait(60);
+      await idle();
       click(0, 0);
       key("F2");
       document.querySelector(".ae-editor").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
@@ -597,7 +606,7 @@
     async grid_scratch_source_change_prompt() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       window.__backend.categories = () => [
         { id: -1, name: "Alpha", instances: 3, types: 1 },
         { id: -2, name: "Beta", instances: 2, types: 1 },
@@ -614,16 +623,16 @@
       const select = document.querySelector(".ae-toolbar select");
       select.value = "__scratch__";
       select.dispatchEvent(new Event("change", { bubbles: true }));
-      await wait(80);
+      await idle();
       const boxes = () => [...document.querySelectorAll(".ae-panel .ae-section:first-child .ae-item input")];
       boxes()[0].checked = true;
       boxes()[0].dispatchEvent(new Event("change", { bubbles: true }));
       [...document.querySelectorAll(".ae-panel .ae-button")].find((b) => b.textContent === "ui_find_parameters").click();
-      await wait(80);
+      await idle();
       document.querySelector(".ae-panel .ae-item.add").click();
       const show = () => [...document.querySelectorAll(".ae-panel .ae-button.primary")].find((b) => b.textContent === "ui_apply_columns");
       show().click();
-      await wait(100);
+      await idle();
       click(0, 0);
       paste("EDIT");
       R.dirty_before = dirty();
@@ -631,17 +640,17 @@
       boxes()[1].dispatchEvent(new Event("change", { bubbles: true }));
       const loadsBefore = sent("load").length;
       [...document.querySelectorAll(".ae-panel .ae-button")].find((b) => b.textContent === "ui_find_parameters").click();
-      await wait(80);
+      await idle();
       show().click();
-      await wait(80);
+      await idle();
       R.dialog_shown = !!document.querySelector(".ae-dialog");
       R.loads_while_asking = sent("load").length - loadsBefore;
       [...document.querySelectorAll(".ae-dialog button")][0].click();
-      await wait(80);
+      await idle();
       R.dirty_after_cancel = dirty();
       R.loads_after_cancel = sent("load").length - loadsBefore;
       show().click();
-      await wait(80);
+      await idle();
       [...document.querySelectorAll(".ae-dialog button")][1].click();
       await wait(120);
       R.dirty_after_discard = dirty();
@@ -653,7 +662,7 @@
     async grid_conflict_survives_edit_and_undo() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       click(0, 0);
       paste("N1");
       const changed = fixtureGrid();
@@ -661,7 +670,7 @@
       window.__backend.load = () => changed;
       const button = (label) => [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf(label) >= 0);
       button("ui_pull").click();
-      await wait(100);
+      await idle();
       R.conflict_after_pull = document.querySelectorAll(".ae-cell.conflict").length;
       click(0, 0);
       paste("D");
@@ -670,7 +679,7 @@
       R.cell_after_undo = cellText(0, 0);
       R.conflict_after_undo = document.querySelectorAll(".ae-cell.conflict").length;
       button("Push").click();
-      await wait(100);
+      await idle();
       R.pushes = sent("push").length;
       click(0, 0);
       paste("Changed in Revit");
@@ -682,7 +691,7 @@
     async grid_undo_selection_follows_the_row() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       const filter = document.querySelectorAll(".ae-filter")[0];
       const applyFilter = () => filter.dispatchEvent(new Event("input", { bubbles: true }));
       filter.value = "D";
@@ -704,7 +713,7 @@
     async grid_scratch_reordered_categories_merge() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       window.__backend.categories = () => [
         { id: -1, name: "Alpha", instances: 3, types: 1 },
         { id: -2, name: "Beta", instances: 2, types: 1 },
@@ -721,7 +730,7 @@
       const select = document.querySelector(".ae-toolbar select");
       select.value = "__scratch__";
       select.dispatchEvent(new Event("change", { bubbles: true }));
-      await wait(80);
+      await idle();
       const boxes = () => [...document.querySelectorAll(".ae-panel .ae-section:first-child .ae-item input")];
       const tick = (index, on) => {
         boxes()[index].checked = on;
@@ -731,17 +740,17 @@
       tick(0, true);
       tick(1, true);
       press("ui_find_parameters");
-      await wait(80);
+      await idle();
       document.querySelector(".ae-panel .ae-item.add").click();
       press("ui_apply_columns");
-      await wait(100);
+      await idle();
       click(0, 0);
       paste("EDIT");
       R.dirty_before = dirty();
       tick(0, false);
       tick(0, true);
       press("ui_find_parameters");
-      await wait(80);
+      await idle();
       const loadsBefore = sent("load").length;
       press("ui_apply_columns");
       await wait(120);
@@ -755,7 +764,7 @@
     async grid_find_parameters_keeps_the_grid_source() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       window.__backend.categories = () => [
         { id: -1, name: "Alpha", instances: 3, types: 1 },
         { id: -2, name: "Beta", instances: 2, types: 1 },
@@ -772,7 +781,7 @@
       const select = document.querySelector(".ae-toolbar select");
       select.value = "__scratch__";
       select.dispatchEvent(new Event("change", { bubbles: true }));
-      await wait(80);
+      await idle();
       const boxes = () => [...document.querySelectorAll(".ae-panel .ae-section:first-child .ae-item input")];
       const tick = (index) => {
         boxes()[index].checked = true;
@@ -781,15 +790,15 @@
       const press = (label) => [...document.querySelectorAll(".ae-panel .ae-button")].find((b) => b.textContent === label).click();
       tick(0);
       press("ui_find_parameters");
-      await wait(80);
+      await idle();
       document.querySelector(".ae-panel .ae-item.add").click();
       press("ui_apply_columns");
-      await wait(100);
+      await idle();
       click(0, 0);
       paste("EDIT");
       tick(1);
       press("ui_find_parameters");
-      await wait(80);
+      await idle();
       const loadsBefore = sent("load").length;
       [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("ui_pull") >= 0).click();
       await wait(120);
@@ -802,7 +811,7 @@
     async grid_late_load_reply_is_ignored() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       const walls = fixtureGrid();
       walls.title = "Walls";
       walls.source = { kind: "schedule", id: 2 };
@@ -816,7 +825,7 @@
       const select = document.querySelector(".ae-toolbar select");
       select.value = "2";
       select.dispatchEvent(new Event("change", { bubbles: true }));
-      await wait(60);
+      await idle();
       select.value = "__scratch__";
       select.dispatchEvent(new Event("change", { bubbles: true }));
       await wait(500);
@@ -831,7 +840,7 @@
     async grid_failed_switch_restores_the_displayed_source() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       window.__app.schedules.push({ id: 3, name: "Roofs" });
       window.__app.renderToolbar();
       const walls = fixtureGrid();
@@ -842,7 +851,7 @@
           return walls;
         }
         if (payload.source.id === 3) {
-          await wait(100);
+          await wait(60);
           throw new Error("boom");
         }
         return fixtureGrid();
@@ -861,7 +870,7 @@
       paste("N1");
       const loadsBefore = sent("load").length;
       [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf("ui_pull") >= 0).click();
-      await wait(150);
+      await idle();
       R.pull_source_ids = sent("load").slice(loadsBefore).map((m) => m.payload.source.id);
       R.dirty_after_pull = dirty();
       R.cell_after_pull = cellText(0, 0);
@@ -871,7 +880,7 @@
     async grid_typing_the_value_revit_now_has_is_not_pending() {
       const R = {};
       mount();
-      await wait(60);
+      await idle();
       click(0, 0);
       paste("N1");
       window.__backend.push = (payload) => ({
@@ -879,7 +888,7 @@
       });
       const button = (label) => [...document.querySelectorAll(".ae-toolbar .ae-button")].find((b) => b.textContent.indexOf(label) >= 0);
       button("Push").click();
-      await wait(100);
+      await idle();
       R.conflict_after_push = document.querySelectorAll(".ae-cell.conflict").length;
       R.pending_before = window.__app.countPending();
       click(0, 0);
@@ -890,7 +899,7 @@
       R.bar_hidden = document.querySelector(".ae-conflictbar").hidden;
       const pushesBefore = sent("push").length;
       button("Push").click();
-      await wait(100);
+      await idle();
       R.pushes_for_matching_text = sent("push").length - pushesBefore;
       click(0, 0);
       paste("D");
@@ -904,7 +913,7 @@
       const rows = [];
       for (let i = 0; i < 5000; i++) rows.push({ id: i + 1, t: 1, c: "", v: ["M" + i, "900 mm", "30", "L1"], x: [3] });
       mount({ grid: Object.assign(fixtureGrid(), { rows }) });
-      await wait(150);
+      await idle();
       R.rendered_rows = document.querySelectorAll(".ae-row").length;
       R.body_height = document.querySelector(".ae-body").style.height;
       const scroll = document.querySelector(".ae-scroll");
@@ -913,6 +922,181 @@
       window.__app.renderBody();
       R.first_after_scroll = document.querySelector(".ae-cell").textContent;
       R.last_row_available = document.querySelectorAll(".ae-row").length < 200;
+      return R;
+    },
+    async core_quotes() {
+      const R = {};
+      R.excel_quoted = core.parseTsv('"a\tb"\t"c ""q"" d"\n');
+      R.unclosed_is_literal = core.parseTsv('"unclosed\tb\nc\td');
+      R.inner_quote_is_literal = core.parseTsv('say "hi"\tx');
+      R.text_after_closing_quote_is_literal = core.parseTsv('"a" b\tc');
+      R.empty_quoted = core.parseTsv('""\tx');
+      return R;
+    },
+
+    async core_numeric() {
+      const R = {};
+      R.order = ["0.5", "0.25", "10", "9"].sort((a, b) => core.compareCells(a, b, true, "."));
+      R.text_order_is_natural = ["b2", "b10", "a"].sort((a, b) => core.compareCells(a, b, false, "."));
+      R.dot_grouping = core.numericValue("1,250 mm", ".");
+      R.comma_grouping = core.numericValue("1.250,5 m", ",");
+      R.comma_decimal = core.numericValue("1,5", ",");
+      R.negative = core.numericValue("-3.5", ".");
+      R.not_a_number = core.numericValue("abc", ".");
+      R.ties_fall_back_to_text = ["1'-6", "1'-3"].sort((a, b) => core.compareCells(a, b, true, "."));
+      return R;
+    },
+
+    async grid_sorts_numbers_by_value() {
+      const R = {};
+      mount({
+        grid: Object.assign(fixtureGrid(), {
+          rows: ["0.5", "0.25", "10", "9", ""].map((v, i) => ({ id: i + 1, t: i + 1, c: "", v: ["M" + i, v, "x", "L"], x: [3] })),
+        }),
+      });
+      await idle();
+      const sort = () => document.querySelectorAll(".ae-sort")[1].click();
+      sort();
+      R.ascending = texts(1);
+      sort();
+      R.descending = texts(1);
+      return R;
+    },
+
+    async grid_load_while_editing() {
+      const R = {};
+      mount();
+      await idle();
+      click(0, 0);
+      key("x");
+      const editor = document.querySelector(".ae-editor");
+      editor.value = "Typed";
+      window.__app.applyGrid(fixtureGrid(), true);
+      R.editor_hidden = document.querySelectorAll(".ae-editor:not([hidden])").length === 0;
+      R.cell = cellText(0, 0);
+      R.dirty = dirty();
+      return R;
+    },
+
+    async grid_undo_restores_the_error_marker() {
+      const R = {};
+      mount();
+      await idle();
+      window.__backend.push = (payload) => ({
+        results: payload.edits.map((e) => ({ row: e.row, key: e.key, ok: false, message: "No good." })),
+      });
+      click(0, 0);
+      paste("N1");
+      document.querySelector(".ae-button.primary").click();
+      await idle();
+      R.errors_after_push = document.querySelectorAll(".ae-cell.error").length;
+      click(0, 0);
+      paste("N2");
+      R.errors_after_edit = document.querySelectorAll(".ae-cell.error").length;
+      key("z", { ctrlKey: true });
+      R.errors_after_undo = document.querySelectorAll(".ae-cell.error").length;
+      R.tip_after_undo = cellAt(0, 0).title;
+      key("y", { ctrlKey: true });
+      R.errors_after_redo = document.querySelectorAll(".ae-cell.error").length;
+      return R;
+    },
+
+    async grid_reports_pending_edits() {
+      const R = {};
+      mount();
+      await idle();
+      R.before_edit = sent("pending").length;
+      click(0, 0);
+      paste("N1");
+      R.after_edit = sent("pending").map((m) => m.payload.count);
+      key("z", { ctrlKey: true });
+      R.after_undo = sent("pending").map((m) => m.payload.count);
+      return R;
+    },
+
+    async grid_edits_multiline_text() {
+      const R = {};
+      mount({
+        grid: Object.assign(fixtureGrid(), {
+          rows: [{ id: 1, t: 1, c: "", v: ["line1\nline2", "1", "a", "L"], x: [3] }],
+        }),
+      });
+      await idle();
+      click(0, 0);
+      key("F2");
+      const editor = document.querySelector(".ae-editor");
+      R.editor_value = editor.value;
+      R.editor_height = editor.style.height;
+      editor.selectionStart = editor.selectionEnd = editor.value.length;
+      editor.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", altKey: true, bubbles: true, cancelable: true }));
+      R.after_alt_enter = editor.value;
+      R.height_after_alt_enter = editor.style.height;
+      editor.value += "line3";
+      editor.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+      R.committed = cellText(0, 0);
+      R.dirty = dirty();
+      return R;
+    },
+
+    async grid_unit_label_follows_the_unit_mode() {
+      const R = {};
+      mount();
+      await idle();
+      const heading = () => document.querySelectorAll(".ae-hcell .ae-htext")[1].textContent;
+      R.display = heading();
+      for (const mode of ["number", "internal"]) {
+        window.__app.applyGrid(Object.assign(fixtureGrid(), { unitMode: mode }), false);
+        R[mode] = heading();
+      }
+      return R;
+    },
+
+    async grid_confirm_closes_on_escape() {
+      const R = {};
+      mount();
+      await idle();
+      click(0, 0);
+      paste("N1");
+      const loads = sent("load").length;
+      [...document.querySelectorAll(".ae-toolbar .ae-seg")].find((b) => b.textContent === "ui_unit_number").click();
+      const dialog = document.querySelector(".ae-modal");
+      R.shown = !!dialog;
+      R.role = dialog.querySelector(".ae-dialog").getAttribute("role");
+      R.focus_on_accept = document.activeElement.classList.contains("primary");
+      dialog.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }));
+      R.tab_moves_to_cancel = !document.activeElement.classList.contains("primary");
+      dialog.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+      await wait(0);
+      R.closed = !document.querySelector(".ae-modal");
+      R.dirty_kept = dirty();
+      R.loads_started = sent("load").length - loads;
+      return R;
+    },
+
+    async grid_toolbar_keeps_its_elements() {
+      const R = {};
+      mount();
+      await idle();
+      const select = document.querySelector(".ae-toolbar select");
+      select.focus();
+      window.__app.setBusy(true);
+      window.__app.setBusy(false);
+      window.__app.renderToolbar();
+      R.same_select = select === document.querySelector(".ae-toolbar select");
+      R.options = select.options.length;
+      return R;
+    },
+
+    async grid_exposes_grid_roles() {
+      const R = {};
+      mount();
+      await idle();
+      R.grid = document.querySelectorAll('[role="grid"]').length;
+      R.rows = document.querySelectorAll('[role="row"]').length;
+      R.cells = document.querySelectorAll('[role="gridcell"]').length;
+      R.headers = document.querySelectorAll('[role="columnheader"]').length;
+      R.rowcount = document.querySelector('[role="grid"]').getAttribute("aria-rowcount");
+      R.selected = document.querySelectorAll('[role="gridcell"][aria-selected="true"]').length;
       return R;
     },
   };

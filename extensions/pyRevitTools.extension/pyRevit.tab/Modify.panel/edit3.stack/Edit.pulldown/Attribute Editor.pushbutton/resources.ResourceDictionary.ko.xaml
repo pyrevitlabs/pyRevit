@@ -118,4 +118,15 @@
     <sys:String x:Key="transaction_layout">속성 편집기: 일람표 열 변경</sys:String>
     <sys:String x:Key="err_other_document">지금은 다른 프로젝트가 활성화되어 있습니다. 이 편집기를 연 프로젝트를 활성화하세요.</sys:String>
     <sys:String x:Key="err_not_committed">Revit이 이 변경을 유지하지 않았습니다.</sys:String>
+    <sys:String x:Key="ui_replace_session">열려 있는 속성 편집기에 반영되지 않은 편집이 {0}개 있습니다. 새로 열고 버리시겠습니까?</sys:String>
+    <sys:String x:Key="ui_request_timeout">Revit이 제시간에 응답하지 않았습니다. “Revit에서 읽기”를 눌러 모델의 현재 상태를 확인하세요.</sys:String>
+    <sys:String x:Key="err_kind_differs">이 셀의 값 종류가 열의 나머지와 달라 여기서 편집할 수 없습니다.</sys:String>
+    <sys:String x:Key="err_spec_differs">이 셀은 열과 단위가 다릅니다. 편집하려면 단위를 “기호 포함”으로 바꾸세요.</sys:String>
+    <sys:String x:Key="err_refused">Revit이 변경을 거부했습니다: {0}</sys:String>
+    <sys:String x:Key="err_owned_by">이 요소는 {0}님이 체크아웃했습니다.</sys:String>
+    <sys:String x:Key="err_out_of_date">이 요소는 중앙 모델에서 변경되었습니다. 먼저 최신 변경 내용을 다시 로드하세요.</sys:String>
+    <sys:String x:Key="err_empty_selection">Revit에서 선택된 항목이 없습니다.</sys:String>
+    <sys:String x:Key="err_schedule_missing">일람표가 더 이상 존재하지 않습니다.</sys:String>
+    <sys:String x:Key="tokens_yes">예;네;참;true;1;x</sys:String>
+    <sys:String x:Key="tokens_no">아니요;아니오;거짓;false;0</sys:String>
 </ResourceDictionary>

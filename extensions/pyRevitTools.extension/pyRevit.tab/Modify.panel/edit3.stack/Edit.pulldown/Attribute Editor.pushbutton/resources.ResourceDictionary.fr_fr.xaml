@@ -118,4 +118,15 @@
     <sys:String x:Key="transaction_layout">Éditeur d’attributs : modifier les colonnes de la nomenclature</sys:String>
     <sys:String x:Key="err_other_document">Un autre projet est actif. Activez le projet pour lequel cet éditeur a été ouvert.</sys:String>
     <sys:String x:Key="err_not_committed">Revit n’a pas conservé cette modification.</sys:String>
+    <sys:String x:Key="ui_replace_session">L’éditeur d’attributs ouvert contient {0} modifications non envoyées. En ouvrir un nouveau et les abandonner ?</sys:String>
+    <sys:String x:Key="ui_request_timeout">Revit n’a pas répondu à temps. Utilisez « Lire depuis Revit » pour voir l’état actuel du modèle.</sys:String>
+    <sys:String x:Key="err_kind_differs">Cette cellule contient un autre type de valeur que le reste de la colonne ; elle ne peut pas être modifiée ici.</sys:String>
+    <sys:String x:Key="err_spec_differs">Cette cellule a une autre unité que la colonne. Choisissez les unités « Avec symbole » pour la modifier.</sys:String>
+    <sys:String x:Key="err_refused">Revit a refusé la modification : {0}</sys:String>
+    <sys:String x:Key="err_owned_by">Cet élément est emprunté par {0}.</sys:String>
+    <sys:String x:Key="err_out_of_date">Cet élément a été modifié dans le modèle central. Rechargez d’abord les dernières modifications.</sys:String>
+    <sys:String x:Key="err_empty_selection">Rien n’est sélectionné dans Revit.</sys:String>
+    <sys:String x:Key="err_schedule_missing">La nomenclature n’existe plus.</sys:String>
+    <sys:String x:Key="tokens_yes">oui;o;vrai;1;x</sys:String>
+    <sys:String x:Key="tokens_no">non;n;faux;0</sys:String>
 </ResourceDictionary>

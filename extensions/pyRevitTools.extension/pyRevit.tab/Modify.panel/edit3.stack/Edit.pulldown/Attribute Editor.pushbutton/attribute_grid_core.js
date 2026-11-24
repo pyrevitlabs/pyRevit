@@ -11,27 +11,30 @@
 
   const NUMBER_PATTERN = /^([\s\S]*?)(\d+(?:[.,]\d+)?)(\D*)$/;
 
+  function quotedFieldEnd(source, start) {
+    for (let i = start + 1; i < source.length; i++) {
+      if (source[i] !== '"') continue;
+      if (source[i + 1] === '"') {
+        i++;
+        continue;
+      }
+      const next = source[i + 1];
+      return next === undefined || next === "\t" || next === "\n" ? i : -1;
+    }
+    return -1;
+  }
+
   function parseTsv(text) {
     const rows = [];
     const source = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     let row = [];
     let field = "";
-    let quoted = false;
     for (let i = 0; i < source.length; i++) {
       const ch = source[i];
-      if (quoted) {
-        if (ch === '"') {
-          if (source[i + 1] === '"') {
-            field += '"';
-            i++;
-          } else {
-            quoted = false;
-          }
-        } else {
-          field += ch;
-        }
-      } else if (ch === '"' && field === "") {
-        quoted = true;
+      const end = ch === '"' && field === "" ? quotedFieldEnd(source, i) : -1;
+      if (end >= 0) {
+        field = source.slice(i + 1, end).replace(/""/g, '"');
+        i = end;
       } else if (ch === "\t") {
         row.push(field);
         field = "";
@@ -120,12 +123,38 @@
     };
     const anchor = settings.backward ? first.value : parts[parts.length - 1].value;
     const direction = settings.backward ? -step : step;
-    for (let k = 1; k <= count; k++) out.push(formatNumber(anchor + direction * k, shape));
+    const separatorPrefix = shape.prefix.endsWith("-");
+    for (let k = 1; k <= count; k++) {
+      const next = anchor + direction * k;
+      out.push(formatNumber(separatorPrefix && next < 0 ? 0 : next, shape));
+    }
     return out;
   }
 
   function naturalCompare(a, b) {
     return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
+  }
+
+  function numericValue(text, decimal) {
+    const comma = decimal === ",";
+    const point = comma ? "," : "\\.";
+    const grouping = comma ? "\\." : ",";
+    const separators = "[" + grouping + " \\u00a0\\u202f]";
+    const pattern = new RegExp("^\\s*([+-]?(?:\\d{1,3}(?:" + separators + "\\d{3})+|\\d+)(?:" + point + "\\d+)?)");
+    const match = pattern.exec(String(text));
+    if (!match) return null;
+    const plain = match[1].replace(new RegExp(separators, "g"), "").replace(",", ".");
+    const value = parseFloat(plain);
+    return Number.isFinite(value) ? value : null;
+  }
+
+  function compareCells(a, b, numeric, decimal) {
+    if (numeric) {
+      const left = numericValue(a, decimal);
+      const right = numericValue(b, decimal);
+      if (left !== null && right !== null && left !== right) return left < right ? -1 : 1;
+    }
+    return naturalCompare(a, b);
   }
 
   function isTypeKey(key) {
@@ -212,6 +241,8 @@
     splitNumber,
     fillSeries,
     naturalCompare,
+    numericValue,
+    compareCells,
     mergeRows,
   };
 })();

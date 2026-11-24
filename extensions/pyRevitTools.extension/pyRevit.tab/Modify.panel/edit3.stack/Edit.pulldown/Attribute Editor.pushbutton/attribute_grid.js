@@ -2,7 +2,8 @@
  * Spreadsheet-like editor page of the Attribute Editor tool.
  *
  * window.pyRevitAttributeGrid.mount(rootId, data) renders the editor into the
- * element with id rootId. data comes from attribute_session.AttributeSession:
+ * element with id rootId (the returned App's ready promise settles when the
+ * first load did). data comes from attribute_session.AttributeSession:
  * {channel, strings, dark, themePreference, start}. The page posts
  * {channel, action, payload, requestId} through chrome.webview.postMessage and
  * Python answers with {channel, event, payload} messages (events: result,
@@ -21,6 +22,8 @@
   const ROWHEAD_WIDTH = 124;
   const MIN_WIDTH = 56;
   const BUFFER_ROWS = 6;
+  const REQUEST_TIMEOUT_MS = 5 * 60 * 1000;
+  const EDITOR_MAX_LINES = 6;
 
   function listen() {
     if (listening || !(window.chrome && window.chrome.webview)) return;
@@ -70,6 +73,8 @@
       this.source = data.start;
       this.title = "";
       this.unitMode = "display";
+      this.decimal = ".";
+      this.reportedPending = 0;
       this.columns = [];
       this.rows = [];
       this.view = [];
@@ -101,7 +106,7 @@
       this.buildDom();
       this.applyTheme();
       this.bindEvents();
-      this.bootstrap();
+      this.ready = this.bootstrap();
     }
 
     S(key, ...values) {
@@ -116,7 +121,14 @@
           return;
         }
         const requestId = ++this.requestSeq;
-        this.requests.set(requestId, { resolve, reject });
+        const timer = setTimeout(() => {
+          this.requests.delete(requestId);
+          reject(new Error(this.S("request_timeout")));
+        }, REQUEST_TIMEOUT_MS);
+        this.requests.set(requestId, {
+          resolve: (value) => (clearTimeout(timer), resolve(value)),
+          reject: (error) => (clearTimeout(timer), reject(error)),
+        });
         window.chrome.webview.postMessage({ channel: this.data.channel, action, payload, requestId });
       });
     }
@@ -140,6 +152,7 @@
       apps.delete(this.data.channel);
       document.removeEventListener("mousemove", this.onDocumentMouseMove);
       document.removeEventListener("mouseup", this.onDocumentMouseUp);
+      window.removeEventListener("resize", this.onWindowResize);
       this.root.remove();
     }
 
@@ -154,24 +167,34 @@
       return new Promise((resolve) => {
         const close = (answer) => {
           overlay.remove();
+          this.focusGrid();
           resolve(answer);
         };
+        const cancel = h("button", { class: "ae-button", onclick: () => close(false) }, this.S("cancel"));
+        const accept = h("button", { class: "ae-button primary", onclick: () => close(true) }, acceptLabel);
         const overlay = h(
           "div",
-          { class: "ae-modal" },
+          {
+            class: "ae-modal",
+            onkeydown: (event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                close(false);
+              } else if (event.key === "Tab") {
+                event.preventDefault();
+                (document.activeElement === accept ? cancel : accept).focus();
+              }
+            },
+          },
           h(
             "div",
-            { class: "ae-dialog" },
+            { class: "ae-dialog", role: "alertdialog", "aria-modal": "true", "aria-label": message },
             h("p", {}, message),
-            h(
-              "div",
-              { class: "ae-dialog-buttons" },
-              h("button", { class: "ae-button", onclick: () => close(false) }, this.S("cancel")),
-              h("button", { class: "ae-button primary", onclick: () => close(true) }, acceptLabel)
-            )
+            h("div", { class: "ae-dialog-buttons" }, cancel, accept)
           )
         );
         this.root.append(overlay);
+        accept.focus();
       });
     }
 
@@ -188,11 +211,13 @@
       this.panel = h("div", { class: "ae-panel", hidden: true });
       this.header = h("div", { class: "ae-header" });
       this.body = h("div", { class: "ae-body" });
-      this.editor = h("input", { class: "ae-editor", type: "text", hidden: true, autocomplete: "off" });
+      this.textEditor = h("textarea", { class: "ae-editor", rows: "1", hidden: true, autocomplete: "off", spellcheck: "false" });
+      this.choiceEditor = h("input", { class: "ae-editor choice", type: "text", hidden: true, autocomplete: "off" });
+      this.editor = this.textEditor;
       this.fillHandle = h("div", { class: "ae-fill", hidden: true });
       this.emptyNote = h("div", { class: "ae-empty", hidden: true });
-      this.sizer = h("div", { class: "ae-sizer" }, this.header, this.body, this.editor, this.fillHandle);
-      this.scroll = h("div", { class: "ae-scroll" }, this.sizer);
+      this.sizer = h("div", { class: "ae-sizer", role: "presentation" }, this.header, this.body, this.textEditor, this.choiceEditor, this.fillHandle);
+      this.scroll = h("div", { class: "ae-scroll", role: "grid", "aria-label": "grid" }, this.sizer);
       this.clip = h("textarea", { class: "ae-clip", tabindex: "0", "aria-label": "grid" });
       this.status = h("div", { class: "ae-status" });
       this.toasts = h("div", { class: "ae-toasts" });
@@ -207,6 +232,7 @@
         this.toasts,
         this.lists
       );
+      this.buildToolbar();
       this.buildPanel();
       this.buildFindBar();
     }
@@ -278,6 +304,7 @@
     }
 
     applyGrid(grid, merge) {
+      this.commitEdit(null);
       const oldKeys = this.columns.map((c) => c.key);
       const newKeys = grid.columns.map((c) => c.key);
       if (!merge) this.generation++;
@@ -285,6 +312,7 @@
       this.loadedSource = grid.source;
       this.title = grid.title;
       this.unitMode = grid.unitMode;
+      this.decimal = grid.decimal || ".";
       this.columns = grid.columns;
       for (const column of this.columns) {
         this.known.set(column.key, { heading: column.heading, scope: column.scope });
@@ -318,13 +346,14 @@
         const needle = text.toLowerCase();
         indices = indices.filter((i) => this.rows[i].cur[ci].toLowerCase().includes(needle));
       }
+      const numeric = this.columns.map((c) => c.kind === "number" || c.kind === "integer");
       const order = this.sort
         .map((entry) => ({ ci: this.columns.findIndex((c) => c.key === entry.key), sign: entry.dir === "desc" ? -1 : 1 }))
         .filter((entry) => entry.ci >= 0);
       if (order.length) {
         indices.sort((a, b) => {
           for (const { ci, sign } of order) {
-            const result = core.naturalCompare(this.rows[a].cur[ci], this.rows[b].cur[ci]);
+            const result = core.compareCells(this.rows[a].cur[ci], this.rows[b].cur[ci], numeric[ci], this.decimal);
             if (result) return result * sign;
           }
           return this.rows[a].id - this.rows[b].id;
@@ -374,53 +403,81 @@
         : this.S("empty_rows");
     }
 
+    buildToolbar() {
+      this.sourceSelect = h("select", { class: "ae-select", title: this.S("source_hint"), onchange: (e) => this.onSourceChange(e.target.value) });
+      this.sourceSignature = null;
+      this.pullButton = h("button", { class: "ae-button", title: this.S("pull_hint"), onclick: () => this.pull() }, "↻ " + this.S("pull"));
+      this.pushButton = h("button", { class: "ae-button primary", title: this.S("push_hint"), onclick: () => this.push(false, false) });
+      this.checkButton = h("button", { class: "ae-button", title: this.S("check_hint"), onclick: () => this.push(false, true) }, "✓ " + this.S("check"));
+      this.undoButton = h("button", { class: "ae-button", title: this.S("undo"), onclick: () => this.undo() }, "↶");
+      this.redoButton = h("button", { class: "ae-button", title: this.S("redo"), onclick: () => this.redo() }, "↷");
+      this.findButton = h("button", { class: "ae-button", title: "Ctrl+F", onclick: () => this.toggleFind() }, this.S("find"));
+      this.showButton = h("button", { class: "ae-button", title: this.S("show_in_revit_hint"), onclick: () => this.showInRevit() }, this.S("show_in_revit"));
+      this.unitButtons = ["display", "number", "internal"].map((mode) => ({
+        mode,
+        node: h("button", { class: "ae-seg", title: this.S("unit_" + mode + "_hint"), onclick: () => this.setUnitMode(mode) }, this.S("unit_" + mode)),
+      }));
+      this.themeButtons = ["auto", "light", "dark"].map((mode) => ({
+        mode,
+        node: h("button", { class: "ae-seg", onclick: () => this.setTheme(mode) }, this.S("theme_" + mode)),
+      }));
+      this.columnsButton = h("button", { class: "ae-button", onclick: () => this.togglePanel() }, this.S("columns"));
+      this.toolbar.append(
+        this.sourceSelect,
+        this.pullButton,
+        this.pushButton,
+        this.checkButton,
+        h("span", { class: "ae-sep" }),
+        this.undoButton,
+        this.redoButton,
+        this.findButton,
+        this.showButton,
+        h("span", { class: "ae-sep" }),
+        h("span", { class: "ae-label" }, this.S("units")),
+        h("span", { class: "ae-segs" }, this.unitButtons.map((entry) => entry.node)),
+        h("span", { class: "ae-spacer" }),
+        h("span", { class: "ae-segs", title: this.S("theme_hint") }, this.themeButtons.map((entry) => entry.node)),
+        this.columnsButton
+      );
+    }
+
+    renderSourceSelect() {
+      const signature = this.schedules.map((item) => item.id + ":" + item.name).join("|");
+      if (signature !== this.sourceSignature) {
+        this.sourceSignature = signature;
+        this.sourceSelect.replaceChildren(
+          h("option", { value: "__scratch__" }, this.S("new_grid")),
+          ...this.schedules.map((item) => h("option", { value: String(item.id) }, item.name))
+        );
+      }
+      this.sourceSelect.value = this.source.kind === "schedule" ? String(this.source.id) : "__scratch__";
+    }
+
+    reportPending(pending) {
+      if (pending === this.reportedPending) return;
+      this.reportedPending = pending;
+      this.request("pending", { count: pending }).catch(() => {});
+    }
+
     renderToolbar() {
       const pending = this.countPending();
       const busy = this.busy > 0;
-      const select = h(
-        "select",
-        { class: "ae-select", title: this.S("source_hint"), onchange: (e) => this.onSourceChange(e.target.value) },
-        h("option", { value: "__scratch__", selected: this.source.kind === "scratch" }, this.S("new_grid")),
-        this.schedules.map((item) =>
-          h("option", { value: String(item.id), selected: this.source.kind === "schedule" && this.source.id === item.id }, item.name)
-        )
-      );
-      const unitButtons = ["display", "number", "internal"].map((mode) =>
-        h(
-          "button",
-          {
-            class: "ae-seg" + (this.unitMode === mode ? " on" : ""),
-            title: this.S("unit_" + mode + "_hint"),
-            disabled: busy,
-            onclick: () => this.setUnitMode(mode),
-          },
-          this.S("unit_" + mode)
-        )
-      );
-      const themeButtons = ["auto", "light", "dark"].map((mode) =>
-        h(
-          "button",
-          { class: "ae-seg" + (this.themePreference === mode ? " on" : ""), onclick: () => this.setTheme(mode) },
-          this.S("theme_" + mode)
-        )
-      );
-      this.toolbar.replaceChildren(
-        select,
-        h("button", { class: "ae-button", title: this.S("pull_hint"), disabled: busy || this.source.kind === "scratch" && !this.columns.length, onclick: () => this.pull() }, "↻ " + this.S("pull")),
-        h("button", { class: "ae-button primary", title: this.S("push_hint"), disabled: busy || !pending, onclick: () => this.push(false, false) }, "↑ " + this.S("push", pending)),
-        h("button", { class: "ae-button", title: this.S("check_hint"), disabled: busy || !pending, onclick: () => this.push(false, true) }, "✓ " + this.S("check")),
-        h("span", { class: "ae-sep" }),
-        h("button", { class: "ae-button", title: this.S("undo"), disabled: !this.undoStack.length, onclick: () => this.undo() }, "↶"),
-        h("button", { class: "ae-button", title: this.S("redo"), disabled: !this.redoStack.length, onclick: () => this.redo() }, "↷"),
-        h("button", { class: "ae-button" + (this.findBar.hidden ? "" : " on"), title: "Ctrl+F", onclick: () => this.toggleFind() }, this.S("find")),
-        h("button", { class: "ae-button", title: this.S("show_in_revit_hint"), disabled: !this.selectedIds().length, onclick: () => this.showInRevit() }, this.S("show_in_revit")),
-        h("span", { class: "ae-sep" }),
-        h("span", { class: "ae-label" }, this.S("units")),
-        h("span", { class: "ae-segs" }, unitButtons),
-        h("span", { class: "ae-spacer" }),
-        h("span", { class: "ae-segs", title: this.S("theme_hint") }, themeButtons),
-        h("button", { class: "ae-button" + (this.panel.hidden ? "" : " on"), onclick: () => this.togglePanel() }, this.S("columns"))
-      );
+      this.renderSourceSelect();
+      this.pullButton.disabled = busy || (this.source.kind === "scratch" && !this.columns.length);
+      this.pushButton.disabled = busy || !pending;
+      this.pushButton.textContent = "↑ " + this.S("push", pending);
+      this.checkButton.disabled = busy || !pending;
+      this.undoButton.disabled = !this.undoStack.length;
+      this.redoButton.disabled = !this.redoStack.length;
+      this.findButton.classList.toggle("on", !this.findBar.hidden);
+      this.showButton.disabled = !this.selectedIds().length;
+      for (const { mode, node } of this.unitButtons) {
+        node.classList.toggle("on", this.unitMode === mode);
+        node.disabled = busy;
+      }
+      for (const { mode, node } of this.themeButtons) node.classList.toggle("on", this.themePreference === mode);
+      this.columnsButton.classList.toggle("on", !this.panel.hidden);
+      this.reportPending(pending);
     }
 
     isPending(row, ci) {
@@ -488,8 +545,8 @@
         titles.append(
           h(
             "div",
-            { class: "ae-hcell" + (frozen ? " frozen" : ""), style, title: column.name || column.heading, onmousedown: (e) => this.onHeaderMouseDown(e, ci) },
-            h("span", { class: "ae-htext" }, column.heading, column.unit && this.unitMode !== "display" ? h("em", {}, " [" + column.unit + "]") : null),
+            { class: "ae-hcell" + (frozen ? " frozen" : ""), style, role: "columnheader", "aria-colindex": ci + 1, title: column.name || column.heading, onmousedown: (e) => this.onHeaderMouseDown(e, ci) },
+            h("span", { class: "ae-htext" }, column.heading, column.unit && this.unitMode === "number" ? h("em", {}, " [" + column.unit + "]") : null),
             badges,
             h("button", { class: "ae-sort" + (sorted ? " on" : ""), title: this.S("sort_hint"), onmousedown: (e) => e.stopPropagation(), onclick: (e) => this.cycleSort(column.key, e.shiftKey) }, sorted ? (sorted.dir === "asc" ? "▲" : "▼") : "⇅"),
             resize
@@ -516,7 +573,7 @@
       const multipleCategories = new Set(this.rows.map((row) => row.c)).size > 1;
       for (let vi = first; vi < last; vi++) {
         const row = this.rows[this.view[vi]];
-        const line = h("div", { class: "ae-row" + (vi % 2 ? " odd" : ""), style: "top:" + vi * ROW_HEIGHT + "px;width:" + this.totalWidth + "px" });
+        const line = h("div", { class: "ae-row" + (vi % 2 ? " odd" : ""), role: "row", "aria-rowindex": vi + 1, style: "top:" + vi * ROW_HEIGHT + "px;width:" + this.totalWidth + "px" });
         const inRow = rect && vi >= rect.r1 && vi <= rect.r2;
         line.append(
           h(
@@ -529,6 +586,8 @@
         this.columns.forEach((column, ci) => line.append(this.buildCell(row, vi, column, ci, rect)));
         fragment.append(line);
       }
+      this.scroll.setAttribute("aria-rowcount", String(this.view.length));
+      this.scroll.setAttribute("aria-colcount", String(this.columns.length));
       this.body.style.height = this.view.length * ROW_HEIGHT + "px";
       this.body.style.width = this.totalWidth + "px";
       this.sizer.style.width = this.totalWidth + "px";
@@ -555,7 +614,8 @@
       else if (this.isConflict(row, ci)) tip = this.S("tip_conflict", row.conflicts.get(ci));
       else if (locked) tip = this.S("tip_locked");
       const style = "width:" + this.columnWidth(column) + "px" + (ci < this.frozen ? ";left:" + this.offsets[ci] + "px" : "");
-      return h("div", { class: classes.join(" "), style, title: tip || value, dataset: { r: vi, c: ci } }, value);
+      const selected = classes.includes("sel");
+      return h("div", { class: classes.join(" "), style, role: "gridcell", "aria-colindex": ci + 1, "aria-selected": selected ? "true" : "false", "aria-readonly": locked ? "true" : null, title: tip || value, dataset: { r: vi, c: ci } }, value);
     }
 
     countPending() {
@@ -622,7 +682,8 @@
       this.fillHandle.hidden = !editable;
       if (!editable) return;
       const column = this.columns[rect.c2];
-      this.fillHandle.style.left = this.offsets[rect.c2] + this.columnWidth(column) - 5 + "px";
+      const shift = rect.c2 < this.frozen ? this.scroll.scrollLeft : 0;
+      this.fillHandle.style.left = shift + this.offsets[rect.c2] + this.columnWidth(column) - 5 + "px";
       this.fillHandle.style.top = HEAD_HEIGHT + FILTER_HEIGHT + (rect.r2 + 1) * ROW_HEIGHT - 5 + "px";
     }
 
@@ -644,9 +705,13 @@
       this.clip.addEventListener("copy", (event) => this.onCopy(event, false));
       this.clip.addEventListener("cut", (event) => this.onCopy(event, true));
       this.clip.addEventListener("paste", (event) => this.onPaste(event));
-      this.editor.addEventListener("keydown", (event) => this.onEditorKeyDown(event));
-      this.editor.addEventListener("blur", () => this.commitEdit(null));
-      window.addEventListener("resize", () => this.queueRender());
+      for (const editor of [this.textEditor, this.choiceEditor]) {
+        editor.addEventListener("keydown", (event) => this.onEditorKeyDown(event));
+        editor.addEventListener("input", () => this.editing && this.positionEditor());
+        editor.addEventListener("blur", () => this.commitEdit(null));
+      }
+      this.onWindowResize = () => this.queueRender();
+      window.addEventListener("resize", this.onWindowResize);
     }
 
     focusGrid() {
@@ -839,7 +904,8 @@
       if (key === "F2") return this.consume(event, () => this.startEdit(this.anchor.r, this.anchor.c));
       if (key === "Delete" || key === "Backspace") return this.consume(event, () => this.clearSelection());
       if (key === "Escape") return this.consume(event, () => this.setSelection(this.focus, this.focus, true));
-      if (key.length === 1 && !mod && !event.altKey) {
+      if ((key.length === 1 || key === "Process") && !mod && !event.altKey) {
+        if (key === "Process") return this.startEdit(this.anchor.r, this.anchor.c, "");
         return this.consume(event, () => this.startEdit(this.anchor.r, this.anchor.c, key));
       }
     }
@@ -871,32 +937,40 @@
       }
       this.setSelection({ r: vi, c: ci }, { r: vi, c: ci });
       this.editing = { vi, ci, original: row.cur[ci], untouched: null };
+      this.editor = column.choices && column.choices.length ? this.choiceEditor : this.textEditor;
       this.editor.hidden = false;
       this.editor.value = initial !== undefined ? initial : row.cur[ci];
       if (initial === undefined) this.editing.untouched = this.editor.value;
       this.setEditorChoices(column);
       this.positionEditor();
-      this.editor.focus();
+      this.editor.focus({ preventScroll: true });
       if (initial === undefined) this.editor.select();
       this.positionFillHandle();
     }
 
+    hideEditors() {
+      this.textEditor.hidden = true;
+      this.choiceEditor.hidden = true;
+    }
+
     setEditorChoices(column) {
       this.lists.replaceChildren();
-      this.editor.removeAttribute("list");
+      this.choiceEditor.removeAttribute("list");
       if (!column.choices || !column.choices.length) return;
       const id = "ae-list-" + this.data.channel;
       this.lists.append(h("datalist", { id }, column.choices.map((choice) => h("option", { value: choice }))));
-      this.editor.setAttribute("list", id);
+      this.choiceEditor.setAttribute("list", id);
     }
 
     positionEditor() {
       const { vi, ci } = this.editing;
       const column = this.columns[ci];
-      this.editor.style.left = this.offsets[ci] + "px";
+      const shift = ci < this.frozen ? this.scroll.scrollLeft : 0;
+      const lines = this.editor === this.textEditor ? clamp(this.editor.value.split("\n").length, 1, EDITOR_MAX_LINES) : 1;
+      this.editor.style.left = shift + this.offsets[ci] + "px";
       this.editor.style.top = HEAD_HEIGHT + FILTER_HEIGHT + vi * ROW_HEIGHT + "px";
       this.editor.style.width = Math.max(this.columnWidth(column), 120) + "px";
-      this.editor.style.height = ROW_HEIGHT + "px";
+      this.editor.style.height = lines * ROW_HEIGHT + "px";
     }
 
     commitEdit(move) {
@@ -904,7 +978,7 @@
       const { vi, ci, original, untouched } = this.editing;
       this.editing = null;
       const value = this.editor.value;
-      this.editor.hidden = true;
+      this.hideEditors();
       const row = this.rows[this.view[vi]];
       const unchangedText = untouched !== null ? untouched : original;
       if (row && value !== unchangedText) this.applyChanges([{ row, ci, value }]);
@@ -917,13 +991,19 @@
     cancelEdit() {
       if (!this.editing) return;
       this.editing = null;
-      this.editor.hidden = true;
+      this.hideEditors();
       this.focusGrid();
       this.renderBody();
     }
 
     onEditorKeyDown(event) {
-      if (event.key === "Enter") {
+      if (event.key === "Enter" && event.altKey && this.editor === this.textEditor) {
+        event.preventDefault();
+        const { selectionStart, selectionEnd, value } = this.editor;
+        this.editor.value = value.slice(0, selectionStart) + "\n" + value.slice(selectionEnd);
+        this.editor.selectionStart = this.editor.selectionEnd = selectionStart + 1;
+        this.positionEditor();
+      } else if (event.key === "Enter") {
         event.preventDefault();
         this.commitEdit([event.shiftKey ? -1 : 1, 0]);
       } else if (event.key === "Tab") {
@@ -958,7 +1038,7 @@
             continue;
           }
           if (row.cur[change.ci] === change.value) continue;
-          entries.push({ row, ci: change.ci, before: row.cur[change.ci], after: change.value });
+          entries.push({ row, ci: change.ci, before: row.cur[change.ci], after: change.value, error: row.errors.get(change.ci) });
           row.cur[change.ci] = change.value;
           row.errors.delete(change.ci);
         }
@@ -977,7 +1057,11 @@
       this.commitEdit(null);
       const entries = this.undoStack.pop();
       if (!entries) return;
-      for (let k = entries.length - 1; k >= 0; k--) entries[k].row.cur[entries[k].ci] = entries[k].before;
+      for (let k = entries.length - 1; k >= 0; k--) {
+        const { row, ci, before, error } = entries[k];
+        row.cur[ci] = before;
+        if (error !== undefined) row.errors.set(ci, error);
+      }
       this.redoStack.push(entries);
       this.afterHistory();
     }
@@ -986,7 +1070,10 @@
       this.commitEdit(null);
       const entries = this.redoStack.pop();
       if (!entries) return;
-      for (const entry of entries) entry.row.cur[entry.ci] = entry.after;
+      for (const entry of entries) {
+        entry.row.cur[entry.ci] = entry.after;
+        entry.row.errors.delete(entry.ci);
+      }
       this.undoStack.push(entries);
       this.afterHistory();
     }

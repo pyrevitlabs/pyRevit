@@ -131,6 +131,8 @@ Adding a test or adjacent project must not require changing a central list. Netw
 
 `dev/tests/python/library/test_diagnose_invisibility_page.py` runs the real `report.js` of the Diagnose Invisibility report in a headless Edge or Chrome, through `fixtures/diagnose_invisibility_page/harness.html`, with a stubbed WebView2 bridge. Set `PYREVIT_TEST_BROWSER` to a browser executable to override the lookup. A missing browser fails the module when `CI` is set and skips it otherwise.
 
+`dev/tests/python/library/test_attribute_editor_page.py` does the same for the Attribute Editor grid (`fixtures/attribute_grid_page/harness.html`) and also checks that the bundle's eight locale files and its `bundle.yaml` stay complete. `test_attribute_values.py` runs the bundle's value codec against a fake `DB`, and `test_pagebridge.py` covers `pyrevit.output.bridge.PageBridge`.
+
 ## Test quality
 
 - Assert outcomes and propagate failures. Printed comparisons, dialogs and debugger launchers are manual checks.

@@ -118,4 +118,15 @@
     <sys:String x:Key="transaction_layout">Editor de atributos: alterar colunas da tabela</sys:String>
     <sys:String x:Key="err_other_document">Outro projeto está ativo agora. Ative o projeto para o qual este editor foi aberto.</sys:String>
     <sys:String x:Key="err_not_committed">O Revit não manteve esta alteração.</sys:String>
+    <sys:String x:Key="ui_replace_session">O editor de atributos aberto tem {0} edições não enviadas. Abrir um novo e descartá-las?</sys:String>
+    <sys:String x:Key="ui_request_timeout">O Revit não respondeu a tempo. Use “Ler do Revit” para ver o que há agora no modelo.</sys:String>
+    <sys:String x:Key="err_kind_differs">Esta célula contém outro tipo de valor que o resto da coluna e não pode ser editada aqui.</sys:String>
+    <sys:String x:Key="err_spec_differs">Esta célula tem uma unidade diferente da coluna. Mude as unidades para “Com símbolo” para editá-la.</sys:String>
+    <sys:String x:Key="err_refused">O Revit recusou a alteração: {0}</sys:String>
+    <sys:String x:Key="err_owned_by">Este elemento está emprestado por {0}.</sys:String>
+    <sys:String x:Key="err_out_of_date">Este elemento foi alterado no modelo central. Recarregue primeiro as últimas alterações.</sys:String>
+    <sys:String x:Key="err_empty_selection">Nada está selecionado no Revit.</sys:String>
+    <sys:String x:Key="err_schedule_missing">A tabela não existe mais.</sys:String>
+    <sys:String x:Key="tokens_yes">sim;s;verdadeiro;1;x</sys:String>
+    <sys:String x:Key="tokens_no">não;nao;n;falso;0</sys:String>
 </ResourceDictionary>

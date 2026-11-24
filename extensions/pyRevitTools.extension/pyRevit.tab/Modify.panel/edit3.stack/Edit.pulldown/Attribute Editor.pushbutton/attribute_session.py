@@ -4,7 +4,8 @@
 Page actions: ``load`` (read a source into a grid), ``schedules``,
 ``categories``, ``available`` (columns that can be added), ``push`` (write
 edits, or check them with ``dry``), ``layout`` (write the column set back to
-the schedule), ``select`` (select or zoom to elements) and ``theme``.
+the schedule), ``select`` (select or zoom to elements), ``theme`` and
+``pending`` (the page reports how many edits are unsent).
 
 Important:
     Handlers outlive the command, so the bundle must run on a persistent
@@ -17,7 +18,7 @@ import os
 import uuid
 
 from pyrevit import DB, HOST_APP, forms, framework, revit, script
-from pyrevit.compat import IRONPY, get_elementid_from_value_func, safe_strtype
+from pyrevit.compat import IRONPY, get_elementid_from_value_func
 from pyrevit.output.bridge import PageBridge
 
 from attribute_grid import build_grid
@@ -28,6 +29,7 @@ from attribute_sources import (
     source_from_payload,
 )
 from attribute_strings import page_strings, t
+from attribute_values import EditError
 from attribute_writer import apply_edits, apply_layout
 
 logger = script.get_logger()
@@ -39,6 +41,7 @@ _BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 _SCRIPT_ASSETS = ("attribute_grid_core.js", "attribute_grid.js")
 _STYLE_ASSET = "attribute_grid.css"
 THEME_PREFERENCES = ("auto", "light", "dark")
+ACTIONS_WITHOUT_REVIT = ("theme", "pending")
 
 
 def _read_asset(name):
@@ -64,6 +67,7 @@ class AttributeSession(object):
         self.start_source = start_source
         self.config = script.get_config()
         self.bridge = PageBridge(output, "attribute-editor")
+        self.pending_edits = 0
         self.root_id = "attribute-editor-{}".format(uuid.uuid4().hex[:8])
 
     def show(self):
@@ -79,6 +83,7 @@ class AttributeSession(object):
             ("layout", self._layout),
             ("select", self._select),
             ("theme", self._theme),
+            ("pending", self._pending),
         ):
             self._register(action, function)
         self.output.set_title(t("ui_title"))
@@ -96,6 +101,16 @@ class AttributeSession(object):
             body=True,
         )
         return True
+
+    def has_unsent_edits(self):
+        """Whether the page holds edits that were never pushed and is still on screen."""
+        if not self.pending_edits:
+            return False
+        try:
+            return not self.output.is_closed_by_user
+        except Exception as ex:
+            logger.debug("Cannot tell whether the window is open: %s", ex)
+            return True
 
     def dispose(self):
         """Stop handling messages and remove the page of this session."""
@@ -115,25 +130,15 @@ class AttributeSession(object):
                 preference if preference in THEME_PREFERENCES else "auto"
             ),
             "start": self.start_source,
-            "scopeAvailable": {
-                "view": bool(self.doc.ActiveView),
-                "selection": True,
-            },
         }
 
     def _register(self, action, function):
-        def handler(payload, request_id):
-            try:
-                if action != "theme" and not self._is_active_document():
-                    raise ValueError(t("err_other_document"))
-                result = function(payload)
-            except Exception as ex:
-                logger.exception("Attribute Editor action '%s' failed", action)
-                self.bridge.reply(request_id, False, safe_strtype(ex))
-                return
-            self.bridge.reply(request_id, True, result)
+        def guarded(payload):
+            if action not in ACTIONS_WITHOUT_REVIT and not self._is_active_document():
+                raise EditError(t("err_other_document"))
+            return function(payload)
 
-        self.bridge.handlers[action] = handler
+        self.bridge.register(action, guarded, expected=(EditError,))
 
     def _is_active_document(self):
         active = revit.doc
@@ -176,6 +181,10 @@ class AttributeSession(object):
         revit.get_selection().set_to(ids)
         if payload.get("zoom"):
             HOST_APP.uidoc.ShowElements(framework.to_clr_list(DB.ElementId, ids))
+        return {}
+
+    def _pending(self, payload):
+        self.pending_edits = int(payload.get("count") or 0)
         return {}
 
     def _theme(self, payload):

@@ -25,7 +25,7 @@ import xml.etree.ElementTree as ET
 TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Integration"
 
-REPO = pathlib.Path(__file__).resolve().parents[2]
+REPO = pathlib.Path(__file__).resolve().parents[4]
 BUNDLE = (
     REPO
     / "extensions"
@@ -81,9 +81,9 @@ def run_scenario(browser, name):
         )
     dom = completed.stdout.decode("utf-8", "replace")
     match = RESULT.search(dom)
-    if match is None:
+    if match is None or completed.returncode != 0:
         raise AssertionError(
-            "scenario {} left no result (exit {}): {}".format(
+            "scenario {} did not finish cleanly (exit {}): {}".format(
                 name, completed.returncode, dom[-400:]
             )
         )
@@ -108,7 +108,10 @@ def keys_used_by_the_code():
     used |= {"ui_theme_" + mode for mode in ("auto", "light", "dark")}
     for path in BUNDLE.glob("*.py"):
         used |= set(
-            re.findall(r'\bt\("([a-z_0-9]+)"\)', path.read_text(encoding="utf-8"))
+            re.findall(
+                r'\b(?:t|token_set|translations)\("([a-z_0-9]+)"\)',
+                path.read_text(encoding="utf-8"),
+            )
         )
     return used
 
@@ -144,10 +147,8 @@ class LocaleTests(unittest.TestCase):
 class BundleMetadataTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        try:
-            import yaml
-        except ImportError:
-            raise unittest.SkipTest("PyYAML is not installed")
+        import yaml
+
         cls.meta = yaml.safe_load((BUNDLE / "bundle.yaml").read_text(encoding="utf-8"))
 
     def test_title_and_tooltip_cover_all_locales(self):
@@ -164,10 +165,21 @@ class BundleMetadataTests(unittest.TestCase):
             self.assertEqual(len(paragraphs), 2, locale)
             self.assertEqual(len(paragraphs[1].splitlines()), 2, locale)
 
-    def test_runs_on_the_persistent_engine_with_a_context_and_minimum_version(self):
-        self.assertTrue(self.meta["engine"]["persistent"])
+    def test_the_persistent_engine_outlives_the_page_handlers_it_hosts(self):
+        self.assertEqual(self.meta["engine"], {"persistent": True})
+        script = (BUNDLE / "script.py").read_text(encoding="utf-8")
+        self.assertIn("script.set_envvar(SESSION_KEY, session)", script)
+        self.assertIn("script.get_envvar(SESSION_KEY)", script)
+
+    def test_runs_in_a_project_from_revit_2022(self):
         self.assertEqual(self.meta["context"], "doc-project")
         self.assertEqual(self.meta["min_revit_version"], 2022)
+
+    def test_the_button_links_to_its_documentation_page(self):
+        self.assertEqual(
+            self.meta["help_url"], "https://docs.pyrevitlabs.io/tools/attribute-editor/"
+        )
+        self.assertTrue((REPO / "docs" / "tools" / "attribute-editor.md").is_file())
 
     def test_icons_exist_in_both_themes(self):
         self.assertTrue((BUNDLE / "icon.png").is_file())
@@ -481,6 +493,99 @@ class AttributeGridPageTests(unittest.TestCase):
         self.assertEqual(result["pushes_for_matching_text"], 0)
         self.assertEqual(result["conflict_when_other_text"], 1)
         self.assertEqual(result["pending_when_other_text"], 1)
+
+    def test_a_quote_only_quotes_a_field_when_it_closes_before_a_delimiter(self):
+        result = self.scenario("core_quotes")
+        self.assertEqual(result["excel_quoted"], [["a\tb", 'c "q" d']])
+        self.assertEqual(
+            result["unclosed_is_literal"], [['"unclosed', "b"], ["c", "d"]]
+        )
+        self.assertEqual(result["inner_quote_is_literal"], [['say "hi"', "x"]])
+        self.assertEqual(
+            result["text_after_closing_quote_is_literal"], [['"a" b', "c"]]
+        )
+        self.assertEqual(result["empty_quoted"], [["", "x"]])
+
+    def test_numbers_compare_by_value_and_ties_fall_back_to_text(self):
+        result = self.scenario("core_numeric")
+        self.assertEqual(result["order"], ["0.25", "0.5", "9", "10"])
+        self.assertEqual(result["text_order_is_natural"], ["a", "b2", "b10"])
+        self.assertEqual(result["dot_grouping"], 1250)
+        self.assertEqual(result["comma_grouping"], 1250.5)
+        self.assertEqual(result["comma_decimal"], 1.5)
+        self.assertEqual(result["negative"], -3.5)
+        self.assertIsNone(result["not_a_number"])
+        self.assertEqual(result["ties_fall_back_to_text"], ["1'-3", "1'-6"])
+
+    def test_a_series_behind_a_separator_does_not_turn_negative(self):
+        result = self.scenario("core_fill")
+        self.assertEqual(
+            result["separator_prefix_stays_positive"], ["A-1", "A-0", "A-0"]
+        )
+
+    def test_number_columns_sort_by_value(self):
+        result = self.scenario("grid_sorts_numbers_by_value")
+        self.assertEqual(result["ascending"], ["", "0.25", "0.5", "9", "10"])
+        self.assertEqual(result["descending"], ["10", "9", "0.5", "0.25", ""])
+
+    def test_a_load_that_ends_while_a_cell_is_open_keeps_what_was_typed(self):
+        result = self.scenario("grid_load_while_editing")
+        self.assertTrue(result["editor_hidden"])
+        self.assertEqual(result["cell"], "Typed")
+        self.assertEqual(result["dirty"], 1)
+
+    def test_undo_brings_back_the_error_marker_of_the_cell(self):
+        result = self.scenario("grid_undo_restores_the_error_marker")
+        self.assertEqual(result["errors_after_push"], 1)
+        self.assertEqual(result["errors_after_edit"], 0)
+        self.assertEqual(result["errors_after_undo"], 1)
+        self.assertEqual(result["tip_after_undo"], "No good.")
+        self.assertEqual(result["errors_after_redo"], 0)
+
+    def test_the_page_tells_python_how_many_edits_are_unsent(self):
+        result = self.scenario("grid_reports_pending_edits")
+        self.assertEqual(result["before_edit"], 0)
+        self.assertEqual(result["after_edit"], [1])
+        self.assertEqual(result["after_undo"], [1, 0])
+
+    def test_multiline_text_keeps_its_line_breaks_while_editing(self):
+        result = self.scenario("grid_edits_multiline_text")
+        self.assertEqual(result["editor_value"], "line1\nline2")
+        self.assertEqual(result["editor_height"], "52px")
+        self.assertEqual(result["after_alt_enter"], "line1\nline2\n")
+        self.assertEqual(result["height_after_alt_enter"], "78px")
+        self.assertEqual(result["committed"], "line1\nline2\nline3")
+        self.assertEqual(result["dirty"], 1)
+
+    def test_the_unit_label_is_only_shown_where_the_numbers_are_in_that_unit(self):
+        result = self.scenario("grid_unit_label_follows_the_unit_mode")
+        self.assertEqual(result["display"], "Width")
+        self.assertEqual(result["number"], "Width [mm]")
+        self.assertEqual(result["internal"], "Width")
+
+    def test_the_confirm_dialog_is_modal_and_closes_on_escape(self):
+        result = self.scenario("grid_confirm_closes_on_escape")
+        self.assertTrue(result["shown"])
+        self.assertEqual(result["role"], "alertdialog")
+        self.assertTrue(result["focus_on_accept"])
+        self.assertTrue(result["tab_moves_to_cancel"])
+        self.assertTrue(result["closed"])
+        self.assertEqual(result["dirty_kept"], 1)
+        self.assertEqual(result["loads_started"], 0)
+
+    def test_rebuilding_the_toolbar_keeps_the_open_dropdown_element(self):
+        result = self.scenario("grid_toolbar_keeps_its_elements")
+        self.assertTrue(result["same_select"])
+        self.assertEqual(result["options"], 3)
+
+    def test_the_grid_exposes_aria_roles(self):
+        result = self.scenario("grid_exposes_grid_roles")
+        self.assertEqual(result["grid"], 1)
+        self.assertEqual(result["rows"], 5)
+        self.assertEqual(result["cells"], 20)
+        self.assertEqual(result["headers"], 4)
+        self.assertEqual(result["rowcount"], "5")
+        self.assertEqual(result["selected"], 1)
 
     def test_large_grids_render_only_the_visible_rows(self):
         result = self.scenario("grid_virtualised")

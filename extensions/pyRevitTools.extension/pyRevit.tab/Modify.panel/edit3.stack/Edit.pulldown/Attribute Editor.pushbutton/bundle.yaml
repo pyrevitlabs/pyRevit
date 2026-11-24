@@ -49,6 +49,7 @@ tooltip:
     Shift 키를 누르고 클릭:
     처음부터 시작: 일람표 없이 범주와 매개변수 열을 선택합니다.
 author: wurschdhaud
+help_url: https://docs.pyrevitlabs.io/tools/attribute-editor/
 context: doc-project
 min_revit_version: 2022
 engine:

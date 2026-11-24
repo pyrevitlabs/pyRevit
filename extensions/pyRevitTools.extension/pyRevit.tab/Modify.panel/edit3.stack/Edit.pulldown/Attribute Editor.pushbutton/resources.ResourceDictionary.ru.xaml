@@ -118,4 +118,15 @@
     <sys:String x:Key="transaction_layout">Редактор атрибутов: изменение столбцов спецификации</sys:String>
     <sys:String x:Key="err_other_document">Сейчас активен другой проект. Активируйте проект, для которого открыт этот редактор.</sys:String>
     <sys:String x:Key="err_not_committed">Revit не сохранил это изменение.</sys:String>
+    <sys:String x:Key="ui_replace_session">В открытом редакторе атрибутов есть неотправленные правки ({0}). Открыть новый и отменить их?</sys:String>
+    <sys:String x:Key="ui_request_timeout">Revit не ответил вовремя. Нажмите «Обновить», чтобы увидеть текущее состояние модели.</sys:String>
+    <sys:String x:Key="err_kind_differs">В этой ячейке значение другого типа, чем в остальной части столбца, поэтому её нельзя изменить здесь.</sys:String>
+    <sys:String x:Key="err_spec_differs">У этой ячейки другая единица, чем у столбца. Чтобы изменить её, выберите единицы «С символом».</sys:String>
+    <sys:String x:Key="err_refused">Revit отклонил изменение: {0}</sys:String>
+    <sys:String x:Key="err_owned_by">Этот элемент занят пользователем {0}.</sys:String>
+    <sys:String x:Key="err_out_of_date">Этот элемент изменён в центральной модели. Сначала загрузите последние изменения.</sys:String>
+    <sys:String x:Key="err_empty_selection">В Revit ничего не выбрано.</sys:String>
+    <sys:String x:Key="err_schedule_missing">Спецификация больше не существует.</sys:String>
+    <sys:String x:Key="tokens_yes">да;д;истина;1;x</sys:String>
+    <sys:String x:Key="tokens_no">нет;н;ложь;0</sys:String>
 </ResourceDictionary>

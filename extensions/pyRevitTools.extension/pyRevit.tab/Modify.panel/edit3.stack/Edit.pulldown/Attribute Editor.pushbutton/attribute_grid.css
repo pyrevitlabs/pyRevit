@@ -1,25 +1,38 @@
+/*
+ * Attribute Editor page. Colours follow pyRevit's brand palette, the same one
+ * pyrevit.forms and the output window use: navy #2c3e50 (pyRevitDark) for the
+ * chrome, darker navy #23303d (pyRevitDarkerDark) for text and dark surfaces,
+ * amber #f39c12 (pyRevitAccent) for the primary action, the active cell and
+ * focus. Selection stays a navy tint so it never competes with the amber.
+ */
 .ae-root {
+  --ae-brand: #2c3e50;
+  --ae-brand-deep: #23303d;
+  --ae-brand-text: #ffffff;
+  --ae-brand-muted: #b9c6d3;
   --ae-bg: #ffffff;
-  --ae-surface: #f5f6f8;
-  --ae-surface-2: #eceef2;
-  --ae-border: #d3d7de;
-  --ae-text: #1d2330;
-  --ae-muted: #6a7384;
-  --ae-accent: #1f6feb;
-  --ae-accent-text: #ffffff;
-  --ae-select: rgba(31, 111, 235, 0.14);
-  --ae-select-edge: #1f6feb;
-  --ae-dirty: #fff3c4;
-  --ae-dirty-edge: #e0a800;
-  --ae-locked: #f1f2f5;
-  --ae-locked-text: #7b8394;
-  --ae-error: #ffd9d9;
-  --ae-error-edge: #d12e2e;
-  --ae-conflict: #ffe0b8;
-  --ae-conflict-edge: #d9780f;
+  --ae-surface: #f4f6f8;
+  --ae-surface-2: #e8ecf0;
+  --ae-border: #d3dae1;
+  --ae-text: #23303d;
+  --ae-muted: #5f6f7f;
+  --ae-accent: #f39c12;
+  --ae-accent-text: #23303d;
+  --ae-link: #2c3e50;
+  --ae-select: rgba(44, 62, 80, 0.12);
+  --ae-select-edge: #2c3e50;
+  --ae-active: #f39c12;
+  --ae-dirty: #fdf0d5;
+  --ae-dirty-edge: #f39c12;
+  --ae-locked: #f1f3f5;
+  --ae-locked-text: #7b8794;
+  --ae-error: #fbeef2;
+  --ae-error-edge: #c7254e;
+  --ae-conflict: #fbe6cf;
+  --ae-conflict-edge: #e17700;
   --ae-odd: #fafbfc;
-  --ae-ok: #1e8a4c;
-  --ae-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  --ae-ok: #618401;
+  --ae-shadow: 0 6px 20px rgba(35, 48, 61, 0.22);
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -32,26 +45,24 @@
 }
 
 .ae-root[data-theme="dark"] {
-  --ae-bg: #1b1e25;
-  --ae-surface: #232731;
-  --ae-surface-2: #2c313d;
-  --ae-border: #3a4150;
-  --ae-text: #e6e9ef;
-  --ae-muted: #98a1b3;
-  --ae-accent: #4c8dff;
-  --ae-accent-text: #0b1220;
-  --ae-select: rgba(76, 141, 255, 0.24);
-  --ae-select-edge: #6fa3ff;
-  --ae-dirty: #5a4b13;
-  --ae-dirty-edge: #f2c230;
-  --ae-locked: #20242d;
-  --ae-locked-text: #7d869a;
-  --ae-error: #5c2323;
-  --ae-error-edge: #ff6b6b;
-  --ae-conflict: #5d3a12;
+  --ae-bg: #1b242e;
+  --ae-surface: #23303d;
+  --ae-surface-2: #2c3e50;
+  --ae-border: #3d5166;
+  --ae-text: #e8edf2;
+  --ae-muted: #9fb0c0;
+  --ae-link: #f5b041;
+  --ae-select: rgba(127, 166, 204, 0.26);
+  --ae-select-edge: #7fa6cc;
+  --ae-dirty: #4a3a14;
+  --ae-locked: #202b36;
+  --ae-locked-text: #7f90a0;
+  --ae-error: #5a2335;
+  --ae-error-edge: #ff7b9c;
+  --ae-conflict: #5a3a14;
   --ae-conflict-edge: #ffa24d;
-  --ae-odd: #1f232c;
-  --ae-ok: #4cc27f;
+  --ae-odd: #1f2a35;
+  --ae-ok: #a6d34a;
   --ae-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
   color-scheme: dark;
 }
@@ -76,6 +87,33 @@
   background: var(--ae-surface);
   border-bottom: 1px solid var(--ae-border);
   flex-wrap: wrap;
+}
+
+.ae-toolbar {
+  background: var(--ae-brand);
+  border-bottom-color: var(--ae-brand-deep);
+  color: var(--ae-brand-text);
+}
+
+.ae-toolbar .ae-label {
+  color: var(--ae-brand-muted);
+}
+
+.ae-toolbar .ae-sep {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.ae-toolbar .ae-button,
+.ae-toolbar .ae-seg,
+.ae-toolbar .ae-select {
+  color: var(--ae-brand-text);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.ae-toolbar .ae-select option {
+  color: var(--ae-text);
+  background: var(--ae-bg);
 }
 
 .ae-status {
@@ -141,12 +179,26 @@
   cursor: default;
 }
 
+.ae-toolbar .ae-button.primary,
+.ae-toolbar .ae-button.on,
+.ae-toolbar .ae-seg.on,
 .ae-button.primary,
 .ae-button.on,
 .ae-seg.on {
   background: var(--ae-accent);
   border-color: var(--ae-accent);
   color: var(--ae-accent-text);
+  font-weight: 600;
+}
+
+.ae-button:focus-visible,
+.ae-seg:focus-visible,
+.ae-mini:focus-visible,
+.ae-select:focus-visible,
+.ae-input:focus-visible,
+.ae-filter:focus-visible {
+  outline: 2px solid var(--ae-accent);
+  outline-offset: 1px;
 }
 
 .ae-segs {
@@ -318,6 +370,7 @@
   top: 0;
   z-index: 6;
   background: var(--ae-surface);
+  box-shadow: 0 2px 0 var(--ae-accent);
 }
 
 .ae-hrow {
@@ -419,7 +472,7 @@
 }
 
 .ae-sort.on {
-  color: var(--ae-accent);
+  color: var(--ae-link);
 }
 
 .ae-resize {
@@ -506,16 +559,16 @@
 
 .ae-cell.fillpad {
   background: var(--ae-select);
-  outline: 1px dashed var(--ae-select-edge);
+  outline: 1px dashed var(--ae-active);
   outline-offset: -1px;
 }
 
 .ae-cell.active {
-  box-shadow: inset 0 0 0 2px var(--ae-select-edge);
+  box-shadow: inset 0 0 0 2px var(--ae-active);
 }
 
 .ae-cell.active.dirty {
-  box-shadow: inset 0 0 0 2px var(--ae-select-edge), inset 4px 0 0 var(--ae-dirty-edge);
+  box-shadow: inset 0 0 0 2px var(--ae-active), inset 4px 0 0 var(--ae-dirty-edge);
 }
 
 .ae-fill {
@@ -523,7 +576,7 @@
   z-index: 3;
   width: 9px;
   height: 9px;
-  background: var(--ae-select-edge);
+  background: var(--ae-active);
   border: 1px solid var(--ae-bg);
   cursor: crosshair;
 }
@@ -534,9 +587,13 @@
   font: inherit;
   color: var(--ae-text);
   background: var(--ae-bg);
-  border: 2px solid var(--ae-select-edge);
+  border: 2px solid var(--ae-active);
   padding: 0 6px;
   outline: none;
+  resize: none;
+  overflow: hidden;
+  white-space: pre;
+  line-height: 22px;
 }
 
 .ae-clip {
@@ -580,6 +637,10 @@
   box-shadow: var(--ae-shadow);
 }
 
+.ae-toast.info {
+  border-left: 4px solid var(--ae-select-edge);
+}
+
 .ae-toast.ok {
   border-left: 4px solid var(--ae-ok);
 }
@@ -608,6 +669,7 @@
   border-radius: 8px;
   background: var(--ae-surface);
   border: 1px solid var(--ae-border);
+  border-top: 4px solid var(--ae-accent);
   box-shadow: var(--ae-shadow);
 }
 

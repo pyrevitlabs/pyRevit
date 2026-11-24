@@ -118,4 +118,15 @@
     <sys:String x:Key="transaction_layout">属性编辑器：更改明细表的列</sys:String>
     <sys:String x:Key="err_other_document">当前活动的是另一个项目。请激活打开此编辑器时所用的项目。</sys:String>
     <sys:String x:Key="err_not_committed">Revit 没有保留此更改。</sys:String>
+    <sys:String x:Key="ui_replace_session">已打开的属性编辑器有 {0} 项未写入的编辑。要打开新的编辑器并放弃它们吗？</sys:String>
+    <sys:String x:Key="ui_request_timeout">Revit 未能及时响应。请点击“从 Revit 读取”查看模型的当前状态。</sys:String>
+    <sys:String x:Key="err_kind_differs">此单元格的值类型与该列其余单元格不同，无法在此编辑。</sys:String>
+    <sys:String x:Key="err_spec_differs">此单元格的单位与该列不同。请将单位切换为“带符号”后再编辑。</sys:String>
+    <sys:String x:Key="err_refused">Revit 拒绝了此更改：{0}</sys:String>
+    <sys:String x:Key="err_owned_by">此图元已被 {0} 借用。</sys:String>
+    <sys:String x:Key="err_out_of_date">此图元已在中心模型中更改。请先重新载入最新内容。</sys:String>
+    <sys:String x:Key="err_empty_selection">Revit 中未选择任何内容。</sys:String>
+    <sys:String x:Key="err_schedule_missing">该明细表已不存在。</sys:String>
+    <sys:String x:Key="tokens_yes">是;真;true;1;x</sys:String>
+    <sys:String x:Key="tokens_no">否;假;false;0</sys:String>
 </ResourceDictionary>

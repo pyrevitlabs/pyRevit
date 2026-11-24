@@ -118,4 +118,15 @@
     <sys:String x:Key="transaction_layout">Attribute Editor: change schedule columns</sys:String>
     <sys:String x:Key="err_other_document">Another project is active now. Activate the project this editor was opened for.</sys:String>
     <sys:String x:Key="err_not_committed">Revit did not keep this change.</sys:String>
+    <sys:String x:Key="ui_replace_session">The open Attribute Editor has {0} unsent edits. Open a new one and discard them?</sys:String>
+    <sys:String x:Key="ui_request_timeout">Revit did not answer in time. Use Pull to see what the model holds now.</sys:String>
+    <sys:String x:Key="err_kind_differs">This cell holds another kind of value than the rest of the column, so it cannot be edited here.</sys:String>
+    <sys:String x:Key="err_spec_differs">This cell has a different unit than the column. Switch the units to “With symbol” to edit it.</sys:String>
+    <sys:String x:Key="err_refused">Revit refused the change: {0}</sys:String>
+    <sys:String x:Key="err_owned_by">This element is checked out by {0}.</sys:String>
+    <sys:String x:Key="err_out_of_date">This element changed in the central model. Reload the latest changes first.</sys:String>
+    <sys:String x:Key="err_empty_selection">Nothing is selected in Revit.</sys:String>
+    <sys:String x:Key="err_schedule_missing">The schedule no longer exists.</sys:String>
+    <sys:String x:Key="tokens_yes">yes;y;true;1;x</sys:String>
+    <sys:String x:Key="tokens_no">no;n;false;0</sys:String>
 </ResourceDictionary>
