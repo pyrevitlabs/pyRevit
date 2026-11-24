@@ -415,6 +415,14 @@ class DedupTests(unittest.TestCase):
         form.checkbox_click(sender, None)
         self.assertEqual([False, True, False], [i.IsSelected for i in form._items])
 
+    def test_uncheck_all_only_affects_visible_rows(self):
+        form = self._form()
+        form.check_all(None, None)
+        form._refresh_list(search_text="Mark")
+        form.uncheck_all(None, None)
+        self.assertEqual([False, False, True], [i.IsSelected for i in form._items])
+        self.assertTrue(form.pasteSingleBtn.IsEnabled)
+
     def test_paste_buttons_follow_checked_state(self):
         form = self._form()
         self.assertFalse(form.pasteSingleBtn.IsEnabled)
