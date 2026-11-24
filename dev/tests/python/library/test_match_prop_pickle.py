@@ -39,6 +39,26 @@ class _StorageType(object):
         raise TypeError("cannot pickle 'StorageType' object")
 
 
+def _clr_deserialize(type_name, text):
+    return _Int64Like(int(text))
+
+
+_clr_deserialize.__module__ = "clr"
+_clr_deserialize.__qualname__ = "Deserialize"
+_clr_deserialize.__name__ = "Deserialize"
+
+
+class _Int64Like(object):
+    def __init__(self, number):
+        self._number = number
+
+    def __int__(self):
+        return self._number
+
+    def __reduce__(self):
+        return (_clr_deserialize, ("System.Int64", str(self._number)))
+
+
 for _name in ("Integer", "Double", "String", "ElementId"):
     setattr(_StorageType, _name, _StorageType(_name))
 
@@ -91,6 +111,26 @@ class PropKeyValuePickleTests(unittest.TestCase):
         )
         self.assertEqual(restored[0].categories, [])
         self.assertIs(original.datatype, _StorageType.Double)
+
+    def test_net_numeric_value_is_stored_as_plain_int(self):
+        """An Int64-like value must not pickle as a clr reference."""
+        clr_stub = types.ModuleType("clr")
+        clr_stub.Deserialize = _clr_deserialize
+        sys.modules["clr"] = clr_stub
+        try:
+            original = self.prop_key_value(
+                name="Base Constraint",
+                datatype=_StorageType.ElementId,
+                value=_Int64Like(593176),
+                istype=False,
+            )
+            payload = pickle.dumps(("Elements", [original]), CROSS_ENGINE_PROTOCOL)
+        finally:
+            del sys.modules["clr"]
+        self.assertNotIn(b"clr", payload)
+        restored = pickle.loads(payload)[1][0]
+        self.assertEqual(593176, restored.value)
+        self.assertIs(type(restored.value), int)
 
 
 if __name__ == "__main__":

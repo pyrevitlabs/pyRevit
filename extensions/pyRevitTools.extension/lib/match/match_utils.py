@@ -67,9 +67,19 @@ class PropKeyValue(object):
         return str(self.__dict__)
 
     def __getstate__(self):
-        """Return a picklable state; the .NET StorageType is stored by name."""
+        """Return a state of plain Python values readable by every engine.
+
+        The .NET StorageType is stored by name and a .NET numeric value, such
+        as the Int64 of an ElementId on IronPython 2.7, is stored as an int.
+        """
         state = dict(self.__dict__)
         state["datatype"] = self.datatype.ToString()
+        value = state["value"]
+        if type(value).__module__ not in ("builtins", "__builtin__"):
+            try:
+                state["value"] = int(value)
+            except (TypeError, ValueError):
+                state["value"] = str(value)
         return state
 
     def __setstate__(self, state):
