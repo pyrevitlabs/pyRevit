@@ -48,7 +48,9 @@ def remember(src_props):
 # ── Shift+Click: open modeless recall window ─────────────────────────────────
 if EXEC_PARAMS.config_mode:
     target_type, recalled_props = recall()
-    RecallWindow(target_type, recalled_props, MEMFILE).Show()
+    recall_window = RecallWindow(target_type, recalled_props, MEMFILE)
+    recall_window.recall_logger = logger
+    recall_window.Show()
     script.exit()
 
 # ── Normal click ─────────────────────────────────────────────────────────────
