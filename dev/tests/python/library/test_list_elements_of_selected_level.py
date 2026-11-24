@@ -1,6 +1,7 @@
 """Regression for #4178: List Elements Of Selected Level never hashes an ElementId."""
 
 import ast
+import functools
 from collections import defaultdict
 from pathlib import Path
 import sys
@@ -27,15 +28,15 @@ NEEDED = ("group_elements_by_level", "main")
 class _UnhashableId(object):
     """ElementId whose hash code is -1, which CPython rejects."""
 
-    def __init__(self, value):
-        self.Value = value
-        self.IntegerValue = value
+    def __init__(self, attribute, value):
+        self._attribute = attribute
+        setattr(self, attribute, value)
 
     def __hash__(self):
         raise SystemError("hash code -1")
 
     def __eq__(self, other):
-        return self.Value == other.Value
+        return getattr(self, self._attribute) == getattr(other, self._attribute)
 
 
 def _is_needed(node):
@@ -50,7 +51,7 @@ def _is_needed(node):
     )
 
 
-def _load():
+def _load(attribute):
     tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
     tree.body = [node for node in tree.body if _is_needed(node)]
     reported = []
@@ -71,7 +72,9 @@ def _load():
     }
     pyrevit_stub = SimpleNamespace(
         compat=SimpleNamespace(
-            get_elementid_value_func=lambda: lambda element_id: element_id.Value
+            get_elementid_value_func=lambda: (
+                lambda element_id: getattr(element_id, attribute)
+            )
         )
     )
     with mock.patch.dict(sys.modules, {"pyrevit": pyrevit_stub}):
@@ -84,13 +87,19 @@ class LevelGroupingTests(unittest.TestCase):
     """Grouping and lookup by level must work when ElementId cannot be hashed."""
 
     def test_elements_are_reported_under_their_level(self):
-        """Each level reports only its own elements."""
-        namespace, elements, levels, reported = _load()
-        level_a = SimpleNamespace(Id=_UnhashableId(10), Name="A")
-        level_b = SimpleNamespace(Id=_UnhashableId(20), Name="B")
-        on_a = SimpleNamespace(LevelId=_UnhashableId(10))
-        on_b = SimpleNamespace(LevelId=_UnhashableId(20))
-        unleveled = SimpleNamespace(LevelId=_UnhashableId(-1))
+        """Each level reports only its own elements, on old and new id APIs."""
+        for attribute in ("IntegerValue", "Value"):
+            with self.subTest(attribute=attribute):
+                self._assert_grouping(attribute)
+
+    def _assert_grouping(self, attribute):
+        namespace, elements, levels, reported = _load(attribute)
+        make_id = functools.partial(_UnhashableId, attribute)
+        level_a = SimpleNamespace(Id=make_id(10), Name="A")
+        level_b = SimpleNamespace(Id=make_id(20), Name="B")
+        on_a = SimpleNamespace(LevelId=make_id(10))
+        on_b = SimpleNamespace(LevelId=make_id(20))
+        unleveled = SimpleNamespace(LevelId=make_id(-1))
         elements.extend([on_a, on_b, on_a, unleveled])
         levels.extend([level_a, level_b])
 
