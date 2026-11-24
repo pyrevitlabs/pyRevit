@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_category">유형 카테고리 선택:</sys:String>
+    <sys:String x:Key="graphics_styles">그래픽 스타일: {}</sys:String>
+    <sys:String x:Key="fill_patterns">채우기 패턴</sys:String>
+    <sys:String x:Key="area_schemes">면적 구성표</sys:String>
+    <sys:String x:Key="line_styles">선 스타일</sys:String>
+    <sys:String x:Key="no_types">유형을 찾을 수 없습니다.</sys:String>
+</ResourceDictionary>

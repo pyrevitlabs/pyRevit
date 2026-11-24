@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_category">选择类型类别：</sys:String>
+    <sys:String x:Key="graphics_styles">图形样式：{}</sys:String>
+    <sys:String x:Key="fill_patterns">填充样式</sys:String>
+    <sys:String x:Key="area_schemes">面积方案</sys:String>
+    <sys:String x:Key="line_styles">线样式</sys:String>
+    <sys:String x:Key="no_types">未找到类型。</sys:String>
+</ResourceDictionary>

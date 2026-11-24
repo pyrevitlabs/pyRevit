@@ -8,34 +8,12 @@ title:
   de_de: Wähle Element Typen aus
   pt_br: Selecionar Tipos de Elemento
 tooltip:
-  en_us: >
-    This tool allows you to select ElementTypes of a specified category.
-    Note:  ElementTypes aren't identified in the Revit UI when selected.  Meaning they are visible in the filter window of Revit,  but there is no way to know if it is an Element or an ElementType
-    as Revit displays the Category of the said Element or ElementType.
-  ko: "지정된 카테고리의 요소 유형을 선택할 수 있습니다. 참고: 선택 시 Revit UI에서 요소 유형이 식별되지 않습니다. Revit의 필터 창에는 표시되지만 요소인지 요소 유형인지 구별할 수 없습니다."
-  fr_fr: >
-    Cet outil vous permet de sélectionner les ElementTypes d'une catégorie spécifiée.
-    Note:
-    Les ElementTypes ne sont pas identifiés dans l'interface utilisateur de Revit lorsqu'ils sont sélectionnés.  Cela signifie qu'ils sont visibles dans la fenêtre de filtre de Revit,  mais il n'y a aucun moyen de savoir s'il s'agit d'un Element ou d'un ElementType
-    car Revit affiche la Catégorie de l'Element ou de l'ElementType en question.
-  ru: >
-    Этот инструмент позволяет выбрать ElementTypes указанной категории.
-    Примечание:
-    ElementTypes не идентифицируются в пользовательском интерфейсе Revit при выборе.  Это означает, что они видны в окне фильтра Revit,  но нет способа узнать, является ли это элементом или ElementType
-    так как Revit отображает категорию указанного элемента или ElementType.
-  chinese_s: 此工具允许您选择指定类别的图元类型。注意：选择图元类型时，Revit 用户界面不会进行标识。这意味着它们会显示在 Revit 的过滤器窗口中，但由于 Revit 仅显示该图元或图元类型的类别，因此无法区分选中的是图元还是图元类型
-  es_es: >
-    Esta herramienta le permite seleccionar ElementTypes de una categoría especificada.
-    Nota:
-    Los ElementTypes no se identifican en la interfaz de usuario de Revit cuando se seleccionan.  Esto significa que son visibles en la ventana de filtro de Revit,  pero no hay forma de saber si es un Elemento o un ElementType
-    ya que Revit muestra la Categoría del Elemento o ElementType en cuestión.
-  de_de: >
-    Mit diesem Tool können Sie ElementTypes einer bestimmten Kategorie auswählen.
-    Hinweis:
-    ElementTypes werden in der Revit-Benutzeroberfläche nicht identifiziert, wenn sie ausgewählt werden.  Das bedeutet, dass sie im Filterfenster von Revit sichtbar sind,  aber es gibt keine Möglichkeit zu wissen, ob es sich um ein Element oder einen ElementType handelt
-    da Revit die Kategorie des betreffenden Elements oder Elementtyps anzeigt.
-  pt_br: >-
-    Esta ferramenta permite selecionar Tipos de Elemento de uma categoria especificada. 
-    Nota: Tipos de Elemento não são identificados na interface do usuário do Revit quando selecionados. 
-    Isso significa que eles são visíveis na janela de filtro do Revit, mas não há como saber se é um 
-    Elemento ou um Tipo de Elemento, pois o Revit exibe a Categoria do referido Elemento ou Tipo de Elemento.
+  en_us: Select all types of one family, all graphics styles of one category, or all fill patterns, area schemes or line styles in the project. A window asks what to select. Revit does not mark selected types as types, so they look like instances in the selection.
+  ko: 프로젝트에서 한 패밀리의 모든 유형, 한 카테고리의 모든 그래픽 스타일, 또는 모든 채우기 패턴, 면적 구성표, 선 스타일을 선택합니다. 창에서 선택할 대상을 고릅니다. Revit은 선택한 유형을 유형으로 표시하지 않으므로 선택 항목에서 인스턴스처럼 보입니다.
+  fr_fr: |-
+    Sélectionne dans le projet tous les types d'une famille, tous les styles graphiques d'une catégorie, ou tous les motifs de remplissage, schémas de surface ou styles de ligne. Une fenêtre demande quoi sélectionner. Revit n'indique pas que les types sélectionnés sont des types : ils ressemblent à des instances dans la sélection.
+  ru: Выделяет в проекте все типоразмеры одного семейства, все стили графики одной категории либо все узоры заливки, схемы площадей или стили линий. В окне нужно выбрать, что выделить. Revit не помечает выбранные типоразмеры как типы, поэтому в выборке они выглядят как экземпляры.
+  chinese_s: 选择项目中某个族的所有类型、某一类别的所有图形样式，或所有填充样式、面积方案或线样式。会弹出窗口让您选择要选取的内容。Revit 不会将选中的类型标识为类型，因此它们在选择中看起来像实例。
+  es_es: Selecciona en el proyecto todos los tipos de una familia, todos los estilos de gráficos de una categoría, o todos los patrones de relleno, esquemas de áreas o estilos de línea. Una ventana pregunta qué seleccionar. Revit no marca los tipos seleccionados como tipos, así que parecen instancias en la selección.
+  de_de: Wählt im Projekt alle Typen einer Familie, alle Grafikstile einer Kategorie oder alle Füllmuster, Flächenschemata oder Linienstile aus. Ein Fenster fragt, was ausgewählt werden soll. Revit kennzeichnet ausgewählte Typen nicht als Typen, sie sehen in der Auswahl wie Exemplare aus.
+  pt_br: Seleciona no projeto todos os tipos de uma família, todos os estilos gráficos de uma categoria, ou todos os padrões de preenchimento, esquemas de área ou estilos de linha. Uma janela pergunta o que selecionar. O Revit não marca os tipos selecionados como tipos, por isso eles parecem instâncias na seleção.
