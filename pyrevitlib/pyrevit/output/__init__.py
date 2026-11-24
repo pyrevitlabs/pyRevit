@@ -363,8 +363,11 @@ class PyRevitOutputWindow(object):
         happens.
 
         Note:
-            Output printed after this call does not scroll the window back to
-            the end until the user scrolls there.
+            Output printed after this call keeps the window at the top, unless
+            the page is short enough that the top is within 50 pixels of the
+            bottom, where the window still follows new prints. Output printed
+            while the window is frozen stays hidden until ``unfreeze()``, so
+            unfreeze before scrolling.
 
         Examples:
             ```python

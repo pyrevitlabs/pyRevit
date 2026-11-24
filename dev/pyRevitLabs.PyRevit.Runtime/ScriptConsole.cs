@@ -750,12 +750,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// <summary>
-        /// Scrolls the document to its first line after draining buffered entries, so the
-        /// scroll cannot run before the last append and be undone by the auto-follow of
-        /// <see cref="BuildInsertEntriesJs"/>. Blocks until the document is ready.
+        /// Scrolls the document to its first line after the buffered entries, so the scroll
+        /// cannot run before the last append and be undone by the auto-follow of
+        /// <see cref="BuildInsertEntriesJs"/>.
         /// </summary>
+        /// <remarks>
+        /// Never blocks: if the document is not ready yet (session load), the entries and the
+        /// scroll stay queued and run in that order once it is. While the window is frozen,
+        /// output stays hidden until <see cref="Unfreeze"/>, so unfreeze before scrolling.
+        /// </remarks>
         public void ScrollToTop() {
-            EnsureDocumentReadyBlocking();
+            FlushPendingEntries();
             PostScriptWhenReady("window.scrollTo(0, 0);");
         }
 

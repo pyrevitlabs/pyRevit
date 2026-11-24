@@ -51,13 +51,18 @@ public class ScriptConsoleSourceTests {
         Assert.Contains("QueueFlush();", unfreeze);
     }
 
-    /// <summary>Scrolling to the top waits for the document and drains buffered entries before posting.</summary>
+    /// <summary>Scrolling to the top drains buffered entries without blocking, then posts the scroll to the top.</summary>
     [Fact]
-    public void ScrollToTop_DrainsBufferedEntriesBeforeScrolling() {
+    public void ScrollToTop_DrainsBufferedEntriesWithoutBlockingBeforeScrolling() {
         var body = CSharpSource.MemberBody(Source, "public void ScrollToTop()");
-        var drain = body.IndexOf("EnsureDocumentReadyBlocking();", StringComparison.Ordinal);
+        var drain = body.IndexOf("FlushPendingEntries();", StringComparison.Ordinal);
         var scroll = body.IndexOf("PostScriptWhenReady(", StringComparison.Ordinal);
         Assert.True(drain >= 0 && scroll > drain);
+        Assert.DoesNotContain("Blocking", body);
+
+        var declaration = Source.IndexOf("public void ScrollToTop()", StringComparison.Ordinal);
+        var end = Source.IndexOf("\n        }", declaration, StringComparison.Ordinal);
+        Assert.Contains("PostScriptWhenReady(\"window.scrollTo(0, 0);\");", Source[declaration..end]);
     }
 
     /// <summary>The scripting entry point flushes the print stream before asking the window to scroll.</summary>

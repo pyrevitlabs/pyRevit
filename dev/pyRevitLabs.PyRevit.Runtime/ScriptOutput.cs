@@ -530,8 +530,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void focus() { window.FocusOutput(); }
 
         /// <summary>
-        /// Scrolls the output window to its first line once everything printed so far is
-        /// rendered. Output printed afterwards no longer follows the end of the window.
+        /// Scrolls the output window to its first line after everything printed so far.
+        /// Output printed afterwards keeps the window at the top unless the top is within 50
+        /// pixels of the bottom of a short page. Never blocks, so it is safe during session load.
         /// </summary>
         public void scroll_to_top() {
             output_stream.Flush();
