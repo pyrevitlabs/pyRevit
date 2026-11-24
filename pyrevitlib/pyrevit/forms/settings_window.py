@@ -703,10 +703,12 @@ class SettingsWindow(forms.WPFWindow):
                 value = control.SelectedItem
             elif setting_type == "slider":
                 value = control.Value  # float from WPF Slider
-            else:
+            elif setting_type == "float":
                 value = _setting_value_from_text(
                     control.Text, self._original_values.get(name)
                 )
+            else:
+                value = control.Text
 
             is_valid, validated_value, error_msg = self._validate_setting(
                 setting, value
