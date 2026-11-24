@@ -20,6 +20,7 @@ namespace pyRevitLabs.Common.Tests {
         [TestCase("https://user:ab/cd@github.com/org/repo.git", "https://***@github.com/org/repo.git")]
         [TestCase("https://user:p w@d/e@127.0.0.1:1/x.git", "https://***@127.0.0.1:1/x.git")]
         [TestCase("https://user:p/w@d/e@127.0.0.1:1/x.git", "https://***@127.0.0.1:1/x.git")]
+        [TestCase("https://user:dummy\npw/x@host/r.git", "https://***@host/r.git")]
         [TestCase("https://host/a@b", "https://host/a@b")]
         [TestCase("https://github.com/org/repo.git", "https://github.com/org/repo.git")]
         [TestCase(@"C:\repos\pyrevit", @"C:\repos\pyrevit")]
