@@ -249,8 +249,9 @@ def get_exception_message(ex):
     """Return an exception's message without its .NET stack trace.
 
     Under CPython (pythonnet) ``str()`` of a .NET exception is built from
-    ``Exception.ToString()`` and includes the stack trace. Inner exceptions are
-    not included. Non-.NET exceptions give ``str(ex)``.
+    ``Exception.ToString()`` and includes the stack trace. This helper does not
+    append inner exceptions, but keeps any inner error text already in
+    ``Message``. Non-.NET exceptions give ``str(ex)``.
     """
     if hasattr(ex, "Message") and hasattr(ex, "GetType"):
         return safe_strtype(ex.Message or "")
