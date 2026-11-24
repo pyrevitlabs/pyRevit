@@ -2,9 +2,10 @@
 from pyrevit import forms, revit
 from pyrevit import DB, UI
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import get_elementid_value_func, get_elementid_from_value_func
 
 get_elementid_value = get_elementid_value_func()
+get_elementid_from_value = get_elementid_from_value_func()
 
 try:
     PLAIN_TYPES = (bool, int, long, float, str, unicode, type(None))
@@ -117,7 +118,7 @@ def match_prop(dest_inst, dest_type, src_props):
                     dparam.Set(pkv.value or 0.0)
                 elif dparam.StorageType == DB.StorageType.ElementId:
                     if not isinstance(pkv.value, DB.ElementId):
-                        dparam.Set(DB.ElementId(pkv.value))
+                        dparam.Set(get_elementid_from_value(pkv.value))
                     else:
                         dparam.Set(pkv.value)
                 else:

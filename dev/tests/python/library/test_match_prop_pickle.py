@@ -138,5 +138,69 @@ class PropKeyValuePickleTests(unittest.TestCase):
         self.assertIs(type(restored.value), int)
 
 
+class _AmbiguousElementId(object):
+    def __init__(self, value):
+        if not isinstance(value, _Int64Like):
+            raise TypeError("Multiple targets could match: ElementId(Int64)")
+        self.value = int(value)
+
+
+class _Parameter(object):
+    StorageType = _StorageType.ElementId
+
+    def __init__(self):
+        self.applied = None
+
+    def Set(self, value):
+        self.applied = value
+
+
+class _Target(object):
+    def __init__(self, parameter):
+        self._parameter = parameter
+
+    def LookupParameter(self, name):
+        return self._parameter
+
+
+def _load_match_prop():
+    tree = ast.parse(MATCH_UTILS.read_bytes())
+    node = next(
+        n
+        for n in tree.body
+        if isinstance(n, ast.FunctionDef) and n.name == "match_prop"
+    )
+    module = types.ModuleType(MODULE_NAME)
+    module.DB = types.SimpleNamespace(
+        StorageType=_StorageType, ElementId=_AmbiguousElementId
+    )
+    module.get_logger = lambda name: types.SimpleNamespace(
+        debug=lambda *args: None, warning=lambda *args: None
+    )
+    module.get_elementid_from_value = lambda value: _AmbiguousElementId(
+        _Int64Like(value)
+    )
+    code = ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[]))
+    exec(compile(code, str(MATCH_UTILS), "exec"), module.__dict__)
+    return module.match_prop
+
+
+@pytest.mark.regression
+class MatchPropElementIdTests(unittest.TestCase):
+    """#4183: a loaded plain int must be turned into an ElementId unambiguously."""
+
+    def test_elementid_row_uses_compat_constructor(self):
+        """The ElementId branch builds the id through the compat function."""
+        parameter = _Parameter()
+        pkv = types.SimpleNamespace(
+            name="Base Constraint",
+            datatype=_StorageType.ElementId,
+            value=593176,
+            istype=False,
+        )
+        _load_match_prop()(_Target(parameter), None, [pkv])
+        self.assertEqual(593176, parameter.applied.value)
+
+
 if __name__ == "__main__":
     unittest.main()
