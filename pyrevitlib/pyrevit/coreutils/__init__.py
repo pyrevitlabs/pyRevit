@@ -246,22 +246,15 @@ class SafeDict(dict):
 
 
 def get_exception_message(ex):
-    """Return the user-facing message of an exception.
+    """Return an exception's message without its .NET stack trace.
 
     Under CPython (pythonnet) ``str()`` of a .NET exception is built from
-    ``Exception.ToString()`` and includes the stack trace. For .NET exceptions
-    this returns only ``Exception.Message``; any other exception gives
-    ``str(ex)``.
-
-    Args:
-        ex (Exception): caught exception, .NET or Python
-
-    Returns:
-        str: exception message without a stack trace
+    ``Exception.ToString()`` and includes the stack trace. Inner exceptions are
+    not included. Non-.NET exceptions give ``str(ex)``.
     """
     if hasattr(ex, "Message") and hasattr(ex, "GetType"):
-        return safe_strtype(ex.Message)
-    return safe_strtype(ex)
+        return safe_strtype(ex.Message or "")
+    return str(ex)
 
 
 def get_all_subclasses(parent_classes):

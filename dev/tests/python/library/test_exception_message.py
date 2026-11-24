@@ -1,8 +1,10 @@
-"""Check coreutils.get_exception_message without Revit."""
+"""Check coreutils.get_exception_message without Revit (regression for #4182)."""
 
 import ast
 from pathlib import Path
 import unittest
+
+import pytest
 
 
 TEST_ENVIRONMENT = "HostFree"
@@ -13,14 +15,14 @@ COREUTILS = (
 )
 
 
-def _load_get_exception_message():
+def _load_get_exception_message(safe_strtype=str):
     tree = ast.parse(COREUTILS.read_text(encoding="utf-8"))
     node = next(
         n
         for n in tree.body
         if isinstance(n, ast.FunctionDef) and n.name == "get_exception_message"
     )
-    namespace = {"safe_strtype": str}
+    namespace = {"safe_strtype": safe_strtype}
     exec(
         compile(ast.Module(body=[node], type_ignores=[]), str(COREUTILS), "exec"),
         namespace,
@@ -40,6 +42,7 @@ class _DotNetException(Exception):
         )
 
 
+@pytest.mark.regression
 class GetExceptionMessageTests(unittest.TestCase):
     def setUp(self):
         self.get_exception_message = _load_get_exception_message()
@@ -53,6 +56,23 @@ class GetExceptionMessageTests(unittest.TestCase):
         self.assertEqual(
             self.get_exception_message(ValueError("bad value")), "bad value"
         )
+
+    def test_dotnet_exception_with_empty_message_returns_empty_string(self):
+        ex = _DotNetException()
+        ex.Message = ""
+        self.assertEqual(self.get_exception_message(ex), "")
+
+    def test_dotnet_exception_with_none_message_returns_empty_string(self):
+        ex = _DotNetException()
+        ex.Message = None
+        self.assertEqual(self.get_exception_message(ex), "")
+
+    def test_python_exception_does_not_use_safe_strtype(self):
+        def failing_safe_strtype(value):
+            raise UnicodeDecodeError("ascii", b"x", 0, 1, "ordinal")
+
+        get_message = _load_get_exception_message(failing_safe_strtype)
+        self.assertEqual(get_message(ValueError("caf" + chr(233))), "caf" + chr(233))
 
 
 if __name__ == "__main__":
