@@ -8,11 +8,23 @@ title:
   de_de: Speicher als Auswahlsatz speichern
   pt_br: Salvar Memória Como Seleção
 tooltip:
-  en_us: Saves current selection memory as a Selection Filter
-  ko: 현재 선택 메모리를 선택 필터로 저장합니다
-  fr_fr: Enregistre la mémoire de sélection actuelle en tant que filtre de sélection
-  ru: Сохраняет текущую выделенную память в качестве фильтра выделения.
-  chinese_s: 将当前选择内存保存为一个选择过滤器
-  es_es: Guarda la memoria de selección actual como un Filtro de selección
-  de_de: Speichert den Inhalt des aktuellen Auswahl Speichers als einen Auswahlsatz
-  pt_br: Salva a memória de seleção atual como um Filtro de Seleção
+  en_us: |-
+    Save the selection memory of the active document as a new selection filter named SavedSelection_<project name>_<time stamp>. Elements that no longer exist are left out.
+  de_de: |-
+    Speichert den Auswahlspeicher des aktiven Dokuments als neuen Auswahlsatz mit dem Namen SavedSelection_<Projektname>_<Zeitstempel>. Elemente, die es nicht mehr gibt, werden ausgelassen.
+  fr_fr: |-
+    Enregistre la mémoire de sélection du document actif comme nouveau filtre de sélection nommé SavedSelection_<nom du projet>_<horodatage>. Les éléments qui n'existent plus sont omis.
+  es_es: |-
+    Guarda la memoria de selección del documento activo como un nuevo filtro de selección llamado SavedSelection_<nombre del proyecto>_<marca de tiempo>. Los elementos que ya no existen se omiten.
+  pt_br: |-
+    Salva a memória de seleção do documento ativo como um novo filtro de seleção chamado SavedSelection_<nome do projeto>_<carimbo de data/hora>. Os elementos que não existem mais são omitidos.
+  ru: |-
+    Сохраняет память выбора активного документа как новый фильтр выбора с именем SavedSelection_<имя проекта>_<метка времени>. Элементы, которых больше нет, не включаются.
+  chinese_s: |-
+    将活动文档的选择内存保存为名为 SavedSelection_<项目名称>_<时间戳> 的新选择过滤器。已不存在的图元将被忽略。
+  ko: |-
+    활성 문서의 선택 메모리를 SavedSelection_<프로젝트 이름>_<타임스탬프> 이름의 새 선택 필터로 저장합니다. 더 이상 존재하지 않는 요소는 제외됩니다.
+context:
+  any:
+    - doc-project
+    - doc-family
