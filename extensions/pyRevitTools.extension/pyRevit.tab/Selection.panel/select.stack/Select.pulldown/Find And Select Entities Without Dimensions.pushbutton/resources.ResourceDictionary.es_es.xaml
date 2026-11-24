@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_category">Buscar elementos sin dimensiones de la categoría:</sys:String>
+    <sys:String x:Key="no_elements">No se encontraron elementos de la categoría {} en la vista activa.</sys:String>
+    <sys:String x:Key="all_dimensioned">Todos los elementos de la categoría {} de la vista activa tienen dimensiones.</sys:String>
+</ResourceDictionary>
