@@ -363,6 +363,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         [TestCase("bin.new", null, true)]
         [TestCase("bin.bak", null, true)]
         [TestCase("bin", null, true)]
+        [TestCase("bin/netfx/engines", null, true)]
         [TestCase("bin/netfx", "pyrevit.exe", false)]
         public void DeployFromRepo_WhenTheKeptFolderHasLocalBinContent_InstallsOnlyWhenThereIsNone(
             string folder,
@@ -406,6 +407,28 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         [Test]
         public void DeployFromRepo_WhenTheKeptFolderIsNotAValidPyRevitClone_RefusesAndDoesNotOfferAResume() {
             var keptClone = CreateKeptClone(out var source, out var dest);
+            Directory.Delete(Path.Combine(keptClone, "pyrevitlib", "pyrevit"), recursive: true);
+            using (var repo = new Repository(keptClone))
+                Commands.Stage(repo, "*");
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new InvalidOperationException("binaries must not be installed");
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
+
+            Assert.That(ex.Message, Does.Contain("not a valid pyRevit clone"));
+            Assert.That(
+                PyRevitClones.DescribeKeptFolderRecovery(keptClone, source, PyRevitLabsConsts.TargetBranch, CloneName),
+                Does.Not.Contain("resumes"));
+        }
+
+        /// <summary>A kept clone nested in another valid clone is judged on its own folder, so an invalid inner clone is not accepted through its parent.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheInvalidKeptCloneIsInsideAValidClone_RefusesAndDoesNotOfferAResume() {
+            var outerSource = CreateSourceRepo("outerSource");
+            var outerDest = Path.Combine(_tempRoot, "outerDest");
+            PyRevitClones.DeployFromRepo("OuterClone", repoUrl: outerSource, destPath: outerDest, installBinaries: false);
+            var nestedDest = Path.Combine(outerDest, "OuterClone", "nested");
+            var keptClone = CreateKeptClone(out var source, out var dest, nestedDest);
             Directory.Delete(Path.Combine(keptClone, "pyrevitlib", "pyrevit"), recursive: true);
             using (var repo = new Repository(keptClone))
                 Commands.Stage(repo, "*");
@@ -796,9 +819,9 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(ex.Message, Does.Contain("pyrevit clones add"));
         }
 
-        private string CreateKeptClone(out string source, out string dest) {
+        private string CreateKeptClone(out string source, out string dest, string destRootPath = null) {
             var sourceRepo = CreateSourceRepo();
-            var destRoot = Path.Combine(_tempRoot, "repoDest");
+            var destRoot = destRootPath ?? Path.Combine(_tempRoot, "repoDest");
             source = sourceRepo;
             dest = destRoot;
             var keptClone = Path.Combine(destRoot, CloneName);

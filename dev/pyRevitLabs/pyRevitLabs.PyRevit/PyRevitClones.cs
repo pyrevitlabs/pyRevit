@@ -354,7 +354,7 @@ namespace pyRevitLabs.PyRevit {
         /// registered at another path as a clone that still opens. A fresh clone, unlike a resume, replaces a
         /// registration of the same name.
         /// A resumed folder is never deleted or reset. Binaries are installed into it only when its
-        /// <c>bin</c>, <c>bin.bak</c> and <c>bin.new</c> folders are all empty or missing, since the install
+        /// <c>bin</c>, <c>bin.bak</c> and <c>bin.new</c> folders hold no file at any depth, since the install
         /// replaces <c>bin</c> and deletes the other two; otherwise the folder is only registered. When installing or
         /// registering fails, a resumed folder is kept as is; a freshly cloned folder is deleted unless only
         /// the binaries are missing.
@@ -982,8 +982,7 @@ namespace pyRevitLabs.PyRevit {
 
         private static bool CanOpenAsClone(string path, string name) {
             try {
-                CreateVerifiedClone(path, name);
-                return true;
+                return CreateVerifiedClone(path, name).ClonePath.IsSamePathAs(path);
             }
             catch (Exception) {
                 return false;
@@ -1167,11 +1166,12 @@ namespace pyRevitLabs.PyRevit {
 
         private static bool HasLocalBinContent(string clonePath) {
             var binPath = Path.Combine(clonePath, "bin");
-            return HasEntries(binPath) || HasEntries(binPath + ".bak") || HasEntries(binPath + ".new");
+            return HasFiles(binPath) || HasFiles(binPath + ".bak") || HasFiles(binPath + ".new");
         }
 
-        private static bool HasEntries(string folderPath) {
-            return Directory.Exists(folderPath) && Directory.EnumerateFileSystemEntries(folderPath).Any();
+        private static bool HasFiles(string folderPath) {
+            return Directory.Exists(folderPath)
+                   && Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories).Any();
         }
 
         private static bool HasBuiltBinaries(string clonePath) {
