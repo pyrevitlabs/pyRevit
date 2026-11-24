@@ -8,12 +8,12 @@ title:
   de_de: Ausgewählte Elemente als anklickbare Links anzeigen
   pt_br: Listar Seleção Como Links Clicáveis
 tooltip:
-  en_us: Lists the selected element ids as clickable links. This is a quick way to go through a series of elements
-  ko: 선택한 요소 ID를 클릭 가능한 링크로 나열합니다. 일련의 요소를 빠르게 탐색하는 방법입니다
-  fr_fr: Répertorie les identifiants d'éléments sélectionnés sous forme de liens cliquables. C'est un moyen rapide de parcourir une série d'éléments
-  ru: Показывает выделенные элементы ввиде ссылок. Это быстрый способ выделять ряд элементов.
-  chinese_s: 将选定图元的ID列为可点击链接。这是快速浏览一系列图元的方法
-  es_es: Lista los IDs de los elementos seleccionados como enlaces clicables. Esta es una forma rápida de revisar una serie de elementos
-  de_de: Die aktuell ausgewählten Elemente werden in einer Konsole aufgelistet. Zu jedem Element Namen wird die Element-ID als anklickbarer Link angezeigt
-  pt_br: Lista os IDs dos elementos selecionados como links clicáveis. Esta é uma maneira rápida de percorrer uma série de elementos
+  en_us: List the selected elements in the output window, sorted by name, each with a clickable element id. Click an id to select or show that element, or click All Elements to select the whole list again.
+  ko: 선택한 요소를 이름순으로 정렬하여 출력 창에 나열하며, 각 요소에는 클릭 가능한 요소 ID가 표시됩니다. ID를 클릭하면 해당 요소를 선택하거나 표시하고, "모든 요소"를 클릭하면 전체 목록을 다시 선택합니다.
+  fr_fr: Liste les éléments sélectionnés dans la fenêtre de sortie, triés par nom, chacun avec un identifiant cliquable. Cliquez sur un identifiant pour sélectionner ou afficher cet élément, ou sur « Tous les éléments » pour sélectionner à nouveau toute la liste.
+  ru: Выводит выделенные элементы в окне вывода, отсортированные по имени, каждый с кликабельным идентификатором. Щёлкните идентификатор, чтобы выделить или показать элемент, или «Все элементы», чтобы снова выделить весь список.
+  chinese_s: 在输出窗口中按名称排序列出所选图元，每个图元带有可点击的图元 ID。点击某个 ID 可选择或显示该图元，点击“所有图元”可重新选择整个列表。
+  es_es: Lista los elementos seleccionados en la ventana de salida, ordenados por nombre, cada uno con un ID clicable. Haga clic en un ID para seleccionar o mostrar ese elemento, o en «Todos los elementos» para volver a seleccionar toda la lista.
+  de_de: Listet die ausgewählten Elemente im Ausgabefenster nach Name sortiert auf, jeweils mit einer anklickbaren Element-ID. Ein Klick auf eine ID wählt das Element aus oder zeigt es an, ein Klick auf „Alle Elemente“ wählt die ganze Liste erneut aus.
+  pt_br: Lista os elementos selecionados na janela de saída, ordenados por nome, cada um com um ID clicável. Clique em um ID para selecionar ou mostrar esse elemento, ou em "Todos os elementos" para selecionar toda a lista novamente.
 context: selection
