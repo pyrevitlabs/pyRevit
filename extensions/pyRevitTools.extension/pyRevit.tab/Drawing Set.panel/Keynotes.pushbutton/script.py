@@ -50,7 +50,9 @@ logger = script.get_logger()
 output = script.get_output()
 
 EM_DASH = b"\xe2\x80\x94".decode("utf-8")
-MIDDOT = b"\xc2\xb7".decode("utf-8")
+MIDDLE_DOT = b"\xc2\xb7".decode("utf-8")
+LEFT_DOUBLE_QUOTE = b"\xe2\x80\x9c".decode("utf-8")
+RIGHT_DOUBLE_QUOTE = b"\xe2\x80\x9d".decode("utf-8")
 
 
 def _resolve_bundle_dir():
@@ -463,7 +465,7 @@ def ui_guard(fn, _logger=logger, _alert=forms.alert):
                         _alert(
                             "Keynote Manager lost its script engine "
                             "(pyRevit recycled it).\n\n"
-                            "The window will close — please reopen it. "
+                            "The window will close " + EM_DASH + " please reopen it. "
                             "If this happens repeatedly, reload pyRevit.",
                             title="Keynote Manager",
                         )
@@ -595,7 +597,7 @@ KEYNOTEMGR_WINDOW_ENVVAR = "KEYNOTEMGR_ACTIVE_WINDOW"
 MAX_KFILE_ATTEMPTS = 5
 MAX_SAVED_EXPANDED = 500
 USAGE_SCOPE_NOTE = (
-    "Usage is checked against keynote tags in THIS project only — other "
+    "Usage is checked against keynote tags in THIS project only " + EM_DASH + " other "
     "projects sharing this keynote file, linked models and un-tagged "
     "element/material keynotes are not visible to this check."
 )
@@ -1063,9 +1065,18 @@ class PastePreviewWindow(forms.WPFWindow):
         if same_file:
             source_name += " " + self._text("SameFileNote", "(same keynote file)")
         self.headerText.Text = (
-            self._text("HeaderInto", "{0} record(s) from “{1}” into “{2}”.").format(
-                len(self._rows), source_name, target_name
-            )
+            self._text(
+                "HeaderInto",
+                "{0} record(s) from "
+                + LEFT_DOUBLE_QUOTE
+                + "{1}"
+                + RIGHT_DOUBLE_QUOTE
+                + " into "
+                + LEFT_DOUBLE_QUOTE
+                + "{2}"
+                + RIGHT_DOUBLE_QUOTE
+                + ".",
+            ).format(len(self._rows), source_name, target_name)
             + "\n"
             + self._text(
                 "HeaderNote",
@@ -1075,8 +1086,9 @@ class PastePreviewWindow(forms.WPFWindow):
         )
         self.footerNote.Text = self._text(
             "FooterNote",
-            "Taking a conflicting row replaces the target's TEXT only — "
-            "its place in the tree is kept.",
+            "Taking a conflicting row replaces the target's TEXT only "
+            + EM_DASH
+            + " its place in the tree is kept.",
         )
         self._build_rows()
         self._update_summary()
@@ -1222,7 +1234,11 @@ class PastePreviewWindow(forms.WPFWindow):
         )
         self.summaryText.Text = self._text(
             "SummaryCounts",
-            "{0} to add " + MIDDOT + " {1} to replace " + MIDDOT + " {2} left alone",
+            "{0} to add "
+            + MIDDLE_DOT
+            + " {1} to replace "
+            + MIDDLE_DOT
+            + " {2} left alone",
         ).format(adds, overs, len(self._rows) - adds - overs)
         self.pasteBtn.IsEnabled = bool(adds or overs)
 
@@ -1609,17 +1625,17 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self.statusRight.Text = (
                 "{} groups".format(len(cats))
                 + " "
-                + MIDDOT
+                + MIDDLE_DOT
                 + " "
                 + "{} keynotes".format(len(knotes))
                 + " "
-                + MIDDOT
+                + MIDDLE_DOT
                 + " "
                 + used
             )
             if len(self._sel_keys) > 1:
                 self.statusRight.Text += (
-                    " " + MIDDOT + " " + "{} selected".format(len(self._sel_keys))
+                    " " + MIDDLE_DOT + " " + "{} selected".format(len(self._sel_keys))
                 )
         except Exception:
             self.statusRight.Text = ""
@@ -1813,9 +1829,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         }
         knote_count = sum(1 for r in rows if not r["is_category"])
         self._hint(
-            "Copied {} — {} keynote(s), {} group(s)".format(
-                ", ".join(root_keys), knote_count, len(rows) - knote_count
-            )
+            "Copied {} ".format(", ".join(root_keys))
+            + EM_DASH
+            + " {} keynote(s), {} group(s)".format(knote_count, len(rows) - knote_count)
         )
 
     def _classify_paste(self, items, target_parent):
@@ -1922,7 +1938,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             alert_db_error(toutex)
             return
         except Exception as ex:
-            alert_db_error(ex, "Paste failed — nothing was written.\n%s" % ex)
+            alert_db_error(
+                ex, "Paste failed " + EM_DASH + " nothing was written.\n" + str(ex)
+            )
             return
 
         # every open project on THIS file now has a stale keynote table;
@@ -2646,10 +2664,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not self._usage_stale:
             return None
         return (
-            "Cannot verify whether '%s' is placed in the model — reading "
+            "Cannot verify whether '"
+            + key
+            + "' is placed in the model "
+            + EM_DASH
+            + " reading "
             "keynote usage from the document failed, so this tool does NOT "
             "know whether any tag references it.\n\n"
-            "Press F5 to refresh first." % key
+            "Press F5 to refresh first."
         )
 
     def _collect_used_ids(self, keys, operation):
@@ -3130,10 +3152,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             # the tree would show blank — disconnect loudly instead.
             self._conn = None
             forms.alert(
-                "The keynote file is missing — renamed or removed by the "
-                "sync client?\n{}\n\nUse Change Keynote File to reconnect.".format(
-                    self._kfile
-                )
+                "The keynote file is missing "
+                + EM_DASH
+                + " renamed or removed by the sync client?\n"
+                + self._kfile
+                + "\n\nUse Change Keynote File to reconnect."
             )
             return []
         try:
@@ -3593,15 +3616,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """Pick any node (category or keynote) as a parent."""
         cats = self.all_categories
         kns = self.all_keynotes
+        separator = " " + EM_DASH + " "
         items = natsorted(
-            ["{} — {}".format(x.key, x.text) for x in cats]
-            + ["{} — {}".format(x.key, x.text) for x in kns],
+            [x.key + separator + x.text for x in cats]
+            + [x.key + separator + x.text for x in kns],
         )
         chosen = forms.SelectFromList.show(
             items, title="Select Parent", multiselect=False, owner=self
         )
         if chosen:
-            return chosen.split(" — ")[0].strip()
+            return chosen.split(separator)[0].strip()
         return None
 
     # =========================================================================
@@ -4298,8 +4322,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             fresh_keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
             forms.alert(
-                "Keynote file is busy — move not applied.\n%s\n\n"
-                "Try the move again." % ex
+                "Keynote file is busy "
+                + EM_DASH
+                + " move not applied.\n"
+                + str(ex)
+                + "\n\nTry the move again."
             )
             return
 
@@ -4472,8 +4499,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception as ex:
             alert_db_error(
                 ex,
-                "Keynote file is busy — nothing was deleted.\n"
-                "%s\n\nPlease try again." % ex,
+                "Keynote file is busy "
+                + EM_DASH
+                + " nothing was deleted.\n"
+                + str(ex)
+                + "\n\nPlease try again.",
             )
             return
 
@@ -4512,7 +4542,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         def _blocked_lines(limit):
             items = list(blocked.items())[:limit]
-            out = "\n  ".join("%s — %s" % (k, why) for k, why in items)
+            out = "\n  ".join(k + " " + EM_DASH + " " + why for k, why in items)
             if len(blocked) > limit:
                 out += "\n  ... and {} more".format(len(blocked) - limit)
             return out
@@ -4560,7 +4590,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             alert_db_error(toutex)
             return
         except Exception as ex:
-            alert_db_error(ex, "Delete failed — nothing was removed.\n%s" % ex)
+            alert_db_error(
+                ex, "Delete failed " + EM_DASH + " nothing was removed.\n" + str(ex)
+            )
             return
 
         self._needs_update = True
@@ -4592,8 +4624,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             db_keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
             forms.alert(
-                "Keynote file is busy — nothing was deleted.\n%s\n\n"
-                "Please try again." % ex
+                "Keynote file is busy "
+                + EM_DASH
+                + " nothing was deleted.\n"
+                + str(ex)
+                + "\n\nPlease try again."
             )
             return
         has_any_children = any(k.parent_key == sel.key for k in db_keynotes)
@@ -4663,8 +4698,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             db_keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
             forms.alert(
-                "Keynote file is busy — re-key not applied.\n%s\n\n"
-                "Please try again." % ex
+                "Keynote file is busy "
+                + EM_DASH
+                + " re-key not applied.\n"
+                + str(ex)
+                + "\n\nPlease try again."
             )
             return
         if any(k.locked for k in db_keynotes if k.parent_key == sel.key):
