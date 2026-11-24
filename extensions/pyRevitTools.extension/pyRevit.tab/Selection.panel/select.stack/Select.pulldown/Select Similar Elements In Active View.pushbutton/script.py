@@ -1,43 +1,48 @@
-"""Selects elements similar to the currently
-selected elements in the active view.
+# -*- coding: utf-8 -*-
+"""Select the elements that share a category with the selected elements.
 
-Shift-Click: select in whole project"""
+Searches the active view, or the whole project on Shift-click.
+"""
 
-# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
-from pyrevit import revit, DB, EXEC_PARAMS
-from pyrevit import forms
-from pyrevit.framework import List
+from pyrevit import forms, script
+from pyrevit import EXEC_PARAMS, revit, DB
+from pyrevit.coreutils import applocales
+from pyrevit.framework import to_clr_list
+
+RESOURCES = script.get_bundle_file("resources.xaml")
 
 
-if not EXEC_PARAMS.config_mode:
-    # ensure active view is a graphical view
-    forms.check_graphicalview(revit.active_view, exitscript=True)
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
-sel_cat_ids = set()
 
-# analyze selection
-selection = revit.get_selection()
-for el in selection:
-    try:
-        sel_cat_ids.add(el.Category.Id)
-    except Exception:
-        continue
+def selected_category_ids():
+    return {
+        element.Category.Id
+        for element in revit.get_selection().elements
+        if element.Category
+    }
 
-if not sel_cat_ids:
-    forms.alert("No suitable elements selected", exitscript=True)
 
-mc_filter = DB.ElementMulticategoryFilter(List[DB.ElementId](sel_cat_ids))
+def main():
+    if not EXEC_PARAMS.config_mode:
+        forms.check_graphicalview(revit.active_view, exitscript=True)
+    category_ids = selected_category_ids()
+    if not category_ids:
+        forms.alert(_t("no_suitable"), exitscript=True)
+    if EXEC_PARAMS.config_mode:
+        collector = DB.FilteredElementCollector(revit.doc)
+    else:
+        collector = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)
+    similar_ids = (
+        collector.WhereElementIsNotElementType()
+        .WherePasses(
+            DB.ElementMulticategoryFilter(to_clr_list(DB.ElementId, category_ids))
+        )
+        .ToElementIds()
+    )
+    revit.get_selection().set_to(similar_ids)
 
-# collect from whole model
-if EXEC_PARAMS.config_mode:
-    cl = DB.FilteredElementCollector(revit.doc).WhereElementIsNotElementType()
-# collect from a view
-else:
-    cl = DB.FilteredElementCollector(
-        revit.doc, revit.active_view.Id
-    ).WhereElementIsNotElementType()
 
-match_list = cl.WherePasses(mc_filter).ToElementIds()
-
-selection.set_to(match_list)
-revit.uidoc.RefreshActiveView()
+if __name__ == "__main__":
+    main()
