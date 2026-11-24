@@ -197,6 +197,7 @@ class _Forms(object):
         self.switches = switches
         self.switch_arguments = None
         self.message = None
+        self.title = None
 
     @property
     def SelectFromList(self):
@@ -207,6 +208,7 @@ class _Forms(object):
         def show(context, **kwargs):
             self.switch_arguments = kwargs["switches"]
             self.message = kwargs["message"]
+            self.title = kwargs["title"]
             return self.choice, self.switches
 
         return SimpleNamespace(show=show)
@@ -361,11 +363,14 @@ class ProjectDialogTests(unittest.TestCase):
                 self.assertEqual([expected], calls)
 
     def test_confirmation_message_names_the_selected_font(self):
-        forms = _Forms("Tahoma", None, {})
+        forms = _Forms("Times New Roman", None, {})
 
         _run_project_main(forms, [])
 
-        self.assertIn("Tahoma", forms.message)
+        self.assertIn("Times New Roman", forms.message)
+        self.assertNotIn(chr(10), forms.message)
+        self.assertLess(len(forms.message), 40)
+        self.assertIn("schedules and tags", forms.title)
 
     def test_cancel_in_either_step_exits_quietly(self):
         for forms in (_Forms(None, None, {}), _Forms("Arial", None, {})):
