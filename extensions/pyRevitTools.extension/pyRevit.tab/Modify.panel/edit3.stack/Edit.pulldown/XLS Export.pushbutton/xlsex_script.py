@@ -1,4 +1,5 @@
 import xlsxwriter
+import numbers
 import os
 import re
 from collections import namedtuple
@@ -73,6 +74,19 @@ class ElementSelectFromList(forms.SelectFromList):
 
         # Call parent _setup
         super(ElementSelectFromList, self)._setup(**kwargs)
+
+
+def write_cell(worksheet, row, col, value, cell_format):
+    """Write a value with its own type instead of letting xlsxwriter guess.
+
+    ``worksheet.write`` turns a string such as ``=1+1`` into a formula and
+    ``http://...`` into a hyperlink, which no longer reads back as the
+    original text.
+    """
+    if isinstance(value, numbers.Real):
+        worksheet.write_number(row, col, value, cell_format)
+    else:
+        worksheet.write_string(row, col, "" if value is None else value, cell_format)
 
 
 def get_unit_label_and_value(param, forge_type_id, field, project_units):
@@ -405,7 +419,7 @@ def create_dropdown_validation(
 
                         # Write workset names to hidden sheet
                         for idx, name in enumerate(workset_names):
-                            hidden_sheet.write(idx, 0, name)
+                            write_cell(hidden_sheet, idx, 0, name, None)
 
                     formula = "={}!$A$1:$A${}".format(
                         hidden_sheet_name, len(workset_names)
@@ -477,7 +491,7 @@ def create_dropdown_validation(
                         hidden_sheets[hidden_sheet_name] = hidden_sheet
 
                         for idx, name in enumerate(element_names):
-                            hidden_sheet.write(idx, 0, name)
+                            write_cell(hidden_sheet, idx, 0, name, None)
 
                     formula = "={}!$A$1:$A${}".format(
                         hidden_sheet_name, len(element_names)
@@ -615,13 +629,15 @@ def export_xls(src_elements, selected_params, field_mapping=None):
 
     max_widths = [len("ElementId")] + [len(p.name) for p in valid_params]
 
+    missing_counts = {}
+
     for row_idx, el in enumerate(src_elements, start=1):
         worksheet.write(row_idx, 0, str(get_elementid_value(el.Id)), locked)
 
         for col_idx, param in enumerate(valid_params):
             param_name = param.name
             param_el = el.LookupParameter(param_name)
-            val = "<does not exist>"
+            val = ""
             cell_format = locked
             if param_el:
                 val = ""
@@ -663,11 +679,23 @@ def export_xls(src_elements, selected_params, field_mapping=None):
                 # Cell is unlocked only if parameter exists, has value, and is not read-only
                 if not param.isreadonly:
                     cell_format = unlocked
+            else:
+                missing_counts[param_name] = missing_counts.get(param_name, 0) + 1
             # If param doesn't exist or has no value, cell remains locked
 
-            worksheet.write(row_idx, col_idx + 1, val, cell_format)
+            write_cell(worksheet, row_idx, col_idx + 1, val, cell_format)
             if len(str(val)) > max_widths[col_idx + 1]:
                 max_widths[col_idx + 1] = min(len(str(val)), 50)
+
+    for param_name, missing_count in sorted(
+        missing_counts.items(), key=lambda item: item[0]
+    ):
+        logger.warning(
+            "Parameter '{}' does not exist on {} of {} exported elements (it may "
+            "be a type parameter). Those cells are empty and locked.".format(
+                param_name, missing_count, len(src_elements)
+            )
+        )
 
     for col_idx, param in enumerate(valid_params):
         create_dropdown_validation(
