@@ -69,6 +69,17 @@ def _format_setting_value(value):
     return str(value)
 
 
+def _setting_value_from_text(text, original):
+    """Return the stored value when the text box still shows its formatted text.
+
+    The displayed float text is rounded, so parsing it back would silently
+    change a value the user did not edit.
+    """
+    if isinstance(original, float) and text == _format_setting_value(original):
+        return original
+    return text
+
+
 class SettingsWindow(forms.WPFWindow):
     """Dynamic settings window that generates UI from schema."""
 
@@ -116,6 +127,7 @@ class SettingsWindow(forms.WPFWindow):
         self.config_section = section
         self.result = False
         self.controls = {}
+        self._original_values = {}
 
         xaml_string = self._generate_xaml()
         forms.WPFWindow.__init__(self, xaml_string, literal_string=True)
@@ -396,6 +408,7 @@ class SettingsWindow(forms.WPFWindow):
                     )
 
             elif setting_type in ["int", "float", "string", "color", "folder", "file"]:
+                self._original_values[name] = current_value
                 control.Text = _format_setting_value(current_value)
 
                 if setting_type == "color":
@@ -691,7 +704,9 @@ class SettingsWindow(forms.WPFWindow):
             elif setting_type == "slider":
                 value = control.Value  # float from WPF Slider
             else:
-                value = control.Text
+                value = _setting_value_from_text(
+                    control.Text, self._original_values.get(name)
+                )
 
             is_valid, validated_value, error_msg = self._validate_setting(
                 setting, value
