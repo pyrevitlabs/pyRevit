@@ -1,4 +1,4 @@
-"""Regression tests for issue 4183: script.store_data writes cross-engine pickles.
+"""Regression tests for #4183: script.store_data writes cross-engine pickles.
 
 ``store_data`` is compiled out of ``script.py`` and run against stubs, so no
 pyRevit, Revit or ``clr`` is needed.
@@ -11,9 +11,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pytest
 
-ROOT_DIR = str(Path(__file__).resolve().parents[4])
-SCRIPT_MODULE = op.join(ROOT_DIR, "pyrevitlib", "pyrevit", "script.py")
+
+ROOT_DIR = Path(__file__).resolve().parents[4]
+SCRIPT_MODULE = str(ROOT_DIR / "pyrevitlib" / "pyrevit" / "script.py")
 TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
 IRONPYTHON_27_MAX_PROTOCOL = 2
@@ -39,6 +41,7 @@ def _load_store_data(data_file):
     raise AssertionError("store_data not found")
 
 
+@pytest.mark.regression
 class StoreDataProtocolTests(unittest.TestCase):
     """Issue 4183: files must stay readable by IronPython 2.7."""
 
