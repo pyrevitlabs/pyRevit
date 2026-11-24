@@ -8,13 +8,16 @@ title:
   de_de: Alle Elemente der gewählten Gruppen inkl. verschachtelten Gruppen auswählen
   pt_br: Selecionar Elementos de Grupo e Subgrupo
 tooltip:
-  en_us: Replaces current selection with elements inside the groups and their subgroups.
-  ko: 현재 선택 항목을 그룹 및 하위 그룹 내의 요소로 교체합니다.
-  fr_fr: Remplace la sélection du groupe par les éléments du Groupe et des Groupes Imbriqués
-  ru: Заменяет текущее выделение элементами внутри групп и их подгрупп.
-  chinese_s: 用组及其子组内部的图元替换当前选择集
-  es_es: Reemplaza la selección actual con elementos dentro de los grupos y sus subgrupos.
-  de_de: >-
-    Wählen Sie eine Gruppe oder mehrere Gruppen aus.  Dieser Befehl ersetz die aktuelle Auswahl mit den  Elementen, die sich in den Gruppen und in  verschachtelten Gruppen befinden.
-  pt_br: Substitui a seleção atual por elementos dentro dos grupos e seus subgrupos.
-context: selection
+  en_us: Replace the selection with the elements inside the selected groups and all their subgroups. The groups and subgroups themselves are not selected, and selected elements that are not groups are dropped.
+  ko: 현재 선택 항목을 선택한 그룹과 모든 하위 그룹 안의 요소로 대체합니다. 그룹과 하위 그룹 자체는 선택되지 않으며, 그룹이 아닌 선택 요소는 선택에서 제외됩니다.
+  fr_fr: Remplace la sélection par les éléments contenus dans les groupes sélectionnés et dans tous leurs sous-groupes. Les groupes et sous-groupes eux-mêmes ne sont pas sélectionnés, et les éléments sélectionnés qui ne sont pas des groupes sont retirés de la sélection.
+  ru: Заменяет выделение элементами внутри выбранных групп и всех их подгрупп. Сами группы и подгруппы не выделяются, а выбранные элементы, не являющиеся группами, исключаются из выделения.
+  chinese_s: 用所选组及其所有子组内部的图元替换当前选择集。组和子组本身不会被选中，不是组的已选图元会从选择集中移除。
+  es_es: Reemplaza la selección por los elementos contenidos en los grupos seleccionados y en todos sus subgrupos. Los grupos y subgrupos en sí no se seleccionan, y los elementos seleccionados que no son grupos se quitan de la selección.
+  de_de: Ersetzt die Auswahl durch die Elemente innerhalb der ausgewählten Gruppen und aller ihrer Untergruppen. Die Gruppen und Untergruppen selbst werden nicht ausgewählt, und ausgewählte Elemente, die keine Gruppen sind, werden aus der Auswahl entfernt.
+  pt_br: Substitui a seleção pelos elementos dentro dos grupos selecionados e de todos os seus subgrupos. Os próprios grupos e subgrupos não são selecionados, e os elementos selecionados que não são grupos são removidos da seleção.
+context:
+  any:
+    - OST_IOSModelGroups
+    - OST_IOSDetailGroups
+    - OST_IOSAttachedDetailGroups
