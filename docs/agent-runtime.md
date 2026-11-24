@@ -637,7 +637,7 @@ the first one is the one that runs. Update or uninstall that install.
 
 ### MCP server does not connect or tools are missing
 
-Claude Code was observed not to list a server's tools after a `/mcp` reconnect when the server had failed at session start (see issue 4018). Restart the client session after a failed connect.
+Claude Code was observed not to list a server's tools after a `/mcp` reconnect when the server had failed at session start (see [issue 4018](https://github.com/pyrevitlabs/pyRevit/issues/4018)). Restart the client session after a failed connect.
 
 Stale `pyrevit.exe` processes lock `bin\` and can block a rebuild. List them with their command lines:
 
@@ -647,7 +647,7 @@ Get-CimInstance Win32_Process -Filter "Name='pyrevit.exe'" | Select-Object Proce
 
 If you have confirmed that no client is using an `mcp` process, stop it by its process ID (`Stop-Process -Id`). Before rebuilding a repository checkout, use `dev/scripts/Stop-McpServers.ps1` only if you want to stop all MCP servers running from that clone's `bin\` folder, including servers still in use (see [Testing agent skills and library changes through MCP](#testing-agent-skills-and-library-changes-through-mcp)); the script lives under `dev/`, so it exists only in a checkout.
 
-Builds before 7.2.0 can leave `mcp` processes running after the client closes stdin. From 7.2.0 an idle server exits as soon as stdin closes; while tool calls are still running it waits for them at most 5 minutes, then cancels them and waits at most 10 more seconds before exiting.
+Builds before 7.1.0 can leave `mcp` processes running after the client closes stdin. From 7.1.0 an idle server exits as soon as stdin closes; while tool calls are still running it waits for them at most 5 minutes, then cancels them and waits at most 10 more seconds before exiting.
 
 To check the handshake by hand from the repository root (`.\bin\pyrevit.exe` is relative to it), pipe an `initialize` request into the server and read the returned JSON line. A banner or a corrupt first frame shows up here:
 
@@ -661,7 +661,7 @@ To time the exchange, discard the output:
 Measure-Command { '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' | .\bin\pyrevit.exe mcp | Out-Null }
 ```
 
-`Measure-Command` measures start to exit, not time to the first line. On a healthy install it returns well under a second. Revit does not need to be running for the handshake or for local tools such as `list_skills`. Tools that need a live Revit session, such as `get_context`, fail with the error code `no_revit` when no agent host is running, with the message "No running Revit with the pyRevit agent host was found. Start Revit with '[agent] enabled = true' (pyrevit configs agent enable)."
+`Measure-Command` measures start to exit, not time to the first line. On a healthy install it usually returns well under a second. Revit does not need to be running for the handshake or for local tools such as `list_skills`. Tools that need a live Revit session, such as `get_context`, fail with the error code `no_revit` when no agent host is running, with the message "No running Revit with the pyRevit agent host was found. Start Revit with '[agent] enabled = true' (pyrevit configs agent enable)."
 
 `get_context.pyrevit.bin_stale: true` means the binaries were built from another commit than the clone; it is a rebuild hint, not a connection failure (see above).
 
