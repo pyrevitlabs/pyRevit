@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_filters">이 프로젝트에는 뷰 필터가 없습니다.</sys:String>
+    <sys:String x:Key="no_valid_filters">선택한 필터에 적용할 규칙이 없습니다.</sys:String>
+    <sys:String x:Key="select_title">뷰 필터 선택</sys:String>
+    <sys:String x:Key="select_button">선택</sys:String>
+    <sys:String x:Key="nothing_found">일치하는 요소를 찾을 수 없습니다.</sys:String>
+    <sys:String x:Key="config_title">필터로 선택 옵션</sys:String>
+    <sys:String x:Key="config_button">저장</sys:String>
+    <sys:String x:Key="exclude_nested">중첩된 패밀리 인스턴스 제외</sys:String>
+    <sys:String x:Key="only_current_view">활성 뷰에서만 검색</sys:String>
+    <sys:String x:Key="reverse_filter">필터를 통과하지 않는 요소 선택</sys:String>
+</ResourceDictionary>

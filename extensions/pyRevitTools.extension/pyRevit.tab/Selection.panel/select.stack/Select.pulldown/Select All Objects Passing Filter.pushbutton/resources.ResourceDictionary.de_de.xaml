@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_filters">Dieses Projekt enthält keine Ansichtsfilter.</sys:String>
+    <sys:String x:Key="no_valid_filters">Die ausgewählten Filter enthalten keine anwendbaren Regeln.</sys:String>
+    <sys:String x:Key="select_title">Ansichtsfilter auswählen</sys:String>
+    <sys:String x:Key="select_button">Auswählen</sys:String>
+    <sys:String x:Key="nothing_found">Es wurden keine passenden Elemente gefunden.</sys:String>
+    <sys:String x:Key="config_title">Optionen für die Auswahl nach Filter</sys:String>
+    <sys:String x:Key="config_button">Speichern</sys:String>
+    <sys:String x:Key="exclude_nested">Verschachtelte Familienexemplare ausschließen</sys:String>
+    <sys:String x:Key="only_current_view">Nur in der aktiven Ansicht suchen</sys:String>
+    <sys:String x:Key="reverse_filter">Elemente auswählen, die den Filter nicht erfüllen</sys:String>
+</ResourceDictionary>

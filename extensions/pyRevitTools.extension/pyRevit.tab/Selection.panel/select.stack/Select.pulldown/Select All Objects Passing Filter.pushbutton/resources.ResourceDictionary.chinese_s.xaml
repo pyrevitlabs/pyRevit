@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_filters">此项目没有视图过滤器。</sys:String>
+    <sys:String x:Key="no_valid_filters">所选过滤器没有可应用的规则。</sys:String>
+    <sys:String x:Key="select_title">选择视图过滤器</sys:String>
+    <sys:String x:Key="select_button">选择</sys:String>
+    <sys:String x:Key="nothing_found">未找到匹配的图元。</sys:String>
+    <sys:String x:Key="config_title">按过滤器选择的选项</sys:String>
+    <sys:String x:Key="config_button">保存</sys:String>
+    <sys:String x:Key="exclude_nested">排除嵌套族实例</sys:String>
+    <sys:String x:Key="only_current_view">仅在活动视图中搜索</sys:String>
+    <sys:String x:Key="reverse_filter">选择未通过过滤器的图元</sys:String>
+</ResourceDictionary>

@@ -1,43 +1,38 @@
-from pyrevit import script, forms
+# -*- coding: utf-8 -*-
+from pyrevit import forms, script
+from pyrevit.coreutils import applocales
 
-my_config = script.get_config()
+import filter_options
 
-exclude_nested = my_config.get_option("exclude_nested", True)
-only_current_view = my_config.get_option("only_current_view", True)
-reverse_filter = my_config.get_option("reverse_filter", False)
+RESOURCES = script.get_bundle_file("resources.xaml")
 
 
-class MyOption(forms.TemplateListItem):
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
+
+
+class OptionItem(forms.TemplateListItem):
     @property
     def name(self):
-        return str(self.item)
+        return _t(self.item)
 
 
-opts = [
-    MyOption("Exclude Nested", exclude_nested),
-    MyOption("Only Current View", only_current_view),
-    MyOption("Reverse Selection", reverse_filter),
-]
-
-results = forms.SelectFromList.show(
-    opts,
-    title="Choose what to set",
-    multiselect=True,
-    button_name="Save Selection",
-    return_all=True,
-    width=300,
-    height=350,
-)
-
-if results:
-    selected_items = {item.item: item.state for item in results}
-
-    my_config.set_option("exclude_nested", selected_items.get("Exclude Nested", True))
-    my_config.set_option(
-        "only_current_view", selected_items.get("Only Current View", True)
+def main():
+    config = script.get_config()
+    options = filter_options.load_options(config)
+    results = forms.SelectFromList.show(
+        [OptionItem(key, options[key]) for key, _ in filter_options.OPTION_DEFAULTS],
+        title=_t("config_title"),
+        multiselect=True,
+        button_name=_t("config_button"),
+        return_all=True,
+        width=420,
+        height=350,
     )
-    my_config.set_option(
-        "reverse_filter", selected_items.get("Reverse Selection", False)
-    )
+    if results:
+        filter_options.save_options(config, {item.item: item.state for item in results})
+        script.save_config()
 
-    script.save_config()
+
+if __name__ == "__main__":
+    main()

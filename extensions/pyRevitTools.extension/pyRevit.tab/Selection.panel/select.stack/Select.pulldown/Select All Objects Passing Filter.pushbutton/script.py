@@ -1,66 +1,82 @@
-from pyrevit import forms, revit, script, DB
-from pyrevit.framework import List
+# -*- coding: utf-8 -*-
+"""Select the elements that pass any of the view filters picked from a list.
 
-doc = revit.doc
-active_view = revit.active_view
-uidoc = revit.uidoc
+The search options (active view or whole project, nested family instances,
+reversed result) are stored by the Shift-click configuration in config.py.
+"""
 
-my_config = script.get_config()
+from pyrevit import forms, script
+from pyrevit import revit, DB
+from pyrevit.coreutils import applocales
+from pyrevit.framework import to_clr_list
 
-exclude_nested = my_config.get_option("exclude_nested", True)
-only_current_view = my_config.get_option("only_current_view", True)
-reverse_filter = my_config.get_option("reverse_filter", False)
+import filter_options
 
-filters = list(revit.query.get_elements_by_class(DB.ParameterFilterElement, doc=doc))
+RESOURCES = script.get_bundle_file("resources.xaml")
 
-if not filters:
-    forms.alert("No Filters found", exitscript=True)
 
-selected_filters = forms.SelectFromList.show(
-    sorted(filters, key=lambda f: f.Name),
-    name_attr="Name",
-    multiselect=True,
-    title="Select Filter(s)",
-)
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
-if not selected_filters:
-    script.exit()
 
-element_filters = []
-for f in selected_filters:
-    ef = f.GetElementFilter()
-    if ef:
-        element_filters.append(ef)
-
-if not element_filters:
-    forms.alert("No valid ElementFilters found.", exitscript=True)
-
-combined_filter = DB.LogicalOrFilter(List[DB.ElementFilter](element_filters))
-
-view_id = active_view.Id if only_current_view else None
-
-collector = (
-    DB.FilteredElementCollector(doc, view_id)
-    if view_id
-    else DB.FilteredElementCollector(doc)
-)
-
-if reverse_filter:
-    all_elements = collector.WhereElementIsNotElementType().ToElements()
-    filtered_elements = [
-        el for el in all_elements if not combined_filter.PassesFilter(el)
-    ]
-else:
-    filtered_elements = (
-        collector.WhereElementIsNotElementType()
-        .WherePasses(combined_filter)
-        .ToElements()
+def pick_element_filters():
+    view_filters = list(
+        revit.query.get_elements_by_class(DB.ParameterFilterElement, doc=revit.doc)
     )
+    if not view_filters:
+        forms.alert(_t("no_filters"), exitscript=True)
+    picked = forms.SelectFromList.show(
+        sorted(view_filters, key=lambda view_filter: view_filter.Name),
+        name_attr="Name",
+        multiselect=True,
+        title=_t("select_title"),
+        button_name=_t("select_button"),
+    )
+    if not picked:
+        script.exit()
+    element_filters = [view_filter.GetElementFilter() for view_filter in picked]
+    element_filters = [
+        element_filter for element_filter in element_filters if element_filter
+    ]
+    if not element_filters:
+        forms.alert(_t("no_valid_filters"), exitscript=True)
+    return element_filters
 
-element_ids = []
-for el in filtered_elements:
-    if exclude_nested and isinstance(el, DB.FamilyInstance) and el.SuperComponent:
-        continue
-    element_ids.append(el.Id)
 
-revit.get_selection().set_to(element_ids)
+def collect_elements(combined_filter, options):
+    if options["only_current_view"]:
+        forms.check_graphicalview(revit.active_view, exitscript=True)
+        collector = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)
+    else:
+        collector = DB.FilteredElementCollector(revit.doc)
+    collector = collector.WhereElementIsNotElementType()
+    if options["reverse_filter"]:
+        return [
+            element
+            for element in collector.ToElements()
+            if not combined_filter.PassesFilter(element)
+        ]
+    return collector.WherePasses(combined_filter).ToElements()
+
+
+def is_nested(element):
+    return isinstance(element, DB.FamilyInstance) and element.SuperComponent
+
+
+def main():
+    options = filter_options.load_options(script.get_config())
+    element_filters = pick_element_filters()
+    combined_filter = DB.LogicalOrFilter(to_clr_list(DB.ElementFilter, element_filters))
+    elements = collect_elements(combined_filter, options)
+    element_ids = [
+        element.Id
+        for element in elements
+        if not (options["exclude_nested"] and is_nested(element))
+    ]
+    if not element_ids:
+        forms.alert(_t("nothing_found"), exitscript=True)
+    revit.get_selection().set_to(element_ids)
+
+
+if __name__ == "__main__":
+    main()
