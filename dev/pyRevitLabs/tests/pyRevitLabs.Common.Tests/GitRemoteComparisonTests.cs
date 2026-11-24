@@ -21,6 +21,9 @@ namespace pyRevitLabs.Common.Tests {
         [TestCase("C:\\dev\\a\\..\\source", "C:\\dev\\source")]
         [TestCase("\\\\server\\share\\repo", "//server/share/repo")]
         [TestCase("ssh://git@host/org/repo", "https://host/org/repo")]
+        [TestCase("git@host:/repos/pyRevit.git", "git@host:/repos/pyRevit")]
+        [TestCase("git@host:repos/pyRevit.git", "host:repos/pyRevit")]
+        [TestCase("git@host:/repos/pyRevit.git", "https://host/repos/pyRevit")]
         [TestCase("file:///C:/dev/source", "C:\\dev\\source")]
         public void AreSameRemote_EquivalentSources_ReturnsTrue(string? first, string? second) {
             Assert.That(GitInstaller.AreSameRemote(first, second), Is.True);
@@ -36,6 +39,8 @@ namespace pyRevitLabs.Common.Tests {
         [TestCase("C:\\dev\\source", "https://github.com/pyrevitlabs/pyRevit")]
         [TestCase("https://host:8443/org/repo", "https://host:9443/org/repo")]
         [TestCase("ssh://git@host1/org/repo", "ssh://git@host2/org/repo")]
+        [TestCase("git@host:repos/pyRevit.git", "git@host:/repos/pyRevit.git")]
+        [TestCase("host:/repos/pyRevit", "git@host:repos/pyRevit")]
         [TestCase("\\\\server\\share\\a", "\\\\server\\share\\b")]
         [TestCase("relative\\repo", "C:\\dev\\source")]
         [TestCase("file:///C:/dev/source", "file:///C:/dev/other")]

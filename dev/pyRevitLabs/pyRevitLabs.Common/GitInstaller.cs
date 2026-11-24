@@ -340,12 +340,28 @@ namespace pyRevitLabs.Common {
         /// <c>.git</c>, trailing slashes, backslash use and host case. The path case is significant for
         /// remote URLs. Local sources compare as full paths, ignoring case; relative local paths resolve
         /// against the process working directory and <c>file://</c> URLs compare as their local path.
-        /// A different port or a different path case counts as a different remote. False when either is empty.
+        /// A different port or a different path case counts as a different remote. Two scp-style addresses
+        /// differ when only one path starts with a slash, since that path starts at the server root instead
+        /// of the remote user's home. False when either is empty.
         /// </returns>
         public static bool AreSameRemote(string first, string second) {
             if (string.IsNullOrWhiteSpace(first) || string.IsNullOrWhiteSpace(second))
                 return false;
+            var firstIsAbsolute = ScpPathIsAbsolute(first);
+            var secondIsAbsolute = ScpPathIsAbsolute(second);
+            if (firstIsAbsolute.HasValue && secondIsAbsolute.HasValue && firstIsAbsolute != secondIsAbsolute)
+                return false;
             return NormalizeRemote(first) == NormalizeRemote(second);
+        }
+
+        private static bool? ScpPathIsAbsolute(string source) {
+            var value = source.Trim().Replace('\\', '/');
+            if (value.StartsWith("file:", StringComparison.OrdinalIgnoreCase)
+                || DrivePathPattern.IsMatch(value)
+                || UrlRemotePattern.IsMatch(value))
+                return null;
+            var match = ScpRemotePattern.Match(value);
+            return match.Success ? match.Groups[2].Value.StartsWith("/") : (bool?)null;
         }
 
         private static readonly Regex DrivePathPattern = new Regex("^[a-z]:(/|$)", RegexOptions.IgnoreCase);
