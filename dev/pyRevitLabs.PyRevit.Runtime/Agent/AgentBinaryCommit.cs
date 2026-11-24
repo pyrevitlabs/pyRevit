@@ -18,7 +18,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentBinaryCommit {
         private const int ShortLength = 7;
         private const string RebuildHint =
-            "The binaries were built from another commit than the clone; rebuild with 'dotnet run -c Release -- local' in build/.";
+            "The binaries were built from another commit than the clone; rebuild with 'dotnet run -c Release -- ci' in build/.";
 
         /// <summary>
         /// The short commit in <paramref name="informationalVersion"/>, or null when it carries none.

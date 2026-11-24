@@ -336,7 +336,7 @@ namespace pyRevitLabs.PyRevit {
             if (!repoSourcePath.IsValidHttpUrl())
                 repoSourcePath = CommonUtils.ExpandEnvironmentPath(repoSourcePath);
             string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TargetBranch;
-            logger.Debug("Repo source determined as \"{0}:{1}\"", repoSourcePath.RedactUrlCredentials(), repoBranch);
+            logger.Debug("Repo source determined as \"{0}\" branch \"{1}\"", repoSourcePath.RedactUrlCredentials(), repoBranch);
 
             // determine destination path if not provided
             if (destPath is null)
