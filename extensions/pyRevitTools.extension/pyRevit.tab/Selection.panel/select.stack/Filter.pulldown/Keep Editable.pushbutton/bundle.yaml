@@ -8,37 +8,30 @@ title:
   de_de: Nur bearbeitbare Elemente in aktueller Auswahl belassen
   pt_br: Manter Editáveis
 tooltip:
-  en_us: >-
-    Keeps only editable elements (unclaimed or owned by current user) in current
-    selection. If nothing is selected, pick a region to filter from.
-  ko: 현재 선택 항목에서 편집 가능한 요소(미청구 또는 현재 사용자 소유)만 유지합니다
-  fr_fr: >-
-    Conserve uniquement les éléments éditables (non réclamés ou appartenant à
-    l'utilisateur actuel) dans la sélection actuelle. Si rien n'est sélectionné,
-    délimitez une zone à filtrer.
-  ru: >-
-    Удерживает только редактируемые элементы (незаявленные или принадлежащие
-    текущему пользователю) в текущем выделении. Если ничего не выбрано, выберите
-    область для фильтрации.
-  chinese_s: >-
-    在当前选择中仅保留可编辑图元（未申请或由当前用户拥有）。若未选择任何内容，则框选区域进行过滤。
-  es_es: >-
-    Mantiene solo los elementos editables (no reclamados o del usuario actual) en
-    la selección actual. Si no hay nada seleccionado, delimite una región para
-    filtrar.
-  de_de: >-
-    Die aktuelle Elementauswahl wird so vermindert, dass nur bearbeitbare Elemente
-    (nicht beanspruchte oder dem aktuellen Benutzer gehörende) in der Auswahl
-    verbleiben. Wenn nichts ausgewählt ist, kann ein Bereich zum Filtern gewählt
-    werden.
-  pt_br: >-
-    Mantém apenas os elementos editáveis (não reivindicados ou do usuário atual)
-    na seleção atual. Se nada estiver selecionado, selecione uma região para
-    filtrar.
+  en_us: |-
+    Keep only the elements in the current selection that are not checked out by another user. With nothing selected, draw a rectangle to select the editable elements inside it. In a model without worksharing, every element counts as editable.
+  ko: |-
+    현재 선택 항목에서 다른 사용자가 체크아웃하지 않은 요소만 유지합니다. 선택한 항목이 없으면 사각형을 그려 그 안에서 편집 가능한 요소를 선택합니다. 작업 공유를 사용하지 않는 모델에서는 모든 요소가 편집 가능한 것으로 간주됩니다.
+  fr_fr: |-
+    Conservez dans la sélection actuelle uniquement les éléments qui ne sont pas empruntés par un autre utilisateur. Si rien n'est sélectionné, tracez un rectangle pour sélectionner les éléments modifiables qu'il contient. Dans un modèle sans travail collaboratif, tous les éléments sont considérés comme modifiables.
+  ru: |-
+    Оставьте в текущем выборе только элементы, не заимствованные другим пользователем. Если ничего не выбрано, нарисуйте прямоугольник, чтобы выбрать внутри него редактируемые элементы. В модели без совместной работы все элементы считаются редактируемыми.
+  chinese_s: |-
+    在当前选择中仅保留未被其他用户借用的图元。若未选择任何内容，则绘制矩形，选择其中可编辑的图元。在未启用工作共享的模型中，所有图元都视为可编辑。
+  es_es: |-
+    Conserve en la selección actual solo los elementos que no estén tomados prestados por otro usuario. Si no hay nada seleccionado, dibuje un rectángulo para seleccionar los elementos editables que contiene. En un modelo sin trabajo compartido, todos los elementos se consideran editables.
+  de_de: |-
+    In der aktuellen Auswahl nur die Elemente behalten, die nicht von einem anderen Benutzer ausgeliehen sind. Ist nichts ausgewählt, ein Rechteck aufziehen, um die bearbeitbaren Elemente darin auszuwählen. In einem Modell ohne Worksharing gilt jedes Element als bearbeitbar.
+  pt_br: |-
+    Mantenha na seleção atual apenas os elementos que não foram emprestados por outro usuário. Se nada estiver selecionado, desenhe um retângulo para selecionar os elementos editáveis dentro dele. Em um modelo sem worksharing, todos os elementos contam como editáveis.
 context:
   any:
     - selection
     - active-plan-view
     - active-section-view
-    - active-3d-view
     - active-elevation-view
+    - active-3d-view
+    - active-sheet
+    - active-legend
+    - active-drafting-view
+    - active-detail-view
