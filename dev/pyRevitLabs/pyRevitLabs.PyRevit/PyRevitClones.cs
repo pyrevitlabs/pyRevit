@@ -354,8 +354,8 @@ namespace pyRevitLabs.PyRevit {
         /// registered at another path as a clone that still opens. A fresh clone, unlike a resume, replaces a
         /// registration of the same name.
         /// A resumed folder is never deleted or reset. Binaries are installed into it only when its
-        /// <c>bin</c> folder is empty or missing and no <c>bin.bak</c> exists, since the install replaces
-        /// <c>bin</c> and deletes <c>bin.bak</c>; otherwise the folder is only registered. When installing or
+        /// <c>bin</c>, <c>bin.bak</c> and <c>bin.new</c> folders are all empty or missing, since the install
+        /// replaces <c>bin</c> and deletes the other two; otherwise the folder is only registered. When installing or
         /// registering fails, a resumed folder is kept as is; a freshly cloned folder is deleted unless only
         /// the binaries are missing.
         /// Archive (<c>--image</c>) installs never resume; see <see cref="DeployFromImage"/>.
@@ -919,14 +919,14 @@ namespace pyRevitLabs.PyRevit {
                         "To refresh it run: pyrevit clones update {0}, or choose another --dest.",
                         decision.RegisteredName);
                 case ResumeDecisionKind.RegisteredInvalidClone:
-                    return "Delete the folder, which drops its stale registration, or choose another --dest.";
+                    return "Move the folder aside, or delete it if it holds nothing you need, which drops its stale registration, or choose another --dest.";
                 case ResumeDecisionKind.NameRegisteredElsewhere:
                     return string.Format(
                         "Choose another clone name or --dest, or run: pyrevit clones forget {0}.",
                         decision.RegisteredName);
             }
             if (decision.Advice == ResumeAdvice.DeleteFolder)
-                return "Delete the folder or choose another --dest.";
+                return "Move the folder aside, or delete it if it holds nothing you need, or choose another --dest.";
             return string.Format(
                 "If it holds work you want to keep, commit or stash it first, then register the folder with: " +
                 "pyrevit clones add <name> \"{0}\" (this does not change the folder), or choose another --dest. " +
@@ -1025,6 +1025,10 @@ namespace pyRevitLabs.PyRevit {
             if (!GitInstaller.HasCompleteWorkingTree(clonePath))
                 return ResumeDecision.NotResumable(
                     "its checkout is incomplete, as after an interrupted clone",
+                    ResumeAdvice.DeleteFolder);
+            if (!CanOpenAsClone(clonePath, cloneName))
+                return ResumeDecision.NotResumable(
+                    "it is not a valid pyRevit clone, for example pyrevitlib/pyrevit is missing",
                     ResumeAdvice.DeleteFolder);
             if (GitInstaller.IsHeadDetached(clonePath))
                 return ResumeDecision.NotResumable(
@@ -1163,8 +1167,11 @@ namespace pyRevitLabs.PyRevit {
 
         private static bool HasLocalBinContent(string clonePath) {
             var binPath = Path.Combine(clonePath, "bin");
-            return (Directory.Exists(binPath) && Directory.EnumerateFileSystemEntries(binPath).Any())
-                   || Directory.Exists(binPath + ".bak");
+            return HasEntries(binPath) || HasEntries(binPath + ".bak") || HasEntries(binPath + ".new");
+        }
+
+        private static bool HasEntries(string folderPath) {
+            return Directory.Exists(folderPath) && Directory.EnumerateFileSystemEntries(folderPath).Any();
         }
 
         private static bool HasBuiltBinaries(string clonePath) {

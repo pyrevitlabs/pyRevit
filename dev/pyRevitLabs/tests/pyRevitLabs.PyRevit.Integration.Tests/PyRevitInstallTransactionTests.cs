@@ -357,9 +357,11 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 Is.EqualTo(keptClone.NormalizeAsPath()));
         }
 
-        /// <summary>The install runs only when bin is empty or missing and no bin.bak exists; anything else is kept and the folder is only registered.</summary>
+        /// <summary>The install runs only when bin, bin.bak and bin.new are all empty or missing, since it replaces bin and deletes the other two; anything else is kept and the folder is only registered.</summary>
         [TestCase("bin.bak", "old.dll", false)]
-        [TestCase("bin.new", "scratch.dll", true)]
+        [TestCase("bin.new", "user-staging.dll", false)]
+        [TestCase("bin.new", null, true)]
+        [TestCase("bin.bak", null, true)]
         [TestCase("bin", null, true)]
         [TestCase("bin/netfx", "pyrevit.exe", false)]
         public void DeployFromRepo_WhenTheKeptFolderHasLocalBinContent_InstallsOnlyWhenThereIsNone(
@@ -400,6 +402,24 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(GitInstaller.HasTrackingBranch(keptClone), Is.False);
         }
 
+        /// <summary>A kept git folder that is not a valid pyRevit clone is refused up front and the hint does not offer a resume.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheKeptFolderIsNotAValidPyRevitClone_RefusesAndDoesNotOfferAResume() {
+            var keptClone = CreateKeptClone(out var source, out var dest);
+            Directory.Delete(Path.Combine(keptClone, "pyrevitlib", "pyrevit"), recursive: true);
+            using (var repo = new Repository(keptClone))
+                Commands.Stage(repo, "*");
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new InvalidOperationException("binaries must not be installed");
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
+
+            Assert.That(ex.Message, Does.Contain("not a valid pyRevit clone"));
+            Assert.That(
+                PyRevitClones.DescribeKeptFolderRecovery(keptClone, source, PyRevitLabsConsts.TargetBranch, CloneName),
+                Does.Not.Contain("resumes"));
+        }
+
         /// <summary>A kept folder whose remote branch ref is gone is refused instead of throwing, and the tracking helpers treat it as untracked.</summary>
         [Test]
         public void DeployFromRepo_WhenTheTrackedRemoteRefIsGone_RefusesWithoutThrowingFromGit() {
@@ -430,7 +450,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
 
             Assert.That(ex.Message, Does.Contain("checkout is incomplete"));
-            Assert.That(ex.Message, Does.Contain("Delete the folder"));
+            Assert.That(ex.Message, Does.Contain("Move the folder aside"));
             Assert.That(GitInstaller.HasCompleteWorkingTree(keptClone), Is.False);
             using (var repo = new Repository(keptClone))
                 Commands.Checkout(repo, repo.Head, new CheckoutOptions { CheckoutModifiers = CheckoutModifiers.Force });
@@ -479,7 +499,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false));
 
             Assert.That(ex.Message, Does.Contain("no longer a valid clone"));
-            Assert.That(ex.Message, Does.Contain("Delete the folder"));
+            Assert.That(ex.Message, Does.Contain("Move the folder aside"));
             Assert.That(ex.Message, Does.Not.Contain("clones forget"));
             Assert.That(ex.Message, Does.Not.Contain("not a registered clone"));
             FixtureDirectory.Delete(folder);
@@ -596,7 +616,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(ex.Message, Does.Contain("not a registered clone"));
             Assert.That(ex.Message, Does.Contain(source));
             Assert.That(ex.Message, Does.Contain(otherSource));
-            Assert.That(ex.Message, Does.Contain("Delete the folder"));
+            Assert.That(ex.Message, Does.Contain("Move the folder aside"));
             Assert.That(ex.Message, Does.Not.Contain("pyrevit clones update"));
             Assert.That(PyRevitClones.GetRegisteredClones(pruneStoredList: false), Is.Empty);
         }
@@ -616,7 +636,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false));
 
             Assert.That(ex.Message, Does.Contain("not a registered clone"));
-            Assert.That(ex.Message, Does.Contain("Delete the folder"));
+            Assert.That(ex.Message, Does.Contain("Move the folder aside"));
             Assert.That(ex.Message, Does.Not.Contain("pyrevit clones update"));
             Assert.That(Repository.IsValid(leftover), Is.True);
         }
