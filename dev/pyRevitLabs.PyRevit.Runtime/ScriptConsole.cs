@@ -749,6 +749,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             PostScriptWhenReady("window.scrollTo(0, document.body.scrollHeight);");
         }
 
+        /// <summary>
+        /// Scrolls the document to its first line after draining buffered entries, so the
+        /// scroll cannot run before the last append and be undone by the auto-follow of
+        /// <see cref="BuildInsertEntriesJs"/>. Blocks until the document is ready.
+        /// </summary>
+        public void ScrollToTop() {
+            EnsureDocumentReadyBlocking();
+            PostScriptWhenReady("window.scrollTo(0, 0);");
+        }
+
         internal void ForceRenderFrame() {
             if (_renderingFrame)
                 return;

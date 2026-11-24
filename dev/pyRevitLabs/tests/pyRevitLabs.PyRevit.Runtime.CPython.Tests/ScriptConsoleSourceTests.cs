@@ -51,6 +51,25 @@ public class ScriptConsoleSourceTests {
         Assert.Contains("QueueFlush();", unfreeze);
     }
 
+    /// <summary>Scrolling to the top waits for the document and drains buffered entries before posting.</summary>
+    [Fact]
+    public void ScrollToTop_DrainsBufferedEntriesBeforeScrolling() {
+        var body = CSharpSource.MemberBody(Source, "public void ScrollToTop()");
+        var drain = body.IndexOf("EnsureDocumentReadyBlocking();", StringComparison.Ordinal);
+        var scroll = body.IndexOf("PostScriptWhenReady(", StringComparison.Ordinal);
+        Assert.True(drain >= 0 && scroll > drain);
+    }
+
+    /// <summary>The scripting entry point flushes the print stream before asking the window to scroll.</summary>
+    [Fact]
+    public void ScriptOutput_ScrollToTop_FlushesPrintStreamFirst() {
+        var output = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Sources", "ScriptOutput.cs"));
+        var body = CSharpSource.MemberBody(output, "public void scroll_to_top()");
+        var flush = body.IndexOf("output_stream.Flush();", StringComparison.Ordinal);
+        var scroll = body.IndexOf("window.ScrollToTop();", StringComparison.Ordinal);
+        Assert.True(flush >= 0 && scroll > flush);
+    }
+
     /// <summary>Plain-text conversion preserves table columns, rows, block breaks, and entities.</summary>
     /// <param name="html">The rendered HTML fragment.</param>
     /// <param name="expected">The readable plain-text representation.</param>

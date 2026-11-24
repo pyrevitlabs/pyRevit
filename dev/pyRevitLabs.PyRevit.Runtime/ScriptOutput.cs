@@ -529,6 +529,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void reset_icon() { window.ResetIcon(); }
         public void focus() { window.FocusOutput(); }
 
+        /// <summary>
+        /// Scrolls the output window to its first line once everything printed so far is
+        /// rendered. Output printed afterwards no longer follows the end of the window.
+        /// </summary>
+        public void scroll_to_top() {
+            output_stream.Flush();
+            window.ScrollToTop();
+        }
+
         public void close_others(bool all_open_outputs = false) {
             ScriptConsoleManager.CloseActiveOutputWindows(
                 window,
