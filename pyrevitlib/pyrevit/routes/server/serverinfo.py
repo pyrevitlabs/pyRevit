@@ -54,7 +54,7 @@ def _read_serverinfo(data_file):
 
 def _write_serverinfo(data_file, rsinfo):
     with open(data_file, "wb") as df:
-        pickle.dump(rsinfo, df)
+        pickle.dump(rsinfo, df, 2)
 
 
 def _get_all_serverinfo():
