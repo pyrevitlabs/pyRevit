@@ -13,7 +13,7 @@ def toggle(doc, datafilename):
     current_view = doc.ActiveView
     if not isinstance(current_view, DB.View3D):
         return
-    current_view_id_value = get_elementid_value(current_view.Id)
+    current_view_id_value = int(get_elementid_value(current_view.Id))
     sectionbox_active_state = current_view.IsSectionBoxActive
 
     try:
