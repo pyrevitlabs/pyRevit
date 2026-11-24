@@ -1,82 +1,69 @@
-"""Activates selection tool that picks only elements with the same parametervalue."""
+# -*- coding: utf-8 -*-
+"""Pick elements that share the parameter values of a chosen element."""
 
-from pyrevit import forms, revit, EXEC_PARAMS
-from pyrevit import UI
+from pyrevit import forms, script
+from pyrevit import revit, EXEC_PARAMS
+from pyrevit.coreutils import applocales
+
+import selectionpick
+
+RESOURCES = script.get_bundle_file("resources.xaml")
 
 
-class ParamValueSelectionFilter(UI.Selection.ISelectionFilter):
-    def __init__(self, p_v_dict):
-        self.p_v_dict = p_v_dict
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
-    # standard API override function
-    def AllowElement(self, element):
-        matches = []
 
-        for p, v in self.p_v_dict.items():
-            try:
-                el_param = element.LookupParameter(p.Definition.Name)
-                if not el_param:
-                    matches.append(False)
-                    continue
+def get_source_element():
+    selected = list(revit.get_selection())
+    if len(selected) == 1:
+        return selected[0]
+    return revit.pick_element(message=_t("pick_element_prompt"))
 
-                el_val = revit.query.get_param_value(el_param)
 
-                matches.append(el_val == v)
+def read_parameter_values(element, parameter_names):
+    return {
+        name: revit.query.get_param_value(element.LookupParameter(name))
+        for name in parameter_names
+    }
 
-            except Exception:
-                matches.append(False)
 
-        # ANY match (default mode)
-        if not EXEC_PARAMS.config_mode and any(matches):
-            return True
-
-        # ALL match (config mode)
-        elif EXEC_PARAMS.config_mode and all(matches):
-            return True
-
-        else:
-            return False
-
-    # standard API override function
-    def AllowReference(self, refer, point):
+def has_value(element, name, expected_value):
+    parameter = element.LookupParameter(name)
+    if not parameter:
         return False
+    return revit.query.get_param_value(parameter) == expected_value
+
+
+def matches_values(element, expected_values, require_all):
+    results = [
+        has_value(element, name, value) for name, value in expected_values.items()
+    ]
+    if require_all:
+        # ALL match (config mode)
+        return all(results)
+    # ANY match (default mode)
+    return any(results)
 
 
 def main():
-    try:
-        sel = revit.get_selection()
-        elem = (
-            sel[0]
-            if len(sel) == 1
-            else revit.pick_element(message="Pick an element for parameter selection")
-        )
-        if not elem:
-            return
-
-        param_defs = forms.select_parameters(elem, exclude_readonly=False)
-
-        p_v_dict = {}
-        for param_def in param_defs:
-            p = elem.LookupParameter(param_def.name)
-            v = revit.query.get_param_value(p)
-            p_v_dict[p] = v
-
-        pvsfilter = ParamValueSelectionFilter(p_v_dict)
-
-        selection_list = revit.pick_rectangle(
-            message="Draw a rectangle to pick elements with the same parametervalue",
-            pick_filter=pvsfilter,
-        )
-
-        filtered_list = []
-        for el in selection_list:
-            filtered_list.append(el.Id)
-
-        sel.set_to(filtered_list)
-        revit.uidoc.RefreshActiveView()
-
-    except Exception:
-        pass
+    source = get_source_element()
+    if not source:
+        return
+    parameter_defs = forms.select_parameters(
+        source,
+        title=_t("select_parameters_title"),
+        button_name=_t("select_parameters_button"),
+        exclude_readonly=False,
+    )
+    if not parameter_defs:
+        return
+    expected_values = read_parameter_values(source, [x.name for x in parameter_defs])
+    require_all = EXEC_PARAMS.config_mode
+    selectionpick.select_picked(
+        lambda element: matches_values(element, expected_values, require_all),
+        message=_t("pick_rectangle_prompt"),
+    )
 
 
 if __name__ == "__main__":
