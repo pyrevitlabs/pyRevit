@@ -11443,7 +11443,7 @@
 <tr>
 <td>IronPython 2.7</td>
 <td><code>**kwargs,</code> with a trailing comma in a signature or call does not parse</td>
-<td>Yes: <code>check_ipy2_compat.py</code>, run by a pre-commit hook</td>
+<td>Yes: <code>check_ipy2_compat.py</code>, run by a pre-commit hook on <code>pyrevitlib/</code> only</td>
 </tr>
 <tr>
 <td>IronPython 3.4.2</td>
@@ -11462,8 +11462,13 @@
 </tr>
 <tr>
 <td>CPython 3.12</td>
-<td>pythonnet has no named indexers (<code>element.Parameter[...]</code>) and interface-typed properties return the interface; see <a href="../build-extensions/scripting/cpython/#differences-from-ironpython">Differences from IronPython</a></td>
+<td>pythonnet has no named indexers (<code>element.Parameter[...]</code> or <code>element.Geometry[...]</code>)</td>
 <td>Yes: <code>CLR-NAMED-INDEXER</code> in <code>check-py3</code></td>
+</tr>
+<tr>
+<td>CPython 3.12</td>
+<td>Interface-typed properties return the interface, not the concrete object; see <a href="../build-extensions/scripting/cpython/#differences-from-ironpython">Differences from IronPython</a></td>
+<td>No</td>
 </tr>
 </tbody>
 </table>
@@ -11495,7 +11500,7 @@
 </tr>
 </tbody>
 </table>
-<p>Revit stores lengths in feet, areas in square feet, volumes in cubic feet and angles in radians, whatever the project shows. Convert with <code>UnitUtils.ConvertFromInternalUnits</code> / <code>ConvertToInternalUnits</code> and a <code>ForgeTypeId</code>, or use the <code>pyrevit.revit.units</code> helpers (<code>format_length</code>, <code>format_area</code>, <code>format_slope</code>, <code>parse_length</code>, <code>parse_slope</code>), which follow the document's display units. <code>DisplayUnitType</code> does not exist on newer Revit years (see <a href="#revit-year">Revit year</a>). A fixed number in a script, such as <code>if length &gt; 500</code>, is a unit bug unless it says which unit it is in. Include area, volume and an angle in the cases, and a value that rounds differently in the two systems.</p>
+<p>Revit stores lengths in feet, areas in square feet, volumes in cubic feet and angles in radians, whatever the project shows. Convert with <code>UnitUtils.ConvertFromInternalUnits</code> / <code>ConvertToInternalUnits</code> and a <code>ForgeTypeId</code>. The <code>pyrevit.revit.units</code> helpers <code>format_length</code>, <code>format_area</code> and <code>format_slope</code> follow the document's display units, but <code>parse_length</code> and <code>parse_slope</code> do not: <code>parse_length</code> treats a bare number as feet, so input that should follow the project's units needs explicit units or a parser that reads them. <code>DisplayUnitType</code> does not exist on newer Revit years (see <a href="#revit-year">Revit year</a>). A fixed number in a script, such as <code>if length &gt; 500</code>, is a unit bug unless it says which unit it is in. Include area, volume and an angle in the cases, and a value that rounds differently in the two systems.</p>
 <h3 id="locale-and-text">Locale and text</h3>
 <table>
 <thead>
@@ -11588,9 +11593,14 @@
 <td>The code sees the elements it should, not every option's</td>
 </tr>
 <tr>
-<td>Read-only or detached model</td>
-<td>Open a model read-only or detached</td>
-<td>Saving or editing fails with a clear message</td>
+<td>Read-only model</td>
+<td>Open a model read-only</td>
+<td>An edit or save that Revit refuses is reported clearly</td>
+</tr>
+<tr>
+<td>Detached model</td>
+<td>Open a workshared model with <strong>Detach from Central</strong></td>
+<td>Supported edits and saves work on the separate model without syncing to the original central model</td>
 </tr>
 </tbody>
 </table>
@@ -11691,7 +11701,7 @@
 <td>Integer division, a missing coding line, file encodings, units, locale</td>
 </tr>
 <tr>
-<td><code>python dev/checks/check_ipy2_compat.py</code></td>
+<td><code>python dev/checks/check_ipy2_compat.py &lt;file.py&gt;</code></td>
 <td><code>**kwargs,</code></td>
 <td>Everything else that IronPython 2.7 cannot parse</td>
 </tr>
