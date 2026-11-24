@@ -6,7 +6,9 @@ IronPython 3.4 do neither. These checks inspect source without loading Revit.
 """
 
 import ast
+import builtins
 from pathlib import Path
+from types import SimpleNamespace
 import unittest
 
 import pytest
@@ -60,6 +62,43 @@ def _defined_name(node):
     if isinstance(node, ast.Assign):
         return getattr(node.targets[0], "id", "")
     return node.name
+
+
+def _load_method(path, class_name, method_name, namespace):
+    tree = _parse(path)
+    cls = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == class_name
+    )
+    method = next(
+        node
+        for node in cls.body
+        if isinstance(node, ast.FunctionDef) and node.name == method_name
+    )
+    module = ast.Module(body=[method], type_ignores=[])
+    exec(compile(module, str(path), "exec"), namespace)
+    return namespace[method_name]
+
+
+def _free_names(function):
+    loaded = {
+        node.id
+        for node in ast.walk(function)
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+    }
+    bound = {
+        node.id
+        for node in ast.walk(function)
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)
+    }
+    bound |= {node.arg for node in ast.walk(function) if isinstance(node, ast.arg)}
+    bound |= {
+        node.name
+        for node in ast.walk(function)
+        if isinstance(node, (ast.ExceptHandler, ast.FunctionDef)) and node.name
+    }
+    return loaded - bound - set(dir(builtins))
 
 
 def _docstring_nodes(tree):
@@ -125,6 +164,42 @@ class FormatSettingValueTests(unittest.TestCase):
 
 
 @pytest.mark.regression
+class SettingValueFromTextTests(unittest.TestCase):
+    """Issue 4184: an unedited rounded float must not replace the stored value."""
+
+    def setUp(self):
+        names = {"_format_setting_value", "_setting_value_from_text"}
+        self.namespace = _load(SETTINGS_WINDOW, names, ast.FunctionDef)
+        self.from_text = self.namespace["_setting_value_from_text"]
+        self.format = self.namespace["_format_setting_value"]
+
+    def test_unedited_float_keeps_its_exact_value(self):
+        original = 1.9685039370078
+        self.assertEqual(self.from_text(self.format(original), original), original)
+
+    def test_edited_text_is_returned_as_typed(self):
+        self.assertEqual(self.from_text("2.5", 1.9685039370078), "2.5")
+
+    def test_non_float_originals_return_the_text(self):
+        self.assertEqual(self.from_text("5", 5), "5")
+        self.assertEqual(self.from_text("a", None), "a")
+
+    def test_save_clicked_reads_text_boxes_through_the_helper(self):
+        tree = _parse(SETTINGS_WINDOW)
+        save = next(
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef) and node.name == "save_clicked"
+        )
+        called = {
+            node.func.id
+            for node in ast.walk(save)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
+        self.assertIn("_setting_value_from_text", called)
+
+
+@pytest.mark.regression
 class DegreeSignTests(unittest.TestCase):
     """Issue 4184: the degree sign must not show as mojibake on IronPython 2.7."""
 
@@ -142,6 +217,32 @@ class DegreeSignTests(unittest.TestCase):
         namespace = _load(GRID_BUBBLES, {"DEGREE"}, ast.Assign)
         self.assertEqual(namespace["DEGREE"], "\N{DEGREE SIGN}")
 
+    def test_status_line_shows_the_degree_sign(self):
+        namespace = _load(GRID_BUBBLES, {"DEGREE"}, ast.Assign)
+        update = _load_method(
+            GRID_BUBBLES, "ToggleGridWindow", "update_status_display", namespace
+        )
+        grids = SimpleNamespace(
+            selection=[],
+            grids=lambda: [object()],
+            get_active_grids=lambda: [object()],
+        )
+        window = SimpleNamespace(
+            grids=grids,
+            coordinate_system="true_north",
+            angle_tolerance=1,
+            status_grids=SimpleNamespace(Text=""),
+            status_grids_active=SimpleNamespace(Text=""),
+            status_coordinate_system=SimpleNamespace(Text=""),
+            status_active_controls=SimpleNamespace(Text=""),
+            top_bottom_collapsed=True,
+            right_left_collapsed=True,
+            show_element=lambda element: None,
+            hide_element=lambda element: None,
+        )
+        update(window)
+        self.assertIn("1° tolerance", window.status_coordinate_system.Text)
+
     def test_grid_bubbles_has_no_non_ascii_literal_outside_comments(self):
         found = _non_ascii_literals_outside_docstrings(_parse(GRID_BUBBLES))
         self.assertEqual(found, [])
@@ -150,6 +251,15 @@ class DegreeSignTests(unittest.TestCase):
 @pytest.mark.regression
 class KeynoteManagerTextTests(unittest.TestCase):
     """Issue 4184: Keynote Manager text must not show as mojibake on IronPython 2.7."""
+
+    def test_lost_engine_warning_uses_no_script_globals(self):
+        guard = next(
+            node
+            for node in _parse(KEYNOTES).body
+            if isinstance(node, ast.FunctionDef) and node.name == "ui_guard"
+        )
+        guard.args.defaults = []
+        self.assertEqual(_free_names(guard), set())
 
     def test_constants_decode_to_the_expected_characters(self):
         names = {"EM_DASH", "MIDDLE_DOT", "LEFT_DOUBLE_QUOTE", "RIGHT_DOUBLE_QUOTE"}
