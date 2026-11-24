@@ -69,7 +69,7 @@ def element_rows(elements):
 
 
 def print_element_table(title, elements):
-    output.print_table(
+    output.print_html_table(
         table_data=element_rows(elements),
         title=title,
         columns=[_t("column_id"), _t("column_class")],
