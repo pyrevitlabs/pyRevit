@@ -32,10 +32,11 @@ namespace pyRevitLabs.PyRevit {
 
         /// <summary>
         /// Test seam that replaces the CI binaries install of a git clone: when set it runs instead of the
-        /// download, so it throws to simulate missing binaries and returns to simulate success. Always null in
-        /// production.
+        /// download with the clone path, repository url, install mode and branch, so it throws to simulate
+        /// missing binaries and returns to simulate success. Process-wide state: only non-parallel tests may
+        /// set it, and they must reset it. Always null in production.
         /// </summary>
-        internal static Action<string> BinariesInstallHook;
+        internal static Action<string, string, BinArtifactInstallMode, string> BinariesInstallHook;
 
         // managing clones ===========================================================================================
         // clones are git clones. pyRevit module likes to know about available clones to
@@ -347,11 +348,14 @@ namespace pyRevitLabs.PyRevit {
         /// </exception>
         /// <remarks>
         /// An existing destination subfolder is resumed instead of cloned again only when it is an
-        /// unregistered git clone of the same origin, checked out at the requested branch, with no local
-        /// commits missing from its remote branch, and the clone name is not registered at another path.
-        /// A resumed folder is never deleted or reset. Binaries are installed into it only when it has no built
-        /// <c>bin/*/engines</c>, so a local build survives. When installing or registering fails, a resumed
-        /// folder is kept as is; a freshly cloned folder is deleted unless only the binaries are missing.
+        /// unregistered git clone of the same origin, checked out at the requested branch (a detached HEAD from
+        /// a tag or commit checkout is never resumed), whose branch tracks a remote branch and has no local
+        /// commits missing from it, and the clone name is not registered at another path.
+        /// A resumed folder is never deleted or reset. Binaries are installed into it only when its
+        /// <c>bin</c> folder is empty or missing and no <c>bin.bak</c> or <c>bin.new</c> exists, since the
+        /// install replaces <c>bin</c>; otherwise the folder is only registered. When installing or
+        /// registering fails, a resumed folder is kept as is; a freshly cloned folder is deleted unless only
+        /// the binaries are missing.
         /// Archive (<c>--image</c>) installs never resume; see <see cref="DeployFromImage"/>.
         /// </remarks>
         // @handled @logs
@@ -362,6 +366,11 @@ namespace pyRevitLabs.PyRevit {
                                           string destPath = null,
                                           GitInstallerCredentials credentials = null,
                                           bool installBinaries = true) {
+            if (deploymentName != null) {
+                // TODO: Add core checkout option. Figure out how to checkout certain folders in libgit2sharp
+                throw new NotImplementedException("Deployment with git clones not implemented yet.");
+            }
+
             if (destPath != null)
                 destPath = CommonUtils.ExpandEnvironmentPath(destPath);
 
@@ -381,27 +390,9 @@ namespace pyRevitLabs.PyRevit {
             // Drop stale registrations before cloning so a retried install can register cleanly.
             PruneStaleCloneRegistrations();
 
-            var isResumedClone = false;
-            // check existing destination path
-            if (CommonUtils.VerifyPath(destPath)) {
-                logger.Debug("Destination path already exists {0}", destPath);
-                destPath = Path.Combine(destPath, cloneName);
-                logger.Debug("Using subpath {0}", destPath);
-                if (CommonUtils.VerifyPath(destPath)) {
-                    if (deploymentName != null)
-                        throw ExistingDestinationException(destPath);
-                    var refusal = GetResumeRefusal(destPath, repoSourcePath, repoBranch, cloneName);
-                    if (refusal != null)
-                        throw ExistingDestinationException(destPath, refusal);
-                    isResumedClone = true;
-                }
-            }
+            destPath = ResolveRepoDestination(destPath, cloneName, repoSourcePath, repoBranch, out var isResumedClone);
 
             // start the clone process
-            if (deploymentName != null) {
-                // TODO: Add core checkout option. Figure out how to checkout certain folders in libgit2sharp
-                throw new NotImplementedException("Deployment with git clones not implemented yet.");
-            }
             if (isResumedClone)
                 logger.Info("Resuming kept clone \"{0}\"", destPath);
             string clonedPath;
@@ -417,8 +408,8 @@ namespace pyRevitLabs.PyRevit {
                 // make sure to delete the repo if error occured after cloning
                 try {
                     PyRevitClone.VerifyCloneValidity(clonedPath);
-                    if (isResumedClone && HasBuiltBinaries(clonedPath))
-                        logger.Info("Kept clone already has built binaries; keeping them.");
+                    if (isResumedClone && HasLocalBinContent(clonedPath))
+                        logger.Info("Kept clone already has files under bin; keeping them and installing nothing.");
                     else if (installBinaries)
                         InstallBinariesForRepoClone(
                             clonedPath,
@@ -428,23 +419,9 @@ namespace pyRevitLabs.PyRevit {
                     logger.Debug("Clone successful \"{0}\"", clonedPath);
                     RegisterClone(cloneName, clonedPath, forceUpdate: true);
                 }
-                catch (pyRevitBinArtifactNotFoundException ex) {
-                    logger.Warn(
-                        "Git clone succeeded but CI binaries could not be installed at \"{0}\" | {1} | {2}",
-                        clonedPath,
-                        ex.Message,
-                        RecoveryMessage(clonedPath) + " Running the same command again resumes.");
-                    throw;
-                }
-                catch (Exception ex) when (isResumedClone) {
-                    logger.Warn(
-                        "Resuming the kept clone at \"{0}\" failed | {1} | {2}",
-                        clonedPath,
-                        ex.Message,
-                        RecoveryMessage(clonedPath));
-                    throw;
-                }
                 catch (Exception ex) {
+                    if (KeepsClonedFolder(ex, isResumedClone, clonedPath))
+                        throw;
                     logger.Debug(string.Format("Exception occured after clone complete. Deleting clone \"{0}\" | {1}",
                                                clonedPath, ex.Message));
                     UnregisterCloneAtPath(clonedPath);
@@ -502,7 +479,10 @@ namespace pyRevitLabs.PyRevit {
                 destPath = Path.Combine(destPath, cloneName);
                 logger.Debug("Using subpath {0}", destPath);
                 if (CommonUtils.VerifyPath(destPath))
-                    throw ExistingDestinationException(destPath, "image deployments are not resumable");
+                    throw CreateExistingDestinationError(
+                        destPath,
+                        RegistrationDecisionAt(destPath)
+                        ?? ResumeDecision.NotResumable("image deployments are not resumable"));
             }
 
             logger.Debug("Destination path determined as \"{0}\"", destPath);
@@ -875,60 +855,170 @@ namespace pyRevitLabs.PyRevit {
                 Update(clone, credentials, skipBin: skipBin);
         }
 
-        private static string RecoveryMessage(string path) {
+        private enum ResumeDecisionKind {
+            Resume,
+            NotResumable,
+            RegisteredClone,
+            RegisteredInvalidClone,
+            NameRegisteredElsewhere,
+        }
+
+        private sealed class ResumeDecision {
+            public static readonly ResumeDecision Resume = new ResumeDecision(ResumeDecisionKind.Resume, null, null);
+
+            private ResumeDecision(ResumeDecisionKind kind, string reason, string registeredName) {
+                Kind = kind;
+                Reason = reason;
+                RegisteredName = registeredName;
+            }
+
+            public ResumeDecisionKind Kind { get; }
+            public string Reason { get; }
+            public string RegisteredName { get; }
+            public bool CanResume => Kind == ResumeDecisionKind.Resume;
+
+            public static ResumeDecision NotResumable(string reason) {
+                return new ResumeDecision(ResumeDecisionKind.NotResumable, reason, null);
+            }
+
+            public static ResumeDecision Registered(ResumeDecisionKind kind, string registeredName) {
+                return new ResumeDecision(kind, null, registeredName);
+            }
+
+            public static ResumeDecision NameElsewhere(string name, string path) {
+                return new ResumeDecision(
+                    ResumeDecisionKind.NameRegisteredElsewhere,
+                    string.Format("a clone named \"{0}\" is already registered at \"{1}\"", name, path),
+                    name);
+            }
+        }
+
+        private static string RecoveryMessage(string path, bool resumable = false) {
             return string.Format(
                 "To recover, register the folder with: pyrevit clones add <name> \"{0}\" " +
-                "then pyrevit clones update <name>, delete the folder, or choose another --dest.",
-                path);
-        }
-
-        private static PyRevitException ExistingDestinationException(string path, string reason = null) {
-            var registered = GetRegisteredClones(pruneStoredList: false)
-                .FirstOrDefault(clone => clone.ClonePath.IsSamePathAs(path));
-            if (registered != null)
-                return new PyRevitException(string.Format(
-                    "Destination path already exists \"{0}\" and is already registered as clone \"{1}\". " +
-                    "To refresh it run: pyrevit clones update {1}, or choose another --dest.",
-                    path,
-                    registered.Name));
-            return new PyRevitException(string.Format(
-                "Destination path already exists \"{0}\" and is not a registered clone{1}. {2}",
+                "then pyrevit clones update <name>, delete the folder, or choose another --dest.{1}",
                 path,
-                reason != null ? " (" + reason + ")" : string.Empty,
-                RecoveryMessage(path)));
+                resumable ? " Running the same command again resumes." : string.Empty);
         }
 
-        private static string GetResumeRefusal(
+        private static PyRevitException CreateExistingDestinationError(string path, ResumeDecision decision) {
+            switch (decision.Kind) {
+                case ResumeDecisionKind.RegisteredClone:
+                    return new PyRevitException(string.Format(
+                        "Destination path already exists \"{0}\" and is already registered as clone \"{1}\". " +
+                        "To refresh it run: pyrevit clones update {1}, or choose another --dest.",
+                        path,
+                        decision.RegisteredName));
+                case ResumeDecisionKind.RegisteredInvalidClone:
+                    return new PyRevitException(string.Format(
+                        "Destination path already exists \"{0}\" and is registered as clone \"{1}\" but is no " +
+                        "longer a valid clone. Restore the folder, run: pyrevit clones forget {1}, " +
+                        "or choose another --dest.",
+                        path,
+                        decision.RegisteredName));
+                case ResumeDecisionKind.NameRegisteredElsewhere:
+                    return new PyRevitException(string.Format(
+                        "Destination path already exists \"{0}\" and cannot be resumed ({1}). " +
+                        "Choose another clone name or --dest, or run: pyrevit clones forget {2}.",
+                        path,
+                        decision.Reason,
+                        decision.RegisteredName));
+                default:
+                    return new PyRevitException(string.Format(
+                        "Destination path already exists \"{0}\" and is not a registered clone ({1}). {2}",
+                        path,
+                        decision.Reason,
+                        RecoveryMessage(path)));
+            }
+        }
+
+        private static string ResolveRepoDestination(
+            string destPath,
+            string cloneName,
+            string repoSourcePath,
+            string repoBranch,
+            out bool isResumed) {
+            isResumed = false;
+            if (!CommonUtils.VerifyPath(destPath))
+                return destPath;
+
+            logger.Debug("Destination path already exists {0}", destPath);
+            var clonePath = Path.Combine(destPath, cloneName);
+            logger.Debug("Using subpath {0}", clonePath);
+            if (!CommonUtils.VerifyPath(clonePath))
+                return clonePath;
+
+            var decision = DecideResume(clonePath, repoSourcePath, repoBranch, cloneName);
+            if (!decision.CanResume)
+                throw CreateExistingDestinationError(clonePath, decision);
+            isResumed = true;
+            return clonePath;
+        }
+
+        private static ResumeDecision RegistrationDecisionAt(string clonePath) {
+            var entry = GetStoredCloneRegistrations()
+                .FirstOrDefault(stored => stored.Value.NormalizeAsPath().IsSamePathAs(clonePath));
+            if (entry.Key == null)
+                return null;
+            try {
+                CreateVerifiedClone(entry.Value.NormalizeAsPath(), entry.Key);
+                return ResumeDecision.Registered(ResumeDecisionKind.RegisteredClone, entry.Key);
+            }
+            catch (Exception) {
+                return ResumeDecision.Registered(ResumeDecisionKind.RegisteredInvalidClone, entry.Key);
+            }
+        }
+
+        private static ResumeDecision DecideResume(
             string clonePath,
             string repoSourcePath,
             string effectiveBranch,
             string cloneName) {
-            var storedRegistrations = GetStoredCloneRegistrations();
-            if (storedRegistrations.Any(entry => entry.Value.NormalizeAsPath().IsSamePathAs(clonePath)))
-                return "it is already registered as a clone";
+            var registeredAtPath = RegistrationDecisionAt(clonePath);
+            if (registeredAtPath != null)
+                return registeredAtPath;
             if (!GitInstaller.IsValidRepo(clonePath))
-                return "it is not a git repository";
+                return ResumeDecision.NotResumable("it is not a git repository");
             var originUrl = GitInstaller.GetRemoteUrl(clonePath, PyRevitConsts.DefaultCloneRemoteName);
             if (originUrl == null)
-                return "it has no origin remote";
+                return ResumeDecision.NotResumable("it has no origin remote");
             if (!GitInstaller.AreSameRemote(originUrl, repoSourcePath))
-                return "its origin remote is not the requested source";
+                return ResumeDecision.NotResumable("its origin remote is not the requested source");
             var keptBranch = GitInstaller.GetCheckedoutBranch(clonePath);
             if (keptBranch != effectiveBranch)
-                return string.Format(
+                return ResumeDecision.NotResumable(string.Format(
                     "it is checked out at branch \"{0}\", not the requested \"{1}\"",
                     keptBranch,
-                    effectiveBranch);
+                    effectiveBranch));
+            if (!GitInstaller.HasTrackingBranch(clonePath))
+                return ResumeDecision.NotResumable("its branch does not track a remote branch");
             if (GitInstaller.IsLocalAheadOfTrackingBranch(clonePath))
-                return "it has local commits that are not on its remote branch";
-            var sameNamed = storedRegistrations.FirstOrDefault(
+                return ResumeDecision.NotResumable("it has local commits that are not on its remote branch");
+            var sameNamed = GetStoredCloneRegistrations().FirstOrDefault(
                 entry => string.Equals(entry.Key, cloneName, StringComparison.OrdinalIgnoreCase));
             if (sameNamed.Key != null)
-                return string.Format(
-                    "a clone named \"{0}\" is already registered at \"{1}\"",
-                    cloneName,
-                    sameNamed.Value);
-            return null;
+                return ResumeDecision.NameElsewhere(cloneName, sameNamed.Value);
+            return ResumeDecision.Resume;
+        }
+
+        private static bool KeepsClonedFolder(Exception ex, bool isResumedClone, string clonedPath) {
+            if (ex is pyRevitBinArtifactNotFoundException) {
+                logger.Warn(
+                    "Git clone succeeded but CI binaries could not be installed at \"{0}\" | {1} | {2}",
+                    clonedPath,
+                    ex.Message,
+                    RecoveryMessage(clonedPath, resumable: true));
+                return true;
+            }
+            if (isResumedClone) {
+                logger.Warn(
+                    "Resuming the kept clone at \"{0}\" failed | {1} | {2}",
+                    clonedPath,
+                    ex.Message,
+                    RecoveryMessage(clonedPath));
+                return true;
+            }
+            return false;
         }
 
         private static Dictionary<string, string> GetStoredCloneRegistrations() {
@@ -944,7 +1034,7 @@ namespace pyRevitLabs.PyRevit {
             string branchName = null) {
             try {
                 if (BinariesInstallHook != null)
-                    BinariesInstallHook(clonePath);
+                    BinariesInstallHook(clonePath, repoUrl, mode, branchName);
                 else
                     BinArtifactInstaller.InstallForRepoClone(clonePath, repoUrl, mode, branchName);
             }
@@ -995,6 +1085,13 @@ namespace pyRevitLabs.PyRevit {
                 if (clone.ClonePath.IsSamePathAs(normalizedPath))
                     UnregisterClone(clone);
             }
+        }
+
+        private static bool HasLocalBinContent(string clonePath) {
+            var binPath = Path.Combine(clonePath, "bin");
+            return (Directory.Exists(binPath) && Directory.EnumerateFileSystemEntries(binPath).Any())
+                   || Directory.Exists(binPath + ".bak")
+                   || Directory.Exists(binPath + ".new");
         }
 
         private static bool HasBuiltBinaries(string clonePath) {

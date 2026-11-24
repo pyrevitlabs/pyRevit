@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using pyRevitLabs.Common.Extensions;
@@ -293,6 +292,17 @@ namespace pyRevitLabs.Common {
             }
         }
 
+        /// <summary>
+        /// Tells whether the checked-out branch of a repository tracks a remote branch.
+        /// </summary>
+        public static bool HasTrackingBranch(string repoPath) {
+            if (!IsValidRepo(repoPath))
+                return false;
+
+            using (var repo = new Repository(repoPath))
+                return repo.Head?.TrackedBranch != null;
+        }
+
         public static bool IsSyncedWithTrackingBranch(string repoPath) {
             if (!IsValidRepo(repoPath))
                 return true;
@@ -335,68 +345,17 @@ namespace pyRevitLabs.Common {
         /// </summary>
         /// <param name="first">A remote URL, scp-style address or local path, such as a stored remote.</param>
         /// <param name="second">The source to compare with.</param>
-        /// <returns>
-        /// True when both resolve to the same host and path, ignoring credentials, scheme, a trailing
-        /// <c>.git</c>, trailing slashes, backslash use and host case. The path case is significant for
-        /// remote URLs. Local sources compare as full paths, ignoring case; relative local paths resolve
-        /// against the process working directory and <c>file://</c> URLs compare as their local path.
-        /// A different port or a different path case counts as a different remote. Two scp-style addresses
-        /// differ when only one path starts with a slash, since that path starts at the server root instead
-        /// of the remote user's home. False when either is empty.
-        /// </returns>
+        /// <returns>True when both resolve to the same repository; false when either is empty.</returns>
+        /// <remarks>
+        /// Credentials, scheme, a trailing <c>.git</c>, trailing slashes, backslash use and host case are
+        /// ignored. The path case is significant for remote URLs, and a different port counts as a
+        /// different remote. Local sources compare as full paths, ignoring case; relative local paths resolve
+        /// against the process working directory and <c>file://</c> URLs compare as their local path. Two
+        /// scp-style addresses differ when only one path starts with a slash, since that path starts at the
+        /// server root instead of the remote user's home.
+        /// </remarks>
         public static bool AreSameRemote(string first, string second) {
-            if (string.IsNullOrWhiteSpace(first) || string.IsNullOrWhiteSpace(second))
-                return false;
-            var firstIsAbsolute = ScpPathIsAbsolute(first);
-            var secondIsAbsolute = ScpPathIsAbsolute(second);
-            if (firstIsAbsolute.HasValue && secondIsAbsolute.HasValue && firstIsAbsolute != secondIsAbsolute)
-                return false;
-            return NormalizeRemote(first) == NormalizeRemote(second);
-        }
-
-        private static bool? ScpPathIsAbsolute(string source) {
-            var value = source.Trim().Replace('\\', '/');
-            if (value.StartsWith("file:", StringComparison.OrdinalIgnoreCase)
-                || DrivePathPattern.IsMatch(value)
-                || UrlRemotePattern.IsMatch(value))
-                return null;
-            var match = ScpRemotePattern.Match(value);
-            return match.Success ? match.Groups[2].Value.StartsWith("/") : (bool?)null;
-        }
-
-        private static readonly Regex DrivePathPattern = new Regex("^[a-z]:(/|$)", RegexOptions.IgnoreCase);
-        private static readonly Regex UrlRemotePattern =
-            new Regex("^[a-z][a-z0-9+.-]+://(?:[^/@]*@)?([^/]+)/?(.*)$", RegexOptions.IgnoreCase);
-        private static readonly Regex ScpRemotePattern = new Regex(@"^(?:[^@/\s]+@)?([^/:@\s]+):(?!//)(.+)$");
-
-        private static string NormalizeRemote(string source) {
-            var value = source.Trim().Replace('\\', '/');
-            if (value.StartsWith("file:", StringComparison.OrdinalIgnoreCase)) {
-                try {
-                    value = new Uri(value).LocalPath.Replace('\\', '/');
-                }
-                catch (UriFormatException) {
-                    return "raw:" + value.ToLowerInvariant();
-                }
-            }
-            var isDrivePath = DrivePathPattern.IsMatch(value);
-            var match = UrlRemotePattern.Match(value);
-            if (!match.Success)
-                match = ScpRemotePattern.Match(value);
-            if (match.Success && !isDrivePath) {
-                var path = match.Groups[2].Value.Trim('/');
-                if (path.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
-                    path = path.Substring(0, path.Length - 4).TrimEnd('/');
-                return "remote:" + match.Groups[1].Value.ToLowerInvariant() + "/" + path;
-            }
-            string fullPath;
-            try {
-                fullPath = Path.GetFullPath(value);
-            }
-            catch (Exception) {
-                fullPath = value;
-            }
-            return "local:" + fullPath.Replace('\\', '/').TrimEnd('/').ToLowerInvariant();
+            return RemoteAddressComparer.AreSame(first, second);
         }
 
         // private methods

@@ -311,20 +311,28 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         /// <summary>Retrying a clone that stopped on missing binaries resumes the kept folder, registers it and deletes nothing.</summary>
         [Test]
         public void DeployFromRepo_WhenRetriedAfterMissingBinaries_ResumesTheKeptClone() {
-            var source = CreateSourceRepo();
-            var dest = Path.Combine(_tempRoot, "repoDest");
-            var keptClone = Path.Combine(dest, CloneName);
-
-            PyRevitClones.BinariesInstallHook = _ => throw new pyRevitBinArtifactNotFoundException("no binaries");
-            Assert.Throws<pyRevitBinArtifactNotFoundException>(
-                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
+            var keptClone = CreateKeptClone(out var source, out var dest);
             var marker = Path.Combine(keptClone, "marker.txt");
             File.WriteAllText(marker, "keep me");
             var hookCalls = 0;
-            PyRevitClones.BinariesInstallHook = _ => hookCalls++;
+            string hookPath = null;
+            string hookUrl = null;
+            var hookMode = BinArtifactInstallMode.Update;
+            string hookBranch = null;
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => {
+                hookCalls++;
+                hookPath = path;
+                hookUrl = url;
+                hookMode = mode;
+                hookBranch = branch;
+            };
             PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest);
 
             Assert.That(hookCalls, Is.EqualTo(1));
+            Assert.That(hookPath.NormalizeAsPath(), Is.EqualTo(keptClone.NormalizeAsPath()));
+            Assert.That(hookUrl, Is.EqualTo(source));
+            Assert.That(hookMode, Is.EqualTo(BinArtifactInstallMode.Clone));
+            Assert.That(hookBranch, Is.EqualTo(PyRevitLabsConsts.TargetBranch));
             Assert.That(File.Exists(marker), Is.True, "resume must not delete anything in the kept folder");
             Assert.That(Repository.IsValid(keptClone), Is.True);
             Assert.That(
@@ -335,16 +343,11 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         /// <summary>A kept folder that already has built binaries is registered without installing binaries over its build.</summary>
         [Test]
         public void DeployFromRepo_WhenTheKeptFolderHasBuiltBinaries_RegistersItWithoutInstallingBinaries() {
-            var source = CreateSourceRepo();
-            var dest = Path.Combine(_tempRoot, "repoDest");
-            var keptClone = Path.Combine(dest, CloneName);
-            PyRevitClones.BinariesInstallHook = _ => throw new pyRevitBinArtifactNotFoundException("no binaries");
-            Assert.Throws<pyRevitBinArtifactNotFoundException>(
-                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
+            var keptClone = CreateKeptClone(out var source, out var dest);
             var localBuild = Path.Combine(keptClone, "bin", "netfx", "engines", "local-build.txt");
             Directory.CreateDirectory(Path.GetDirectoryName(localBuild));
             File.WriteAllText(localBuild, "built locally");
-            PyRevitClones.BinariesInstallHook = _ => throw new InvalidOperationException("binaries must not be installed");
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new InvalidOperationException("binaries must not be installed");
 
             PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest);
 
@@ -352,6 +355,89 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(
                 PyRevitClones.GetRegisteredClone(CloneName).ClonePath.NormalizeAsPath(),
                 Is.EqualTo(keptClone.NormalizeAsPath()));
+        }
+
+        /// <summary>A kept folder whose bin holds files without engines, such as a partial build, is registered and its bin is left untouched.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheKeptFolderHasABinWithoutEngines_KeepsItAndRegisters() {
+            var keptClone = CreateKeptClone(out var source, out var dest);
+            var partialBuild = Path.Combine(keptClone, "bin", "netfx", "pyrevit.exe");
+            Directory.CreateDirectory(Path.GetDirectoryName(partialBuild));
+            File.WriteAllText(partialBuild, "partial");
+            var leftoverBackup = Path.Combine(keptClone, "bin.bak", "old.dll");
+            Directory.CreateDirectory(Path.GetDirectoryName(leftoverBackup));
+            File.WriteAllText(leftoverBackup, "old");
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new InvalidOperationException("binaries must not be installed");
+
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest);
+
+            Assert.That(File.Exists(partialBuild), Is.True);
+            Assert.That(File.Exists(leftoverBackup), Is.True);
+            Assert.That(PyRevitClones.GetRegisteredClone(CloneName), Is.Not.Null);
+        }
+
+        /// <summary>A resumed clone that fails for a reason other than missing binaries keeps its folder and registers nothing.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheResumeFailsForAnotherReason_KeepsTheFolderAndRegistersNothing() {
+            var keptClone = CreateKeptClone(out var source, out var dest);
+            var marker = Path.Combine(keptClone, "marker.txt");
+            File.WriteAllText(marker, "keep me");
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new InvalidOperationException("boom");
+
+            Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
+
+            Assert.That(File.Exists(marker), Is.True);
+            Assert.That(Repository.IsValid(keptClone), Is.True);
+            Assert.That(PyRevitClones.GetRegisteredClones(pruneStoredList: false), Is.Empty);
+        }
+
+        /// <summary>A kept folder whose branch has no upstream is not resumed, since local commits could not be detected.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheKeptBranchHasNoUpstream_Refuses() {
+            var keptClone = CreateKeptClone(out var source, out var dest);
+            using (var repo = new Repository(keptClone)) {
+                repo.Config.Unset("branch.master.remote");
+                repo.Config.Unset("branch.master.merge");
+            }
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new InvalidOperationException("binaries must not be installed");
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
+
+            Assert.That(ex.Message, Does.Contain("does not track a remote branch"));
+            Assert.That(PyRevitClones.GetRegisteredClones(pruneStoredList: false), Is.Empty);
+        }
+
+        /// <summary>A kept folder checked out at a commit instead of a branch is not resumed.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheKeptFolderHasADetachedHead_Refuses() {
+            var keptClone = CreateKeptClone(out var source, out var dest);
+            using (var repo = new Repository(keptClone))
+                Commands.Checkout(repo, repo.Head.Tip);
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new InvalidOperationException("binaries must not be installed");
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
+
+            Assert.That(ex.Message, Does.Contain("is checked out at branch"));
+            Assert.That(PyRevitClones.GetRegisteredClones(pruneStoredList: false), Is.Empty);
+        }
+
+        /// <summary>A folder registered at this path that is no longer a valid clone gets its own message, not the unregistered one.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheFolderIsRegisteredButNoLongerAClone_SaysSo() {
+            var source = CreateSourceRepo();
+            var dest = Path.Combine(_tempRoot, "repoDest");
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false);
+            Directory.Delete(Path.Combine(dest, CloneName, "pyrevitlib", "pyrevit"), recursive: true);
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false));
+
+            Assert.That(ex.Message, Does.Contain("no longer a valid clone"));
+            Assert.That(ex.Message, Does.Contain("clones forget"));
+            Assert.That(ex.Message, Does.Not.Contain("not a registered clone"));
         }
 
         /// <summary>A kept folder with commits missing from its remote branch is not resumed, since the binaries would not match its code.</summary>
@@ -368,7 +454,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 var author = new Signature("Test", "test@example.invalid", DateTimeOffset.UtcNow);
                 repo.Commit("local", author, author);
             }
-            PyRevitClones.BinariesInstallHook = _ => throw new InvalidOperationException("binaries must not be installed");
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new InvalidOperationException("binaries must not be installed");
 
             var ex = Assert.Throws<PyRevitException>(
                 () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
@@ -474,13 +560,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         /// <summary>When the resume fails again on missing binaries the kept folder, its files and its repo survive and nothing is registered.</summary>
         [Test]
         public void DeployFromRepo_WhenTheResumeFailsAgain_KeepsTheFolderAndRegistersNothing() {
-            var source = CreateSourceRepo();
-            var dest = Path.Combine(_tempRoot, "repoDest");
-            var keptClone = Path.Combine(dest, CloneName);
-
-            PyRevitClones.BinariesInstallHook = _ => throw new pyRevitBinArtifactNotFoundException("no binaries");
-            Assert.Throws<pyRevitBinArtifactNotFoundException>(
-                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
+            var keptClone = CreateKeptClone(out var source, out var dest);
             var marker = Path.Combine(keptClone, "marker.txt");
             File.WriteAllText(marker, "keep me");
 
@@ -527,23 +607,23 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: keptDest, installBinaries: false));
 
             Assert.That(ex.Message, Does.Contain("already registered at"));
+            Assert.That(ex.Message, Does.Not.Contain("not a registered clone"));
             Assert.That(
                 PyRevitClones.GetRegisteredClone(CloneName).ClonePath.NormalizeAsPath(),
                 Is.EqualTo(Path.Combine(otherDest, CloneName).NormalizeAsPath()));
         }
 
-        /// <summary>A deployment request into an existing folder keeps failing with the destination-exists error and touches nothing.</summary>
+        /// <summary>A deployment request is rejected as not implemented before anything is created, even for an existing folder.</summary>
         [Test]
-        public void DeployFromRepo_WhenADeploymentNameIsGivenForAnExistingFolder_ThrowsDestinationExists() {
+        public void DeployFromRepo_WhenADeploymentNameIsGivenForAnExistingFolder_ThrowsNotImplemented() {
             var source = CreateSourceRepo();
             var dest = Path.Combine(_tempRoot, "repoDest");
             PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false);
             PyRevitClones.UnregisterClone(PyRevitClones.GetRegisteredClone(CloneName));
 
-            var ex = Assert.Throws<PyRevitException>(
+            Assert.Throws<NotImplementedException>(
                 () => PyRevitClones.DeployFromRepo(CloneName, deploymentName: "core", repoUrl: source, destPath: dest));
 
-            Assert.That(ex.Message, Does.Contain("Destination path already exists"));
             Assert.That(Repository.IsValid(Path.Combine(dest, CloneName)), Is.True);
         }
 
@@ -552,7 +632,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         public void DeployFromRepo_WhenAFreshCloneFailsForAnotherReason_DeletesTheClonedFolder() {
             var source = CreateSourceRepo();
             var dest = Path.Combine(_tempRoot, "repoDest");
-            PyRevitClones.BinariesInstallHook = _ => throw new InvalidOperationException("boom");
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new InvalidOperationException("boom");
 
             Assert.Throws<PyRevitException>(
                 () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
@@ -566,7 +646,7 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
         public void DeployFromRepo_WhenTheDestinationHasBraces_StillReportsMissingBinaries() {
             var source = CreateSourceRepo();
             var dest = Path.Combine(_tempRoot, "dest{0}{x}");
-            PyRevitClones.BinariesInstallHook = _ => throw new pyRevitBinArtifactNotFoundException("no binaries");
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new pyRevitBinArtifactNotFoundException("no binaries");
 
             Assert.Throws<pyRevitBinArtifactNotFoundException>(
                 () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest));
@@ -590,13 +670,23 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Assert.That(ex.Message, Does.Contain("pyrevit clones add"));
         }
 
+        private string CreateKeptClone(out string source, out string dest) {
+            var sourceRepo = CreateSourceRepo();
+            var destRoot = Path.Combine(_tempRoot, "repoDest");
+            source = sourceRepo;
+            dest = destRoot;
+            var keptClone = Path.Combine(destRoot, CloneName);
+            PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new pyRevitBinArtifactNotFoundException("no binaries");
+            Assert.Throws<pyRevitBinArtifactNotFoundException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: sourceRepo, destPath: destRoot));
+            return keptClone;
+        }
+
         private string CreateSourceRepo(string folderName = "source") {
             var source = Path.Combine(_tempRoot, folderName);
             Directory.CreateDirectory(Path.Combine(source, "pyrevitlib", "pyrevit"));
-            Directory.CreateDirectory(Path.Combine(source, "bin"));
             File.WriteAllText(Path.Combine(source, "pyrevitlib", "pyrevit", "version"), "7.0.0");
-            File.WriteAllText(Path.Combine(source, "bin", "placeholder.txt"), "bin");
-            File.WriteAllText(Path.Combine(source, "pyRevitfile"), "[deployments]\r\ncore = ['bin', 'pyrevitlib', 'pyRevitfile']\r\n");
+            File.WriteAllText(Path.Combine(source, "pyRevitfile"), "[deployments]\r\ncore = ['pyrevitlib', 'pyRevitfile']\r\n");
             Repository.Init(source);
             using (var repository = new Repository(source)) {
                 repository.Refs.UpdateTarget("HEAD", "refs/heads/master");
