@@ -14,24 +14,44 @@ import pytest
 ROOT_DIR = Path(__file__).resolve().parents[4]
 SCAN_ROOTS = ("pyrevitlib", "extensions")
 SKIPPED_PARTS = {"site-packages", "rpw", "dev", "bin", "obj", "node_modules"}
-PICKLE_MODULE_NAMES = {"pickle", "pl", "cPickle"}
+PICKLE_MODULES = ("pickle", "cPickle")
+WRITER_NAMES = ("dump", "Pickler")
 CROSS_ENGINE_PROTOCOL = 2
 TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
 
 
-def _is_pickle_writer(call):
+def _pickle_imports(tree):
+    module_aliases = set(PICKLE_MODULES)
+    writer_aliases = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name in PICKLE_MODULES:
+                    module_aliases.add(alias.asname or alias.name)
+        elif isinstance(node, ast.ImportFrom) and node.module in PICKLE_MODULES:
+            for alias in node.names:
+                if alias.name in WRITER_NAMES:
+                    writer_aliases[alias.asname or alias.name] = alias.name
+    return module_aliases, writer_aliases
+
+
+def _writer_name(call, module_aliases, writer_aliases):
     func = call.func
-    if not isinstance(func, ast.Attribute) or func.attr not in ("dump", "Pickler"):
-        return False
-    owner = func.value
-    if isinstance(owner, ast.Attribute):
-        owner = ast.Name(id=owner.attr)
-    return isinstance(owner, ast.Name) and owner.id in PICKLE_MODULE_NAMES
+    if isinstance(func, ast.Name):
+        return writer_aliases.get(func.id)
+    if isinstance(func, ast.Attribute) and func.attr in WRITER_NAMES:
+        owner = func.value
+        owner_name = owner.attr if isinstance(owner, ast.Attribute) else None
+        if isinstance(owner, ast.Name):
+            owner_name = owner.id
+        if owner_name in module_aliases:
+            return func.attr
+    return None
 
 
-def _protocol_argument(call):
-    position = 2 if call.func.attr == "dump" else 1
+def _protocol_argument(call, writer_name):
+    position = 2 if writer_name == "dump" else 1
     if len(call.args) > position:
         return call.args[position]
     for keyword in call.keywords:
@@ -47,9 +67,13 @@ def _violations():
             if SKIPPED_PARTS & set(path.relative_to(ROOT_DIR).parts):
                 continue
             tree = ast.parse(path.read_bytes())
+            module_aliases, writer_aliases = _pickle_imports(tree)
             for node in ast.walk(tree):
-                if isinstance(node, ast.Call) and _is_pickle_writer(node):
-                    protocol = _protocol_argument(node)
+                if not isinstance(node, ast.Call):
+                    continue
+                writer_name = _writer_name(node, module_aliases, writer_aliases)
+                if writer_name:
+                    protocol = _protocol_argument(node, writer_name)
                     is_pinned = (
                         isinstance(protocol, ast.Constant)
                         and protocol.value == CROSS_ENGINE_PROTOCOL
