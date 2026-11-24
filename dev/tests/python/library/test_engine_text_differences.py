@@ -184,19 +184,61 @@ class SettingValueFromTextTests(unittest.TestCase):
         self.assertEqual(self.from_text("5", 5), "5")
         self.assertEqual(self.from_text("a", None), "a")
 
-    def test_save_clicked_reads_text_boxes_through_the_helper(self):
-        tree = _parse(SETTINGS_WINDOW)
-        save = next(
-            node
-            for node in ast.walk(tree)
-            if isinstance(node, ast.FunctionDef) and node.name == "save_clicked"
+    def _save(self, setting_type, original, text, **schema):
+        namespace = _load(
+            SETTINGS_WINDOW,
+            {
+                "_format_setting_value",
+                "_setting_value_from_text",
+                "_DISPLAY_ONLY_TYPES",
+            },
+            (ast.FunctionDef, ast.Assign),
         )
-        called = {
-            node.func.id
-            for node in ast.walk(save)
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        alerts = []
+        namespace["forms"] = SimpleNamespace(
+            alert=lambda message, **kwargs: alerts.append(message)
+        )
+        namespace["script"] = SimpleNamespace(save_config=lambda: None)
+        methods = {
+            name: _load_method(SETTINGS_WINDOW, "SettingsWindow", name, namespace)
+            for name in ("save_clicked", "_validate_setting", "_validate_numeric")
         }
-        self.assertIn("_setting_value_from_text", called)
+        written = {}
+        setting = dict(schema, name="field", type=setting_type)
+        window = SimpleNamespace(
+            settings_schema=[setting],
+            controls={"field": SimpleNamespace(Text=text)},
+            _original_values={"field": original},
+            config=SimpleNamespace(set_option=written.__setitem__),
+            configparser=None,
+            result=None,
+            Close=lambda: None,
+        )
+        window._validate_setting = lambda s, v: methods["_validate_setting"](
+            window, s, v
+        )
+        window._validate_numeric = lambda *a: methods["_validate_numeric"](window, *a)
+        methods["save_clicked"](window, None, None)
+        return written, alerts
+
+    def test_unedited_float_setting_is_saved_exactly(self):
+        original = 1.9685039370078
+        written, alerts = self._save("float", original, "1.96850393701")
+        self.assertEqual(written, {"field": original})
+        self.assertEqual(alerts, [])
+
+    def test_edited_float_setting_is_saved_as_typed(self):
+        written, _ = self._save("float", 1.9685039370078, "2.5")
+        self.assertEqual(written, {"field": 2.5})
+
+    def test_int_setting_holding_a_decimal_is_still_rejected(self):
+        written, alerts = self._save("int", 10.5, "10.5")
+        self.assertEqual(written, {})
+        self.assertEqual(len(alerts), 1)
+
+    def test_string_setting_with_a_float_default_is_saved_as_text(self):
+        written, _ = self._save("string", 1.5, "1.5")
+        self.assertEqual(written, {"field": "1.5"})
 
 
 @pytest.mark.regression
