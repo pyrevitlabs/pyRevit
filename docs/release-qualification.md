@@ -114,7 +114,7 @@ The IronPython version is fixed per session, so the engine checks need two sessi
 
 ### Languages and encodings
 
-A pass in an English session on an ASCII path says nothing about these four cases. Each has produced a bug of its own.
+A pass in an English session on an ASCII path says nothing about these four cases. Each has produced a bug of its own. The [test matrix](testing.md#test-matrix-and-pitfalls) lists these and the other axes (engines, units, Revit years, document state, environment and failure paths) that an author or reviewer goes through for a single change.
 
 | Case | How | Passed when |
 |---|---|---|
