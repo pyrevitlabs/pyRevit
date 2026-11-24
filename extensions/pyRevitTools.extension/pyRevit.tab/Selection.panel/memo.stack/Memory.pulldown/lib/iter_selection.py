@@ -43,6 +43,6 @@ def iterate(mode, step_size=1):
                 selection.set_to(get_elementid_from_value(list(cursel)[idx]))
 
                 with open(index_datafile, "wb") as f:
-                    pickle.dump(idx, f)
+                    pickle.dump(idx, f, 2)
         except Exception as io_err:
             logger.error("Error read/write to: %s | %s", datafile, io_err)

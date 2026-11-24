@@ -40,7 +40,7 @@ def remember(src_props):
     """
     try:
         with open(MEMFILE, "wb") as mf:
-            pickle.dump(src_props, mf)
+            pickle.dump(src_props, mf, 2)
     except Exception as ex:
         logger.debug("Failed saving matched properties to memory | %s", str(ex))
 

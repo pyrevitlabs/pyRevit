@@ -196,7 +196,7 @@ def temp_switch(doc, temp_datafilename, padding=1.0, target_view=None):
 
             del view_data[view_key]
             with open(temp_datafilename, "wb") as f:
-                script.pickle.dump(view_data, f)
+                script.pickle.dump(view_data, f, 2)
 
             return "restored"
 
@@ -232,7 +232,7 @@ def temp_switch(doc, temp_datafilename, padding=1.0, target_view=None):
 
                 view_data[view_key] = current_state
                 with open(temp_datafilename, "wb") as f:
-                    script.pickle.dump(view_data, f)
+                    script.pickle.dump(view_data, f, 2)
 
                 return "set"
 

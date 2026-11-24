@@ -527,6 +527,6 @@ class RecallWindow(forms.WPFWindow):
             )
         try:
             with open(c._memfile, "wb") as f:
-                pickle.dump((c._recall_target_type, serializable), f)
+                pickle.dump((c._recall_target_type, serializable), f, 2)
         except Exception:
             pass
