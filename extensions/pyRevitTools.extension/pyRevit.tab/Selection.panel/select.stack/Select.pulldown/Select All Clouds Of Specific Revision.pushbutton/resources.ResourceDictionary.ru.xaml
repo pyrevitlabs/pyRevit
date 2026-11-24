@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="dialog_title">Выберите изменение</sys:String>
+    <sys:String x:Key="button_name">Выделить облака</sys:String>
+    <sys:String x:Key="no_clouds">У этого изменения нет пометочных облаков.</sys:String>
+</ResourceDictionary>
