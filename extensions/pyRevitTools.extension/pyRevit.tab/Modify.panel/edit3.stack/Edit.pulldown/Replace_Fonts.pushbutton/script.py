@@ -334,8 +334,8 @@ def main():
             ]
         ),
         title="Change Font in Elements",
-        message="Updates fonts in families, dimensions and text notes. "
-        "Schedules and tags are not updated.",
+        message="Replace fonts with '{}'. Updates families, dimensions and text "
+        "notes. Schedules and tags are not updated.".format(selected_font),
     )
     if not choice:
         alert("No values selected.")
