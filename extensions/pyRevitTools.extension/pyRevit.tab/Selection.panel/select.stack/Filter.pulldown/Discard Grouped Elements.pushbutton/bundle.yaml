@@ -8,34 +8,30 @@ title:
   de_de: Gruppierte Elemente von der aktuellen Auswahl ausschliessen
   pt_br: Descartar Elementos Agrupados
 tooltip:
-  en_us: >-
-    Discards (not delete) grouped elements from the current selection.
-    If nothing is selected, pick a region to filter from.
-  ko: 현재 선택 항목에서 그룹 요소를 제외합니다(삭제 아님).
-  fr_fr: >-
-    Supprime (ne supprime pas) les éléments groupés de la sélection actuelle.
-    Si rien n'est sélectionné, délimitez une zone à filtrer.
-  ru: >-
-    Отбросить (не удалить) сгруппированные элементы с текущего выделения.
-    Если ничего не выбрано, выберите область для фильтрации.
-  chinese_s: >-
-    从当前选择中排除（非删除）已编组的图元。
-    若未选择任何内容，则框选区域进行过滤。
-  es_es: >-
-    Descarta (no elimina) elementos agrupados de la selección actual.
-    Si no hay nada seleccionado, delimite una región para filtrar.
-  de_de: >-
-    Die aktuelle Elementauswahl wird so vermindert, dass keine gruppierten Elemente
-    mehr in der Auswahl vorhanden sind. Die Elemente werden nicht gelöscht, sondern
-    nur aus der aktuellen Auswahl entfernt.
-    Wenn nichts ausgewählt ist, kann ein Bereich zum Filtern gewählt werden.
-  pt_br: >-
-    Descarta (não exclui) elementos agrupados da seleção atual.
-    Se nada estiver selecionado, selecione uma região para filtrar.
+  en_us: |-
+    Remove groups and the elements inside groups from the current selection. The elements are not deleted. With nothing selected, draw a rectangle to select everything inside it that is not grouped.
+  ko: |-
+    현재 선택 항목에서 그룹과 그룹에 속한 요소를 제외합니다. 요소는 삭제되지 않습니다. 선택한 항목이 없으면 사각형을 그려 그 안에서 그룹에 속하지 않은 모든 요소를 선택합니다.
+  fr_fr: |-
+    Retirez les groupes et les éléments groupés de la sélection actuelle. Les éléments ne sont pas supprimés. Si rien n'est sélectionné, tracez un rectangle pour sélectionner tout ce qu'il contient qui n'est pas groupé.
+  ru: |-
+    Уберите из текущего выбора группы и элементы, входящие в группы. Элементы не удаляются. Если ничего не выбрано, нарисуйте прямоугольник, чтобы выбрать внутри него всё, что не входит в группы.
+  chinese_s: |-
+    从当前选择中移除组以及组内的图元（图元不会被删除）。若未选择任何内容，则绘制矩形，选择其中所有未编组的图元。
+  es_es: |-
+    Quite los grupos y los elementos que están dentro de grupos de la selección actual. Los elementos no se eliminan. Si no hay nada seleccionado, dibuje un rectángulo para seleccionar todo lo que contiene que no esté agrupado.
+  de_de: |-
+    Gruppen und Elemente in Gruppen aus der aktuellen Auswahl entfernen. Die Elemente werden nicht gelöscht. Ist nichts ausgewählt, ein Rechteck aufziehen, um alles darin auszuwählen, was nicht gruppiert ist.
+  pt_br: |-
+    Remova os grupos e os elementos dentro de grupos da seleção atual. Os elementos não são excluídos. Se nada estiver selecionado, desenhe um retângulo para selecionar tudo o que estiver dentro dele e não for agrupado.
 context:
   any:
     - selection
     - active-plan-view
     - active-section-view
-    - active-3d-view
     - active-elevation-view
+    - active-3d-view
+    - active-sheet
+    - active-legend
+    - active-drafting-view
+    - active-detail-view
