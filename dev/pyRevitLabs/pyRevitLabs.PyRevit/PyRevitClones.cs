@@ -989,6 +989,18 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
+        private static bool OpensAsCloneAtAnyPath(string path, string name) {
+            if (!CommonUtils.VerifyPath(path))
+                return false;
+            try {
+                CreateVerifiedClone(path, name);
+                return true;
+            }
+            catch (Exception) {
+                return false;
+            }
+        }
+
         private static ResumeDecision RegistrationDecisionAt(string clonePath) {
             var entry = GetStoredCloneRegistrations()
                 .FirstOrDefault(stored => stored.Value.NormalizeAsPath().IsSamePathAs(clonePath));
@@ -1049,10 +1061,11 @@ namespace pyRevitLabs.PyRevit {
                 return ResumeDecision.NotResumable(
                     "it has local commits that are not on its remote branch",
                     ResumeAdvice.KeepWork);
-            var sameNamed = GetRegisteredClones(pruneStoredList: false)
-                .FirstOrDefault(clone => string.Equals(clone.Name, cloneName, StringComparison.OrdinalIgnoreCase));
-            if (sameNamed != null)
-                return ResumeDecision.NameElsewhere(cloneName, sameNamed.ClonePath);
+            var sameNamed = GetStoredCloneRegistrations().FirstOrDefault(
+                entry => string.Equals(entry.Key, cloneName, StringComparison.OrdinalIgnoreCase)
+                         && OpensAsCloneAtAnyPath(entry.Value.NormalizeAsPath(), entry.Key));
+            if (sameNamed.Key != null)
+                return ResumeDecision.NameElsewhere(cloneName, sameNamed.Value);
             return ResumeDecision.Resume;
         }
 

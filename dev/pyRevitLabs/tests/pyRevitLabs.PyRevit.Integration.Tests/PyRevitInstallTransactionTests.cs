@@ -469,6 +469,26 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 Is.False);
         }
 
+        /// <summary>A name stored at an inner clone is still seen while its valid parent stays registered, although the registry omits the duplicate path.</summary>
+        [Test]
+        public void DeployFromRepo_WhenTheParentCloneStaysRegisteredAndTheInnerNameIsHidden_RefusesAndKeepsIt() {
+            var source = CreateSourceRepo();
+            var keptDest = Path.Combine(_tempRoot, "keptDest");
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: keptDest, installBinaries: false);
+            PyRevitClones.UnregisterClone(PyRevitClones.GetRegisteredClone(CloneName));
+            var outerDest = Path.Combine(_tempRoot, "outerDest");
+            PyRevitClones.DeployFromRepo("OuterClone", repoUrl: source, destPath: outerDest, installBinaries: false);
+            var innerDest = Path.Combine(outerDest, "OuterClone", "nested");
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: innerDest, installBinaries: false);
+            Directory.Delete(Path.Combine(innerDest, CloneName, "pyrevitlib", "pyrevit"), recursive: true);
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: keptDest, installBinaries: false));
+
+            Assert.That(ex.Message, Does.Contain("already registered at"));
+            Assert.That(PyRevitClones.GetRegisteredClone("OuterClone"), Is.Not.Null);
+        }
+
         /// <summary>A resume with --skip-bin registers the folder without inspecting or installing binaries.</summary>
         [Test]
         public void DeployFromRepo_WhenResumingWithSkipBin_RegistersWithoutInstalling() {
