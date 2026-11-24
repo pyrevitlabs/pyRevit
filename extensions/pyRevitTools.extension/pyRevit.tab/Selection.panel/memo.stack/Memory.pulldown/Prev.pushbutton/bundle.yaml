@@ -9,42 +9,46 @@ title:
   pt_br: Anterior ●
 tooltip:
   en_us: |-
-    Select the previous element in selection memory. A normal click moves back one element.
+    Select the previous element in the selection memory, in order of element id. A normal click moves back one element; before the first element it wraps around to the last.
 
     Shift-click:
-    Move back ten elements in selection memory.
-  ko: |-
-    선택 메모리에서 이전 요소를 선택합니다. 일반 클릭은 한 요소씩 뒤로 이동합니다.
+    Move back ten elements in the selection memory.
+  de_de: |-
+    Wählt das vorherige Element im Auswahlspeicher aus, in der Reihenfolge der Element-IDs. Ein normaler Klick geht ein Element zurück; vor dem ersten Element geht es zum letzten.
 
-    Shift 키를 누르고 클릭:
-    선택 메모리에서 열 요소씩 뒤로 이동합니다.
+    Bei gedrückter Umschalttaste klicken:
+    Im Auswahlspeicher zehn Elemente zurückgehen.
   fr_fr: |-
-    Sélectionne l'élément précédent dans la mémoire de sélection. Un clic recule d'un élément.
+    Sélectionne l'élément précédent dans la mémoire de sélection, dans l'ordre des identifiants d'élément. Un clic recule d'un élément ; avant le premier élément, on passe au dernier.
 
     Maj+clic :
     Reculer de dix éléments dans la mémoire de sélection.
+  es_es: |-
+    Selecciona el elemento anterior de la memoria de selección, en el orden de sus ID de elemento. Un clic retrocede un elemento; antes del primero, pasa al último.
+
+    Mayús-clic:
+    Retroceder diez elementos en la memoria de selección.
+  pt_br: |-
+    Seleciona o elemento anterior na memória de seleção, na ordem dos IDs dos elementos. Um clique normal volta um elemento; antes do primeiro, vai para o último.
+
+    Clique mantendo a tecla Shift pressionada:
+    Voltar dez elementos na memória de seleção.
   ru: |-
-    Выбирает предыдущий элемент в памяти выбора. Обычный щелчок перемещает на один элемент назад.
+    Выбирает предыдущий элемент в памяти выбора в порядке идентификаторов элементов. Обычный щелчок перемещает на один элемент назад; перед первым элементом переходит к последнему.
 
     Shift + Щелчок:
     Перейти на десять элементов назад в памяти выбора.
   chinese_s: |-
-    选择选择记忆中的上一个图元。普通单击向后移动一个图元。
+    按图元 ID 顺序选择选择内存中的上一个图元。普通单击向后移动一个图元；到达第一个图元之前会回到最后一个。
 
     按住 Shift 键单击：
-    在选择记忆中向后移动十个图元。
-  es_es: |-
-    Selecciona el elemento anterior de la memoria de selección. Un clic retrocede un elemento.
+    在选择内存中向后移动十个图元。
+  ko: |-
+    요소 ID 순서대로 선택 메모리의 이전 요소를 선택합니다. 일반 클릭은 한 요소씩 뒤로 이동하며, 첫 번째 요소 앞에서는 마지막 요소로 돌아갑니다.
 
-    Mayús-clic:
-    Retroceder diez elementos en la memoria de selección.
-  de_de: |-
-    Wählt das vorherige Element im Auswahlverlauf aus. Ein normaler Klick geht ein Element zurück.
-
-    Bei gedrückter Umschalttaste klicken:
-    Im Auswahlverlauf zehn Elemente zurückgehen.
-  pt_br: |-
-    Seleciona o elemento anterior na memória de seleção. Um clique normal volta um elemento.
-
-    Clique mantendo a tecla Shift pressionada:
-    Voltar dez elementos na memória de seleção.
+    Shift 키를 누르고 클릭:
+    선택 메모리에서 열 요소씩 뒤로 이동합니다.
+context:
+  any:
+    - doc-project
+    - doc-family
