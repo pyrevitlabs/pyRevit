@@ -11616,9 +11616,11 @@ function they mark.</p>
 sends progress notifications every 10 seconds while it waits. If your client still
 times out, raise its MCP tool timeout (Claude Code: the <code>MCP_TOOL_TIMEOUT</code>
 environment variable, in milliseconds).</p>
-<p>While the prompt is open, Revit's taskbar button flashes while the prompt waits. The
-flash stops when the prompt closes, and it can also stop earlier when Revit comes to the
-front. The prompt holds Revit's main thread, so other
+</div>
+<div class="admonition note">
+<p class="admonition-title">While the prompt is open</p>
+<p>Revit's taskbar button flashes (<code>FlashWindowEx</code>) until the prompt closes, and it can
+also stop earlier when Revit comes to the front. The prompt holds Revit's main thread, so other
 ExternalEvent add-ins such as Routes wait until it is answered, and other agent requests wait
 or get <code>revit_busy</code>. For unattended automation, set <code>policy = auto</code> before starting Revit.
 Switching from <code>ask</code> to <code>auto</code> during a session makes the next modify run ask you to
