@@ -10116,6 +10116,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pages-in-the-output-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pages in the output window
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#writing-theme-aware-forms" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10847,6 +10858,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pages-in-the-output-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pages in the output window
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#writing-theme-aware-forms" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11060,6 +11082,58 @@ forms keep rendering exactly as before. Set the class attribute to follow Revit:
 <code>DWMWA_USE_IMMERSIVE_DARK_MODE</code> on Windows 10 20H1 and later. On Windows 11 build 22000+ it
 additionally sets the exact caption and caption-text colours. The exact-colour operation is a
 no-op on older Windows. Before Windows 10 20H1, the title bar stays in the system colour.</p>
+<h2 id="pages-in-the-output-window">Pages in the output window</h2>
+<p>Interactive pages in the WebView2 output window cannot use <code>Theme.xaml</code>, so they restate the brand palette as CSS custom properties scoped to the page root. The <a href="../tools/attribute-editor/">Attribute Editor</a> page is the reference; copy its <code>attribute_grid.css</code> tokens for a new page.</p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Value</th>
+<th>Brand name</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chrome</td>
+<td><code>#2c3e50</code></td>
+<td><code>pyRevitDark</code></td>
+<td>Toolbars and header bars, in both themes</td>
+</tr>
+<tr>
+<td>Ink and dark surfaces</td>
+<td><code>#23303d</code></td>
+<td><code>pyRevitDarkerDark</code></td>
+<td>Text on light surfaces, text on amber, dark-theme panels</td>
+</tr>
+<tr>
+<td>Accent</td>
+<td><code>#f39c12</code></td>
+<td><code>pyRevitAccent</code></td>
+<td>Primary action, active cell, focus ring, fill handle</td>
+</tr>
+<tr>
+<td>Success</td>
+<td><code>#618401</code></td>
+<td></td>
+<td>Success marks (<code>#a6d34a</code> on dark)</td>
+</tr>
+<tr>
+<td>Error</td>
+<td><code>#c7254e</code></td>
+<td></td>
+<td>Rejected values (<code>#ff7b9c</code> on dark)</td>
+</tr>
+<tr>
+<td>Warning</td>
+<td><code>#e17700</code></td>
+<td></td>
+<td>Conflicts (<code>#ffa24d</code> on dark)</td>
+</tr>
+</tbody>
+</table>
+<p>The status colors are the ones in <code>pyrevitlib/pyrevit/output/outputstyles.css</code>. Amber is never used for text on a light surface, where it does not reach contrast, and text on an amber fill is the dark ink. Selection is a navy tint, so it does not compete with the amber active cell. A page follows the host theme with a <code>data-theme</code> attribute on its root (set from <code>pyrevit.forms.is_dark_theme()</code>), or with <code>prefers-color-scheme</code> when it has no Python side.</p>
+<p>Older pages (Diagnose Invisibility, Section Box Navigator) predate this and use the output window's own ink <code>#233749</code> with a blue accent.</p>
 <h2 id="writing-theme-aware-forms">Writing theme-aware forms</h2>
 <ul>
 <li>Never hardcode <code>White</code>, <code>Black</code>, <code>DimGray</code> or similar in XAML. Bind to a palette brush instead.</li>

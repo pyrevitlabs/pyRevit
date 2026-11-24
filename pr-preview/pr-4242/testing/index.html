@@ -11137,6 +11137,7 @@
 </ul>
 <p>Adding a test or adjacent project must not require changing a central list. Network/elevation requirements must be provisioned or isolated, not used to silently exempt HostFree tests from CI.</p>
 <p><code>dev/tests/python/library/test_diagnose_invisibility_page.py</code> runs the real <code>report.js</code> of the Diagnose Invisibility report in a headless Edge or Chrome, through <code>fixtures/diagnose_invisibility_page/harness.html</code>, with a stubbed WebView2 bridge. Set <code>PYREVIT_TEST_BROWSER</code> to a browser executable to override the lookup. A missing browser fails the module when <code>CI</code> is set and skips it otherwise.</p>
+<p><code>dev/tests/python/library/test_attribute_editor_page.py</code> does the same for the Attribute Editor grid (<code>fixtures/attribute_grid_page/harness.html</code>) and also checks that the bundle's eight locale files and its <code>bundle.yaml</code> stay complete. <code>test_attribute_values.py</code> runs the bundle's value codec against a fake <code>DB</code>, and <code>test_pagebridge.py</code> covers <code>pyrevit.output.bridge.PageBridge</code>.</p>
 <h2 id="test-quality">Test quality</h2>
 <ul>
 <li>Assert outcomes and propagate failures. Printed comparisons, dialogs and debugger launchers are manual checks.</li>
