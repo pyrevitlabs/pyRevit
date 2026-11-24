@@ -6,10 +6,13 @@ pythonnet.
 """
 
 import ast
+import sys
+import types
 from collections import OrderedDict
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 import pytest
 
@@ -193,6 +196,7 @@ class _Forms(object):
         self.choice = choice
         self.switches = switches
         self.switch_arguments = None
+        self.message = None
 
     @property
     def SelectFromList(self):
@@ -202,6 +206,7 @@ class _Forms(object):
     def CommandSwitchWindow(self):
         def show(context, **kwargs):
             self.switch_arguments = kwargs["switches"]
+            self.message = kwargs["message"]
             return self.choice, self.switches
 
         return SimpleNamespace(show=show)
@@ -213,18 +218,6 @@ class _Output(object):
 
 
 def _run_project_main(forms, calls):
-    tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
-    tree.body = [
-        node
-        for node in tree.body
-        if getattr(node, "name", "") == "main"
-        or (
-            isinstance(node, ast.Assign)
-            and getattr(node.targets[0], "id", "").startswith("SWITCH_")
-        )
-    ]
-    doc = SimpleNamespace(IsFamilyDocument=False)
-
     class _ProjectCollector(object):
         def __init__(self, document):
             pass
@@ -245,34 +238,72 @@ def _run_project_main(forms, calls):
         def __exit__(self, *args):
             return False
 
-    namespace = {
-        "OrderedDict": OrderedDict,
-        "System": SimpleNamespace(
+    def module(name, **attributes):
+        stub = types.ModuleType(name)
+        stub.__dict__.update(attributes)
+        return stub
+
+    db = SimpleNamespace(
+        Family="Family",
+        TextNoteType="TextNoteType",
+        DimensionType="DimensionType",
+        FilteredElementCollector=_ProjectCollector,
+        Element=_PythonnetElement,
+        ElementType=object,
+        BuiltInParameter=SimpleNamespace(TEXT_FONT="TEXT_FONT"),
+        BuiltInCategory=SimpleNamespace(OST_GenericAnnotation=1),
+    )
+    host_app = SimpleNamespace(
+        doc=SimpleNamespace(IsFamilyDocument=False),
+        uidoc=SimpleNamespace(RefreshActiveView=lambda: None),
+    )
+    revit = SimpleNamespace(
+        Transaction=_Transaction,
+        TransactionGroup=_Transaction,
+        query=SimpleNamespace(get_name=lambda element: element.Name),
+    )
+    forms_module = module(
+        "pyrevit.forms",
+        SelectFromList=forms.SelectFromList,
+        CommandSwitchWindow=forms.CommandSwitchWindow,
+        alert=lambda *args, **kwargs: calls.append("alert"),
+        ProgressBar=lambda **kwargs: _Bar(),
+    )
+    pyrevit = module(
+        "pyrevit",
+        script=SimpleNamespace(
+            get_output=lambda: _Output(), get_logger=lambda: _Logger()
+        ),
+        DB=db,
+        HOST_APP=host_app,
+        revit=revit,
+    )
+    pyrevit.__path__ = []
+    stubs = {
+        "System": module(
+            "System",
             Drawing=SimpleNamespace(
                 FontFamily=SimpleNamespace(Families=[SimpleNamespace(Name="Arial")])
-            )
+            ),
         ),
-        "HOST_APP": SimpleNamespace(
-            doc=doc, uidoc=SimpleNamespace(RefreshActiveView=lambda: None)
+        "pyrevit": pyrevit,
+        "pyrevit.forms": forms_module,
+        "pyrevit.revit": module("pyrevit.revit"),
+        "pyrevit.revit.db": module("pyrevit.revit.db"),
+        "pyrevit.revit.db.create": module(
+            "pyrevit.revit.db.create", FamilyLoaderOptionsHandler=object
         ),
-        "forms": forms,
-        "alert": lambda *args, **kwargs: calls.append("alert"),
-        "output": _Output(),
-        "logger": _Logger(),
-        "ProgressBar": lambda **kwargs: _Bar(),
-        "revit": SimpleNamespace(TransactionGroup=_Transaction),
-        "DB": SimpleNamespace(
-            Family="Family",
-            TextNoteType="TextNoteType",
-            DimensionType="DimensionType",
-            FilteredElementCollector=_ProjectCollector,
+        "pyrevit.compat": module(
+            "pyrevit.compat",
+            get_elementid_value_func=lambda: lambda element_id: element_id,
         ),
-        "update_text_types": lambda *args: [],
-        "update_text_font_in_family": lambda *args: ([], False),
-        "process_family_document": lambda *args: ([], False),
     }
-    exec(compile(tree, str(SCRIPT), "exec"), namespace)
-    namespace["main"]()
+    namespace = {"__name__": "replace_fonts_under_test", "__file__": str(SCRIPT)}
+    with mock.patch.dict(sys.modules, stubs):
+        exec(
+            compile(SCRIPT.read_text(encoding="utf-8"), str(SCRIPT), "exec"), namespace
+        )
+        namespace["main"]()
     return namespace
 
 
@@ -312,19 +343,29 @@ class ProjectDialogTests(unittest.TestCase):
 
         self.assertEqual(["Family", "TextNoteType", "DimensionType"], calls)
 
-    def test_only_the_enabled_toggle_runs(self):
-        calls = []
-        forms = _Forms("Arial", "Replace Fonts", None)
+    def test_each_toggle_alone_runs_only_its_collector(self):
         names = _run_project_main(_Forms("Arial", None, {}), [])
-        forms.switches = {
-            names["SWITCH_FAMILIES"]: False,
-            names["SWITCH_TEXT_NOTES"]: False,
-            names["SWITCH_DIMENSIONS"]: True,
-        }
+        cases = (
+            ("SWITCH_FAMILIES", "Family"),
+            ("SWITCH_TEXT_NOTES", "TextNoteType"),
+            ("SWITCH_DIMENSIONS", "DimensionType"),
+        )
+        for enabled, expected in cases:
+            with self.subTest(switch=enabled):
+                calls = []
+                switches = {names[key]: key == enabled for key, _ in cases}
+                forms = _Forms("Arial", "Replace Fonts", switches)
 
-        _run_project_main(forms, calls)
+                _run_project_main(forms, calls)
 
-        self.assertEqual(["DimensionType"], calls)
+                self.assertEqual([expected], calls)
+
+    def test_confirmation_message_names_the_selected_font(self):
+        forms = _Forms("Tahoma", None, {})
+
+        _run_project_main(forms, [])
+
+        self.assertIn("Tahoma", forms.message)
 
     def test_cancel_in_either_step_exits_quietly(self):
         for forms in (_Forms(None, None, {}), _Forms("Arial", None, {})):
