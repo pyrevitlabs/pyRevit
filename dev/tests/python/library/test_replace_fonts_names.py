@@ -1,9 +1,17 @@
-"""Check how Replace Fonts reads type names and builds its dialogs without Revit."""
+"""Regression checks for #4180: Replace Fonts on CPython, without Revit.
+
+Covers engine-neutral type names and the pyRevit forms dialog wiring.
+The stubbed ``revit.query.get_name`` does not exercise the real helper on
+pythonnet.
+"""
 
 import ast
+from collections import OrderedDict
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+
+import pytest
 
 
 TEST_ENVIRONMENT = "HostFree"
@@ -121,6 +129,7 @@ def _load():
     return namespace, logger
 
 
+@pytest.mark.regression
 class TypeNameTests(unittest.TestCase):
     """Type names must read on every engine, so no ``Name.GetValue``."""
 
@@ -153,6 +162,7 @@ class TypeNameTests(unittest.TestCase):
         self.assertEqual([], logger.errors)
 
 
+@pytest.mark.regression
 class ScriptSourceTests(unittest.TestCase):
     """FlexForm is IronPython-only, so the script must use pyRevit forms."""
 
@@ -175,6 +185,165 @@ class ScriptSourceTests(unittest.TestCase):
         self.assertNotIn("FlexForm", source)
         self.assertNotIn("Name.GetValue", source)
         self.assertNotIn("Name.SetValue", source)
+
+
+class _Forms(object):
+    def __init__(self, font, choice, switches):
+        self.font = font
+        self.choice = choice
+        self.switches = switches
+        self.switch_arguments = None
+
+    @property
+    def SelectFromList(self):
+        return SimpleNamespace(show=lambda *args, **kwargs: self.font)
+
+    @property
+    def CommandSwitchWindow(self):
+        def show(context, **kwargs):
+            self.switch_arguments = kwargs["switches"]
+            return self.choice, self.switches
+
+        return SimpleNamespace(show=show)
+
+
+class _Output(object):
+    def print_md(self, text):
+        pass
+
+
+def _run_project_main(forms, calls):
+    tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
+    tree.body = [
+        node
+        for node in tree.body
+        if getattr(node, "name", "") == "main"
+        or (
+            isinstance(node, ast.Assign)
+            and getattr(node.targets[0], "id", "").startswith("SWITCH_")
+        )
+    ]
+    doc = SimpleNamespace(IsFamilyDocument=False)
+
+    class _ProjectCollector(object):
+        def __init__(self, document):
+            pass
+
+        def OfClass(self, cls):
+            calls.append(cls)
+            return self
+
+        def ToElements(self):
+            return []
+
+    class _Bar(object):
+        cancelled = False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    namespace = {
+        "OrderedDict": OrderedDict,
+        "System": SimpleNamespace(
+            Drawing=SimpleNamespace(
+                FontFamily=SimpleNamespace(Families=[SimpleNamespace(Name="Arial")])
+            )
+        ),
+        "HOST_APP": SimpleNamespace(
+            doc=doc, uidoc=SimpleNamespace(RefreshActiveView=lambda: None)
+        ),
+        "forms": forms,
+        "alert": lambda *args, **kwargs: calls.append("alert"),
+        "output": _Output(),
+        "logger": _Logger(),
+        "ProgressBar": lambda **kwargs: _Bar(),
+        "revit": SimpleNamespace(TransactionGroup=_Transaction),
+        "DB": SimpleNamespace(
+            Family="Family",
+            TextNoteType="TextNoteType",
+            DimensionType="DimensionType",
+            FilteredElementCollector=_ProjectCollector,
+        ),
+        "update_text_types": lambda *args: [],
+        "update_text_font_in_family": lambda *args: ([], False),
+        "process_family_document": lambda *args: ([], False),
+    }
+    exec(compile(tree, str(SCRIPT), "exec"), namespace)
+    namespace["main"]()
+    return namespace
+
+
+@pytest.mark.regression
+class ProjectDialogTests(unittest.TestCase):
+    """The three toggles map to the three collectors and keep their order."""
+
+    def test_toggles_are_ordered_and_default_to_true(self):
+        forms = _Forms("Arial", None, {})
+        namespace = _run_project_main(forms, [])
+
+        self.assertIsInstance(forms.switch_arguments, OrderedDict)
+        self.assertEqual(
+            [
+                namespace["SWITCH_FAMILIES"],
+                namespace["SWITCH_TEXT_NOTES"],
+                namespace["SWITCH_DIMENSIONS"],
+            ],
+            list(forms.switch_arguments),
+        )
+        self.assertEqual([True] * 3, list(forms.switch_arguments.values()))
+
+    def test_all_toggles_on_collect_every_type_class(self):
+        calls = []
+        forms = _Forms("Arial", "Replace Fonts", None)
+        names = _run_project_main(_Forms("Arial", None, {}), [])
+        forms.switches = dict.fromkeys(
+            [
+                names["SWITCH_FAMILIES"],
+                names["SWITCH_TEXT_NOTES"],
+                names["SWITCH_DIMENSIONS"],
+            ],
+            True,
+        )
+
+        _run_project_main(forms, calls)
+
+        self.assertEqual(["Family", "TextNoteType", "DimensionType"], calls)
+
+    def test_only_the_enabled_toggle_runs(self):
+        calls = []
+        forms = _Forms("Arial", "Replace Fonts", None)
+        names = _run_project_main(_Forms("Arial", None, {}), [])
+        forms.switches = {
+            names["SWITCH_FAMILIES"]: False,
+            names["SWITCH_TEXT_NOTES"]: False,
+            names["SWITCH_DIMENSIONS"]: True,
+        }
+
+        _run_project_main(forms, calls)
+
+        self.assertEqual(["DimensionType"], calls)
+
+    def test_cancel_in_either_step_exits_quietly(self):
+        for forms in (_Forms(None, None, {}), _Forms("Arial", None, {})):
+            calls = []
+            _run_project_main(forms, calls)
+            self.assertEqual(["alert"], calls)
+
+    def test_every_switch_lookup_uses_a_constant(self):
+        tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
+        lookups = [
+            node.slice
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Subscript)
+            and getattr(node.value, "id", "") == "switches"
+        ]
+
+        self.assertEqual(3, len(lookups))
+        for lookup in lookups:
+            self.assertTrue(lookup.id.startswith("SWITCH_"))
 
 
 if __name__ == "__main__":
