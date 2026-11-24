@@ -19,16 +19,19 @@ def iterate(mode, step_size=1):
 
     selection = revit.get_selection()
 
+    idx = 0
     if op.exists(index_datafile):
-        with open(index_datafile, "rb") as f:
-            idx = pickle.load(f)
+        try:
+            with open(index_datafile, "rb") as f:
+                idx = pickle.load(f)
 
-        if mode == "-":
-            idx = idx - step_size
-        else:
-            idx = idx + step_size
-    else:
-        idx = 0
+            if mode == "-":
+                idx = idx - step_size
+            else:
+                idx = idx + step_size
+        except Exception as index_err:
+            logger.debug("Ignoring unreadable index %s | %s", index_datafile, index_err)
+            idx = 0
 
     if op.exists(datafile):
         try:
