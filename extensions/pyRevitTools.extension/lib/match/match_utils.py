@@ -66,6 +66,17 @@ class PropKeyValue(object):
     def __repr__(self):
         return str(self.__dict__)
 
+    def __getstate__(self):
+        """Return a picklable state; the .NET StorageType is stored by name."""
+        state = dict(self.__dict__)
+        state["datatype"] = self.datatype.ToString()
+        return state
+
+    def __setstate__(self, state):
+        """Restore the state and convert the stored name back to DB.StorageType."""
+        self.__dict__.update(state)
+        self.datatype = getattr(DB.StorageType, state["datatype"])
+
 
 def match_prop(dest_inst, dest_type, src_props):
     """Match given properties on target instance or type"""

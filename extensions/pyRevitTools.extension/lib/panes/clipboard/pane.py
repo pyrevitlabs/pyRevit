@@ -528,5 +528,7 @@ class RecallWindow(forms.WPFWindow):
         try:
             with open(c._memfile, "wb") as f:
                 pickle.dump((c._recall_target_type, serializable), f, 2)
-        except Exception:
-            pass
+        except Exception as ex:
+            script.get_logger().warning(
+                "Failed saving matched properties to memory | %s", ex
+            )
