@@ -1,10 +1,14 @@
-"""Check List Elements Of Selected Level never hashes an ElementId."""
+"""Regression for #4178: List Elements Of Selected Level never hashes an ElementId."""
 
 import ast
 from collections import defaultdict
 from pathlib import Path
+import sys
 from types import SimpleNamespace
 import unittest
+from unittest import mock
+
+import pytest
 
 
 TEST_ENVIRONMENT = "HostFree"
@@ -34,9 +38,21 @@ class _UnhashableId(object):
         return self.Value == other.Value
 
 
+def _is_needed(node):
+    if getattr(node, "name", "") in NEEDED:
+        return True
+    if isinstance(node, ast.ImportFrom) and node.module == "pyrevit":
+        node.names = [alias for alias in node.names if alias.name == "compat"]
+        return bool(node.names)
+    return (
+        isinstance(node, ast.Assign)
+        and getattr(node.targets[0], "id", "") == "get_elementid_value"
+    )
+
+
 def _load():
     tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
-    tree.body = [node for node in tree.body if getattr(node, "name", "") in NEEDED]
+    tree.body = [node for node in tree.body if _is_needed(node)]
     reported = []
     elements = []
     levels = []
@@ -51,17 +67,24 @@ def _load():
         "forms": SimpleNamespace(select_levels=lambda use_selection: levels),
         "output": SimpleNamespace(print_md=lambda text: None),
         "_t": lambda key: key,
-        "get_elementid_value": lambda element_id: element_id.Value,
         "report_level": lambda level, found: reported.append((level, found)),
     }
-    exec(compile(tree, str(SCRIPT), "exec"), namespace)
+    pyrevit_stub = SimpleNamespace(
+        compat=SimpleNamespace(
+            get_elementid_value_func=lambda: lambda element_id: element_id.Value
+        )
+    )
+    with mock.patch.dict(sys.modules, {"pyrevit": pyrevit_stub}):
+        exec(compile(tree, str(SCRIPT), "exec"), namespace)
     return namespace, elements, levels, reported
 
 
+@pytest.mark.regression
 class LevelGroupingTests(unittest.TestCase):
     """Grouping and lookup by level must work when ElementId cannot be hashed."""
 
     def test_elements_are_reported_under_their_level(self):
+        """Each level reports only its own elements."""
         namespace, elements, levels, reported = _load()
         level_a = SimpleNamespace(Id=_UnhashableId(10), Name="A")
         level_b = SimpleNamespace(Id=_UnhashableId(20), Name="B")

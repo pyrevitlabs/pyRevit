@@ -3,13 +3,13 @@
 
 from collections import defaultdict
 
-from pyrevit import forms, script
+from pyrevit import compat, forms, script
 from pyrevit import revit, DB
 from pyrevit.coreutils import applocales, escape_for_output
 
-output = script.get_output()
-
 get_elementid_value = compat.get_elementid_value_func()
+
+output = script.get_output()
 
 RESOURCES = script.get_bundle_file("resources.xaml")
 
