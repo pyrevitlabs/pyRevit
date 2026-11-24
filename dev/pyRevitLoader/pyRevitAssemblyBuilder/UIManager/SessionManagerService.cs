@@ -580,10 +580,28 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
         }
 
-        private static readonly Regex _pidStampedUserRegex =
-            new Regex(@"^pyRevit_(?<version>\d{4})_(?<user>.+)_(?<pid>\d+)_(?<fname>.+)", RegexOptions.Compiled);
         private static readonly Regex _pidStampedRegex =
             new Regex(@"^pyRevit_(?<version>\d{4})_(?<pid>\d+)_(?<fname>.+)", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Extracts the owning process id from an instance data file name
+        /// (<c>pyRevit_{version}_{pid}_{id}.{ext}</c>), the only name form pyRevit writes for
+        /// per-instance files.
+        /// </summary>
+        /// <returns>
+        /// False for any other name, including document data files such as
+        /// <c>pyRevit_2025_{id}_{project}.pym</c>, which must survive startup cleanup.
+        /// </returns>
+        /// <remarks>
+        /// The pid must directly follow the version. Do not allow a user segment before it: a greedy
+        /// pattern would take a digit run from inside a project name as the pid.
+        /// </remarks>
+        internal static bool TryGetInstanceFilePid(string fileName, out int pid)
+        {
+            pid = 0;
+            var match = _pidStampedRegex.Match(fileName);
+            return match.Success && int.TryParse(match.Groups["pid"].Value, out pid);
+        }
 
         /// <summary>
         /// Removes pid-stamped appdata files left behind by Revit instances that are no longer
@@ -608,13 +626,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 foreach (var filePath in System.IO.Directory.GetFiles(appDataDir))
                 {
                     var fileName = System.IO.Path.GetFileName(filePath);
-                    var match = _pidStampedUserRegex.Match(fileName);
-                    if (!match.Success)
-                        match = _pidStampedRegex.Match(fileName);
-                    if (!match.Success)
-                        continue;
-
-                    if (int.TryParse(match.Groups["pid"].Value, out var pid) && !runningPids.Contains(pid))
+                    if (TryGetInstanceFilePid(fileName, out var pid) && !runningPids.Contains(pid))
                         TryDeleteFile(filePath);
                 }
             }
