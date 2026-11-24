@@ -88,8 +88,13 @@ class PropKeyValuePickleTests(unittest.TestCase):
 
     def setUp(self):
         """Load PropKeyValue against the stub."""
+        if MODULE_NAME in sys.modules:
+            self.addCleanup(
+                sys.modules.__setitem__, MODULE_NAME, sys.modules[MODULE_NAME]
+            )
+        else:
+            self.addCleanup(sys.modules.pop, MODULE_NAME, None)
         self.prop_key_value = _load_prop_key_value()
-        self.addCleanup(sys.modules.pop, MODULE_NAME, None)
 
     def test_raw_storage_type_is_not_picklable(self):
         """The stub reproduces the CPython failure for the raw enum."""
