@@ -227,6 +227,19 @@ class SettingValueFromTextTests(unittest.TestCase):
         self.assertEqual(written, {"field": original})
         self.assertEqual(alerts, [])
 
+    def test_unedited_float_is_validated_by_value_not_by_rounded_text(self):
+        original = 1.9685039370078
+        written, alerts = self._save(
+            "float", original, "1.96850393701", max=1.9685039370079
+        )
+        self.assertEqual(written, {"field": original})
+        self.assertEqual(alerts, [])
+
+    def test_edited_float_above_the_limit_is_rejected(self):
+        written, alerts = self._save("float", 1.5, "2.5", max=1.9685039370079)
+        self.assertEqual(written, {})
+        self.assertEqual(len(alerts), 1)
+
     def test_edited_float_setting_is_saved_as_typed(self):
         written, _ = self._save("float", 1.9685039370078, "2.5")
         self.assertEqual(written, {"field": 2.5})
