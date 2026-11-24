@@ -11462,8 +11462,8 @@
 </tr>
 <tr>
 <td>CPython 3.12</td>
-<td>pythonnet has no named indexers (<code>element.Parameter[...]</code> or <code>element.Geometry[...]</code>)</td>
-<td>Yes: <code>CLR-NAMED-INDEXER</code> in <code>check-py3</code></td>
+<td>pythonnet has no named indexers (<code>element.Parameter[...]</code>, <code>element.Geometry[...]</code>, <code>element.BoundingBox[view]</code>); call the <code>get_</code> method instead</td>
+<td>Partly: <code>CLR-NAMED-INDEXER</code> in <code>check-py3</code> flags only <code>Parameter</code> and <code>Geometry</code></td>
 </tr>
 <tr>
 <td>CPython 3.12</td>
