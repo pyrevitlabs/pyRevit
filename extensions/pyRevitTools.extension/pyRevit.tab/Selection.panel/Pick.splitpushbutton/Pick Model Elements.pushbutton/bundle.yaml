@@ -8,11 +8,24 @@ title:
   de_de: Nur Modell Elemente auswählen
   pt_br: Selecionar Elementos de Modelo
 tooltip:
-  en_us: Activates selection tool that picks only Model elements
-  ko: 모델 요소만 선택하는 선택 도구를 활성화합니다
-  fr_fr: Active l'outil de sélection qui choisit seulement les éléments de modèle
-  ru: Активирует инструмент выбора, который выбирает только элементы модели.
-  chinese_s: 激活仅选择模型图元的选择工具
-  es_es: Activa la herramienta de selección que elige solo elementos de modelo
-  de_de: Aktiviert ein besonderes Auswahlwerkzeug, das nur Modell Elemente auswählt
-  pt_br: Ativa a ferramenta de seleção que escolhe apenas elementos de Modelo
+  en_us: |-
+    Draw a rectangle to select only the model elements inside it. View-specific elements such as detail lines, text notes, dimensions and tags are left out. The result replaces the current selection.
+  ko: |-
+    사각형을 그려 그 안의 모델 요소만 선택합니다. 상세선, 텍스트 노트, 치수, 태그처럼 특정 뷰에 속한 요소는 제외됩니다. 결과는 현재 선택 항목을 대체합니다.
+  fr_fr: |-
+    Tracez un rectangle pour sélectionner uniquement les éléments de modèle qu'il contient. Les éléments propres à une vue, comme les lignes de détail, les notes de texte, les cotes et les étiquettes, sont exclus. Le résultat remplace la sélection actuelle.
+  ru: |-
+    Нарисуйте прямоугольник, чтобы выбрать только элементы модели внутри него. Элементы, относящиеся к одному виду, например линии детализации, текстовые примечания, размеры и марки, исключаются. Результат заменяет текущий выбор.
+  chinese_s: |-
+    绘制矩形，仅选择其中的模型图元。详图线、文字注释、尺寸标注和标记等视图专有图元会被排除。结果会替换当前选择。
+  es_es: |-
+    Dibuje un rectángulo para seleccionar solo los elementos de modelo que contiene. Se excluyen los elementos específicos de la vista, como líneas de detalle, notas de texto, cotas y etiquetas. El resultado sustituye la selección actual.
+  de_de: |-
+    Ein Rechteck aufziehen, um nur die Modellelemente darin auszuwählen. Ansichtsspezifische Elemente wie Detaillinien, Textnotizen, Bemaßungen und Beschriftungen werden ausgelassen. Das Ergebnis ersetzt die aktuelle Auswahl.
+  pt_br: |-
+    Desenhe um retângulo para selecionar apenas os elementos de modelo dentro dele. Elementos específicos da vista, como linhas de detalhe, notas de texto, cotas e etiquetas, ficam de fora. O resultado substitui a seleção atual.
+context:
+  not_any:
+    - active-schedule
+    - active-project-browser
+    - active-system-browser
