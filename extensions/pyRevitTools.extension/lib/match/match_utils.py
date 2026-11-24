@@ -6,6 +6,11 @@ from pyrevit.compat import get_elementid_value_func
 
 get_elementid_value = get_elementid_value_func()
 
+try:
+    PLAIN_TYPES = (bool, int, long, float, str, unicode, type(None))
+except NameError:
+    PLAIN_TYPES = (bool, int, float, str, type(None))
+
 
 class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
     def __init__(self, category_ids):
@@ -75,7 +80,7 @@ class PropKeyValue(object):
         state = dict(self.__dict__)
         state["datatype"] = self.datatype.ToString()
         value = state["value"]
-        if type(value).__module__ not in ("builtins", "__builtin__"):
+        if not isinstance(value, PLAIN_TYPES):
             try:
                 state["value"] = int(value)
             except (TypeError, ValueError):

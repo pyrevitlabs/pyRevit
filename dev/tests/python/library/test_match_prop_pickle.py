@@ -55,6 +55,8 @@ class _Int64Like(object):
     def __int__(self):
         return self._number
 
+    __module__ = "__builtin__"
+
     def __reduce__(self):
         return (_clr_deserialize, ("System.Int64", str(self._number)))
 
@@ -72,7 +74,10 @@ def _load_prop_key_value():
     module.DB = types.SimpleNamespace(StorageType=_StorageType)
     module.get_elementid_value = int
     sys.modules[MODULE_NAME] = module
-    code = ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[]))
+    plain_types = next(n for n in tree.body if isinstance(n, ast.Try))
+    code = ast.fix_missing_locations(
+        ast.Module(body=[plain_types, node], type_ignores=[])
+    )
     exec(compile(code, str(MATCH_UTILS), "exec"), module.__dict__)
     return module.PropKeyValue
 
