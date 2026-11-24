@@ -59,6 +59,7 @@ class _WPFPanel(_Form):
     def load_xaml(self, xaml_source, literal_string=False):
         self.xaml_source = xaml_source
         self.literal_string = literal_string
+        _bind_widgets(self)
 
 
 class _PropKeyValue(object):
@@ -260,13 +261,33 @@ class ComposedXamlTests(unittest.TestCase):
         self.assertTrue(callable(getattr(self.pane.RecallWindow, handler)))
 
     def test_panel_and_window_load_the_composed_text(self):
-        panel = object.__new__(self.pane.MatchHistoryClipboard)
-        panel.load_xaml(self.pane._PAGE_XAML)
+        panel = self.pane.MatchHistoryClipboard()
         window = self.pane.RecallWindow("Elements", [], None)
         for form in (panel, window):
             self.assertTrue(form.literal_string)
             self.assertEqual(1, form.xaml_source.count('x:Name="paramListView"'))
             self.assertNotIn("@@CONTENT@@", form.xaml_source)
+
+    def test_panel_and_window_finish_startup(self):
+        panel = self.pane.MatchHistoryClipboard()
+        window = self.pane.RecallWindow("Elements", [], None)
+        for form in (panel, window):
+            merged = [os.path.basename(path) for path in form._merged]
+            self.assertEqual(
+                ["clipboard.Icons.xaml", "clipboard_ui.ResourceDictionary.en_us.xaml"],
+                merged,
+            )
+        self.assertEqual("collapsed", window.loadViewFiltersBtn.Visibility)
+        self.assertIsNone(panel.loadViewFiltersBtn.Visibility)
+
+    def test_panel_passes_other_xaml_through_unchanged(self):
+        panel = self.pane.MatchHistoryClipboard()
+        panel.load_xaml("<Page/>", literal_string=True)
+        self.assertEqual("<Page/>", panel.xaml_source)
+        self.assertTrue(panel.literal_string)
+        panel.load_xaml("other.xaml")
+        self.assertEqual("other.xaml", panel.xaml_source)
+        self.assertFalse(panel.literal_string)
 
     def test_missing_marker_raises_naming_the_file(self):
         with tempfile.TemporaryDirectory() as folder:

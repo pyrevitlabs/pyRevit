@@ -463,6 +463,12 @@ class _ClipboardLogic(object):
 
 
 class MatchHistoryClipboard(_ClipboardLogic, forms.WPFPanel):
+    """Dockable panel keeping the history of matched parameters.
+
+    Registered by the extension startup and opened from the Match History
+    Clipboard button.
+    """
+
     panel_title = "pyRevit MatchHistory Clipboard"
     panel_id = "0f3a0866-0123-4178-9f2c-121961bd292c"
     panel_source = _PAGE_XAML
@@ -473,9 +479,12 @@ class MatchHistoryClipboard(_ClipboardLogic, forms.WPFPanel):
         forms.WPFPanel.__init__(self)
         self._finish_clipboard()
 
-    def load_xaml(self, xaml_path):
-        """Load the page XAML composed with the shared grid."""
-        forms.WPFPanel.load_xaml(self, _compose_xaml(xaml_path), literal_string=True)
+    def load_xaml(self, xaml_source, literal_string=False):
+        """Compose the clipboard template before loading it as a page."""
+        if not literal_string and xaml_source == self.panel_source:
+            xaml_source = _compose_xaml(xaml_source)
+            literal_string = True
+        forms.WPFPanel.load_xaml(self, xaml_source, literal_string=literal_string)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -484,6 +493,12 @@ class MatchHistoryClipboard(_ClipboardLogic, forms.WPFPanel):
 
 
 class RecallWindow(_ClipboardLogic, forms.WPFWindow):
+    """Modeless window recalling the parameters saved by Match Properties.
+
+    Opened by Match Properties in config mode. Closing it pickles the checked
+    rows back to the memory file.
+    """
+
     resolve_theme = True
 
     def __init__(self, target_type, initial_props, memfile):
