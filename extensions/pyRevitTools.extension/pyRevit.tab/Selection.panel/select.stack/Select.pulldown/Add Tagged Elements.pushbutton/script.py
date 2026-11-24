@@ -1,37 +1,41 @@
-from pyrevit import revit, DB, UI, HOST_APP
-from pyrevit import forms
+# -*- coding: utf-8 -*-
+"""Add the elements that the selected tags refer to to the selection."""
 
-#  import List
-from System.Collections.Generic import List
+from pyrevit import forms, script
+from pyrevit import HOST_APP
+from pyrevit import revit, DB
+from pyrevit.coreutils import applocales
+
+RESOURCES = script.get_bundle_file("resources.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
+
+
+def tagged_element_ids(tag):
+    if isinstance(tag, DB.IndependentTag):
+        if HOST_APP.is_newer_than(2022, or_equal=True):
+            return list(tag.GetTaggedLocalElementIds())
+        return [tag.TaggedLocalElementId]
+    if isinstance(tag, DB.Architecture.RoomTag):
+        return [tag.TaggedLocalRoomId]
+    if isinstance(tag, DB.Mechanical.SpaceTag):
+        return [tag.Space.Id] if tag.Space is not None else []
+    if isinstance(tag, DB.AreaTag):
+        return [tag.Area.Id] if tag.Area is not None else []
+    return []
 
 
 selection = revit.get_selection()
 
+tagged_ids = [
+    tagged_id
+    for tag in selection
+    for tagged_id in tagged_element_ids(tag)
+    if tagged_id != DB.ElementId.InvalidElementId
+]
+if not tagged_ids:
+    forms.alert(_t("no_tags"), exitscript=True)
 
-tagged_elements = []
-
-for el in selection:
-    if HOST_APP.is_newer_than(2022, or_equal=True):
-        if isinstance(el, DB.IndependentTag):
-            tagged_elements.append(List[DB.ElementId](el.GetTaggedLocalElementIds())[0])
-        elif isinstance(el, DB.Architecture.RoomTag):
-            tagged_elements.append(el.TaggedLocalRoomId)
-        elif isinstance(el, DB.Mechanical.SpaceTag):
-            tagged_elements.append(el.Space.Id)
-        elif isinstance(el, DB.AreaTag):
-            tagged_elements.append(el.Area.Id)
-    else:
-        if isinstance(el, DB.IndependentTag):
-            tagged_elements.append(el.TaggedLocalElementId)
-        elif isinstance(el, DB.Architecture.RoomTag):
-            tagged_elements.append(el.TaggedLocalRoomId)
-        elif isinstance(el, DB.Mechanical.SpaceTag):
-            tagged_elements.append(el.Space.Id)
-        elif isinstance(el, DB.AreaTag):
-            tagged_elements.append(el.Area.Id)
-
-
-if len(tagged_elements) > 0:
-    selection.append(tagged_elements)
-else:
-    forms.alert("Please select at least one element tag.")
+selection.append(tagged_ids)
