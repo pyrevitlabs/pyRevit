@@ -202,6 +202,7 @@ Look categories up with `BuiltInCategory` and parameters with `BuiltInParameter`
 | Case | How to reach it | A pass looks like |
 |---|---|---|
 | One year per runtime group | Revit 2021-2024 (.NET Framework 4.8), 2025-2026 and 2027 and later; see [Revit versions and .NET](adding-revit-version.md#revit-versions-and-net) | The change works on one year of each group the code can run on |
+| Revit 2025 or 2026 on .NET 8 and on .NET 10 | A 2025 or 2026 host before and after its `.5` update (.NET 10); the pyRevit assemblies target .NET 8 in both | Same result on both hosts |
 | Oldest and newest supported year | `pyrevit launch <clone> default <year> --isolated` | Same, and the code uses no API the oldest year lacks |
 
 Some API changes alter behaviour instead of removing a member: `ElementId` moved from `int` to `long` (use `get_elementid_value_func()` from `pyrevit.compat` instead of `.IntegerValue`), and `DisplayUnitType` gave way to `ForgeTypeId`. `pipenv run check-revit-api` finds uses that are not protected for every year the code can run on (see [`revit-api-compat.md`](revit-api-compat.md)); it checks the API surface, not whether the result of a changed member is the same.
