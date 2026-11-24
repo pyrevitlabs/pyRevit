@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="transaction_set_workset">Establecer área de trabajo activa</sys:String>
+    <sys:String x:Key="transaction_set_work_plane">Establecer plano de trabajo activo en el nivel</sys:String>
+    <sys:String x:Key="transaction_set_phase">Establecer fase de la vista</sys:String>
+    <sys:String x:Key="not_workshared">El modelo no tiene áreas de trabajo compartidas.</sys:String>
+    <sys:String x:Key="phase_not_editable">No se puede modificar la fase de la vista (probablemente hay un modo de vista temporal activo).</sys:String>
+    <sys:String x:Key="config_title">Elegir qué establecer</sys:String>
+    <sys:String x:Key="config_button">Guardar selección</sys:String>
+    <sys:String x:Key="option_set_workset">Área de trabajo</sys:String>
+    <sys:String x:Key="option_set_workset_checkout">Tomar prestada el área de trabajo</sys:String>
+    <sys:String x:Key="option_set_workplane_to_level">Plano de trabajo en el nivel</sys:String>
+    <sys:String x:Key="option_set_workplane_visible">Mostrar plano de trabajo</sys:String>
+    <sys:String x:Key="option_set_phase">Fase</sys:String>
+</ResourceDictionary>
