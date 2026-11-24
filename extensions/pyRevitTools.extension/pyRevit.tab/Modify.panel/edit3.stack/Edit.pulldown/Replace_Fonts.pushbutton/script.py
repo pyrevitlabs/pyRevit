@@ -32,7 +32,7 @@ def rename_element_type_if_needed(element_type, old_font, new_font_name):
     Returns:
         None
     """
-    current_name = DB.Element.Name.GetValue(element_type)
+    current_name = revit.query.get_name(element_type)
     # Use case-insensitive check to see if the old font name is part of the type name
     if old_font.lower() in current_name.lower():
         # Use case-insensitive replace
@@ -42,7 +42,7 @@ def rename_element_type_if_needed(element_type, old_font, new_font_name):
                 re.escape(old_font), new_font_name, current_name, flags=re.IGNORECASE
             )
             if new_name != current_name:
-                DB.Element.Name.SetValue(element_type, new_name)
+                element_type.Name = new_name
                 logger.debug(
                     "Renamed type from '{}' to '{}'".format(current_name, new_name)
                 )
@@ -107,7 +107,7 @@ def update_nested_generic_annotations(host_family_doc, font_name):
                             param.Set(font_name)
                             found_in_this_nested = True
                             results.append(
-                                (DB.Element.Name.GetValue(et), old_font, font_name)
+                                (revit.query.get_name(et), old_font, font_name)
                             )
 
                 # Recursive call for families nested even deeper
@@ -179,7 +179,7 @@ def process_family_document(family_doc, new_font_name):
                             found = True
                             result.append(
                                 (
-                                    DB.Element.Name.GetValue(element_type),
+                                    revit.query.get_name(element_type),
                                     old_font,
                                     new_font_name,
                                 )
@@ -187,7 +187,7 @@ def process_family_document(family_doc, new_font_name):
                 except Exception as e:
                     logger.error(
                         "Error updating type '{}' in family '{}': {}".format(
-                            DB.Element.Name.GetValue(element_type),
+                            revit.query.get_name(element_type),
                             family_doc.Title,
                             str(e),
                         )
@@ -263,12 +263,12 @@ def update_text_types(doc, element_types, font_name):
                         rename_element_type_if_needed(elem_type, old_font, font_name)
                         param.Set(font_name)
                         results.append(
-                            (DB.Element.Name.GetValue(elem_type), old_font, font_name)
+                            (revit.query.get_name(elem_type), old_font, font_name)
                         )
             except Exception as e:
                 logger.error(
                     "**Error updating {}: {}**".format(
-                        DB.Element.Name.GetValue(elem_type), str(e)
+                        revit.query.get_name(elem_type), str(e)
                     )
                 )
     return results
