@@ -17,7 +17,7 @@ TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
 
 BRIDGE = (
-    pathlib.Path(__file__).resolve().parents[2]
+    pathlib.Path(__file__).resolve().parents[4]
     / "pyrevitlib"
     / "pyrevit"
     / "output"
@@ -26,17 +26,26 @@ BRIDGE = (
 
 
 def load_bridge():
-    names = ("pyrevit", "pyrevit.coreutils", "pyrevit.coreutils.logger")
+    names = (
+        "pyrevit",
+        "pyrevit.compat",
+        "pyrevit.coreutils",
+        "pyrevit.coreutils.logger",
+    )
     previous = {name: sys.modules.get(name) for name in names}
     logger_module = types.ModuleType("pyrevit.coreutils.logger")
     logger_module.get_logger = lambda name: logging.getLogger(name)
     coreutils_module = types.ModuleType("pyrevit.coreutils")
     coreutils_module.logger = logger_module
+    compat_module = types.ModuleType("pyrevit.compat")
+    compat_module.safe_strtype = str
     pyrevit_module = types.ModuleType("pyrevit")
     pyrevit_module.coreutils = coreutils_module
+    pyrevit_module.compat = compat_module
     sys.modules.update(
         {
             "pyrevit": pyrevit_module,
+            "pyrevit.compat": compat_module,
             "pyrevit.coreutils": coreutils_module,
             "pyrevit.coreutils.logger": logger_module,
         }
@@ -183,6 +192,51 @@ class PageBridgeTests(unittest.TestCase):
                 "event": "scene",
                 "payload": {"a": [1, 2]},
             },
+        )
+
+    def test_a_registered_function_is_answered_with_its_return_value(self):
+        self.bridge.register("push", lambda payload: {"written": payload["n"]})
+        self.bridge.start()
+        self.page_says("push", {"n": 4}, request_id=9)
+        self.assertEqual(
+            self.output.posted,
+            [
+                {
+                    "channel": self.bridge.channel,
+                    "event": "result",
+                    "payload": {"requestId": 9, "ok": True, "message": {"written": 4}},
+                }
+            ],
+        )
+
+    def test_a_registered_function_that_raises_still_answers_the_request(self):
+        def fail(payload):
+            raise ValueError("boom")
+
+        self.bridge.register("push", fail)
+        self.bridge.start()
+        with self.assertLogs("bridge_under_test", level="ERROR"):
+            self.page_says("push", request_id=2)
+        self.assertEqual(
+            self.output.posted[0]["payload"],
+            {"requestId": 2, "ok": False, "message": "boom"},
+        )
+
+    def test_an_expected_refusal_is_answered_without_an_error_log(self):
+        class Refusal(Exception):
+            pass
+
+        def refuse(payload):
+            raise Refusal("not now")
+
+        self.bridge.register("push", refuse, expected=(Refusal,))
+        self.bridge.start()
+        with self.assertLogs("bridge_under_test", level="INFO") as logs:
+            self.page_says("push", request_id=6)
+        self.assertEqual([record.levelname for record in logs.records], ["INFO"])
+        self.assertEqual(
+            self.output.posted[0]["payload"],
+            {"requestId": 6, "ok": False, "message": "not now"},
         )
 
     def test_stop_unsubscribes(self):

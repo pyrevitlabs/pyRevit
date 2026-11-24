@@ -43,6 +43,11 @@ class Transaction:
         `failures_preprocessor` takes any `DB.IFailuresPreprocessor` and wins
         over `swallow_errors`. Both are ignored when the transaction runs as a
         `SubTransaction` inside an already open transaction.
+
+    Note:
+        Leaving the context never raises when Revit refuses the commit: the
+        transaction is rolled back and the error is logged. Read `committed`
+        after the `with` block to tell whether Revit kept the changes.
     """
 
     def __init__(
@@ -79,8 +84,10 @@ class Transaction:
                 )
             self._rvtxn.SetFailureHandlingOptions(self._fhndlr_ops)
         self._logerror = log_errors
+        self._committed = False
 
     def __enter__(self):
+        self._committed = False
         self._rvtxn.Start()
         return self
 
@@ -95,7 +102,7 @@ class Transaction:
                 )
         else:
             try:
-                self._rvtxn.Commit()
+                self._committed = self._rvtxn.Commit() == DB.TransactionStatus.Committed
             except Exception as errmsg:
                 self._rvtxn.RollBack()
                 if self._logerror:
@@ -114,6 +121,15 @@ class Transaction:
     def name(self, new_name):
         if hasattr(self._rvtxn, "SetName"):
             return self._rvtxn.SetName(new_name)
+
+    @property
+    def committed(self):
+        """Whether the last run of the context ended with Revit keeping its changes.
+
+        False before the context ends, after a rollback, after an exception in
+        the body, and when a failures preprocessor answered with a rollback.
+        """
+        return self._committed
 
     @property
     def status(self):

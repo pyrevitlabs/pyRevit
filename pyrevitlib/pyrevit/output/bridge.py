@@ -7,7 +7,8 @@ channels, for example from a previous run printed into the same window, are
 ignored.
 
 Tools that render an interactive page (a report, a grid, a preview) create one
-:class:`PageBridge` per page, register a handler per page action and
+:class:`PageBridge` per page, register a handler per page action
+(:meth:`PageBridge.register`, or the lower-level ``handlers`` dict) and
 :meth:`PageBridge.start` it. The page side posts with
 ``window.chrome.webview.postMessage`` and listens with
 ``window.chrome.webview.addEventListener("message", ...)``.
@@ -16,6 +17,7 @@ Tools that render an interactive page (a report, a grid, a preview) create one
 import json
 import uuid
 
+from pyrevit.compat import safe_strtype
 from pyrevit.coreutils.logger import get_logger
 
 mlogger = get_logger(__name__)
@@ -31,7 +33,8 @@ class PageBridge(object):
     Attributes:
         channel (str): channel name the page must put on every message.
         handlers (dict): action name -> ``handler(payload, request_id)``,
-            filled by the tool before :meth:`start`.
+            filled by the tool before :meth:`start`. A handler owns its reply;
+            :meth:`register` builds handlers that reply on their behalf.
 
     Important:
         ``output.on_message`` handlers outlive the command, so the bundle must
@@ -43,6 +46,37 @@ class PageBridge(object):
         self.output = output
         self.channel = "{}-{}".format(prefix, uuid.uuid4().hex)
         self.handlers = {}
+
+    def register(self, action, function, expected=()):
+        """Serve ``action`` with ``function(payload)`` and reply with what it returns.
+
+        A return value is answered as a successful ``result``. An exception is
+        answered as a failed ``result`` carrying its text, so the page's
+        request never stays pending.
+
+        Args:
+            action (str): action name the page posts.
+            function (callable): ``function(payload)`` returning a
+                JSON-serializable value.
+            expected (tuple): exception classes that are routine refusals whose
+                message is meant for the user. They are logged without a
+                traceback; any other exception is logged with one.
+        """
+
+        def handler(payload, request_id):
+            try:
+                result = function(payload)
+            except expected as ex:
+                mlogger.info("Action '%s' refused: %s", action, safe_strtype(ex))
+                self.reply(request_id, False, safe_strtype(ex))
+                return
+            except Exception as ex:
+                mlogger.exception("Action '%s' failed", action)
+                self.reply(request_id, False, safe_strtype(ex))
+                return
+            self.reply(request_id, True, result)
+
+        self.handlers[action] = handler
 
     def start(self):
         """Subscribe to the output window; return False when it cannot receive."""
@@ -67,7 +101,11 @@ class PageBridge(object):
             mlogger.debug("Handler '%s' failed: %s", action, ex)
             self.send(
                 "error",
-                {"action": action, "requestId": request_id, "message": str(ex)},
+                {
+                    "action": action,
+                    "requestId": request_id,
+                    "message": safe_strtype(ex),
+                },
             )
 
     def send(self, event, payload=None, raw_payload=None):
