@@ -53,11 +53,11 @@ Changing the units re-reads the grid, so the pending edits are discarded after y
 
 **Check** runs the same steps, commit included, and then discards the result, so you can find out which cells would fail without changing the model.
 
-**Pull** reads the current values from Revit and keeps your pending edits. A grid built from the current selection keeps the elements it was built from, even if the selection in Revit changes. If a cell was changed in Revit after you loaded it and you edited it in the grid as well, it is marked orange and a bar offers **Keep my values** or **Use Revit's values**. Push never overwrites such a cell silently.
+**Pull** reads the current values from Revit and keeps your pending edits. A grid built from the current selection keeps the elements it was built from, even if the selection in Revit changes, and so does a column change with **Show grid**. To use a new selection, start a new grid. If a cell was changed in Revit after you loaded it and you edited it in the grid as well, it is marked orange and a bar offers **Keep my values** or **Use Revit's values**. Push never overwrites such a cell silently.
 
 ## Choosing columns
 
-**Columns** opens a side panel with the columns of the grid and the parameters that can be added. Add, remove, reorder (drag, or use the arrows) and set how many columns stay frozen at the left. **Show grid** reads the new column set. With a schedule open, **Write layout to schedule** also adds, removes and reorders the columns of the Revit schedule itself; a field the schedule has hidden is shown again instead of added twice. Filters, sorting and fields it does not manage, such as the count, stay as they are.
+**Columns** opens a side panel with the columns of the grid and the parameters that can be added. Add, remove, reorder (drag, or use the arrows) and set how many columns stay frozen at the left. **Show grid** reads the new column set. With a schedule open, **Write layout to schedule** also adds, removes and reorders the columns of the Revit schedule itself; a field the schedule has hidden is shown again instead of added twice, and a field that a filter, sort or group refers to is hidden instead of removed, so those rules keep working. Filters, sorting and fields it does not manage, such as the count, stay as they are.
 
 ## Starting from scratch
 

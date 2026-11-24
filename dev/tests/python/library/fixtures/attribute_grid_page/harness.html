@@ -710,6 +710,56 @@
       return R;
     },
 
+    async grid_show_grid_keeps_the_pinned_selection() {
+      const R = {};
+      mount();
+      await idle();
+      window.__backend.categories = () => [{ id: -1, name: "Alpha", instances: 3, types: 1 }];
+      window.__backend.available = () => [
+        { key: "bip|-9|i", heading: "Mark", scope: "i" },
+        { key: "bip|-8|i", heading: "Comments", scope: "i" },
+      ];
+      window.__backend.load = (payload) => ({
+        source: Object.assign({}, payload.source, { selection: payload.source.selection || [1, 2] }),
+        title: "",
+        unitMode: "display",
+        columns: payload.columns.map((key) => column(key, key)),
+        rows: [
+          { id: 1, t: 1, c: "A", v: payload.columns.map(() => "A"), x: [] },
+          { id: 2, t: 1, c: "A", v: payload.columns.map(() => "B"), x: [] },
+        ],
+        sort: [],
+      });
+      const select = document.querySelector(".ae-toolbar select");
+      select.value = "__scratch__";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      await idle();
+      const box = document.querySelector(".ae-panel .ae-section:first-child .ae-item input");
+      box.checked = true;
+      box.dispatchEvent(new Event("change", { bubbles: true }));
+      const scope = document.querySelector(".ae-panel .ae-row2 select");
+      scope.value = "selection";
+      scope.dispatchEvent(new Event("change", { bubbles: true }));
+      const press = (label) => [...document.querySelectorAll(".ae-panel .ae-button")].find((b) => b.textContent === label).click();
+      press("ui_find_parameters");
+      await idle();
+      document.querySelector(".ae-panel .ae-item.add").click();
+      press("ui_apply_columns");
+      await idle();
+      click(0, 0);
+      paste("EDIT");
+      R.dirty_before = dirty();
+      document.querySelector(".ae-panel .ae-item.add").click();
+      press("ui_apply_columns");
+      await idle();
+      const loads = sent("load");
+      R.first_load_has_selection = "selection" in loads[loads.length - 2].payload.source;
+      R.second_load_selection = loads[loads.length - 1].payload.source.selection;
+      R.dirty_after = dirty();
+      R.dialog_shown = !!document.querySelector(".ae-modal");
+      return R;
+    },
+
     async grid_scratch_reordered_categories_merge() {
       const R = {};
       mount();

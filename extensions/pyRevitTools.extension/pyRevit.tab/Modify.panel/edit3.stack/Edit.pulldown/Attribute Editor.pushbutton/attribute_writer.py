@@ -5,6 +5,7 @@ from pyrevit import DB, framework, revit, script
 from pyrevit.compat import get_elementid_from_value_func, safe_strtype
 
 from attribute_columns import SCOPE_TYPE, ColumnSpec, id_value
+from attribute_sources import id_value_of_field
 from attribute_strings import t
 from attribute_values import EditError, make_codec
 
@@ -247,7 +248,7 @@ def _push(doc, edits, codec, columns, force, blocked):
     return ordered
 
 
-def apply_edits(doc, edits, unit_mode, force=False, dry=False):
+def apply_edits(doc, edits, unit_mode, force=False, dry=False, column_formats=None):
     """Write ``edits`` in one transaction and report the outcome per cell.
 
     Args:
@@ -259,6 +260,9 @@ def apply_edits(doc, edits, unit_mode, force=False, dry=False):
         dry (bool): validate by writing and committing inside a transaction
             group that is rolled back, so Revit's commit-time checks run but
             nothing in the model changes.
+        column_formats (dict | None): ``{column key: DB.FormatOptions}`` of the
+            schedule fields that override the project's number format. The
+            grid read its texts with them, so comparing and parsing must too.
 
     Returns:
         (list[dict]): one result per edit: ``{row, key, ok, message}`` for a
@@ -273,7 +277,10 @@ def apply_edits(doc, edits, unit_mode, force=False, dry=False):
         Elements another user owns in a workshared model fail up front.
     """
     codec = make_codec(doc, unit_mode)
-    columns = {}
+    columns = dict(
+        (key, ColumnSpec(key, field_format=field_format))
+        for key, field_format in (column_formats or {}).items()
+    )
     blocked = _worksharing_blocks(doc, edits)
     if dry:
         with revit.DryTransactionGroup(t("transaction_push"), doc):
@@ -298,7 +305,9 @@ def apply_layout(doc, source, ordered_keys):
 
     Adds missing fields (showing a hidden field again instead of adding it
     twice), removes the visible supported fields that are no longer wanted and
-    reorders. Calculated fields and unsupported fields stay where they are.
+    reorders. Calculated fields and unsupported fields stay where they are, and
+    so do filters and sorting: a field one of them refers to is hidden rather
+    than removed.
 
     Args:
         doc (DB.Document): the document.
@@ -316,6 +325,7 @@ def apply_layout(doc, source, ordered_keys):
     hidden = source.field_ids_by_key(hidden=True)
     schedulable = source.schedulable_fields()
     summary = {"added": 0, "removed": 0, "failed": []}
+    in_use = source.fields_in_use()
     collector = FailureCollector()
     with revit.Transaction(
         t("transaction_layout"),
@@ -327,7 +337,10 @@ def apply_layout(doc, source, ordered_keys):
             if key in ordered_keys:
                 continue
             try:
-                definition.RemoveField(field_id)
+                if id_value_of_field(field_id) in in_use:
+                    definition.GetField(field_id).IsHidden = True
+                else:
+                    definition.RemoveField(field_id)
                 summary["removed"] += 1
             except Exception as ex:
                 logger.debug("RemoveField failed for %s: %s", key, ex)

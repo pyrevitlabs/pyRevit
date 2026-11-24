@@ -451,6 +451,14 @@ class AttributeGridPageTests(unittest.TestCase):
         self.assertEqual(result["rows_after_redo"], 4)
         self.assertEqual(result["selected_after_redo"], "D2")
 
+    def test_changing_columns_keeps_the_selection_the_grid_was_built_from(self):
+        result = self.scenario("grid_show_grid_keeps_the_pinned_selection")
+        self.assertEqual(result["dirty_before"], 1)
+        self.assertFalse(result["first_load_has_selection"])
+        self.assertEqual(result["second_load_selection"], [1, 2])
+        self.assertEqual(result["dirty_after"], 1)
+        self.assertFalse(result["dialog_shown"])
+
     def test_a_reordered_category_set_keeps_pending_edits_without_asking(self):
         result = self.scenario("grid_scratch_reordered_categories_merge")
         self.assertEqual(result["dirty_before"], 1)

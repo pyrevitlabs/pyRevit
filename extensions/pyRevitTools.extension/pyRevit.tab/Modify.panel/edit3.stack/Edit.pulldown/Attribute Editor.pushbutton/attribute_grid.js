@@ -1319,6 +1319,7 @@
       try {
         const reply = await this.request("push", {
           edits: edits.map(({ row, key, text, base }) => ({ row, key, text, base })),
+          source: this.loadedSource || this.source,
           unitMode: this.unitMode,
           force: !!force,
           dry: !!dry,
@@ -1687,6 +1688,8 @@
           return;
         }
         const next = { kind: "scratch", categories, scope: this.builder.scope, types: this.builder.types };
+        const shown = this.loadedSource || {};
+        if (next.scope === "selection" && shown.selection && this.sameScratchSource(next, shown)) next.selection = shown.selection;
         const pending = this.countPending();
         if (pending && !this.sameScratchSource(next, this.loadedSource || {}) && !(await this.confirm(this.S("source_discard", pending), this.S("discard")))) return;
         this.source = next;
@@ -1706,7 +1709,9 @@
     sameScratchSource(a, b) {
       if (a.kind !== "scratch" || b.kind !== "scratch") return false;
       const ids = (source) => [...(source.categories || [])].sort((x, y) => x - y).join(",");
-      return ids(a) === ids(b) && a.scope === b.scope && !!a.types === !!b.types;
+      const same = ids(a) === ids(b) && a.scope === b.scope && !!a.types === !!b.types;
+      const selected = (source) => (source.selection ? [...source.selection].sort((x, y) => x - y).join(",") : null);
+      return same && (selected(a) === null || selected(b) === null || selected(a) === selected(b));
     }
 
     async writeLayout() {

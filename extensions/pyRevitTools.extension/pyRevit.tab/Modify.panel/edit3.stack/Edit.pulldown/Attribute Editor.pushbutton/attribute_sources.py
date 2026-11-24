@@ -80,6 +80,10 @@ def _field_format(field):
         return None
 
 
+def id_value_of_field(field_id):
+    return int(field_id.IntegerValue)
+
+
 def _scope_of_field_type(field_type):
     if field_type == DB.ScheduleFieldType.Instance:
         return SCOPE_ELEMENT
@@ -145,6 +149,31 @@ class ScheduleSource(object):
             if bool(field.IsHidden) == hidden and key is not None and key not in by_key:
                 by_key[key] = field_id
         return by_key
+
+    def column_formats(self):
+        """Return ``{column key: DB.FormatOptions}`` of the fields with their own format."""
+        return dict(
+            (column.key, column.field_format)
+            for column in self.default_columns()
+            if column.field_format is not None
+        )
+
+    def fields_in_use(self):
+        """Return the ids of the schedule fields a filter, sort or group refers to.
+
+        Removing such a field would remove the rule with it, so a layout change
+        hides it instead.
+        """
+        definition = self.schedule.Definition
+        used = set(
+            id_value_of_field(definition.GetFilter(index).FieldId)
+            for index in range(definition.GetFilterCount())
+        )
+        used.update(
+            id_value_of_field(definition.GetSortGroupField(index).FieldId)
+            for index in range(definition.GetSortGroupFieldCount())
+        )
+        return used
 
     def sort_hints(self, keys):
         """Return the schedule's sort fields that map to ``keys``."""
@@ -238,6 +267,9 @@ class ScratchSource(object):
 
     def default_columns(self):
         return []
+
+    def column_formats(self):
+        return {}
 
     def sort_hints(self, keys):
         return []

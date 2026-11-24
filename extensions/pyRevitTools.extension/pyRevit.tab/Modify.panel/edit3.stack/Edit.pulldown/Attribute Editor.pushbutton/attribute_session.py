@@ -167,6 +167,7 @@ class AttributeSession(object):
             payload.get("unitMode"),
             force=bool(payload.get("force")),
             dry=bool(payload.get("dry")),
+            column_formats=source_from_payload(self.doc, payload).column_formats(),
         )
         return {"results": results}
 
