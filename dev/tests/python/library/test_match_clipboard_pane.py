@@ -289,6 +289,17 @@ class ComposedXamlTests(unittest.TestCase):
         self.assertEqual("other.xaml", panel.xaml_source)
         self.assertFalse(panel.literal_string)
 
+    def test_subclass_with_its_own_page_loads_it_unchanged(self):
+        class CustomPanel(self.pane.MatchHistoryClipboard):
+            panel_source = "custom_page.xaml"
+
+        custom = CustomPanel.__new__(CustomPanel)
+        custom.load_xaml(custom.panel_source)
+        self.assertEqual("custom_page.xaml", custom.xaml_source)
+        self.assertFalse(custom.literal_string)
+        builtin = self.pane.MatchHistoryClipboard()
+        self.assertEqual(1, builtin.xaml_source.count('x:Name="paramListView"'))
+
     def test_missing_marker_raises_naming_the_file(self):
         with tempfile.TemporaryDirectory() as folder:
             path = os.path.join(folder, "broken.xaml")

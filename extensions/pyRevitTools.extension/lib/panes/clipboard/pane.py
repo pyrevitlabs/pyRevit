@@ -481,7 +481,7 @@ class MatchHistoryClipboard(_ClipboardLogic, forms.WPFPanel):
 
     def load_xaml(self, xaml_source, literal_string=False):
         """Compose the clipboard template before loading it as a page."""
-        if not literal_string and xaml_source == self.panel_source:
+        if not literal_string and xaml_source == _PAGE_XAML:
             xaml_source = _compose_xaml(xaml_source)
             literal_string = True
         forms.WPFPanel.load_xaml(self, xaml_source, literal_string=literal_string)
