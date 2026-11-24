@@ -51,6 +51,23 @@ _ROW_GRID_MARGIN = 'Margin="0,0,0,2"'
 DEFAULT_MAX_HEIGHT = 560
 
 
+def _format_setting_value(value):
+    """Return the text-box text for a setting value, identical on every engine.
+
+    IronPython 2.7 renders floats with 12 significant digits while CPython 3
+    and IronPython 3.4 use the shortest round-trip form; 12 digits is used
+    everywhere so the same value shows the same text.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, float):
+        text = "%.12g" % value
+        if not any(char in text for char in ".eni"):
+            text += ".0"
+        return text
+    return str(value)
+
+
 class SettingsWindow(forms.WPFWindow):
     """Dynamic settings window that generates UI from schema."""
 
@@ -378,7 +395,7 @@ class SettingsWindow(forms.WPFWindow):
                     )
 
             elif setting_type in ["int", "float", "string", "color", "folder", "file"]:
-                control.Text = str(current_value) if current_value is not None else ""
+                control.Text = _format_setting_value(current_value)
 
                 if setting_type == "color":
                     self._update_color_preview(name, control.Text)
