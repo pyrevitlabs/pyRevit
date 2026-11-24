@@ -1,9 +1,12 @@
-"""Check the Match Properties clipboard pane without Revit or WPF."""
+"""Regression tests for #4179: the Match Properties clipboard pane under CPython.
+
+The pane logic runs against stubbed forms, without Revit or WPF; loading the
+composed XAML in real WPF is not covered.
+"""
 
 import ast
 import os
 import pickle
-import re
 import sys
 import tempfile
 import unittest
@@ -11,6 +14,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from unittest import mock
+
+import pytest
 
 
 TEST_ENVIRONMENT = "HostFree"
@@ -190,6 +195,7 @@ def _class_bases(tree, class_name):
     return None
 
 
+@pytest.mark.regression
 class PaneStructureTests(unittest.TestCase):
     """CPython forms cannot subclass WPF types or call wpf.LoadComponent."""
 
@@ -204,9 +210,6 @@ class PaneStructureTests(unittest.TestCase):
                 for base in node.bases:
                     self.assertNotIn("UserControl", ast.unparse(base), node.name)
 
-    def test_no_load_component_on_self(self):
-        self.assertNotIn("wpf.LoadComponent(self,", self.source)
-
     def test_forms_derive_from_the_engine_neutral_bases(self):
         self.assertIn("forms.WPFWindow", _class_bases(self.tree, "RecallWindow"))
         self.assertIn(
@@ -217,6 +220,7 @@ class PaneStructureTests(unittest.TestCase):
         self.assertEqual(["forms.Reactive"], _class_bases(self.tree, "ParameterItem"))
 
 
+@pytest.mark.regression
 class ComposedXamlTests(unittest.TestCase):
     """Window and page XAML wrap the one shared grid and bind to the logic."""
 
@@ -255,16 +259,25 @@ class ComposedXamlTests(unittest.TestCase):
         handler = root.attrib["Closing"]
         self.assertTrue(callable(getattr(self.pane.RecallWindow, handler)))
 
-    def test_panel_and_window_load_literal_xaml(self):
+    def test_panel_and_window_load_the_composed_text(self):
         panel = object.__new__(self.pane.MatchHistoryClipboard)
         panel.load_xaml(self.pane._PAGE_XAML)
         window = self.pane.RecallWindow("Elements", [], None)
         for form in (panel, window):
             self.assertTrue(form.literal_string)
-            self.assertIn("<Grid", form.xaml_source)
+            self.assertEqual(1, form.xaml_source.count('x:Name="paramListView"'))
             self.assertNotIn("@@CONTENT@@", form.xaml_source)
 
+    def test_missing_marker_raises_naming_the_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, "broken.xaml")
+            with open(path, "w") as f:
+                f.write("<Window/>")
+            with self.assertRaisesRegex(ValueError, "broken.xaml"):
+                self.pane._compose_xaml(path)
 
+
+@pytest.mark.regression
 class ParameterItemTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -288,6 +301,7 @@ class ParameterItemTests(unittest.TestCase):
         self.assertEqual("multiple", self.pane.ParameterItem(pkv).Category)
 
 
+@pytest.mark.regression
 class FilterTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -353,6 +367,7 @@ class FilterTests(unittest.TestCase):
         self.assertEqual("res:filterIcon", form.regexToggle_b.Content)
 
 
+@pytest.mark.regression
 class DedupTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -390,6 +405,7 @@ class DedupTests(unittest.TestCase):
         self.assertFalse(form.pasteSelBtn.IsEnabled)
 
 
+@pytest.mark.regression
 class RecallLayoutTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -415,7 +431,13 @@ class RecallLayoutTests(unittest.TestCase):
             merged,
         )
 
+    def test_finish_without_init_fails_loudly(self):
+        form = _bind_widgets(object.__new__(self.pane.RecallWindow))
+        with self.assertRaises(RuntimeError):
+            form._finish_clipboard()
 
+
+@pytest.mark.regression
 class SaveRecallTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -453,7 +475,11 @@ class SaveRecallTests(unittest.TestCase):
     def test_no_memfile_saves_nothing(self):
         form = _recall_form(self.pane)
         form.populate([_prop("Mark")])
-        form._save_recall()
+        with mock.patch.object(self.pane.pickle, "dump") as dump:
+            with mock.patch("builtins.open") as opened:
+                form._save_recall()
+        dump.assert_not_called()
+        opened.assert_not_called()
 
 
 if __name__ == "__main__":

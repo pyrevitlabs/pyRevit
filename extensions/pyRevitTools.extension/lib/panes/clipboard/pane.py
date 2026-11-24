@@ -45,6 +45,10 @@ def _compose_xaml(root_xaml_path):
         root = f.read().decode("utf-8-sig")
     with open(_CONTENT_XAML, "rb") as f:
         content = f.read().decode("utf-8-sig")
+    if _CONTENT_MARKER not in root:
+        raise ValueError(
+            "{} has no {} marker".format(op.basename(root_xaml_path), _CONTENT_MARKER)
+        )
     return root.replace(_CONTENT_MARKER, content)
 
 
@@ -147,6 +151,8 @@ class _ClipboardLogic(object):
 
     def _finish_clipboard(self):
         """Merge icon and locale dictionaries and apply recall-mode layout."""
+        if not hasattr(self, "_is_recall"):
+            raise RuntimeError("_init_clipboard must run before the form loads")
         self.merge_resource_dict(_ICONS_XAML)
         _merge_locale(self)
 
@@ -467,8 +473,9 @@ class MatchHistoryClipboard(_ClipboardLogic, forms.WPFPanel):
         forms.WPFPanel.__init__(self)
         self._finish_clipboard()
 
-    def load_xaml(self, xaml_source, literal_string=False):
-        forms.WPFPanel.load_xaml(self, _compose_xaml(xaml_source), literal_string=True)
+    def load_xaml(self, xaml_path):
+        """Load the page XAML composed with the shared grid."""
+        forms.WPFPanel.load_xaml(self, _compose_xaml(xaml_path), literal_string=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
