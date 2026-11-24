@@ -8,8 +8,10 @@ namespace pyRevitLabs.Common.Tests {
     [Category("HostFree")]
     [Category("Unit")]
     public class BinArtifactInstallerTests {
-        /// <summary>A clone without an origin remote fails before any download is attempted.</summary>
+        /// <summary>A clone without an origin remote fails before any download is attempted (#4042).</summary>
         [Test]
+        [Category("Integration")]
+        [Category("Regression")]
         public void InstallForRepoClone_WhenTheCloneHasNoOrigin_Throws() {
             var repoPath = Path.Combine(Path.GetTempPath(), "binInstallNoOrigin_" + Guid.NewGuid().ToString("N"));
             LibGit2Sharp.Repository.Init(repoPath);

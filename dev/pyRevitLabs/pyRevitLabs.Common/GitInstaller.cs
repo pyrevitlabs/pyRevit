@@ -278,43 +278,92 @@ namespace pyRevitLabs.Common {
             return head;
         }
 
+        /// <summary>
+        /// Tells whether the checked-out branch has commits that are not on its tracking branch.
+        /// </summary>
+        /// <returns>
+        /// False when the folder is not a repository or the branch has no usable tracking branch, including
+        /// one whose remote ref no longer exists.
+        /// </returns>
         public static bool IsLocalAheadOfTrackingBranch(string repoPath) {
             if (!IsValidRepo(repoPath))
                 return false;
 
             using (var repo = new Repository(repoPath)) {
-                var tracked = repo.Head?.TrackedBranch;
-                if (tracked == null)
+                if (!TryGetTrackedTip(repo, out var trackedTip))
                     return false;
 
-                var divergence = repo.ObjectDatabase.CalculateHistoryDivergence(repo.Head.Tip, tracked.Tip);
-                return divergence.AheadBy > 0;
+                return repo.ObjectDatabase.CalculateHistoryDivergence(repo.Head.Tip, trackedTip).AheadBy > 0;
             }
         }
 
         /// <summary>
-        /// Tells whether the checked-out branch of a repository tracks a remote branch.
+        /// Tells whether the checked-out branch tracks a remote branch whose ref still exists; a branch tracking
+        /// another local branch does not count.
         /// </summary>
         public static bool HasTrackingBranch(string repoPath) {
             if (!IsValidRepo(repoPath))
                 return false;
 
             using (var repo = new Repository(repoPath))
-                return repo.Head?.TrackedBranch != null;
+                return TryGetTrackedTip(repo, out _);
         }
 
+        /// <summary>
+        /// Tells whether the checked-out branch and its tracking branch point at the same history.
+        /// </summary>
+        /// <returns>
+        /// True when the folder is not a repository or the branch has no usable tracking branch.
+        /// </returns>
         public static bool IsSyncedWithTrackingBranch(string repoPath) {
             if (!IsValidRepo(repoPath))
                 return true;
 
             using (var repo = new Repository(repoPath)) {
-                var tracked = repo.Head?.TrackedBranch;
-                if (tracked == null)
+                if (!TryGetTrackedTip(repo, out var trackedTip))
                     return true;
 
-                var divergence = repo.ObjectDatabase.CalculateHistoryDivergence(repo.Head.Tip, tracked.Tip);
+                var divergence = repo.ObjectDatabase.CalculateHistoryDivergence(repo.Head.Tip, trackedTip);
                 return divergence.AheadBy == 0 && divergence.BehindBy == 0;
             }
+        }
+
+        /// <summary>
+        /// Tells whether HEAD points at a commit instead of a branch, as after a tag or commit checkout.
+        /// </summary>
+        public static bool IsHeadDetached(string repoPath) {
+            if (!IsValidRepo(repoPath))
+                return false;
+
+            using (var repo = new Repository(repoPath))
+                return repo.Info.IsHeadDetached;
+        }
+
+        /// <summary>
+        /// Tells whether the checkout of a repository finished: the index exists and no tracked file is missing
+        /// from the working tree.
+        /// </summary>
+        /// <remarks>
+        /// Modified, staged, untracked and ignored files do not count as incomplete; only tracked files
+        /// absent from disk do. A clone interrupted before its checkout completed has no index.
+        /// </remarks>
+        public static bool HasCompleteWorkingTree(string repoPath) {
+            if (!IsValidRepo(repoPath))
+                return false;
+
+            using (var repo = new Repository(repoPath)) {
+                if (!File.Exists(Path.Combine(repo.Info.Path, "index")))
+                    return false;
+
+                var options = new StatusOptions { IncludeUntracked = false, IncludeIgnored = false };
+                return !repo.RetrieveStatus(options).Any(entry => entry.State.HasFlag(FileStatus.DeletedFromWorkdir));
+            }
+        }
+
+        private static bool TryGetTrackedTip(Repository repo, out Commit trackedTip) {
+            var tracked = repo.Head?.TrackedBranch;
+            trackedTip = tracked != null && tracked.IsRemote ? tracked.Tip : null;
+            return trackedTip != null && repo.Head.Tip != null;
         }
 
         /// <summary>
@@ -352,7 +401,8 @@ namespace pyRevitLabs.Common {
         /// different remote. Local sources compare as full paths, ignoring case; relative local paths resolve
         /// against the process working directory and <c>file://</c> URLs compare as their local path. Two
         /// scp-style addresses differ when only one path starts with a slash, since that path starts at the
-        /// server root instead of the remote user's home.
+        /// server root instead of the remote user's home. A home-relative scp-style path also differs from an
+        /// <c>ssh://</c> URL, whose path is always absolute.
         /// </remarks>
         public static bool AreSameRemote(string first, string second) {
             return RemoteAddressComparer.AreSame(first, second);

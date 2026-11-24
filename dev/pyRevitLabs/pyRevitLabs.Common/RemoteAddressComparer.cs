@@ -19,8 +19,7 @@ namespace pyRevitLabs.Common {
                 return false;
             var firstAddress = Parse(first);
             var secondAddress = Parse(second);
-            if (firstAddress.IsScp && secondAddress.IsScp
-                && firstAddress.ScpPathIsAbsolute != secondAddress.ScpPathIsAbsolute)
+            if (ScpPathRootDiffers(firstAddress, secondAddress) || ScpPathRootDiffers(secondAddress, firstAddress))
                 return false;
             return firstAddress.Key == secondAddress.Key;
         }
@@ -29,6 +28,15 @@ namespace pyRevitLabs.Common {
             public string Key;
             public bool IsScp;
             public bool ScpPathIsAbsolute;
+            public bool IsSshUrl;
+        }
+
+        private static bool ScpPathRootDiffers(Address scp, Address other) {
+            if (!scp.IsScp)
+                return false;
+            if (other.IsScp)
+                return scp.ScpPathIsAbsolute != other.ScpPathIsAbsolute;
+            return other.IsSshUrl && !scp.ScpPathIsAbsolute;
         }
 
         private static Address Parse(string source) {
@@ -56,6 +64,7 @@ namespace pyRevitLabs.Common {
                 return new Address {
                     Key = "remote:" + match.Groups[1].Value.ToLowerInvariant() + "/" + path,
                     IsScp = isScp,
+                    IsSshUrl = !isScp && value.StartsWith("ssh://", StringComparison.OrdinalIgnoreCase),
                     ScpPathIsAbsolute = isScp && rawPath.StartsWith("/"),
                 };
             }

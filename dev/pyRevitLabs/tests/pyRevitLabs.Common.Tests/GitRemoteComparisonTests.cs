@@ -24,6 +24,7 @@ namespace pyRevitLabs.Common.Tests {
         [TestCase("git@host:/repos/pyRevit.git", "git@host:/repos/pyRevit")]
         [TestCase("git@host:repos/pyRevit.git", "host:repos/pyRevit")]
         [TestCase("git@host:/repos/pyRevit.git", "https://host/repos/pyRevit")]
+        [TestCase("git@host:/repos/pyRevit.git", "ssh://git@host/repos/pyRevit.git")]
         [TestCase("file:///C:/dev/source", "C:\\dev\\source")]
         public void AreSameRemote_EquivalentSources_ReturnsTrue(string? first, string? second) {
             Assert.That(GitInstaller.AreSameRemote(first, second), Is.True);
@@ -41,6 +42,7 @@ namespace pyRevitLabs.Common.Tests {
         [TestCase("ssh://git@host1/org/repo", "ssh://git@host2/org/repo")]
         [TestCase("git@host:repos/pyRevit.git", "git@host:/repos/pyRevit.git")]
         [TestCase("host:/repos/pyRevit", "git@host:repos/pyRevit")]
+        [TestCase("git@host:repos/pyRevit.git", "ssh://git@host/repos/pyRevit.git")]
         [TestCase("\\\\server\\share\\a", "\\\\server\\share\\b")]
         [TestCase("relative\\repo", "C:\\dev\\source")]
         [TestCase("file:///C:/dev/source", "file:///C:/dev/other")]
@@ -52,6 +54,7 @@ namespace pyRevitLabs.Common.Tests {
 
         /// <summary>A missing remote and a folder that is not a repository both read as null.</summary>
         [Test]
+        [Category("Integration")]
         public void GetRemoteUrl_WhenTheRemoteOrRepositoryIsMissing_ReturnsNull() {
             var root = Path.Combine(Path.GetTempPath(), "gitRemoteUrl_" + Guid.NewGuid().ToString("N"));
             var repoPath = Path.Combine(root, "repo");

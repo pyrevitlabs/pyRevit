@@ -92,6 +92,17 @@ namespace pyRevitLabs.Common {
             }
         }
 
+        /// <summary>
+        /// Installs the CI binaries that match the head commit of a git clone, replacing its <c>bin</c> folder.
+        /// </summary>
+        /// <param name="clonePath">The clone folder.</param>
+        /// <param name="repoUrl">The repository url, or null to read the clone's origin remote.</param>
+        /// <param name="mode">Whether the clone is new or being updated.</param>
+        /// <param name="branchName">The branch to resolve binaries for, or null for the checked-out branch.</param>
+        /// <exception cref="PyRevitException">
+        /// No <paramref name="repoUrl"/> was given and the clone has no origin remote.
+        /// </exception>
+        /// <exception cref="pyRevitBinArtifactNotFoundException">No CI binaries exist for the clone's commit.</exception>
         public static void InstallForRepoClone(
             string clonePath,
             string repoUrl,

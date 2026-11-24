@@ -41,14 +41,21 @@ $ pyrevit clone dev --dest="C:\pyRevit\dev" --branch=develop
 
 #### Retrying an interrupted clone
 
-When the git clone succeeds but the pre-built binaries for the branch are not available yet, `pyrevit clone` keeps the cloned folder and reports a warning without registering it. Running the same command again (same `<clone_name>`, `--dest` and `--source`) resumes: it installs the binaries into the kept folder and registers it, without deleting or resetting anything in it. When the kept folder already has files under `bin` (for example a local `dotnet run -- ci` build, even a partial one) or a leftover `bin.bak` or `bin.new` folder, the command installs nothing, because installing replaces `bin`, and only registers the folder.
+When the git clone succeeds but the pre-built binaries for the branch are not available yet, `pyrevit clone` keeps the cloned folder and reports a warning without registering it. Running the same command again (same `<clone_name>`, `--dest` and `--source`) resumes: it installs the binaries into the kept folder and registers it, without deleting or resetting anything in it. When the kept folder already has files under `bin` (for example a local `dotnet run -- ci` build, even a partial one) or a leftover `bin.bak` folder, the command installs nothing, because installing replaces `bin` and deletes `bin.bak`, and only registers the folder. An empty `bin` or a `bin.new` folder does not count.
 
-Resuming only happens when the kept folder is an unregistered git clone whose `origin` is the requested source. The branch the kept folder has checked out must also be the branch being cloned (a folder checked out at a tag or commit, with a detached HEAD, is never resumed): the one given with `--branch`, or the default branch (`master`) when it is omitted. The checked-out branch must track a remote branch and the folder must not have local commits that are missing from it, and the clone name must not already be registered at another path. A folder created from a `--image` archive is never resumed. If the existing folder does not qualify, the command stops with an error. Register the folder and update it once binaries are available, delete the folder, or choose another `--dest`:
+Resuming only happens when the kept folder is an unregistered git clone with a complete checkout (a clone interrupted while checking out files is not resumed) whose `origin` is the requested source. The branch the kept folder has checked out must also be the branch being cloned (a folder checked out at a tag or commit, with a detached HEAD, is never resumed, so clones of a tag do not resume): the one given with `--branch`, or the default branch (`master`) when it is omitted. The checked-out branch must track a remote branch that still exists and the folder must not have local commits that are missing from it, and the clone name must not already be registered at another path as a clone that still opens (a fresh clone, unlike a resume, replaces a registration of the same name). Remotes are compared ignoring credentials, scheme and a trailing `.git`, but the path case matters: `github.com/Org/Repo` and `github.com/org/repo` are different sources, and the error names both. A folder created from a `--image` archive is never resumed. If the existing folder does not qualify, the command stops with an error that names the reason and what to do:
+
+- Not a git repository, no `origin`, another `origin`, or an incomplete checkout: delete the folder or choose another `--dest`. Do not register or update it.
+- Local commits, another branch, no upstream branch, or a detached HEAD: commit or stash your work first, then register the folder, or choose another `--dest`:
 
 ```powershell
 $ pyrevit clones add <clone_name> "<path_to_kept_folder>"
-$ pyrevit clones update <clone_name>
 ```
+
+  `clones add` only registers the folder and changes nothing in it. `clones update <clone_name>` discards uncommitted edits to tracked files and merges the remote branch into your local commits; add `--skip-bin` to keep the folder's `bin`.
+- The folder is already registered as a clone that still opens: refresh it with `pyrevit clones update <clone_name>`, or choose another `--dest`.
+- The folder is registered but no longer a valid clone: delete the folder, which drops its stale registration, or choose another `--dest`.
+- The clone name is registered at another path: choose another name or `--dest`, or run `pyrevit clones forget <clone_name>` first.
 
 #### Installing Custom Clones
 
