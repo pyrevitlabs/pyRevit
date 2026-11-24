@@ -389,10 +389,10 @@ namespace pyRevitLabs.PyRevit {
             // make sure destPath exists
             CommonUtils.EnsurePath(destPath);
 
+            destPath = ResolveRepoDestination(destPath, cloneName, repoSourcePath, repoBranch, out var isResumedClone);
+
             // Drop stale registrations before cloning so a retried install can register cleanly.
             PruneStaleCloneRegistrations();
-
-            destPath = ResolveRepoDestination(destPath, cloneName, repoSourcePath, repoBranch, out var isResumedClone);
 
             // start the clone process
             if (isResumedClone)
@@ -864,6 +864,7 @@ namespace pyRevitLabs.PyRevit {
             RegisteredClone,
             RegisteredInvalidClone,
             NameRegisteredElsewhere,
+            NameRegisteredHidden,
         }
 
         private enum ResumeAdvice {
@@ -896,9 +897,9 @@ namespace pyRevitLabs.PyRevit {
                 return new ResumeDecision(kind, null, registeredName, ResumeAdvice.KeepWork);
             }
 
-            public static ResumeDecision NameElsewhere(string name, string path) {
+            public static ResumeDecision NameElsewhere(string name, string path, bool isListed) {
                 return new ResumeDecision(
-                    ResumeDecisionKind.NameRegisteredElsewhere,
+                    isListed ? ResumeDecisionKind.NameRegisteredElsewhere : ResumeDecisionKind.NameRegisteredHidden,
                     string.Format("a clone named \"{0}\" is already registered at \"{1}\"", name, path),
                     name,
                     ResumeAdvice.KeepWork);
@@ -924,6 +925,12 @@ namespace pyRevitLabs.PyRevit {
                     return string.Format(
                         "Choose another clone name or --dest, or run: pyrevit clones forget {0}.",
                         decision.RegisteredName);
+                case ResumeDecisionKind.NameRegisteredHidden:
+                    return string.Format(
+                        "That registration is not listed, so it cannot be forgotten by name. Choose another clone " +
+                        "name or --dest, or replace it with: pyrevit clones add {0} \"{1}\" --force.",
+                        decision.RegisteredName,
+                        path);
             }
             if (decision.Advice == ResumeAdvice.DeleteFolder)
                 return "Move the folder aside, or delete it if it holds nothing you need, or choose another --dest.";
@@ -947,6 +954,7 @@ namespace pyRevitLabs.PyRevit {
                         decision.RegisteredName);
                     break;
                 case ResumeDecisionKind.NameRegisteredElsewhere:
+                case ResumeDecisionKind.NameRegisteredHidden:
                     problem = string.Format("cannot be resumed ({0})", decision.Reason);
                     break;
                 default:
@@ -1065,7 +1073,11 @@ namespace pyRevitLabs.PyRevit {
                 entry => string.Equals(entry.Key, cloneName, StringComparison.OrdinalIgnoreCase)
                          && OpensAsCloneAtAnyPath(entry.Value.NormalizeAsPath(), entry.Key));
             if (sameNamed.Key != null)
-                return ResumeDecision.NameElsewhere(cloneName, sameNamed.Value);
+                return ResumeDecision.NameElsewhere(
+                    cloneName,
+                    sameNamed.Value,
+                    GetRegisteredClones(pruneStoredList: false)
+                        .Any(clone => string.Equals(clone.Name, cloneName, StringComparison.OrdinalIgnoreCase)));
             return ResumeDecision.Resume;
         }
 

@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using LibGit2Sharp;
 using NUnit.Framework;
 using pyRevitLabs.Common;
@@ -486,10 +488,42 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
                 () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: keptDest, installBinaries: false));
 
             Assert.That(ex.Message, Does.Contain("already registered at"));
+            Assert.That(ex.Message, Does.Contain("not listed"));
+            Assert.That(ex.Message, Does.Contain("--force"));
+            Assert.That(ex.Message, Does.Not.Contain("clones forget"));
+            Assert.That(PyRevitClones.GetRegisteredClone("OuterClone"), Is.Not.Null);
+
+            var kept = Path.Combine(keptDest, CloneName);
+            PyRevitClones.RegisterClone(CloneName, kept, forceUpdate: true);
+            Assert.That(
+                PyRevitClones.GetRegisteredClone(CloneName).ClonePath.NormalizeAsPath(),
+                Is.EqualTo(kept.NormalizeAsPath()));
             Assert.That(PyRevitClones.GetRegisteredClone("OuterClone"), Is.Not.Null);
         }
 
-        /// <summary>A resume with --skip-bin registers the folder without inspecting or installing binaries.</summary>
+        /// <summary>The same-name check reads the saved registrations before the cleanup of a missing unrelated clone can drop a hidden name.</summary>
+        [Test]
+        public void DeployFromRepo_WhenAnUnrelatedCloneFolderIsMissing_StillSeesTheHiddenSavedName() {
+            var source = CreateSourceRepo();
+            var keptDest = Path.Combine(_tempRoot, "keptDest");
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: keptDest, installBinaries: false);
+            PyRevitClones.UnregisterClone(PyRevitClones.GetRegisteredClone(CloneName));
+            var unrelatedDest = Path.Combine(_tempRoot, "unrelatedDest");
+            PyRevitClones.DeployFromRepo("UnrelatedClone", repoUrl: source, destPath: unrelatedDest, installBinaries: false);
+            var outerDest = Path.Combine(_tempRoot, "outerDest");
+            PyRevitClones.DeployFromRepo("OuterClone", repoUrl: source, destPath: outerDest, installBinaries: false);
+            var innerDest = Path.Combine(outerDest, "OuterClone", "nested");
+            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: innerDest, installBinaries: false);
+            Directory.Delete(Path.Combine(innerDest, CloneName, "pyrevitlib", "pyrevit"), recursive: true);
+            FixtureDirectory.Delete(Path.Combine(unrelatedDest, "UnrelatedClone"));
+
+            var ex = Assert.Throws<PyRevitException>(
+                () => PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: keptDest, installBinaries: false));
+
+            Assert.That(ex.Message, Does.Contain("already registered at"));
+        }
+
+        /// <summary>A resume with --skip-bin registers the folder without scanning bin, even when a build folder cannot be listed.</summary>
         [Test]
         public void DeployFromRepo_WhenResumingWithSkipBin_RegistersWithoutInstalling() {
             var keptClone = CreateKeptClone(out var source, out var dest);
@@ -497,8 +531,23 @@ namespace pyRevitLabs.PyRevit.Integration.Tests {
             Directory.CreateDirectory(Path.GetDirectoryName(build));
             File.WriteAllText(build, "local");
             PyRevitClones.BinariesInstallHook = (path, url, mode, branch) => throw new InvalidOperationException("binaries must not be installed");
+            var binInfo = new DirectoryInfo(Path.Combine(keptClone, "bin"));
+            var denyListing = new FileSystemAccessRule(
+                WindowsIdentity.GetCurrent().User,
+                FileSystemRights.ListDirectory,
+                AccessControlType.Deny);
+            var security = binInfo.GetAccessControl();
+            security.AddAccessRule(denyListing);
+            binInfo.SetAccessControl(security);
 
-            PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false);
+            try {
+                PyRevitClones.DeployFromRepo(CloneName, repoUrl: source, destPath: dest, installBinaries: false);
+            }
+            finally {
+                security = binInfo.GetAccessControl();
+                security.RemoveAccessRule(denyListing);
+                binInfo.SetAccessControl(security);
+            }
 
             Assert.That(File.Exists(build), Is.True);
             Assert.That(PyRevitClones.GetRegisteredClone(CloneName), Is.Not.Null);
