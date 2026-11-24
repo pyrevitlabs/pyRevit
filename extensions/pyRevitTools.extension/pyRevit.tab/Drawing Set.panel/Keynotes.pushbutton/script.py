@@ -551,16 +551,13 @@ class RevitActionHandler(UI.IExternalEventHandler):
                     # call sites rely on the user being told why nothing
                     # happened, so this must not be conditional on IsLoaded.
                     try:
+                        message = coreutils.get_exception_message(ex)
                         if window and window.IsLoaded:
                             window.Dispatcher.Invoke(
-                                System.Action(
-                                    lambda e=coreutils.get_exception_message(ex): (
-                                        forms.alert(e)
-                                    )
-                                )
+                                System.Action(lambda: forms.alert(message))
                             )
                         else:
-                            forms.alert(coreutils.get_exception_message(ex))
+                            forms.alert(message)
                     except Exception as disp_ex:
                         logger.debug("Failed to display error in window | %s" % disp_ex)
                 if callback and (succeeded or callback_on_error):
