@@ -161,7 +161,7 @@ class ReValueWindow(forms.WPFWindow):
                             if param:
                                 param.Set(item.newvalue)
         except Exception as ex:
-            forms.alert(str(ex), title="Error")
+            forms.alert(coreutils.get_exception_message(ex), title="Error")
 
 
 ReValueWindow("ReValueWindow.xaml").show(modal=True)

@@ -1667,7 +1667,10 @@ class PrintSheetsWindow(forms.WPFWindow):
             try:
                 print_mgr.CombinedFile = True
             except Exception as e:
-                forms.alert(str(e) + "\nSet printer correctly in Print settings.")
+                forms.alert(
+                    coreutils.get_exception_message(e)
+                    + "\nSet printer correctly in Print settings."
+                )
                 script.exit()
             print_filepath = op.join(dir_path, COMBINED_PDF_NAME + ".pdf")
             print_mgr.PrintToFile = True
