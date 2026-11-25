@@ -197,7 +197,7 @@ class _Forms(object):
         self.switches = switches
         self.switch_arguments = None
         self.message = None
-        self.title = None
+        self.commands = None
 
     @property
     def SelectFromList(self):
@@ -208,7 +208,7 @@ class _Forms(object):
         def show(context, **kwargs):
             self.switch_arguments = kwargs["switches"]
             self.message = kwargs["message"]
-            self.title = kwargs["title"]
+            self.commands = context
             return self.choice, self.switches
 
         return SimpleNamespace(show=show)
@@ -370,7 +370,7 @@ class ProjectDialogTests(unittest.TestCase):
         self.assertIn("Times New Roman", forms.message)
         self.assertNotIn(chr(10), forms.message)
         self.assertLess(len(forms.message), 40)
-        self.assertIn("schedules and tags", forms.title)
+        self.assertTrue(all("schedules and tags" in c for c in forms.commands))
 
     def test_cancel_in_either_step_exits_quietly(self):
         for forms in (_Forms(None, None, {}), _Forms("Arial", None, {})):

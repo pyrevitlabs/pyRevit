@@ -325,7 +325,7 @@ def main():
         return
 
     choice, switches = forms.CommandSwitchWindow.show(
-        ["Replace Fonts"],
+        ["Replace Fonts (schedules and tags are not updated)"],
         switches=OrderedDict(
             [
                 (SWITCH_FAMILIES, True),
@@ -333,7 +333,7 @@ def main():
                 (SWITCH_DIMENSIONS, True),
             ]
         ),
-        title="Change Font in Elements (schedules and tags are not updated)",
+        title="Change Font in Elements",
         message="Replace fonts with '{}'".format(selected_font),
     )
     if not choice:
