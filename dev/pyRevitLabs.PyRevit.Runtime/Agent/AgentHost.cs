@@ -97,6 +97,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         internal static readonly int ProcessId = ReadProcessId();
 
+        /// <summary>
+        /// The pipe name this host serves, with a random nonce chosen once per process.
+        /// </summary>
+        /// <remarks>
+        /// Important: the initializer reads <see cref="ProcessId"/>, so it must stay declared after it;
+        /// static initializers run in declaration order.
+        /// </remarks>
         public static string PipeName { get; } = AgentPipeName.Create(ProcessId);
 
         /// <summary>

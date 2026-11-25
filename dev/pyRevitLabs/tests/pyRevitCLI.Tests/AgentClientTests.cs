@@ -433,6 +433,8 @@ public class AgentClientTests : IDisposable {
         var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(ThisHost(), "ping"));
 
         Assert.Equal("pipe_error", error.Code);
+        Assert.Contains("Could not read the owner", error.Message);
+        Assert.DoesNotContain("another user", error.Message);
         Assert.Empty(host.Requests);
     }
 
