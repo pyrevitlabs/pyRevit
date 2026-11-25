@@ -225,12 +225,27 @@ def agent_dir():
     return str(Common.PyRevitLabsConsts.AgentPath)
 
 
+def cli_start_info(*arguments):
+    """Start info that runs the attached clone's ``pyrevit`` CLI without a window.
+
+    Important:
+        The file name and arguments are set as properties, never passed to
+        ``ProcessStartInfo(fileName, arguments)``. On .NET 8 that constructor
+        also takes an ``IEnumerable[str]``, which the CPython engine picks for a
+        Python ``str`` and fills with one argument per character.
+    """
+    info = ProcessStartInfo()
+    info.FileName = CLI
+    info.Arguments = " ".join(arguments)
+    info.UseShellExecute = False
+    info.CreateNoWindow = True
+    return info
+
+
 def run_cli(*arguments):
     """Run the attached clone's ``pyrevit`` CLI and return its output text."""
-    info = ProcessStartInfo(CLI, " ".join(arguments))
-    info.UseShellExecute = False
+    info = cli_start_info(*arguments)
     info.RedirectStandardOutput = True
-    info.CreateNoWindow = True
     process = Process.Start(info)
     reading = process.StandardOutput.ReadToEndAsync()
     if not reading.Wait(CLI_TIMEOUT_MS):

@@ -18,9 +18,8 @@ import shutil
 from unittest import TestCase
 
 import System
-from System.Diagnostics import Process, ProcessStartInfo
+from System.Diagnostics import Process
 
-from pyrevit import HOME_DIR
 from pyrevit.labs import PyRevit
 
 import agent_harness as harness
@@ -38,7 +37,6 @@ SHIPPED_SKILLS = (
     "scheduling",
     "views",
 )
-CLI = op.join(HOME_DIR, "bin", "pyrevit.exe")
 
 
 def _mcp(*calls):
@@ -69,11 +67,9 @@ def _mcp(*calls):
                 "params": {"name": tool, "arguments": arguments},
             }
         )
-    info = ProcessStartInfo(CLI, "mcp")
-    info.UseShellExecute = False
+    info = harness.cli_start_info("mcp")
     info.RedirectStandardInput = True
     info.RedirectStandardOutput = True
-    info.CreateNoWindow = True
     info.StandardOutputEncoding = System.Text.Encoding.UTF8
     process = Process.Start(info)
     for line in lines:
