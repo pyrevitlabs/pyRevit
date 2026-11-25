@@ -51,6 +51,40 @@ public class ScriptConsoleSourceTests {
         Assert.Contains("QueueFlush();", unfreeze);
     }
 
+    /// <summary>Scrolling to the top drains buffered entries without blocking, then posts the scroll to the top.</summary>
+    [Fact]
+    public void ScrollToTop_DrainsBufferedEntriesWithoutBlockingBeforeScrolling() {
+        var body = CSharpSource.MemberBody(Source, "public void ScrollToTop()");
+        var drain = body.IndexOf("FlushPendingEntries();", StringComparison.Ordinal);
+        var scroll = body.IndexOf("PostScriptWhenReady(", StringComparison.Ordinal);
+        Assert.True(drain >= 0 && scroll > drain);
+        Assert.DoesNotContain("Blocking", body);
+
+        var declaration = Source.IndexOf("public void ScrollToTop()", StringComparison.Ordinal);
+        var end = Source.IndexOf("\n        }", declaration, StringComparison.Ordinal);
+        Assert.Contains("PostScriptWhenReady(\"window.scrollTo(0, 0);\");", Source[declaration..end]);
+    }
+
+    /// <summary>Queued scripts stay queued until the document is ready, so an early drain cannot drop or reorder them.</summary>
+    [Fact]
+    public void FlushPendingScripts_KeepsQueueUntilDocumentReady() {
+        var body = CSharpSource.MemberBody(Source, "private void FlushPendingScripts()");
+        Assert.True(CSharpSource.IsInBlockOf(body, "lock (_pendingLock)", "!_renderer.IsDocumentReady"));
+        var guard = body.IndexOf("!_renderer.IsDocumentReady", StringComparison.Ordinal);
+        var drain = body.IndexOf("_pendingScripts.Clear();", StringComparison.Ordinal);
+        Assert.True(guard >= 0 && drain > guard);
+    }
+
+    /// <summary>The scripting entry point flushes the print stream before asking the window to scroll.</summary>
+    [Fact]
+    public void ScriptOutput_ScrollToTop_FlushesPrintStreamFirst() {
+        var output = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Sources", "ScriptOutput.cs"));
+        var body = CSharpSource.MemberBody(output, "public void scroll_to_top()");
+        var flush = body.IndexOf("output_stream.Flush();", StringComparison.Ordinal);
+        var scroll = body.IndexOf("window.ScrollToTop();", StringComparison.Ordinal);
+        Assert.True(flush >= 0 && scroll > flush);
+    }
+
     /// <summary>Plain-text conversion preserves table columns, rows, block breaks, and entities.</summary>
     /// <param name="html">The rendered HTML fragment.</param>
     /// <param name="expected">The readable plain-text representation.</param>
