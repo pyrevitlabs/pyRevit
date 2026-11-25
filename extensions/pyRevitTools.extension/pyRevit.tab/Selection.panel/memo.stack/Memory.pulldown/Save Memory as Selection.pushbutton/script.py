@@ -20,6 +20,8 @@ def main():
     with revit.Transaction(selectionmemory.text("save_transaction")):
         selection_filter = DB.SelectionFilterElement.Create(revit.doc, name)
         selection_filter.SetElementIds(framework.to_clr_list(DB.ElementId, element_ids))
+    if not selection_filter.IsValidObject:
+        forms.alert(selectionmemory.text("save_failed"), exitscript=True)
     forms.alert(
         selectionmemory.text("save_done").format(len(element_ids), name),
         warn_icon=False,

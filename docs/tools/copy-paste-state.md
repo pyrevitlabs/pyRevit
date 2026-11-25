@@ -26,11 +26,21 @@ A copied property stays in memory until you copy it again, or until [Purge Memor
 | **View Zoom/Pan State** | The active plan, section, 3D, sheet or drafting view, with nothing selected. 3D and section views also store their orientation. | An active view of the same kind. Plans, ceiling plans, engineering plans and area plans count as the same kind. | Yes |
 | **3D Section Box State** | The active 3D view. | The active 3D view. The view then zooms to fit. | Yes |
 | **Visibility Graphics** | The active view, with nothing selected. Not available on sheets and schedules. | The active view. It takes over the settings of the copied view that a view template can control. | No |
-| **Crop Region** | The selected views, or the active view if no view is selected. The view must be able to have a crop region. The crop shape and whether the crop is switched on are copied. | Every selected view that can be cropped, or the active view. | Yes |
+| **Crop Region** | The first cropable view among the selected views, or the active view if no view is selected. The crop shape (the crop box in a 3D view) and whether the crop is switched on are copied. | Every selected view that can be cropped, or the active view. | Yes |
 | **Viewport Placement on Sheet** | Exactly one selected viewport. | Every selected viewport. | Yes |
 | **Filter Overrides** | The filters you choose from the view's filter list. | The active or selected views, or the view templates you choose. | No |
 
-Split crop regions are not copied.
+!!! note "Pasting crops between 2D and 3D views"
+
+    Copy a crop from a 3D view to 3D views, and from any other view to other views. A crop shape copied from a 2D view does not replace the crop box of a 3D view, it only switches that crop box on or off, and a 3D crop box cannot be pasted into a 2D view.
+
+!!! note "Split crop regions"
+
+    A split crop region has more than one boundary. Only the first boundary is copied, and it is pasted as a single crop region, so the pasted crop can be smaller than the original.
+
+!!! note "Visibility Graphics and Filter Overrides follow the source view"
+
+    These two do not store a snapshot of the settings. **Visibility Graphics** remembers the view it was copied from, and **Filter Overrides** remembers which filters you picked and that view. **Paste State ●** reads the settings from that view at the moment you paste, so changes you made to the source view after copying are pasted as well.
 
 ### Zoom and Pan
 
@@ -53,7 +63,7 @@ The position is measured from the title block, so the viewport lands in the same
 
 !!! tip "Shift-click"
 
-    Hold ++shift++ while clicking **Paste State ●** to choose the axis when you paste a viewport placement: **X**, **Y** or **XY**. With **X** or **Y** only that coordinate of the viewport changes and the other one stays where it is. The other properties ignore ++shift++.
+    Hold ++shift++ while clicking **Paste State ●** to choose the axis when you paste a viewport placement: **X**, **Y** or **XY**. With **X** or **Y** only that coordinate of the viewport is taken from the copied placement. The other coordinate stays where it is, except that the title block offset is added to it again: on a sheet whose title block sits at a nonzero position along the other axis, the viewport moves along that axis too. The other properties ignore ++shift++.
 
 ### Filter overrides
 
@@ -68,4 +78,4 @@ When you paste, you decide where the overrides go:
 - **Active/Selected View** pastes into the selected views, or the active view if none is selected. The view you copied from is left out. Views whose view template controls the filter settings are skipped, and you are told so.
 - **Select View Templates** opens a list of view templates to paste into.
 
-A filter that is already applied to the target view gets the copied overrides.
+A filter that the target view does not have yet is added. A filter that is already applied to the target view is removed and added again with the copied overrides, so it is switched on afterwards even if it was switched off in the target view.

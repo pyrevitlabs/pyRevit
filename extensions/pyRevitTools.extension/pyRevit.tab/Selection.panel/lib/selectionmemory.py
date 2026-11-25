@@ -4,8 +4,11 @@
 Each document keeps its memory in the document data file ``SelList``, a pickled set
 of element id strings, and the position of Next and Prev in ``SelListPrevNextIndex``.
 Older pyRevit releases read and write the same files, so the formats must not change.
+Next and Prev also store the id of the element they selected last in
+``SelListPrevNextLastId``, which older releases ignore.
 """
 
+import bisect
 import os.path as op
 import pickle
 
@@ -19,6 +22,7 @@ logger = script.get_logger()
 RESOURCES = op.join(op.dirname(__file__), "selectionmemory.xaml")
 MEMORY_ID = "SelList"
 INDEX_ID = "SelListPrevNextIndex"
+LAST_VISITED_ID = "SelListPrevNextLastId"
 DATA_FILE_EXTENSION = "pym"
 
 
@@ -33,6 +37,10 @@ def _memory_file():
 
 def _index_file():
     return script.get_document_data_file(INDEX_ID, DATA_FILE_EXTENSION)
+
+
+def _last_visited_file():
+    return script.get_document_data_file(LAST_VISITED_ID, DATA_FILE_EXTENSION)
 
 
 def _load(path):
@@ -99,15 +107,34 @@ def require_memory_element_ids():
     return element_ids
 
 
+def _stepped_index(element_id_values, last_value, direction, step_size):
+    if last_value in element_id_values:
+        return element_id_values.index(last_value) + direction * step_size
+    insertion_point = bisect.bisect_left(element_id_values, last_value)
+    if direction > 0:
+        return insertion_point + step_size - 1
+    return insertion_point - step_size
+
+
 def step_through_memory(direction, step_size=1):
     """Select the element ``step_size`` places after (``direction`` 1) or before (-1) the last one.
 
-    The position is stored per document and wraps around at both ends. The first
-    call in a document selects the first element of the memory.
+    The last element is remembered per document by its id, so the walk continues from
+    it when elements are added to or removed from the memory or deleted from the
+    document. If the last element is gone, the walk continues with its neighbour in
+    id order. It wraps around at both ends. The first call in a document selects the
+    first element of the memory.
     """
     element_ids = require_memory_element_ids()
-    stored_index = _load(_index_file())
-    index = 0 if stored_index is None else stored_index + direction * step_size
+    get_elementid_value = get_elementid_value_func()
+    element_id_values = [get_elementid_value(element_id) for element_id in element_ids]
+    last_value = _load(_last_visited_file())
+    if last_value is not None:
+        index = _stepped_index(element_id_values, last_value, direction, step_size)
+    else:
+        stored_index = _load(_index_file())
+        index = 0 if stored_index is None else stored_index + direction * step_size
     index %= len(element_ids)
     revit.get_selection().set_to([element_ids[index]])
     _dump(_index_file(), index)
+    _dump(_last_visited_file(), element_id_values[index])

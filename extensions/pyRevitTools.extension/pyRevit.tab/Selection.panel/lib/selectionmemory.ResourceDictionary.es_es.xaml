@@ -6,6 +6,7 @@
     <sys:String x:Key="memory_stale">Ninguno de los elementos de la memoria de selección existe ya en este documento.</sys:String>
     <sys:String x:Key="save_transaction">Guardar memoria de selección como filtro de selección</sys:String>
     <sys:String x:Key="save_done">Se guardaron {0} elementos como filtro de selección "{1}".</sys:String>
+    <sys:String x:Key="save_failed">Revit rechazó el cambio, por lo que no se guardó ningún filtro de selección.</sys:String>
     <sys:String x:Key="purge_nothing">No hay archivos de memoria que eliminar.</sys:String>
     <sys:String x:Key="purge_done">Se eliminaron {0} archivos de memoria:</sys:String>
 </ResourceDictionary>

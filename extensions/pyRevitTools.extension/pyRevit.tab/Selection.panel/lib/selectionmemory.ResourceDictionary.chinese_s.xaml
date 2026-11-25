@@ -6,6 +6,7 @@
     <sys:String x:Key="memory_stale">选择内存中的图元在此文档中已全部不存在。</sys:String>
     <sys:String x:Key="save_transaction">将选择内存保存为选择过滤器</sys:String>
     <sys:String x:Key="save_done">已将 {0} 个图元保存为选择过滤器“{1}”。</sys:String>
+    <sys:String x:Key="save_failed">Revit 拒绝了此更改，未保存选择过滤器。</sys:String>
     <sys:String x:Key="purge_nothing">没有可删除的内存文件。</sys:String>
     <sys:String x:Key="purge_done">已删除 {0} 个内存文件：</sys:String>
 </ResourceDictionary>

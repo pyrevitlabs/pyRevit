@@ -33,7 +33,7 @@ If the memory is empty, or none of its elements exist any more, **MRead** says s
 
 ## Walking through the memory
 
-**Next ●** and **Prev ●** select one element of the memory at a time, in order of element id. The position is stored per document, and the first click in a document that has no stored position selects the first element. After the last element, **Next** wraps around to the first one, and **Prev** wraps around the other way.
+**Next ●** and **Prev ●** select one element of the memory at a time, in order of element id. The last element they selected is stored per document, and the first click in a document that has none selects the first element. The walk continues from that element when you add elements to the memory or remove some, or when elements are deleted. If the last element is no longer in the memory, it continues with the next element by id. After the last element, **Next** wraps around to the first one, and **Prev** wraps around the other way.
 
 !!! tip "Shift-click"
 
@@ -41,7 +41,7 @@ If the memory is empty, or none of its elements exist any more, **MRead** says s
 
 ## Saving the memory as a selection filter
 
-**Save Memory as Selection** turns the memory into a Revit selection filter named `SavedSelection_<project name>_<time stamp>` and tells you its name. The filter is created in one step, so a single undo removes it. Elements that no longer exist are left out.
+**Save Memory as Selection** turns the memory into a Revit selection filter named `SavedSelection_<project name>_<time stamp>` and tells you its name. The filter is created in one step, so a single undo removes it. Elements that no longer exist are left out. If Revit rejects the change, you are told that no filter was saved.
 
 ![Selection filter saved](../assets/tools/selection-memory/save-as-selection-filter.png)
 

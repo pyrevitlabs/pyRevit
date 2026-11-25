@@ -6,6 +6,7 @@
     <sys:String x:Key="memory_stale">None of the elements in the selection memory exist in this document any more.</sys:String>
     <sys:String x:Key="save_transaction">Save selection memory as selection filter</sys:String>
     <sys:String x:Key="save_done">Saved {0} elements as the selection filter "{1}".</sys:String>
+    <sys:String x:Key="save_failed">Revit rejected the change, so no selection filter was saved.</sys:String>
     <sys:String x:Key="purge_nothing">There are no memory files to remove.</sys:String>
     <sys:String x:Key="purge_done">Removed {0} memory files:</sys:String>
 </ResourceDictionary>
