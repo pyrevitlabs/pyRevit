@@ -41,7 +41,7 @@ If the memory is empty, or none of its elements exist any more, **MRead** says s
 
 ## Saving the memory as a selection filter
 
-**Save Memory as Selection** turns the memory into a Revit selection filter named `SavedSelection_<project name>_<time stamp>` and tells you its name. The filter is created in one step, so a single undo removes it. Elements that no longer exist are left out. If Revit rejects the change, you are told that no filter was saved.
+**Save Memory as Selection** turns the memory into a Revit selection filter named `SavedSelection_<project name>_<time stamp>` and tells you its name. The filter is created in one step, so a single undo removes it. Elements that no longer exist are left out. If Revit rejects the change when it commits, you are told that no filter was saved. If Revit raises an error while it creates the filter or sets its elements, for example because the name already exists, the command stops with that error and does not show this message.
 
 ![Selection filter saved](../assets/tools/selection-memory/save-as-selection-filter.png)
 

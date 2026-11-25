@@ -32,11 +32,11 @@ A copied property stays in memory until you copy it again, or until [Purge Memor
 
 !!! note "Pasting crops between 2D and 3D views"
 
-    Copy a crop from a 3D view to 3D views, and from any other view to other views. A crop shape copied from a 2D view does not replace the crop box of a 3D view, it only switches that crop box on or off, and a 3D crop box cannot be pasted into a 2D view.
+    Copy a crop from a 3D view to 3D views, and from any other view to other views. A crop shape copied from a 2D view does not replace the crop box of a 3D view, it only switches that crop box on or off, and a 3D crop box cannot be pasted into a 2D view. Revit also requires the copied crop shape to be parallel to the plane of the target view, so a plan crop cannot be pasted into a section.
 
 !!! note "Split crop regions"
 
-    A split crop region has more than one boundary. Only the first boundary is copied, and it is pasted as a single crop region, so the pasted crop can be smaller than the original.
+    A split crop region has more than one boundary. Only the first boundary is copied, so the pasted crop can be smaller than the original. If the target view's crop region is already split, Revit keeps its split, and the result is not necessarily a single region.
 
 !!! note "Visibility Graphics and Filter Overrides follow the source view"
 
