@@ -3,9 +3,11 @@
 
 from collections import defaultdict
 
-from pyrevit import forms, script
+from pyrevit import compat, forms, script
 from pyrevit import revit, DB
 from pyrevit.coreutils import applocales, escape_for_output
+
+get_elementid_value = compat.get_elementid_value_func()
 
 output = script.get_output()
 
@@ -20,7 +22,7 @@ def group_elements_by_level():
     elements_by_level = defaultdict(list)
     all_elements = DB.FilteredElementCollector(revit.doc).WhereElementIsNotElementType()
     for element in all_elements:
-        elements_by_level[element.LevelId].append(element)
+        elements_by_level[get_elementid_value(element.LevelId)].append(element)
     return elements_by_level
 
 
@@ -77,7 +79,7 @@ def main():
     elements_by_level = group_elements_by_level()
     output.print_md("#### {}".format(_t("list_elements_title")))
     for level in levels:
-        report_level(level, elements_by_level[level.Id])
+        report_level(level, elements_by_level[get_elementid_value(level.Id)])
 
 
 if __name__ == "__main__":
