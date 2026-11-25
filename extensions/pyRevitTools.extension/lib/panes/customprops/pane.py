@@ -366,9 +366,15 @@ class CustomPropertiesPanel(forms.WPFPanel):
             self.logger.warning("SelectionChanged handler error: {}".format(ex))
 
     def _safe_ui(self, func, *args):
+        def guarded():
+            try:
+                func(*args)
+            except Exception as ex:
+                self.logger.warning("Deferred pane update failed: {}".format(ex))
+
         self.Dispatcher.BeginInvoke(
             framework.Threading.DispatcherPriority.Background,
-            framework.System.Action(lambda: func(*args)),
+            framework.System.Action(guarded),
         )
 
     def _on_doc_changed(self, sender, args):
@@ -382,8 +388,9 @@ class CustomPropertiesPanel(forms.WPFPanel):
                 return
             modified = set(args.GetModifiedElementIds())
             deleted = set(args.GetDeletedElementIds())
-            current_ids = set(e.Id for e in self._elements)
-            if current_ids & (modified | deleted):
+            has_invalid = any(not e.IsValidObject for e in self._elements)
+            current_ids = set(e.Id for e in self._elements if e.IsValidObject)
+            if has_invalid or current_ids & (modified | deleted):
                 live_ids = current_ids - deleted
                 live_elements = [doc.GetElement(eid) for eid in live_ids]
                 live_elements = [e for e in live_elements if e is not None]
@@ -423,7 +430,8 @@ class CustomPropertiesPanel(forms.WPFPanel):
     def _update_display(self, elements, doc=None):
         self._suppress_dirty = True
         try:
-            self._elements = list(elements)
+            elements = [e for e in elements if e.IsValidObject]
+            self._elements = elements
             if doc is None and elements:
                 try:
                     self._doc = HOST_APP.uiapp.ActiveUIDocument.Document
