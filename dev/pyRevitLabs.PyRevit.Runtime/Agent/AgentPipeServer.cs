@@ -7,12 +7,10 @@ using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-#if NETFRAMEWORK
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
-#endif
 
 using pyRevitLabs.Common;
 using pyRevitLabs.NLog;
@@ -28,8 +26,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// agent requests execute arbitrary code in Revit, this ACL is the access control.
     /// Denying network logons deliberately refuses SSH sessions too, whose tokens carry the
     /// Network SID; Remote Desktop sessions are interactive logons and are allowed.
-    /// Invariant: on .NET Framework the pipe is created with <c>PIPE_REJECT_REMOTE_CLIENTS</c> set
-    /// explicitly. That path has no automated test, because the test projects target .NET only.
+    /// Invariant: every instance is created natively with <c>PIPE_REJECT_REMOTE_CLIENTS</c> set, on
+    /// every target framework, because the managed .NET constructors do not set it.
     /// Invariant: a connection that sends no line for <see cref="IdleTimeout"/> is closed, so a
     /// stalled client can't hold a server instance and, with others, lock every other client out.
     /// The timeout covers waiting for a request only, never the time a request takes to run.
@@ -396,18 +394,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// and its owner's access list, not <see cref="BuildPipeSecurity"/>, would guard the host.
         /// </remarks>
         private NamedPipeServerStream CreatePipe(bool firstInstance) {
-            var security = BuildPipeSecurity();
-#if NETFRAMEWORK
-            return CreatePipeNative(security, firstInstance);
-#else
-            var options = firstInstance ? PipeOptions.Asynchronous | PipeOptions.FirstPipeInstance : PipeOptions.Asynchronous;
-            return NamedPipeServerStreamAcl.Create(
-                pipeName, PipeDirection.InOut, maxConnections, PipeTransmissionMode.Byte,
-                options, 0, 0, security);
-#endif
+            return CreatePipeNative(BuildPipeSecurity(), firstInstance);
         }
 
-#if NETFRAMEWORK
         private const uint PipeAccessDuplex = 0x3;
         private const uint FileFlagFirstPipeInstance = 0x80000;
         private const uint FileFlagOverlapped = 0x40000000;
@@ -442,7 +431,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 descriptor.Free();
             }
         }
-#endif
 
         private static PipeSecurity BuildPipeSecurity() {
             var security = new PipeSecurity();

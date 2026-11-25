@@ -946,8 +946,8 @@ user can connect to the host and submit scripts.
 
 The pipe name is `pyrevit-agent-<pid>-<nonce>`, where the nonce is 32 random hex characters
 chosen at host start and recorded in the instance file, so another process can't guess the
-name and create the pipe first. On .NET Framework the host also creates the pipe with the
-reject-remote-clients flag; that path has no automated test. The CLI
+name and create the pipe first. The host creates every pipe instance natively with the
+reject-remote-clients flag on every target framework (the managed constructors don't set it). The CLI
 refuses to send a request unless the registered name has that form (the older
 `pyrevit-agent-<pid>` form is still accepted for one release), the process serving the pipe is
 the Revit recorded in the instance file, and that process runs as the current user (compared by
