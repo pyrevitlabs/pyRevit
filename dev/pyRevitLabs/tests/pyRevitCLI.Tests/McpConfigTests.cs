@@ -96,6 +96,72 @@ public class McpProjectConfigTests : IDisposable {
     }
 
     [Fact]
+    public void AProjectFolderBehindAJunctionIsRefused() {
+        var real = Directory.CreateTempSubdirectory("pyrevit-mcp-real-").FullName;
+        Directory.CreateDirectory(Path.Combine(real, "inner"));
+        var link = Path.Combine(Path.GetTempPath(), "pyrevit-mcp-link-" + Guid.NewGuid().ToString("N"));
+        try {
+            Assert.True(TryCreateJunction(link, real, out var error), "mklink /J failed: " + error);
+            Environment.CurrentDirectory = Path.Combine(link, "inner");
+
+            var refused = Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Cursor, project: true));
+
+            Assert.Contains(link, refused.Message);
+            Assert.False(Directory.Exists(Path.Combine(real, "inner", ".cursor")));
+        }
+        finally {
+            Environment.CurrentDirectory = project;
+            Directory.Delete(link);
+            Directory.Delete(real, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AProjectConfigFileThatIsALinkIsRefused() {
+        var outside = Path.Combine(Directory.CreateTempSubdirectory("pyrevit-mcp-outside-").FullName, "opencode.json");
+        File.WriteAllText(outside, "{}");
+        var linkPath = Path.Combine(project, "opencode.json");
+        try {
+            if (!TryCreateFileSymlink(linkPath, outside))
+                return;
+
+            Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.OpenCode, project: true));
+
+            Assert.Equal("{}", File.ReadAllText(outside));
+        }
+        finally {
+            Directory.Delete(Path.GetDirectoryName(outside), recursive: true);
+        }
+    }
+
+    private static bool TryCreateFileSymlink(string link, string target) {
+        try {
+            File.CreateSymbolicLink(link, target);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+            return false;
+        }
+    }
+
+    [Fact]
+    public void QuotedAndNetworkPathEntriesAreKeptAndRelativeOnesDropped() {
+        var previousPath = Environment.GetEnvironmentVariable("PATH");
+        try {
+            Environment.SetEnvironmentVariable("PATH", "\"C:\\quoted dir\"" + Path.PathSeparator + @"\\server\share\bin" + Path.PathSeparator + "\"relative dir\"");
+
+            var entries = PyRevitCLIAgentCmds.FreshPath().Split(Path.PathSeparator);
+
+            Assert.Contains(@"C:\quoted dir", entries);
+            Assert.Contains(@"\\server\share\bin", entries);
+            Assert.DoesNotContain("relative dir", entries);
+        }
+        finally {
+            Environment.SetEnvironmentVariable("PATH", previousPath);
+        }
+    }
+
+    [Fact]
     public void RelativePathEntriesAreNotUsedToFindClientTools() {
         var previousPath = Environment.GetEnvironmentVariable("PATH");
         try {

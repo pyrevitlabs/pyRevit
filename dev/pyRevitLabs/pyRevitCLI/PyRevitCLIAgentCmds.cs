@@ -558,6 +558,11 @@ namespace pyRevitCLI {
                 .Distinct(StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// The PATH of this process plus the machine and user values, expanded, without quotes and
+        /// without relative entries (a tool found through the current folder is never run). UNC
+        /// entries are kept.
+        /// </summary>
         internal static string FreshPath() {
             var entries = new[] {
                     Environment.GetEnvironmentVariable("PATH"),
@@ -566,7 +571,7 @@ namespace pyRevitCLI {
                 }
                 .Where(value => !string.IsNullOrEmpty(value))
                 .SelectMany(value => value.Split(Path.PathSeparator))
-                .Select(entry => Environment.ExpandEnvironmentVariables(entry.Trim()))
+                .Select(entry => Environment.ExpandEnvironmentVariables(entry.Trim().Trim('"').Trim()))
                 .Where(entry => entry.Length > 0 && Path.IsPathFullyQualified(entry))
                 .Distinct(StringComparer.OrdinalIgnoreCase);
             return string.Join(Path.PathSeparator.ToString(), entries);
