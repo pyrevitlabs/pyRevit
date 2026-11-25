@@ -543,7 +543,7 @@ doesn't know them, instead of `Unknown` or `0`.
 
 `pyrevitlib/` loads live from the clone's working tree, but the runtime DLLs only change on a rebuild.
 `get_context.pyrevit.bin_commit` is the commit the binaries were built from. When it differs from
-`commit`, `bin_stale: true` and a `bin_hint` ask for a rebuild (`dotnet run -c Release -- local`), and
+`commit`, `bin_stale: true` and a `bin_hint` ask for a rebuild (`dotnet run -c Release -- ci`), and
 `pyrevit agent status` shows the same fields. Nothing is flagged when the clone's commit is unknown.
 The instance record is written when the session starts, so `pyrevit agent status` asks the live host
 for `commit`, `bin_commit` and `bin_stale` when it pings it, and a checkout with Revit open shows up at
@@ -697,7 +697,7 @@ explicit user actions, so the agent can read the sequence that led to a bug.
 
 ```shell
 pyrevit agent record start [--no-screenshots] [--screenshot-interval=5] [--max-screenshots=20]
-                           [--max-events=5000] [--max-duration=1800] [--revit=<year>]
+                           [--max-events=5000] [--max-duration=1800] [--revit=<year|pid|clone>]
 pyrevit agent record stop
 pyrevit agent record status
 pyrevit agent recordings [--limit=<count>]
