@@ -384,7 +384,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
                 return
             doc = uidoc.Document
             self._safe_ui(self._refresh_worksets_if_needed, doc)
-            if not self._elements:
+            if not self._elements or not args.GetDocument().Equals(doc):
                 return
             modified = set(args.GetModifiedElementIds())
             deleted = set(args.GetDeletedElementIds())
