@@ -391,8 +391,10 @@ class CustomPropertiesPanel(forms.WPFPanel):
             has_invalid = any(not e.IsValidObject for e in self._elements)
             current_ids = set(e.Id for e in self._elements if e.IsValidObject)
             if has_invalid or current_ids & (modified | deleted):
-                live_ids = current_ids - deleted
-                live_elements = [doc.GetElement(eid) for eid in live_ids]
+                selected_ids = [
+                    eid for eid in uidoc.Selection.GetElementIds() if eid not in deleted
+                ]
+                live_elements = [doc.GetElement(eid) for eid in selected_ids]
                 live_elements = [e for e in live_elements if e is not None]
                 self._safe_ui(self._update_display, live_elements, doc)
         except Exception:
