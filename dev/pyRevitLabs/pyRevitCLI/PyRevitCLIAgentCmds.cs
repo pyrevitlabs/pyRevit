@@ -459,7 +459,8 @@ namespace pyRevitCLI {
         /// This command is often launched from Revit (Settings → Agent Runtime), and Revit's
         /// environment keeps the PATH from when Revit started, which misses tools installed since.
         /// So the tool is located on the PATH freshly read from the registry plus the usual install
-        /// folders, and the child process gets that fresh PATH too.
+        /// folders, and the child process gets that fresh PATH too. Relative PATH entries are
+        /// dropped, so a tool in the current folder is never run.
         /// An <c>.exe</c> starts directly. A <c>.cmd</c> or <c>.bat</c> shim (npm installs) needs
         /// <c>cmd.exe</c>, which would expand <c>%NAME%</c> in a quoted path, so such a call is
         /// refused when it contains <c>%</c>. The tool gets <see cref="ClientCliTimeout"/> to finish
@@ -557,7 +558,7 @@ namespace pyRevitCLI {
                 .Distinct(StringComparer.OrdinalIgnoreCase);
         }
 
-        private static string FreshPath() {
+        internal static string FreshPath() {
             var entries = new[] {
                     Environment.GetEnvironmentVariable("PATH"),
                     Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine),
@@ -566,7 +567,7 @@ namespace pyRevitCLI {
                 .Where(value => !string.IsNullOrEmpty(value))
                 .SelectMany(value => value.Split(Path.PathSeparator))
                 .Select(entry => Environment.ExpandEnvironmentVariables(entry.Trim()))
-                .Where(entry => entry.Length > 0)
+                .Where(entry => entry.Length > 0 && Path.IsPathFullyQualified(entry))
                 .Distinct(StringComparer.OrdinalIgnoreCase);
             return string.Join(Path.PathSeparator.ToString(), entries);
         }

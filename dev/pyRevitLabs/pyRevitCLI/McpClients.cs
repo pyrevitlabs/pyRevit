@@ -55,6 +55,16 @@ namespace pyRevitCLI {
 
         protected abstract void RemoveRegistration(bool project);
 
+        /// <summary>
+        /// Refuses a project-scope write whose target folder is a link or junction, which would
+        /// put the config in a folder other than the project's.
+        /// </summary>
+        protected static void RejectLinkedProjectFolders(params string[] folders) {
+            foreach (var folder in folders.Where(Directory.Exists))
+                if (new DirectoryInfo(folder).Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    throw new PyRevitException($"{folder} is a link or junction; run this from the real project folder.");
+        }
+
         protected static bool IsThisInstall(string registered) {
             var current = Environment.ProcessPath;
             if (string.IsNullOrWhiteSpace(registered) || string.IsNullOrWhiteSpace(current))
@@ -84,12 +94,16 @@ namespace pyRevitCLI {
 
         public override void Install(string command, bool project) {
             RejectUnsupportedScope(project);
+            if (project)
+                RejectLinkedProjectFolders(Environment.CurrentDirectory);
             PyRevitCLIAgentCmds.ClientCli(Tool, RemoveArguments(project), true);
             PyRevitCLIAgentCmds.ClientCli(Tool, AddArguments(command, project), false);
         }
 
         protected override void RemoveRegistration(bool project) {
             RejectUnsupportedScope(project);
+            if (project)
+                RejectLinkedProjectFolders(Environment.CurrentDirectory);
             PyRevitCLIAgentCmds.ClientCli(Tool, RemoveArguments(project), false);
         }
 
@@ -191,11 +205,11 @@ namespace pyRevitCLI {
         }
 
         public override void Install(string command, bool project) {
-            UpdateJsonConfig(ConfigPath(project), ServersKey, Entry(command));
+            UpdateJsonConfig(ConfigPath(project), ServersKey, Entry(command), project);
         }
 
         protected override void RemoveRegistration(bool project) {
-            UpdateJsonConfig(ConfigPath(project), ServersKey, null);
+            UpdateJsonConfig(ConfigPath(project), ServersKey, null, project);
         }
 
         public override void UninstallFromUserProfile(bool ownedOnly, string home, string appData) {
@@ -232,7 +246,9 @@ namespace pyRevitCLI {
         /// Adds (or with a null <paramref name="entry"/>, removes) the pyrevit server under
         /// <paramref name="serversKey"/> and leaves every other key untouched.
         /// </summary>
-        private static void UpdateJsonConfig(string path, string serversKey, JObject entry) {
+        private static void UpdateJsonConfig(string path, string serversKey, JObject entry, bool project = false) {
+            if (project)
+                RejectLinkedProjectFolders(Environment.CurrentDirectory, Path.GetDirectoryName(path));
             var serverName = PyRevitCLIAgentCmds.McpServerName;
             var config = File.Exists(path) ? PyRevitCLIAgentCmds.TryReadJson(path) : new JObject();
             if (config == null)

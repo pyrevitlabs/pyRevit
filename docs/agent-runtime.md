@@ -41,6 +41,11 @@ runtime is independent of the Routes server and doesn't need it enabled.
     `.mcp.json`, Cursor: `.cursor/mcp.json`, VS Code: `.vscode/mcp.json`, OpenCode:
     `opencode.json[c]`). Codex only supports user-level servers. A JSON config file that
     contains comments is never rewritten; the command prints the entry to add by hand.
+    A project install is refused when the current folder or the client's config folder is a
+    link or junction, so the file isn't written outside the project. The client's own tool
+    (`claude`) is looked up in absolute `PATH` entries and the usual install folders only; relative
+    entries are skipped. The entry pins the absolute path of this `pyrevit.exe`, so review
+    a project file before you commit it.
 
 2. **Start Revit** (or reload pyRevit), and open a model.
 3. **Check the connection:**
@@ -334,8 +339,8 @@ Rules the host enforces:
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
-  the run, it is rolled back, and it can't be saved or saved as, so the file on disk stays
-  unchanged. A family from `EditFamily` or a new document the script creates has no file yet;
+  the run, it is rolled back, and the guard cancels save and save as while the run lasts, so
+  the file on disk stays unchanged unless the script writes it by other means. A family from `EditFamily` or a new document the script creates has no file yet;
   it is reported there with a `scope` statement and without a `rolled_back` field, doesn't fail
   the run, and isn't rolled back; it is discarded when closed.
 - When `blocked` isn't empty, `warnings` gains an `operation_blocked` entry
@@ -388,8 +393,8 @@ Rules the host enforces:
   time limit. Time spent waiting for approval doesn't count.
 - The runner compiles the script with every bare `except` and `except BaseException`
   (also spelled as an attribute, such as `except builtins.BaseException`) narrowed to
-  `except Exception`, so a script can't swallow its own timeout, and can't catch
-  `KeyboardInterrupt` or `SystemExit` that way. If a handler can't be rewritten in the
+  `except Exception`, so a script that doesn't go out of its way doesn't swallow its own timeout or
+  catch `KeyboardInterrupt` or `SystemExit` that way. If a handler can't be rewritten in the
   source, the run compiles the narrowed syntax tree instead, at the cost of line numbers,
   rather than keep the broad handler. A script that suppresses the timeout some
   other way, such as through an alias, `except tuple(...)`, a library's bare `except`, or
@@ -427,7 +432,8 @@ Rules the host enforces:
   no timeout, outside the guard (see the limits under [The guarded run](#the-guarded-run)).
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
-- Documents can't be saved or synchronized during a run.
+- The guard cancels save, save as and synchronize for the run's documents while the run lasts.
+  It is not a sandbox: a script can leave code behind that acts after the run.
   Closing is blocked for documents open when the run started.
   The script may close documents it creates or opens during the run.
 
@@ -457,8 +463,8 @@ pyrevit configs agent reckless          # prints the current setting
 The host reads the setting at the start of each run, so a change applies to the next run
 without reloading pyRevit. Turning it off applies at once. Turning it on applies only after
 you confirm it in a Revit prompt before the next run of any mode, so a script that rewrites
-the config can't make later runs reckless; No keeps it off until the setting is turned off
-and on again or Revit restarts. A script can't turn it on for its own run. A reckless run's
+the config doesn't make later runs reckless; No keeps it off until the setting is turned off
+and on again or Revit restarts. A script that rewrites the config doesn't turn it on for its own run. A reckless run's
 response, its `response.json` record and the compact MCP result carry `"reckless": true`,
 and `get_context` reports `agent.reckless: true` while it is in force.
 
@@ -1053,7 +1059,7 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
 1. **Arm guards** (only while the run is active):
     - `DocumentSynchronizingWithCentral`, `DocumentSaving` and `DocumentSavingAs` are cancelled for documents open when the run started and for documents the script creates or opens during the run, when Revit marks the event cancellable.
       `DocumentClosing` is cancelled only for documents open when the run started.
-      The script may close documents it creates or opens during the run, but cannot save them.
+      The script may close documents it creates or opens during the run; save is cancelled while the run lasts.
       After the guard is disposed, the host closes any of these documents still open in the background without saving; documents with an open view are left open.
     - `DialogBoxShowing` is captured and dismissed.
     - `FailuresProcessing` warnings are recorded and deleted, and errors roll back the
@@ -1073,7 +1079,7 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
     - **modify** with policy `readonly`: the policy is read before the script and again here,
       and the stricter value (`readonly`, then `ask`, then `auto`) decides. A run queued before
       the switch to `readonly` rolls back with `policy_readonly` instead of committing, and a
-      script that rewrites the policy can't loosen it for its own run, nor, without the user
+      script that rewrites the policy doesn't loosen it for its own run, nor, without the user
       confirming it in Revit, for later runs.
     - **modify** with policy `auto`: `Assimilate()` straight away. The response says
       `approval: auto`.

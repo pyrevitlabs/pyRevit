@@ -61,6 +61,73 @@ public class McpProjectConfigTests : IDisposable {
     }
 
     [Fact]
+    public void AProjectConfigFolderThatIsAJunctionIsRefused() {
+        var elsewhere = Directory.CreateTempSubdirectory("pyrevit-mcp-elsewhere-").FullName;
+        try {
+            Assert.True(TryCreateJunction(Path.Combine(project, ".cursor"), elsewhere, out var error), "mklink /J failed: " + error);
+
+            Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Cursor, project: true));
+
+            Assert.Empty(Directory.GetFileSystemEntries(elsewhere));
+        }
+        finally {
+            Directory.Delete(Path.Combine(project, ".cursor"));
+            Directory.Delete(elsewhere, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AProjectFolderThatIsAJunctionIsRefusedForClientCliInstalls() {
+        var real = Directory.CreateTempSubdirectory("pyrevit-mcp-real-").FullName;
+        var link = Path.Combine(Path.GetTempPath(), "pyrevit-mcp-link-" + Guid.NewGuid().ToString("N"));
+        try {
+            Assert.True(TryCreateJunction(link, real, out var error), "mklink /J failed: " + error);
+            Environment.CurrentDirectory = link;
+
+            Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Claude, project: true));
+
+            Assert.Empty(cli.Calls);
+        }
+        finally {
+            Environment.CurrentDirectory = project;
+            Directory.Delete(link);
+            Directory.Delete(real, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RelativePathEntriesAreNotUsedToFindClientTools() {
+        var previousPath = Environment.GetEnvironmentVariable("PATH");
+        try {
+            Environment.SetEnvironmentVariable("PATH", @"relative\bin" + Path.PathSeparator + "." + Path.PathSeparator + @"C:\absolute\bin");
+
+            var entries = PyRevitCLIAgentCmds.FreshPath().Split(Path.PathSeparator);
+
+            Assert.DoesNotContain(@"relative\bin", entries);
+            Assert.DoesNotContain(".", entries);
+            Assert.Contains(@"C:\absolute\bin", entries);
+            Assert.All(entries, entry => Assert.True(Path.IsPathFullyQualified(entry), entry));
+        }
+        finally {
+            Environment.SetEnvironmentVariable("PATH", previousPath);
+        }
+    }
+
+    private static bool TryCreateJunction(string link, string target, out string error) {
+        var start = new System.Diagnostics.ProcessStartInfo("cmd.exe", $"/c mklink /J \"{link}\" \"{target}\"") {
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        using (var process = System.Diagnostics.Process.Start(start)) {
+            error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+            return process.ExitCode == 0;
+        }
+    }
+
+    [Fact]
     public void VsCodeGetsAStdioEntryUnderServers() {
         PyRevitCLIAgentCmds.InstallMcp(McpClientKind.VSCode, project: true);
 
