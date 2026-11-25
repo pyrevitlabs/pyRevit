@@ -1290,6 +1290,27 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
                 self.assertEqual(["timeout"], errors)
                 self.assertLess(time.time() - started, 3)
 
+    def test_workspace_module_does_not_shadow_an_earlier_path_entry(self):
+        """A workspace module named like an earlier module loses; a unique one imports."""
+        earlier = self._workspace({"shared_name.py": "SOURCE = 'earlier'\n"})
+        workspace = self._workspace(
+            {
+                "shared_name.py": "SOURCE = 'workspace'\n",
+                "unique_workspace_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        with (
+            mock.patch.object(sys, "path", [earlier] + sys.path),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import shared_name\nimport unique_workspace_name\n"
+                "assert shared_name.SOURCE == 'earlier'\n"
+                "assert unique_workspace_name.SOURCE == 'workspace'\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
+
     def test_sys_path_order_still_picks_the_module(self):
         """A folder placed before the workspace keeps winning its imports."""
         workspace = self._workspace({"shared.py": "SOURCE = 'workspace'\n"})

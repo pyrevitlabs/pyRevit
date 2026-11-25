@@ -45,15 +45,28 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             try {
                 Assert.True(TryCreateJunction(link, real, out var error), "mklink /J failed: " + error);
 
-                Assert.Equal("invalid_params", Assert.Throws<AgentException>(() => AgentRunRequest.FromJson(Run(workspace: link))).Code);
-                Assert.Equal("invalid_params", Assert.Throws<AgentException>(() => AgentRunRequest.FromJson(Run(workspace: Path.Combine(link, "inner")))).Code);
-                Assert.Equal(real, AgentRunRequest.FromJson(Run(workspace: real)).Workspace);
+                var linked = Assert.Throws<AgentException>(() => AgentRunRequest.FromJson(Run(workspace: link)));
+                var behind = Assert.Throws<AgentException>(() => AgentRunRequest.FromJson(Run(workspace: Path.Combine(link, "inner"))));
+
+                Assert.Equal("invalid_params", linked.Code);
+                Assert.Contains(link, linked.Message);
+                Assert.Equal("invalid_params", behind.Code);
+                Assert.Contains(link, behind.Message);
+                if (!TempRootIsBehindALink())
+                    Assert.Equal(real, AgentRunRequest.FromJson(Run(workspace: real)).Workspace);
             }
             finally {
                 if (Directory.Exists(link))
                     Directory.Delete(link);
                 Directory.Delete(root, true);
             }
+        }
+
+        private static bool TempRootIsBehindALink() {
+            for (var folder = new DirectoryInfo(Path.GetFullPath(Path.GetTempPath())); folder != null; folder = folder.Parent)
+                if (folder.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    return true;
+            return false;
         }
 
         private static bool TryCreateJunction(string link, string target, out string error) {

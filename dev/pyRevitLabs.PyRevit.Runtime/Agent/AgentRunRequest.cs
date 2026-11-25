@@ -92,8 +92,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'inputs' must be an object.");
             var workspace = AgentParams.Get<string>(parameters, "workspace");
             var document = AgentDocumentBinding.Parse(parameters["document"]);
-            if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || IsNetworkOrDevicePath(workspace) || !Directory.Exists(workspace) || IsOrIsBehindReparsePoint(workspace)))
-                throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing local folder that is not a link or junction and is not behind one.");
+            if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || IsNetworkOrDevicePath(workspace) || !Directory.Exists(workspace)))
+                throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing local folder.");
+            if (!string.IsNullOrWhiteSpace(workspace))
+                RejectLinkedWorkspace(workspace);
             var timeoutSeconds = AgentParams.Get<double?>(parameters, "timeout_s") ?? DefaultTimeoutSeconds;
             if (double.IsNaN(timeoutSeconds) || timeoutSeconds <= 0 || timeoutSeconds > MaxTimeoutSeconds)
                 throw new AgentException("invalid_params", $"'timeout_s' must be more than 0 and at most {MaxTimeoutSeconds}.");
@@ -119,11 +121,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return path.Length >= 2 && IsSeparator(path[0]) && IsSeparator(path[1]);
         }
 
-        private static bool IsOrIsBehindReparsePoint(string path) {
-            for (var folder = new DirectoryInfo(Path.GetFullPath(path)); folder != null; folder = folder.Parent)
-                if (folder.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                    return true;
-            return false;
+        /// <remarks>
+        /// Checked when the request is parsed, so it does not stop a folder from being swapped for
+        /// a link before the run imports from it. A workspace under a linked or cloud-synced
+        /// folder is refused too, because any ancestor with the reparse attribute counts.
+        /// </remarks>
+        private static void RejectLinkedWorkspace(string workspace) {
+            var folder = Path.GetFullPath(workspace);
+            try {
+                for (var current = new DirectoryInfo(folder); current != null; current = current.Parent)
+                    if (current.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                        throw new AgentException("invalid_params", $"'workspace' must not be or sit behind a link or junction; '{current.FullName}' is one.");
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+                throw new AgentException("invalid_params", $"'workspace' could not be checked for links ({ex.Message}).");
+            }
         }
 
         private static bool IsSeparator(char character) {
