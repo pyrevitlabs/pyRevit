@@ -10882,7 +10882,7 @@
 </tr>
 <tr>
 <td><strong>Crop Region</strong></td>
-<td>The selected views, or the active view if no view is selected. The view must be able to have a crop region. The crop shape and whether the crop is switched on are copied.</td>
+<td>The first cropable view among the selected views, or the active view if no view is selected. The crop shape (the crop box in a 3D view) and whether the crop is switched on are copied.</td>
 <td>Every selected view that can be cropped, or the active view.</td>
 <td>Yes</td>
 </tr>
@@ -10900,7 +10900,18 @@
 </tr>
 </tbody>
 </table>
-<p>Split crop regions are not copied.</p>
+<div class="admonition note">
+<p class="admonition-title">Pasting crops between 2D and 3D views</p>
+<p>Copy a crop from a 3D view to 3D views, and from any other view to other views. A crop shape copied from a 2D view does not replace the crop box of a 3D view, it only switches that crop box on or off, and a 3D crop box cannot be pasted into a 2D view.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Split crop regions</p>
+<p>A split crop region has more than one boundary. Only the first boundary is copied, and it is pasted as a single crop region, so the pasted crop can be smaller than the original.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Visibility Graphics and Filter Overrides follow the source view</p>
+<p>These two do not store a snapshot of the settings. <strong>Visibility Graphics</strong> remembers the view it was copied from, and <strong>Filter Overrides</strong> remembers which filters you picked and that view. <strong>Paste State ●</strong> reads the settings from that view at the moment you paste, so changes you made to the source view after copying are pasted as well.</p>
+</div>
 <h3 id="zoom-and-pan">Zoom and Pan</h3>
 <p>Pasting needs a view of a compatible type. If the copied view and the active view are of different types, you get a message that names both. A 3D view with a locked orientation refuses the pasted orientation, and a section view must be parallel to the copied one.</p>
 <p><img alt="View type mismatch" src="../../assets/tools/copy-paste-state/view-type-mismatch.png" /></p>
@@ -10915,7 +10926,7 @@
 <p>The position is measured from the title block, so the viewport lands in the same place on sheets whose title block sits somewhere else.</p>
 <div class="admonition tip">
 <p class="admonition-title">Shift-click</p>
-<p>Hold <span class="keys"><kbd class="key-shift">Shift</kbd></span> while clicking <strong>Paste State ●</strong> to choose the axis when you paste a viewport placement: <strong>X</strong>, <strong>Y</strong> or <strong>XY</strong>. With <strong>X</strong> or <strong>Y</strong> only that coordinate of the viewport changes and the other one stays where it is. The other properties ignore <span class="keys"><kbd class="key-shift">Shift</kbd></span>.</p>
+<p>Hold <span class="keys"><kbd class="key-shift">Shift</kbd></span> while clicking <strong>Paste State ●</strong> to choose the axis when you paste a viewport placement: <strong>X</strong>, <strong>Y</strong> or <strong>XY</strong>. With <strong>X</strong> or <strong>Y</strong> only that coordinate of the viewport is taken from the copied placement. The other coordinate stays where it is, except that the title block offset is added to it again: on a sheet whose title block sits at a nonzero position along the other axis, the viewport moves along that axis too. The other properties ignore <span class="keys"><kbd class="key-shift">Shift</kbd></span>.</p>
 </div>
 <h3 id="filter-overrides">Filter overrides</h3>
 <p><strong>Copy State</strong> opens a list of the filters applied to the view. Tick the filters whose overrides you want to copy, then click <strong>Select filters</strong>.</p>
@@ -10926,7 +10937,7 @@
 <li><strong>Active/Selected View</strong> pastes into the selected views, or the active view if none is selected. The view you copied from is left out. Views whose view template controls the filter settings are skipped, and you are told so.</li>
 <li><strong>Select View Templates</strong> opens a list of view templates to paste into.</li>
 </ul>
-<p>A filter that is already applied to the target view gets the copied overrides.</p>
+<p>A filter that the target view does not have yet is added. A filter that is already applied to the target view is removed and added again with the copied overrides, so it is switched on afterwards even if it was switched off in the target view.</p>
 
 
 
