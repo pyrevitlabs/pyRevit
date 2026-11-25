@@ -7,6 +7,8 @@ TEST_LEVEL = "Unit"
 import ast
 import builtins
 import contextlib
+import importlib.abc
+import importlib.machinery
 import importlib.util
 import linecache
 import os
@@ -20,6 +22,7 @@ import tokenize
 import traceback
 import types
 import unittest
+import zipfile
 from pathlib import Path
 from unittest import mock
 
@@ -1307,6 +1310,60 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
                 "import shared_name\nimport unique_workspace_name\n"
                 "assert shared_name.SOURCE == 'earlier'\n"
                 "assert unique_workspace_name.SOURCE == 'workspace'\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
+
+    def test_workspace_module_does_not_shadow_a_zip_on_sys_path(self):
+        """A module a ZIP entry provides wins over a workspace module of that name."""
+        archive_folder = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, archive_folder, True)
+        archive = os.path.join(archive_folder, "provider.zip")
+        with zipfile.ZipFile(archive, "w") as handle:
+            handle.writestr("zip_shadowed_name.py", "SOURCE = 'zip'\n")
+        workspace = self._workspace(
+            {
+                "zip_shadowed_name.py": "SOURCE = 'workspace'\n",
+                "zip_unique_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        with (
+            mock.patch.object(sys, "path", [archive] + sys.path),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import zip_shadowed_name\nimport zip_unique_name\n"
+                "assert zip_shadowed_name.SOURCE == 'zip'\n"
+                "assert zip_unique_name.SOURCE == 'workspace'\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
+
+    def test_workspace_module_does_not_shadow_a_meta_path_finder(self):
+        """A module another meta path finder provides wins over a workspace one."""
+
+        class Provider(importlib.abc.MetaPathFinder, importlib.abc.Loader):
+            def find_spec(self, fullname, path, target=None):
+                if fullname != "finder_shadowed_name":
+                    return None
+                return importlib.machinery.ModuleSpec(fullname, self)
+
+            def create_module(self, spec):
+                return None
+
+            def exec_module(self, module):
+                module.SOURCE = "finder"
+
+        workspace = self._workspace(
+            {"finder_shadowed_name.py": "SOURCE = 'workspace'\n"}
+        )
+        with (
+            mock.patch.object(sys, "meta_path", [Provider()] + sys.meta_path),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import finder_shadowed_name\n"
+                "assert finder_shadowed_name.SOURCE == 'finder'\n",
                 workspace=workspace,
             )
         self.assertEqual([], errors)

@@ -325,6 +325,13 @@ class _WorkspaceLoopGuard(object):
     stops loops inside workspace code. Everything outside the workspace,
     pyrevitlib and rpw included, imports as usual and stays unguarded.
 
+    A top-level workspace module never shadows a module that another
+    ``sys.meta_path`` finder or an earlier ``sys.path`` entry (a folder, a ZIP
+    file) can already resolve, whatever form that module has: the hook steps
+    aside and the import proceeds as without it. The standard library, which
+    some engines serve from archives or a resource importer rather than
+    ``.py`` files on ``sys.path``, is covered that way.
+
     Note:
         Both the PEP 302 protocol (``find_module``/``load_module``, IronPython
         2.7) and the PEP 451 one (``find_spec``/``exec_module``) are
@@ -358,8 +365,54 @@ class _WorkspaceLoopGuard(object):
             found = (package, True) if op.isfile(package) else None
             found = found or ((module, False) if op.isfile(module) else None)
             if found:
-                return found if self._is_workspace_file(found[0]) else None
+                if not self._is_workspace_file(found[0]):
+                    return None
+                if path is None and self._resolved_elsewhere(fullname):
+                    return None
+                return found
         return None
+
+    def _resolved_elsewhere(self, fullname):
+        for finder in list(sys.meta_path):
+            if finder is not self and self._provides(finder, fullname, True):
+                return True
+        import pkgutil
+
+        for entry in list(sys.path):
+            if not entry or not isinstance(entry, str):
+                continue
+            if _is_under(op.join(op.abspath(entry), "x"), self._root):
+                break
+            try:
+                importer = pkgutil.get_importer(entry)
+            except Exception:
+                continue
+            if importer is not None and self._provides(importer, fullname, False):
+                return True
+        return False
+
+    def _provides(self, provider, fullname, is_finder):
+        try:
+            if hasattr(provider, "find_spec"):
+                found = (
+                    provider.find_spec(fullname, None)
+                    if is_finder
+                    else provider.find_spec(fullname)
+                )
+            elif hasattr(provider, "find_module"):
+                found = (
+                    provider.find_module(fullname, None)
+                    if is_finder
+                    else provider.find_module(fullname)
+                )
+            else:
+                return False
+        except Exception:
+            return False
+        if found is None:
+            return False
+        origin = getattr(found, "origin", None) or getattr(found, "filename", None)
+        return not self._is_workspace_file(origin)
 
     def _is_workspace_file(self, filename):
         return _is_under(filename, self._root) and not any(
