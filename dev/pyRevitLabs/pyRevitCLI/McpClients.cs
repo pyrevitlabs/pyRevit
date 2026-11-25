@@ -83,7 +83,7 @@ namespace pyRevitCLI {
             foreach (var target in ProjectTargets()) {
                 var link = ReparsePoints.FindLink(target);
                 if (link != null)
-                    throw new PyRevitException($"{link} is a link or junction, so the project config is not written; run this from the real project folder.");
+                    throw new PyRevitException($"{link} is a link or junction, so the project config is not changed; run this from the real project folder.");
             }
         }
 

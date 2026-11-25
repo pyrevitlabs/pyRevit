@@ -266,7 +266,7 @@ namespace pyRevitCLI {
                 try {
                     var data = JObject.Parse(File.ReadAllText(file));
                     if (!AgentPipeName.IsValid(data.Value<string>("pipe"))) {
-                        logger.Debug("Ignoring agent registration {0}: unexpected pipe name.", Path.GetFileName(file));
+                        logger.Warn("Ignoring agent registration {0}: its pipe name is not one a pyRevit agent host registers.", Path.GetFileName(file));
                         continue;
                     }
                     var instance = new AgentInstance {
