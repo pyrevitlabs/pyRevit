@@ -41,40 +41,27 @@ def own_named_types(family_name, element_types):
     ]
 
 
-def add_choice(choices, label, provider):
-    unique_label = label
-    copy_number = 2
-    while unique_label in choices:
-        unique_label = "{} ({})".format(label, copy_number)
-        copy_number += 1
-    choices[unique_label] = provider
+def special_choices():
+    choices = {}
+    for category_name, styles in graphics_styles_by_category_name().items():
+        choices[_t("graphics_styles").format(category_name)] = partial(list, styles)
+    choices[_t("fill_patterns")] = partial(
+        revit.query.get_types_by_class, DB.FillPatternElement, doc=revit.doc
+    )
+    choices[_t("area_schemes")] = partial(
+        revit.query.get_types_by_class, DB.AreaScheme, doc=revit.doc
+    )
+    choices[_t("line_styles")] = partial(revit.query.get_line_styles, doc=revit.doc)
+    return choices
 
 
 def type_choices():
-    choices = {}
+    choices = special_choices()
     for family_name, element_types in types_by_family_name().items():
-        add_choice(
-            choices, family_name, partial(own_named_types, family_name, element_types)
-        )
-    for category_name, styles in graphics_styles_by_category_name().items():
-        add_choice(
-            choices, _t("graphics_styles").format(category_name), partial(list, styles)
-        )
-    add_choice(
-        choices,
-        _t("fill_patterns"),
-        partial(revit.query.get_types_by_class, DB.FillPatternElement, doc=revit.doc),
-    )
-    add_choice(
-        choices,
-        _t("area_schemes"),
-        partial(revit.query.get_types_by_class, DB.AreaScheme, doc=revit.doc),
-    )
-    add_choice(
-        choices,
-        _t("line_styles"),
-        partial(revit.query.get_line_styles, doc=revit.doc),
-    )
+        label = family_name
+        if label in choices:
+            label = _t("family_choice").format(family_name)
+        choices[label] = partial(own_named_types, family_name, element_types)
     return choices
 
 

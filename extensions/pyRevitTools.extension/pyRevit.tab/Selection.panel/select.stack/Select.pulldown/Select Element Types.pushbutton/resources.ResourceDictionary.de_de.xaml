@@ -4,6 +4,7 @@
 
     <sys:String x:Key="pick_category">Typkategorie auswählen:</sys:String>
     <sys:String x:Key="graphics_styles">Grafikstile: {}</sys:String>
+    <sys:String x:Key="family_choice">Familie: {}</sys:String>
     <sys:String x:Key="fill_patterns">Füllmuster</sys:String>
     <sys:String x:Key="area_schemes">Flächenschemata</sys:String>
     <sys:String x:Key="line_styles">Linienstile</sys:String>

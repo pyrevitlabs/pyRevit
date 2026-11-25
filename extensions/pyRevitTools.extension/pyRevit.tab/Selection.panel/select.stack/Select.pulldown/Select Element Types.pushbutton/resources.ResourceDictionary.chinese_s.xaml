@@ -4,6 +4,7 @@
 
     <sys:String x:Key="pick_category">选择类型类别：</sys:String>
     <sys:String x:Key="graphics_styles">图形样式：{}</sys:String>
+    <sys:String x:Key="family_choice">族：{}</sys:String>
     <sys:String x:Key="fill_patterns">填充样式</sys:String>
     <sys:String x:Key="area_schemes">面积方案</sys:String>
     <sys:String x:Key="line_styles">线样式</sys:String>

@@ -4,6 +4,7 @@
 
     <sys:String x:Key="pick_category">Выберите категорию типов:</sys:String>
     <sys:String x:Key="graphics_styles">Стили графики: {}</sys:String>
+    <sys:String x:Key="family_choice">Семейство: {}</sys:String>
     <sys:String x:Key="fill_patterns">Узоры заливки</sys:String>
     <sys:String x:Key="area_schemes">Схемы площадей</sys:String>
     <sys:String x:Key="line_styles">Стили линий</sys:String>
