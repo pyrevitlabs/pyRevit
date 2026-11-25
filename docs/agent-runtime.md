@@ -137,7 +137,10 @@ transaction because the Revit API requires one, and that state isn't saved with 
 model. The agent is told to use it rather than writing `run_modify` scripts to show
 things. Because they change view state or write files, `show_elements`,
 `navigate_revit_link` and `capture_view` are annotated for MCP clients as neither
-read-only nor destructive.
+read-only nor destructive. `run_query`, `run_modify` and `run_automation` are
+annotated as open-world, because the script they run can reach the network, the file
+system and other processes, and none of the three is annotated read-only. `run_query` and
+`run_modify` are annotated destructive. Clients should ask the user to approve each call.
 
 `run_query` and `run_modify` return a compact result for the agent: `status`, then
 `error` (when present), `decision`, `result` and `output`. The non-empty change set,

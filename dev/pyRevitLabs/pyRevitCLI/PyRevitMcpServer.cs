@@ -777,7 +777,7 @@ namespace pyRevitCLI {
                         arguments.Value<int?>("offset") ?? 0,
                         arguments.Value<int?>("limit") ?? 25)),
 
-                new McpTool("run_automation", readOnly: true, new[] { "id", "inputs" },
+                new McpTool("run_automation", readOnly: false, destructive: false, new[] { "id", "inputs" },
                     () => ("Run a reviewed read-only automation operation (invocable in list_automation) with the inputs it lists. "
                         + "Runs as a query, so model changes are rolled back. This does not accept Python source, module names or callable names.",
                         new JObject {
@@ -788,7 +788,7 @@ namespace pyRevitCLI {
                             ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
-                    RunAutomation),
+                    RunAutomation, openWorld: true),
 
                 new McpTool("lookup_revit_api", readOnly: true, new string[0],
                     () => ("Look up a Revit API type or member in the running Revit version, e.g. 'Wall', 'Autodesk.Revit.DB.Wall', 'Wall.Create', 'ElementId.Value'. Returns signatures, enum values and obsolete markers. "
@@ -938,7 +938,7 @@ namespace pyRevitCLI {
                             ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
-                    arguments => RunScript(arguments, "query")),
+                    arguments => RunScript(arguments, "query"), openWorld: true),
 
                 new McpTool("run_modify", readOnly: false, new[] { "script", "title" },
                     () => ("Run a Python script that changes the model. With dry_run=true the change set is returned and everything is rolled back. Otherwise, under agent policy 'ask', Revit shows the user an approval prompt with the changed elements isolated; under policy 'auto' the change is committed directly. Kept changes become one undo entry named 'Agent: <title>'. Status 'rejected' means the user discarded the changes.",
@@ -953,7 +953,7 @@ namespace pyRevitCLI {
                             ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
-                    arguments => RunScript(arguments, (arguments.Value<bool?>("dry_run") ?? false) ? "dry_run" : "modify")),
+                    arguments => RunScript(arguments, (arguments.Value<bool?>("dry_run") ?? false) ? "dry_run" : "modify"), openWorld: true),
 
                 new McpTool("get_run", readOnly: true, new[] { "run_id" },
                     () => ("Read a recorded run by run_id, or by the request_id of a request that got no answer: response, script, and pages of a result too large to return inline (use offset/length).",
@@ -979,22 +979,24 @@ namespace pyRevitCLI {
         private sealed class McpTool {
             private readonly bool readOnly;
             private readonly bool destructive;
+            private readonly bool openWorld;
             private readonly string[] required;
             private readonly Func<(string Description, JObject Properties)> schema;
             private readonly Func<JObject, JToken> handler;
 
             public McpTool(
                 string name, bool readOnly, string[] required,
-                Func<(string Description, JObject Properties)> schema, Func<JObject, JToken> handler)
-                : this(name, readOnly, !readOnly, required, schema, handler) {
+                Func<(string Description, JObject Properties)> schema, Func<JObject, JToken> handler, bool openWorld = false)
+                : this(name, readOnly, !readOnly, required, schema, handler, openWorld) {
             }
 
             public McpTool(
                 string name, bool readOnly, bool destructive, string[] required,
-                Func<(string Description, JObject Properties)> schema, Func<JObject, JToken> handler) {
+                Func<(string Description, JObject Properties)> schema, Func<JObject, JToken> handler, bool openWorld = false) {
                 Name = name;
                 this.readOnly = readOnly;
                 this.destructive = destructive;
+                this.openWorld = openWorld;
                 this.required = required;
                 this.schema = schema;
                 this.handler = handler;
@@ -1087,7 +1089,7 @@ namespace pyRevitCLI {
                     ["annotations"] = new JObject {
                         ["readOnlyHint"] = readOnly,
                         ["destructiveHint"] = destructive,
-                        ["openWorldHint"] = false,
+                        ["openWorldHint"] = openWorld,
                     },
                 };
             }
