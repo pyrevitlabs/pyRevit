@@ -10,6 +10,7 @@
     <sys:String x:Key="option_model_groups">Modellgruppen</sys:String>
     <sys:String x:Key="option_painted_elements">Eingefärbte Elemente</sys:String>
     <sys:String x:Key="option_model_elements">Modellelemente</sys:String>
+    <sys:String x:Key="category_option_format">{} (Kategorie)</sys:String>
     <sys:String x:Key="transaction_isolate">{} isolieren</sys:String>
     <sys:String x:Key="transaction_reset_isolate">Temporäres Ausblenden/Isolieren zurücksetzen</sys:String>
     <sys:String x:Key="nothing_to_isolate">Es gibt nichts zu isolieren. Die aktive Ansicht enthält keine Elemente für „{}“.</sys:String>

@@ -10,6 +10,7 @@
     <sys:String x:Key="option_model_groups">Groupes de modèles</sys:String>
     <sys:String x:Key="option_painted_elements">Éléments peints</sys:String>
     <sys:String x:Key="option_model_elements">Éléments de modèle</sys:String>
+    <sys:String x:Key="category_option_format">{} (catégorie)</sys:String>
     <sys:String x:Key="transaction_isolate">Isoler {}</sys:String>
     <sys:String x:Key="transaction_reset_isolate">Réinitialiser le masquage/isolement temporaire</sys:String>
     <sys:String x:Key="nothing_to_isolate">Rien à isoler. La vue active ne contient aucun élément pour « {} ».</sys:String>

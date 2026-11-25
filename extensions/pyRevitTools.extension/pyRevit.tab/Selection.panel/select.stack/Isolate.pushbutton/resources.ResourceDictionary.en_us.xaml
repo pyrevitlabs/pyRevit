@@ -10,6 +10,7 @@
     <sys:String x:Key="option_model_groups">Model Groups</sys:String>
     <sys:String x:Key="option_painted_elements">Painted Elements</sys:String>
     <sys:String x:Key="option_model_elements">Model Elements</sys:String>
+    <sys:String x:Key="category_option_format">{} (category)</sys:String>
     <sys:String x:Key="transaction_isolate">Isolate {}</sys:String>
     <sys:String x:Key="transaction_reset_isolate">Reset temporary hide/isolate</sys:String>
     <sys:String x:Key="nothing_to_isolate">Nothing to isolate. The active view has no elements for "{}".</sys:String>

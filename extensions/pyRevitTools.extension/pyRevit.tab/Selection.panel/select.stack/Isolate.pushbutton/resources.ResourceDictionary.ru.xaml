@@ -10,6 +10,7 @@
     <sys:String x:Key="option_model_groups">Группы модели</sys:String>
     <sys:String x:Key="option_painted_elements">Раскрашенные элементы</sys:String>
     <sys:String x:Key="option_model_elements">Элементы модели</sys:String>
+    <sys:String x:Key="category_option_format">{} (категория)</sys:String>
     <sys:String x:Key="transaction_isolate">Изолировать: {}</sys:String>
     <sys:String x:Key="transaction_reset_isolate">Сброс временного скрытия/изоляции</sys:String>
     <sys:String x:Key="nothing_to_isolate">Нечего изолировать. В активном виде нет элементов для «{}».</sys:String>

@@ -27,8 +27,7 @@ def load(default_categories):
     config = script.get_config(CONFIG_SECTION)
     saved_names = config.get_option(CONFIG_OPTION, [])
     categories = [
-        revit.query.get_category(category)
-        for category in (saved_names or default_categories)
+        _find_category(category) for category in (saved_names or default_categories)
     ]
     return [category for category in categories if category]
 
@@ -45,11 +44,10 @@ def configure(default_categories, title, button_name):
         title: Dialog title.
         button_name: Caption of the dialog's confirm button.
     """
-    categories_table = revit.doc.Settings.Categories
-    all_categories = list(categories_table)
-    all_categories.append(
-        categories_table.get_Item(DB.BuiltInCategory.OST_AreaSchemeLines)
-    )
+    all_categories = list(revit.doc.Settings.Categories)
+    area_scheme_lines = _area_scheme_lines()
+    if area_scheme_lines:
+        all_categories.append(area_scheme_lines)
     favourite_names = [category.Name for category in load(default_categories)]
     chosen = forms.SelectFromList.show(
         sorted(
@@ -72,10 +70,26 @@ def configure(default_categories, title, button_name):
         script.save_config()
 
 
+def _area_scheme_lines():
+    return revit.doc.Settings.Categories.get_Item(
+        DB.BuiltInCategory.OST_AreaSchemeLines
+    )
+
+
+def _find_category(category):
+    found = revit.query.get_category(category)
+    if found:
+        return found
+    area_scheme_lines = _area_scheme_lines()
+    if area_scheme_lines and category == area_scheme_lines.Name:
+        return area_scheme_lines
+    return None
+
+
 def _check_defaults(default_categories, options):
     default_names = [
         category.Name
-        for category in (revit.query.get_category(x) for x in default_categories)
+        for category in (_find_category(x) for x in default_categories)
         if category
     ]
     for option in options:

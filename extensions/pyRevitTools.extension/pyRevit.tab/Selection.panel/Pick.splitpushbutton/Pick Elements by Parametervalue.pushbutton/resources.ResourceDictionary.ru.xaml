@@ -4,6 +4,7 @@
 
     <sys:String x:Key="pick_element_prompt">Выберите элемент для выбора параметров</sys:String>
     <sys:String x:Key="pick_rectangle_prompt">Нарисуйте прямоугольник, чтобы выбрать элементы с совпадающими значениями параметров</sys:String>
+    <sys:String x:Key="no_readable_parameters">Ни один из выбранных параметров нельзя прочитать у самого элемента. Параметры типа не поддерживаются. Ничего не выбрано.</sys:String>
     <sys:String x:Key="select_parameters_title">Выберите параметры для сравнения</sys:String>
     <sys:String x:Key="select_parameters_button">Выбрать</sys:String>
 </ResourceDictionary>

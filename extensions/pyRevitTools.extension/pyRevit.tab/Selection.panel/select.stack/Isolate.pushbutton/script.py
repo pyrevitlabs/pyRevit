@@ -87,25 +87,31 @@ def model_element_ids(view):
     return framework.to_clr_list(DB.ElementId, element_to_isolate)
 
 
+def _category_label(category_name, action_labels):
+    if category_name in action_labels:
+        return _t("category_option_format").format(category_name)
+    return category_name
+
+
 def build_isolation_options():
+    actions = [
+        (_t("option_room_tags"), room_and_room_tag_ids),
+        (_t("option_model_groups"), model_group_and_member_ids),
+        (_t("option_painted_elements"), painted_element_ids),
+        (_t("option_model_elements"), model_element_ids),
+    ]
+    action_labels = [label for label, _ in actions]
     favourites = sorted(isolate_config.load_configs(), key=lambda x: x.Name)
     options = [
         (
-            category.Name,
+            _category_label(category.Name, action_labels),
             lambda view, category_id=category.Id: category_element_ids(
                 view, category_id
             ),
         )
         for category in favourites
     ]
-    options.extend(
-        [
-            (_t("option_room_tags"), room_and_room_tag_ids),
-            (_t("option_model_groups"), model_group_and_member_ids),
-            (_t("option_painted_elements"), painted_element_ids),
-            (_t("option_model_elements"), model_element_ids),
-        ]
-    )
+    options.extend(actions)
     return options
 
 

@@ -10,6 +10,7 @@
     <sys:String x:Key="option_model_groups">Grupos de modelo</sys:String>
     <sys:String x:Key="option_painted_elements">Elementos pintados</sys:String>
     <sys:String x:Key="option_model_elements">Elementos de modelo</sys:String>
+    <sys:String x:Key="category_option_format">{} (categoria)</sys:String>
     <sys:String x:Key="transaction_isolate">Isolar {}</sys:String>
     <sys:String x:Key="transaction_reset_isolate">Redefinir ocultar/isolar temporário</sys:String>
     <sys:String x:Key="nothing_to_isolate">Nada para isolar. A vista ativa não contém elementos para "{}".</sys:String>

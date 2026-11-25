@@ -4,6 +4,7 @@
 
     <sys:String x:Key="pick_element_prompt">Pick an element for parameter selection</sys:String>
     <sys:String x:Key="pick_rectangle_prompt">Draw a rectangle to pick elements with matching parameter values</sys:String>
+    <sys:String x:Key="no_readable_parameters">None of the selected parameters can be read from the element itself. Type parameters are not supported. Nothing was picked.</sys:String>
     <sys:String x:Key="select_parameters_title">Select Parameters to Match</sys:String>
     <sys:String x:Key="select_parameters_button">Select</sys:String>
 </ResourceDictionary>

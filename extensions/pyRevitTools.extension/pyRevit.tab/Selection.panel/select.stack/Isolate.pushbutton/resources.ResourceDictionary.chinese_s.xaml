@@ -10,6 +10,7 @@
     <sys:String x:Key="option_model_groups">模型组</sys:String>
     <sys:String x:Key="option_painted_elements">已涂刷图元</sys:String>
     <sys:String x:Key="option_model_elements">模型图元</sys:String>
+    <sys:String x:Key="category_option_format">{}（类别）</sys:String>
     <sys:String x:Key="transaction_isolate">隔离 {}</sys:String>
     <sys:String x:Key="transaction_reset_isolate">重设临时隐藏/隔离</sys:String>
     <sys:String x:Key="nothing_to_isolate">没有可隔离的图元。活动视图中没有“{}”对应的图元。</sys:String>

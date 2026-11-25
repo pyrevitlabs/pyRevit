@@ -60,8 +60,9 @@ def pick_matching(predicate, message=""):
 def select_picked(predicate, message=""):
     """Replace the selection with the matching elements of a rectangle pick.
 
-    Leaves the selection unchanged when the user cancels the pick. A rectangle that
-    holds no matching element clears the selection.
+    Does not apply a new selection when the user cancels the pick; Revit may already
+    have cleared the old selection when the pick started. A completed pick that holds
+    no matching element clears the selection.
     """
     picked = pick_matching(predicate, message)
     if picked is not None:

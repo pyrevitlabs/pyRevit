@@ -10,6 +10,7 @@
     <sys:String x:Key="option_model_groups">모델 그룹</sys:String>
     <sys:String x:Key="option_painted_elements">페인트된 요소</sys:String>
     <sys:String x:Key="option_model_elements">모델 요소</sys:String>
+    <sys:String x:Key="category_option_format">{} (카테고리)</sys:String>
     <sys:String x:Key="transaction_isolate">{} 격리</sys:String>
     <sys:String x:Key="transaction_reset_isolate">임시 숨기기/격리 재설정</sys:String>
     <sys:String x:Key="nothing_to_isolate">격리할 요소가 없습니다. 활성 뷰에 "{}"에 해당하는 요소가 없습니다.</sys:String>

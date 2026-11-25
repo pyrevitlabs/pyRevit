@@ -22,9 +22,11 @@ def get_source_element():
 
 
 def read_parameter_values(element, parameter_names):
+    parameters = {name: element.LookupParameter(name) for name in parameter_names}
     return {
-        name: revit.query.get_param_value(element.LookupParameter(name))
-        for name in parameter_names
+        name: revit.query.get_param_value(parameter)
+        for name, parameter in parameters.items()
+        if parameter
     }
 
 
@@ -59,6 +61,9 @@ def main():
     if not parameter_defs:
         return
     expected_values = read_parameter_values(source, [x.name for x in parameter_defs])
+    if not expected_values:
+        forms.alert(_t("no_readable_parameters"))
+        return
     require_all = EXEC_PARAMS.config_mode
     selectionpick.select_picked(
         lambda element: matches_values(element, expected_values, require_all),
