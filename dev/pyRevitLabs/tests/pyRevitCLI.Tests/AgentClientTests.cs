@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Principal;
 using pyRevitCLI;
 using pyRevitLabs.Json.Linq;
 
@@ -42,7 +43,7 @@ public class AgentClientTests : IDisposable {
     [Fact]
     public void RegistrationsOfNonRevitProcessesAreSkippedAndRemoved() {
         PyRevitAgentClient.ProcessNameReader = process => process.ProcessName;
-        host.Register("2086", Environment.ProcessId, DateTime.UtcNow, fileName: "non-revit.json", pipeName: "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
+        host.Register("2086", Environment.ProcessId, DateTime.UtcNow, fileName: "non-revit.json", pipeName: "pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N"));
 
         Assert.Empty(PyRevitAgentClient.GetInstances());
         Assert.False(File.Exists(Path.Combine(host.AgentDir, "instances", "non-revit.json")));
@@ -53,7 +54,7 @@ public class AgentClientTests : IDisposable {
     public void RegistrationsPredatingTheRevitProcessAreSkippedAndRemoved() {
         using var process = Process.GetCurrentProcess();
         host.Register("2087", Environment.ProcessId, process.StartTime.ToUniversalTime().AddSeconds(-10),
-            fileName: "reused.json", pipeName: "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
+            fileName: "reused.json", pipeName: "pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N"));
 
         Assert.Equal("2090", Assert.Single(PyRevitAgentClient.GetInstances()).RevitVersion);
         Assert.False(File.Exists(Path.Combine(host.AgentDir, "instances", "reused.json")));
@@ -65,7 +66,7 @@ public class AgentClientTests : IDisposable {
         using var process = Process.GetCurrentProcess();
         PyRevitAgentClient.ProcessNameReader = registeredProcess => "rEvIt";
         host.Register("2088", Environment.ProcessId, process.StartTime.ToUniversalTime().AddSeconds(-1),
-            fileName: "tolerated.json", pipeName: "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
+            fileName: "tolerated.json", pipeName: "pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N"));
 
         Assert.Equal("2088", PyRevitAgentClient.Resolve("2088").RevitVersion);
         Assert.True(File.Exists(Path.Combine(host.AgentDir, "instances", "tolerated.json")));
@@ -145,7 +146,7 @@ public class AgentClientTests : IDisposable {
         var path = Path.Combine(host.AgentDir, "instances", "invalid-started.json");
         File.WriteAllText(path, new JObject {
             ["pid"] = Environment.ProcessId,
-            ["pipe"] = "pyrevit-missing-" + Guid.NewGuid().ToString("N"),
+            ["pipe"] = "pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N"),
             ["revit_version"] = "2089",
             ["started"] = "invalid",
         }.ToString());
@@ -347,7 +348,7 @@ public class AgentClientTests : IDisposable {
         host.Register("2085", 2147483000, DateTime.UtcNow);
         using var process = Process.GetCurrentProcess();
         host.Register("2086", Environment.ProcessId, process.StartTime.ToUniversalTime().AddMinutes(-1),
-            pipeName: "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
+            pipeName: "pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N"));
 
         var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Resolve(null));
 
@@ -414,9 +415,66 @@ public class AgentClientTests : IDisposable {
     }
 
     [Fact]
+    public void APipeServedByAProcessOfAnotherUserIsRefusedBeforeAnythingIsSent() {
+        PyRevitAgentClient.ProcessOwnerReader = processId => new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(ThisHost(), "run", new JObject { ["script"] = "secret" }));
+
+        Assert.Equal("pipe_error", error.Code);
+        Assert.Equal(AgentOutcome.NotSent, error.Outcome);
+        Assert.Contains("another user", error.Message);
+        Assert.Empty(host.Requests);
+    }
+
+    [Fact]
+    public void AProcessOwnerThatCannotBeReadIsRefused() {
+        PyRevitAgentClient.ProcessOwnerReader = processId => null;
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(ThisHost(), "ping"));
+
+        Assert.Equal("pipe_error", error.Code);
+        Assert.Empty(host.Requests);
+    }
+
+    [Fact]
+    public void TheOwnerOfThisProcessIsTheCurrentUser() {
+        Assert.Equal(WindowsIdentity.GetCurrent().User, PyRevitAgentClient.ProcessOwnerReader(Environment.ProcessId));
+    }
+
+    [Theory]
+    [InlineData("pyrevit-fake-0123")]
+    [InlineData("pyrevit-agent-12-NOTHEX")]
+    [InlineData(@"..\pyrevit-agent-12")]
+    [InlineData("pyrevit-agent-12-0123456789abcdef0123456789abcdef-x")]
+    public void AnUnexpectedRegisteredPipeNameIsRefusedBeforeConnecting(string pipeName) {
+        var instance = new AgentInstance { ProcessId = Environment.ProcessId, Pipe = pipeName, RevitVersion = "2090" };
+
+        var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(instance, "ping"));
+
+        Assert.Equal("pipe_error", error.Code);
+        Assert.Equal(AgentOutcome.NotSent, error.Outcome);
+        Assert.Empty(host.Requests);
+    }
+
+    [Fact]
+    public void RegistrationsWithAnUnexpectedPipeNameAreNotListed() {
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, fileName: "odd.json", pipeName: "pyrevit-fake-" + Guid.NewGuid().ToString("N"));
+
+        Assert.DoesNotContain(PyRevitAgentClient.GetInstances(), instance => instance.RevitVersion == "2091");
+    }
+
+    [Fact]
+    public void ARegistrationWithoutANonceStillWorks() {
+        var legacyName = "pyrevit-agent-" + Environment.ProcessId;
+        host.Register("2092", Environment.ProcessId, DateTime.UtcNow, fileName: "legacy.json", pipeName: legacyName);
+
+        Assert.Equal(legacyName, PyRevitAgentClient.Resolve("2092").Pipe);
+    }
+
+    [Fact]
     public void NobodyListeningIsReportedAsBusy() {
         PyRevitAgentClient.ConnectTimeoutMs = 200;
-        var instance = new AgentInstance { ProcessId = Environment.ProcessId, Pipe = "pyrevit-nobody-" + Guid.NewGuid().ToString("N"), RevitVersion = "2090" };
+        var instance = new AgentInstance { ProcessId = Environment.ProcessId, Pipe = "pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N"), RevitVersion = "2090" };
 
         var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(instance, "ping"));
 
@@ -501,7 +559,7 @@ public class AgentClientTests : IDisposable {
     [Fact]
     public void NobodyListeningMeansTheRequestWasNotSent() {
         PyRevitAgentClient.ConnectTimeoutMs = 200;
-        var instance = new AgentInstance { ProcessId = Environment.ProcessId, Pipe = "pyrevit-nobody-" + Guid.NewGuid().ToString("N"), RevitVersion = "2090" };
+        var instance = new AgentInstance { ProcessId = Environment.ProcessId, Pipe = "pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N"), RevitVersion = "2090" };
 
         var error = Assert.Throws<AgentClientException>(() => PyRevitAgentClient.Call(instance, "ping"));
 
@@ -607,7 +665,7 @@ public class AgentClientTests : IDisposable {
     [Fact]
     public void StatusReportsAHostWithoutAPipeAsNotResponding() {
         var instance = ThisHost();
-        instance.Pipe = "pyrevit-missing-" + Guid.NewGuid().ToString("N");
+        instance.Pipe = "pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N");
         PyRevitAgentClient.PingConnectTimeoutMs = 200;
 
         var line = PyRevitCLIAgentCmds.StatusLine(instance);
@@ -700,7 +758,7 @@ public class AgentClientTests : IDisposable {
         var connection = server.WaitForConnectionAsync();
 
         Assert.True(PyRevitAgentClient.PipeExists(pipeName));
-        Assert.False(PyRevitAgentClient.PipeExists("pyrevit-missing-" + Guid.NewGuid().ToString("N")));
+        Assert.False(PyRevitAgentClient.PipeExists("pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N")));
         await Task.Delay(200);
         Assert.False(connection.IsCompleted);
     }

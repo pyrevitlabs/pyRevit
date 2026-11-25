@@ -902,7 +902,7 @@ engine; pick one by clone name, or by process id when one clone runs in several 
  │ pyrevit mcp                  │   MCP protocol, tool schemas, instructions,
  │                              │   instance discovery, run records
  └──────────────┬───────────────┘
-                │  named pipe  \\.\pipe\pyrevit-agent-<pid>  (current user only)
+                │  named pipe  \\.\pipe\pyrevit-agent-<pid>-<nonce>  (current user only)
                 ▼
  ┌──────────────────────────────┐   inside Revit (PyRevit.Runtime, Agent/)
  │ AgentHost                    │
@@ -929,9 +929,15 @@ access list allows only the current Windows user and denies network logons, and 
 the authentication. The trust boundary is the Windows account: any process running as that
 user can connect to the host and submit scripts.
 
-The CLI also checks that the process serving the pipe is the Revit recorded in the instance
-file, and refuses to send a request otherwise, so another local process can't take over a
-pipe name while the host is down.
+The pipe name is `pyrevit-agent-<pid>-<nonce>`, where the nonce is 32 random hex characters
+chosen at host start and recorded in the instance file, so another process can't guess the
+name and create the pipe first. The pipe also refuses remote clients outright. The CLI
+refuses to send a request unless the registered name has that form (the older
+`pyrevit-agent-<pid>` form is still accepted for one release), the process serving the pipe is
+the Revit recorded in the instance file, and that process runs as the current user; a process
+whose owner can't be read counts as another user's. This keeps a request from reaching a pipe
+another local process created while the host was down. It does not stop a process of the same
+user, which is inside the trust boundary above.
 
 Remote use is through Remote Desktop only. An RDP session is an interactive logon, so
 `pyrevit mcp` started inside it reaches Revit. SSH is refused on purpose: an SSH logon

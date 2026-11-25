@@ -97,7 +97,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         internal static readonly int ProcessId = ReadProcessId();
 
-        public static string PipeName => "pyrevit-agent-" + ProcessId;
+        public static string PipeName { get; } = AgentPipeName.Create(ProcessId);
 
         /// <summary>
         /// True while the pipe server is up and accepting connections.

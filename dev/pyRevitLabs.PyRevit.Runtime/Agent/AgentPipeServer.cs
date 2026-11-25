@@ -28,6 +28,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// agent requests execute arbitrary code in Revit, this ACL is the access control.
     /// Denying network logons deliberately refuses SSH sessions too, whose tokens carry the
     /// Network SID; Remote Desktop sessions are interactive logons and are allowed.
+    /// Invariant: remote clients are refused outright (<c>PIPE_REJECT_REMOTE_CLIENTS</c>): set
+    /// explicitly on .NET Framework, where the runtime doesn't, and by the runtime on .NET.
     /// Invariant: a connection that sends no line for <see cref="IdleTimeout"/> is closed, so a
     /// stalled client can't hold a server instance and, with others, lock every other client out.
     /// The timeout covers waiting for a request only, never the time a request takes to run.
@@ -409,6 +411,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const uint PipeAccessDuplex = 0x3;
         private const uint FileFlagFirstPipeInstance = 0x80000;
         private const uint FileFlagOverlapped = 0x40000000;
+        private const uint PipeRejectRemoteClients = 0x8;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct SecurityAttributes {
@@ -430,7 +433,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     SecurityDescriptor = descriptor.AddrOfPinnedObject(),
                 };
                 var openMode = PipeAccessDuplex | FileFlagOverlapped | (firstInstance ? FileFlagFirstPipeInstance : 0);
-                var handle = CreateNamedPipe(@"\\.\pipe\" + pipeName, openMode, 0, (uint)maxConnections, 0, 0, 0, ref attributes);
+                var handle = CreateNamedPipe(@"\\.\pipe\" + pipeName, openMode, PipeRejectRemoteClients, (uint)maxConnections, 0, 0, 0, ref attributes);
                 if (handle.IsInvalid)
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 return new NamedPipeServerStream(PipeDirection.InOut, true, false, handle);
