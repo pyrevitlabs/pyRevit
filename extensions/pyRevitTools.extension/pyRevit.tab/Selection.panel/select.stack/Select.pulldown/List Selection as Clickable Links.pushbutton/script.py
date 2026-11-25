@@ -29,8 +29,8 @@ named_elements = sorted(
 if len(selection.element_ids) < SELECT_ALL_LINK_LIMIT:
     output.print_md(output.linkify(selection.element_ids, title=_t("all_elements")))
 
-output.print_table(
-    [
+output.print_html_table(
+    table_data=[
         [index, output.linkify(element.Id), escape_for_output(name)]
         for index, (name, element) in enumerate(named_elements, 1)
     ],
