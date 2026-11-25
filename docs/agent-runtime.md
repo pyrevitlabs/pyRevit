@@ -42,7 +42,10 @@ runtime is independent of the Routes server and doesn't need it enabled.
     `opencode.json[c]`). Codex only supports user-level servers. A JSON config file that
     contains comments is never rewritten; the command prints the entry to add by hand.
     A project install is refused when the current folder or the client's config folder is a
-    link or junction, so the file isn't written outside the project. The client's own tool
+    link or junction, or the config file itself is a link, so the file isn't written outside the
+    project. The check runs when the command starts and walks every folder above the target, so a
+    project under a linked or cloud-synced folder is refused too; it doesn't guard against a swap
+    afterwards. The client's own tool
     (`claude`) is looked up in absolute `PATH` entries and the usual install folders only; relative
     entries are skipped. The entry pins the absolute path of this `pyrevit.exe`, so review
     a project file before you commit it.
@@ -116,7 +119,7 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. Up to 20000 integer ids and 100 distinct categories (a repeated category counts once), and the categories may match at most 20000 elements (`too_many_elements` otherwise); an id with no element is listed in `missing_ids`. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. `isolate` and `hide` leave out ids the active view doesn't show and list them in `not_in_view_ids`; `select` lists them there too but still selects them, so `zoom` can open a view that shows them; while a temporary isolate is on, the elements it hides count as not shown, so `reset` before isolating others. `view` is the view acted on; when zooming makes Revit open another view, `active_view` names it. |
 | `navigate_revit_link` | no | Select, zoom to, isolate or temporarily hide the elements of a `link` returned by `inspect_elements` (see [Navigation links](#navigation-links)) |
 | `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit, named by name, id or sheet number, and a schedule on a temporary sheet that is rolled back (a schedule rejects `detail_level` and `display_style` with `view_not_supported`, and so does one filtered by sheet on Revit 2023 and later, which would render empty there; Revit 2021 and 2022 can't report it); `viewport` renders an open view through Revit cropped to what its window shows now (zoom, pan, temporary isolate; no selection highlight), in a rolled-back transaction; `screen` captures the active view window as the user sees it (selection, temporary isolate), fails with `view_not_active` for any other view, and fails with `view_obscured` when another application's window covers any part of it (click-through overlays such as the GeForce overlay don't count); view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`, up to 20000 integer ids) and seen from `direction`, which is rolled back. `eye` and `target` (feet) switch it to a perspective camera without a section box; `section` (`origin`, `normal`, optional `depth`) renders a temporary section or elevation for a horizontal `normal`, or a plan cut at `origin` height for `[0, 0, -1]`, framed on `elements` or the model; ids in `elements` that don't exist are listed in `missing_ids`, also on an error. `detail_level` (`coarse`, `medium`, `fine`) and `display_style` (`wireframe`, `hidden_line`, `shaded`, `shaded_edges`) apply to the temporary view and, in `export` and `viewport` modes, to a named view for that capture only, inside the same rolled-back group (a view template that controls them is detached there; in a workshared model a view you don't own is duplicated and the copy is changed, so nothing is borrowed; `viewport` refuses such a view while its temporary hide/isolate is on). A view name shared by several views fails with `view_ambiguous` and lists their ids, types and sheet numbers (pass `view_type`, a Revit `ViewType` name such as `FloorPlan`, to keep only views of that type; not valid with `active` or `3d`), except in `screen` mode when one of them is the active view; a digits-only selector is tried as an id first, then as a name. Saved under `%APPDATA%\pyRevit\agent\captures`. |
-| `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` appends a folder of the agent's own modules to `sys.path`, after the library paths, so its modules don't take precedence over standard library or pyRevit modules by path order; they are re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
+| `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` appends a folder of the agent's own modules to `sys.path`, after the library paths, so its modules don't take precedence over standard library or pyRevit modules by path order (give them unique names: a name a library module has resolves to the library); they are re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
 | `run_modify` | after approval | Run a changing script against the active document; it is refused when no document is active. `dry_run=true` previews the change set and rolls back. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
 | `get_recording` | no | A [session recording](#session-recorder) the user made: a JSON timeline of element changes, pyRevit commands and output, logs, extension breadcrumbs and screenshot files. Without `recording_id` it lists recent recordings. Works without Revit |
@@ -142,10 +145,13 @@ transaction because the Revit API requires one, and that state isn't saved with 
 model. The agent is told to use it rather than writing `run_modify` scripts to show
 things. Because they change view state or write files, `show_elements`,
 `navigate_revit_link` and `capture_view` are annotated for MCP clients as neither
-read-only nor destructive. `run_query`, `run_modify` and `run_automation` are
-annotated as open-world, because the script they run can reach the network, the file
-system and other processes, and none of the three is annotated read-only. `run_query` and
-`run_modify` are annotated destructive. Clients should ask the user to approve each call.
+read-only nor destructive. `run_query` and `run_modify` are annotated open-world and
+destructive, and not read-only, because the script they run can reach the network, the file
+system and other processes. `run_automation` is annotated read-only and closed-world: it only
+invokes shipped operations marked `query` or `pure` that open no transaction, and the run is a
+rolled-back query. That annotation reflects the marker contract, not a sandbox: the marker
+limits an operation's mode and transactions, not what the Python it calls can reach. Clients
+should ask the user to approve each run call.
 
 `run_query` and `run_modify` return a compact result for the agent: `status`, then
 `error` (when present), `decision`, `result` and `output`. The non-empty change set,
@@ -642,7 +648,10 @@ pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --ow
 `capture`, `inspect` and `lookup` are the CLI forms of the `capture_view`, `inspect_elements` and `lookup_revit_api` tools, for clients without MCP. `capture` takes the view the way the tool does (a name, sheet number or id; the active view without one; `3d` for a temporary 3D view; `--view-type=FloorPlan` and the like keep only views of that type when a name is shared, as `view_type` does) and prints the host's answer without the image data. The host keeps the PNG under `%APPDATA%\pyRevit\agent\captures`; `--out` writes it to a file of your choice as well, and `path` in the output then names that file. `inspect` takes up to 50 element ids of the active document.
 
 `--timeout` defaults to 300 and is capped at 3600; [reckless mode](#reckless-mode) ignores it.
-`--workspace` must be an existing local folder; network (UNC) paths are refused, and so is a folder that is a link or junction or sits behind one.
+`--workspace` must be an existing local folder; network (UNC) paths are refused, and so is a folder that is a link or junction or sits behind one (the error names the link). The
+check runs when the request is parsed, not at import time, and a workspace under a linked or
+cloud-synced folder is refused too. Give workspace modules unique names: the folder is last on
+`sys.path`, so a name a library module has resolves to the library.
 
 When its output is redirected to a pipe or file, the CLI writes UTF-8 without a BOM for every command. Readers must decode it as UTF-8; in PowerShell, set `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` first, or a legacy code page shows non-ASCII text as mojibake. In Windows PowerShell 5.1, `>` is equivalent to `Out-File` with no parameters, which writes UTF-16LE, so to keep the CLI's UTF-8 bytes redirect in `cmd` (`cmd /c "pyrevit ... > out.json"`) or pipe to `Out-File -Encoding utf8`. Read a BOM-less UTF-8 file with `Get-Content -Encoding UTF8`, because Windows PowerShell 5.1 otherwise decodes it with the system's active (ANSI) code page, which `[Console]::OutputEncoding` does not change.
 
@@ -937,11 +946,14 @@ user can connect to the host and submit scripts.
 
 The pipe name is `pyrevit-agent-<pid>-<nonce>`, where the nonce is 32 random hex characters
 chosen at host start and recorded in the instance file, so another process can't guess the
-name and create the pipe first. The pipe also refuses remote clients outright. The CLI
+name and create the pipe first. On .NET Framework the host also creates the pipe with the
+reject-remote-clients flag; that path has no automated test. The CLI
 refuses to send a request unless the registered name has that form (the older
 `pyrevit-agent-<pid>` form is still accepted for one release), the process serving the pipe is
-the Revit recorded in the instance file, and that process runs as the current user; a process
-whose owner can't be read counts as another user's. This keeps a request from reaching a pipe
+the Revit recorded in the instance file, and that process runs as the current user (compared by
+user SID, so an elevated Revit of the same user matches). A process whose owner can't be read is
+refused with its own message. Whether a non-elevated CLI can read an elevated process's owner is
+unverified; the host never runs elevated. This keeps a request from reaching a pipe
 another local process created while the host was down. It does not stop a process of the same
 user, which is inside the trust boundary above.
 
