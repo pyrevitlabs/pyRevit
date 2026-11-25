@@ -692,7 +692,7 @@ namespace pyRevitCLI {
         private static JObject WorkspaceProperty() {
             return new JObject {
                 ["type"] = "string",
-                ["description"] = "Absolute path of a folder with your own helper modules (plan data, functions). It is on sys.path for the run and its modules are re-imported fresh every run, so `import house_plan` sees your latest edits.",
+                ["description"] = "Absolute path of a folder with your own helper modules (plan data, functions). It is appended to sys.path for the run, after the library paths, so give its modules unique names: a name that a library module already has resolves to the library. Its modules are re-imported fresh every run, so `import house_plan` sees your latest edits.",
             };
         }
 
@@ -777,9 +777,9 @@ namespace pyRevitCLI {
                         arguments.Value<int?>("offset") ?? 0,
                         arguments.Value<int?>("limit") ?? 25)),
 
-                new McpTool("run_automation", readOnly: false, destructive: false, new[] { "id", "inputs" },
+                new McpTool("run_automation", readOnly: true, new[] { "id", "inputs" },
                     () => ("Run a reviewed read-only automation operation (invocable in list_automation) with the inputs it lists. "
-                        + "Runs as a query, so model changes are rolled back. This does not accept Python source, module names or callable names.",
+                        + "Only operations marked query or pure that open no transaction can be invoked, and the run is a query, so model changes are rolled back. The operations are shipped pyRevit and rpw functions that read the model; the marker limits their mode and transactions, not what the Python they call can reach. This does not accept Python source, module names or callable names.",
                         new JObject {
                             ["id"] = new JObject { ["type"] = "string", ["description"] = "Invocable automation identifier, such as pyrevit.units.parse-length." },
                             ["inputs"] = new JObject { ["type"] = "object", ["description"] = "Operation input object." },
@@ -788,7 +788,7 @@ namespace pyRevitCLI {
                             ["document"] = DocumentProperty(),
                             ["revit"] = RevitProperty(),
                         }),
-                    RunAutomation, openWorld: true),
+                    RunAutomation),
 
                 new McpTool("lookup_revit_api", readOnly: true, new string[0],
                     () => ("Look up a Revit API type or member in the running Revit version, e.g. 'Wall', 'Autodesk.Revit.DB.Wall', 'Wall.Create', 'ElementId.Value'. Returns signatures, enum values and obsolete markers. "
