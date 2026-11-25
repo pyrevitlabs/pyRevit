@@ -227,6 +227,17 @@ function they mark.
     times out, raise its MCP tool timeout (Claude Code: the `MCP_TOOL_TIMEOUT`
     environment variable, in milliseconds).
 
+!!! note "While the prompt is open"
+
+    Revit's taskbar button flashes (`FlashWindowEx`) until the prompt closes, and it can
+    also stop earlier when Revit comes to the front. The prompt holds Revit's main thread, so other
+    ExternalEvent add-ins such as Routes wait until it is answered, and other agent requests wait
+    or get `revit_busy`. For unattended automation, set `policy = auto` before starting Revit.
+    Switching from `ask` to `auto` while Revit is running makes the next modify run ask you to
+    confirm the change, so answer that before leaving Revit unattended.
+    Unattended agents also need a session: start one before you leave, or set
+    `[agent] session_start` to `auto`.
+
 ### Sessions and the agent panel
 
 The **pyRevit Agent** panel is a dockable pane where the user decides when agents may work.
