@@ -10883,7 +10883,7 @@
 <p>Hold <span class="keys"><kbd class="key-shift">Shift</kbd></span> while clicking <strong>Next</strong> or <strong>Prev</strong> to move ten elements instead of one.</p>
 </div>
 <h2 id="saving-the-memory-as-a-selection-filter">Saving the memory as a selection filter</h2>
-<p><strong>Save Memory as Selection</strong> turns the memory into a Revit selection filter named <code>SavedSelection_&lt;project name&gt;_&lt;time stamp&gt;</code> and tells you its name. The filter is created in one step, so a single undo removes it. Elements that no longer exist are left out. If Revit rejects the change, you are told that no filter was saved.</p>
+<p><strong>Save Memory as Selection</strong> turns the memory into a Revit selection filter named <code>SavedSelection_&lt;project name&gt;_&lt;time stamp&gt;</code> and tells you its name. The filter is created in one step, so a single undo removes it. Elements that no longer exist are left out. If Revit rejects the change when it commits, you are told that no filter was saved. If Revit raises an error while it creates the filter or sets its elements, for example because the name already exists, the command stops with that error and does not show this message.</p>
 <p><img alt="Selection filter saved" src="../../assets/tools/selection-memory/save-as-selection-filter.png" /></p>
 <h2 id="purging-all-memory-files">Purging all memory files</h2>
 <p><strong>Purge Memory Files</strong> deletes every <code>.pym</code> file of the running Revit version, for all documents, and lists what it removed. It works without an open document.</p>
