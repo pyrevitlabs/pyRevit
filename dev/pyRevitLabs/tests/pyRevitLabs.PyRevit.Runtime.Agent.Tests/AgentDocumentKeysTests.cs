@@ -1,6 +1,8 @@
 using Autodesk.Revit.DB;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public sealed class AgentDocumentKeysTests {
         private readonly AgentDocumentKeys keys = new AgentDocumentKeys();
 

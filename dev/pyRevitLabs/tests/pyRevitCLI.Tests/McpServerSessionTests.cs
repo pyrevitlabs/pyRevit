@@ -2,6 +2,8 @@ using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public partial class McpServerTests {
     private static JObject Session(string state) {
         return new JObject { ["required"] = true, ["state"] = state };

@@ -3,6 +3,8 @@ using pyRevitLabs.Json.Linq;
 namespace pyRevitCLI.Tests;
 
 [Collection(CliGlobalState.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public sealed class AgentSessionCommandTests : IDisposable {
     private readonly FakeAgentHost host = new FakeAgentHost();
 

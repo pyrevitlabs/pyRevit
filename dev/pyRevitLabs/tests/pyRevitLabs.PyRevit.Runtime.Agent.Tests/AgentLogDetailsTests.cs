@@ -3,6 +3,8 @@ using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public sealed class AgentLogDetailsTests {
         private static JArray Elements(int count, string category) {
             return new JArray(Enumerable.Range(1, count).Select(index => new JObject {
