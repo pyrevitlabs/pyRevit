@@ -426,6 +426,17 @@ class AgentRunnerLinesTests(unittest.TestCase):
         module_file = os.path.join(sys.prefix, "Lib", "io.py")
         self.assertTrue(self.runner._is_runtime_module(module_file))
 
+    def test_workspace_goes_after_the_library_paths_on_sys_path(self):
+        """A workspace module can't shadow a module an earlier path entry provides."""
+        folder = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, folder, True)
+        saved_path = list(sys.path)
+        self.addCleanup(lambda: sys.path.__setitem__(slice(None), saved_path))
+        added = self.runner._enter_workspace(folder)
+        self.assertEqual(folder, added)
+        self.assertEqual(folder, sys.path[-1])
+        self.assertEqual(saved_path, sys.path[:-1])
+
     def test_compile_reports_whether_loops_are_guarded(self):
         """Guard loops only when asked, and report it."""
         source = "for item in range(2):\n    pass\n"

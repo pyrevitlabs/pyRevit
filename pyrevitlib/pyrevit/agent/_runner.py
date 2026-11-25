@@ -1722,7 +1722,10 @@ def _build_namespace(context):
 
 
 def _enter_workspace(workspace):
-    """Put the agent's workspace folder on sys.path with its modules unloaded.
+    """Append the agent's workspace folder to sys.path with its modules unloaded.
+
+    The folder goes last so a workspace module can't shadow a standard library
+    or pyRevit module of the same name.
 
     The script engine is reused between runs, so a module imported from the
     workspace would otherwise keep the code of the first run that imported
@@ -1734,7 +1737,7 @@ def _enter_workspace(workspace):
     _unload_modules_under(workspace)
     added = workspace not in sys.path
     if added:
-        sys.path.insert(0, workspace)
+        sys.path.append(workspace)
     return workspace if added else None
 
 

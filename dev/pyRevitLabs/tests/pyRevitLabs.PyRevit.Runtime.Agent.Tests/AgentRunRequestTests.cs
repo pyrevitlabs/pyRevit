@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using PyRevitLabs.PyRevit.Runtime.Agent;
 using pyRevitLabs.Json.Linq;
@@ -32,6 +33,40 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             var folder = Path.GetTempPath();
 
             Assert.Equal(Path.GetFullPath(folder), AgentRunRequest.FromJson(Run(workspace: folder)).Workspace);
+        }
+
+        [Fact]
+        public void AWorkspaceThatIsOrIsBehindAJunctionIsRefused() {
+            var root = Path.Combine(Path.GetTempPath(), "agent-workspace-" + Guid.NewGuid().ToString("N"));
+            var real = Path.Combine(root, "real");
+            var link = Path.Combine(root, "link");
+            Directory.CreateDirectory(Path.Combine(real, "inner"));
+            try {
+                Assert.True(TryCreateJunction(link, real, out var error), "mklink /J failed: " + error);
+
+                Assert.Equal("invalid_params", Assert.Throws<AgentException>(() => AgentRunRequest.FromJson(Run(workspace: link))).Code);
+                Assert.Equal("invalid_params", Assert.Throws<AgentException>(() => AgentRunRequest.FromJson(Run(workspace: Path.Combine(link, "inner")))).Code);
+                Assert.Equal(real, AgentRunRequest.FromJson(Run(workspace: real)).Workspace);
+            }
+            finally {
+                if (Directory.Exists(link))
+                    Directory.Delete(link);
+                Directory.Delete(root, true);
+            }
+        }
+
+        private static bool TryCreateJunction(string link, string target, out string error) {
+            var start = new ProcessStartInfo("cmd.exe", $"/c mklink /J \"{link}\" \"{target}\"") {
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+            using (var process = Process.Start(start)) {
+                error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+                return process.ExitCode == 0;
+            }
         }
 
         [Fact]

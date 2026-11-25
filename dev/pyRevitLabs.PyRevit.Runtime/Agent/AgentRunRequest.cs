@@ -92,8 +92,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'inputs' must be an object.");
             var workspace = AgentParams.Get<string>(parameters, "workspace");
             var document = AgentDocumentBinding.Parse(parameters["document"]);
-            if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || IsNetworkOrDevicePath(workspace) || !Directory.Exists(workspace)))
-                throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing local folder.");
+            if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || IsNetworkOrDevicePath(workspace) || !Directory.Exists(workspace) || IsOrIsBehindReparsePoint(workspace)))
+                throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing local folder that is not a link or junction and is not behind one.");
             var timeoutSeconds = AgentParams.Get<double?>(parameters, "timeout_s") ?? DefaultTimeoutSeconds;
             if (double.IsNaN(timeoutSeconds) || timeoutSeconds <= 0 || timeoutSeconds > MaxTimeoutSeconds)
                 throw new AgentException("invalid_params", $"'timeout_s' must be more than 0 and at most {MaxTimeoutSeconds}.");
@@ -117,6 +117,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </remarks>
         private static bool IsNetworkOrDevicePath(string path) {
             return path.Length >= 2 && IsSeparator(path[0]) && IsSeparator(path[1]);
+        }
+
+        private static bool IsOrIsBehindReparsePoint(string path) {
+            for (var folder = new DirectoryInfo(Path.GetFullPath(path)); folder != null; folder = folder.Parent)
+                if (folder.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    return true;
+            return false;
         }
 
         private static bool IsSeparator(char character) {
