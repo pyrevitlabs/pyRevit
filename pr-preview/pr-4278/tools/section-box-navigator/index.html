@@ -11064,8 +11064,11 @@
 <h3 id="levels-and-grids">Levels and grids</h3>
 <p>To keep the picture readable, the preview shows the levels inside the box and the next one above and below it. For grids it shows those crossing the box and the next one beyond each side. <strong>All levels</strong> and <strong>All grids</strong> show everything. Choosing a grid with <strong>Align to grid</strong> also shows all grids. Snapping always considers every level and grid.</p>
 <h3 id="which-elements-are-shown">Which elements are shown</h3>
-<p>The preview follows the <strong>phase</strong>, <strong>phase filter</strong> and <strong>design options</strong> of the view, and loads the model again when you switch to a view that differs.</p>
+<p>The preview follows the <strong>detail level</strong>, <strong>phase</strong>, <strong>phase filter</strong> and <strong>design options</strong> of the view, and loads the model again when one of them changes or you switch to a view that differs.</p>
 <ul>
+<li>At <strong>Coarse</strong> and <strong>Medium</strong>, Revit gives pyRevit only lines for some elements, without a 3D shape, and the preview leaves them out. In the Snowdon Towers Plumbing sample that comes with Revit, these are pipe fittings and pipe accessories at both levels, and duct fittings at Coarse. Set the view to <strong>Fine</strong> to see them. Other families can behave differently.</li>
+<li>The preview is not a copy of the view: for example, it shows pipes with a 3D shape at Coarse and Medium, where the view draws them as lines.</li>
+<li>A view whose phase filter is <strong>None</strong> shows every phase.</li>
 <li>Each design option set shows its primary option, unless the view is dedicated to an option, or you are editing one. Choices made on the <strong>Design Options</strong> tab of Visibility/Graphics are not available to pyRevit.</li>
 <li>Linked models show their primary design options and are not filtered by phase.</li>
 <li>Visibility/Graphics, view filters and hidden elements are not applied, so you can drag the box over geometry the view hides.</li>
@@ -11116,7 +11119,8 @@
 <p>The navigator remembers these settings, the nudge amounts and the preview's display settings.</p>
 <h2 id="troubleshooting">Troubleshooting</h2>
 <p><strong>The window opens too small.</strong> The navigator remembers its size and position. Resize the window once and it opens at that size from then on. To go back to the default size, close the navigator and delete the file ending in <code>last_window_position_Section Box Navigator.pym</code> in <code>%APPDATA%\pyRevit\&lt;Revit version&gt;</code>. Do not use <code>pyrevit caches clear</code> for this: it closes running Revit sessions and deletes all stored pyRevit data of that version.</p>
-<p><strong>Elements are missing from the 3D preview.</strong> Check the category list on the right: the category may be unticked, or show elements as <strong>not loaded</strong>. Rooms and spaces start unticked. Elements of another phase or of a design option the view does not show are left out on purpose.</p>
+<p><strong>Pipe or duct fittings are missing from the 3D preview.</strong> Set the detail level of the view to <strong>Fine</strong>. See <a href="#which-elements-are-shown">Which elements are shown</a>.</p>
+<p><strong>Other elements are missing from the 3D preview.</strong> Check the category list on the right: the category may be unticked, or show elements as <strong>not loaded</strong>. Rooms and spaces start unticked. Elements of another phase or of a design option the view does not show are left out on purpose.</p>
 
 
 
