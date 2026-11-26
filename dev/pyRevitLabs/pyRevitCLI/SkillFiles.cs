@@ -414,8 +414,9 @@ namespace pyRevitCLI {
         /// <remarks>
         /// Only folders older than <see cref="StaleTempAge"/> are touched, so a run in progress is left alone.
         /// A leftover is restored or deleted only when its marker is valid and its content matches the marker
-        /// digest; its recorded name must be a valid skill name. Anything else is kept with a warning. Links,
-        /// and folders that contain one, are never followed.
+        /// digest; its recorded name must be a valid skill name. An old leftover without a marker (a copy killed before the
+        /// marker was written) is deleted when it holds only markdown files and folders. Anything else is kept
+        /// with a warning. Links, and folders that contain one, are never followed.
         /// </remarks>
         internal static List<string> SweepTemp(string skillsDir, bool restore) {
             var warnings = new List<string>();
@@ -427,9 +428,18 @@ namespace pyRevitCLI {
                         Directory.Delete(directory);
                         continue;
                     }
-                    var check = Check(directory, ReadMarker);
-                    if (check.Marker == null || ContainsLink(directory))
+                    if (ContainsLink(directory)) {
+                        warnings.Add($"Kept {directory}: it is a leftover of an interrupted run but it contains a link.");
                         continue;
+                    }
+                    var check = Check(directory, ReadMarker);
+                    if (check.Marker == null) {
+                        if (IsPartialCopy(directory))
+                            Directory.Delete(directory, recursive: true);
+                        else
+                            warnings.Add($"Kept {directory}: it is a leftover of an interrupted run but holds files other than markdown.");
+                        continue;
+                    }
                     if (!check.Intact) {
                         warnings.Add($"Kept {directory}: it is a leftover of an interrupted run but its content does not match its marker.");
                         continue;
@@ -447,6 +457,11 @@ namespace pyRevitCLI {
                 }
             }
             return warnings;
+        }
+
+        private static bool IsPartialCopy(string directory) {
+            return Directory.GetFiles(directory).All(file => file.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+                && Directory.GetDirectories(directory).All(IsPartialCopy);
         }
 
         /// <summary>

@@ -129,4 +129,61 @@ public class AgentSkillUninstallTests : SkillInstallFixture {
         Assert.False(Directory.Exists(Skills(project, ".agents", "x")));
         Assert.False(Directory.Exists("C:/Windows/Temp/x"));
     }
+
+    private string UnmarkedLeftover(bool aged, params string[] files) {
+        var leftover = Directory.CreateDirectory(AgentsSkill(".pyrevit-tmp-partial")).FullName;
+        foreach (var file in files) {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(leftover, file)));
+            File.WriteAllText(Path.Combine(leftover, file), "partial");
+        }
+        if (aged)
+            Age(leftover);
+        return leftover;
+    }
+
+    [Fact]
+    public void AFreshUnmarkedLeftoverIsLeftAlone() {
+        var leftover = UnmarkedLeftover(aged: false, "SKILL.md");
+
+        var report = Install();
+
+        Assert.True(Directory.Exists(leftover));
+        Assert.DoesNotContain(report.Warnings, warning => warning.Contains(leftover));
+    }
+
+    [Fact]
+    public void AnAgedUnmarkedLeftoverMadeOfMarkdownIsDeleted() {
+        var leftover = UnmarkedLeftover(aged: true, "SKILL.md", Path.Combine("refs", "extra.md"));
+
+        Install();
+
+        Assert.False(Directory.Exists(leftover));
+    }
+
+    [Fact]
+    public void AnAgedUnmarkedLeftoverWithAnotherFileIsKeptWithAWarning() {
+        var leftover = UnmarkedLeftover(aged: true, "SKILL.md", "notes.txt");
+
+        var installed = Install();
+        var removed = Uninstall(force: true);
+
+        Assert.True(File.Exists(Path.Combine(leftover, "notes.txt")));
+        Assert.Contains(installed.Warnings, warning => warning.Contains(leftover));
+        Assert.Contains(removed.Warnings, warning => warning.Contains(leftover));
+    }
+
+    [LinkFact]
+    public void AnAgedUnmarkedLeftoverHoldingALinkIsKeptWithAWarningAndNeverFollowed() {
+        var elsewhere = Directory.CreateDirectory(Path.Combine(temp, "elsewhere")).FullName;
+        File.WriteAllText(Path.Combine(elsewhere, "keep.md"), "keep");
+        var leftover = UnmarkedLeftover(aged: false, "SKILL.md");
+        MakeJunction(Path.Combine(leftover, "linked"), elsewhere);
+        Age(leftover);
+
+        var report = Install();
+
+        Assert.True(Directory.Exists(leftover));
+        Assert.True(File.Exists(Path.Combine(elsewhere, "keep.md")));
+        Assert.Contains(report.Warnings, warning => warning.Contains(leftover));
+    }
 }
