@@ -386,6 +386,7 @@ namespace pyRevitCLI {
                             { "show",                   "Print the record of an agent run" },
                             { "record",                 "Start, stop or check a session recording of what happens in Revit" },
                             { "recordings",             "List recent session recordings" },
+                            { "skills",                 "Install, check or remove the shipped agent skills in the skill folders of other coding agents" },
                         },
                         options: new Dictionary<string, string>() {
                             { "--json",                 "Print status as json" },
@@ -413,6 +414,11 @@ namespace pyRevitCLI {
                             { "--max-screenshots=<count>", "Most screenshots in one recording, 0 to 100 (default 20)" },
                             { "--max-events=<count>",   "Most events in one recording, 1 to 20000 (default 5000)" },
                             { "--max-duration=<seconds>", "Stop the recording after this long, 1 to 14400 (default 1800)" },
+                            { "--scope=<scope>",        "project (default) or user, for 'agent skills'" },
+                            { "--target=<targets>",     "Comma-separated agents (default), antigravity, claude, copilot, opencode, for 'agent skills'" },
+                            { "--path=<folder>",        "Project folder for the project scope (default: current folder); never the skills folder itself" },
+                            { "--force",                "Replace a pyRevit-installed skill that was edited by hand; never touches a folder pyRevit did not write" },
+                            { "--prefix",               "Install a skill whose name is taken by another folder as pyrevit-<name>" },
                         });
 
                 case PyRevitCLICommandType.Mcp:

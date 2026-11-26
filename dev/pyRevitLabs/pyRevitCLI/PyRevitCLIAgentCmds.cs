@@ -383,6 +383,85 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
+        /// <c>pyrevit agent skills install</c>: copies the shipped skills into the skill folders of the
+        /// chosen targets and prints what was installed, refreshed or skipped.
+        /// </summary>
+        /// <remarks>
+        /// Writes below the project folder (<paramref name="path"/> or the current folder) or the user
+        /// profile, never anywhere else; see <see cref="PyRevitAgentSkillInstaller"/>.
+        /// </remarks>
+        public static void InstallSkills(string scope, string targets, string path, bool force, bool prefix) {
+            var report = PyRevitAgentSkillInstaller.Install(
+                PyRevitAgentSkillInstaller.ParseTargets(targets), scope, SkillsProjectRoot(scope, path), SkillsHome(), ShippedSkills(), force, prefix);
+            PrintSkillsReport(report);
+            foreach (var warning in PyRevitAgentSkillInstaller.UserSkillWarnings(UserSkillsToCheck()))
+                Console.WriteLine("Warning: " + warning);
+            Console.WriteLine("Claude Code reads .claude/skills (add --target=claude). The Antigravity CLI needs '/skills reload' after an install.");
+        }
+
+        /// <summary>
+        /// <c>pyrevit agent skills status</c>: prints whether each shipped skill is current, stale, edited,
+        /// missing or blocked by a folder pyRevit did not write. A stale copy is a warning, not an error.
+        /// </summary>
+        public static void PrintSkillsStatus(string scope, string targets, string path, bool json) {
+            var report = PyRevitAgentSkillInstaller.Status(
+                PyRevitAgentSkillInstaller.ParseTargets(targets), scope, SkillsProjectRoot(scope, path), SkillsHome(), ShippedSkills());
+            report.Warnings.AddRange(PyRevitAgentSkillInstaller.UserSkillWarnings(UserSkillsToCheck()));
+            if (json) {
+                Console.WriteLine(new JObject {
+                    ["skills"] = new JArray(report.Actions.Select(action => new JObject {
+                        ["target"] = action.Target,
+                        ["skill"] = action.Skill,
+                        ["state"] = action.State,
+                        ["folder"] = action.Folder,
+                    })),
+                    ["warnings"] = new JArray(report.Warnings),
+                }.ToString(Formatting.Indented));
+                return;
+            }
+            PrintSkillsReport(report);
+            if (report.Actions.Any(action => action.State == "stale"))
+                Console.WriteLine("Warning: some installed skills are stale. Run 'pyrevit agent skills install' to refresh them.");
+        }
+
+        /// <summary>
+        /// <c>pyrevit agent skills uninstall</c>: removes the pyRevit-owned skill folders of the chosen targets.
+        /// </summary>
+        public static void UninstallSkills(string scope, string targets, string path) {
+            var report = PyRevitAgentSkillInstaller.Uninstall(
+                PyRevitAgentSkillInstaller.ParseTargets(targets), scope, SkillsProjectRoot(scope, path), SkillsHome());
+            PrintSkillsReport(report);
+            if (report.Actions.Count == 0)
+                Console.WriteLine("No pyRevit skills found to remove.");
+        }
+
+        private static void PrintSkillsReport(SkillsReport report) {
+            foreach (var action in report.Actions)
+                Console.WriteLine($"{action.State,-9} {action.Skill} ({action.Target}: {action.Folder})");
+            foreach (var warning in report.Warnings)
+                Console.WriteLine("Warning: " + warning);
+        }
+
+        private static string SkillsProjectRoot(string scope, string path) {
+            if (scope == PyRevitAgentSkillInstaller.ScopeUser && path != null)
+                throw new PyRevitException("--path is the project folder and cannot be combined with --scope=user.");
+            return path ?? Environment.CurrentDirectory;
+        }
+
+        private static string SkillsHome() {
+            return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        }
+
+        private static string ShippedSkills() {
+            return PyRevitAgentSkills.ShippedSkillsDir
+                ?? throw new PyRevitException("The shipped agent skills were not found next to this pyrevit.exe or in a registered clone.");
+        }
+
+        private static string UserSkillsToCheck() {
+            return PyRevitConfigs.GetAgentUserSkillsEnabled() ? PyRevitAgentSkills.UserSkillsDir : null;
+        }
+
+        /// <summary>
         /// Registers <c>pyrevit mcp</c> with an MCP client.
         /// </summary>
         /// <remarks>
