@@ -7,6 +7,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Build.Tests;
 
 [TestClass]
+[TestCategory("HostFree")]
+[TestCategory("Unit")]
 public sealed class TestSignatureDetectorTests {
     [TestMethod]
     [DataRow("CN=pyRevit Local Dev (BOX)", true)]

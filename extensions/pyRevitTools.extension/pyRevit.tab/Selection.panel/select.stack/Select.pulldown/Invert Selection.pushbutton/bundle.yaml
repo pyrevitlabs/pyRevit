@@ -18,38 +18,34 @@ tooltip:
 
     Shift 키를 누르고 클릭:
     상위 그룹 요소 대신 그룹 구성원을 선택합니다.
-  fr_fr: >-
+  fr_fr: |-
     Inverse la sélection dans la vue active
 
     Maj+clic :
-
     Sélectionnez les membres du groupe au lieu des éléments du groupe parent
-  ru: >-
+  ru: |-
     Инвертирует выделение в текущем виде.
 
-    Щелчок с удержанием клавиши Shift:
-
+    Shift + Щелчок:
     Выделить члены группы вместо элементов родительской группы.
   chinese_s: |-
     反转活动视图中的选择。
 
     按住 Shift 键单击：
     选择组成员而不是其父组图元。
-  es_es: >-
+  es_es: |-
     Invierte la selección en la vista activa
 
     Mayús-clic:
-
     Seleccionar miembros del grupo en lugar de elementos del grupo padre
   de_de: |-
     Kehrt die Auswahl in der aktiven Ansicht um.
 
     Bei gedrückter Umschalttaste klicken:
     Wählt Gruppenmitglieder statt der übergeordneten Gruppenelemente aus.
-  pt_br: >-
+  pt_br: |-
     Inverte a seleção na vista ativa
 
     Clique mantendo a tecla Shift pressionada:
-
     Selecionar membros do grupo em vez de elementos do grupo pai
 context: selection

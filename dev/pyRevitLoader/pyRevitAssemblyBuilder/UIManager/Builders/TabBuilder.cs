@@ -1,9 +1,12 @@
 #nullable enable
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.UI;
 using Autodesk.Windows;
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
 
 namespace pyRevitAssemblyBuilder.UIManager.Builders
@@ -13,18 +16,28 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
     /// </summary>
     public class TabBuilder : ITabBuilder
     {
+        private static readonly ConcurrentDictionary<string, string> AppliedTitles =
+            new ConcurrentDictionary<string, string>();
+
         private readonly ILogger _logger;
         private readonly UIApplication _uiApp;
+        private readonly ITabIconDecorator _tabIconDecorator;
+        private readonly bool _showTabIcons;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TabBuilder"/> class.
         /// </summary>
         /// <param name="uiApp">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
-        public TabBuilder(UIApplication uiApp, ILogger logger)
+        /// <param name="tabIconDecorator">Must be the instance <see cref="SessionManagerService"/> resets and refreshes around each UI build.</param>
+        /// <param name="showTabIcons">When <c>false</c>, no tab icon is recorded, so the decorator's
+        /// refresh removes any icon a previous session drew.</param>
+        public TabBuilder(UIApplication uiApp, ILogger logger, ITabIconDecorator tabIconDecorator, bool showTabIcons = true)
         {
             _uiApp = uiApp ?? throw new ArgumentNullException(nameof(uiApp));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _tabIconDecorator = tabIconDecorator ?? throw new ArgumentNullException(nameof(tabIconDecorator));
+            _showTabIcons = showTabIcons;
         }
 
         /// <inheritdoc/>
@@ -36,8 +49,8 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 return null;
             }
 
-            // Use localized title which handles fallback to DisplayName
-            var tabText = ExtensionParser.GetComponentTitle(component);
+            var tabText = component.DisplayName;
+            var tabTitle = ExtensionParser.GetComponentTitle(component);
 
             try
             {
@@ -59,9 +72,8 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 var ribbon = ComponentManager.Ribbon;
                 if (ribbon?.Tabs == null) return null;
 
-                // Primary search: exact Title or Id match
-                var existingTab = ribbon.Tabs.FirstOrDefault(t =>
-                    t.Title == tabText || t.Id == tabText);
+                var existingTab = ribbon.Tabs.FirstOrDefault(t => t.Id == tabText)
+                    ?? ribbon.Tabs.FirstOrDefault(t => t.Title == tabText);
 
                 // Fallback: tab was renamed by a script (e.g. translation) so Title no
                 // longer matches. Search by pyRevit Tag (set during the previous session)
@@ -79,6 +91,13 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     existingTab.Tag = UIManagerConstants.PyRevitTabIdentifier;
                     existingTab.IsVisible = true;
                     existingTab.IsEnabled = true;
+                    ApplyTabIcon(existingTab, component);
+
+                    if (ShouldApplyTitle(existingTab, tabText, tabTitle))
+                    {
+                        existingTab.Title = tabTitle;
+                        AppliedTitles[tabText] = tabTitle;
+                    }
 
                     // Detect rename: if the current Title differs, return it so the
                     // caller can dual-mark the scanner registry under both names.
@@ -95,6 +114,50 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             }
 
             return renamedTitle;
+        }
+
+        private void ApplyTabIcon(RibbonTab tab, ParsedComponent component)
+        {
+            if (!_showTabIcons)
+                return;
+
+            var lightIconPath = FirstRasterIconPath(component.Icons?.LightIcons);
+            var darkIconPath = FirstRasterIconPath(component.Icons?.DarkIcons);
+            if (lightIconPath == null && darkIconPath == null)
+                return;
+
+            try
+            {
+                var currentSource = _tabIconDecorator.GetIconSource(tab);
+                if (currentSource == null)
+                {
+                    _tabIconDecorator.TryAddIcons(tab, component.Directory, lightIconPath, darkIconPath);
+                }
+                else if (!string.Equals(currentSource, component.Directory, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.Error(
+                        $"Tab '{tab.Title}' already shows the icon from '{currentSource}'; " +
+                        $"the icon in '{component.Directory}' is ignored. Keep a tab icon in only one extension.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to apply icon to tab '{tab.Title}'. Exception: {ex.Message}");
+            }
+        }
+
+        private static string? FirstRasterIconPath(IEnumerable<ComponentIcon>? icons) =>
+            icons?.FirstOrDefault(i =>
+                i.IsValid && !string.Equals(i.Extension, ".svg", StringComparison.OrdinalIgnoreCase))?.FilePath;
+
+        private static bool ShouldApplyTitle(RibbonTab tab, string tabName, string tabTitle)
+        {
+            if (string.IsNullOrEmpty(tabTitle) || tab.Title == tabTitle)
+                return false;
+
+            return AppliedTitles.TryGetValue(tabName, out var appliedTitle)
+                ? appliedTitle == tab.Title
+                : tab.Title == tabName;
         }
 
         /// <inheritdoc/>

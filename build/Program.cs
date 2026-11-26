@@ -8,6 +8,17 @@ using ModularPipelines.Extensions;
 
 PyRevitPaths.Initialize();
 
+if (args is ["test-catalog", var catalogPath, var outputPath])
+{
+    var requests = System.Text.Json.JsonSerializer.Deserialize<TestCatalogRequest[]>(File.ReadAllText(catalogPath))!;
+    var suites = requests.Select(request => new TestCatalogSuite(
+        request.Project,
+        request.Framework,
+        request.Sources.SelectMany(path => TestMetadata.Read(File.ReadAllText(path), path, request.Defines)).ToArray())).ToArray();
+    File.WriteAllText(outputPath, System.Text.Json.JsonSerializer.Serialize(suites));
+    return;
+}
+
 var builder = Pipeline.CreateBuilder(args);
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
@@ -54,7 +65,6 @@ if (modes.Ci)
     builder.Services.AddModule<BuildLoadersModule>();
     builder.Services.AddModule<BuildRuntimeModule>();
     builder.Services.AddModule<BuildRunnersModule>();
-    builder.Services.AddModule<TestConfigurationsModule>();
     builder.Services.AddModule<BuildShellModule>();
     builder.Services.AddModule<StageBinAssetsModule>();
     builder.Services.AddModule<BuildAutocompModule>();
@@ -70,6 +80,7 @@ if (modes.Packages)
     builder.Services.AddModule<RestoreStampedMetadataModule>();
     builder.Services.AddModule<BuildInstallersModule>();
     builder.Services.AddModule<BuildChocoModule>();
+    builder.Services.AddModule<StageStandaloneDoctorModule>();
 }
 
 if (modes.Sign || modes.Publish)
@@ -98,12 +109,16 @@ if (modes.Publish)
 {
     builder.Services.AddModule<GenerateReleaseNotesModule>();
     builder.Services.AddModule<PublishGithubReleaseModule>();
-    builder.Services.AddModule<PublishChocoModule>();
 }
 
 if (modes.Winget)
 {
     builder.Services.AddModule<PublishWingetModule>();
+}
+
+if (modes.Choco)
+{
+    builder.Services.AddModule<PublishChocoModule>();
 }
 
 if (modes.Notify)

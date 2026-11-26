@@ -1,14 +1,15 @@
 """Revit events handler management."""
 
 # pylint: disable=unused-argument
-from collections import deque
+from System import Action
 from System.Collections import ArrayList, Hashtable
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
-from pyrevit import compat, PyRevitCPythonNotSupported
+from pyrevit import compat
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.runtime.types import ApiContextQueue
 
 
 mlogger = get_logger(__name__)
@@ -34,7 +35,7 @@ def _get_registered_handlers():
 class FuncAsEventHandler(UI.IExternalEventHandler):
     """Turns a function into an event handler."""
 
-    __namespace__ = EXEC_PARAMS.exec_id
+    __namespace__ = "pyrevit.revit.events"
 
     def __init__(self, handler_func, purge=True):
         self.name = "FuncAsEventHandler"
@@ -56,55 +57,155 @@ def create_handler(handler_func, handler_args_type):
     return framework.EventHandler[handler_args_type](handler_func)
 
 
+_EVENT_SOURCES = {
+    "doc-changed": (DB.Events, "DocumentChangedEventArgs", "app", "DocumentChanged"),
+    "doc-closed": (DB.Events, "DocumentClosedEventArgs", "app", "DocumentClosed"),
+    "doc-opened": (DB.Events, "DocumentOpenedEventArgs", "app", "DocumentOpened"),
+    "view-activated": (
+        UI.Events,
+        "ViewActivatedEventArgs",
+        "uiapp",
+        "ViewActivated",
+    ),
+    "selection-changed": (
+        UI.Events,
+        "SelectionChangedEventArgs",
+        "uiapp",
+        "SelectionChanged",
+    ),
+}
+
+
+def _event_args_type(event_name):
+    """Resolve the event-args type only when a handler is attached.
+
+    Note:
+        ``SelectionChangedEventArgs`` exists only in Revit 2023+, so resolving
+        it at import time would break ``pyrevit.revit`` on older hosts.
+    """
+    namespace, type_name, _, _ = _EVENT_SOURCES[event_name]
+    return getattr(namespace, type_name)
+
+
+def _clr_event(event_name):
+    """Return the event source object and its CLR ``EventInfo``.
+
+    Handlers are added and removed through ``EventInfo`` so the delegate itself
+    is subscribed. Revit returns a new ``Application`` wrapper on every access,
+    and CPython's ``-=`` only finds handlers added through the same wrapper.
+    """
+    _, _, source_name, clr_event_name = _EVENT_SOURCES[event_name]
+    source = getattr(HOST_APP, source_name)
+    return source, source.GetType().GetEvent(clr_event_name)
+
+
 def add_handler(event_name, handler_func):
-    event_handler = None
+    """Subscribe a function to a Revit event.
 
-    if event_name == "doc-changed":
-        event_handler = create_handler(handler_func, DB.Events.DocumentChangedEventArgs)
-        HOST_APP.app.DocumentChanged += event_handler
+    Requires Revit API context. The delegate is attached through the CLR
+    ``EventInfo``, so ``remove_handler`` can detach it although Revit returns a
+    new ``Application`` wrapper on every access.
 
-    elif event_name == "doc-closed":
-        event_handler = create_handler(handler_func, DB.Events.DocumentClosedEventArgs)
-        HOST_APP.app.DocumentClosed += event_handler
+    Args:
+        event_name (str): key such as ``doc-changed`` or ``selection-changed``.
+        handler_func (Callable): called with ``(sender, args)``.
 
-    elif event_name == "doc-opened":
-        event_handler = create_handler(handler_func, DB.Events.DocumentOpenedEventArgs)
-        HOST_APP.app.DocumentOpened += event_handler
-
-    elif event_name == "view-activated":
-        event_handler = create_handler(handler_func, UI.Events.ViewActivatedEventArgs)
-        HOST_APP.uiapp.ViewActivated += event_handler
-
-    elif event_name == "selection-changed":
-        if HOST_APP.is_older_than(2023):
-            mlogger.error("Not available in this Revit Version")
-            return
-        event_handler = create_handler(
-            handler_func, UI.Events.SelectionChangedEventArgs
-        )
-        HOST_APP.uiapp.SelectionChanged += event_handler
-
+    Returns:
+        (EventHandler | None): the subscribed delegate to pass to
+            ``remove_handler``; None for an unknown event name, or for
+            ``selection-changed`` before Revit 2023, which also logs an error.
+    """
+    if event_name not in _EVENT_SOURCES:
+        return None
+    if event_name == "selection-changed" and HOST_APP.is_older_than(2023):
+        mlogger.error("Not available in this Revit Version")
+        return None
+    event_handler = create_handler(handler_func, _event_args_type(event_name))
+    source, clr_event = _clr_event(event_name)
+    clr_event.AddEventHandler(source, event_handler)
     return event_handler
 
 
 def remove_handler(event_name, event_handler):
-    if event_name == "doc-changed":
-        HOST_APP.app.DocumentChanged -= event_handler
+    """Unsubscribe a delegate returned by ``add_handler``.
 
-    elif event_name == "doc-closed":
-        HOST_APP.app.DocumentClosed -= event_handler
+    Requires Revit API context. Does nothing for an unknown event name, and
+    logs an error for ``selection-changed`` before Revit 2023.
 
-    elif event_name == "doc-opened":
-        HOST_APP.app.DocumentOpened -= event_handler
+    Args:
+        event_name (str): the key the delegate was added under.
+        event_handler (EventHandler): the delegate ``add_handler`` returned.
+    """
+    if event_name not in _EVENT_SOURCES:
+        return
+    if event_name == "selection-changed" and HOST_APP.is_older_than(2023):
+        mlogger.error("Not available in this Revit Version")
+        return
+    source, clr_event = _clr_event(event_name)
+    clr_event.RemoveEventHandler(source, event_handler)
 
-    elif event_name == "view-activated":
-        HOST_APP.uiapp.ViewActivated -= event_handler
 
-    elif event_name == "selection-changed":
-        if HOST_APP.is_older_than(2023):
-            mlogger.error("Not available in this Revit Version")
-            return
-        HOST_APP.uiapp.SelectionChanged -= event_handler
+def replace_handler(slot, source, event_name, handler_func, handler_args_type):
+    """Subscribe to a CLR event, first detaching what ``slot`` subscribed before.
+
+    For smart button ``__selfinit__`` functions, which run again in a new
+    engine on every reload. A handler a previous load left subscribed fires
+    once more per reload, and keeps that engine and every module it imported
+    alive for the rest of the Revit session.
+
+    Args:
+        slot (str): process-wide key, unique to this subscription.
+        source (object): object raising the event, such as ``__rvt__``.
+        event_name (str): CLR event name, such as ``ViewActivated``.
+        handler_func (Callable): called with ``(sender, args)``.
+        handler_args_type (type): the event's ``EventArgs`` type.
+
+    Returns:
+        (EventHandler): the subscribed delegate.
+    """
+    release_handler(slot, source, event_name)
+    event_handler = create_handler(handler_func, handler_args_type)
+    source.GetType().GetEvent(event_name).AddEventHandler(source, event_handler)
+    framework.AppDomain.CurrentDomain.SetData(slot, event_handler)
+    return event_handler
+
+
+def release_handler(slot, source, event_name):
+    """Detach the delegate ``replace_handler`` subscribed under ``slot``.
+
+    A delegate whose detach fails is logged and moved out of the slot into a
+    retry list, so the next load still gets the slot while every later
+    release keeps trying to detach it until the detach succeeds.
+
+    Args:
+        slot (str): the key passed to ``replace_handler``.
+        source (object): object raising the event.
+        event_name (str): CLR event name.
+
+    Note:
+        The retry list lives in AppDomain data under ``slot + ":stale"`` and
+        must stay a CLR ``ArrayList``: each reload runs in a new engine.
+    """
+    domain = framework.AppDomain.CurrentDomain
+    stale_key = slot + ":stale"
+    pending = list(domain.GetData(stale_key) or [])
+    previous = domain.GetData(slot)
+    if previous is not None:
+        pending.append(previous)
+    if not pending:
+        return
+    clr_event = source.GetType().GetEvent(event_name)
+    still_attached = ArrayList()
+    try:
+        for event_handler in pending:
+            try:
+                clr_event.RemoveEventHandler(source, event_handler)
+            except Exception as ex:
+                mlogger.error("Could not release handler for %s: %s", slot, ex)
+                still_attached.Add(event_handler)
+    finally:
+        domain.SetData(slot, None)
+        domain.SetData(stale_key, still_attached if still_attached.Count else None)
 
 
 def register_handler(event_name, handler_func, handler_group_id):
@@ -208,52 +309,54 @@ def delayed_unregister_exec_handlers(handler_group_id):
         if isinstance(handler_group_id, (list, tuple, ArrayList))
         else [handler_group_id]
     )
-    HANDLER_UNREGISTERER.handler_group_id = handler_group_ids
-    ext_event = _get_unregisterer_extevent()
-    if ext_event is None:
-        mlogger.error(
-            "Could not create ExternalEvent; event handlers remain registered"
-        )
-        if HOST_APP.has_api_context:
-            _unregister_handler_groups(handler_group_ids)
+    error = _schedule_in_api_context(
+        lambda: _unregister_handler_groups(handler_group_ids)
+    )
+    if error is None:
         return
-    try:
-        response = ext_event.Raise()
-        if response in (
-            UI.ExternalEventRequest.Denied,
-            UI.ExternalEventRequest.TimedOut,
-        ):
-            mlogger.error(
-                "Could not unregister event handlers; "
-                "ExternalEvent request was {}".format(response)
-            )
-            if HOST_APP.has_api_context:
-                _unregister_handler_groups(handler_group_ids)
-    except Exception as ex:
-        mlogger.error("Could not unregister event handlers: {}".format(ex))
-        if HOST_APP.has_api_context:
-            _unregister_handler_groups(handler_group_ids)
-
-
-def _get_unregisterer_extevent():
-    # External events require API context, so retry creation on first use.
-    global HANDLER_UNREGISTERER_EXTEVENT
-    if HANDLER_UNREGISTERER_EXTEVENT is None:
-        try:
-            HANDLER_UNREGISTERER_EXTEVENT = UI.ExternalEvent.Create(
-                HANDLER_UNREGISTERER
-            )
-        except Exception:
-            HANDLER_UNREGISTERER_EXTEVENT = None
-    return HANDLER_UNREGISTERER_EXTEVENT
+    mlogger.error("Could not unregister event handlers: {}".format(error))
+    if HOST_APP.has_api_context:
+        _unregister_handler_groups(handler_group_ids)
 
 
 HANDLER_UNREGISTERER = FuncAsEventHandler(_unregister_handler_groups, purge=False)
-# Import can occur outside API context, so event creation may be deferred.
-try:
-    HANDLER_UNREGISTERER_EXTEVENT = UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
-except Exception:
-    HANDLER_UNREGISTERER_EXTEVENT = None
+"""Deprecated since 7.1: kept so code written against 7.0 still imports.
+
+Use ``delayed_unregister_exec_handlers`` instead. It is never passed to
+``ExternalEvent.Create``, so holding it does not keep this module or its
+engine alive across reloads.
+"""
+
+HANDLER_UNREGISTERER_EXTEVENT = None
+"""Deprecated since 7.1: always ``None``.
+
+Unregistering now goes through the runtime's shared ``ApiContextQueue``.
+"""
+
+
+def _schedule_in_api_context(callback):
+    """Queue a callback on the runtime's ExternalEvent shared by all engines.
+
+    Note:
+        Never create an ExternalEvent with a Python handler at import time:
+        Revit keeps the handler until the event is disposed, and the handler
+        keeps this engine and every module it imported alive after reloads.
+        The callback is wrapped in ``System.Action`` explicitly because
+        pythonnet does not convert a Python function to a delegate argument.
+
+    Returns:
+        (str | None): why the callback will never run, or None once queued.
+    """
+    try:
+        response = ApiContextQueue.Schedule(Action(callback))
+    except Exception as ex:
+        return str(ex)
+    if response in (
+        UI.ExternalEventRequest.Denied,
+        UI.ExternalEventRequest.TimedOut,
+    ):
+        return "ExternalEvent request was {}".format(response)
+    return None
 
 
 def handle(*args):  # pylint: disable=no-method-argument
@@ -282,51 +385,6 @@ def stop_events():
             delayed_unregister_exec_handlers(EXEC_PARAMS.exec_id)
 
 
-class _GenericExternalEventHandler(UI.IExternalEventHandler):
-    def __init__(self):
-        self._queue = deque()
-
-    def Execute(self, uiapp):
-        while self._queue:
-            fn = self._queue.popleft()
-            try:
-                fn()
-            except Exception as ex:
-                mlogger.error("ExternalEvent error: {}".format(ex))
-
-    def GetName(self):
-        return "GenericExternalEventHandler"
-
-    def schedule(self, func):
-        self._queue.append(func)
-
-    def discard(self, func):
-        try:
-            self._queue.remove(func)
-            return True
-        except ValueError:
-            return False
-
-
-if compat.IRONPY:
-    _HANDLER = _GenericExternalEventHandler()
-    # Import can occur outside API context, so event creation may be deferred.
-    try:
-        _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
-    except Exception:
-        _EXTERNAL_EVENT = None
-
-
-def _get_execute_extevent():
-    global _EXTERNAL_EVENT
-    if _EXTERNAL_EVENT is None:
-        try:
-            _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
-        except Exception:
-            _EXTERNAL_EVENT = None
-    return _EXTERNAL_EVENT
-
-
 def execute_in_revit_context(func, *args, **kwargs):
     """Execute a function in Revit API context using ExternalEvent.
 
@@ -344,8 +402,8 @@ def execute_in_revit_context(func, *args, **kwargs):
 
     Returns:
         (bool): True when the callback was queued; False when the
-            ExternalEvent could not be created or raised, in which case the
-            callback never runs.
+            ExternalEvent could not be raised, in which case the callback
+            never runs.
 
     Example:
         ```python
@@ -366,9 +424,6 @@ def execute_in_revit_context(func, *args, **kwargs):
         This function does not return values from the executed function.
         For return values, use callbacks or shared mutable objects.
     """
-    if not compat.IRONPY:
-        PyRevitCPythonNotSupported("pyrevit.revit.events.execute_in_revit_context")
-
     # Snapshot module-level imports from the function's globals at scheduling
     # time. When the ExternalEvent fires asynchronously, the IronPython engine
     # may have cleared the script scope (non-persistent engines) or module
@@ -393,6 +448,8 @@ def execute_in_revit_context(func, *args, **kwargs):
             g[k] = _saved_modules[k]
         try:
             func(*args, **kwargs)
+        except Exception as ex:
+            mlogger.error("ExternalEvent error: {}".format(ex))
         finally:
             for k, old in saved.items():
                 if old is _MISSING:
@@ -400,29 +457,8 @@ def execute_in_revit_context(func, *args, **kwargs):
                 else:
                     g[k] = old
 
-    _ext_event = _get_execute_extevent()
-    if _ext_event is None:
-        mlogger.error("Could not create ExternalEvent; scheduled callback will not run")
-        return False
-
-    _HANDLER.schedule(_wrapper)
-    try:
-        response = _ext_event.Raise()
-        if response in (
-            UI.ExternalEventRequest.Denied,
-            UI.ExternalEventRequest.TimedOut,
-        ):
-            _HANDLER.discard(_wrapper)
-            mlogger.error(
-                "Could not schedule callback; ExternalEvent request was {}".format(
-                    response
-                )
-            )
-            return False
-    except Exception as ex:
-        _HANDLER.discard(_wrapper)
-        mlogger.error(
-            "Could not schedule callback through ExternalEvent: {}".format(ex)
-        )
+    error = _schedule_in_api_context(_wrapper)
+    if error is not None:
+        mlogger.error("Could not schedule callback: {}".format(error))
         return False
     return True

@@ -1,8 +1,30 @@
-"""Read and Write Excel Files."""
+"""Read and Write Excel Files.
+
+The vendored xlrd reads both .xlsx and .xls workbooks and xlsxwriter writes
+them, on IronPython and CPython alike, so both engines return the same values.
+"""
 
 # pylint: disable=import-error
+import time
+import types
+
 import xlrd
 import xlsxwriter
+
+
+def _give_xlrd_a_clock():
+    """Restore the ``time.clock`` xlrd's .xls reader needs on Python 3.8+.
+
+    xlrd 1.1.0 times every .xls parse with ``time.clock``, which Python 3.8
+    removed, so each .xls load fails on CPython without it. Only
+    ``xlrd.book`` sees the replacement; the standard ``time`` module is left
+    untouched. A no-op on IronPython, which still has ``time.clock``.
+    """
+    if not hasattr(xlrd.book.time, "clock"):
+        xlrd.book.time = types.SimpleNamespace(clock=time.perf_counter, time=time.time)
+
+
+_give_xlrd_a_clock()
 
 
 def _read_xlsheet(xlsheet, columns=[], datatype=None, headers=True):

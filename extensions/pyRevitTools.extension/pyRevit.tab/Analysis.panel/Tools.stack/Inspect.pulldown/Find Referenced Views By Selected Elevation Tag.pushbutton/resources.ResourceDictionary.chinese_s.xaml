@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_elevation_tag">请选择一个立面标记。</sys:String>
+    <sys:String x:Key="table_title">立面标记引用的视图</sys:String>
+    <sys:String x:Key="column_detail_number">详图编号</sys:String>
+    <sys:String x:Key="column_name">名称</sys:String>
+    <sys:String x:Key="column_view_type">视图类型</sys:String>
+    <sys:String x:Key="column_template">样板</sys:String>
+    <sys:String x:Key="column_show">选择/显示图元</sys:String>
+    <sys:String x:Key="no_views">该立面标记未引用任何视图。</sys:String>
+    <sys:String x:Key="yes">是</sys:String>
+    <sys:String x:Key="no">否</sys:String>
+</ResourceDictionary>

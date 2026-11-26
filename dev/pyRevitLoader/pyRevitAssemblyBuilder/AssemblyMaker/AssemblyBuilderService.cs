@@ -82,6 +82,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 _buildStrategy.ToString(),
                 $"rocket:{rocketMode}",
                 $"rocket_compat:{extension.RocketModeCompatible}",
+                $"python_engine:{extension.DeclaredPythonEngine}",
                 $"builder:{GetAssemblyBuildFingerprint()}",
                 $"runtime:{GetRuntimeBuildFingerprint()}",
                 $"libs:{LibraryExtensionSearchPaths.CacheSeed(libraryExtensions)}");
@@ -193,7 +194,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 // Assembly names follow: pyRevit_{revitVersion}_{hash}_{extensionName}
                 foreach (var name in _loadedPyRevitAssemblyNames)
                 {
-                    if (name.EndsWith(extension.Name, StringComparison.OrdinalIgnoreCase))
+                    if (ExtensionAssemblyName.BelongsTo(name, extension.Name))
                     {
                         _logger.Debug($"Found loaded extension assembly: {name}");
                         return true;
@@ -418,7 +419,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         // Bump CommandTypeGeneratorSchema when generation logic changes without a
         // pyRevit version bump. Library-extension directories are hashed separately
         // in strategySeed so adding/removing a .lib or nested lib/ also invalidates.
-        private const string CommandTypeGeneratorSchema = "lib-root-2";
+        private const string CommandTypeGeneratorSchema = "ancestor-search-paths-1";
 
         private static readonly string _assemblyBuildFingerprint = ComputeAssemblyBuildFingerprint();
 

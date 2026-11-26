@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,10 +20,33 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// drained in order, so concurrent requests can never overwrite each other.
     /// </remarks>
     internal sealed class AgentDispatcher : IExternalEventHandler {
+        public const string RunHungCode = "run_hung";
+
+        private static readonly TimeSpan DefaultHungGrace = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan HungPollInterval = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan DefaultModalGrace = TimeSpan.FromSeconds(1.5);
+        private static readonly TimeSpan StartPollInterval = TimeSpan.FromMilliseconds(250);
+
         private readonly object queueLock = new object();
         private readonly Queue<AgentWorkItem> queue = new Queue<AgentWorkItem>();
+        private readonly TimeSpan hungGrace;
+        private readonly TimeSpan modalGrace;
+        private readonly Func<bool> modalDialogOpen;
         private ExternalEvent externalEvent;
-        private DateTime? runningSince;
+        private long runningSinceTicks;
+        private ScriptDeadline currentScript;
+
+        public AgentDispatcher() : this(DefaultHungGrace) {
+        }
+
+        internal AgentDispatcher(TimeSpan hungGrace) : this(hungGrace, AgentWindows.IsModalDialogOpen, DefaultModalGrace) {
+        }
+
+        internal AgentDispatcher(TimeSpan hungGrace, Func<bool> modalDialogOpen, TimeSpan modalGrace) {
+            this.hungGrace = hungGrace;
+            this.modalDialogOpen = modalDialogOpen;
+            this.modalGrace = modalGrace;
+        }
 
         public void Attach(ExternalEvent ev) {
             externalEvent = ev;
@@ -33,10 +58,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <exception cref="AgentException">
         /// <c>revit_busy</c> (see <see cref="AgentException.NotRun"/>) when Revit refuses the
         /// ExternalEvent or does not become idle within <paramref name="startTimeout"/>. The work
-        /// is then removed from the queue and never runs. Once the work has started, the call
-        /// waits for it to finish no matter how long it takes, because it can't be aborted safely.
+        /// is then removed from the queue and never runs. With <paramref name="failFastOnModalDialog"/>
+        /// the same error is raised as soon as a modal dialog has kept Revit from starting the work
+        /// for the modal grace period, instead of after <paramref name="startTimeout"/>. Once the
+        /// work has started, the call
+        /// waits for it to finish, because it can't be aborted safely, unless its script passes
+        /// the deadline set by <see cref="BeginScript"/> by more than the grace period.
         /// </exception>
-        public JToken Invoke(Func<UIApplication, JToken> work, TimeSpan startTimeout) {
+        /// <exception cref="AgentException">
+        /// <c>run_hung</c> with outcome <c>unknown</c> when the script is stuck past its deadline
+        /// in a call its timeout can't interrupt. The work keeps running on the main thread and
+        /// finishes, and is recorded, whenever that call returns; the caller just stops waiting,
+        /// so the pipe can answer later requests.
+        /// </exception>
+        public JToken Invoke(Func<UIApplication, JToken> work, TimeSpan startTimeout, bool failFastOnModalDialog = false) {
             var item = new AgentWorkItem(work);
             lock (queueLock)
                 queue.Enqueue(item);
@@ -47,19 +82,78 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     throw AgentException.NotRun("Revit rejected the agent request: " + response + ".");
             }
 
-            if (!item.Started.Wait(startTimeout)) {
-                if (TryRemove(item))
-                    throw AgentException.NotRun(BusyMessage(startTimeout));
-            }
+            if (!WaitForStart(item, startTimeout, failFastOnModalDialog, out var waited, out var blockedByModalDialog)
+                && TryRemove(item))
+                throw AgentException.NotRun(BusyMessage(waited, blockedByModalDialog));
 
+            var completion = new Task[] { item.Completion.Task };
+            while (Task.WaitAny(completion, HungPollInterval) < 0) {
+                var stuck = OverdueScript();
+                if (stuck != null)
+                    throw RunHung(stuck);
+            }
             return item.Completion.Task.GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Queues <paramref name="work"/> for the main thread without waiting for it. Work Revit
+        /// refuses to schedule is dropped.
+        /// </summary>
+        /// <remarks>
+        /// Nobody observes the result, so <paramref name="work"/> must handle its own failures.
+        /// </remarks>
+        public void Post(Func<UIApplication, JToken> work) {
+            var item = new AgentWorkItem(work);
+            lock (queueLock)
+                queue.Enqueue(item);
+
+            var response = externalEvent.Raise();
+            if (response == ExternalEventRequest.Denied || response == ExternalEventRequest.TimedOut)
+                TryRemove(item);
+        }
+
+        /// <summary>
+        /// Marks the script of the work running now as due to end within
+        /// <paramref name="timeLimit"/>, until the returned object is disposed.
+        /// </summary>
+        /// <remarks>
+        /// Called on the main thread around the script only, so time spent waiting for the
+        /// user's approval never counts. Disposing restores the previous deadline, so a nested run
+        /// can't clear the deadline of the run that started it. <paramref name="runId"/> and
+        /// <paramref name="requestId"/> go into the <c>run_hung</c> error.
+        /// </remarks>
+        public IDisposable BeginScript(TimeSpan timeLimit, string runId, string requestId) {
+            var script = new ScriptDeadline(this, timeLimit, runId, requestId);
+            script.Previous = Interlocked.Exchange(ref currentScript, script);
+            return script;
+        }
+
+        private ScriptDeadline OverdueScript() {
+            var script = Volatile.Read(ref currentScript);
+            return script != null && script.Overdue > hungGrace ? script : null;
+        }
+
+        private static AgentException RunHung(ScriptDeadline script) {
+            var exception = new AgentException(
+                RunHungCode,
+                string.Format(
+                    "The script is still running {0:0}s past its time limit, stuck in a call its timeout "
+                    + "can't interrupt, such as a long Revit API call, Thread.Sleep, or a printer or window "
+                    + "waiting for input. Revit stays busy, and later requests that need it fail with "
+                    + "revit_busy, until that call returns; the run then ends and is recorded as usual. Look "
+                    + "it up by its request id before sending it again, and ask the user to check Revit.",
+                    script.Overdue.TotalSeconds));
+            exception.Details["outcome"] = "unknown";
+            exception.Details["run_id"] = script.RunId;
+            exception.Details["request_id"] = script.RequestId;
+            return exception;
         }
 
         public void Execute(UIApplication app) {
             AgentWorkItem item;
             while (TryDequeue(out item)) {
                 item.Started.Set();
-                runningSince = DateTime.UtcNow;
+                Interlocked.Exchange(ref runningSinceTicks, DateTime.UtcNow.Ticks);
                 try {
                     item.Completion.TrySetResult(item.Work(app));
                 }
@@ -67,18 +161,54 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     item.Completion.TrySetException(ex);
                 }
                 finally {
-                    runningSince = null;
+                    Interlocked.Exchange(ref runningSinceTicks, 0);
                 }
             }
         }
 
-        private string BusyMessage(TimeSpan startTimeout) {
-            var message = string.Format("Revit did not become idle within {0:0}s.", startTimeout.TotalSeconds);
-            var since = runningSince;
-            if (since.HasValue)
+        private bool WaitForStart(
+            AgentWorkItem item, TimeSpan startTimeout, bool failFastOnModalDialog,
+            out TimeSpan waited, out bool blockedByModalDialog) {
+            var clock = Stopwatch.StartNew();
+            TimeSpan? blockedSince = null;
+            blockedByModalDialog = false;
+            while (true) {
+                waited = clock.Elapsed;
+                var remaining = startTimeout - waited;
+                if (remaining <= TimeSpan.Zero)
+                    return false;
+                if (item.Started.Wait(remaining < StartPollInterval ? remaining : StartPollInterval))
+                    return true;
+                if (!failFastOnModalDialog)
+                    continue;
+                if (!modalDialogOpen()) {
+                    blockedSince = null;
+                    continue;
+                }
+                blockedSince = blockedSince ?? clock.Elapsed;
+                waited = clock.Elapsed;
+                if (waited - blockedSince.Value >= modalGrace) {
+                    blockedByModalDialog = true;
+                    return false;
+                }
+            }
+        }
+
+        private string BusyMessage(TimeSpan waited, bool blockedByModalDialog) {
+            var message = string.Format(CultureInfo.InvariantCulture, "Revit did not become idle within {0:0.#}s.", waited.TotalSeconds);
+            if (blockedByModalDialog)
+                message += " A modal dialog is open and keeps Revit from starting the request.";
+            var since = Interlocked.Read(ref runningSinceTicks);
+            var stuck = OverdueScript();
+            if (since != 0 && stuck != null)
+                return message + string.Format(
+                    " An earlier agent run is stuck {0:0}s past its time limit in a call its timeout can't "
+                    + "interrupt; Revit stays busy until that call returns.",
+                    stuck.Overdue.TotalSeconds);
+            if (since != 0)
                 message += string.Format(
                     " An earlier agent request has been running for {0:0}s; it may be waiting on a dialog.",
-                    (DateTime.UtcNow - since.Value).TotalSeconds);
+                    TimeSpan.FromTicks(DateTime.UtcNow.Ticks - since).TotalSeconds);
             var dialogs = AgentWindows.OpenDialogs();
             if (dialogs.Count > 0)
                 message += " Open Revit windows: " + string.Join(", ", dialogs)
@@ -117,6 +247,31 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        private sealed class ScriptDeadline : IDisposable {
+            private readonly AgentDispatcher owner;
+            private readonly long dueTimestamp;
+            private int disposed;
+
+            public ScriptDeadline(AgentDispatcher owner, TimeSpan timeLimit, string runId, string requestId) {
+                this.owner = owner;
+                dueTimestamp = Stopwatch.GetTimestamp() + (long)(timeLimit.TotalSeconds * Stopwatch.Frequency);
+                RunId = runId;
+                RequestId = requestId;
+            }
+
+            public string RunId { get; }
+            public string RequestId { get; }
+            public ScriptDeadline Previous { get; set; }
+
+            public TimeSpan Overdue =>
+                TimeSpan.FromSeconds((double)(Stopwatch.GetTimestamp() - dueTimestamp) / Stopwatch.Frequency);
+
+            public void Dispose() {
+                if (Interlocked.Exchange(ref disposed, 1) == 0)
+                    Interlocked.Exchange(ref owner.currentScript, Previous);
+            }
+        }
+
         private sealed class AgentWorkItem {
             public AgentWorkItem(Func<UIApplication, JToken> work) {
                 Work = work;
@@ -126,41 +281,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             public ManualResetEventSlim Started { get; } = new ManualResetEventSlim(false);
             public TaskCompletionSource<JToken> Completion { get; } =
                 new TaskCompletionSource<JToken>(TaskCreationOptions.RunContinuationsAsynchronously);
-        }
-    }
-
-    /// <summary>
-    /// A failure reported to the agent with a stable machine-readable <see cref="Code"/>.
-    /// </summary>
-    public sealed class AgentException : Exception {
-        public const string NotRunCode = "revit_busy";
-
-        public AgentException(string code, string message) : base(message) {
-            Code = code;
-        }
-
-        public string Code { get; }
-
-        /// <summary>
-        /// Extra fields for the error's <c>data</c> object, next to <c>type</c>.
-        /// </summary>
-        public JObject Details { get; } = new JObject();
-
-        /// <summary>
-        /// A request the host refused before running any of it because Revit was busy.
-        /// </summary>
-        /// <remarks>
-        /// Invariant: every <c>revit_busy</c> the host raises goes through here. It means the
-        /// request was discarded and will never run later, so the caller may send it again.
-        /// The message says so and <c>data.outcome</c> is <c>not_run</c>.
-        /// </remarks>
-        public static AgentException NotRun(string message) {
-            var exception = new AgentException(
-                NotRunCode,
-                message + " The request was not run and has been discarded; it will not run later, "
-                + "so it is safe to send again once Revit is idle.");
-            exception.Details["outcome"] = "not_run";
-            return exception;
         }
     }
 }

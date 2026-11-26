@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_lines">Выберите хотя бы одну линию.</sys:String>
+    <sys:String x:Key="table_title">Линии по стилям линий в модели</sys:String>
+    <sys:String x:Key="column_style">Стиль линии</sys:String>
+    <sys:String x:Key="column_count">Количество</sys:String>
+    <sys:String x:Key="lines_of_style">Линии стиля {}</sys:String>
+    <sys:String x:Key="column_line">Линия</sys:String>
+    <sys:String x:Key="column_class">Класс</sys:String>
+    <sys:String x:Key="column_view">Вид</sys:String>
+    <sys:String x:Key="model">Модель</sys:String>
+</ResourceDictionary>

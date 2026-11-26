@@ -11,8 +11,10 @@ layout:
   - CLR
   - Inspect IExporter
   - DirectContext3D
-  - Settings Window
+  - Settings Window[title:Settings\nWindow]
   - Modeless
-  - DockablePane
+  - DockablePane[title:Dockable\nPane]
   - ExportIFC
   - AVF
+  - CheckBox Examples
+  - Toggle Examples[title:Toggle\nExamples]

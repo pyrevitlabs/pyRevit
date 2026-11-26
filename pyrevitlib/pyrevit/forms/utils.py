@@ -1,7 +1,7 @@
 """Utility functions to support forms module."""
 
-from pyrevit import framework
-from pyrevit.framework import wpf, Controls, Imaging, Uri, UriKind
+from pyrevit.framework import Controls, Imaging, Uri, UriKind
+from . import _backend
 
 
 def bitmap_from_file(bitmap_file):
@@ -36,7 +36,7 @@ def load_component(xaml_file, comp_type):
     Returns:
         (System.Windows.Controls): loaded WPF control
     """
-    return wpf.LoadComponent(comp_type, xaml_file)
+    return _backend.load_component(comp_type, xaml_file)
 
 
 def load_ctrl_template(xaml_file):

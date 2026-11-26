@@ -3,6 +3,8 @@ using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class McpRunResultsTests {
     private static JObject Error(string type, string message, string failingLine = null) {
         var error = new JObject { ["type"] = type, ["message"] = message };
@@ -40,6 +42,8 @@ public class McpRunResultsTests {
         return run;
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class CompactTests {
         [Fact]
         public void StatusAndRunIdLeadTheResult() {
@@ -56,10 +60,24 @@ public class McpRunResultsTests {
         }
 
         [Fact]
+        public void RecklessRunsAreMarkedAndCheckedRunsAreNot() {
+            Assert.Null(PyRevitMcpRunResults.Compact(Run())["reckless"]);
+            Assert.True(PyRevitMcpRunResults.Compact(Run(extra: new JObject { ["reckless"] = true }))["reckless"].Value<bool>());
+        }
+
+        [Fact]
+        public void ARollbackFailureReasonIsKeptForEveryMode() {
+            var extra = new JObject { ["decision"] = "rollback_incomplete", ["rollback_failure"] = "Revit returned Pending." };
+
+            Assert.Equal("Revit returned Pending.", PyRevitMcpRunResults.Compact(Run("query", extra: extra))["rollback_failure"].Value<string>());
+            Assert.Null(PyRevitMcpRunResults.Compact(Run("modify"))["rollback_failure"]);
+        }
+
+        [Fact]
         public void EmptyBookkeepingIsDropped() {
             var compact = PyRevitMcpRunResults.Compact(Run());
 
-            foreach (var key in new[] { "changes", "warnings", "failures", "dialogs", "blocked", "output", "result", "approval" })
+            foreach (var key in new[] { "changes", "warnings", "failures", "dialogs", "blocked", "exports", "output", "result", "approval" })
                 Assert.Null(compact[key]);
         }
 
@@ -70,12 +88,24 @@ public class McpRunResultsTests {
                 ["failures"] = new JArray(new JObject { ["severity"] = "Warning" }),
                 ["dialogs"] = new JArray(new JObject { ["message"] = "hi" }),
                 ["blocked"] = new JArray(new JObject { ["operation"] = "save" }),
+                ["exports"] = new JArray(@"C:\runs\exports\A101.png"),
                 ["approval"] = "user",
             }));
 
-            foreach (var key in new[] { "warnings", "failures", "dialogs", "blocked" })
+            foreach (var key in new[] { "warnings", "failures", "dialogs", "blocked", "exports" })
                 Assert.Single((JArray)compact[key]);
             Assert.Equal("user", compact["approval"].Value<string>());
+        }
+
+        [Fact]
+        public void ExportsAreCappedAtTwentyAndPointToGetRun() {
+            var compact = PyRevitMcpRunResults.Compact(Run(extra: new JObject {
+                ["exports"] = new JArray(Enumerable.Range(0, 25).Select(index => $"sheet-{index}.png")),
+            }));
+
+            Assert.Equal(20, ((JArray)compact["exports"]).Count);
+            Assert.Contains("25", compact.Value<string>("exports_note"));
+            Assert.Contains("get_run", compact.Value<string>("exports_note"));
         }
 
         [Fact]
@@ -87,9 +117,80 @@ public class McpRunResultsTests {
         }
 
         [Fact]
-        public void ModifiedOrDeletedChangesPointToGetRunForTheDetails() {
-            Assert.Contains("get_run", PyRevitMcpRunResults.Compact(Run("modify", Changes(modified: 1)))["changes"].Value<string>("details"));
-            Assert.Contains("get_run", PyRevitMcpRunResults.Compact(Run("modify", Changes(deleted: 1)))["changes"].Value<string>("details"));
+        public void ModifiedElementsAreDescribedInline() {
+            var changes = Changes(modified: 1);
+            changes["modified"] = new JArray(new JObject {
+                ["id"] = 7,
+                ["category"] = "Project Information",
+                ["name"] = "Project Information",
+                ["class"] = "ProjectInfo",
+            });
+
+            var compact = PyRevitMcpRunResults.Compact(Run("modify", changes))["changes"];
+
+            var modified = Assert.Single((JArray)compact["modified"]);
+            Assert.Equal("Project Information", modified.Value<string>("category"));
+            Assert.Equal("ProjectInfo", modified.Value<string>("class"));
+            Assert.Null(compact["details"]);
+        }
+
+        [Fact]
+        public void DeletedIdsAreListedInline() {
+            var changes = Changes(deleted: 2);
+            changes["deleted"] = new JArray(4, 5);
+
+            var compact = PyRevitMcpRunResults.Compact(Run("modify", changes))["changes"];
+
+            Assert.Equal(new[] { 4, 5 }, compact["deleted_ids"].Select(id => id.Value<int>()));
+            Assert.Null(compact["details"]);
+        }
+
+        [Fact]
+        public void ModifiedAndDeletedListsAreCappedAtTwentyAndPointToGetRunForUpToFifty() {
+            var changes = Changes(modified: 120, deleted: 30);
+            changes["modified"] = new JArray(Enumerable.Range(1, 50).Select(id => new JObject { ["id"] = id }));
+            changes["deleted"] = new JArray(Enumerable.Range(1, 30));
+
+            var compact = PyRevitMcpRunResults.Compact(Run("modify", changes))["changes"];
+
+            Assert.Equal(20, ((JArray)compact["modified"]).Count);
+            Assert.Equal(20, ((JArray)compact["deleted_ids"]).Count);
+            Assert.Contains("get_run(run_id) lists up to 50", compact.Value<string>("details"));
+        }
+
+        [Fact]
+        public void LoadedFamiliesAndTypesAreNamed() {
+            var changes = Changes(added: 3);
+            changes["added_families"] = new JArray(
+                new JObject { ["id"] = 1, ["category"] = null, ["name"] = "Desk", ["class"] = "Family" },
+                new JObject { ["id"] = 2, ["category"] = "Furniture", ["name"] = "1200x600", ["class"] = "FamilySymbol" });
+
+            var compact = PyRevitMcpRunResults.Compact(Run("modify", changes))["changes"];
+
+            Assert.Equal(new[] { 1, 2, 3 }, compact["added_ids"].Select(id => id.Value<int>()));
+            Assert.Equal(new[] { "Desk", "1200x600" }, compact["added_families"].Select(family => family.Value<string>("name")));
+        }
+
+        [Fact]
+        public void TheHostSummaryLeadsTheChanges() {
+            var changes = Changes(added: 25);
+            changes["summary"] = "added 25 elements (Walls)";
+
+            var compact = PyRevitMcpRunResults.Compact(Run("modify", changes))["changes"];
+
+            Assert.Equal("summary", ((JObject)compact).Properties().First().Name);
+            Assert.Equal("added 25 elements (Walls)", compact.Value<string>("summary"));
+            Assert.Equal(20, ((JArray)compact["added_ids"]).Count);
+        }
+
+        [Fact]
+        public void AddedFamiliesAreCappedAtTwenty() {
+            var changes = Changes(added: 50);
+            changes["added_families"] = new JArray(Enumerable.Range(1, 30).Select(id => new JObject { ["id"] = id, ["class"] = "FamilySymbol" }));
+
+            var compact = PyRevitMcpRunResults.Compact(Run("modify", changes))["changes"];
+
+            Assert.Equal(20, ((JArray)compact["added_families"]).Count);
         }
 
         [Fact]
@@ -165,6 +266,8 @@ public class McpRunResultsTests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class HintTests {
         [Fact]
         public void ChangingTheDocumentOutsideATransactionPointsToShowElements() {
@@ -299,6 +402,8 @@ public class McpRunResultsTests {
         }
     }
 
+    [Trait("Environment", "HostFree")]
+    [Trait("Level", "Unit")]
     public class LookupTests {
         [Theory]
         [InlineData("AttributeError", "'Autodesk.Revit.DB' object has no attribute 'Wal'", "Wal")]

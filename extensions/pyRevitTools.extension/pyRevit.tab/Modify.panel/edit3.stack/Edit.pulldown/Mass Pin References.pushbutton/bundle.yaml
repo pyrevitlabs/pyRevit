@@ -26,7 +26,7 @@ tooltip:
   ru: |
     Позволяет выбрать одну или несколько категорий (например, оси, уровни, связи) и закрепить все незакреплённые элементы в модели.
 
-    Щелчок с удержанием клавиши Shift:
+    Shift + Щелчок:
     Открепляет все закреплённые элементы в выбранных категориях.
   chinese_s: |-
     选择一个或多个类别（例如轴网、标高或链接），并锁定这些类别中所有未锁定的实例。
@@ -43,8 +43,8 @@ tooltip:
 
     Bei gedrückter Umschalttaste klicken:
     Hebt die Anheftung aller angehefteten Elemente in den ausgewählten Kategorien auf.
-  pt_br: >-
+  pt_br: |-
     Permite selecionar uma ou mais categorias (ex.: Eixos, Níveis, Vínculos) e fixar todas as instâncias não fixadas no modelo.
-    
+
     Clique mantendo a tecla Shift pressionada:
     Desafixa todas as instâncias fixadas nas categorias selecionadas.

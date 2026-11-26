@@ -4,6 +4,8 @@ namespace PyRevitLabs.PyRevit.Runtime.CPython.Tests;
 /// Guards the two pyRevit-side halves of the interpreter lifecycle contract. The runtime assembly
 /// cannot be loaded outside a Revit host, so these read the engine source instead of calling it.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class CPythonEngineSourceTests {
     /// <summary>
     /// Releasing the engine at Reload or Refresh Engine must not tear down the process-wide
@@ -38,5 +40,41 @@ public class CPythonEngineSourceTests {
         Assert.True(
             CSharpSource.IsInBlockOf(body, guard, "PythonEngine.ProgramName ="),
             "PythonEngine.ProgramName must be assigned inside the !PythonEngine.IsInitialized guard");
+    }
+
+    /// <summary>
+    /// The forms binding conversions, which decide how Python lists and objects reach CLR
+    /// parameters, are installed when the engine starts rather than on the first
+    /// <c>import pyrevit.forms</c>, so a script converts the same way in a fresh session as after a
+    /// forms tool ran. The call sits outside the bring-up guard so it also runs when pyRevit
+    /// attaches to an interpreter something else brought up.
+    /// </summary>
+    [Fact]
+    public void Start_RegistersTheFormsBindingConversions() {
+        string body = CSharpSource.MemberBody(
+            CSharpSource.CPythonEngine, "public override void Start(ref ScriptRuntime runtime)");
+
+        Assert.Contains("RegisterPythonConversions();", body, StringComparison.Ordinal);
+        Assert.False(
+            CSharpSource.IsInBlockOf(body, "if (!PythonEngine.IsInitialized)", "RegisterPythonConversions();"),
+            "the conversions must be registered whoever brought the interpreter up");
+        Assert.Contains("GetMethod(\"RegisterConversions\"", CSharpSource.CPythonEngine, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// <c>PythonEngine.Initialize</c> has to run inside the <c>CrtLocale</c> scope so the CPython
+    /// locale switch never reaches Revit (pyRevit#4074). The behaviour itself is covered by
+    /// <see cref="CPythonInterpreterLifecycleTests.Initializing_UnderACrtLocaleScope_LeavesLcCtypeUntouched"/>;
+    /// this keeps the engine from dropping the scope.
+    /// </summary>
+    [Fact]
+    public void InterpreterInitialize_RunsInsideACrtLocaleScope() {
+        string body = CSharpSource.MemberBody(
+            CSharpSource.CPythonEngine, "public override void Start(ref ScriptRuntime runtime)");
+
+        Assert.True(
+            CSharpSource.IsInBlockOf(
+                body, "using (CrtLocale.Preserve(CrtLocale.LcCtype))", "PythonEngine.Initialize()"),
+            "PythonEngine.Initialize() must run inside using (CrtLocale.Preserve(CrtLocale.LcCtype))");
     }
 }

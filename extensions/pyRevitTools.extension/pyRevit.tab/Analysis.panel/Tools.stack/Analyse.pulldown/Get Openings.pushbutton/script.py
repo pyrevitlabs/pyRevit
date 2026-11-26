@@ -8,63 +8,35 @@ import time
 from pyrevit import script
 from pyrevit import revit, DB
 from pyrevit.compat import get_elementid_value_func
-from pyrevit.coreutils import applocales, escape_for_html
+from pyrevit.coreutils import applocales, escape_for_output
 from pyrevit.framework import List
 
 output = script.get_output()
 
 RESOURCES = script.get_bundle_file("resources.xaml")
 OPENING_FILTER_NAME = "0_ShaftOpenings"
-OPENING_CATEGORIES = [
-    DB.BuiltInCategory.OST_FloorOpening,
-    DB.BuiltInCategory.OST_SWallRectOpening,
-    DB.BuiltInCategory.OST_ShaftOpening,
-    DB.BuiltInCategory.OST_RoofOpening,
-]
 
 
 def _t(key):
     return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
-def escape_for_output(text):
-    """Make model text render literally in print_table cells and print_md headings.
-
-    print_table splits cells on pipes and renders Markdown, so pipes, emphasis and
-    link characters are encoded as entities. Ampersands are encoded so names such
-    as "&copy;" are not read as entities, and line breaks become spaces so a name
-    stays on one table row.
-    """
-    escaped = escape_for_html(" ".join(text.splitlines()).replace("&", "&#38;"))
-    for character in "|*_`[":
-        escaped = escaped.replace(character, "&#{};".format(ord(character)))
-    return escaped
-
-
 def collect_openings():
-    """Collect the openings of ``OPENING_CATEGORIES``.
+    """Collect every ``DB.Opening`` of the project.
 
     Note:
-        Filters by ``BuiltInCategory`` directly: these categories are missing from
-        ``doc.Settings.Categories``, so ``query.get_elements_by_categories`` skips
-        most of them.
+        Collects by class instead of by category so that openings in arc walls,
+        columns, beams and any other host are included, not only floor, wall,
+        shaft and roof openings.
     """
-    return (
-        DB.FilteredElementCollector(revit.doc)
-        .WherePasses(
-            DB.ElementMulticategoryFilter(List[DB.BuiltInCategory](OPENING_CATEGORIES))
-        )
-        .WhereElementIsNotElementType()
-        .ToElements()
-    )
+    return list(DB.FilteredElementCollector(revit.doc).OfClass(DB.Opening))
 
 
 def sync_opening_filter(openings):
     """Create the selection filter for the openings, or reset the existing one to them.
 
     Args:
-        openings: The openings of the categories in ``OPENING_CATEGORIES``, the
-            same set the report lists.
+        openings: The openings of the project, the same set the report lists.
 
     Returns:
         bool: True if the filter was created, False if an existing one was updated.
@@ -92,6 +64,9 @@ def report(openings):
     output.print_md("#### {}".format(_t("openings_in_project").format(len(openings))))
     if not openings:
         return
+    output.print_md(
+        output.linkify([opening.Id for opening in openings], title=_t("select_all"))
+    )
     get_elementid_value = get_elementid_value_func()
     output.print_table(
         table_data=[

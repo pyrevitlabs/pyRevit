@@ -56,6 +56,7 @@ Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Par
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden runascurrentuser
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemoveMcpServers"; Parameters: "mcp uninstall --all --owned"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "RemovePathEntry"; Parameters: "env path remove ""{app}\bin"" --scope=machine"; Flags: runhidden runascurrentuser
 
 [Code]
 function RunPyRevitCommand(const Params: String): Boolean;
@@ -83,7 +84,7 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
-    if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine') then
+    if not RunPyRevitCommand('env path ensure "' + ExpandConstant('{app}\bin') + '" --scope=machine --first') then
       SuppressibleMsgBox(
         'pyRevit CLI was installed, but the installer could not register the install folder in the machine PATH environment variable.' + #13#10 + #13#10 +
         'You may need to manually add the following folder to the machine PATH:' + #13#10 +

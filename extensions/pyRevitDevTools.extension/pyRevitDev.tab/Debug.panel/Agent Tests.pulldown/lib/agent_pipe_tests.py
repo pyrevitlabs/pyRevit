@@ -5,6 +5,10 @@ thread serves itself (ping, lookup_api) and errors. Requests that need the main
 thread time out as revit_busy while a command runs, which is also checked here.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import json
 import os.path as op
 import threading

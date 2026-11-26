@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="select_levels">Au moins un niveau doit être sélectionné.</sys:String>
+    <sys:String x:Key="list_elements_title">Lister tous les éléments des niveaux sélectionnés</sys:String>
+    <sys:String x:Key="elements_on_level">Éléments au niveau {}</sys:String>
+    <sys:String x:Key="no_elements">Aucun élément n'est associé à ce niveau.</sys:String>
+    <sys:String x:Key="table_title">{} catégories, {} éléments</sys:String>
+    <sys:String x:Key="column_category">Catégorie</sys:String>
+    <sys:String x:Key="column_count">Nombre</sys:String>
+    <sys:String x:Key="column_select">Sélectionner</sys:String>
+    <sys:String x:Key="select_all">Tout sélectionner</sys:String>
+    <sys:String x:Key="no_category">&lt;sans catégorie&gt;</sys:String>
+</ResourceDictionary>

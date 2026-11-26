@@ -1,32 +1,25 @@
 title:
-  en_us: >-
+  en_us: |-
     Set
-
     Workset
-  ko: >-
+  ko: |-
     설정
-
     워크셋
-  fr_fr: >-
+  fr_fr: |-
     Active
-
     Sous-Projet
-  ru: >-
+  ru: |-
     Задать
-
     раб. набор
   chinese_s: "设置\n工作集"
-  es_es: >-
+  es_es: |-
     Establecer
-
     Área de trabajo
-  de_de: >-
+  de_de: |-
     Set
-    
     Workset
-  pt_br: >-
+  pt_br: |-
     Definir
-    
     Workset
 tooltip:
   en_us: |-
@@ -47,7 +40,7 @@ tooltip:
   ru: |-
     Устанавливает текущий рабочий набор на основе выбранных элементов.
 
-    Щелчок с удержанием клавиши Shift:
+    Shift + Щелчок:
     Настроить рабочий набор, заимствование элементов, установку или отображение рабочей плоскости и фазу.
   chinese_s: |-
     根据所选内容设置活动工作集。

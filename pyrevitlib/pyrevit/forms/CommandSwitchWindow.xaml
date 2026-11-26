@@ -187,11 +187,13 @@
 					   VerticalAlignment="Center"
 					   DockPanel.Dock="Left"
 					   FontSize="14"
-					   Foreground="White" />
+					   Foreground="White"
+					   Content="{DynamicResource CommandSwitchWindow.MessageLabel.Content}" />
                 <TextBox x:Name="search_tb"
 						 Margin="10,2,5,0"
 						 VerticalAlignment="Center"
-						 TextChanged="search_txt_changed"/>
+						 TextChanged="search_txt_changed"
+						 Tag="{DynamicResource CommandSwitchWindow.SearchTextBox.Tag}" />
             </DockPanel>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
 						  VerticalScrollBarVisibility="Hidden">

@@ -14,7 +14,7 @@ with ProgressBar(cancellable=True, step=10) as pb:
             pb.update_progress(counter, max_value)
 
     for counter in range(0, max_value):
-        pb.step = (max_value - counter) / 10
+        pb.step = (max_value - counter) // 10
         if pb.cancelled:
             break
         else:
@@ -22,10 +22,10 @@ with ProgressBar(cancellable=True, step=10) as pb:
 
     pb.indeterminate = True
     pb.title = "Indeterminate Process... ({value} of {max_value})"
-    for counter in range(0, max_value / 4):
+    for counter in range(0, max_value // 4):
         if pb.cancelled:
             cancelcount += 1
             if cancelcount >= cancelcounttimeout:
                 break
 
-        pb.update_progress(counter, max_value / 4)
+        pb.update_progress(counter, max_value // 4)

@@ -6,6 +6,9 @@
     <system:String x:Key="Model">Modèle</system:String>
     <system:String x:Key="LinkedPrefix">Lié : </system:String>
     <system:String x:Key="SheetIndex">Index des Feuilles</system:String>
+    <system:String x:Key="AllModels">&lt;Tous les modèles&gt;</system:String>
+    <system:String x:Key="EachModelPrintSetting">&lt;Paramètre d'impression actuel de chaque modèle&gt;</system:String>
+    <system:String x:Key="SameFileNameAcrossModels">Des feuilles de modèles différents auraient le même nom de fichier. Ajoutez {index} ou {proj_number} au format de nommage pour les distinguer.</system:String>
     
     <system:String x:Key="SheetOrdering">Ordre des Feuilles</system:String>
     <system:String x:Key="ReversePrintOrder">Inverser l'Ordre d'Impression</system:String>

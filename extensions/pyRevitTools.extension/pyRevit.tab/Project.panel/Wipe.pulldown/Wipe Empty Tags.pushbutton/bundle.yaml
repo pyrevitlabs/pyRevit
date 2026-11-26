@@ -18,40 +18,35 @@ tooltip:
 
     Shift 키를 누르고 클릭:
     선택한 뷰에서 빈 태그를 제거합니다.
-  fr_fr: >-
+  fr_fr: |-
     Supprime les étiquettes vides dans la vue actuelle
 
     Maj+clic :
-
     Supprimer les étiquettes dans les vues sélectionnées
-  ru: >-
+  ru: |-
     Удаляет пустые парки на текущем виде.
 
-    Щелчок с удержанием клавиши Shift:
-
+    Shift + Щелчок:
     Удалить марки на выделенных видах.
   chinese_s: |-
     移除当前视图中的空标记。
 
     按住 Shift 键单击：
     移除选定视图中的空标记。
-  es_es: >-
+  es_es: |-
     Elimina etiquetas vacías en la vista actual
 
     Mayús-clic:
-
     Eliminar etiquetas en vistas seleccionadas
-  de_de: >-
+  de_de: |-
     Es werden alle leeren Beschriftungen in der aktuellen Ansicht gelöscht
 
     Bei gedrückter Umschalttaste klicken:
-
     Es erscheint ein Auswahldialog mit verfügbaren Ansichten im Projekt.  Auf den ausgewählten Ansichten werden alle leeren Beschriftungen gelöscht
-  pt_br: >-
+  pt_br: |-
     Remove identificadores vazios na vista atual
-    
+
     Clique mantendo a tecla Shift pressionada:
-    
     Remover identificadores nas vistas selecionadas
 context:
   - doc-project

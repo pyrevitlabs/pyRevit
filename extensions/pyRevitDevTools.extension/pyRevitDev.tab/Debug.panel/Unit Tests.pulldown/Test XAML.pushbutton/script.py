@@ -173,12 +173,12 @@ class UI(forms.WPFWindow, forms.Reactive):
         mbinding.Bindings.Add(binding)
         # mbinding.NotifyOnSourceUpdated = True
 
-        self.textbox.DataContext = self.vm.nested_data
+        forms.set_data_context(self.textbox, self.vm.nested_data)
         self.emppanel.SetBinding(self.emppanel.DataContextProperty, mbinding)
-        self.empinfo.DataContext = self.vm.employee_data
-        self.textblock.DataContext = self.vm.data
-        self.button.DataContext = self.vm.data
-        self.statuslight.DataContext = self.vm.server
+        forms.set_data_context(self.empinfo, self.vm.employee_data)
+        forms.set_data_context(self.textblock, self.vm.data)
+        forms.set_data_context(self.button, self.vm.data)
+        forms.set_data_context(self.statuslight, self.vm.server)
 
         self.set_image_source(self.testimage, "test.png")
         self.taglist.ItemsSource = self.vm.tags

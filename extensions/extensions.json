@@ -382,6 +382,19 @@
             "website": "https://github.com/Budzhak/XYZ",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "False",
+            "name": "Emperor",
+            "description": "Free toolkit for MEP and HVAC engineers: grille align, diffuser array, smart insulation, smart tag, view, link and room/space managers, Excel to drafting view, PDF/DWG exporter and a Claude connector",
+            "author": "Yahya Morcy",
+            "author_profile": "https://github.com/ynan3000",
+            "url": "https://github.com/ynan3000/emperor-revit.git",
+            "website": "https://ynan3000.github.io/emperor-revit/",
+            "image": "",
+            "dependencies": []
         }
     ]
 }

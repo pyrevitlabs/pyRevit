@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -30,6 +29,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private WeakReference<ScriptRuntime> _runtime;
         private ScriptConsole _window;
+        private readonly ElementIdRegistry _elementIds = new ElementIdRegistry();
         private ScriptIO _outputStream;
         private UIApplication _uiApp;
         private bool _debugMode;
@@ -225,6 +225,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (_window == null || _window.ClosedByUser) {
                     _heldRecords.Close();
                     _window = new ScriptConsole(_debugMode, _uiApp);
+                    _window.ElementIds = _elementIds;
                     _window.Closed += hold_records_while_closed;
                     if (string.IsNullOrEmpty(_window.OutputId))
                         _window.OutputId = "pyrevit-output";
@@ -240,8 +241,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         internal void TrackRuntimeWindow(ScriptConsole window) {
-            if (window != null)
-                _window = window;
+            if (window == null)
+                return;
+            _window = window;
+            _window.ElementIds = _elementIds;
         }
 
         internal Dispatcher WindowDispatcher => _window?.Dispatcher;
@@ -342,7 +345,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 mark_error();
 
             if (ScriptOutputUi.MayCreateOutputUi) {
-                write_line(content);
+                using (Agent.AgentRecorder.SuppressOutput())
+                    write_line(content);
                 return;
             }
 
@@ -391,6 +395,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void release_held_records() {
+            using (Agent.AgentRecorder.SuppressOutput())
+                release_held_records_unrecorded();
+        }
+
+        private void release_held_records_unrecorded() {
             while (true) {
                 int dropped;
                 var released = _heldRecords.DrainOrOpen(out dropped);
@@ -484,6 +493,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _window.IsSessionOutput = isSessionOutput;
         }
 
+        /// <summary>
+        /// Stores element ids too many to fit in a <c>revit://</c> link and returns the token the
+        /// link carries instead. Safe from any thread: it does not touch the output window. The
+        /// token resolves in this output's window until that window closes.
+        /// </summary>
+        /// <param name="comma_separated_ids">Element id values joined by commas.</param>
+        public string register_element_ids(string comma_separated_ids) => _elementIds.Register(comma_separated_ids);
+
         public void close() { window.Close(); }
         public void hide() { window.Hide(); }
         public void show() { window.Show(); }
@@ -511,6 +528,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void set_icon(string iconpath) { window.SetIcon(iconpath); }
         public void reset_icon() { window.ResetIcon(); }
         public void focus() { window.FocusOutput(); }
+
+        /// <summary>
+        /// Scrolls the output window to its first line after everything printed so far.
+        /// Output printed afterwards keeps the window at the top unless the top is within 50
+        /// pixels of the bottom of a short page. Never blocks, so it is safe during session load.
+        /// </summary>
+        public void scroll_to_top() {
+            output_stream.Flush();
+            window.ScrollToTop();
+        }
 
         public void close_others(bool all_open_outputs = false) {
             ScriptConsoleManager.CloseActiveOutputWindows(
@@ -592,15 +619,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void print_table(object table_data, object columns = null, object formats = null, string title = "", string last_line_style = "") {
-            var rows = ToRows(table_data);
-            if (rows.Count == 0)
+            var rows = PythonTableData.ToRows(table_data);
+            if (rows.Count == 0) {
                 return;
+            }
 
             if (!string.IsNullOrEmpty(last_line_style))
                 add_style(string.Format("tr:last-child {{ {0} }}", last_line_style));
 
-            var headers = ToList(columns);
-            var formatList = ToList(formats);
+            var headers = PythonTableData.ToCells(columns);
+            var formatList = PythonTableData.ToCells(formats);
             var maxCols = 0;
             foreach (var row in rows)
                 maxCols = Math.Max(maxCols, row.Count);
@@ -646,19 +674,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
             string table_width_style = null,
             bool repeat_head_as_foot = false,
             bool row_striping = true) {
-            var rows = ToRows(table_data);
-            if (rows.Count == 0) {
-                print_md("### :warning: No table_data list");
+            var rows = PythonTableData.ToRows(table_data);
+            var emptyTableWarning = PythonTableData.EmptyTableWarning(rows);
+            if (emptyTableWarning != null) {
+                print_md(emptyTableWarning);
                 return;
             }
 
             _tableCounter += 1;
             var tableId = _tableCounter;
-            var headers = ToList(columns);
-            var formatList = ToList(formats);
-            var headAlign = ToList(column_head_align_styles);
-            var dataAlign = ToList(column_data_align_styles);
-            var widths = ToList(column_widths);
+            var headers = PythonTableData.ToCells(columns);
+            var formatList = PythonTableData.ToCells(formats);
+            var headAlign = PythonTableData.ToCells(column_head_align_styles);
+            var dataAlign = PythonTableData.ToCells(column_data_align_styles);
+            var widths = PythonTableData.ToCells(column_widths);
             var border = string.IsNullOrEmpty(column_vertical_border_style)
                 ? string.Empty
                 : string.Format(" style='{0}'", column_vertical_border_style);
@@ -732,7 +761,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void InjectElement(string targetName, string elementTag, string contents, object attribs) {
             output_stream.Flush();
-            var attribsDict = ToDictionary(attribs);
+            var attribsDict = PythonTableData.ToDictionary(attribs);
             window.InjectHtmlElement(targetName, elementTag, contents ?? string.Empty, attribsDict);
         }
 
@@ -893,55 +922,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 html.AppendFormat("<th class='head_title-{0}-{1}' align='left'>{2}</th>", tableUid, idx, columns[idx]);
             html.Append("</tr></thead>");
             return html.ToString();
-        }
-
-        private static List<List<string>> ToRows(object value) {
-            var rows = new List<List<string>>();
-            if (value == null || value is string)
-                return rows;
-
-            var enumerable = value as IEnumerable;
-            if (enumerable == null)
-                return rows;
-
-            foreach (var rowObj in enumerable)
-                rows.Add(ToList(rowObj));
-            return rows;
-        }
-
-        private static List<string> ToList(object value) {
-            var items = new List<string>();
-            if (value == null)
-                return items;
-            if (value is string) {
-                items.Add((string)value);
-                return items;
-            }
-
-            var enumerable = value as IEnumerable;
-            if (enumerable == null) {
-                items.Add(value.ToString());
-                return items;
-            }
-
-            foreach (var item in enumerable)
-                items.Add(item == null ? string.Empty : item.ToString());
-            return items;
-        }
-
-        private static Dictionary<string, string> ToDictionary(object value) {
-            var result = new Dictionary<string, string>();
-            if (value == null)
-                return result;
-
-            var dictionary = value as IDictionary;
-            if (dictionary != null) {
-                foreach (DictionaryEntry entry in dictionary)
-                    result[entry.Key.ToString()] = entry.Value?.ToString() ?? string.Empty;
-                return result;
-            }
-
-            return result;
         }
 
         private static string ApplyFormat(string format, string value) {

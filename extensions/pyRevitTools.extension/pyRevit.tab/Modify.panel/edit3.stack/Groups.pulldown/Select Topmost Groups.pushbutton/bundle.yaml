@@ -18,42 +18,38 @@ tooltip:
 
     Shift 키를 누르고 클릭:
     선택 항목에 그룹에 속하지 않은 요소도 포함합니다.
-  fr_fr: >-
+  fr_fr: |-
     Sélectionne les occurences du groupe qui contiennent les éléments sélectionnés
     Par défaut, les éléments non groupés sont exclus de la sélection
 
     Maj+clic :
-
     Inclure les éléments non-groupés
-  ru: >-
+  ru: |-
     Выделяет экземпляры групп, которые содержат выделенные элементы.
     По умолчанию исключает несгруппированные элементы из выделения.
 
-    Щелчок с удержанием клавиши Shift:
+    Shift + Щелчок:
     Включить несгруппированные элементы.
   chinese_s: |-
     选择包含所选图元的组实例。默认情况下，未编组的图元不会被选中。
 
     按住 Shift 键单击：
     同时选择未编组的图元。
-  es_es: >-
+  es_es: |-
     Selecciona instancias de grupos, que contienen elementos seleccionados
     Por defecto excluye elementos no agrupados de la selección
 
     Mayús-clic:
-
     Incluir elementos no agrupados
-  de_de: >-
+  de_de: |-
     Wählt Gruppeninstanzen aus, die die ausgewähltne Elemente enthalten
     Schließt standardmäßig nicht gruppierte Elemente von der Auswahl aus
 
     Bei gedrückter Umschalttaste klicken:
-
     Nicht gruppierte Elemente einbeziehen
-  pt_br: >-
+  pt_br: |-
     Seleciona instâncias de grupo que contêm elementos selecionados. por padrão, exclui elementos não agrupados da seleção
-    
+
     Clique mantendo a tecla Shift pressionada:
-    
     Incluir elementos não agrupados
 context: selection

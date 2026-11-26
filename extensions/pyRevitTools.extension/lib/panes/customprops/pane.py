@@ -259,6 +259,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
             "pt_br": "Propriedades personalizadas",
             "ru": "Свойства элемента",
             "chinese_s": "自定义属性",
+            "ko": "사용자 지정 속성",
         }
     )
     panel_id = "d3a7f2c1-8e45-4b9a-a312-0f6b7c8d9e10"
@@ -365,9 +366,15 @@ class CustomPropertiesPanel(forms.WPFPanel):
             self.logger.warning("SelectionChanged handler error: {}".format(ex))
 
     def _safe_ui(self, func, *args):
+        def guarded():
+            try:
+                func(*args)
+            except Exception as ex:
+                self.logger.warning("Deferred pane update failed: {}".format(ex))
+
         self.Dispatcher.BeginInvoke(
             framework.Threading.DispatcherPriority.Background,
-            framework.System.Action(lambda: func(*args)),
+            framework.System.Action(guarded),
         )
 
     def _on_doc_changed(self, sender, args):
@@ -377,14 +384,17 @@ class CustomPropertiesPanel(forms.WPFPanel):
                 return
             doc = uidoc.Document
             self._safe_ui(self._refresh_worksets_if_needed, doc)
-            if not self._elements:
+            if not self._elements or not args.GetDocument().Equals(doc):
                 return
             modified = set(args.GetModifiedElementIds())
             deleted = set(args.GetDeletedElementIds())
-            current_ids = set(e.Id for e in self._elements)
-            if current_ids & (modified | deleted):
-                live_ids = current_ids - deleted
-                live_elements = [doc.GetElement(eid) for eid in live_ids]
+            has_invalid = any(not e.IsValidObject for e in self._elements)
+            current_ids = set(e.Id for e in self._elements if e.IsValidObject)
+            if has_invalid or current_ids & (modified | deleted):
+                selected_ids = [
+                    eid for eid in uidoc.Selection.GetElementIds() if eid not in deleted
+                ]
+                live_elements = [doc.GetElement(eid) for eid in selected_ids]
                 live_elements = [e for e in live_elements if e is not None]
                 self._safe_ui(self._update_display, live_elements, doc)
         except Exception:
@@ -422,7 +432,8 @@ class CustomPropertiesPanel(forms.WPFPanel):
     def _update_display(self, elements, doc=None):
         self._suppress_dirty = True
         try:
-            self._elements = list(elements)
+            elements = [e for e in elements if e.IsValidObject]
+            self._elements = elements
             if doc is None and elements:
                 try:
                     self._doc = HOST_APP.uiapp.ActiveUIDocument.Document
@@ -1313,7 +1324,20 @@ class CustomPropertiesPanel(forms.WPFPanel):
         view = uidoc.ActiveView
 
         if not isinstance(view, DB.View):
-            forms.alert("Active view is not suitable for filters.")
+            forms.alert(
+                applocales.get_locale_string(
+                    {
+                        "en_us": "Active view is not suitable for filters.",
+                        "de_de": "Die aktive Ansicht ist für Filter nicht geeignet.",
+                        "fr_fr": "La vue active ne convient pas aux filtres.",
+                        "es_es": "La vista activa no es adecuada para filtros.",
+                        "pt_br": "A vista ativa não é adequada para filtros.",
+                        "ru": "Активный вид не подходит для фильтров.",
+                        "chinese_s": "当前视图不适用于过滤器。",
+                        "ko": "활성 뷰에는 필터를 사용할 수 없습니다.",
+                    }
+                )
+            )
             return
 
         checked_names = self._get_checked_param_names()

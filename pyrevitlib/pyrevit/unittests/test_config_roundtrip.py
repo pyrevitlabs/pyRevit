@@ -22,6 +22,10 @@ assemblies are not loadable.
 Run from Revit via the pyRevit DevTools "Config Module Tests" button.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import os
 import tempfile
 import unittest

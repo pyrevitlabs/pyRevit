@@ -350,6 +350,42 @@ def _generate_runtime_asm():
         raise compile_err
 
 
+def _select_year_runtime(assemblies, name_of):
+    """Return ``[runtime]`` when exactly one per-year pyRevit runtime is loaded.
+
+    Per-year runtimes are named ``pyRevitLabs.PyRevit.Runtime.<year>``; the
+    shared runtime and any other assembly are ignored. Returns ``[]`` when
+    none or several are loaded, so the caller keeps its usual fallback.
+
+    Note:
+        The pyRevit Runner keeps only the runtime year it was compiled against,
+        which can differ from the host year, and its command already executes
+        through that runtime. Normal sessions load the host year's runtime, so
+        this is reached only when that one is missing.
+    """
+    prefix = RUNTIME_NAMESPACE.lower() + "."
+    year_runtimes = []
+    for asm in assemblies:
+        name = safe_strtype(name_of(asm)).lower()
+        if name.startswith(prefix) and name[len(prefix) :].isdigit():
+            year_runtimes.append(asm)
+    return year_runtimes if len(year_runtimes) == 1 else []
+
+
+def _find_loaded_year_runtime():
+    year_runtime = _select_year_runtime(
+        framework.AppDomain.CurrentDomain.GetAssemblies(),
+        lambda asm: asm.GetName().Name,
+    )
+    if year_runtime:
+        mlogger.debug(
+            "Interface types assembly in use is: %s (%s is not loaded)",
+            year_runtime[0].GetName().Name,
+            RUNTIME_ASSM_NAME,
+        )
+    return year_runtime
+
+
 def _get_runtime_asm():
     if appdata.is_data_file_available(
         file_id=RUNTIME_ASSM_FILE_ID, file_ext=framework.ASSEMBLY_FILE_TYPE
@@ -359,24 +395,46 @@ def _get_runtime_asm():
         return _generate_runtime_asm()
 
 
-def create_ipyengine_configs(clean=False, full_frame=False, persistent=False):
-    """Return the configuration for ipython engine.
+def create_ipyengine_configs(
+    clean=False,
+    full_frame=False,
+    persistent=False,
+    engine_type=None,
+    bundle_engine_type=None,
+):
+    """Return Python command engine configuration.
 
     Args:
         clean (bool, optional): Engine should be clean. Defaults to False.
         full_frame (bool, optional): Engine shoul be full frame. Defaults to False.
         persistent (bool, optional): Engine should persist. Defaults to False.
+        engine_type (str, optional): The extension-level Python engine
+            declaration. ``"cpython"`` is emitted as the engine type, which
+            ``ScriptRuntime`` accepts before it applies the first-line rule;
+            any other value preserves per-script selection.
+        bundle_engine_type (str, optional): The bundle's own ``engine.type``.
+            A non-blank value is passed through verbatim and marked explicit.
 
     Returns:
         (str): Configuration
+
+    Invariant:
+        Precedence matches the C# command generator: the bundle's
+        ``engine.type`` wins over the extension declaration. ``ScriptRuntime``
+        honors only ``CPython`` or an explicit ``IronPython`` and falls back to
+        ``exts.first_line_selects_cpython`` for any other value.
     """
-    return json.dumps(
-        {
-            exts.MDATA_ENGINE_CLEAN: clean,
-            exts.MDATA_ENGINE_FULLFRAME: full_frame,
-            exts.MDATA_ENGINE_PERSISTENT: persistent,
-        }
-    )
+    engine_configs = {
+        exts.MDATA_ENGINE_CLEAN: clean,
+        exts.MDATA_ENGINE_FULLFRAME: full_frame,
+        exts.MDATA_ENGINE_PERSISTENT: persistent,
+    }
+    if bundle_engine_type and bundle_engine_type.strip():
+        engine_configs[exts.MDATA_ENGINE_TYPE] = bundle_engine_type
+        engine_configs[exts.MDATA_ENGINE_TYPE_EXPLICIT] = True
+    elif engine_type == exts.PYTHON_ENGINE_CPYTHON:
+        engine_configs[exts.MDATA_ENGINE_TYPE] = exts.ENGINE_CONFIG_CPYTHON
+    return json.dumps(engine_configs)
 
 
 def create_ext_command_attrs():
@@ -421,10 +479,10 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     and its constructor default arguments that must be provided here.
 
     Args:
-        modulebuilder (:obj:`ModuleBuilder`): dotnet module builder
+        modulebuilder (ModuleBuilder): dotnet module builder
         type_class (type): source dotnet type for the command
         class_name (str): name for the new type
-        custom_attr_list (:obj:`list`): list of dotnet attributes for the type
+        custom_attr_list (list): list of dotnet attributes for the type
         *args (Any): list of arguments to be used with type constructor
 
     Returns:
@@ -498,7 +556,7 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
 # compile or load the base types assembly
 # see it the assembly is already loaded
 RUNTIME_ASSM = None
-assm_list = assmutils.find_loaded_asm(RUNTIME_ASSM_NAME)
+assm_list = assmutils.find_loaded_asm(RUNTIME_ASSM_NAME) or _find_loaded_year_runtime()
 _perfmark("pyrevit.runtime:after assmutils.find_loaded_asm")
 if assm_list:
     RUNTIME_ASSM = assm_list[0]

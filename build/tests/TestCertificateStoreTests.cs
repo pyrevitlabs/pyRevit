@@ -6,6 +6,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Build.Tests;
 
 [TestClass]
+[TestCategory("HostFree")]
+[TestCategory("Unit")]
 public sealed class TestCertificateStoreTests {
     private const string Hash = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
 

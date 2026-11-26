@@ -35,10 +35,6 @@ available_revit_versions = [
     "2023",
     "2022",
     "2021",
-    "2020",
-    "2019",
-    "2018",
-    "2017",
 ]
 
 
@@ -316,6 +312,7 @@ class SettingsWindow(forms.WPFWindow):
         self.cur_stylesheet_tb.Text = output.get_stylesheet()
         # pyrevit gui settings
         self.loadtooltipex_cb.IsChecked = user_config.tooltip_debug_info
+        self.showtabicons_cb.IsChecked = user_config.core.ShowTabIcons
 
     def _get_event_telemetry_checkboxes(self):
         return list(
@@ -448,7 +445,9 @@ class SettingsWindow(forms.WPFWindow):
     def _setup_agent(self):
         self._agent_enabled_at_open = PyRevit.PyRevitConfigs.GetAgentEnabled()
         self.agent_cb.IsChecked = self._agent_enabled_at_open
-        self.agent_tab_highlight_cb.IsChecked = PyRevit.PyRevitConfigs.GetAgentTabHighlight()
+        self.agent_tab_highlight_cb.IsChecked = (
+            PyRevit.PyRevitConfigs.GetAgentTabHighlight()
+        )
         policy = PyRevit.PyRevitConfigs.GetAgentPolicy()
         self.agent_policy_readonly_rb.IsChecked = policy == "readonly"
         self.agent_policy_auto_rb.IsChecked = policy == "auto"
@@ -564,6 +563,9 @@ class SettingsWindow(forms.WPFWindow):
             # if attachment is for all users dont attempt at making changes
             # user probably does not have write access and this fails
             if attachment.AttachmentType == PyRevit.PyRevitAttachmentType.AllUsers:
+                return
+
+            if attachment.AttachmentType == PyRevit.PyRevitAttachmentType.PerLaunch:
                 return
 
             # notify use to restart if engine has changed
@@ -1018,11 +1020,22 @@ class SettingsWindow(forms.WPFWindow):
         if (
             self.loadtooltipex_cb.IsChecked != user_config.tooltip_debug_info
             and not self.reload_requested
+            and not request_reload
         ):
             request_reload = forms.alert(
                 self.get_locale_string("UI-UX.NeedReload"), yes=True, no=True
             )
         user_config.tooltip_debug_info = self.loadtooltipex_cb.IsChecked
+
+        if (
+            self.showtabicons_cb.IsChecked != user_config.core.ShowTabIcons
+            and not self.reload_requested
+            and not request_reload
+        ):
+            request_reload = forms.alert(
+                self.get_locale_string("UI-UX.NeedReload"), yes=True, no=True
+            )
+        user_config.core.ShowTabIcons = self.showtabicons_cb.IsChecked
 
         return request_reload
 

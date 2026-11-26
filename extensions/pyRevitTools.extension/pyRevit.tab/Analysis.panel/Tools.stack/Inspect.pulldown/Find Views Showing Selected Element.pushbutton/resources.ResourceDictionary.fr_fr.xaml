@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="progress_title">Recherche dans les vues</sys:String>
+    <sys:String x:Key="views_containing">Vues contenant les éléments sélectionnés</sys:String>
+    <sys:String x:Key="no_views">Aucun des éléments sélectionnés n'est visible dans une vue.</sys:String>
+    <sys:String x:Key="table_title">{} vue(s)</sys:String>
+    <sys:String x:Key="column_view">Vue</sys:String>
+    <sys:String x:Key="column_view_type">Type de vue</sys:String>
+    <sys:String x:Key="column_matches">Éléments sélectionnés affichés</sys:String>
+    <sys:String x:Key="column_show">Sélectionner/Afficher l'élément</sys:String>
+</ResourceDictionary>

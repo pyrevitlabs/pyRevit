@@ -2,7 +2,7 @@
 
 Adds parsing of Definition Lists to Python-Markdown.
 
-See <https://pythonhosted.org/Markdown/extensions/definition_lists.html>
+See <https://python-markdown.github.io/extensions/definition_lists/>
 for documentation.
 
 Original code Copyright 2008 [Waylan Limberg](http://achinghead.com)

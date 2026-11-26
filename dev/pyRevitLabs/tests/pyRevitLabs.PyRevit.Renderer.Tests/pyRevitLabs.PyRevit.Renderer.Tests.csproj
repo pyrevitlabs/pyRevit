@@ -17,6 +17,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
         <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
         <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
@@ -73,6 +74,9 @@
         <Compile Include="..\..\..\pyRevitLoader\Source\AssemblyLoadPolicy.cs" Link="Sources\AssemblyLoadPolicy.cs" />
         <None Include="..\..\..\pyRevitLoader\Source\PyRevitLoaderApplication.cs"
               Link="Sources\PyRevitLoaderApplication.cs"
+              CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\..\..\pyRevitLoader\Source\PyRevitRunnerApplication.cs"
+              Link="Sources\PyRevitRunnerApplication.cs"
               CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 

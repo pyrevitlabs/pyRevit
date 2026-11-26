@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="sheets_containing">Листы, содержащие выбранные элементы</sys:String>
+    <sys:String x:Key="no_sheets">Ни один из выбранных элементов не показан на листах.</sys:String>
+    <sys:String x:Key="table_title">Листы и видовые экраны</sys:String>
+    <sys:String x:Key="column_number">Номер листа</sys:String>
+    <sys:String x:Key="column_sheet">Название листа</sys:String>
+    <sys:String x:Key="column_sheet_show">Показать лист</sys:String>
+    <sys:String x:Key="column_view">Вид</sys:String>
+    <sys:String x:Key="column_viewport_show">Показать видовой экран</sys:String>
+</ResourceDictionary>

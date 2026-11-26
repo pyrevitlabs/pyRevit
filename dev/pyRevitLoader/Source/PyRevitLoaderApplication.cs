@@ -69,10 +69,11 @@ namespace PyRevitLoader
             var startupTimestamp = Stopwatch.GetTimestamp();
             var processUptimeMilliseconds = GetProcessUptimeMilliseconds();
             _uiControlledApplication = application;
-            LoadAssembliesInFolder(LoaderPath);
+            var hostYear = application.ControlledApplication.VersionNumber;
+            LoadAssembliesInFolder(LoaderPath, hostYear);
             // We also need to load dlls from two folders up
             var commonFolder = Path.GetDirectoryName(Path.GetDirectoryName(LoaderPath));
-            LoadAssembliesInFolder(commonFolder);
+            LoadAssembliesInFolder(commonFolder, hostYear);
             var assembliesLoadedTimestamp = Stopwatch.GetTimestamp();
 
             try
@@ -112,13 +113,13 @@ namespace PyRevitLoader
             }
         }
 
-        private static void LoadAssembliesInFolder(string folder)
+        private static void LoadAssembliesInFolder(string folder, string hostYear)
         {
             // load all engine assemblies
             // this is to ensure pyRevit is loaded on its own assemblies
             foreach (var engineDll in Directory.GetFiles(folder, "*.dll"))
             {
-                var decision = AssemblyLoadPolicy.ShouldSkip(engineDll);
+                var decision = AssemblyLoadPolicy.ShouldSkip(engineDll, hostYear);
                 if (decision.Skip)
                     continue;
                 try

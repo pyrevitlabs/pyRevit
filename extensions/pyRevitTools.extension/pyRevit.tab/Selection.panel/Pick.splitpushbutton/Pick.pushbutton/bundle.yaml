@@ -18,38 +18,33 @@ tooltip:
 
     Shift 키를 누르고 클릭:
     사용 가능한 카테고리 중 즐겨찾기 카테고리를 선택합니다.
-  fr_fr: >-
+  fr_fr: |-
     Active l'outil de sélection qui sélectionne un type d'élément spécifique
 
-     Maj+clic :
-
-     Choisissez vos favoris dans toutes les catégories disponibles
-  ru: >-
+    Maj+clic :
+    Choisissez vos favoris dans toutes les catégories disponibles
+  ru: |-
     Активирует инструмент выделения, который выбирает определенный тип элемента.
 
-    Щелчок с удержанием клавиши Shift:
-
+    Shift + Щелчок:
     Выбрать избранное из всех доступных категорий.
   chinese_s: |-
     启用选择工具，以便从特定类别中拾取图元。
 
     按住 Shift 键单击：
     从所有可用类别中选择要收藏的类别。
-  es_es: >-
+  es_es: |-
     Activa la herramienta de selección que elige un tipo específico de elemento
 
     Mayús-clic:
-
     Elegir favoritos de todas las categorías disponibles
-  de_de: >-
+  de_de: |-
     Aktiviert ein besonderes Auswahlwerkzeug,  das nur einen bestimmten Typ von Elementen auswählt. 
 
     Bei gedrückter Umschalttaste klicken:
-
     In einem Auswahldialog kann man gezielt Kategorien auswählen,  die dann mit dem Auswahlwerkzeug auswählbar sind.
-  pt_br: >-
+  pt_br: |-
     Ativa a ferramenta de seleção que escolhe um tipo específico de elemento
-    
+
     Clique mantendo a tecla Shift pressionada:
-    
     Escolher favoritos de todas as categorias disponíveis

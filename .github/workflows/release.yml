@@ -68,7 +68,7 @@ jobs:
           exit 1
 
       - name: Download unsigned bin artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: unsigned-bin-${{ github.sha }}
           run-id: ${{ steps.wait_ci.outputs.run_id }}
@@ -99,7 +99,7 @@ jobs:
           gh release upload ci-binaries $branchZip --clobber
 
       - name: Download stamped release metadata
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: stamped-release-metadata-${{ github.sha }}
           run-id: ${{ steps.wait_ci.outputs.run_id }}
@@ -127,7 +127,6 @@ jobs:
           Signing__Endpoint: ${{ secrets.AZURE_ENDPOINT }}
           Signing__SigningAccountName: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
           Signing__CertificateProfileName: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
-          Publish__ChocoToken: ${{ secrets.CHOCO_TOKEN }}
           Publish__WingetToken: ${{ secrets.WINGET_GITHUB_TOKEN }}
         run: dotnet run -c Release -- release pack sign publish
 

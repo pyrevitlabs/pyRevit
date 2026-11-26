@@ -35,16 +35,23 @@ def _solids(geometry):
                 pending.append(item)
 
 
-def _element_meshes(element):
-    """Translucent meshes of an element's solids, or of its bounding box."""
+def element_meshes(
+    element, color=GHOST_COLOR, detail_level=DB.ViewDetailLevel.Fine, edge_color=None
+):
+    """Return meshes of an element's solids in ``color``, else of its bounding box.
+
+    Edges are black unless ``edge_color`` is given.
+    """
     options = DB.Options()
-    options.DetailLevel = DB.ViewDetailLevel.Fine
+    options.DetailLevel = detail_level
     meshes = []
     try:
         geometry = element.get_Geometry(options)
         if geometry is not None:
             for solid in _solids(geometry):
-                mesh = dc3dserver.Mesh.from_solid(element.Document, solid, GHOST_COLOR)
+                mesh = dc3dserver.Mesh.from_solid(
+                    element.Document, solid, color, edge_color=edge_color
+                )
                 if mesh is not None:
                     meshes.append(mesh)
     except Exception:
@@ -52,13 +59,13 @@ def _element_meshes(element):
     if not meshes:
         bbox = element.get_BoundingBox(None)
         if bbox is not None:
-            mesh = dc3dserver.Mesh.from_boundingbox(bbox, GHOST_COLOR)
+            mesh = dc3dserver.Mesh.from_boundingbox(bbox, color, edge_color=edge_color)
             if mesh is not None:
                 meshes.append(mesh)
     return meshes
 
 
-def _zoom_to(uidoc, view, element):
+def zoom_to(uidoc, view, element):
     """Zoom the open UI view of ``view`` around the element's extents."""
     bbox = element.get_BoundingBox(None)
     if bbox is None:
@@ -109,14 +116,22 @@ class GhostPreview(object):
             del self._meshes[key]
             self._refresh(uidoc)
             return False
-        self._meshes[key] = _element_meshes(element)
+        self._meshes[key] = element_meshes(element)
         self._refresh(uidoc)
         if uidoc.ActiveView.Id == view.Id:
-            _zoom_to(uidoc, view, element)
+            zoom_to(uidoc, view, element)
         else:
             self._zoom_after_activation(view, element)
             uidoc.RequestViewChange(view)
         return True
+
+    def forget(self, element_id_value):
+        """Remove the ghost of an element that left the report, if it has one."""
+        if self._meshes.pop(element_id_value, None) is None:
+            return
+        uidoc = HOST_APP.uiapp.ActiveUIDocument
+        if uidoc is not None and self._server is not None:
+            self._refresh(uidoc)
 
     def close(self):
         """Remove all ghosts and unregister the server."""
@@ -166,7 +181,7 @@ class GhostPreview(object):
             target = self.doc.GetElement(element_id)
             if uidoc is None or target is None or uidoc.ActiveView.Id != view_id:
                 return
-            _zoom_to(uidoc, uidoc.ActiveView, target)
+            zoom_to(uidoc, uidoc.ActiveView, target)
 
         def on_view_activated(sender, args):
             if args.CurrentActiveView is None or args.CurrentActiveView.Id != view_id:

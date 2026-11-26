@@ -103,7 +103,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
                     if (!usedShortcuts.Add(shortcut))
                     {
-                        _logger.Debug($"Shortcut '{shortcut}' for button '{request.ButtonName}' is already assigned to another command and was skipped.");
+                        _logger.Warning($"Shortcut '{shortcut}' for button '{request.ButtonName}' is already assigned to another command and was skipped.");
                         continue;
                     }
 

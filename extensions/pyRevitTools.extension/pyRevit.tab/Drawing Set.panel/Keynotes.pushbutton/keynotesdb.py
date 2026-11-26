@@ -14,7 +14,7 @@ from pyrevit import HOST_APP, DOCS
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import framework
-from pyrevit.framework import System
+from pyrevit.framework import System, to_clr_list
 from pyrevit import revit
 from pyrevit import forms
 
@@ -245,7 +245,7 @@ class RKeynoteExpansion(object):
         if not live_keys:
             return
         missing = self.saved - live_keys
-        self.saved -= (missing & self._missed)
+        self.saved -= missing & self._missed
         self._missed = missing
 
 
@@ -314,7 +314,7 @@ class RKeynote(forms.Reactive):
     def multi_selected(self, value):
         value = bool(value)
         if value == self._multi_selected:
-            return          # never raise a no-op change at the binding
+            return  # never raise a no-op change at the binding
         self._multi_selected = value
         self.OnPropertyChanged("multi_selected")
 
@@ -478,7 +478,7 @@ def _verify_keynotesdb_def(conn):
         cat_table_def.SupportsHistory = False
         cat_table_def.EncapsulateValues = False
         cat_table_def.SupportsHeaders = False
-        cat_table_def.Fields = [cat_key, cat_title]
+        cat_table_def.Fields = to_clr_list(dfdb.Field, [cat_key, cat_title])
         cat_table_def.Description = CATEGORIES_TABLE_DESC
         conn.CreateTable(KEYNOTES_DB, CATEGORIES_TABLE, cat_table_def)
 
@@ -497,7 +497,9 @@ def _verify_keynotesdb_def(conn):
         keynotes_table_def.SupportsHistory = False
         keynotes_table_def.EncapsulateValues = False
         keynotes_table_def.SupportsHeaders = False
-        keynotes_table_def.Fields = [keynote_key, keynote_text, keynote_parent_key]
+        keynotes_table_def.Fields = to_clr_list(
+            dfdb.Field, [keynote_key, keynote_text, keynote_parent_key]
+        )
         # wiring the keynotes primary key
         keynotes_table_def.Wires = [
             dfdb.Wire(KEYNOTES_PARENTKEY_FIELD, CATEGORY_KEY_FIELD),
@@ -778,24 +780,41 @@ def release_locks(keynotes_file, lock_ids, username=None):
     return released
 
 
+def _record_values(values):
+    record = framework.Dictionary[str, System.Object]()
+    for name, value in values.items():
+        record[name] = value
+    return record
+
+
 # categories ------------------------------------------------------------------
 
 
 def add_category(conn, key, text):
     text = normalize_keynote_text(text)
-    conn.InsertRecord(KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_TITLE_FIELD: text})
+    conn.InsertRecord(
+        KEYNOTES_DB, CATEGORIES_TABLE, key, _record_values({CATEGORY_TITLE_FIELD: text})
+    )
     return RKeynote(key=key, text=text)
 
 
 def update_category_title(conn, key, new_title):
     new_title = normalize_keynote_text(new_title)
     conn.UpdateRecord(
-        KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_TITLE_FIELD: new_title}
+        KEYNOTES_DB,
+        CATEGORIES_TABLE,
+        key,
+        _record_values({CATEGORY_TITLE_FIELD: new_title}),
     )
 
 
 def update_category_key(conn, key, new_key):
-    conn.UpdateRecord(KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_KEY_FIELD: new_key})
+    conn.UpdateRecord(
+        KEYNOTES_DB,
+        CATEGORIES_TABLE,
+        key,
+        _record_values({CATEGORY_KEY_FIELD: new_key}),
+    )
 
 
 def mark_category_under_edited(conn, key):
@@ -815,7 +834,9 @@ def add_keynote(conn, key, text, parent_key):
         KEYNOTES_DB,
         KEYNOTES_TABLE,
         key,
-        {KEYNOTES_TEXT_FIELD: text, KEYNOTES_PARENTKEY_FIELD: parent_key},
+        _record_values(
+            {KEYNOTES_TEXT_FIELD: text, KEYNOTES_PARENTKEY_FIELD: parent_key}
+        ),
     )
     return RKeynote(key=key, text=text, parent_key=parent_key)
 
@@ -830,16 +851,23 @@ def mark_keynote_under_edited(conn, key):
 
 def update_keynote_text(conn, key, text):
     text = normalize_keynote_text(text)
-    conn.UpdateRecord(KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_TEXT_FIELD: text})
+    conn.UpdateRecord(
+        KEYNOTES_DB, KEYNOTES_TABLE, key, _record_values({KEYNOTES_TEXT_FIELD: text})
+    )
 
 
 def update_keynote_key(conn, key, new_key):
-    conn.UpdateRecord(KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_KEY_FIELD: new_key})
+    conn.UpdateRecord(
+        KEYNOTES_DB, KEYNOTES_TABLE, key, _record_values({KEYNOTES_KEY_FIELD: new_key})
+    )
 
 
 def move_keynote(conn, key, new_parent):
     conn.UpdateRecord(
-        KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_PARENTKEY_FIELD: new_parent}
+        KEYNOTES_DB,
+        KEYNOTES_TABLE,
+        key,
+        _record_values({KEYNOTES_PARENTKEY_FIELD: new_parent}),
     )
 
 
@@ -951,6 +979,7 @@ def _paste_step(conn, row):
 
     if action == "add":
         if is_cat:
+
             def _do(k=key, t=text):
                 add_category(conn, k, t)
 
@@ -964,6 +993,7 @@ def _paste_step(conn, row):
 
             def _undo(k=key):
                 remove_keynote(conn, k)
+
         return _do, _undo
 
     if action == "overwrite":
@@ -971,17 +1001,20 @@ def _paste_step(conn, row):
         # re-scan the whole table once per row
         old_text = normalize_keynote_text(row.get("target_text") or "")
         if is_cat:
+
             def _do(k=key, t=text):
                 update_category_title(conn, k, t)
 
             def _undo(k=key, t=old_text):
                 update_category_title(conn, k, t)
         else:
+
             def _do(k=key, t=text):
                 update_keynote_text(conn, k, t)
 
             def _undo(k=key, t=old_text):
                 update_keynote_text(conn, k, t)
+
         return _do, _undo
 
     raise ValueError("unknown paste action: %s" % action)
@@ -1023,6 +1056,7 @@ def _delete_step(conn, row):
     text = normalize_keynote_text(row.get("text") or "")
 
     if row.get("is_category"):
+
         def _do(k=key):
             remove_category(conn, k)
 
@@ -1036,6 +1070,7 @@ def _delete_step(conn, row):
 
         def _undo(k=key, t=text, p=parent):
             add_keynote(conn, k, t, p)
+
     return _do, _undo
 
 

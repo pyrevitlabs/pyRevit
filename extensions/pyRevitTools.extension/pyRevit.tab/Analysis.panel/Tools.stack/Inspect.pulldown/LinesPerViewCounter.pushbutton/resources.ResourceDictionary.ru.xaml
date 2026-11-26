@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="lines_per_view">Линии детализации по видам</sys:String>
+    <sys:String x:Key="line_count_in_document">Количество линий в текущем документе: {}</sys:String>
+    <sys:String x:Key="lines_in_links">Линии детализации по видам в связях Revit</sys:String>
+    <sys:String x:Key="line_count_in_link">Количество линий в связи Revit: {}</sys:String>
+    <sys:String x:Key="no_detail_lines">Линии детализации не найдены.</sys:String>
+    <sys:String x:Key="no_view_name">&lt;имя вида недоступно&gt;</sys:String>
+    <sys:String x:Key="lines_in_total">Всего линий: {}</sys:String>
+    <sys:String x:Key="in_views">На видах: {}</sys:String>
+    <sys:String x:Key="column_number">Количество</sys:String>
+    <sys:String x:Key="column_name">Название</sys:String>
+    <sys:String x:Key="column_id">Id</sys:String>
+    <sys:String x:Key="column_creator">Автор</sys:String>
+</ResourceDictionary>

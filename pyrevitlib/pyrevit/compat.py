@@ -154,6 +154,18 @@ def get_elementid_from_value_func():
     return from_value
 
 
+def clr_implementation(value):
+    """Return the runtime-typed object behind an interface-typed CLR value.
+
+    pythonnet 3 wraps a value returned through an interface-typed member (such
+    as ``PrintSetup.CurrentPrintSetting``, an ``IPrintSetting``) as that
+    interface: the concrete type's members are missing and ``isinstance``
+    against the concrete type fails. IronPython always exposes the runtime
+    type, so this returns ``value`` unchanged there.
+    """
+    return getattr(value, "__implementation__", value)
+
+
 def urlopen(url):
     """Urlopen wrapper.
 

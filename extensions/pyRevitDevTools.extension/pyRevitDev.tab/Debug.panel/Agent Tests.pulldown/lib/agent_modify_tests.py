@@ -1,5 +1,9 @@
 """Agent modify runs: decisions, change sets, rollback and the run guard's blocks."""
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import os
 import os.path as op
 import shutil
@@ -52,7 +56,9 @@ class DecisionTests(TestCase):
         self.assertEqual(1, added["changes"]["added_count"])
         deleted = _modify(
             "t = DB.Transaction(doc, 'delete level')\nt.Start()\n"
-            "doc.Delete(DB.ElementId(inputs['id']))\nt.Commit()\n",
+            "doc.Delete({element})\nt.Commit()\n".format(
+                element=harness.INPUT_ELEMENT_ID
+            ),
             inputs={"id": added["result"]},
         )
         self.assertEqual(1, deleted["changes"]["deleted_count"])
@@ -153,8 +159,8 @@ class RollbackTests(TestCase):
         before = harness.comment(_wall())
         response = _modify(
             "t = DB.Transaction(doc, 'left open')\nt.Start()\n"
-            "doc.GetElement(DB.ElementId(inputs['id'])).get_Parameter({}).Set('agent-open')\n".format(
-                harness.COMMENTS
+            "doc.GetElement({element}).get_Parameter({}).Set('agent-open')\n".format(
+                harness.COMMENTS, element=harness.INPUT_ELEMENT_ID
             ),
             inputs={"id": _wall()},
         )
@@ -169,12 +175,45 @@ class RollbackTests(TestCase):
             "def change():\n"
             "    transaction = DB.Transaction(doc, 'helper transaction')\n"
             "    transaction.Start()\n"
-            "    doc.GetElement(DB.ElementId(inputs['id'])).get_Parameter({}).Set('agent-local')\n"
+            "    doc.GetElement({element}).get_Parameter({}).Set('agent-local')\n"
             "    raise ValueError('boom')\n"
-            "change()\n".format(harness.COMMENTS),
+            "change()\n".format(harness.COMMENTS, element=harness.INPUT_ELEMENT_ID),
             inputs={"id": _wall()},
         )
         self.assertEqual("ValueError", response["error"]["type"])
+        self.assertEqual(before, harness.comment(_wall()))
+        self.assertFalse(harness.session().project.IsModifiable)
+
+    def test_function_local_transaction_left_open_on_return_is_rolled_back(self):
+        """A helper that returns with its transaction still open cannot orphan it."""
+        before = harness.comment(_wall())
+        response = _modify(
+            "def change():\n"
+            "    transaction = DB.Transaction(doc, 'helper transaction')\n"
+            "    transaction.Start()\n"
+            "    doc.GetElement({element}).get_Parameter({}).Set('agent-local')\n"
+            "change()\n".format(harness.COMMENTS, element=harness.INPUT_ELEMENT_ID),
+            inputs={"id": _wall()},
+        )
+        self.assertEqual("transaction_left_open", response["error"]["type"])
+        self.assertEqual(before, harness.comment(_wall()))
+        self.assertFalse(harness.session().project.IsModifiable)
+
+    def test_timeout_in_a_helper_rolls_back_its_open_transaction(self):
+        """A timeout inside a helper still finds the transaction only that helper holds."""
+        before = harness.comment(_wall())
+        response = _modify(
+            "def change():\n"
+            "    transaction = DB.Transaction(doc, 'helper transaction')\n"
+            "    transaction.Start()\n"
+            "    doc.GetElement({element}).get_Parameter({}).Set('agent-local')\n"
+            "    while True:\n"
+            "        pass\n"
+            "change()\n".format(harness.COMMENTS, element=harness.INPUT_ELEMENT_ID),
+            inputs={"id": _wall()},
+            timeout=2,
+        )
+        self.assertEqual("timeout", response["error"]["type"])
         self.assertEqual(before, harness.comment(_wall()))
         self.assertFalse(harness.session().project.IsModifiable)
 
@@ -216,10 +255,63 @@ class BlockTests(TestCase):
             "views.Add(doc.ActiveView.Id)\ndoc.Export(inputs['folder'], 'agent', views, DB.DWGExportOptions())\n",
             inputs={"folder": folder},
         )
-        self.assertIn(
-            "file_export", [entry["operation"] for entry in response["blocked"]]
-        )
+        blocked = [
+            entry
+            for entry in response["blocked"]
+            if entry["operation"] == "file_export"
+        ]
+        self.assertTrue(blocked)
+        self.assertTrue(op.normcase(blocked[0]["path"]).startswith(op.normcase(folder)))
         self.assertEqual([], os.listdir(folder))
+
+    def test_export_into_export_dir_is_allowed_and_listed(self):
+        """An image export with FilePath = export_dir is written inside it and listed."""
+        response = _modify(
+            "import os\nfrom System.Collections.Generic import List\n"
+            "views = List[DB.ElementId]()\nviews.Add(doc.ActiveView.Id)\n"
+            "options = DB.ImageExportOptions()\n"
+            "options.ExportRange = DB.ExportRange.SetOfViews\n"
+            "options.SetViewsAndSheets(views)\n"
+            "options.FilePath = export_dir\n"
+            "options.HLRandWFViewsFileType = DB.ImageFileType.PNG\n"
+            "options.ZoomType = DB.ZoomFitType.FitToPage\n"
+            "options.PixelSize = 256\n"
+            "doc.ExportImage(options)\n"
+            "result = export_dir.endswith(os.sep)\n",
+        )
+        self.assertEqual("ok", response["status"])
+        self.assertTrue(response["result"])
+        self.assertFalse(response.get("blocked"))
+        exports = response["exports"]
+        self.assertTrue(exports)
+        folder = op.normcase(op.join(response["run_dir"], "exports"))
+        for path in exports:
+            self.assertTrue(op.isfile(path))
+            self.assertTrue(op.normcase(path).startswith(folder))
+
+    def test_background_export_is_blocked_into_export_dir_too(self):
+        """A background PDF export is cancelled as background_export and writes nothing."""
+        response = _modify(
+            "from System.Collections.Generic import List\n"
+            "if not hasattr(DB.PDFExportOptions, 'SetExportInBackground'):\n"
+            "    result = 'unsupported'\n"
+            "else:\n"
+            "    views = List[DB.ElementId]()\n    views.Add(doc.ActiveView.Id)\n"
+            "    options = DB.PDFExportOptions()\n    options.Combine = False\n"
+            "    options.SetExportInBackground(True)\n"
+            "    doc.Export(export_dir, views, options)\n"
+            "    result = 'exported'\n",
+        )
+        if response.get("result") == "unsupported":
+            self.skipTest("Background export needs Revit 2025 or later.")
+        blocked = [
+            entry
+            for entry in response.get("blocked", [])
+            if entry["operation"] == "background_export"
+        ]
+        self.assertEqual(1, len(blocked))
+        self.assertTrue(blocked[0]["path"])
+        self.assertFalse(response.get("exports"))
 
     def test_document_opened_in_the_background_cannot_be_saved_and_is_closed(self):
         """A document the run opens can't be saved, and it is closed after the run."""

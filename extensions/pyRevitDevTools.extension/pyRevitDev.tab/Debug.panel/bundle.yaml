@@ -11,7 +11,10 @@ layout:
 - Logs
 - -----
 - Unit Tests
+- ">>>"
+- Log Output Tests[title:Log Output\nTests]
 - Engine Tests
+- Forms Tests
 - Agent Tests
 - Bundle Tests
 - Icon Inheritance Examples
@@ -19,8 +22,9 @@ layout:
 - Misc Tests[title:Third-Party\nUnit Tests]
 - Debug Dialog Config
 - WebView2 Check
-- -----
 - Test ComboBox
+- Test CheckBox
+- Test CheckBox Stack
 
 template_test: Bundle liquid templating works (https://www.youtube.com/watch?v=)
 docpath: https://docs.pyrevitlabs.io/

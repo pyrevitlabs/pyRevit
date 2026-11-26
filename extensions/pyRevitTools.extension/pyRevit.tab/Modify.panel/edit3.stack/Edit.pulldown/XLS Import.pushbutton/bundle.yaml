@@ -12,27 +12,37 @@ tooltip:
     Imports element parameter values from a previously exported Excel file.
     The file must contain valid element IDs and parameter values in configured unittype.
     Read-only and unsupported parameters will be skipped. User-modifiable status is ignored.
-  ko: 이전에 내보낸 Excel 파일에서 요소 매개변수 값을 가져옵니다.
+    Blank cells are ignored and never clear a value. A summary of what was set and skipped is shown at the end.
+  ko: >-
+    이전에 내보낸 Excel 파일에서 요소 매개변수 값을 가져옵니다.
+    빈 셀은 무시되며 기존 값을 지우지 않습니다. 설정된 항목과 건너뛴 항목의 요약이 마지막에 표시됩니다.
   fr_fr: >-
     Importe les valeurs des paramètres d’éléments depuis un fichier Excel précédemment exporté.
     Le fichier doit contenir des identifiants d’éléments valides et des valeurs de paramètres dans le type d’unité configuré.
     Les paramètres en lecture seule ou non pris en charge seront ignorés. Le statut modifiable par l’utilisateur est ignoré.
+    Les cellules vides sont ignorées et n’effacent jamais une valeur. Un résumé des valeurs définies et ignorées s’affiche à la fin.
   ru: >-
     Импортирует значения параметров элементов из ранее экспортированного файла Excel.
     Файл должен содержать допустимые идентификаторы элементов и значения параметров в настроенном типе единиц.
     Параметры только для чтения и неподдерживаемые параметры будут пропущены. Статус редактируемости пользователем игнорируется.
-  chinese_s: 从先前导出的 Excel 文件导入图元参数值。该文件必须包含有效的图元 ID 以及符合已配置单位类型的参数值。只读和不支持的参数将被跳过。用户可修改的状态将被忽略。
+    Пустые ячейки игнорируются и никогда не стирают значение. В конце показывается сводка установленных и пропущенных значений.
+  chinese_s: >-
+    从先前导出的 Excel 文件导入图元参数值。该文件必须包含有效的图元 ID 以及符合已配置单位类型的参数值。只读和不支持的参数将被跳过。用户可修改的状态将被忽略。
+    空白单元格会被忽略，且不会清除现有值。结束时会显示已设置和已跳过内容的摘要。
   es_es: >-
     Importa valores de parámetros de elementos desde un archivo Excel previamente exportado.
     El archivo debe contener IDs de elementos válidos y valores de parámetros en el tipo de unidad configurado.
     Los parámetros de solo lectura y no admitidos se omitirán. El estado modificable por el usuario se ignora.
+    Las celdas vacías se ignoran y nunca borran un valor. Al final se muestra un resumen de lo establecido y lo omitido.
   de_de: >-
     Importiert Werte von Elementparametern aus einer zuvor exportierten Excel-Datei.
     Die Datei muss gültige Element-IDs und Parameterwerte im konfigurierten Einheitentyp enthalten.
     Schreibgeschützte und nicht unterstützte Parameter werden übersprungen. Der Benutzer-Bearbeitbarkeitsstatus wird ignoriert.
+    Leere Zellen werden ignoriert und löschen nie einen Wert. Am Ende wird eine Zusammenfassung der gesetzten und übersprungenen Werte angezeigt.
   pt_br: >-
     Importa valores de parâmetros de elementos de um arquivo Excel exportado anteriormente. 
     O arquivo deve conter IDs de elemento válidos e valores de parâmetros no tipo de unidade configurado. 
     Parâmetros somente leitura e não suportados serão ignorados. O status modificável pelo usuário é ignorado.
+    Células em branco são ignoradas e nunca apagam um valor. Um resumo do que foi definido e ignorado é exibido no final.
 author: wurschdhaud
 min_revit_version: 2022

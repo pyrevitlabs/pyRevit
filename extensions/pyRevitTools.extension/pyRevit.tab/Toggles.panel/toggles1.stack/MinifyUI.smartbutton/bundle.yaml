@@ -18,39 +18,34 @@ tooltip:
 
     Shift 키를 누르고 클릭:
     인터페이스를 최소화할 때 숨길 탭을 선택합니다.
-  fr_fr: >-
+  fr_fr: |-
     Réduire la liste des onglets Revit ouverts
 
     Maj+clic :
-
     Personnalisez les onglets à masquer en mode minimisé
-  ru: >-
+  ru: |-
     Минимизирует список открытых вкладок Revit.
 
-    Щелчок с удержанием клавиши Shift:
-
+    Shift + Щелчок:
     Настроить, какие вкладки должны быть скрыты в мини-режиме.
   chinese_s: |-
     切换 Revit 选项卡的最小化布局。
 
     按住 Shift 键单击：
     选择界面最小化时隐藏的选项卡。
-  es_es: >-
+  es_es: |-
     Reduce the list of open Revit tabs
 
     Mayús-clic:
-
     Customize which tabs should be hidden in minified mode
-  de_de: >-
+  de_de: |-
     Die Aktivierung reduziert die Anzahl der Registerkarten der Revit Multifunktionsleiste. Welche Registerkarten dabei ausgeblendet werden, wird in den Einstellungen festgelegt. Diese öffnet man, indem man bei gedrückter Umschalttaste auf das Werkzeug klickt.
 
     Bei gedrückter Umschalttaste klicken:
-
     Es öffnet sich ein Auswahldialog mit allen verfügbaren Registerkarten.  Alle Register die hier ausgewählt werden, werden ausgeblendet,  wenn man den Befehl "Revit UI minimieren" aktiviert.
-  pt_br: >-
+  pt_br: |-
     Reduz a lista de abas abertas do Revit
-    
+
     Clique mantendo a tecla Shift pressionada:
-    
     Personalizar quais abas devem ser ocultadas no modo minimizado
 context: zero-doc

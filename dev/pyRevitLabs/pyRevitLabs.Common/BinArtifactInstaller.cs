@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 
 using pyRevitLabs.NLog;
 
@@ -90,14 +92,26 @@ namespace pyRevitLabs.Common {
             }
         }
 
+        /// <summary>
+        /// Installs the CI binaries that match the head commit of a git clone, replacing its <c>bin</c> folder.
+        /// </summary>
+        /// <param name="clonePath">The clone folder.</param>
+        /// <param name="repoUrl">The repository url, or null to read the clone's origin remote.</param>
+        /// <param name="mode">Whether the clone is new or being updated.</param>
+        /// <param name="branchName">The branch to resolve binaries for, or null for the checked-out branch.</param>
+        /// <exception cref="PyRevitException">
+        /// No <paramref name="repoUrl"/> was given and the clone has no origin remote.
+        /// </exception>
+        /// <exception cref="pyRevitBinArtifactNotFoundException">No CI binaries exist for the clone's commit.</exception>
         public static void InstallForRepoClone(
             string clonePath,
             string repoUrl,
             BinArtifactInstallMode mode,
             string branchName = null) {
-            var repoId = GithubRepoHelper.ParseRepoId(repoUrl ?? GitInstaller.GetRemoteUrl(
-                clonePath,
-                PyRevitLabsConsts.DefaultRemoteName));
+            var effectiveUrl = repoUrl ?? GitInstaller.GetRemoteUrl(clonePath, PyRevitLabsConsts.DefaultRemoteName);
+            if (effectiveUrl == null)
+                throw new PyRevitException(string.Format("Clone \"{0}\" has no origin remote.", clonePath));
+            var repoId = GithubRepoHelper.ParseRepoId(effectiveUrl);
             var resolvedBranch = !string.IsNullOrWhiteSpace(branchName)
                 ? branchName
                 : (GitInstaller.GetCheckedoutBranch(clonePath) ?? PyRevitLabsConsts.TargetBranch);
@@ -125,8 +139,14 @@ namespace pyRevitLabs.Common {
             out bool usedBranchFallback) {
             usedBranchFallback = false;
 
+            var releaseRepos = BinArtifactSupport.GetReleaseDownloadRepos(repoId);
+            var isVersionTag = BinArtifactSupport.IsVersionTagRef(branchName);
+
+            if (isVersionTag && TryDownloadVersionTagBin(releaseRepos.Take(1), branchName, destPath))
+                return true;
+
             var shaAsset = GithubReleaseBinAPI.BuildShaAssetName(normalizedSha);
-            foreach (var releaseRepoId in BinArtifactSupport.GetReleaseDownloadRepos(repoId)) {
+            foreach (var releaseRepoId in releaseRepos) {
                 if (GithubReleaseBinAPI.TryDownloadReleaseAsset(releaseRepoId, shaAsset, destPath)) {
                     if (BinArtifactSupport.IsForkRepo(repoId)
                         && string.Equals(releaseRepoId, PyRevitLabsConsts.OriginalRepoId, StringComparison.OrdinalIgnoreCase)) {
@@ -136,11 +156,8 @@ namespace pyRevitLabs.Common {
                 }
             }
 
-            // Published v* releases attach a durable signed bin zip; try it when SHA assets are absent.
-            if (BinArtifactSupport.IsVersionTagRef(branchName)
-                && TryDownloadVersionTagBin(repoId, branchName, destPath)) {
+            if (isVersionTag && TryDownloadVersionTagBin(releaseRepos.Skip(1), branchName, destPath))
                 return true;
-            }
 
             if (!allowBranchFallback || !BinArtifactSupport.IsSupportedCiBinBranch(branchName))
                 return false;
@@ -172,9 +189,12 @@ namespace pyRevitLabs.Common {
             return false;
         }
 
-        private static bool TryDownloadVersionTagBin(string repoId, string tagName, string destPath) {
+        private static bool TryDownloadVersionTagBin(
+            IEnumerable<string> releaseRepoIds,
+            string tagName,
+            string destPath) {
             var tagAsset = GithubReleaseBinAPI.BuildVersionTagBinAssetName(tagName);
-            foreach (var releaseRepoId in BinArtifactSupport.GetReleaseDownloadRepos(repoId)) {
+            foreach (var releaseRepoId in releaseRepoIds) {
                 if (GithubReleaseBinAPI.TryDownloadReleaseAsset(
                     releaseRepoId,
                     tagAsset,

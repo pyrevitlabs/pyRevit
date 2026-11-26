@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="lines_per_view">各视图的详图线数量</sys:String>
+    <sys:String x:Key="line_count_in_document">当前文档中的线数量：{}</sys:String>
+    <sys:String x:Key="lines_in_links">Revit 链接中各视图的详图线数量</sys:String>
+    <sys:String x:Key="line_count_in_link">Revit 链接中的线数量：{}</sys:String>
+    <sys:String x:Key="no_detail_lines">未找到详图线。</sys:String>
+    <sys:String x:Key="no_view_name">&lt;无可用视图名称&gt;</sys:String>
+    <sys:String x:Key="lines_in_total">共 {} 条线</sys:String>
+    <sys:String x:Key="in_views">分布在 {} 个视图中</sys:String>
+    <sys:String x:Key="column_number">数量</sys:String>
+    <sys:String x:Key="column_name">名称</sys:String>
+    <sys:String x:Key="column_id">ID</sys:String>
+    <sys:String x:Key="column_creator">创建者</sys:String>
+</ResourceDictionary>

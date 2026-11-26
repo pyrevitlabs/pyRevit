@@ -81,3 +81,6 @@ build/appsettings.Development.json
 
 # Python virtualenv created by pipenv (PIPENV_VENV_IN_PROJECT)
 .venv/
+.test-results/
+.coverage
+.pytest_cache/

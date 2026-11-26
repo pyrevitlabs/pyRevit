@@ -6,6 +6,9 @@
     <system:String x:Key="Model">模型</system:String>
     <system:String x:Key="LinkedPrefix">已链接：</system:String>
     <system:String x:Key="SheetIndex">图纸索引</system:String>
+    <system:String x:Key="AllModels">&lt;所有模型&gt;</system:String>
+    <system:String x:Key="EachModelPrintSetting">&lt;各模型的当前打印设置&gt;</system:String>
+    <system:String x:Key="SameFileNameAcrossModels">不同模型的图纸会生成相同的文件名。请在命名格式中加入 {index} 或 {proj_number} 加以区分。</system:String>
     
     <system:String x:Key="SheetOrdering">图纸排序</system:String>
     <system:String x:Key="ReversePrintOrder">反转打印顺序</system:String>

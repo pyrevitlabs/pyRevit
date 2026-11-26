@@ -144,8 +144,10 @@ namespace pyRevitLabs.Common {
         public static bool IsElevatedProcess() {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return false;
-            return UserEnv.IsRunAsElevated();
+            return ElevatedProcessDetector();
         }
+
+        internal static Func<bool> ElevatedProcessDetector { get; set; } = UserEnv.IsRunAsElevated;
 
         private static ActiveConfigInfo GetUserConfig(string seedConfig, bool createIfMissing) {
             var userRoot = PyRevitLabsConsts.PyRevitPath;
@@ -229,9 +231,14 @@ namespace pyRevitLabs.Common {
         /// <summary>
         /// Repo/clone-local config override: the first config file found in the
         /// resolved install root (typically a developer clone), or null when none
-        /// exists.
+        /// exists. Always null in a session started with
+        /// <see cref="PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar"/> set to 1, whose config
+        /// is the one under <see cref="PyRevitLabsConsts.PyRevitPath"/>.
         /// </summary>
         public static string GetLocalConfigFilePath() {
+            if (Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitIgnoreLocalConfigEnvVar) == "1")
+                return null;
+
             string installRoot = ResolveInstallRoot();
             return File.Exists(Path.Combine(installRoot, "pyRevitfile"))
                 ? FindConfigIniInDirectory(installRoot)

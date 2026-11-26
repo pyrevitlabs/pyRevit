@@ -162,7 +162,7 @@ class ScriptFileParser(object):
         if self.ast_tree:
             doc_str = ast.get_docstring(self.ast_tree)
             if doc_str:
-                return doc_str.decode("utf-8")
+                return doc_str if PY3 else doc_str.decode("utf-8")
 
     def extract_param(self, param_name, default_value=None):
         """Find variable and extract its value.
@@ -585,6 +585,29 @@ def reverse_html(input_html):
 
 def escape_for_html(input_string):
     return input_string.replace("<", "&lt;").replace(">", "&gt;")
+
+
+_MARKDOWN_SPECIAL_CHARACTERS = "|*_`["
+
+
+def escape_for_output(text):
+    """Make model text render literally in output window tables and headings.
+
+    ``print_table`` splits cells on pipes and renders Markdown, so pipes,
+    emphasis and link characters are encoded as entities. Ampersands are
+    encoded so names such as "&copy;" are not read as entities, and line
+    breaks become spaces so a name stays on one table row.
+
+    Args:
+        text (str): text taken from the model, such as an element or type name
+
+    Returns:
+        (str): text safe to embed in Markdown or table cells
+    """
+    escaped = escape_for_html(" ".join(text.splitlines()).replace("&", "&#38;"))
+    for character in _MARKDOWN_SPECIAL_CHARACTERS:
+        escaped = escaped.replace(character, "&#{};".format(ord(character)))
+    return escaped
 
 
 def read_url(url_to_open):

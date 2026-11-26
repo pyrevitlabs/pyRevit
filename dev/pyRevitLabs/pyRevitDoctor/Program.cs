@@ -1,68 +1,134 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions;
 
 using pyRevitDoctor.Properties;
 
 namespace pyRevitDoctor {
     class Program {
-        const string helpMessage = @"Fix potential or real problems
+        const string helpUsage = @"Fix potential or real problems
 
 Usage:
     pyrevit-doctor (-V | --version)
     pyrevit-doctor (-h | --help)
     pyrevit-doctor [--list]
-    pyrevit-doctor <doctor_command> [--dryrun]
+    pyrevit-doctor <doctor_command> [--dryrun] [--force] [--keep-config] [--keep-extensions]
 
-    Arguments & Options:
+";
+
+        const string helpOptions = @"    Arguments & Options:
+        --list                   List the doctor commands
         <doctor_command>         Doctor command to run
+        --dryrun                 Report what would be removed without changing anything
+        --force                  Also purge uninstall entries whose install is still present
+                                 (purge-installs, purge-all)
+        --keep-config            Keep pyRevit_config.ini instead of backing it up to Documents
+                                 and deleting it (purge-files, purge-all)
+        --keep-extensions        Keep the Extensions folder in the pyRevit data folders instead of
+                                 backing it up to a zip in Documents and deleting it
+                                 (purge-files, purge-all)
 
+";
+
+        const string standaloneDownloadNote = @"    Standalone download, for when pyRevit is broken or not installed (needs the .NET 8 runtime or newer):
+        https://github.com/pyrevitlabs/pyRevit/releases
 ";
 
         static DoctorCommand[] Commands = new DoctorCommand[] {
             new DoctorCommand {
                 Name = "purge-installs",
                 HelpMsg = "Clean up records of old installations from registry",
-                Command = PurgeInstalls.PurgeOldInstalls
+                Command = PurgeInstalls.Run
+            },
+            new DoctorCommand {
+                Name = "purge-files",
+                HelpMsg = "Delete install and data folders, Revit add-in manifests and PATH entries",
+                Command = session => PurgeFiles.Run(session, MachineLocations.FromEnvironment())
+            },
+            new DoctorCommand {
+                Name = "purge-all",
+                HelpMsg = "Run purge-files and purge-installs and remove MCP registrations",
+                Command = session => PurgeAll.Run(session, MachineLocations.FromEnvironment())
             }
         };
+
+        static string HelpMessage => helpUsage + CommandsHelp() + helpOptions;
+
+        static string CommandsHelp() {
+            var lines = Commands.Select(command => $"        {command.Name,-25}{command.HelpMsg}");
+            return string.Join(Environment.NewLine, new[] { "    Commands:" }.Concat(lines))
+                + Environment.NewLine + Environment.NewLine;
+        }
 
         public static Version DoctorVersion => Assembly.GetExecutingAssembly().GetName().Version;
 
         static void Main(string[] args) {
-            bool dryrun = args.Contains("--dryrun");
+            var options = new PurgeOptions {
+                DryRun = args.Contains("--dryrun"),
+                Force = args.Contains("--force"),
+                KeepConfig = args.Contains("--keep-config"),
+                KeepExtensions = args.Contains("--keep-extensions"),
+            };
 
             if (args.Contains("--version") || args.Contains("-V"))
                 Console.WriteLine(DoctorVersion);
             else if (args.Contains("--help") || args.Contains("-h"))
-                Console.WriteLine(helpMessage);
+                Console.WriteLine(HelpMessage + standaloneDownloadNote);
             else if (args.Contains("--wrappedhelp"))
-                Console.WriteLine(helpMessage.Replace("pyrevit-doctor (-V | --version)\n", "").Replace("pyrevit-doctor", "pyrevit doctor"));
+                Console.WriteLine(WrappedHelp.From(HelpMessage) + standaloneDownloadNote);
             else if (args.Contains("--list"))
                 PrintCommands();
 
             else if (args.Length > 0) {
-                if (Commands.Where(x => x.Name == args[0]).FirstOrDefault() is DoctorCommand command)
-                    command.Command(dryrun);
+                var commandName = DoctorArguments.FindCommandName(args);
+                var requested = Commands.FirstOrDefault(x => x.Name == commandName);
+                if (requested.Name != null)
+                    RunCommand(requested, options);
+                else {
+                    Console.Error.WriteLine(commandName == null
+                        ? "No doctor command given."
+                        : $"Unknown doctor command \"{commandName}\".");
+                    PrintCommands();
+                    Environment.ExitCode = 1;
+                }
             }
             else {
                 if (AskForCommand() is DoctorCommand command) {
-                    command.Command(dryrun);
+                    RunCommand(command, options);
                     Console.WriteLine("Press any key to close");
                     Console.ReadLine();
                 }
             }
         }
 
+        static void RunCommand(DoctorCommand command, PurgeOptions options) {
+            if (IsRevitRunning()) {
+                if (!options.DryRun) {
+                    Console.Error.WriteLine("Revit.exe is running. Close Revit and run the command again.");
+                    Environment.ExitCode = 1;
+                    return;
+                }
+                Console.WriteLine("Warning: Revit.exe is running. Without --dryrun this command would abort.");
+            }
+
+            var session = new PurgeSession(options, Console.Out);
+            command.Command(session);
+            session.PrintSummary();
+            if (session.FailedCount > 0)
+                Environment.ExitCode = 1;
+        }
+
+        static bool IsRevitRunning() => Process.GetProcessesByName("Revit").Length > 0;
+
         static DoctorCommand? AskForCommand() {
             Console.WriteLine("Select a commands to run:");
             uint commandId = 1;
             foreach (var command in Commands)
-                Console.WriteLine($"    {commandId}) {command.Name,-25} {command.HelpMsg}");
+                Console.WriteLine($"    {commandId++}) {command.Name,-25} {command.HelpMsg}");
             Console.Write("\nEnter Command Id: ");
 
             if (int.TryParse(Console.ReadLine(), out int cmdId)) {
@@ -78,35 +144,14 @@ Usage:
                 Console.WriteLine($"    {command.Name,-25} {command.HelpMsg}");
         }
 
-        static Regex productFinder = new Regex(
-                @"\{$\s*""product"":\s+""(.+)"",$\s*""release"":\s+""(.+)"",$\s*""version"":\s+""(.+)"",$\s*""key"":\s+""(.+)""$\s*\}",
-                RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.Compiled
-            );
-
-
-        public static List<Product> LoadProducts() {
-            var products = new List<Product>();
-            foreach (Match match in productFinder.Matches(Resources.ProductInfo))
-                products.Add(new Product {
-                    Name = match.Groups[1].Value,
-                    Release = match.Groups[2].Value,
-                    Version = new Version(match.Groups[3].Value),
-                    Key = match.Groups[4].Value,
-                });
-            return products;
-        }
+        /// <summary>Reads the product list embedded in the executable.</summary>
+        /// <exception cref="System.Text.Json.JsonException">The embedded list is not valid JSON.</exception>
+        public static List<Product> LoadProducts() => ProductCatalog.Parse(Resources.ProductInfo);
     }
 
     struct DoctorCommand {
         public string Name;
         public string HelpMsg;
-        public Action<bool> Command;
-    }
-
-    public struct Product {
-        public string Name;
-        public string Release;
-        public Version Version;
-        public string Key;
+        public Action<PurgeSession> Command;
     }
 }

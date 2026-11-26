@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="sheets_referencing">Sheets showing the view {} {}</sys:String>
+    <sys:String x:Key="no_sheets">The view is not placed on any sheet.</sys:String>
+    <sys:String x:Key="table_title">View is referenced on {} sheet(s)</sys:String>
+    <sys:String x:Key="column_number">Sheet number</sys:String>
+    <sys:String x:Key="column_name">Sheet name</sys:String>
+    <sys:String x:Key="column_show">Select/Show element</sys:String>
+</ResourceDictionary>

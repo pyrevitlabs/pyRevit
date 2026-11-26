@@ -177,6 +177,74 @@ public sealed class ConfigurationService : IConfigurationService {
     }
 
     /// <inheritdoc />
+    public IReadOnlyList<string> ResetToDefaults(string? sectionName = null, bool dryRun = false) {
+        string environmentSectionName = GetCustomAttribute<SectionNameAttribute>(typeof(EnvironmentSection))!.SectionName;
+        bool isEnvironment(string name) => string.Equals(name, environmentSectionName, StringComparison.OrdinalIgnoreCase);
+
+        if (sectionName is not null && isEnvironment(sectionName))
+            throw new ArgumentException(
+                $"Section \"{sectionName}\" holds machine state and cannot be reset.");
+
+        if (!dryRun)
+            EnsureWritable();
+
+        lock (_syncLock) {
+            var removed = new List<string>();
+            var targets = sectionName is null
+                ? _configuration.GetSectionNames().Where(name => !isEnvironment(name)).ToList()
+                : new List<string> { sectionName };
+
+            foreach (string target in targets) {
+                if (!_configuration.HasSection(target)) {
+                    if (sectionName is not null && FindSectionType(target) is null)
+                        throw new ArgumentException($"Section \"{target}\" is not a known config section and is not in the config file.");
+                    continue;
+                }
+
+                Type? sectionType = FindSectionType(target);
+                if (sectionType is null || !_configuration.GetSectionOptionNames(target).Any()) {
+                    removed.Add(target);
+                    if (!dryRun)
+                        _configuration.RemoveSection(target);
+                    continue;
+                }
+
+                foreach (string keyName in GetBoundKeyNames(sectionType)) {
+                    if (!_configuration.HasSectionKey(target, keyName))
+                        continue;
+                    removed.Add(target + ":" + keyName);
+                    if (!dryRun)
+                        _configuration.RemoveOption(target, keyName);
+                }
+
+                if (!dryRun && !_configuration.GetSectionOptionNames(target).Any())
+                    _configuration.RemoveSection(target);
+            }
+
+            if (!dryRun && removed.Count > 0)
+                _configuration.SaveConfiguration();
+
+            return removed;
+        }
+    }
+
+    private static Type? FindSectionType(string sectionName) {
+        return typeof(ConfigurationService).Assembly.GetTypes().FirstOrDefault(type =>
+            string.Equals(GetCustomAttribute<SectionNameAttribute>(type)?.SectionName, sectionName,
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static IEnumerable<string> GetBoundKeyNames(Type sectionType) {
+        foreach (var propertyInfo in GetProperties(sectionType)) {
+            if (GetCustomAttribute<PreserveOnResetAttribute>(propertyInfo) is not null)
+                continue;
+            yield return GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
+            if (GetCustomAttribute<LegacyKeyNameAttribute>(propertyInfo) is { } legacyKeyName)
+                yield return legacyKeyName.KeyName;
+        }
+    }
+
+    /// <inheritdoc />
     public T? GetSectionKeyValueOrDefault<T>(
         string sectionName,
         string keyName,

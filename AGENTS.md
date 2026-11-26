@@ -45,17 +45,19 @@ The `wip`/`release` channel stamping (`Build__Channel` env var) and the other pi
 
 ## Documentation
 
-- [Developer Docs (Notion)](https://pyrevitlabs.notion.site/Developer-Docs-2c88f3ecccde422d9504e20b6b9e04f8)
+- User and extension-author docs: [`docs/`](docs), published at [docs.pyrevitlabs.io](https://docs.pyrevitlabs.io). Start at [`docs/build-extensions/index.md`](docs/build-extensions/index.md) for bundles, extensions and scripting.
 - Technical docs source: [`docs/`](docs) (mkdocs). Reference API is generated from source docstrings.
 
 Build and validate before finishing doc changes:
 
 ```bash
 mkdocs build --strict                 # Build docs, fail on warnings
-pipenv run check-docstrings           # Lint docstrings with ruff
+pipenv run check-docstrings           # Lint docstrings with ruff (report only)
 ```
 
 ## Testing
+
+Follow the repository testing policy in `docs/testing.md`. Every test that uses the Revit API or requires installed/running Revit runs locally outside CI; all other first-party automated tests must be discovered and run in CI. Require effective `Level` and `Environment` tags, allowing class/module defaults. Keep C# test projects beside their owning modules where practical, with shared discovery rather than class-name allowlists. Measure and ratchet coverage per module. Run `python dev/tests/run_tests.py` from the repository root for shared discovery, reports, and coverage gates; use `--list` to inspect classification without executing fixtures.
 
 To test in Revit:
 
@@ -89,7 +91,7 @@ To check agent skills or pyrevitlib helpers against a live Revit through MCP, fo
 ## Code style
 
 - Python: Google docstring convention. `ruff format` runs automatically on commit via a pre-commit hook for any staged Python file in the repo, except paths excluded by the hook (notably `site-packages/`, `pyrevitlib/rpw/`, and `dev/modules/`); it will reformat and fail the commit for review if it changes anything — install it once with `pipenv run pre-commit install`. Also run `pipenv run ruff check --fix <path>` to lint before finishing; that part isn't hook-enforced.
-- C#: matches each area's existing brace convention (see `.editorconfig`: same-line/K&R everywhere except the `pyRevitAssemblyBuilder`/`pyRevitExtensionParser`/`pyRevitExtensionParserTester` trio under `dev/pyRevitLoader/`, which use Allman). `dotnet format` runs automatically on commit via the same pre-commit hook for any staged `.cs` file (vendored `dev/modules/` excluded) and will reformat and fail the commit for review if it changes anything.
+- C#: matches each area's existing brace convention (see `.editorconfig`: same-line/K&R everywhere except `pyRevitAssemblyBuilder`, `pyRevitExtensionParser`, and `tests` under `dev/pyRevitLoader/`, which use Allman). `dotnet format` runs automatically on commit via the same pre-commit hook for any staged `.cs` file (vendored `dev/modules/` excluded) and will reformat and fail the commit for review if it changes anything.
 
 ## Commenting guidelines
 
@@ -140,7 +142,8 @@ Mark dangerous-to-break constraints explicitly with Google-style sections: `Impo
 
 ### Language rules
 
-- **Python**: Google-style docstrings on **public** symbols (non-underscored).
+- **Python**: Google-style docstrings on **public** symbols (non-underscored) of importable library code: `pyrevitlib/` (except the vendored `pyrevitlib/rpw/`) and any `lib/` folder outside a button bundle (extension, tab, panel, pulldown or stack level). Only `pyrevitlib/pyrevit` is linted (`pipenv run check-docstrings`); the rest is checked in review.
+  - Bundle entry points (`*_script.py`, `*_config.py`) and helper modules inside a button bundle folder, including its own `lib/`, are not an API. Their functions and classes are exempt unless a docstring adds a non-obvious contract.
 - **C#**: XML `///` doc comments on **public** classes and methods. `<summary>` carries purpose; `<param>` / `<returns>` / `<exception>` cover non-obvious details only.
 - Private (underscored Python, `private` / `internal` C#) members are exempt.
 

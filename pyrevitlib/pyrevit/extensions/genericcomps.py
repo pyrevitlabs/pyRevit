@@ -575,7 +575,7 @@ class GenericUICommand(GenericUIComponent):
             # allow python tools to load side scripts
             self.add_module_path(self.directory)
             # read the metadata from python script if not metadata file
-            if not self.meta and not self.is_cpython:
+            if not self.meta and not self.has_cpython_hashbang:
                 # sets up self.meta from script global variables
                 self._read_bundle_metadata_from_python_script()
 
@@ -755,8 +755,9 @@ class GenericUICommand(GenericUIComponent):
             custom_docstring = script_content.extract_param(exts.DOCSTRING_PARAM)
             self._tooltip = custom_docstring or script_docstring or self._tooltip
 
-            script_author = script_content.extract_param(exts.AUTHOR_PARAM)
-            script_author = script_content.extract_param(exts.AUTHORS_PARAM)
+            script_author = script_content.extract_param(
+                exts.AUTHORS_PARAM
+            ) or script_content.extract_param(exts.AUTHOR_PARAM)
             if isinstance(script_author, list):
                 script_author = "\n".join(script_author)
             self.author = script_author or self.author
@@ -834,13 +835,25 @@ class GenericUICommand(GenericUIComponent):
         else:
             return "%{}".format(self.name)
 
-    @property
-    def is_cpython(self):
+    def _read_script_first_line(self):
         if PY3:
             with open(self.script_file, "r", encoding="utf-8") as script_f:
-                return exts.CPYTHON_HASHBANG in script_f.readline()
+                return script_f.readline()
         with open(self.script_file, "r") as script_f:
-            return exts.CPYTHON_HASHBANG in script_f.readline()
+            return script_f.readline()
+
+    @property
+    def is_cpython(self):
+        return exts.first_line_selects_cpython(self._read_script_first_line())
+
+    @property
+    def has_cpython_hashbang(self):
+        """Whether the script opens with the ``#! python3`` hashbang.
+
+        Narrower than ``is_cpython``: a CPython-flavoured first line without
+        the hashbang still has its ``__title__``-style metadata read.
+        """
+        return exts.CPYTHON_HASHBANG in self._read_script_first_line()
 
     def has_config_script(self):
         return self.config_script_file != self.script_file

@@ -12,6 +12,7 @@ Examples:
     ```
 """
 
+import functools
 import json
 import os.path as op
 
@@ -81,6 +82,21 @@ active_stylesheet = user_config.output_stylesheet or get_default_stylesheet()
 set_stylesheet(active_stylesheet)
 
 
+def _command_runtime_output():
+    """Return the ``ScriptOutput`` of the running command.
+
+    Outside of a command (e.g. during session load) falls back to the session
+    output.
+    """
+    out = None
+    runtime = EXEC_PARAMS.script_runtime
+    if runtime:
+        out = getattr(runtime, "OutputService", None)
+    if out is None:
+        out = ScriptOutput.GetDefault()
+    return out
+
+
 class PyRevitOutputWindow(object):
     """Wrapper to interact with the output window.
 
@@ -112,7 +128,10 @@ class PyRevitOutputWindow(object):
     def __init__(self):
         # Deferred callbacks must retain the command output selected while the
         # command runtime is still active.
-        self._runtime_output()
+        output = self._runtime_output()
+        object.__setattr__(
+            self, "linkify", functools.partial(self.linkify, output=output)
+        )
 
     def _runtime_output(self):
         """Return the runtime ``ScriptOutput`` this wrapper is bound to.
@@ -122,13 +141,7 @@ class PyRevitOutputWindow(object):
         """
         out = self.__dict__.get("_rt_out")
         if out is None:
-            # bind to the output of the running command; outside of a command
-            # (e.g. during session load) fall back to the session output
-            runtime = EXEC_PARAMS.script_runtime
-            if runtime:
-                out = getattr(runtime, "OutputService", None)
-            if out is None:
-                out = ScriptOutput.GetDefault()
+            out = _command_runtime_output()
             object.__setattr__(self, "_rt_out", out)
         return out
 
@@ -230,7 +243,7 @@ class PyRevitOutputWindow(object):
         Args:
             element_tag (str): html tag of the element e.g. 'div'
             element_contents (str): html code of the element contents
-            attribs (:obj:`dict`): dictionary of attribute names and value
+            attribs (dict): dictionary of attribute names and value
 
         Examples:
             ```python
@@ -250,7 +263,7 @@ class PyRevitOutputWindow(object):
         Args:
             element_tag (str): html tag of the element e.g. 'div'
             element_contents (str): html code of the element contents
-            attribs (:obj:`dict`): dictionary of attribute names and value
+            attribs (dict): dictionary of attribute names and value
 
         Examples:
             ```python
@@ -269,7 +282,7 @@ class PyRevitOutputWindow(object):
 
         Args:
             script_code (str): javascript code
-            attribs (:obj:`dict`): dictionary of attribute names and value
+            attribs (dict): dictionary of attribute names and value
             body (bool, optional): injects script into body instead of head
 
         Examples:
@@ -286,7 +299,7 @@ class PyRevitOutputWindow(object):
 
         Args:
             style_code (str): css styling code
-            attribs (:obj:`dict`): dictionary of attribute names and value
+            attribs (dict): dictionary of attribute names and value
 
         Examples:
             ```python
@@ -340,6 +353,31 @@ class PyRevitOutputWindow(object):
     def get_height(self):
         """int: Return current window height."""
         return self._runtime_output().get_height()
+
+    def scroll_to_top(self):
+        """Scroll the output window to its first line.
+
+        By default the window follows the end of the output while a script
+        prints. Call this after the last print to show the beginning of long
+        output instead. Everything printed so far is rendered before the scroll
+        happens.
+
+        Note:
+            Output printed after this call keeps the window at the top, unless
+            the page is short enough that the top is within 50 pixels of the
+            bottom, where the window still follows new prints. Output printed
+            while the window is frozen stays hidden until ``unfreeze()``, so
+            unfreeze before scrolling.
+
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            for line in report_lines:
+                output.print_md(line)
+            output.scroll_to_top()
+            ```
+        """
+        return self._runtime_output().scroll_to_top()
 
     def close(self):
         """Close the window."""
@@ -490,7 +528,10 @@ class PyRevitOutputWindow(object):
         ``chrome.webview.addEventListener("message", e => e.data)``.
 
         Args:
-            data (object): value to serialize with ``json.dumps``
+            data (object): value to serialize with ``json.dumps``. Non-ASCII
+                text is sent as is, not escaped as unicode sequences, because
+                IronPython 2's ASCII-escaping encoder raises on some mixed
+                Cyrillic and Latin-1 strings.
 
         Returns:
             (bool): False when the window is closed or cannot deliver messages,
@@ -499,7 +540,9 @@ class PyRevitOutputWindow(object):
         """
         if not self._runtime_output().IsWindowReady:
             return False
-        return self._runtime_output().window.PostWebMessage(json.dumps(data))
+        return self._runtime_output().window.PostWebMessage(
+            json.dumps(data, ensure_ascii=False)
+        )
 
     def _dispatch_message(self, sender, args):
         """Decode one page message and schedule every handler in API context."""
@@ -776,14 +819,22 @@ class PyRevitOutputWindow(object):
         return self._runtime_output().next_page()
 
     @staticmethod
-    def linkify(element_ids, title=None):
+    def linkify(element_ids, title=None, output=None):
         """Create clickable link for the provided element ids.
 
-        This method, creates the link but does not print it directly.
+        This method, creates the link but does not print it directly. Any number
+        of ids is supported: lists too long to fit in a url are stored in the
+        output window and the link refers to them.
+
+        Note:
+            Called on an output wrapper, the link is bound to that wrapper's
+            window. Called on the class, it is bound to the running command's.
 
         Args:
             element_ids (ElementId | list[ElementId]): single or multiple ids
             title (str): tile of the link. defaults to list of element ids
+            output (ScriptOutput): output window that resolves the link when
+                the ids are stored; defaults to the running command's output
 
         Returns:
             (str): clickable link
@@ -795,8 +846,13 @@ class PyRevitOutputWindow(object):
                 print('{}: {}'.format(idx+1, output.linkify(elid)))
             ```
         """
+
+        def register_ids(comma_separated_ids):
+            target = output or _command_runtime_output()
+            return target.register_element_ids(comma_separated_ids)
+
         return coreutils.prepare_html_str(
-            linkmaker.make_link(element_ids, contents=title)
+            linkmaker.make_link(element_ids, contents=title, register_ids=register_ids)
         )
 
     def make_chart(self, version=None):

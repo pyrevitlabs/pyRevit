@@ -1,5 +1,9 @@
 """Agent host requests other than runs: context, inspection, presentation and capture."""
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import os.path as op
 from unittest import skipUnless
 
@@ -97,7 +101,7 @@ class CaptureTests(TestCase):
             view="3d",
             direction="northwest",
             elements=harness.session().wall_ids,
-            width=300,
+            width=320,
         )
         self.assertTrue(op.exists(result["path"]))
         self.assertEqual(before, harness.run(count)["result"])

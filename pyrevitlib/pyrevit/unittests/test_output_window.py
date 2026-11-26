@@ -12,6 +12,10 @@ the print-based regression buttons under Log Output Tests and by the
 behavior.
 """
 
+TEST_ENVIRONMENT = "Revit"
+TEST_LEVEL = "Integration"
+
+
 import unittest
 
 
@@ -121,6 +125,79 @@ class OutputWindowPrintTests(unittest.TestCase):
         self.assertIsInstance(link, str)
         self.assertIn(PROTOCOL_NAME, link)
         self.assertIn("element[]=", link)
+
+    def test_linkify_registers_ids_that_do_not_fit_in_a_link(self):
+        """Element ids beyond the url limit resolve through the output window."""
+        from pyrevit.compat import get_elementid_from_value_func
+
+        token = self.output.register_element_ids("1,2,3")
+        self.assertTrue(token.isdigit(), "token: {}".format(token))
+
+        elementid_from_value = get_elementid_from_value_func()
+        element_ids = [elementid_from_value(1000000 + i) for i in range(500)]
+        link = self.output.linkify(element_ids)
+        self.assertNotIn("element[]=", link)
+        self.assertIn("elements=", link)
+        self.assertIn("500 elements", link)
+
+    def test_registered_link_selects_the_original_elements(self):
+        """Clicking a token link selects every registered element, and only those."""
+        import re
+        from System import Array
+        from pyrevit import DB, HOST_APP
+        from pyrevit.framework import to_clr_list
+        from pyrevit.compat import get_elementid_value_func
+
+        if HOST_APP.uidoc is None:
+            self.skipTest("selecting elements needs an open document")
+        element_ids = list(
+            DB.FilteredElementCollector(HOST_APP.doc)
+            .WhereElementIsNotElementType()
+            .ToElementIds()
+        )
+        if len(element_ids) < 500:
+            self.skipTest("the open document has too few elements for a long link")
+
+        window = self.output.window
+        process_url = (
+            window.GetType()
+            .Assembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptConsoleUtils")
+            .GetMethod("ProcessUrl")
+        )
+
+        def click(url):
+            process_url.Invoke(None, Array[object]([HOST_APP.uiapp, url, window]))
+
+        def select(ids):
+            HOST_APP.uidoc.Selection.SetElementIds(to_clr_list(DB.ElementId, ids))
+
+        get_value = get_elementid_value_func()
+
+        def values(ids):
+            return set(get_value(eid) for eid in ids)
+
+        def selected():
+            return values(HOST_APP.uidoc.Selection.GetElementIds())
+
+        link = self.output.linkify(element_ids)
+        select_url, show_url = re.findall(r'href="([^"]+)"', link)
+        self.assertEqual(
+            re.search(r"elements=(\d+)", select_url).group(1),
+            re.search(r"elements=(\d+)", show_url).group(1),
+        )
+
+        select([])
+        click(select_url)
+        self.assertEqual(values(element_ids), selected())
+
+        select(element_ids[:1])
+        click(select_url + "&append=true")
+        self.assertEqual(values(element_ids), selected())
+
+        select(element_ids[:2])
+        click("revit://outputhelpers?&command=select&elements=0&show=false")
+        self.assertEqual(values(element_ids[:2]), selected())
+        select([])
 
 
 class OutputWindowProgressTests(unittest.TestCase):

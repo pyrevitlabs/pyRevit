@@ -13,6 +13,8 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// intended string-encoding contract: string values round-trip decoded, not
 /// JSON-quoted.
 /// </summary>
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Integration")]
 public class GoldenFileFidelityTests {
     private static string FixtureDir => Path.Combine(AppContext.BaseDirectory, "Fixtures");
 

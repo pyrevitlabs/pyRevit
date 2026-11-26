@@ -295,6 +295,7 @@
 
             <DataGrid.Columns>
                 <DataGridTextColumn Header="{StaticResource PrintIndex}" Binding="{Binding print_index}" MinWidth="70" Width="70" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
+                <DataGridTextColumn x:Name="modelcol" Header="{StaticResource Model}" Binding="{Binding model_name}" MinWidth="100" Width="150" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}" Visibility="Collapsed"/>
                 <DataGridTextColumn Header="{StaticResource SheetNumber}" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
                 <DataGridTextColumn Header="{StaticResource SheetName}" Binding="{Binding name}" MinWidth="400" Width="400" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
                 <DataGridTemplateColumn Header="{StaticResource SheetRevision}" MinWidth="50" Width="1*" IsReadOnly="True"

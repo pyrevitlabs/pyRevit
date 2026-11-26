@@ -313,8 +313,9 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public override string ToString() {
-            var result = string.Format("{0} | Version: {1} | Build: {2}({3}) | Language: {4} | Path: \"{5}\"",
-                                       Name, Version, BuildNumber, BuildTarget, LanguageCode, InstallLocation);
+            var language = LanguageCode == 0 ? string.Empty : string.Format(" | Language: {0}", LanguageCode);
+            var result = string.Format("{0} | Version: {1} | Build: {2}({3}){4} | Path: \"{5}\"",
+                                       Name, Version, BuildNumber, BuildTarget, language, InstallLocation);
             if (!IsListedInHostsDatabase)
                 result += " | Note: not listed in pyrevit-hosts.json";
             var unsupportedNote = RevitProductData.GetUnsupportedProductNote(ProductYear);
@@ -385,7 +386,31 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
         public string ExecutiveLocation => RevitProductData.GetBinaryLocation(InstallLocation);
+
+        /// <summary>
+        /// Windows language code of the installation, or 0 when unknown.
+        /// </summary>
+        /// <remarks>
+        /// Only the registry carries it, so products resolved from a file version or a running process have 0
+        /// until <see cref="FindInstalledLanguageCode"/> supplies it. <see cref="ToString"/> leaves the field out for 0.
+        /// </remarks>
         public int LanguageCode { get; set; }
+
+        /// <summary>
+        /// Language code of the installed Revit whose executable is <paramref name="binaryFilePath"/>, or 0 when no
+        /// registered installation owns that file.
+        /// </summary>
+        public static int FindInstalledLanguageCode(string binaryFilePath) {
+            if (string.IsNullOrEmpty(binaryFilePath))
+                return 0;
+            var wanted = Path.GetFullPath(binaryFilePath);
+            foreach (var installed in ListInstalledProducts()) {
+                var executive = installed.ExecutiveLocation;
+                if (executive != null && string.Equals(Path.GetFullPath(executive), wanted, StringComparison.OrdinalIgnoreCase))
+                    return installed.LanguageCode;
+            }
+            return 0;
+        }
 
         // static:
         public static RevitProduct LookupRevitProduct(string buildOrVersionString,
@@ -633,8 +658,8 @@ namespace pyRevitLabs.TargetApps.Revit {
                                 continue;
                             }
                             logger.Debug("Revit Product is : {0}", revitProduct);
-                            // grab the registry name if it doesn't have a name
-                            if (revitProduct.Name is null || revitProduct.Name == string.Empty)
+                            var hasNoName = revitProduct.Name is null || revitProduct.Name == string.Empty;
+                            if ((hasNoName || !revitProduct.IsListedInHostsDatabase) && !string.IsNullOrEmpty(regName))
                                 revitProduct.Name = regName;
 
                             // build from a registry version if it doesn't already have one
@@ -675,8 +700,30 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        private static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath, string installPath) {
-            return ResolveProduct(regVersion, binaryFilePath, installPath, ResolvedProductRole.InstalledSibling);
+        internal static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath, string installPath) {
+            var identifier = ReadBinaryFileVersion(binaryFilePath) ?? regVersion;
+            return ResolveProduct(identifier, binaryFilePath, installPath, ResolvedProductRole.InstalledSibling);
+        }
+
+        /// <summary>
+        /// File version of the Revit executable, which is what Revit updates change.
+        /// </summary>
+        /// <remarks>
+        /// The registry <c>DisplayVersion</c> is written by the installer and stays at the first release
+        /// of a product year after an update, so it must not be the identity of an installed product.
+        /// </remarks>
+        /// <returns>The file version, or null when there is no readable executable.</returns>
+        internal static string ReadBinaryFileVersion(string binaryFilePath) {
+            if (binaryFilePath is null)
+                return null;
+            try {
+                var fileVersion = FileVersionInfo.GetVersionInfo(binaryFilePath).FileVersion;
+                return string.IsNullOrEmpty(fileVersion) ? null : fileVersion;
+            }
+            catch (Exception readEx) {
+                logger.Debug("Could not read the file version of \"{0}\": {1}", binaryFilePath, readEx.Message);
+                return null;
+            }
         }
 
         public static List<RevitProduct> ListSupportedProducts() {

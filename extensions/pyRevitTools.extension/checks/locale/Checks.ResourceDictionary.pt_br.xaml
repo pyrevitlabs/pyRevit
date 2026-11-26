@@ -257,8 +257,6 @@ conforme definido por uma lista de tipos de parede no Revit.</system:String>
     <system:String x:Key="CADAuditInstances">Auditar instâncias CAD:</system:String>
     <system:String x:Key="CADAuditInProject">neste projeto</system:String>
     <system:String x:Key="CADAuditInActiveView">apenas na vista ativa</system:String>
-    <system:String x:Key="CADAuditCancel">CANCELAR</system:String>
-    <system:String x:Key="CADAuditOK">OK</system:String>
     <system:String x:Key="CADAuditTitle">Auditoria de instâncias CAD no projeto atual</system:String>
     <system:String x:Key="CADAuditNoInstances">Nenhuma instância CAD encontrada</system:String>
     <system:String x:Key="CADAuditSelect">Selecionar</system:String>

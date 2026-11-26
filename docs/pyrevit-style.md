@@ -1,6 +1,12 @@
 # Writing pyRevit-style code
 
-What a pyRevit script should look like, for new contributors and for AI agents. The rule behind everything below: **use `pyrevit` first, drop to raw Revit API only for what it doesn't cover.** The library already absorbs Revit-version differences, engine quirks, and API traps.
+What a pyRevit Python script should look like, for new contributors and for AI agents. The rule behind everything below: **use `pyrevit` first, drop to raw Revit API only for what it doesn't cover.** The library already absorbs Revit-version differences, engine quirks, and API traps.
+
+Scope:
+
+- **Python scripts only** (IronPython 2.7, IronPython 3.4, CPython 3). C# bundles follow the C# conventions in [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop/AGENTS.md#code-style); VB.NET, Ruby, Dynamo and Grasshopper bundles are not covered.
+- **`script.py` and `config.py` stand for `*script.py` and `*config.py`.** pyRevit picks the entry point by file name ending, so `export_script.py` and `export_config.py` work the same as the bare names.
+- [Button metadata](#button-metadata) applies to every bundle language.
 
 ## The shape of a button script
 
@@ -25,7 +31,7 @@ for sheet in sorted(revised_sheets, key=lambda sheet: sheet.SheetNumber):
 
 - Titles, tooltips, icons and authorship belong in `bundle.yaml` next to `script.py` (see [Extensions](extensions.md)).
 - Module-level handles come first and are named the same everywhere: `logger`, `output`, and `selection` when needed. Don't invent alternatives.
-- A short script can simply run top to bottom, as above. Once it has helper functions and the flow after them is more than about ten lines (loops, several branches), put that flow in a `main()` called at the bottom of `script.py`.
+- A short script can simply run top to bottom, as above. Once it has helper functions and the flow after them is more than about thirty lines, or has several distinct stages (collect input, validate, modify, report), put that flow in a `main()` called at the bottom of `script.py`. Don't add `main()` just because a script has a helper function or two.
 - Logic that gets reused or tested on its own lives in small named functions.
 - Helpers a script outgrows go in separate modules next to `script.py` in the bundle folder (it is on `sys.path` automatically), rather than into one 1500-line file. A `lib/` subfolder is optional.
 
@@ -94,6 +100,7 @@ forms.alert("Done.", sub_msg="3 sheets updated.")
 - Use `output = script.get_output()` and `output.print_md(...)` for results. Plain `print` is fine for one-liners.
 - Make elements clickable with `output.linkify(element.Id)`.
 - Report problems with `logger.error(...)` / `logger.warning(...)`, never silent `except: pass`.
+- Inside an `except` block, use `logger.exception("What failed")`. It logs at error level and appends the full traceback; `logger.error(..., exc_info=True)` does the same. Don't `import traceback` for this.
 - Escape user-controlled text before HTML output with `coreutils.escape_for_html`.
 
 ## Settings and data files
@@ -104,7 +111,7 @@ forms.alert("Done.", sub_msg="3 sheets updated.")
 
 ## Button metadata
 
-Everything the user sees on the ribbon before clicking lives in `bundle.yaml`.
+Everything the user sees on the ribbon before clicking lives in `bundle.yaml`. This section applies to bundles in any script language; read `config.py` below as the bundle's `*config.<ext>`.
 
 ### Context
 
@@ -122,8 +129,8 @@ A button can do something else on shift-click. How the mode is wired decides whe
 
 | Alternate mode lives in | Dot marker |
 |---|---|
-| a `config.py` next to `script.py` | Added by pyRevit automatically. **Don't add your own**, or the title shows two dots. |
-| `script.py` itself, via `EXEC_PARAMS.config_mode` | Add ` ●` (space and U+25CF) to the end of the title yourself. |
+| a `*config.<ext>` next to `*script.<ext>` | Added by pyRevit automatically. **Don't add your own**, or the title shows two dots. |
+| the script itself (in Python, via `EXEC_PARAMS.config_mode`) | Add ` ●` (space and U+25CF) to the end of the title yourself. |
 | nowhere (no alternate mode) | None. |
 
 Either way, describe the mode in the tooltip: first paragraph says what a plain click does, then a blank line, `Shift-click:` on its own line, and the alternate action on the next line.
@@ -156,7 +163,7 @@ Scripts run on IronPython 2.7 by default, and can also run on CPython 3 and Iron
 Conventions from [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop/AGENTS.md). Only `ruff format` is automated; the rest is checked in review:
 
 - **No inline comments.** Make the code self-explanatory with names and small functions. Exceptions: tooling pragmas (`# noqa`, `# type: ignore`), `TODO` / `FIXME` with an owner and ticket, and the group labels on `pyrevit` imports (see [Imports](#imports)).
-- **Docstrings on public symbols only**, Google style, and only where they add what the code can't say: purpose, contract, side effects, exceptions, invariants. Don't restate the signature.
+- **Docstrings on public symbols of importable library code only**, Google style, and only where they add what the code can't say: purpose, contract, side effects, exceptions, invariants. Don't restate the signature. Scripts and bundle-local helpers are exempt; the exact scope is in [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop/AGENTS.md#language-rules).
 - `ruff format` formats Python on commit. Run `pipenv run ruff check --fix <path>` before finishing.
 - Names: `snake_case` functions and variables, `PascalCase` classes, `UPPER_CASE` constants. Revit API members keep their original `PascalCase`.
 - Prefer early returns over deep nesting. Prefer `for`/comprehensions over `map`/`filter` chains.
@@ -174,12 +181,12 @@ Conventions from [AGENTS.md](https://github.com/pyrevitlabs/pyRevit/blob/develop
 | `element.Id.IntegerValue` | `get_elementid_value_func()(element.Id)` |
 | `if revit_version == "2022": ...` string compares | `HOST_APP.is_newer_than(2021)` |
 | `except: pass` | catch the specific exception and `logger.error(...)` |
+| `import traceback` + `logger.error(traceback.format_exc())` | `logger.exception("What failed")` |
 | One 1500-line `script.py` | Small functions, a `main()`, and helper modules next to `script.py` |
 
 ## For AI agents
 
 - Look a function up before writing it: search `pyrevitlib/pyrevit/revit/db/{query,create,update}.py`, or use the MCP `lookup_pyrevit_api` tool.
-- Check each `find_*` helper's contract before relying on it in unattended runs. `find_level`, `find_type`, `find_family_symbol` and `find_view` raise `PyRevitException` on a miss and list the valid names; `find_plan_view` raises without a name list. `find_workset`, `find_first_legend` and `find_paper_size_by_name` do not raise, and `find_paper_sizes_by_dims` returns a list.
-- Don't use `pyrevit.forms` in unattended agent runs. There is no user to answer.
+- Scripts you run through the MCP runtime (`run_query`, `run_modify`) follow the agent skills, which override this guide where they differ, for example no `pyrevit.forms` there. See [Agent runtime](agent-runtime.md).
 - Match the surrounding file's style over this guide when they conflict, and keep pre-existing comments.
-- Before finishing: `pipenv run ruff check --fix <path>`, `pipenv run check-py3 <path>`, and test the button in Revit with a dev clone (see [Developer guide](dev-guide.md)).
+- Before finishing: `pipenv run ruff check --fix <path>`, `pipenv run check-py3 <path>`, `python dev/checks/check_revit_api_compat.py <path>` (see [Revit API compatibility lint](revit-api-compat.md)), and test the button in Revit with a dev clone (see [Developer guide](dev-guide.md)).

@@ -257,8 +257,6 @@ as defined by a wall type list within Revit.</system:String>
     <system:String x:Key="CADAuditInstances">Audit CAD instances:</system:String>
     <system:String x:Key="CADAuditInProject">in this project</system:String>
     <system:String x:Key="CADAuditInActiveView">in only the active view</system:String>
-    <system:String x:Key="CADAuditCancel">CANCEL</system:String>
-    <system:String x:Key="CADAuditOK">OK</system:String>
     <system:String x:Key="CADAuditTitle">Audit of CAD instances in the current project</system:String>
     <system:String x:Key="CADAuditNoInstances">No CAD instances found</system:String>
     <system:String x:Key="CADAuditSelect">Select</system:String>

@@ -7,8 +7,16 @@ using System.Threading.Tasks;
 
 namespace pyRevitLabs.Common {
     public class PyRevitLabsConsts {
+        /// <summary>
+        /// Replaces the pyRevit appdata folder. Does not isolate the all-users config: a fresh folder is
+        /// seeded from it, registered clones included, unless <see cref="PyRevitProgramDataPathOverrideEnvVar"/> is set too.
+        /// </summary>
         public const string PyRevitPathOverrideEnvVar = "PYREVIT_PATH_OVERRIDE";
+
+        /// <summary>Replaces the pyRevit programdata folder that holds the all-users config.</summary>
         public const string PyRevitProgramDataPathOverrideEnvVar = "PYREVIT_PROGRAMDATA_PATH_OVERRIDE";
+        public const string PyRevitAgentDirOverrideEnvVar = "PYREVIT_AGENT_DIR";
+        public const string PyRevitIgnoreLocalConfigEnvVar = "PYREVIT_IGNORE_LOCAL_CONFIG";
         // product
         public const string ProductName = "pyRevit";
 
@@ -65,6 +73,20 @@ namespace pyRevitLabs.Common {
                 if (!string.IsNullOrWhiteSpace(pathOverride))
                     return pathOverride;
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppdataDirName);
+            }
+        }
+
+        /// <summary>
+        /// Folder holding agent instance records, run records and captures. Follows the pyRevit
+        /// appdata path unless <see cref="PyRevitAgentDirOverrideEnvVar"/> pins it, which lets a
+        /// session with its own appdata path keep registering where clients look for sessions.
+        /// </summary>
+        public static string AgentPath {
+            get {
+                string pathOverride = Environment.GetEnvironmentVariable(PyRevitAgentDirOverrideEnvVar);
+                if (!string.IsNullOrWhiteSpace(pathOverride))
+                    return pathOverride;
+                return Path.Combine(PyRevitPath, "agent");
             }
         }
 
