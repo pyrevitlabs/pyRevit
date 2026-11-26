@@ -102,9 +102,7 @@ def match_prop(dest_inst, dest_type, src_props):
     """Match given properties on target instance or type.
 
     Args:
-        dest_inst (DB.Element): element receiving the instance properties.
-        dest_type (DB.ElementType): element type receiving the type properties.
-        src_props (list[PropKeyValue]): properties to apply.
+        dest_type (DB.ElementType or None): If None, type properties are skipped.
 
     Note:
         An ElementId property carries a saved integer id, rebuilt through
