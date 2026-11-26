@@ -117,6 +117,37 @@ layout:
   - PullDown A
 ```
 
+### Keyboard Shortcuts
+
+The bundle file can assign Revit keyboard shortcuts to a button. pyRevit registers them each time it loads, so users don't have to set them up in Revit's **Keyboard Shortcuts** dialog.
+
+```yaml
+# a single shortcut
+shortcuts: ZQ
+
+# or a list of shortcuts
+shortcuts:
+  - ZQ
+  - Ctrl+Shift+K
+```
+
+Shortcuts work on push, smart, invoke, URL and link buttons, including those inside a pulldown, split button or stack. Other bundle types ignore the key.
+
+Write each shortcut the way Revit's Keyboard Shortcuts dialog shows it: a key sequence such as `ZQ`, or a combination such as `Ctrl+Shift+K`. Letter case does not matter, so `zq` and `ZQ` are the same shortcut.
+
+When pyRevit registers the shortcuts:
+
+- A shortcut Revit rejects as invalid is skipped, and a warning is written to the pyRevit log.
+- A shortcut already assigned to another command, including Revit's own commands such as `WA` for Wall, is never overridden. It is skipped with a warning. Pick a free one in the Keyboard Shortcuts dialog.
+- When two bundles ask for the same shortcut, the first button loaded gets it and the other is skipped with a warning.
+- Shortcuts the user assigned to the same command in Revit are kept; the bundle's shortcut is added next to them.
+
+Shortcuts from the bundle file apply to the current session and are not written to Revit's `KeyboardShortcuts.xml`. This has a few consequences:
+
+- Removing a shortcut from the bundle file removes it on the next start.
+- If the user clears a bundle shortcut in Revit without saving, it comes back on the next load.
+- Once the user saves the Keyboard Shortcuts dialog, Revit stores every current assignment, including the bundle's, in its own file. From then on the shortcut stays even if it is removed from the bundle file; remove it in the Keyboard Shortcuts dialog as well.
+
 ### Bundle Environment Configs
 
 #### Supported Revit Versions
