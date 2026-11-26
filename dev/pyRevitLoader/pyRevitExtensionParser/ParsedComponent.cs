@@ -17,6 +17,15 @@ namespace pyRevitExtensionParser
         public List<string> LayoutOrder { get; set; }
 
         /// <summary>
+        /// True when the parent bundle has a <c>layout</c> that does not list this component, which keeps it off the ribbon.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: an excluded component stays in its parent's <see cref="Children"/>, behind the listed ones,
+        /// so its commands are still built. Only the ribbon skips it.
+        /// </remarks>
+        public bool IsExcludedByLayout { get; set; }
+
+        /// <summary>
         /// The control ID for this component, used to find the ribbon item.
         /// Format: "CustomCtrl_%CustomCtrl_%{tab}%{panel}%{group}%{button}"
         /// </summary>

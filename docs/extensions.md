@@ -87,7 +87,7 @@ Common keys:
 - `min_revit_version` / `max_revit_version`.
 - `is_beta`, `highlight` (`new` or `updated`), `collapsed`.
 - `engine` — `clean`, `full_frame`, `persistent`, `mainthread` (plus Dynamo-specific `automate`, `dynamo_path`, `dynamo_path_check_existing`, `dynamo_force_manual_run`, `dynamo_model_nodes_info`).
-- `layout` — reorders/nests child buttons instead of relying on folder order; use `---` for a separator and `>>>` to start a slideout.
+- `layout` — lists the child bundles shown on the ribbon, in order, instead of relying on folder order; unlisted ones are [hidden](build-extensions/bundles/layout.md#unlisted-bundles). Use `---` for a separator and `>>>` to start a slideout.
 - `background` / `background_dark` — panel bundles only; see [Panel background colors](#panel-background-colors).
 
 Bundle-type-specific keys: `modules` (link buttons), `assembly` / `command_class` / `availability_class` (invoke/link buttons), `hyperlink` (URL buttons), `checked` (checkboxes; the starting state, `false` by default).
