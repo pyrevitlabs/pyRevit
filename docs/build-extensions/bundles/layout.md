@@ -30,6 +30,18 @@ layout:
   - PullDown C
 ```
 
+### Unlisted Bundles
+
+A `layout` is also the list of what appears on the ribbon. A child bundle that it does not list is hidden, so you can keep a bundle in the extension without showing it. This applies to every bundle that has a `layout`, from a tab hiding panels to a pull-down or stack hiding buttons. A bundle without a `layout` shows all of its children.
+
+Names must match the bundle folder name without its extension, including upper and lower case.
+
+A hidden command is still built, so it can still be run from code. A `.nobutton` bundle does not need to be listed.
+
+!!! warning ""
+
+    pyRevit 6.0 to 7.1 also showed unlisted bundles, after the listed ones. If a button, panel or tab disappears after updating, add its name to the `layout`.
+
 ### Separator Lines
 **Panel** and **Pull Down Bundle** layout files can contain a directive to place a vertical (in panels) or horizontal (in pull-downs) separator line in between buttons. `---` This line will add a separator to the interface. You can use more than 3 `-` characters. For example `----------` still works as a separator.
 
