@@ -104,6 +104,48 @@ class ShownDesignOptionTests(unittest.TestCase):
         )
 
 
+class PhaseFilterTests(unittest.TestCase):
+    PHASE, FILTER = 5, 6
+
+    def follow(self, filter_id, hidden=()):
+        module = load_with_stubs("sectionbox_scene_filter")
+        db = module.DB
+        db.ElementId = types.SimpleNamespace(InvalidElementId=-1)
+        db.BuiltInParameter = types.SimpleNamespace(
+            VIEW_PHASE="phase",
+            VIEW_PHASE_FILTER="phase_filter",
+            VIEWER_OPTION_VISIBILITY="option",
+        )
+        db.DesignOption = types.SimpleNamespace(GetActiveDesignOptionId=lambda doc: -1)
+        db.ElementOnPhaseStatus = types.SimpleNamespace(
+            **dict((name, name) for name in module.PHASE_STATUS_NAMES)
+        )
+        db.PhaseStatusPresentation = types.SimpleNamespace(DontShow="hidden")
+        phase_filter = types.SimpleNamespace(
+            GetPhaseStatusPresentation=lambda status: (
+                "hidden" if status in hidden else "shown"
+            )
+        )
+        values = {"phase": self.PHASE, "phase_filter": filter_id, "option": -1}
+        view = types.SimpleNamespace(
+            Document=types.SimpleNamespace(GetElement=lambda _: phase_filter),
+            get_Parameter=lambda name: types.SimpleNamespace(
+                AsElementId=lambda: values[name]
+            ),
+        )
+        return module.SceneFilter.for_view(view)
+
+    def test_a_named_phase_filter_limits_the_phase_statuses(self):
+        followed = self.follow(self.FILTER, hidden=("Demolished", "Temporary"))
+        self.assertEqual(followed.phase_id, self.PHASE)
+        self.assertEqual(followed.statuses, ("Existing", "New"))
+
+    def test_the_phase_filter_none_shows_elements_of_every_phase(self):
+        """Revit shows later phases too, which a status filter would leave out."""
+        followed = self.follow(-1)
+        self.assertEqual((followed.phase_id, followed.statuses), (None, ()))
+
+
 class LevelAtElevationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

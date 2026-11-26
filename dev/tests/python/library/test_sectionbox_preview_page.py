@@ -531,6 +531,12 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
         result = self.scenario("model_reload")
         self.assertEqual(result["dropped"], [0, 0, 0, True])
         self.assertEqual(result["visible"], [["Walls", False], ["Roofs", True]])
+        self.assertEqual(result["bounds_before"], [501, 501, 90])
+        self.assertIsNone(result["bounds_dropped"])
+        self.assertEqual(
+            result["bounds_reloaded"], {"min": [0, 0, 0], "max": [1, 1, 0]}
+        )
+        self.assertEqual(result["radius"], 1)
 
     def test_a_failed_stream_re_enables_the_load_links(self):
         result = self.scenario("stream_error_clears_requests")

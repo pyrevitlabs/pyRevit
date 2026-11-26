@@ -713,6 +713,7 @@ void main() { outColor = uColor; }`;
       this.batches = [];
       this.elements.clear();
       this.groups.clear();
+      this.modelBounds = null;
       this.progress = [0, 0];
       this._clearHover();
       this._renderCategories();

@@ -63,11 +63,7 @@ def _parameter_element_id(view, parameter):
     return found.AsElementId() if found is not None else None
 
 
-def _shown_phase_statuses(view):
-    filter_id = _parameter_element_id(view, DB.BuiltInParameter.VIEW_PHASE_FILTER)
-    if _id_value(filter_id) is None:
-        return PHASE_STATUS_NAMES
-    phase_filter = view.Document.GetElement(filter_id)
+def _shown_phase_statuses(phase_filter):
     return tuple(
         name
         for name in PHASE_STATUS_NAMES
@@ -96,7 +92,8 @@ class SceneFilter(object):
     phase, which would need the link's phase mapping.
 
     Args:
-        phase_id (DB.ElementId | None): the view's phase; None shows all phases.
+        phase_id (DB.ElementId | None): the view's phase; None shows all phases,
+            as a view whose phase filter is None does.
         statuses (tuple[str]): ``DB.ElementOnPhaseStatus`` names the view's
             phase filter shows. Elements without a phase status always pass.
         active_option (int | None): id value of the option being edited.
@@ -121,14 +118,18 @@ class SceneFilter(object):
         if view is None:
             return cls()
         phase_id = _parameter_element_id(view, DB.BuiltInParameter.VIEW_PHASE)
-        if _id_value(phase_id) is None:
+        filter_id = _parameter_element_id(view, DB.BuiltInParameter.VIEW_PHASE_FILTER)
+        statuses = ()
+        if _id_value(phase_id) is None or _id_value(filter_id) is None:
             phase_id = None
+        else:
+            statuses = _shown_phase_statuses(view.Document.GetElement(filter_id))
         view_option = _parameter_element_id(
             view, DB.BuiltInParameter.VIEWER_OPTION_VISIBILITY
         )
         return cls(
             phase_id,
-            _shown_phase_statuses(view) if phase_id is not None else (),
+            statuses,
             _id_value(DB.DesignOption.GetActiveDesignOptionId(view.Document)),
             _id_value(view_option),
         )

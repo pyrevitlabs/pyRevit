@@ -1038,9 +1038,15 @@
     const mesh = (id, group) => ({ id, source: 0, group, approx: false, positions: packed(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0])), indices: packed(new Uint32Array([0, 1, 2])) });
     p._onEvent("scene", { progress: [2, 2], meshes: [mesh(1, "Walls"), mesh(2, "Floors")] });
     p.groups.get("0|Walls").visible = false;
+    const far = Object.assign(mesh(4, "Walls"), { positions: packed(new Float32Array([500, 500, 90, 501, 500, 90, 500, 501, 90])) });
+    p._onEvent("scene", { progress: [3, 3], meshes: [far] });
+    const R = { bounds_before: p.modelBounds.max.slice() };
     p._onEvent("sources", { dropAll: true, loading: true });
-    const R = { dropped: [p.elements.size, p.groups.size, p.batches.length, p.loading] };
+    R.dropped = [p.elements.size, p.groups.size, p.batches.length, p.loading];
+    R.bounds_dropped = p.modelBounds;
     p._onEvent("scene", { progress: [2, 2], meshes: [mesh(1, "Walls"), mesh(3, "Roofs")] });
+    R.bounds_reloaded = p.modelBounds;
+    R.radius = Number(p._radius().toFixed(4));
     R.visible = [...p.groups.values()].map((g) => [g.name, g.visible]);
     return R;
   };
