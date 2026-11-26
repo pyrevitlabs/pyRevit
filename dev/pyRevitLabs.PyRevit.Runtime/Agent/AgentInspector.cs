@@ -35,10 +35,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return AgentParams.ElementIds(ids, "ids").Distinct().ToList();
         }
 
-        public static JToken Inspect(UIApplication app, List<long> ids, bool includeParameters) {
-            var uidoc = app.ActiveUIDocument
-                ?? throw new AgentException("no_active_document", "Revit has no active document.");
-            var doc = uidoc.Document;
+        /// <param name="doc">The document the request names, which need not be the active one.</param>
+        public static JToken Inspect(Document doc, List<long> ids, bool includeParameters) {
+            if (doc == null)
+                throw new AgentException("no_active_document", "Revit has no active document.");
             var elements = new JArray();
             var memoryErrors = 0;
             foreach (var id in ids)
@@ -109,6 +109,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private static JObject DocumentReference(Document doc) {
             return new JObject {
+                ["key"] = AgentDocuments.Keys.KeyOf(doc),
                 ["title"] = doc.Title,
                 ["path"] = doc.PathName,
             };

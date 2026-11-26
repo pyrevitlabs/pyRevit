@@ -95,6 +95,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         [ThreadStatic]
         private static UIApplication inlineApplication;
 
+        /// <summary>
+        /// What agents are doing right now, recorded by the request handler for the agent panel.
+        /// </summary>
+        internal static readonly AgentActivity Activity = new AgentActivity();
+
+        /// <summary>
+        /// Raised when the host starts or stops, on the thread that configured it, and when the
+        /// pipe server stops listening by itself, on the pipe server's thread.
+        /// </summary>
+        /// <remarks>
+        /// Important: a handler can't assume the Revit main thread and must queue any UI work.
+        /// </remarks>
+        internal static event Action StateChanged;
+
+        /// <summary>
+        /// Raised after <see cref="RefreshConfigIfChanged"/> reloads the config, on the thread that
+        /// called it, so the agent panel can show a policy changed from outside Revit.
+        /// </summary>
+        internal static event Action ConfigChanged;
+
         internal static readonly int ProcessId = ReadProcessId();
 
         public static string PipeName => "pyrevit-agent-" + ProcessId;
@@ -143,7 +163,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <remarks>
         /// A pyRevit command can't use the pipe, because the pipe executes requests through an
         /// ExternalEvent that never fires while a command is running. This runs the request on
-        /// the calling thread instead, through the same policy, guard and dialog handling.
+        /// the calling thread instead, through the same session gate, policy, guard and dialog
+        /// handling.
         /// Warning: a CPython caller must save and restore <c>sys.stdout</c>, <c>sys.stderr</c>,
         /// <c>sys.path</c>, <c>sys.argv</c> and the trace function around the call; a nested
         /// CPython run replaces them and doesn't put them back.
@@ -178,11 +199,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// this before reading it.
         /// </remarks>
         internal static void RefreshConfigIfChanged() {
+            bool reloaded;
             try {
-                configRefresh.RefreshIfChanged();
+                reloaded = configRefresh.RefreshIfChanged();
             }
             catch (Exception ex) {
                 logger.Debug("Could not refresh agent config: {0}", ex.Message);
+                return;
+            }
+            if (reloaded)
+                ConfigChanged?.Invoke();
+        }
+
+        private static string ReadSessionStart() {
+            try {
+                return PyRevitConfigs.GetAgentSessionStart();
+            }
+            catch (Exception ex) {
+                logger.Warn("Could not read [agent] session_start, so sessions start in the agent panel: {0}", ex.Message);
+                return AgentSessions.StartUser;
             }
         }
 
@@ -204,7 +239,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// session manager on every load and reload.
         /// </summary>
         /// <remarks>
-        /// A reload also re-enables tab highlighting that visual failures turned off.
+        /// <c>[agent] session_start</c> is applied here only, so a config edit from outside Revit
+        /// can't make sessions start automatically mid-session.
+        /// The agent panel is registered here on the first load, even when the host is disabled:
+        /// Revit accepts a dockable pane only during startup and never removes one, so turning
+        /// the host on later needs just a reload.
+        /// A reload also re-enables tab highlighting that visual failures turned off, and starts a
+        /// new pipe server when the old one stopped listening.
         /// </remarks>
         public static void Configure(UIApplication uiApp, IList<string> scriptSearchPaths) {
             if (tabHighlightDisabled) {
@@ -219,6 +260,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 revitVersion = uiApp.Application.VersionNumber;
             }
 
+            AgentPanel.Register(uiApp);
+
             if (!IsEnabled()) {
                 Stop();
                 return;
@@ -232,29 +275,35 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return;
             }
 
+            AgentSessions.Configure(uiApp.Application, ReadSessionStart());
+            AgentAwarenessWatch.Attach(uiApp);
+
+            var started = false;
             lock (sync) {
                 if (dispatcher == null) {
                     dispatcher = new AgentDispatcher();
                     dispatcher.Attach(ExternalEvent.Create(dispatcher));
                 }
 
-                if (pipeServer != null && pipeServer.IsListening)
-                    return;
+                if (pipeServer == null || !pipeServer.IsListening) {
+                    pipeServer?.Dispose();
+                    pipeServer = new AgentPipeServer(PipeName, AgentRequestHandler.Handle, ForgetStoppedPipe);
+                    pipeServer.Start();
+                    WriteInstanceFile(uiApp);
+                    AgentPaths.PruneOldRecordsInBackground();
+                    started = true;
 
-                pipeServer?.Dispose();
-                pipeServer = new AgentPipeServer(PipeName, AgentRequestHandler.Handle, ForgetStoppedPipe);
-                pipeServer.Start();
-                WriteInstanceFile(uiApp);
-                AgentPaths.PruneOldRecordsInBackground();
-
-                if (!exitHandlerRegistered) {
-                    AppDomain.CurrentDomain.ProcessExit += (s, e) => DeleteInstanceFile();
-                    uiApp.ApplicationClosing += (s, e) => Stop();
-                    exitHandlerRegistered = true;
+                    if (!exitHandlerRegistered) {
+                        AppDomain.CurrentDomain.ProcessExit += (s, e) => DeleteInstanceFile();
+                        uiApp.ApplicationClosing += (s, e) => Stop();
+                        exitHandlerRegistered = true;
+                    }
                 }
             }
 
-            logger.Info("pyRevit agent host listening on pipe '{0}'", PipeName);
+            if (started)
+                logger.Info("pyRevit agent host listening on pipe '{0}'", PipeName);
+            StateChanged?.Invoke();
         }
 
         /// <summary>
@@ -263,23 +312,39 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         public static void Stop() {
             AgentRecorder.StopIfActive("host_stopped");
+            AgentSessions.EndForHostStop();
             DisposeTabHighlight();
+            var stopped = false;
             lock (sync) {
-                if (pipeServer == null)
-                    return;
-                pipeServer.Dispose();
-                pipeServer = null;
-                DeleteInstanceFile();
+                if (pipeServer != null) {
+                    pipeServer.Dispose();
+                    pipeServer = null;
+                    DeleteInstanceFile();
+                    stopped = true;
+                }
             }
 
-            logger.Info("pyRevit agent host stopped");
+            if (stopped)
+                logger.Info("pyRevit agent host stopped");
+            StateChanged?.Invoke();
         }
 
+        /// <summary>
+        /// Stops advertising a pipe server that gave up, and tells the agent panel the host no
+        /// longer listens.
+        /// </summary>
+        /// <remarks>
+        /// The agent session stays as it is: the user never ended it, and the next
+        /// <see cref="Configure"/> starts a new pipe server for it. Runs on the pipe server's
+        /// thread.
+        /// </remarks>
         private static void ForgetStoppedPipe(AgentPipeServer stopped) {
             lock (sync) {
-                if (ReferenceEquals(pipeServer, stopped))
-                    DeleteInstanceFile();
+                if (!ReferenceEquals(pipeServer, stopped))
+                    return;
+                DeleteInstanceFile();
             }
+            StateChanged?.Invoke();
         }
 
         private static bool IsElevated() {
@@ -344,7 +409,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (inlineApplication != null || !engineWarmUp.OnRequest(method, loadAtStart))
                 return;
             try {
-                Dispatcher?.Post(WarmUpEngine);
+                Dispatcher?.Post(app => WarmUpEngine(app));
             }
             catch (Exception ex) {
                 logger.Debug("Could not queue the agent engine warm-up: {0}", ex.Message);

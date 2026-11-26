@@ -18,7 +18,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// While armed, the guard:
     /// <list type="bullet">
     /// <item>records added, modified and deleted element ids from <c>DocumentChanged</c>, for the
-    /// active document and, separately, for every other document;</item>
+    /// run's document and, separately, for every other document;</item>
     /// <item>holds a group on every other open, editable, non-linked document, so changes a
     /// script makes there through <c>app.Documents</c> can be rolled back;</item>
     /// <item>records failure messages, deletes warnings, and rolls back pending transactions that
@@ -30,9 +30,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// run's export folder is let through; see <see cref="AgentExportFolder"/>. It cancels
     /// closing only for documents that were open when the run started.</item>
     /// </list>
-    /// Invariant: only the active document's group may ever be assimilated. The groups on other
-    /// documents are always rolled back, so a run can never keep a change outside the document
-    /// the user sees and approves.
+    /// Invariant: only the groups of the run's document and of the other documents in the agent
+    /// session may be assimilated, and only when the run is kept. The groups on documents outside
+    /// the session are always rolled back, so a run can never keep a change in a document the
+    /// user didn't let agents work in.
     /// Invariant: every group must be closed before the ExternalEvent callback returns;
     /// Revit doesn't allow an open group to outlive the callback. <see cref="Dispose"/> rolls back
     /// anything still open and always unsubscribes every handler.
@@ -55,18 +56,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly List<Document> openAtStart;
         private readonly List<Document> documentsCreatedDuringRun = new List<Document>();
         private readonly List<Document> documentsOpenedFromDisk = new List<Document>();
+        private readonly Func<Document, bool> inSession;
         private TransactionGroup group;
         private bool assimilationRequested;
         private bool documentEventsArmed;
         private AgentDialogCapture dialogCapture;
         private readonly AgentExportFolder exportFolder;
 
+        /// <param name="inSession">
+        /// Whether an open document is in the agent session, so the run may change it and keep the
+        /// change with its own. Null lets the run keep changes to its own document only.
+        /// </param>
         /// <param name="exportDir">Existing folder the run may export Revit files into, or null
         /// to block every export. It is resolved here, before the script runs.</param>
-        public AgentRunGuard(UIApplication uiApp, Document doc, string exportDir = null) {
+        public AgentRunGuard(
+            UIApplication uiApp, Document doc, Func<Document, bool> inSession = null, string exportDir = null) {
             this.uiApp = uiApp;
             app = uiApp.Application;
             this.doc = doc;
+            this.inSession = inSession;
             exportFolder = exportDir == null ? null : new AgentExportFolder(exportDir);
             openAtStart = AgentDocuments.Snapshot(app);
         }
@@ -86,15 +94,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
 
         /// <summary>
-        /// True once the active document's group was assimilated, so its changes are kept.
+        /// True once the run was kept: its own document's group, or another session document's,
+        /// was assimilated.
         /// </summary>
         public bool Committed { get; private set; }
 
         /// <summary>
-        /// True when rolling back the active document's group threw, did not report it rolled
-        /// back, or left the model different from before the run (an element that existed before
-        /// and that the run deleted is still missing, or one it added is still there), so the
-        /// run's changes may still be in the model.
+        /// True when rolling back the group of the document the run works in threw, did not report
+        /// it rolled back, or left the model different from before the run (an element that existed
+        /// before and that the run deleted is still missing, or one it added is still there), so the
+        /// run's changes may still be in that model.
         /// </summary>
         /// <remarks>
         /// The model is checked even when the group already ended before the rollback was
@@ -103,17 +112,49 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool RollbackFailed { get; private set; }
 
         /// <summary>
-        /// Why the active document's rollback failed, the first time it did: the exception Revit
-        /// threw, the status it returned, or the element check that found the run's changes still
-        /// in the model. Null while <see cref="RollbackFailed"/> is false.
+        /// Why the rollback of the document the run works in failed, the first time it did: the
+        /// exception Revit threw, the status it returned, or the element check that found the run's
+        /// changes still in the model. Null while <see cref="RollbackFailed"/> is false.
         /// </summary>
         public string RollbackFailureReason { get; private set; }
 
         /// <summary>
-        /// True when the script changed a document that was already open when the run started.
-        /// Those changes are outside what the run may keep, so the run must fail.
+        /// True when the script changed a document outside the agent session that was already open
+        /// when the run started. Those changes are outside what the run may keep, so the run must
+        /// fail.
         /// </summary>
-        public bool ChangedOtherOpenDocument => others.Any(other => !other.OpenedDuringRun && !other.Changes.IsEmpty);
+        public bool ChangedOtherOpenDocument => ChangedOutsideSession.Any();
+
+        /// <summary>
+        /// Titles of the documents that make <see cref="ChangedOtherOpenDocument"/> true; never
+        /// documents the run created.
+        /// </summary>
+        public IList<string> ChangedOtherOpenDocumentTitles => ChangedOutsideSession.Select(other => other.Title).ToList();
+
+        /// <summary>
+        /// The other documents in the session the script changed; their changes are kept with the
+        /// run's own.
+        /// </summary>
+        public IList<AgentOtherDocument> ChangedSessionDocuments => others.Where(IsKeepable).ToList();
+
+        /// <summary>
+        /// Whether the script changed anything the run may keep: its own document, or another one
+        /// in the session.
+        /// </summary>
+        public bool HasChanges => !changes.IsEmpty || others.Any(IsKeepable);
+
+        /// <summary>
+        /// Session documents whose changes Revit wouldn't keep after <see cref="Assimilate"/> kept
+        /// others; each was rolled back and says why in <see cref="AgentOtherDocument.KeepError"/>.
+        /// </summary>
+        public IList<AgentOtherDocument> NotKept => others.Where(other => other.KeepError != null).ToList();
+
+        private IEnumerable<AgentOtherDocument> ChangedOutsideSession =>
+            others.Where(other => !other.OpenedDuringRun && !other.InSession && !other.Changes.IsEmpty);
+
+        private static bool IsKeepable(AgentOtherDocument other) {
+            return other.InSession && !other.Changes.IsEmpty;
+        }
 
         public bool LeftTransactionOpenInOtherDocument => others.Any(other => other.HasOpenTransaction);
 
@@ -143,7 +184,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             foreach (var other in openAtStart) {
                 if (other.IsLinked || IsWatchedDocument(other))
                     continue;
-                var tracked = new AgentOtherDocument(other, openedDuringRun: false);
+                var tracked = new AgentOtherDocument(other, openedDuringRun: false) {
+                    InSession = inSession?.Invoke(other) == true,
+                };
                 tracked.StartGroup(groupName);
                 others.Add(tracked);
             }
@@ -154,7 +197,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             group = new TransactionGroup(doc, groupName);
             if (group.Start() != TransactionStatus.Started)
                 throw new InvalidOperationException(
-                    "Revit did not start the run's transaction group on the active document, so the run could not be rolled back; the script was not run.");
+                    $"Revit did not start the run's transaction group on '{doc.Title}', so the run could not be rolled back; the script was not run.");
         }
 
         private void DisarmDialogCapture() {
@@ -198,14 +241,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 RollbackFailureReason = reason;
         }
 
+        /// <summary>
+        /// Keeps the run: rolls back every document outside the session, then keeps the run's own
+        /// document and each other session document it changed, as one undo entry in each.
+        /// </summary>
+        /// <remarks>
+        /// Revit can't keep several documents at once. A session document that fails to keep after
+        /// others were kept is rolled back and listed in <see cref="NotKept"/>, so the run can report
+        /// the partial result. A failure to roll back a document outside the session throws before
+        /// anything is kept.
+        /// </remarks>
         public void Assimilate() {
-            RollBackOtherDocuments();
+            RollBackOtherDocuments(other => !IsKeepable(other));
             if (HasOpenGroup) {
                 var status = group.Assimilate();
                 if (status != TransactionStatus.Committed)
                     throw new InvalidOperationException(
                         $"Revit did not commit the run's changes (status {status}), so they are not reported as kept.");
                 Committed = true;
+            }
+            foreach (var other in others.Where(IsKeepable)) {
+                other.Keep();
+                if (other.Kept)
+                    Committed = true;
             }
             assimilationRequested = true;
         }
@@ -219,11 +277,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         public bool HasUnrevertedOtherDocumentChanges => others.Any(other =>
-            !other.OpenedDuringRun && !other.Changes.IsEmpty && !other.ChangesReverted);
+            !other.OpenedDuringRun && !other.Changes.IsEmpty && !other.ChangesReverted && !other.Kept);
 
-        private void RollBackOtherDocuments() {
+        private void RollBackOtherDocuments(Func<AgentOtherDocument, bool> which = null) {
             var errors = new List<Exception>();
-            foreach (var other in others) {
+            foreach (var other in others.Where(which ?? (_ => true))) {
                 try {
                     other.RollBack();
                 }
@@ -283,7 +341,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private AgentOtherDocument TrackOther(Document other) {
-            var tracked = others.FirstOrDefault(candidate => IsSameDocument(candidate.Document, other));
+            var tracked = others.FirstOrDefault(candidate => AgentDocuments.IsSame(candidate.Document, other));
             if (tracked == null) {
                 tracked = new AgentOtherDocument(other, openedDuringRun: true);
                 others.Add(tracked);
@@ -343,7 +401,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             documentsOpenedFromDisk.Add(opened);
             if (IsWatchedDocument(opened))
                 return;
-            var tracked = others.FirstOrDefault(candidate => IsSameDocument(candidate.Document, opened));
+            var tracked = others.FirstOrDefault(candidate => AgentDocuments.IsSame(candidate.Document, opened));
             if (tracked != null)
                 tracked.MarkOpenedFromDisk();
             else
@@ -396,8 +454,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private bool IsProtectedFromSave(Document target) {
             return WasOpenAtStart(target)
-                || documentsCreatedDuringRun.Any(created => IsSameDocument(created, target))
-                || documentsOpenedFromDisk.Any(opened => IsSameDocument(opened, target));
+                || documentsCreatedDuringRun.Any(created => AgentDocuments.IsSame(created, target))
+                || documentsOpenedFromDisk.Any(opened => AgentDocuments.IsSame(opened, target));
         }
 
         private void OnDocumentClosing(object sender, DocumentClosingEventArgs e) {
@@ -405,19 +463,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 Block(e, e.Document, "close");
         }
 
-        private static bool IsSameDocument(Document first, Document second) {
-            if (first != null && ReferenceEquals(first, second))
-                return true;
-            try {
-                return first != null && second != null && first.IsValidObject && second.IsValidObject && first.Equals(second);
-            }
-            catch (Exception) {
-                return false;
-            }
-        }
-
         private bool WasOpenAtStart(Document target) {
-            return openAtStart.Any(open => IsSameDocument(open, target));
+            return openAtStart.Any(open => AgentDocuments.IsSame(open, target));
         }
 
         private void OnDocumentSynchronizingWithCentral(object sender, DocumentSynchronizingWithCentralEventArgs e) {
@@ -476,12 +523,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private bool IsWatchedDocument(Document other) {
-            return IsSameDocument(other, doc);
+            return AgentDocuments.IsSame(other, doc);
         }
     }
 
     /// <summary>
-    /// A document other than the active one, watched for the length of one agent run.
+    /// A document other than the run's own, watched for the length of one agent run.
     /// </summary>
     /// <remarks>
     /// Invariant: <see cref="HasOpenTransaction"/> reports only a transaction the run left
@@ -506,6 +553,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public bool OpenedDuringRun { get; private set; }
         public string Title { get; }
         public AgentChangeSet Changes { get; } = new AgentChangeSet();
+
+        /// <summary>Whether the agent session holds the document, so the run may keep its changes.</summary>
+        public bool InSession { get; set; }
+
+        /// <summary>Whether the run's changes in the document were kept.</summary>
+        public bool Kept { get; private set; }
+
+        /// <summary>Why Revit wouldn't keep the run's changes in the document, or null.</summary>
+        public string KeepError { get; private set; }
 
         public bool HasOpenTransaction => !modifiableAtStart && Document.IsValidObject && Document.IsModifiable;
 
@@ -549,10 +605,53 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <summary>
+        /// Keeps the run's changes in the document as one undo entry. When Revit refuses, or does
+        /// not report the changes committed, they are rolled back and <see cref="KeepError"/> says
+        /// why. Without a group, which a document that couldn't take one at the start has, the
+        /// changes are already in it.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: <see cref="Kept"/> is true only when Revit returned
+        /// <see cref="TransactionStatus.Committed"/>, as for the run's own document. An
+        /// assimilation Revit turned into a rollback ends the group, so the model is checked for
+        /// the run's changes instead of rolling back again.
+        /// </remarks>
+        public void Keep() {
+            if (!HasOpenGroup) {
+                Kept = true;
+                return;
+            }
+            var status = TransactionStatus.Uninitialized;
+            try {
+                status = group.Assimilate();
+                if (status != TransactionStatus.Committed)
+                    KeepError = $"Revit did not commit the changes (status {status}).";
+            }
+            catch (Exception ex) {
+                KeepError = ex.Message;
+            }
+            Kept = KeepError == null;
+            if (Kept)
+                return;
+            try {
+                if (HasOpenGroup)
+                    RollBack();
+                else if (status == TransactionStatus.RolledBack)
+                    rolledBack = !Changes.LeavesTracesAfterRollback(Document);
+            }
+            catch (Exception) {
+            }
+        }
+
         public JObject Describe() {
             var description = Changes.Summarize();
             description["document"] = Title;
             description["opened_during_run"] = OpenedDuringRun;
+            description["in_session"] = InSession;
+            description["kept"] = Kept;
+            if (KeepError != null)
+                description["keep_error"] = KeepError;
             if (OpenedDuringRun)
                 description["scope"] = "created during the run; not rolled back";
             else

@@ -56,6 +56,9 @@ namespace pyRevitCLI {
                 compact["error"] = shaped;
             }
 
+            if (run["since_last_call"] is JObject sinceLastCall)
+                compact["since_last_call"] = sinceLastCall;
+
             if (run.Value<string>("mode") != "query")
                 compact["decision"] = run["decision"];
             if (run["rollback_failure"]?.Type == JTokenType.String)
@@ -83,6 +86,9 @@ namespace pyRevitCLI {
             CopyIfNotEmpty(run, compact, "failures");
             CopyIfNotEmpty(run, compact, "dialogs");
             CopyIfNotEmpty(run, compact, "blocked");
+            CopyIfNotEmpty(run, compact, "opened_documents");
+            CopyIfNotEmpty(run, compact, "closed_documents");
+            CopyIfNotEmpty(run, compact, "unclosed_documents");
             if (run["exports"] is JArray exports && exports.Count > 0) {
                 compact["exports"] = new JArray(exports.Take(MaxChangeIds));
                 if (exports.Count > MaxChangeIds)

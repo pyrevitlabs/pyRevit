@@ -23,6 +23,9 @@ agent_harness.run_suites(
             "agent_query_tests",
             "agent_modify_tests",
             "agent_settings_tests",
+            "agent_session_tests",
+            "agent_awareness_tests",
+            "agent_panel_tests",
             "agent_pipe_tests",
         )
     ]

@@ -517,9 +517,11 @@ func main() {
 					"capture": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+							"--document":  complete.PredictNothing,
 							"--mode":      complete.PredictNothing,
 							"--out":       complete.PredictNothing,
 							"--revit":     complete.PredictNothing,
+							"--title":     complete.PredictNothing,
 							"--view-type": complete.PredictNothing,
 							"--width":     complete.PredictNothing,
 						},
@@ -527,8 +529,10 @@ func main() {
 					"inspect": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+							"--document":      complete.PredictNothing,
 							"--no-parameters": complete.PredictNothing,
 							"--revit":         complete.PredictNothing,
+							"--title":         complete.PredictNothing,
 						},
 					},
 					"lookup": complete.Command{
@@ -540,6 +544,7 @@ func main() {
 					"run": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+							"--document":  complete.PredictNothing,
 							"--engine":    complete.PredictNothing,
 							"--inputs":    complete.PredictNothing,
 							"--mode":      complete.PredictNothing,
@@ -558,6 +563,38 @@ func main() {
 					"show": complete.Command{
 						Sub:   complete.Commands{},
 						Flags: complete.Flags{},
+					},
+					"session": complete.Command{
+						Sub: complete.Commands{
+							"status": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--revit": complete.PredictNothing,
+								},
+							},
+							"pause": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--revit": complete.PredictNothing,
+								},
+							},
+							"end": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--revit": complete.PredictNothing,
+								},
+							},
+							"request": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--reason": complete.PredictNothing,
+									"--revit":  complete.PredictNothing,
+								},
+							},
+						},
+						Flags: complete.Flags{
+							"--revit": complete.PredictNothing,
+						},
 					},
 					"record": complete.Command{
 						Sub: complete.Commands{},
@@ -1063,6 +1100,25 @@ func main() {
 										},
 									},
 									"disable": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+								},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
+							"sessionstart": complete.Command{
+								Sub: complete.Commands{
+									"user": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+									"auto": complete.Command{
 										Sub: complete.Commands{},
 										Flags: complete.Flags{
 											"--log": complete.PredictNothing,

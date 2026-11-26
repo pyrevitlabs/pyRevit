@@ -115,6 +115,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             AssertResponse(AgentRunVerdict.NoDocument, "ok", "no_document", null);
         }
 
+        [Fact]
+        public void OnlyAModifyRunThatWentThroughKeepsTheDocumentsItOpened() {
+            foreach (var verdict in new[] { AgentRunVerdict.AutoCommit, AgentRunVerdict.UserApproved, AgentRunVerdict.NoChanges, AgentRunVerdict.NoDocument })
+                Assert.True(AgentRunDecision.KeepsOpenedDocuments(AgentRunMode.Modify, verdict), verdict.ToString());
+            foreach (var verdict in new[] {
+                AgentRunVerdict.UserDiscarded, AgentRunVerdict.DiscardedCallerGone, AgentRunVerdict.PolicyReadOnly, AgentRunVerdict.ScriptFailed,
+                AgentRunVerdict.TransactionLeftOpen, AgentRunVerdict.OtherDocumentChanged,
+            })
+                Assert.False(AgentRunDecision.KeepsOpenedDocuments(AgentRunMode.Modify, verdict), verdict.ToString());
+        }
+
+        [Fact]
+        public void QueriesAndDryRunsNeverKeepTheDocumentsTheyOpened() {
+            foreach (var verdict in new[] { AgentRunVerdict.QueryRolledBack, AgentRunVerdict.NoChanges, AgentRunVerdict.NoDocument })
+                Assert.False(AgentRunDecision.KeepsOpenedDocuments(AgentRunMode.Query, verdict), verdict.ToString());
+            foreach (var verdict in new[] { AgentRunVerdict.DryRunRolledBack, AgentRunVerdict.NoChanges, AgentRunVerdict.NoDocument })
+                Assert.False(AgentRunDecision.KeepsOpenedDocuments(AgentRunMode.DryRun, verdict), verdict.ToString());
+        }
+
         /// <summary>A host failure before the script started, such as a refused transaction group, ran nothing (#3949).</summary>
         [Fact]
         public void AHostErrorBeforeTheScriptStartedIsNotRun() {

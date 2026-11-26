@@ -35,6 +35,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         /// <summary>
+        /// The provisional record carries the reason, session id and document title the final record
+        /// carries, so an interrupted run can still be traced to its session and model.
+        /// </summary>
+        [Fact]
+        public void TheRecordNamesTheSessionAndDocumentLikeTheFinalRecord() {
+            var request = AgentRunRequest.FromJson(new JObject {
+                ["script"] = "pass",
+                ["engine"] = "ironpython",
+                ["title"] = "Rename template",
+                ["reason"] = "The user asked for consistent names",
+            });
+
+            var record = AgentPendingRecord.Build(request, "abc123", "C:\\runs\\abc123", "session-1", "Tower.rvt");
+
+            Assert.Equal("The user asked for consistent names", record.Value<string>("reason"));
+            Assert.Equal("session-1", record.Value<string>("session_id"));
+            Assert.Equal("Tower.rvt", record.Value<string>("document"));
+        }
+
+        /// <summary>
         /// Writing leaves a readable response.json in the run folder.
         /// </summary>
         [Fact]

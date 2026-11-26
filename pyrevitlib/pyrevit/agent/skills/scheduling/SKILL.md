@@ -89,5 +89,5 @@ they name, with your own file tools after the run or by asking the user to copy 
 
 - [ ] The schedule's rows, read back, match a direct element query of the same category and filters.
 - [ ] Its fields, filters, sorting and totals, read back from `schedule.Definition`, are the ones asked for.
-- [ ] `capture_view(view="Door Schedule")` shows how it looks; it renders the schedule on a temporary sheet that is rolled back.
+- [ ] `capture_view(document=key, view="Door Schedule", title="Check the door schedule")` shows how it looks; it renders the schedule on a temporary sheet that is rolled back.
 - [ ] You told the user the schedule's name and the path of any file you exported, and that the file is temporary.

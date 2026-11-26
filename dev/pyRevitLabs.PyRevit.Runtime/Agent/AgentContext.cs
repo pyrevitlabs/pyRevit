@@ -45,12 +45,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static JObject DescribeAgent() {
             var agent = new JObject {
                 ["policy"] = AgentRunService.PolicyNameInForce(),
+                ["session"] = AgentSessions.Describe(),
             };
             if (AgentRunService.RecklessInForce())
                 agent["reckless"] = true;
             return agent;
         }
 
+        /// <remarks>
+        /// Invariant: the active view, selection and levels come only from a document in the
+        /// session. When the active document is outside it, <c>document</c> still names it, with
+        /// <c>in_session</c> false, so the agent can ask the user to add it, and the rest stays
+        /// null: the user hasn't let agents read that model. Must run on the Revit main thread.
+        /// </remarks>
         public static JToken Describe(UIApplication app) {
             var env = new EnvDictionary();
             var context = new JObject {
@@ -75,14 +82,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return context;
 
             var doc = uidoc.Document;
+            var inSession = AgentSessions.IsInSession(doc);
             context["document"] = new JObject {
+                ["key"] = AgentDocuments.Keys.KeyOf(doc),
                 ["title"] = doc.Title,
                 ["path"] = doc.PathName,
+                ["in_session"] = inSession,
                 ["is_family"] = doc.IsFamilyDocument,
                 ["is_workshared"] = doc.IsWorkshared,
                 ["is_read_only"] = doc.IsReadOnly,
                 ["is_modified"] = doc.IsModified,
             };
+            if (!inSession)
+                return context;
 
             var view = uidoc.ActiveView;
             if (view != null) {

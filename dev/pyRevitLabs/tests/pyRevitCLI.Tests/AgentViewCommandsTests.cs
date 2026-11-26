@@ -169,6 +169,37 @@ public sealed class AgentViewCommandsTests : IDisposable {
     }
 
     [Fact]
+    public void CaptureAndInspectNameTheDocumentAndTitleOnlyWhenGiven() {
+        AnswerCaptureWithImage();
+        Printed(() => PyRevitCLIAgentCmds.CaptureView(null, null, null, null, null, document: "doc-2", title: "Check the plan"));
+        host.Handler = request => FakeAgentHost.Result(request, new JObject());
+        Printed(() => PyRevitCLIAgentCmds.InspectElements(new[] { "311" }, true, null, document: "doc-2", title: "Check the wall"));
+        Printed(() => PyRevitCLIAgentCmds.InspectElements(new[] { "311" }, true, null));
+
+        var capture = (JObject)Assert.Single(host.RequestsFor("capture"))["params"];
+        Assert.Equal("doc-2", capture.Value<string>("document"));
+        Assert.Equal("Check the plan", capture.Value<string>("title"));
+        var inspections = host.RequestsFor("inspect_elements");
+        Assert.Equal("doc-2", inspections[0]["params"].Value<string>("document"));
+        Assert.Equal("Check the wall", inspections[0]["params"].Value<string>("title"));
+        Assert.Null(inspections[1]["params"]["document"]);
+        Assert.Null(inspections[1]["params"]["title"]);
+    }
+
+    [Fact]
+    public void CaptureAndInspectTakeADocumentKeyAndATitleOnTheCommandLine() {
+        var capture = Parse("agent", "capture", "--document=doc-2", "--title=Check the plan");
+        var inspect = Parse("agent", "inspect", "311", "--document=doc-2", "--title=Check the wall");
+
+        Assert.True(capture["capture"].IsTrue);
+        Assert.Equal("doc-2", PyRevitCLIArguments.Value(capture, "--document"));
+        Assert.Equal("Check the plan", PyRevitCLIArguments.Value(capture, "--title"));
+        Assert.True(inspect["inspect"].IsTrue);
+        Assert.Equal("doc-2", PyRevitCLIArguments.Value(inspect, "--document"));
+        Assert.Equal("Check the wall", PyRevitCLIArguments.Value(inspect, "--title"));
+    }
+
+    [Fact]
     public void LookupSendsTheNameAndPrintsTheHostAnswer() {
         host.Handler = request => FakeAgentHost.Result(request, new JObject { ["kind"] = "type", ["name"] = "Wall" });
 

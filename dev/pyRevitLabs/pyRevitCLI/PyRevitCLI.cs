@@ -544,6 +544,16 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Agent);
 
+                else if (all("session"))
+                    PyRevitCLIAgentCmds.ControlSession(
+                        action: all("request") ? "request"
+                            : all("pause") ? "pause"
+                            : all("end") ? "end"
+                            : "status",
+                        reason: TryGetValue("--reason"),
+                        revitSelector: TryGetValue("--revit")
+                        );
+
                 else if (all("status"))
                     PyRevitCLIAgentCmds.PrintStatus(json: arguments["--json"].IsTrue);
 
@@ -557,14 +567,18 @@ namespace pyRevitCLI {
                         mode: TryGetValue("--mode"),
                         width: TryGetValue("--width"),
                         outFile: TryGetValue("--out"),
-                        revitSelector: TryGetValue("--revit")
+                        revitSelector: TryGetValue("--revit"),
+                        document: TryGetValue("--document"),
+                        title: TryGetValue("--title")
                         );
 
                 else if (all("inspect"))
                     PyRevitCLIAgentCmds.InspectElements(
                         elementIds: PyRevitCLIArguments.Values(arguments, "<element_id>"),
                         includeParameters: arguments["--no-parameters"].IsFalse,
-                        revitSelector: TryGetValue("--revit")
+                        revitSelector: TryGetValue("--revit"),
+                        document: TryGetValue("--document"),
+                        title: TryGetValue("--title")
                         );
 
                 else if (all("lookup"))
@@ -582,7 +596,8 @@ namespace pyRevitCLI {
                         inputsJson: TryGetValue("--inputs"),
                         revitSelector: TryGetValue("--revit"),
                         timeoutSeconds: TryGetValue("--timeout"),
-                        workspace: TryGetValue("--workspace")
+                        workspace: TryGetValue("--workspace"),
+                        document: TryGetValue("--document")
                         );
 
                 else if (all("runs"))
@@ -881,6 +896,11 @@ namespace pyRevitCLI {
                         PyRevitCLIAgentCmds.ConfigureUserSkills(
                             any("enable", "disable") ? arguments["enable"].IsTrue : null);
 
+                    else if (all("sessionstart"))
+                        PyRevitCLIAgentCmds.ConfigureSessionStart(
+                            arguments["user"].IsTrue ? PyRevitConsts.ConfigsAgentSessionStartUser
+                            : arguments["auto"].IsTrue ? PyRevitConsts.ConfigsAgentSessionStartAuto
+                            : null);
                     else if (all("reckless"))
                         PyRevitCLIAgentCmds.ConfigureReckless(
                             any("enable", "disable") ? arguments["enable"].IsTrue : null);

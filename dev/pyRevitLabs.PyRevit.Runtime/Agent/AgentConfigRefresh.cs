@@ -23,17 +23,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             this.reload = reload;
         }
 
+        /// <returns>True when the config was reloaded, false when it hadn't changed.</returns>
         /// <exception cref="Exception">Whatever reading the file time or reloading the config throws.</exception>
-        internal void RefreshIfChanged() {
+        internal bool RefreshIfChanged() {
             var path = configPath();
             var lastWrite = lastWriteOf(path);
             lock (sync) {
                 if (path == watchedPath && lastWrite == watchedLastWrite)
-                    return;
+                    return false;
                 reload();
                 watchedPath = path;
                 watchedLastWrite = lastWrite;
             }
+            return true;
         }
     }
 }

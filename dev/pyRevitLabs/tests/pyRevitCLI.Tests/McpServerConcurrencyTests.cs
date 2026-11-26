@@ -116,7 +116,7 @@ public partial class McpServerTests {
         var runStarted = BlockRunsUntil(release);
         using var session = new LiveSession();
 
-        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["revit"] = "2090" }));
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["title"] = "Count", ["document"] = "doc-1", ["revit"] = "2090" }));
         Assert.True(runStarted.Wait(Patience));
         session.Send(ToolCall(2, "get_context", new JObject { ["revit"] = "2091" }));
         var context = session.Next();
@@ -144,7 +144,7 @@ public partial class McpServerTests {
         PyRevitAgentClient.PingConnectTimeoutMs = 300;
         using var session = new LiveSession();
 
-        session.Send(ToolCall(1, "run_modify", new JObject { ["script"] = "result = 1" }));
+        session.Send(ToolCall(1, "run_modify", new JObject { ["script"] = "result = 1", ["title"] = "Change", ["document"] = "doc-1" }));
         Assert.True(runStarted.Wait(Patience));
         session.Send(ToolCall(2, "get_context"));
         session.Cancel(2);
@@ -170,7 +170,7 @@ public partial class McpServerTests {
         using var gate = new ManualResetEventSlim(false);
         using var session = new LiveSession(writeGate: gate);
 
-        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["title"] = "Count", ["document"] = "doc-1" }));
         Assert.True(session.Writing.Wait(Patience));
         session.Cancel(1);
         session.Send(ToolCall(2, "get_context"));
@@ -188,7 +188,7 @@ public partial class McpServerTests {
         var runStarted = BlockRunsUntil(release);
         using var session = new LiveSession(inputClosedGracePeriod: TimeSpan.FromMilliseconds(300));
 
-        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["title"] = "Count", ["document"] = "doc-1" }));
         Assert.True(runStarted.Wait(Patience));
         var finished = session.CloseInputAndWait(Patience);
         release.Set();
@@ -203,9 +203,9 @@ public partial class McpServerTests {
         var runStarted = BlockRunsUntil(release);
         using var session = new LiveSession(inputClosedGracePeriod: TimeSpan.FromMilliseconds(300));
 
-        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["title"] = "Count", ["document"] = "doc-1" }));
         Assert.True(runStarted.Wait(Patience));
-        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 2" }));
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 2", ["title"] = "Count", ["document"] = "doc-1" }));
         var finished = session.CloseInputAndWait(Patience);
         release.Set();
 
@@ -219,7 +219,7 @@ public partial class McpServerTests {
         var runStarted = BlockRunsUntil(release);
         using var session = new LiveSession(inputClosedGracePeriod: Patience);
 
-        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["title"] = "Count", ["document"] = "doc-1" }));
         Assert.True(runStarted.Wait(Patience));
         var closing = Task.Run(() => session.CloseInputAndWait(Patience));
         Assert.True(session.InputEnded.Wait(Patience), "The server never read the end of input.");
@@ -240,7 +240,7 @@ public partial class McpServerTests {
         var runStarted = BlockRunsUntil(release);
         using var session = new LiveSession();
 
-        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["title"] = "Count", ["document"] = "doc-1" }));
         Assert.True(runStarted.Wait(Patience));
         session.Cancel(1, jsonrpc: "1.0");
         session.Send(new JObject { ["jsonrpc"] = "2.0", ["id"] = 2, ["method"] = "ping" });
@@ -262,7 +262,7 @@ public partial class McpServerTests {
         using var gate = new ManualResetEventSlim(false);
         using var session = new LiveSession(writeGate: gate);
 
-        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1" }));
+        session.Send(ToolCall(1, "run_query", new JObject { ["script"] = "result = 1", ["title"] = "Count", ["document"] = "doc-1" }));
         Assert.True(session.Writing.Wait(Patience));
         session.Send(ToolCall(2, "get_context"));
         Assert.True(SpinWait.SpinUntil(() => host.RequestsFor("get_context").Count > 0, Patience));

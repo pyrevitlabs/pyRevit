@@ -8,8 +8,8 @@ using static PyRevitLabs.PyRevit.Runtime.Agent.AgentUser32;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
-    /// Lists the visible top-level windows of the Revit process other than its main window,
-    /// to explain why Revit isn't idle.
+    /// Lists the visible top-level windows of the Revit process other than its main window and
+    /// the floating agent panel, to explain why Revit isn't idle.
     /// </summary>
     /// <remarks>
     /// Revit shows some modal dialogs while idle, outside any agent run, such as the
@@ -27,6 +27,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// UI thread would block the caller and the <c>revit_busy</c> answer would never be sent.
     /// </remarks>
     internal static class AgentWindows {
+        /// <summary>The agent panel's window title, which is never a dialog that blocks Revit.</summary>
+        /// <remarks>
+        /// Warning: the run approval prompt has the same title. Tell the two apart with
+        /// <see cref="IsDialog"/>: the prompt is a native dialog and the floating panel is not.
+        /// </remarks>
+        internal const string AgentPanelTitle = "pyRevit Agent";
+
+        private const string DialogClass = "#32770";
+
         private const int MaxWindows = 6;
 
         private static IntPtr revitMainWindow;
@@ -86,6 +95,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     GetClassName(window, className, className.Capacity);
                     if (text.Length == 0 && className.ToString().StartsWith("Tooltip", StringComparison.OrdinalIgnoreCase))
                         return true;
+                    if (text.ToString() == AgentPanelTitle && className.ToString() != DialogClass)
+                        return true;
                     found.Add(string.Format("'{0}' ({1})", text, className));
                     return found.Count < MaxWindows;
                 }, IntPtr.Zero);
@@ -93,6 +104,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             catch (Exception) {
             }
             return found;
+        }
+
+        /// <summary>
+        /// Whether a window is a native Windows dialog, such as a message box. Reads the window
+        /// class only and never sends a message.
+        /// </summary>
+        internal static bool IsDialog(IntPtr window) {
+            var className = new StringBuilder(256);
+            GetClassName(window, className, className.Capacity);
+            return className.ToString() == DialogClass;
         }
 
         private static IntPtr MainWindow() {

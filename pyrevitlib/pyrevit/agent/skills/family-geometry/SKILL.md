@@ -168,7 +168,7 @@ t.Commit()
 
 ## Preview the family without loading it
 
-`capture_view` only shows the active document. A family from `NewFamilyDocument` or `EditFamily` has no window, so the host closes it when the run ends and no later `capture_view` can reach it. Look at it inside the run instead: export a temporary isometric 3D view into `export_dir`, then read the PNG listed in `exports`. A family the user has open and active needs none of this: `capture_view` works on it directly.
+`capture_view` only shows the active document. A family from `NewFamilyDocument` or `EditFamily` has no window, so `capture_view` can't reach it, whether the host closes it when the run ends or a modify run keeps it open in the session. Look at it inside the run instead: export a temporary isometric 3D view into `export_dir`, then read the PNG listed in `exports`. A family the user has open and active needs none of this: `capture_view` works on it directly.
 
 ```python
 import os

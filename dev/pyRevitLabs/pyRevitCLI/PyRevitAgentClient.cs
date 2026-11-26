@@ -140,7 +140,8 @@ namespace pyRevitCLI {
 
         /// <summary>
         /// The host's other <c>error.data</c> fields, such as the candidate <c>views</c> of a
-        /// <c>view_ambiguous</c> error, passed on to the caller unchanged.
+        /// <c>view_ambiguous</c> error, and fields the MCP server adds, such as
+        /// <c>since_last_call</c>, passed on to the caller unchanged.
         /// </summary>
         public JObject Details { get; }
 
@@ -158,6 +159,20 @@ namespace pyRevitCLI {
             }
         }
 
+        /// <summary>
+        /// The same error with <paramref name="details"/> added to <see cref="Details"/>, keeping
+        /// its outcome and ids, so an error rethrown with more context still says whether the
+        /// request is safe to send again.
+        /// </summary>
+        public AgentClientException WithDetails(JObject details) {
+            var merged = Details == null ? new JObject() : (JObject)Details.DeepClone();
+            merged.Merge(details);
+            return new AgentClientException(Code, HostMessage, Outcome, RequestId, RunId, merged);
+        }
+
+        /// <remarks>
+        /// <see cref="Details"/> never replaces the error's own fields.
+        /// </remarks>
         public JObject ToJson() {
             var json = new JObject { ["error"] = Code, ["message"] = HostMessage };
             if (Outcome != null)
@@ -393,8 +408,15 @@ namespace pyRevitCLI {
         /// See <see cref="Call"/>; <c>revit_busy</c> when the pipe isn't accepted in time and
         /// <c>no_answer</c> when the answer doesn't come in time.
         /// </exception>
-        public static JObject Ping(AgentInstance instance, bool identity = false) {
-            var parameters = identity ? new JObject { ["identity"] = true } : null;
+        /// <param name="identity">
+        /// Asks the host to add its commit, and whether its binaries are stale, to the answer.
+        /// </param>
+        /// <returns>The host's answer, which describes its agent session.</returns>
+        public static JObject Ping(AgentInstance instance, JObject parameters = null, bool identity = false) {
+            if (identity) {
+                parameters = parameters == null ? new JObject() : (JObject)parameters.DeepClone();
+                parameters["identity"] = true;
+            }
             return Call(instance, "ping", parameters, answerTimeoutMs: PingTimeoutMs, connectTimeoutMs: PingConnectTimeoutMs) as JObject;
         }
 

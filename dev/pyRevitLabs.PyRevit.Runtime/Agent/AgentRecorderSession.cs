@@ -170,7 +170,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             pendingScreenshot = null;
             try {
                 var request = AgentCapture.Parse(new JObject { ["mode"] = "export", ["width"] = 1024 });
-                var captured = (JObject)AgentCapture.Capture(uiApp, request);
+                JObject captured;
+                using (AgentAwarenessWatch.Awareness.Suppress())
+                    captured = (JObject)AgentCapture.Capture(uiApp, uiApp.ActiveUIDocument.Document, request);
                 var source = captured.Value<string>("path");
                 Directory.CreateDirectory(store.ScreenshotsDirectory);
                 var name = "shot-" + throttle.Taken.ToString("D3") + ".png";

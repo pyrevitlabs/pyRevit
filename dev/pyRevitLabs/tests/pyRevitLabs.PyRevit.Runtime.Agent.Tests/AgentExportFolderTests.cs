@@ -145,7 +145,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         public void TheScriptFacingFolderAndItsPrefixesAreAllowedByAGuardOnThePlainFolder() {
             var app = new UIApplication();
             var forScripts = exports + Path.DirectorySeparatorChar;
-            using (var guard = new AgentRunGuard(app, new Document(), exports)) {
+            using (var guard = new AgentRunGuard(app, new Document(), exportDir: exports)) {
                 guard.Arm("Test");
 
                 Assert.True(app.Application.ExportFile(forScripts));
@@ -166,7 +166,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         public void TheGuardAllowsExportsIntoTheFolderAndBlocksOthersWithTheirPath() {
             var app = new UIApplication();
             var document = new Document();
-            using (var guard = new AgentRunGuard(app, document, exports)) {
+            using (var guard = new AgentRunGuard(app, document, exportDir: exports)) {
                 guard.Arm("Test");
 
                 Assert.True(app.Application.ExportFile(Path.Combine(exports, "sheet.png")));
@@ -187,7 +187,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         [Fact]
         public void ABackgroundExportIsBlockedEvenIntoTheFolder() {
             var app = new UIApplication();
-            using (var guard = new AgentRunGuard(app, new Document(), exports)) {
+            using (var guard = new AgentRunGuard(app, new Document(), exportDir: exports)) {
                 guard.Arm("Test");
 
                 Assert.False(app.Application.ExportFile(exports, background: true));
@@ -208,7 +208,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         public void ABackgroundExportOutsideTheFolderNamesBothFixesInOneEntry() {
             var app = new UIApplication();
             var elsewhere = Path.Combine(outside, "sheet.pdf");
-            using (var guard = new AgentRunGuard(app, new Document(), exports)) {
+            using (var guard = new AgentRunGuard(app, new Document(), exportDir: exports)) {
                 guard.Arm("Test");
 
                 Assert.False(app.Application.ExportFile(elsewhere, background: true));

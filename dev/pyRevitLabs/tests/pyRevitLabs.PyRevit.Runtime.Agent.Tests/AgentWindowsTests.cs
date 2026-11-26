@@ -19,10 +19,37 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         [DllImport("user32.dll")]
         private static extern bool DestroyWindow(IntPtr window);
 
-        private static IntPtr CreateVisibleWindow(string title) {
-            var window = CreateWindowEx(0, "STATIC", title, WsPopup | WsVisible, 0, 0, 100, 100, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+        private const string NativeDialogClass = "#32770";
+
+        private static IntPtr CreateVisibleWindow(string title, string className = "STATIC") {
+            var window = CreateWindowEx(0, className, title, WsPopup | WsVisible, 0, 0, 100, 100, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
             Assert.NotEqual(IntPtr.Zero, window);
             return window;
+        }
+
+        /// <summary>
+        /// The approval prompt and the floating agent panel share a title. Only the prompt is a
+        /// native dialog, so it is listed as blocking Revit and the panel is not.
+        /// </summary>
+        [Fact]
+        public void TheApprovalPromptIsListedAndTheFloatingPanelWithTheSameTitleIsNot() {
+            var mainWindow = CreateVisibleWindow("Revit main");
+            var panel = CreateVisibleWindow(AgentWindows.AgentPanelTitle);
+            var prompt = CreateVisibleWindow(AgentWindows.AgentPanelTitle, NativeDialogClass);
+            try {
+                AgentWindows.RememberMainWindow(mainWindow);
+
+                Assert.True(AgentWindows.IsDialog(prompt));
+                Assert.False(AgentWindows.IsDialog(panel));
+                var listed = Assert.Single(AgentWindows.OpenDialogs(), dialog => dialog.Contains(AgentWindows.AgentPanelTitle));
+                Assert.Contains(NativeDialogClass, listed);
+            }
+            finally {
+                AgentWindows.RememberMainWindow(IntPtr.Zero);
+                DestroyWindow(prompt);
+                DestroyWindow(panel);
+                DestroyWindow(mainWindow);
+            }
         }
 
         [Fact]
