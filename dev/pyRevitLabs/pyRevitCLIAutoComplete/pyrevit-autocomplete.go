@@ -585,8 +585,8 @@ func main() {
 									"--log":    complete.PredictNothing,
 									"--path":   complete.PredictNothing,
 									"--prefix": complete.PredictNothing,
-									"--scope":  complete.PredictNothing,
-									"--target": complete.PredictNothing,
+									"--scope":  complete.PredictSet("project", "user"),
+									"--target": complete.PredictSet("agents", "antigravity", "claude", "copilot", "opencode"),
 								},
 							},
 							"status": complete.Command{
@@ -594,16 +594,17 @@ func main() {
 								Flags: complete.Flags{
 									"--json":   complete.PredictNothing,
 									"--path":   complete.PredictNothing,
-									"--scope":  complete.PredictNothing,
-									"--target": complete.PredictNothing,
+									"--scope":  complete.PredictSet("project", "user"),
+									"--target": complete.PredictSet("agents", "antigravity", "claude", "copilot", "opencode"),
 								},
 							},
 							"uninstall": complete.Command{
 								Sub: complete.Commands{},
 								Flags: complete.Flags{
+									"--force":  complete.PredictNothing,
 									"--path":   complete.PredictNothing,
-									"--scope":  complete.PredictNothing,
-									"--target": complete.PredictNothing,
+									"--scope":  complete.PredictSet("project", "user"),
+									"--target": complete.PredictSet("agents", "antigravity", "claude", "copilot", "opencode"),
 								},
 							},
 						},
