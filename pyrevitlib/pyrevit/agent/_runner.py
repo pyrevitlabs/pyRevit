@@ -1798,13 +1798,13 @@ def _enter_workspace(workspace):
     The folder goes last so a workspace module can't shadow a standard library
     or pyRevit module of the same name. An entry that is already on
     ``sys.path``, from an earlier run, a script or ``PYTHONPATH``, is moved to
-    the end for the run and put back at its position by
-    :func:`_leave_workspace`.
+    the end for the run and put back by :func:`_leave_workspace`, right after
+    the entry that preceded it.
 
     Returns:
         A token for :func:`_leave_workspace`: ``(workspace, moved)``, where
-        ``moved`` lists the ``(index, entry)`` pairs taken out of ``sys.path``,
-        or None when no workspace is set.
+        ``moved`` lists the ``(preceding_entry, entry)`` pairs taken out of
+        ``sys.path`` in their original order, or None when no workspace is set.
 
     The script engine is reused between runs, so a module imported from the
     workspace would otherwise keep the code of the first run that imported
@@ -1815,13 +1815,17 @@ def _enter_workspace(workspace):
         return None
     _unload_modules_under(workspace)
     root = _folder_prefix(workspace)
+    original = list(sys.path)
     moved = [
-        (index, entry)
-        for index, entry in enumerate(sys.path)
+        (original[index - 1] if index else None, entry)
+        for index, entry in enumerate(original)
         if isinstance(entry, str) and entry and _folder_prefix(entry) == root
     ]
-    for index, _ in reversed(moved):
-        del sys.path[index]
+    sys.path[:] = [
+        entry
+        for entry in original
+        if not (isinstance(entry, str) and entry and _folder_prefix(entry) == root)
+    ]
     sys.path.append(workspace)
     return workspace, moved
 
@@ -1922,8 +1926,9 @@ def _leave_workspace(workspace, token):
     """Unload the workspace's modules and restore ``sys.path`` as it was before the run.
 
     ``token`` is what :func:`_enter_workspace` returned: the entry the run
-    appended is removed and the entries it moved are put back at their
-    positions.
+    appended is removed and each entry it moved is put back right after the
+    entry that preceded it, at the front when it was first, or at the end
+    when that entry is gone.
 
     A module left loaded would shadow a module of the same name in a different
     workspace folder on a later run, since ``import`` returns the cached module
@@ -1937,8 +1942,13 @@ def _leave_workspace(workspace, token):
             if sys.path[index] == appended:
                 del sys.path[index]
                 break
-        for index, entry in moved:
-            sys.path.insert(index, entry)
+        for preceding, entry in moved:
+            if preceding is None:
+                sys.path.insert(0, entry)
+            elif preceding in sys.path:
+                sys.path.insert(sys.path.index(preceding) + 1, entry)
+            else:
+                sys.path.append(entry)
 
 
 def _elementid_value(element_id):

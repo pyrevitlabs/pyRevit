@@ -1463,6 +1463,29 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
             self.assertEqual(original, patched)
         self.assertEqual([], errors)
 
+    def test_leaving_the_workspace_restores_its_place_after_the_preceding_entry(self):
+        """The workspace entry returns after the entry that preceded it, not at its old index."""
+        folder = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, folder, True)
+        for edits, expected in (
+            ([], ["A", folder, "B"]),
+            ([("insert", 0, "X")], ["X", "A", folder, "B"]),
+            ([("insert", 0, "X"), ("remove", "A")], ["X", "B", folder]),
+            ([("remove", "A"), ("remove", "B")], [folder]),
+        ):
+            with self.subTest(edits=edits):
+                patched = ["A", folder, "B"]
+                with mock.patch.object(sys, "path", patched):
+                    token = self.runner._enter_workspace(folder)
+                    self.assertEqual(["A", "B", folder], patched)
+                    for edit in edits:
+                        if edit[0] == "insert":
+                            patched.insert(edit[1], edit[2])
+                        else:
+                            patched.remove(edit[1])
+                    self.runner._leave_workspace(folder, token)
+                    self.assertEqual(expected, patched)
+
     def test_sys_path_order_still_picks_the_module(self):
         """A folder placed before the workspace keeps winning its imports."""
         workspace = self._workspace({"shared.py": "SOURCE = 'workspace'\n"})
