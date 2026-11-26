@@ -435,8 +435,8 @@ class AgentRunnerLinesTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, folder, True)
         saved_path = list(sys.path)
         self.addCleanup(lambda: sys.path.__setitem__(slice(None), saved_path))
-        added = self.runner._enter_workspace(folder)
-        self.assertEqual(folder, added)
+        token = self.runner._enter_workspace(folder)
+        self.assertEqual((folder, []), token)
         self.assertEqual(folder, sys.path[-1])
         self.assertEqual(saved_path, sys.path[:-1])
 
@@ -1403,6 +1403,64 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
                 "assert legacy_unique_name.SOURCE == 'workspace'\n",
                 workspace=workspace,
             )
+        self.assertEqual([], errors)
+
+    def test_legacy_loader_is_delegated_only_outside_the_workspace(self):
+        """A find_module loader for a workspace file stays guarded; a library one is delegated."""
+        outside = self._workspace({"loader_outside_name.py": "SOURCE = 'outside'\n"})
+        workspace = self._workspace(
+            {
+                "loader_inside_name.py": "SOURCE = 'inside'\n",
+                "loader_outside_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        files = {
+            "loader_inside_name": os.path.join(workspace, "loader_inside_name.py"),
+            "loader_outside_name": os.path.join(outside, "loader_outside_name.py"),
+        }
+
+        class Legacy(object):
+            def find_module(self, fullname, path=None):
+                if fullname not in files:
+                    return None
+                return importlib.machinery.SourceFileLoader(fullname, files[fullname])
+
+        with (
+            mock.patch.object(sys, "meta_path", sys.meta_path + [Legacy()]),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import loader_inside_name\nimport loader_outside_name\n"
+                "assert loader_inside_name.SOURCE == 'inside'\n"
+                "assert '__agent_tick__' in vars(loader_inside_name)\n"
+                "assert loader_outside_name.SOURCE == 'outside'\n"
+                "assert '__agent_tick__' not in vars(loader_outside_name)\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
+
+    def test_workspace_already_early_on_sys_path_is_moved_behind_for_the_run(self):
+        """A pre-existing early workspace entry loses to later entries, then returns."""
+        earlier = self._workspace({"early_shadowed_name.py": "SOURCE = 'earlier'\n"})
+        workspace = self._workspace(
+            {
+                "early_shadowed_name.py": "SOURCE = 'workspace'\n",
+                "early_unique_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        original = [workspace, earlier] + sys.path
+        patched = list(original)
+        with (
+            mock.patch.object(sys, "path", patched),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import early_shadowed_name\nimport early_unique_name\n"
+                "assert early_shadowed_name.SOURCE == 'earlier'\n"
+                "assert early_unique_name.SOURCE == 'workspace'\n",
+                workspace=workspace,
+            )
+            self.assertEqual(original, patched)
         self.assertEqual([], errors)
 
     def test_sys_path_order_still_picks_the_module(self):

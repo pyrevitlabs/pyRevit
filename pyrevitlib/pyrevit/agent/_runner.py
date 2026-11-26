@@ -413,6 +413,12 @@ class _WorkspaceLoopGuard(object):
         if found is None:
             return None
         origin = getattr(found, "origin", None) or getattr(found, "filename", None)
+        if origin is None:
+            loader = getattr(found, "loader", found)
+            try:
+                origin = loader.get_filename(fullname)
+            except Exception:
+                origin = None
         return None if self._is_workspace_file(origin) else found
 
     def _is_workspace_file(self, filename):
@@ -1790,7 +1796,15 @@ def _enter_workspace(workspace):
     """Append the agent's workspace folder to sys.path with its modules unloaded.
 
     The folder goes last so a workspace module can't shadow a standard library
-    or pyRevit module of the same name.
+    or pyRevit module of the same name. An entry that is already on
+    ``sys.path``, from an earlier run, a script or ``PYTHONPATH``, is moved to
+    the end for the run and put back at its position by
+    :func:`_leave_workspace`.
+
+    Returns:
+        A token for :func:`_leave_workspace`: ``(workspace, moved)``, where
+        ``moved`` lists the ``(index, entry)`` pairs taken out of ``sys.path``,
+        or None when no workspace is set.
 
     The script engine is reused between runs, so a module imported from the
     workspace would otherwise keep the code of the first run that imported
@@ -1800,10 +1814,16 @@ def _enter_workspace(workspace):
     if not workspace:
         return None
     _unload_modules_under(workspace)
-    added = workspace not in sys.path
-    if added:
-        sys.path.append(workspace)
-    return workspace if added else None
+    root = _folder_prefix(workspace)
+    moved = [
+        (index, entry)
+        for index, entry in enumerate(sys.path)
+        if isinstance(entry, str) and entry and _folder_prefix(entry) == root
+    ]
+    for index, _ in reversed(moved):
+        del sys.path[index]
+    sys.path.append(workspace)
+    return workspace, moved
 
 
 def _is_under(module_file, root):
@@ -1898,8 +1918,12 @@ def _is_runtime_module(module_file):
     return any(_is_under(module_file, prefix) for prefix in prefixes if prefix)
 
 
-def _leave_workspace(workspace, added_to_path):
-    """Unload the workspace's modules and drop the ``sys.path`` entry the run added.
+def _leave_workspace(workspace, token):
+    """Unload the workspace's modules and restore ``sys.path`` as it was before the run.
+
+    ``token`` is what :func:`_enter_workspace` returned: the entry the run
+    appended is removed and the entries it moved are put back at their
+    positions.
 
     A module left loaded would shadow a module of the same name in a different
     workspace folder on a later run, since ``import`` returns the cached module
@@ -1907,8 +1931,14 @@ def _leave_workspace(workspace, added_to_path):
     """
     if workspace:
         _unload_modules_under(workspace)
-    if added_to_path and added_to_path in sys.path:
-        sys.path.remove(added_to_path)
+    if token:
+        appended, moved = token
+        for index in range(len(sys.path) - 1, -1, -1):
+            if sys.path[index] == appended:
+                del sys.path[index]
+                break
+        for index, entry in moved:
+            sys.path.insert(index, entry)
 
 
 def _elementid_value(element_id):
