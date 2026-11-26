@@ -327,10 +327,12 @@ class _WorkspaceLoopGuard(object):
 
     A top-level workspace module never shadows a module that another
     ``sys.meta_path`` finder or an earlier ``sys.path`` entry (a folder, a ZIP
-    file) can already resolve, whatever form that module has: the hook steps
-    aside and the import proceeds as without it. The standard library, which
-    some engines serve from archives or a resource importer rather than
-    ``.py`` files on ``sys.path``, is covered that way.
+    file) can already resolve, whatever form that module has: the hook hands
+    the import to that provider, returning its spec or loader, so the result
+    does not depend on where the provider sits in ``sys.meta_path``. The
+    standard library, which some engines serve from archives or a resource
+    importer, behind a path finder that would find the workspace first, is
+    covered that way.
 
     Note:
         Both the PEP 302 protocol (``find_module``/``load_module``, IronPython
@@ -365,17 +367,15 @@ class _WorkspaceLoopGuard(object):
             found = (package, True) if op.isfile(package) else None
             found = found or ((module, False) if op.isfile(module) else None)
             if found:
-                if not self._is_workspace_file(found[0]):
-                    return None
-                if path is None and self._resolved_elsewhere(fullname):
-                    return None
-                return found
+                return found if self._is_workspace_file(found[0]) else None
         return None
 
-    def _resolved_elsewhere(self, fullname):
+    def _provided_elsewhere(self, fullname):
         for finder in list(sys.meta_path):
-            if finder is not self and self._provides(finder, fullname, True):
-                return True
+            if finder is not self:
+                found = self._ask(finder, fullname, True)
+                if found is not None:
+                    return found
         import pkgutil
 
         for entry in list(sys.path):
@@ -387,11 +387,12 @@ class _WorkspaceLoopGuard(object):
                 importer = pkgutil.get_importer(entry)
             except Exception:
                 continue
-            if importer is not None and self._provides(importer, fullname, False):
-                return True
-        return False
+            found = None if importer is None else self._ask(importer, fullname, False)
+            if found is not None:
+                return found
+        return None
 
-    def _provides(self, provider, fullname, is_finder):
+    def _ask(self, provider, fullname, is_finder):
         try:
             if hasattr(provider, "find_spec"):
                 found = (
@@ -406,13 +407,13 @@ class _WorkspaceLoopGuard(object):
                     else provider.find_module(fullname)
                 )
             else:
-                return False
+                return None
         except Exception:
-            return False
+            return None
         if found is None:
-            return False
+            return None
         origin = getattr(found, "origin", None) or getattr(found, "filename", None)
-        return not self._is_workspace_file(origin)
+        return None if self._is_workspace_file(origin) else found
 
     def _is_workspace_file(self, filename):
         return _is_under(filename, self._root) and not any(
@@ -426,6 +427,10 @@ class _WorkspaceLoopGuard(object):
     def find_module(self, fullname, path=None):
         if not self._locate(fullname, path):
             return None
+        if path is None:
+            provided = self._provided_elsewhere(fullname)
+            if provided is not None:
+                return getattr(provided, "loader", provided)
         self._paths[fullname] = path
         return self
 
@@ -452,6 +457,13 @@ class _WorkspaceLoopGuard(object):
         if not located:
             return None
         import importlib.util
+
+        if path is None:
+            provided = self._provided_elsewhere(fullname)
+            if provided is not None:
+                if hasattr(provided, "loader"):
+                    return provided
+                return importlib.util.spec_from_loader(fullname, provided)
 
         filename, is_package = located
         return importlib.util.spec_from_file_location(

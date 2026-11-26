@@ -1368,6 +1368,43 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
             )
         self.assertEqual([], errors)
 
+    def test_provider_after_a_path_finder_still_wins_over_the_workspace(self):
+        """A find_module-only finder placed after the path finder beats a workspace module."""
+
+        class Legacy(object):
+            def find_module(self, fullname, path=None):
+                return self if fullname == "legacy_shadowed_name" else None
+
+            def create_module(self, spec):
+                return None
+
+            def exec_module(self, module):
+                module.SOURCE = "legacy"
+
+            def load_module(self, fullname):
+                module = types.ModuleType(fullname)
+                module.SOURCE = "legacy"
+                sys.modules[fullname] = module
+                return module
+
+        workspace = self._workspace(
+            {
+                "legacy_shadowed_name.py": "SOURCE = 'workspace'\n",
+                "legacy_unique_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        with (
+            mock.patch.object(sys, "meta_path", sys.meta_path + [Legacy()]),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import legacy_shadowed_name\nimport legacy_unique_name\n"
+                "assert legacy_shadowed_name.SOURCE == 'legacy'\n"
+                "assert legacy_unique_name.SOURCE == 'workspace'\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
+
     def test_sys_path_order_still_picks_the_module(self):
         """A folder placed before the workspace keeps winning its imports."""
         workspace = self._workspace({"shared.py": "SOURCE = 'workspace'\n"})
