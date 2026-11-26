@@ -96,7 +96,6 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.caret
   - pymdownx.keys
-  - pymdownx.highlight
   - admonition
   - md_in_html
   - toc
