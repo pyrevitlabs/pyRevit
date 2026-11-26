@@ -537,6 +537,7 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
             result["bounds_reloaded"], {"min": [0, 0, 0], "max": [1, 1, 0]}
         )
         self.assertEqual(result["radius"], 1)
+        self.assertEqual(result["fit_to_model_target"], [0.5, 0.5, 0])
 
     def test_a_failed_stream_re_enables_the_load_links(self):
         result = self.scenario("stream_error_clears_requests")

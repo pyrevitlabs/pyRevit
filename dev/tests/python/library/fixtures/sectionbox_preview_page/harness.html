@@ -1047,6 +1047,8 @@
     p._onEvent("scene", { progress: [2, 2], meshes: [mesh(1, "Walls"), mesh(3, "Roofs")] });
     R.bounds_reloaded = p.modelBounds;
     R.radius = Number(p._radius().toFixed(4));
+    p.frameModel();
+    R.fit_to_model_target = p.camera.target.map((v) => Number(v.toFixed(4)));
     R.visible = [...p.groups.values()].map((g) => [g.name, g.visible]);
     return R;
   };
