@@ -12,9 +12,9 @@ Please provide a brief description of the changes introduced in this pull reques
 Before submitting your pull request, ensure the following requirements are met:
 
 - [ ] Code follows the [PEP 8](https://peps.python.org/pep-0008/) style guide.
-- [ ] Code has been formatted with [Black](https://github.com/psf/black) using the command:
+- [ ] Python code has been formatted with [Ruff](https://docs.astral.sh/ruff/formatter/) using the command:
   ```bash
-  pipenv run black {source_file_or_directory}
+  pipenv run ruff format {source_file_or_directory}
   ```
 - [ ] Changes are tested and verified to work as expected.
 
