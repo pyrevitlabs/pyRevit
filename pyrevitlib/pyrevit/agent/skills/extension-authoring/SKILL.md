@@ -1,6 +1,6 @@
 ---
 name: extension-authoring
-description: Turning a working script into a pyRevit button the user keeps. Covers where agent-made extensions live, adding and removing extension search paths, the bundle folder layout, bundle.yaml, converting an agent script into a button script, reloading pyRevit, and checking the button loaded. Use it for "make this a button", "add a tool to the ribbon", "create a pyRevit extension for this", "load the extension in this folder", "remove that tab" and similar tasks.
+description: Use when turning a script into a pyRevit button or extension, bundle layout, bundle.yaml, search paths, reload and load check, e.g. "make this a button", "add a tool to the ribbon", "remove that tab".
 ---
 
 # Extension authoring

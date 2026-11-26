@@ -1,6 +1,6 @@
 ---
 name: scheduling
-description: Schedules and quantities. Covers creating schedules, adding fields, filters, sorting and grouping, reading schedule contents, placing schedules on sheets, and preparing them for export. Use it for "make a door schedule", "count windows by type", "export the room schedule" and similar tasks.
+description: Use when creating or reading schedules and quantities, fields, filters, sorting, grouping, placing on sheets and export, e.g. "make a door schedule", "count windows by type".
 ---
 
 # Scheduling

@@ -1,6 +1,6 @@
 ---
 name: family-editing
-description: Editing Revit families. Covers opening a family from the project, family parameters, types and formulas, and loading the family back into the project. Use it for "add a parameter to these families", "create door types", "fix family formulas" and similar tasks.
+description: Use when editing Revit families, opening from the project, parameters, types, formulas and loading back, e.g. "add a parameter to these families", "create door types", "fix family formulas".
 ---
 
 # Family editing

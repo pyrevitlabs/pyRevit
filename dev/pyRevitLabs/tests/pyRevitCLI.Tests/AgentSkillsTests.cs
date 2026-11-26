@@ -30,6 +30,18 @@ public class AgentSkillsTests {
     }
 
     [Fact]
+    public void EveryShippedSkillHasAFolderNameAndAShortDescription() {
+        var shipped = PyRevitAgentSkills.Load().Where(skill => skill.Source == PyRevitAgentSkills.ShippedSource).ToList();
+
+        Assert.NotEmpty(shipped);
+        foreach (var skill in shipped) {
+            Assert.Equal(Path.GetFileName(skill.Directory), skill.Name);
+            Assert.Matches("^[a-z0-9][a-z0-9-]{0,63}$", skill.Name);
+            Assert.True(skill.Description.Length <= 240, skill.Name + " description has " + skill.Description.Length + " characters");
+        }
+    }
+
+    [Fact]
     public void TheInstructionsNameEverySkillAndLeaveNoPlaceholder() {
         var skills = PyRevitAgentSkills.Load();
 
