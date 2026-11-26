@@ -822,6 +822,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../tools/tab-coloring/" class="md-nav__link">
         
   
@@ -1463,6 +1491,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unlisted-bundles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unlisted Bundles
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#separator-lines" class="md-nav__link">
@@ -10639,6 +10678,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unlisted-bundles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unlisted Bundles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#separator-lines" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10781,6 +10831,13 @@ See <a href="../metadata/">Bundle Metadata</a> for the other keys of the bundle 
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PushButton C</span>
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PullDown C</span>
 </span></code></pre></div>
+<h3 id="unlisted-bundles">Unlisted Bundles</h3>
+<p>A <code>layout</code> is also the list of what appears on the ribbon. A child bundle that it does not list is hidden, so you can keep a bundle in the extension without showing it. This applies to every bundle that has a <code>layout</code>, from a tab hiding panels to a pull-down or stack hiding buttons. A bundle without a <code>layout</code> shows all of its children.</p>
+<p>Names must match the bundle folder name without its extension, including upper and lower case.</p>
+<p>A hidden command is still built, so it can still be run from code. A <code>.nobutton</code> bundle does not need to be listed.</p>
+<div class="admonition warning">
+<p>pyRevit 6.0 to 7.1 also showed unlisted bundles, after the listed ones. If a button, panel or tab disappears after updating, add its name to the <code>layout</code>.</p>
+</div>
 <h3 id="separator-lines">Separator Lines</h3>
 <p><strong>Panel</strong> and <strong>Pull Down Bundle</strong> layout files can contain a directive to place a vertical (in panels) or horizontal (in pull-downs) separator line in between buttons. <code>---</code> This line will add a separator to the interface. You can use more than 3 <code>-</code> characters. For example <code>----------</code> still works as a separator.</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">layout</span><span class="p">:</span>
