@@ -210,6 +210,8 @@ public class McpProjectConfigTests : IDisposable {
     [Fact]
     public void ExpandedVariablesAreSplitBeforeEntriesAreChecked() {
         var previousPath = Environment.GetEnvironmentVariable("PATH");
+        var previousDirs = Environment.GetEnvironmentVariable("PYREVIT_TEST_DIRS");
+        var previousOne = Environment.GetEnvironmentVariable("PYREVIT_TEST_ONE");
         try {
             Environment.SetEnvironmentVariable("PYREVIT_TEST_DIRS", @"C:\trusted" + Path.PathSeparator + @".\bin");
             Environment.SetEnvironmentVariable("PYREVIT_TEST_ONE", @"C:\plain dir");
@@ -224,8 +226,8 @@ public class McpProjectConfigTests : IDisposable {
         }
         finally {
             Environment.SetEnvironmentVariable("PATH", previousPath);
-            Environment.SetEnvironmentVariable("PYREVIT_TEST_DIRS", null);
-            Environment.SetEnvironmentVariable("PYREVIT_TEST_ONE", null);
+            Environment.SetEnvironmentVariable("PYREVIT_TEST_DIRS", previousDirs);
+            Environment.SetEnvironmentVariable("PYREVIT_TEST_ONE", previousOne);
         }
     }
 
