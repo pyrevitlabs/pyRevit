@@ -14,11 +14,17 @@ namespace pyRevitCLI {
     /// <summary>
     /// How <c>install</c> treats folders it must not simply overwrite.
     /// </summary>
-    internal sealed class SkillOptions {
-        public bool Force { get; set; }
-        public bool Prefix { get; set; }
+    internal readonly struct SkillOptions {
+        /// <summary>Replaces an owned copy that was edited or holds extra files.</summary>
+        public bool Force { get; init; }
+
+        /// <summary>Installs a skill whose plain name is taken as <c>pyrevit-&lt;name&gt;</c>.</summary>
+        public bool Prefix { get; init; }
     }
 
+    /// <summary>
+    /// One skills folder and the target names that share it.
+    /// </summary>
     internal sealed class SkillDestination {
         public string Label { get; set; }
         public string SkillsDir { get; set; }
@@ -33,21 +39,29 @@ namespace pyRevitCLI {
     /// shipped skills folder as arguments and never reads them from the environment.
     /// </remarks>
     internal sealed class SkillContext {
-        public string[] Targets { get; private set; }
+        private string[] targets;
+
         public SkillScope Scope { get; private set; }
         public string BaseRoot { get; private set; }
         public string ShippedDir { get; private set; }
-        public List<SkillDestination> Destinations { get; private set; }
+        public IReadOnlyList<SkillDestination> Destinations { get; private set; }
 
         /// <summary>
-        /// Validates the command line values and resolves the skills folders.
+        /// Whether <paramref name="target"/> was among the chosen targets.
+        /// </summary>
+        public bool Includes(string target) {
+            return targets.Contains(target, StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Validates the command line values and resolves the skills folders for <c>install</c> and <c>status</c>.
         /// </summary>
         /// <param name="targets">Comma-separated target names.</param>
         /// <param name="scope"><c>project</c> or <c>user</c>.</param>
         /// <param name="path">The project folder given with <c>--path</c>, or null.</param>
         /// <param name="currentFolder">The project folder when <paramref name="path"/> is null.</param>
         /// <param name="home">The user profile folder.</param>
-        /// <param name="shippedDir">The shipped skills folder; may be null for <c>uninstall</c>.</param>
+        /// <param name="shippedDir">The shipped skills folder, or null when it was not found; the run then fails with a clear message.</param>
         /// <exception cref="PyRevitException">
         /// An unknown target or scope, <paramref name="path"/> together with the user scope, a missing project
         /// folder, or a profile folder that cannot be resolved.
@@ -70,12 +84,19 @@ namespace pyRevitCLI {
                 baseRoot = Path.GetFullPath(home);
             }
             return new SkillContext {
-                Targets = names,
+                targets = names,
                 Scope = parsedScope,
                 BaseRoot = baseRoot,
                 ShippedDir = shippedDir,
                 Destinations = SkillTargets.Destinations(names, parsedScope, baseRoot),
             };
+        }
+
+        /// <summary>
+        /// Same as <see cref="Create"/> for <c>uninstall</c>, which does not need the shipped skills.
+        /// </summary>
+        public static SkillContext CreateForUninstall(string targets, string scope, string path, string currentFolder, string home) {
+            return Create(targets, scope, path, currentFolder, home, null);
         }
     }
 
@@ -83,7 +104,7 @@ namespace pyRevitCLI {
     /// The skill folders each client reads, and the warning for a skill installed where one client reads it twice.
     /// </summary>
     internal static class SkillTargets {
-        public static readonly string[] TargetNames = { "agents", "antigravity", "claude", "copilot", "opencode" };
+        internal static readonly string[] TargetNames = { "agents", "antigravity", "claude", "copilot", "opencode" };
 
         private static readonly Dictionary<string, (string[] Project, string[] User)> Folders =
             new Dictionary<string, (string[] Project, string[] User)>(StringComparer.OrdinalIgnoreCase) {
@@ -110,7 +131,7 @@ namespace pyRevitCLI {
         /// Splits a comma-separated <c>--target</c> value into valid, distinct target names.
         /// </summary>
         /// <exception cref="PyRevitException">The value is empty or names an unknown target.</exception>
-        public static string[] ParseTargets(string text) {
+        internal static string[] ParseTargets(string text) {
             var names = (text ?? string.Empty).Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(name => name.Trim().ToLowerInvariant())
                 .Distinct()
@@ -122,7 +143,7 @@ namespace pyRevitCLI {
             return names;
         }
 
-        public static SkillScope ParseScope(string text) {
+        internal static SkillScope ParseScope(string text) {
             switch ((text ?? string.Empty).ToLowerInvariant()) {
                 case "project": return SkillScope.Project;
                 case "user": return SkillScope.User;
@@ -130,7 +151,7 @@ namespace pyRevitCLI {
             }
         }
 
-        public static List<SkillDestination> Destinations(string[] names, SkillScope scope, string baseRoot) {
+        internal static List<SkillDestination> Destinations(string[] names, SkillScope scope, string baseRoot) {
             return names
                 .Select(name => (Name: name, Dir: SkillsDir(baseRoot, scope == SkillScope.Project ? Folders[name].Project : Folders[name].User)))
                 .GroupBy(entry => entry.Dir, StringComparer.OrdinalIgnoreCase)
@@ -145,24 +166,11 @@ namespace pyRevitCLI {
         /// <summary>
         /// Warns when a client that reads several skill folders would see the same pyRevit-owned skill more than once.
         /// </summary>
-        public static void WarnOverlaps(SkillContext context, List<string> warnings) {
+        internal static void WarnOverlaps(SkillContext context, List<string> warnings) {
             foreach (var (client, project, user) in ClientReads) {
                 var owners = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
                 foreach (var parts in context.Scope == SkillScope.Project ? project : user) {
-                    var skillsDir = SkillsDir(context.BaseRoot, parts);
-                    try {
-                        SkillFiles.AssertNoLink(context.BaseRoot, skillsDir);
-                    }
-                    catch (PyRevitException) {
-                        continue;
-                    }
-                    if (!Directory.Exists(skillsDir))
-                        continue;
-                    foreach (var directory in Directory.GetDirectories(skillsDir).Where(path => !SkillFiles.IsLink(path))) {
-                        var marker = SkillFiles.ReadMarker(directory);
-                        if (marker == null)
-                            continue;
-                        var key = marker.Name ?? Path.GetFileName(directory);
+                    foreach (var (directory, key) in SkillFiles.FindOwnedFolders(context.BaseRoot, SkillsDir(context.BaseRoot, parts))) {
                         if (!owners.TryGetValue(key, out var folders))
                             owners[key] = folders = new List<string>();
                         folders.Add(directory);

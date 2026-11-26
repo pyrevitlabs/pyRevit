@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Json.Linq;
@@ -26,7 +28,8 @@ namespace pyRevitCLI {
     /// <remarks>
     /// <c>Sha256</c> is the digest of the shipped skill, so <c>status</c> can tell a stale copy.
     /// <c>InstalledSha256</c> is the digest of the files as written (a prefixed copy has a different
-    /// <c>name</c> line), so an edit is told from the folder content alone.
+    /// <c>name</c> line), so an edit is told from the folder content alone. <c>InstalledName</c> is the
+    /// folder the copy was written to; a marker found in a folder of another name was copied there.
     /// </remarks>
     internal sealed class SkillMarker {
         public string Name { get; set; }
@@ -48,29 +51,60 @@ namespace pyRevitCLI {
 
     /// <summary>
     /// File-level work of the skill installer: collecting and digesting skill files, the ownership
-    /// marker, the atomic copy and the link guards.
+    /// marker, the atomic copy, leftover cleanup and the link guards.
     /// </summary>
     /// <remarks>
     /// Invariants: nothing is written, replaced or deleted through a link (reparse point); a folder
-    /// counts as pyRevit-owned only when its marker parses and the folder content matches the marker
-    /// digest, which is an ownership record checked against the content, not proof of origin; a copy is
-    /// built beside its destination and moved into place.
+    /// counts as pyRevit-owned only when its marker parses, names that very folder, and the folder content
+    /// matches the marker digest (an ownership record checked against the content, not proof of origin); a
+    /// copy is built beside its destination and moved into place; only leftovers older than
+    /// <see cref="StaleTempAge"/> are cleaned, and only while holding the folder's <see cref="Lock"/>.
     /// </remarks>
     internal static class SkillFiles {
-        public const string MarkerFile = ".pyrevit-skill.json";
-        public const string SkillFile = "SKILL.md";
-        public const string TempPrefix = ".pyrevit-tmp-";
-        public const int MaxFileBytes = 128 * 1024;
-        public const int MaxFilesPerSkill = 256;
+        internal const string SkillFile = "SKILL.md";
+        internal const string TempPrefix = ".pyrevit-tmp-";
+        internal const int MaxFileBytes = 128 * 1024;
+        internal static readonly TimeSpan StaleTempAge = TimeSpan.FromMinutes(10);
+        internal static readonly TimeSpan LockTimeout = TimeSpan.FromSeconds(30);
+        private const string MarkerFile = ".pyrevit-skill.json";
+        private const int MaxFilesPerSkill = 256;
         private const int MaxMarkerBytes = 4 * 1024;
         private static readonly Regex NamePattern = new Regex("^[a-z0-9][a-z0-9-]{0,63}\\z", RegexOptions.Compiled);
-        private static readonly Regex NameLine = new Regex("^\\s*name\\s*:", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex TopLevelNameLine = new Regex("^name\\s*:", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        public static bool IsValidName(string name) {
+        internal static bool IsValidName(string name) {
             return name != null && NamePattern.IsMatch(name);
         }
 
-        public static List<(string Relative, string Path)> CollectFiles(string root) {
+        /// <summary>
+        /// The one filter for failures a per-skill or per-folder step reports and survives.
+        /// </summary>
+        internal static bool IsRecoverable(Exception ex) {
+            return ex is PyRevitException || ex is IOException || ex is UnauthorizedAccessException;
+        }
+
+        /// <summary>
+        /// Removes control, line-separator and Unicode format (bidi) characters so a file name cannot
+        /// rewrite what the console shows.
+        /// </summary>
+        internal static string Printable(string text) {
+            if (text == null)
+                return null;
+            var clean = new StringBuilder(text.Length);
+            foreach (var character in text) {
+                var category = char.GetUnicodeCategory(character);
+                if (!char.IsControl(character) && category != UnicodeCategory.Format && category != UnicodeCategory.LineSeparator && category != UnicodeCategory.ParagraphSeparator)
+                    clean.Append(character);
+            }
+            return clean.ToString();
+        }
+
+        internal static ShippedSkill LoadShipped(string directory, string name) {
+            var files = CollectFiles(directory);
+            return new ShippedSkill { Name = name, Files = files, Digest = Digest(files) };
+        }
+
+        private static List<(string Relative, string Path)> CollectFiles(string root) {
             var files = new List<(string Relative, string Path)>();
             Collect(root, root, files);
             return files.OrderBy(file => file.Relative, StringComparer.Ordinal).ToList();
@@ -91,43 +125,53 @@ namespace pyRevitCLI {
                     Collect(root, child, files);
         }
 
-        public static string Digest(List<(string Relative, string Path)> files, string renameTo = null) {
+        private static string Digest(List<(string Relative, string Path)> files) {
             using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)) {
                 foreach (var file in files) {
-                    var bytes = ReadFile(file, renameTo);
+                    var bytes = File.ReadAllBytes(file.Path);
                     sha256.AppendData(Encoding.UTF8.GetBytes(file.Relative));
                     sha256.AppendData(new byte[] { 0 });
                     sha256.AppendData(BitConverter.GetBytes((long)bytes.Length));
                     sha256.AppendData(bytes);
                 }
-                return BitConverter.ToString(sha256.GetHashAndReset()).Replace("-", string.Empty).ToLowerInvariant();
+                return Hex(sha256.GetHashAndReset());
             }
         }
 
-        public static byte[] ReadFile((string Relative, string Path) file, string renameTo) {
+        private static string Hex(byte[] bytes) {
+            return BitConverter.ToString(bytes).Replace("-", string.Empty).ToLowerInvariant();
+        }
+
+        private static byte[] ReadFile((string Relative, string Path) file, string renameTo) {
             var bytes = File.ReadAllBytes(file.Path);
             return renameTo != null && file.Relative == SkillFile ? RenameSkill(bytes, renameTo) : bytes;
         }
 
         /// <summary>
-        /// Rewrites the <c>name</c> front matter line, whatever its quoting or spacing, keeping the
-        /// BOM, the line endings and every other byte.
+        /// Rewrites the top-level <c>name</c> line of the front matter, whatever its quoting or spacing,
+        /// keeping the BOM, the line endings and every other byte.
         /// </summary>
-        public static byte[] RenameSkill(byte[] bytes, string name) {
+        /// <exception cref="PyRevitException">The file has no closed front matter block.</exception>
+        private static byte[] RenameSkill(byte[] bytes, string name) {
             var encoding = new UTF8Encoding(false);
             var lines = encoding.GetString(bytes).Split('\n').ToList();
+            if (lines[0].TrimStart('﻿').Trim() != "---")
+                throw new PyRevitException($"SKILL.md has no front matter, so its name cannot be rewritten to '{name}'.");
             var lineEnd = lines[0].EndsWith("\r") ? "\r" : string.Empty;
-            for (var index = 1; index < lines.Count && lines[index].Trim() != "---"; index++) {
-                if (NameLine.IsMatch(lines[index])) {
+            for (var index = 1; index < lines.Count; index++) {
+                if (lines[index].Trim() == "---") {
+                    lines.Insert(1, "name: " + name + lineEnd);
+                    return encoding.GetBytes(string.Join("\n", lines));
+                }
+                if (TopLevelNameLine.IsMatch(lines[index])) {
                     lines[index] = "name: " + name + (lines[index].EndsWith("\r") ? "\r" : string.Empty);
                     return encoding.GetBytes(string.Join("\n", lines));
                 }
             }
-            lines.Insert(1, "name: " + name + lineEnd);
-            return encoding.GetBytes(string.Join("\n", lines));
+            throw new PyRevitException($"SKILL.md front matter is never closed, so its name cannot be rewritten to '{name}'.");
         }
 
-        public static SkillMarker ReadMarker(string folder) {
+        private static SkillMarker ReadMarker(string folder) {
             var path = Path.Combine(folder, MarkerFile);
             try {
                 if (!File.Exists(path) || IsLink(path) || new FileInfo(path).Length > MaxMarkerBytes)
@@ -135,11 +179,12 @@ namespace pyRevitCLI {
                 var json = JToken.Parse(File.ReadAllText(path)) as JObject;
                 var source = Text(json, "source");
                 var sha256 = Text(json, "sha256");
-                if (source != PyRevitAgentSkills.ShippedSource || sha256 == null)
+                var installedName = Text(json, "installedName");
+                if (source != PyRevitAgentSkills.ShippedSource || sha256 == null || installedName == null)
                     return null;
                 return new SkillMarker {
                     Name = Text(json, "name"),
-                    InstalledName = Text(json, "installedName"),
+                    InstalledName = installedName,
                     Sha256 = sha256,
                     InstalledSha256 = Text(json, "installedSha256") ?? sha256,
                 };
@@ -147,6 +192,11 @@ namespace pyRevitCLI {
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is pyRevitLabs.Json.JsonException || ex is InvalidCastException || ex is FormatException) {
                 return null;
             }
+        }
+
+        private static SkillMarker ReadOwnMarker(string folder) {
+            var marker = ReadMarker(folder);
+            return marker != null && string.Equals(marker.InstalledName, Path.GetFileName(folder), StringComparison.OrdinalIgnoreCase) ? marker : null;
         }
 
         private static string Text(JObject json, string key) {
@@ -157,11 +207,16 @@ namespace pyRevitCLI {
         /// Reads the marker of <paramref name="folder"/> and checks the folder content against it.
         /// </summary>
         /// <remarks>
-        /// A link, a plain file or a folder without a valid marker has no <c>Marker</c>. An owned folder is
-        /// <c>Intact</c> only when it holds exactly the marker and the markdown files the marker digest
-        /// covers; anything else is listed in <c>Extras</c> or explained in <c>Note</c>.
+        /// A link, a plain file, a folder without a valid marker or one whose marker names another folder
+        /// (a copy) has no <c>Marker</c>. An owned folder is <c>Intact</c> only when it holds exactly the marker
+        /// and the markdown files the marker digest covers; anything else is listed in <c>Extras</c> or
+        /// explained in <c>Note</c>.
         /// </remarks>
-        public static OwnedCheck Verify(string folder) {
+        internal static OwnedCheck Verify(string folder) {
+            return Check(folder, ReadOwnMarker);
+        }
+
+        private static OwnedCheck Check(string folder, Func<string, SkillMarker> readMarker) {
             var check = new OwnedCheck();
             if (IsLink(folder)) {
                 check.Exists = true;
@@ -176,7 +231,7 @@ namespace pyRevitCLI {
             if (!Directory.Exists(folder))
                 return check;
             check.Exists = true;
-            check.Marker = ReadMarker(folder);
+            check.Marker = readMarker(folder);
             if (check.Marker == null)
                 return check;
             try {
@@ -184,15 +239,14 @@ namespace pyRevitCLI {
                 check.Extras.AddRange(Extras(folder, folder, new HashSet<string>(files.Select(file => file.Relative), StringComparer.Ordinal)));
                 check.Intact = check.Extras.Count == 0 && Digest(files) == check.Marker.InstalledSha256;
             }
-            catch (Exception ex) when (ex is PyRevitException || ex is IOException || ex is UnauthorizedAccessException) {
+            catch (Exception ex) when (IsRecoverable(ex)) {
                 check.Note = ex.Message;
             }
             return check;
         }
 
         private static IEnumerable<string> Extras(string root, string directory, HashSet<string> collected) {
-            var entries = Directory.GetFileSystemEntries(directory);
-            foreach (var entry in entries) {
+            foreach (var entry in Directory.GetFileSystemEntries(directory)) {
                 var relative = Path.GetRelativePath(root, entry).Replace('\\', '/');
                 if (IsLink(entry))
                     yield return relative + " (link)";
@@ -208,52 +262,124 @@ namespace pyRevitCLI {
             }
         }
 
-        public static void WriteAtomically(string skillsDir, ShippedSkill skill, string installedName, bool replace, List<string> warnings) {
+        /// <summary>
+        /// Lists the pyRevit-owned skill folders in <paramref name="skillsDir"/>, keyed by shipped skill name.
+        /// </summary>
+        /// <remarks>
+        /// Empty when the skills folder is missing or a link lies on the way to it.
+        /// </remarks>
+        internal static List<(string Directory, string Key)> FindOwnedFolders(string baseRoot, string skillsDir) {
+            var found = new List<(string Directory, string Key)>();
+            try {
+                AssertNoLink(baseRoot, skillsDir);
+                if (!Directory.Exists(skillsDir))
+                    return found;
+                foreach (var directory in Directory.GetDirectories(skillsDir).Where(path => !IsLink(path))) {
+                    var marker = ReadOwnMarker(directory);
+                    if (marker != null)
+                        found.Add((directory, marker.Name ?? Path.GetFileName(directory)));
+                }
+            }
+            catch (Exception ex) when (IsRecoverable(ex)) {
+                return new List<(string Directory, string Key)>();
+            }
+            return found;
+        }
+
+        /// <summary>
+        /// Checks that <paramref name="skillsDir"/> is inside <paramref name="baseRoot"/> with no link on the
+        /// way, and creates it when <paramref name="create"/>.
+        /// </summary>
+        /// <returns>Whether the skills folder exists afterwards.</returns>
+        internal static bool EnsureSkillsDir(string baseRoot, string skillsDir, bool create) {
+            AssertInside(baseRoot, skillsDir);
+            AssertNoLink(baseRoot, skillsDir);
+            if (Directory.Exists(skillsDir))
+                return true;
+            if (create)
+                Directory.CreateDirectory(skillsDir);
+            return create;
+        }
+
+        /// <summary>
+        /// Writes <paramref name="skill"/> to <c>skillsDir/installedName</c> through a temporary folder.
+        /// </summary>
+        /// <returns>A warning when the replaced copy could not be deleted, otherwise null.</returns>
+        /// <remarks>
+        /// On failure the previous copy, if any, is still in place and the temporary folder is removed.
+        /// </remarks>
+        internal static string WriteAtomically(string skillsDir, ShippedSkill skill, string installedName, bool replace) {
             if (!IsValidName(installedName))
                 throw new PyRevitException($"'{installedName}' is not a valid skill folder name.");
             var destination = Path.Combine(skillsDir, installedName);
             AssertInside(skillsDir, destination);
             var temp = Path.Combine(skillsDir, TempPrefix + Guid.NewGuid().ToString("N"));
             try {
-                Directory.CreateDirectory(temp);
-                var renameTo = installedName == skill.Name ? null : installedName;
-                foreach (var file in skill.Files) {
-                    var target = Path.Combine(temp, file.Relative.Replace('/', Path.DirectorySeparatorChar));
-                    Directory.CreateDirectory(Path.GetDirectoryName(target));
-                    File.WriteAllBytes(target, ReadFile(file, renameTo));
-                }
-                WriteMarker(temp, skill, installedName, Digest(CollectFiles(temp)));
-
-                if (!replace) {
-                    Directory.Move(temp, destination);
-                    return;
-                }
-                if (ContainsLink(destination))
-                    throw new PyRevitException($"Refusing to replace {destination}: it contains a link or a cloud placeholder.");
-                var aside = Path.Combine(skillsDir, TempPrefix + Guid.NewGuid().ToString("N"));
-                Directory.Move(destination, aside);
-                try {
-                    Directory.Move(temp, destination);
-                }
-                catch (Exception ex) {
-                    try {
-                        Directory.Move(aside, destination);
-                    }
-                    catch (Exception restoreError) {
-                        throw new IOException($"{ex.Message} The old copy could not be put back and is in {aside}: {restoreError.Message}", ex);
-                    }
-                    throw;
-                }
-                try {
-                    Directory.Delete(aside, recursive: true);
-                }
-                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
-                    warnings.Add($"Could not remove the old copy {aside}: {ex.Message}");
-                }
+                Stage(temp, skill, installedName);
+                return SwapIn(temp, destination, skillsDir, replace);
             }
             finally {
                 if (Directory.Exists(temp) && !IsLink(temp))
                     Directory.Delete(temp, recursive: true);
+            }
+        }
+
+        private static void Stage(string temp, ShippedSkill skill, string installedName) {
+            Directory.CreateDirectory(temp);
+            var renameTo = installedName == skill.Name ? null : installedName;
+            foreach (var file in skill.Files) {
+                var target = Path.Combine(temp, file.Relative.Replace('/', Path.DirectorySeparatorChar));
+                Directory.CreateDirectory(Path.GetDirectoryName(target));
+                File.WriteAllBytes(target, ReadFile(file, renameTo));
+            }
+            WriteMarker(temp, skill, installedName, Digest(CollectFiles(temp)));
+        }
+
+        private static string SwapIn(string temp, string destination, string skillsDir, bool replace) {
+            if (!replace) {
+                Directory.Move(temp, destination);
+                return null;
+            }
+            if (ContainsLink(destination))
+                throw new PyRevitException($"Refusing to replace {destination}: it contains a link or a cloud placeholder.");
+            var aside = Path.Combine(skillsDir, TempPrefix + Guid.NewGuid().ToString("N"));
+            Directory.Move(destination, aside);
+            TryTouch(aside);
+            try {
+                Directory.Move(temp, destination);
+            }
+            catch (Exception ex) {
+                PutBack(aside, destination, ex);
+                throw;
+            }
+            return TryDelete(aside);
+        }
+
+        private static void PutBack(string aside, string destination, Exception cause) {
+            try {
+                Directory.Move(aside, destination);
+            }
+            catch (Exception restoreError) {
+                throw new IOException($"{cause.Message} The old copy could not be put back and is in {aside}: {restoreError.Message}", cause);
+            }
+        }
+
+        private static void TryTouch(string directory) {
+            try {
+                Directory.SetLastWriteTimeUtc(directory, DateTime.UtcNow);
+            }
+            catch (Exception ex) when (IsRecoverable(ex)) {
+                return;
+            }
+        }
+
+        private static string TryDelete(string directory) {
+            try {
+                Directory.Delete(directory, recursive: true);
+                return null;
+            }
+            catch (Exception ex) when (IsRecoverable(ex)) {
+                return $"Could not remove the old copy {directory}: {ex.Message}";
             }
         }
 
@@ -281,26 +407,34 @@ namespace pyRevitCLI {
         /// Cleans up <c>.pyrevit-tmp-*</c> folders a crashed run left in <paramref name="skillsDir"/>.
         /// </summary>
         /// <param name="restore">
-        /// Moves a leftover that carries a marker back to its destination when that destination is
-        /// missing, so an interrupted replace does not lose the only copy.
+        /// Moves a verified leftover back to its destination when that destination is missing, so an
+        /// interrupted replace does not lose the only copy.
         /// </param>
+        /// <returns>The warnings for leftovers that were restored, kept or could not be cleaned.</returns>
         /// <remarks>
-        /// Removes only empty folders and folders with a valid marker; never a link and never a folder
-        /// that contains one.
+        /// Only folders older than <see cref="StaleTempAge"/> are touched, so a run in progress is left alone.
+        /// A leftover is restored or deleted only when its marker is valid and its content matches the marker
+        /// digest; its recorded name must be a valid skill name. Anything else is kept with a warning. Links,
+        /// and folders that contain one, are never followed.
         /// </remarks>
-        public static void SweepTemp(string skillsDir, bool restore, List<string> warnings) {
+        internal static List<string> SweepTemp(string skillsDir, bool restore) {
+            var warnings = new List<string>();
             foreach (var directory in Directory.GetDirectories(skillsDir, TempPrefix + "*").OrderBy(path => path, StringComparer.Ordinal)) {
                 try {
-                    if (IsLink(directory))
+                    if (IsLink(directory) || Directory.GetLastWriteTimeUtc(directory) > DateTime.UtcNow - StaleTempAge)
                         continue;
                     if (!Directory.EnumerateFileSystemEntries(directory).Any()) {
                         Directory.Delete(directory);
                         continue;
                     }
-                    var marker = ReadMarker(directory);
-                    if (marker == null || ContainsLink(directory))
+                    var check = Check(directory, ReadMarker);
+                    if (check.Marker == null || ContainsLink(directory))
                         continue;
-                    var destination = marker.InstalledName != null && IsValidName(marker.InstalledName) ? Path.Combine(skillsDir, marker.InstalledName) : null;
+                    if (!check.Intact) {
+                        warnings.Add($"Kept {directory}: it is a leftover of an interrupted run but its content does not match its marker.");
+                        continue;
+                    }
+                    var destination = IsValidName(check.Marker.InstalledName) ? Path.Combine(skillsDir, check.Marker.InstalledName) : null;
                     if (restore && destination != null && !IsLink(destination) && !File.Exists(destination) && !Directory.Exists(destination)) {
                         Directory.Move(directory, destination);
                         warnings.Add($"Restored {destination} from {directory}, left by an interrupted run.");
@@ -308,19 +442,55 @@ namespace pyRevitCLI {
                     else
                         Directory.Delete(directory, recursive: true);
                 }
-                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+                catch (Exception ex) when (IsRecoverable(ex)) {
                     warnings.Add($"Could not clean up {directory}: {ex.Message}");
                 }
             }
+            return warnings;
         }
 
-        public static void AssertInside(string root, string path) {
+        /// <summary>
+        /// Takes a named mutex for <paramref name="skillsDir"/>, so two pyRevit commands do not work in one skills
+        /// folder at the same time.
+        /// </summary>
+        /// <exception cref="PyRevitException">The mutex was not free within <see cref="LockTimeout"/>.</exception>
+        internal static IDisposable Lock(string skillsDir) {
+            var key = Hex(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(skillsDir).ToLowerInvariant()))).Substring(0, 16);
+            var mutex = new Mutex(false, "Local\\pyrevit-skills-" + key);
+            bool acquired;
+            try {
+                acquired = mutex.WaitOne(LockTimeout);
+            }
+            catch (AbandonedMutexException) {
+                acquired = true;
+            }
+            if (!acquired) {
+                mutex.Dispose();
+                throw new PyRevitException($"Another pyRevit command is working in {skillsDir}. Try again when it has finished.");
+            }
+            return new SkillsLock(mutex);
+        }
+
+        private sealed class SkillsLock : IDisposable {
+            private readonly Mutex mutex;
+
+            public SkillsLock(Mutex mutex) {
+                this.mutex = mutex;
+            }
+
+            public void Dispose() {
+                mutex.ReleaseMutex();
+                mutex.Dispose();
+            }
+        }
+
+        private static void AssertInside(string root, string path) {
             var boundary = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
             if (!(Path.GetFullPath(path) + Path.DirectorySeparatorChar).StartsWith(boundary, StringComparison.OrdinalIgnoreCase))
                 throw new PyRevitException($"Refusing {path}: it is outside {root}.");
         }
 
-        public static void AssertNoLink(string baseRoot, string path) {
+        private static void AssertNoLink(string baseRoot, string path) {
             var boundary = Path.GetFullPath(baseRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             for (var current = new DirectoryInfo(Path.GetFullPath(path)); current != null; current = current.Parent) {
                 if (string.Equals(current.FullName.TrimEnd(Path.DirectorySeparatorChar), boundary, StringComparison.OrdinalIgnoreCase))
@@ -331,7 +501,7 @@ namespace pyRevitCLI {
             throw new PyRevitException($"Refusing {path}: it is outside {baseRoot}.");
         }
 
-        public static bool ContainsLink(string directory) {
+        internal static bool ContainsLink(string directory) {
             foreach (var entry in Directory.GetFileSystemEntries(directory)) {
                 if (IsLink(entry))
                     return true;
@@ -341,7 +511,7 @@ namespace pyRevitCLI {
             return false;
         }
 
-        public static bool IsLink(string path) {
+        internal static bool IsLink(string path) {
             try {
                 return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
             }

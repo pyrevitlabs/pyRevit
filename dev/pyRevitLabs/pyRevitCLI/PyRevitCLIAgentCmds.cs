@@ -397,7 +397,7 @@ namespace pyRevitCLI {
             report.Warnings.AddRange(PyRevitAgentSkillInstaller.UserSkillWarnings(UserSkillsToCheck()));
             PrintSkillsReport(report);
             ThrowOnFailures(report);
-            if (!context.Targets.Contains("claude") && report.Actions.Any(action => action.State == SkillState.Installed || action.State == SkillState.Updated))
+            if (!context.Includes("claude") && report.Actions.Any(action => action.State == SkillState.Installed || action.State == SkillState.Updated))
                 Console.WriteLine("Claude Code reads .claude/skills (add --target=claude). The Antigravity CLI needs '/skills reload' after an install.");
         }
 
@@ -430,7 +430,8 @@ namespace pyRevitCLI {
         /// An edited copy is kept unless <paramref name="force"/>.
         /// </summary>
         public static void UninstallSkills(string scope, string targets, string path, bool force) {
-            var report = PyRevitAgentSkillInstaller.Uninstall(SkillsContext(scope, targets, path, needShipped: false), force);
+            var context = SkillContext.CreateForUninstall(targets, scope, path, Environment.CurrentDirectory, UserProfile());
+            var report = PyRevitAgentSkillInstaller.Uninstall(context, force);
             PrintSkillsReport(report);
             ThrowOnFailures(report);
             if (!report.Actions.Any(action => action.State == SkillState.Removed))
@@ -439,9 +440,9 @@ namespace pyRevitCLI {
 
         private static void PrintSkillsReport(SkillsReport report) {
             foreach (var action in report.Actions)
-                Console.WriteLine($"{action.State.Label(),-9} {action.Skill} ({action.Target}: {action.Folder})");
+                Console.WriteLine(SkillFiles.Printable($"{action.State.Label(),-9} {action.Skill} ({action.Target}: {action.Folder})"));
             foreach (var warning in report.Warnings)
-                Console.WriteLine("Warning: " + warning);
+                Console.WriteLine(SkillFiles.Printable("Warning: " + warning));
         }
 
         private static void ThrowOnFailures(SkillsReport report) {
@@ -450,14 +451,12 @@ namespace pyRevitCLI {
                 throw new PyRevitException($"{failed} skill(s) failed, see the warnings above.");
         }
 
-        private static SkillContext SkillsContext(string scope, string targets, string path, bool needShipped = true) {
-            return SkillContext.Create(
-                targets,
-                scope,
-                path,
-                Environment.CurrentDirectory,
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                needShipped ? PyRevitAgentSkills.ShippedSkillsDir : null);
+        private static SkillContext SkillsContext(string scope, string targets, string path) {
+            return SkillContext.Create(targets, scope, path, Environment.CurrentDirectory, UserProfile(), PyRevitAgentSkills.ShippedSkillsDir);
+        }
+
+        private static string UserProfile() {
+            return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         }
 
         private static string UserSkillsToCheck() {
