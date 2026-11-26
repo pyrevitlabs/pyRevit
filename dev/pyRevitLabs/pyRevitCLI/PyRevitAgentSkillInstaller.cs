@@ -2,22 +2,38 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
 
 using pyRevitLabs.Common;
-using pyRevitLabs.Json.Linq;
 
 namespace pyRevitCLI {
+    internal enum SkillState {
+        Installed,
+        Updated,
+        Current,
+        Stale,
+        Edited,
+        Missing,
+        Foreign,
+        Removed,
+        Failed,
+    }
+
+    internal static class SkillStateText {
+        /// <summary>
+        /// The lowercase word printed for a state; the only place a state becomes text.
+        /// </summary>
+        public static string Label(this SkillState state) {
+            return state.ToString().ToLowerInvariant();
+        }
+    }
+
     /// <summary>
     /// One skill in one skills folder: what <c>agent skills install|status|uninstall</c> found or did.
     /// </summary>
     internal sealed class SkillAction {
         public string Target { get; set; }
         public string Skill { get; set; }
-        public string State { get; set; }
+        public SkillState State { get; set; }
         public string Folder { get; set; }
     }
 
@@ -34,134 +50,57 @@ namespace pyRevitCLI {
     /// or removes those copies.
     /// </summary>
     /// <remarks>
-    /// Only skills shipped with pyRevit are copied, never user skills or <c>INSTRUCTIONS.md</c>.
-    /// Each copy carries a <c>.pyrevit-skill.json</c> marker; the marker is what makes a folder
-    /// pyRevit-owned.
-    /// Invariants: a folder without the marker is never overwritten, replaced or deleted; no path
-    /// is written, replaced or deleted through a link (reparse point), and every path stays inside
-    /// the skills folder; a copy is built in a temporary folder beside its destination and moved
-    /// into place, so a failed run leaves the old copy. The core takes the project root, the
-    /// profile folder and the shipped skills folder as arguments and never reads them from the
-    /// environment.
+    /// Only skills shipped with pyRevit are copied, never user skills or <c>INSTRUCTIONS.md</c>. Each copy
+    /// carries a <c>.pyrevit-skill.json</c> marker; a folder is pyRevit-owned only while its content
+    /// still matches the marker.
+    /// Invariants: a folder without a valid marker is never overwritten, replaced or deleted; an owned
+    /// folder that was edited or holds extra files is replaced or removed only with <c>force</c>, which
+    /// names the extra files first; nothing is written or deleted through a link; every path stays inside
+    /// the skills folder. One skill that cannot be handled is reported as <c>failed</c> or <c>foreign</c>
+    /// and the run goes on.
     /// Installed copies are guidance, not policy: they cannot change host policy.
     /// </remarks>
     internal static class PyRevitAgentSkillInstaller {
-        public const string MarkerFile = ".pyrevit-skill.json";
-        public const string ScopeProject = "project";
-        public const string ScopeUser = "user";
+        public const string DefaultTarget = "agents";
+        public const string DefaultScope = "project";
         public const int MaxDescriptionChars = 240;
-        private const string SkillFile = "SKILL.md";
-        private const string TempPrefix = ".pyrevit-tmp-";
         private const string NamePrefix = "pyrevit-";
-        private const int MaxFileBytes = 128 * 1024;
-        private const int MaxFilesPerSkill = 256;
-        private const int MaxMarkerBytes = 4 * 1024;
-        private static readonly Regex SkillName = new Regex("^[a-z0-9][a-z0-9-]{0,63}\\z", RegexOptions.Compiled);
 
-        private static readonly Dictionary<string, (string[] Project, string[] User)> TargetFolders =
-            new Dictionary<string, (string[] Project, string[] User)>(StringComparer.OrdinalIgnoreCase) {
-                ["agents"] = (new[] { ".agents", "skills" }, new[] { ".agents", "skills" }),
-                ["antigravity"] = (new[] { ".agents", "skills" }, new[] { ".gemini", "config", "skills" }),
-                ["claude"] = (new[] { ".claude", "skills" }, new[] { ".claude", "skills" }),
-                ["copilot"] = (new[] { ".github", "skills" }, new[] { ".copilot", "skills" }),
-                ["opencode"] = (new[] { ".opencode", "skills" }, new[] { ".config", "opencode", "skills" }),
-            };
+        private sealed class Inspection {
+            public SkillState State { get; set; }
+            public List<string> Extras { get; set; } = new List<string>();
+            public string Note { get; set; }
+        }
 
-        private static readonly (string Client, string[][] Project, string[][] User)[] ClientReads = {
-            ("OpenCode",
-                new[] { new[] { ".opencode", "skills" }, new[] { ".claude", "skills" }, new[] { ".agents", "skills" } },
-                new[] { new[] { ".config", "opencode", "skills" }, new[] { ".claude", "skills" }, new[] { ".agents", "skills" } }),
-            ("Cursor",
-                new[] { new[] { ".agents", "skills" }, new[] { ".cursor", "skills" }, new[] { ".claude", "skills" }, new[] { ".codex", "skills" } },
-                new[] { new[] { ".agents", "skills" }, new[] { ".cursor", "skills" }, new[] { ".claude", "skills" }, new[] { ".codex", "skills" } }),
-            ("VS Code",
-                new[] { new[] { ".github", "skills" }, new[] { ".claude", "skills" }, new[] { ".agents", "skills" } },
-                new[] { new[] { ".copilot", "skills" }, new[] { ".claude", "skills" }, new[] { ".agents", "skills" } }),
-        };
-
-        private enum Found { Missing, Foreign, Current, Stale, Edited }
-
-        private sealed class ShippedSkill {
+        private sealed class Located {
             public string Name { get; set; }
-            public string Directory { get; set; }
-            public List<(string Relative, string Path)> Files { get; set; }
-            public string Digest { get; set; }
-        }
-
-        private sealed class Destination {
-            public string Label { get; set; }
-            public string BaseRoot { get; set; }
-            public string SkillsDir { get; set; }
-        }
-
-        /// <summary>
-        /// Splits a comma-separated <c>--target</c> value into valid, distinct target names.
-        /// </summary>
-        /// <exception cref="PyRevitException">The value is empty or names an unknown target.</exception>
-        public static string[] ParseTargets(string text) {
-            var names = (text ?? string.Empty).Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(name => name.Trim().ToLowerInvariant())
-                .Distinct()
-                .ToArray();
-            var unknown = names.Where(name => !TargetFolders.ContainsKey(name)).ToList();
-            if (names.Length == 0 || unknown.Count > 0)
-                throw new PyRevitException(
-                    $"Unknown target '{(unknown.Count > 0 ? string.Join(",", unknown) : text)}'. Valid targets: {string.Join(", ", TargetFolders.Keys)}.");
-            return names;
+            public string Folder { get; set; }
+            public Inspection Inspection { get; set; }
+            public string PlainFolder { get; set; }
+            public bool PrefixTried { get; set; }
         }
 
         /// <summary>
         /// Installs the shipped skills into the skills folder of each target.
         /// </summary>
-        /// <param name="force">
-        /// Replaces a pyRevit-owned copy whose files were edited by hand. It never touches a folder
-        /// without the marker.
-        /// </param>
-        /// <param name="prefix">
-        /// Installs a skill whose plain name is taken by a folder pyRevit did not write as
-        /// <c>pyrevit-&lt;name&gt;</c>, rewriting the <c>name</c> front matter line to match.
-        /// </param>
         /// <remarks>
-        /// Idempotent: a current copy is reported and not rewritten, a stale owned copy is refreshed,
-        /// a folder without the marker is skipped with a warning. Writes only below the skills folders.
+        /// Idempotent: a current copy is reported and not rewritten, a stale owned copy is refreshed. A folder
+        /// without the marker is skipped with a warning, or the skill is installed as
+        /// <c>pyrevit-&lt;name&gt;</c> with <see cref="SkillOptions.Prefix"/>. An existing owned prefixed copy is
+        /// refreshed in place when the plain name is free. <see cref="SkillOptions.Force"/> replaces an owned
+        /// copy that was edited, removing any extra files in it after naming them in a warning.
         /// </remarks>
         /// <exception cref="PyRevitException">
-        /// An unknown scope, a missing project root or profile, a link on the way to a skills folder, or a
-        /// shipped file over 128 KiB.
+        /// The shipped skills are missing or have a file over the limit, or a link is on the way to a skills folder.
         /// </exception>
-        public static SkillsReport Install(IEnumerable<string> targets, string scope, string projectRoot, string home, string shippedSkillsDir, bool force, bool prefix) {
+        public static SkillsReport Install(SkillContext context, SkillOptions options) {
             var report = new SkillsReport();
-            var destinations = Resolve(targets, scope, projectRoot, home);
-            var shipped = LoadShipped(shippedSkillsDir, report);
-            foreach (var destination in destinations) {
-                var exists = EnsureSkillsDirSafe(destination);
-                foreach (var skill in shipped) {
-                    var name = skill.Name;
-                    var found = exists ? Inspect(Path.Combine(destination.SkillsDir, name), skill) : Found.Missing;
-                    if (found == Found.Foreign && prefix && !name.StartsWith(NamePrefix, StringComparison.Ordinal)) {
-                        name = NamePrefix + name;
-                        found = SkillName.IsMatch(name) ? Inspect(Path.Combine(destination.SkillsDir, name), skill) : Found.Foreign;
-                    }
-                    var folder = Path.Combine(destination.SkillsDir, name);
-                    string state;
-                    if (found == Found.Foreign) {
-                        state = "foreign";
-                        report.Warnings.Add($"Skipped '{skill.Name}': {folder} exists and was not installed by pyRevit. Use --prefix to install it as {NamePrefix}{skill.Name}.");
-                    }
-                    else if (found == Found.Current)
-                        state = "current";
-                    else if (found == Found.Edited && !force) {
-                        state = "edited";
-                        report.Warnings.Add($"Skipped '{skill.Name}': {folder} was edited by hand. Use --force to replace it.");
-                    }
-                    else {
-                        WriteSkill(destination, skill, name, replace: found != Found.Missing, report);
-                        state = found == Found.Missing ? "installed" : "updated";
-                    }
-                    report.Actions.Add(new SkillAction { Target = destination.Label, Skill = skill.Name, State = state, Folder = folder });
-                    if (state == "installed" || state == "updated" || state == "current")
-                        WarnLongDescription(folder, report);
-                }
+            var shipped = LoadShipped(context.ShippedDir, report);
+            foreach (var destination in context.Destinations) {
+                PrepareSkillsDir(context, destination, create: true);
+                SkillFiles.SweepTemp(destination.SkillsDir, restore: true, report.Warnings);
+                foreach (var skill in shipped)
+                    report.Actions.Add(InstallOne(destination, skill, options, report));
             }
             return report;
         }
@@ -170,68 +109,77 @@ namespace pyRevitCLI {
         /// Compares the copies in each target's skills folder with the shipped skills.
         /// </summary>
         /// <remarks>
-        /// States: <c>current</c>, <c>stale</c> (shipped skill changed), <c>edited</c> (files differ from
-        /// the marker), <c>missing</c>, <c>foreign</c> (a folder pyRevit did not write holds the name).
-        /// Also warns when one client would read the same pyRevit-owned skill from several folders.
+        /// States: <c>current</c>, <c>stale</c> (shipped skill changed), <c>edited</c> (content differs from the
+        /// marker or has extra files), <c>missing</c>, <c>foreign</c> (a folder pyRevit did not write holds the
+        /// name). Also warns when one client would read the same pyRevit-owned skill from several folders.
         /// Read-only.
         /// </remarks>
-        public static SkillsReport Status(IEnumerable<string> targets, string scope, string projectRoot, string home, string shippedSkillsDir) {
+        public static SkillsReport Status(SkillContext context) {
             var report = new SkillsReport();
-            var destinations = Resolve(targets, scope, projectRoot, home);
-            var shipped = LoadShipped(shippedSkillsDir, report);
-            foreach (var destination in destinations) {
-                var exists = EnsureSkillsDirSafe(destination, create: false);
+            var shipped = LoadShipped(context.ShippedDir, report);
+            foreach (var destination in context.Destinations) {
+                var exists = PrepareSkillsDir(context, destination, create: false);
                 foreach (var skill in shipped) {
-                    var folder = Path.Combine(destination.SkillsDir, skill.Name);
-                    var found = exists ? Inspect(folder, skill) : Found.Missing;
-                    if (found == Found.Foreign || found == Found.Missing) {
-                        var prefixed = Path.Combine(destination.SkillsDir, NamePrefix + skill.Name);
-                        var prefixedFound = exists && !skill.Name.StartsWith(NamePrefix, StringComparison.Ordinal) && SkillName.IsMatch(NamePrefix + skill.Name)
-                            ? Inspect(prefixed, skill)
-                            : Found.Missing;
-                        if (prefixedFound != Found.Missing && prefixedFound != Found.Foreign) {
-                            found = prefixedFound;
-                            folder = prefixed;
-                        }
-                    }
-                    report.Actions.Add(new SkillAction { Target = destination.Label, Skill = skill.Name, State = found.ToString().ToLowerInvariant(), Folder = folder });
-                    if (found == Found.Current || found == Found.Stale || found == Found.Edited)
-                        WarnLongDescription(folder, report);
+                    var located = exists ? Locate(destination, skill, prefixOnClash: true) : PlainMissing(destination, skill);
+                    if (located.PrefixTried && located.Inspection.State == SkillState.Missing)
+                        located = Locate(destination, skill, prefixOnClash: false);
+                    if (located.Inspection.Note != null)
+                        report.Warnings.Add($"{located.Folder}: {located.Inspection.Note}.");
+                    if (located.Inspection.State == SkillState.Edited && located.Inspection.Extras.Count > 0)
+                        report.Warnings.Add($"{located.Folder} holds files pyRevit did not install{Describe(located.Inspection.Extras, null)}.");
+                    report.Actions.Add(new SkillAction { Target = destination.Label, Skill = skill.Name, State = located.Inspection.State, Folder = located.Folder });
+                    if (IsOwned(located.Inspection.State))
+                        WarnLongDescription(located.Folder, report.Warnings, "Skill");
                 }
             }
-            WarnOverlappingFolders(scope, projectRoot, home, report);
+            SkillTargets.WarnOverlaps(context, report.Warnings);
             return report;
         }
 
         /// <summary>
         /// Removes the pyRevit-owned skill folders from each target's skills folder.
         /// </summary>
+        /// <param name="context">The shipped skills folder is not needed and may be null.</param>
+        /// <param name="force">Also removes an owned folder that was edited or holds extra files, naming them first.</param>
         /// <remarks>
-        /// Removes only folders with the marker, plus empty <c>.pyrevit-tmp-*</c> leftovers. Never removes
-        /// the skills folder, a folder without the marker or anything reached through a link.
+        /// Removes only folders whose marker matches their content, plus leftover <c>.pyrevit-tmp-*</c> folders.
+        /// Never removes the skills folder, a folder without a valid marker or anything reached through a link.
         /// </remarks>
-        public static SkillsReport Uninstall(IEnumerable<string> targets, string scope, string projectRoot, string home) {
+        public static SkillsReport Uninstall(SkillContext context, bool force) {
             var report = new SkillsReport();
-            foreach (var destination in Resolve(targets, scope, projectRoot, home)) {
-                if (!EnsureSkillsDirSafe(destination, create: false))
+            foreach (var destination in context.Destinations) {
+                if (!PrepareSkillsDir(context, destination, create: false))
                     continue;
+                SkillFiles.SweepTemp(destination.SkillsDir, restore: false, report.Warnings);
                 foreach (var directory in Directory.GetDirectories(destination.SkillsDir).OrderBy(path => path, StringComparer.OrdinalIgnoreCase)) {
                     var name = Path.GetFileName(directory);
-                    if (IsLink(directory))
+                    if (name.StartsWith(SkillFiles.TempPrefix, StringComparison.Ordinal) || SkillFiles.IsLink(directory))
                         continue;
-                    if (name.StartsWith(TempPrefix, StringComparison.Ordinal)) {
-                        if (!Directory.EnumerateFileSystemEntries(directory).Any())
-                            Directory.Delete(directory);
-                        continue;
+                    var action = new SkillAction { Target = destination.Label, Skill = name, Folder = directory };
+                    try {
+                        var check = SkillFiles.Verify(directory);
+                        if (check.Marker == null)
+                            continue;
+                        if (!check.Intact && !force) {
+                            action.State = SkillState.Edited;
+                            report.Warnings.Add($"Kept {directory}: it was edited or holds files pyRevit did not install{Describe(check.Extras, check.Note)}. Use --force to remove it.");
+                        }
+                        else if (SkillFiles.ContainsLink(directory)) {
+                            action.State = SkillState.Foreign;
+                            report.Warnings.Add($"Kept {directory}: it contains a link or a cloud placeholder.");
+                        }
+                        else {
+                            if (!check.Intact)
+                                report.Warnings.Add($"Removing {directory} with --force deletes{Describe(check.Extras, check.Note)}.");
+                            Directory.Delete(directory, recursive: true);
+                            action.State = SkillState.Removed;
+                        }
                     }
-                    if (ReadMarker(directory) == null)
-                        continue;
-                    if (ContainsLink(directory)) {
-                        report.Warnings.Add($"Kept {directory}: it contains a link.");
-                        continue;
+                    catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+                        action.State = SkillState.Failed;
+                        report.Warnings.Add($"Could not remove {directory}: {ex.Message}");
                     }
-                    Directory.Delete(directory, recursive: true);
-                    report.Actions.Add(new SkillAction { Target = destination.Label, Skill = name, State = "removed", Folder = directory });
+                    report.Actions.Add(action);
                 }
             }
             return report;
@@ -244,40 +192,104 @@ namespace pyRevitCLI {
             var warnings = new List<string>();
             if (userSkillsDir == null || !Directory.Exists(userSkillsDir))
                 return warnings;
-            foreach (var directory in Directory.GetDirectories(userSkillsDir).Where(path => !IsLink(path)))
+            foreach (var directory in Directory.GetDirectories(userSkillsDir).Where(path => !SkillFiles.IsLink(path)))
                 WarnLongDescription(directory, warnings, "User skill");
             return warnings;
         }
 
-        private static List<Destination> Resolve(IEnumerable<string> targets, string scope, string projectRoot, string home) {
-            var names = targets.ToList();
-            if (names.Count == 0 || names.Any(name => !TargetFolders.ContainsKey(name)))
-                throw new PyRevitException($"Unknown target. Valid targets: {string.Join(", ", TargetFolders.Keys)}.");
-            if (scope != ScopeProject && scope != ScopeUser)
-                throw new PyRevitException($"Unknown scope '{scope}'. Valid scopes: {ScopeProject}, {ScopeUser}.");
-
-            string baseRoot;
-            if (scope == ScopeProject) {
-                if (string.IsNullOrWhiteSpace(projectRoot) || !Directory.Exists(projectRoot))
-                    throw new PyRevitException($"Project folder not found: {projectRoot}");
-                baseRoot = Path.GetFullPath(projectRoot);
+        private static SkillAction InstallOne(SkillDestination destination, ShippedSkill skill, SkillOptions options, SkillsReport report) {
+            var located = Locate(destination, skill, options.Prefix);
+            var inspection = located.Inspection;
+            var action = new SkillAction { Target = destination.Label, Skill = skill.Name, State = inspection.State, Folder = located.Folder };
+            try {
+                switch (inspection.State) {
+                    case SkillState.Foreign:
+                        report.Warnings.Add(ForeignMessage(skill, located, options));
+                        break;
+                    case SkillState.Current:
+                        break;
+                    case SkillState.Edited when !options.Force:
+                        report.Warnings.Add($"Skipped '{skill.Name}': {located.Folder} was edited or holds files pyRevit did not install{Describe(inspection.Extras, inspection.Note)}. Use --force to replace it.");
+                        break;
+                    default:
+                        if (inspection.State == SkillState.Edited && (inspection.Extras.Count > 0 || inspection.Note != null))
+                            report.Warnings.Add($"Replacing {located.Folder} with --force deletes{Describe(inspection.Extras, inspection.Note)}.");
+                        var replace = inspection.State != SkillState.Missing;
+                        SkillFiles.WriteAtomically(destination.SkillsDir, skill, located.Name, replace, report.Warnings);
+                        action.State = replace ? SkillState.Updated : SkillState.Installed;
+                        break;
+                }
             }
-            else {
-                if (string.IsNullOrWhiteSpace(home) || !Directory.Exists(home))
-                    throw new PyRevitException("The user profile folder cannot be resolved, so the user-level skills folder is unknown.");
-                baseRoot = Path.GetFullPath(home);
+            catch (Exception ex) when (ex is PyRevitException || ex is IOException || ex is UnauthorizedAccessException) {
+                action.State = SkillState.Failed;
+                report.Warnings.Add($"Could not install '{skill.Name}' into {located.Folder}: {ex.Message}");
             }
-
-            return names
-                .Select(name => (Name: name, Dir: Path.Combine(new[] { baseRoot }.Concat(scope == ScopeProject ? TargetFolders[name].Project : TargetFolders[name].User).ToArray())))
-                .GroupBy(entry => entry.Dir, StringComparer.OrdinalIgnoreCase)
-                .Select(group => new Destination { Label = string.Join("+", group.Select(entry => entry.Name)), BaseRoot = baseRoot, SkillsDir = group.Key })
-                .ToList();
+            if (action.State == SkillState.Installed || action.State == SkillState.Updated || action.State == SkillState.Current)
+                WarnLongDescription(located.Folder, report.Warnings, "Skill");
+            return action;
         }
 
-        private static bool EnsureSkillsDirSafe(Destination destination, bool create = true) {
-            AssertInside(destination.BaseRoot, destination.SkillsDir);
-            AssertNoLink(destination.BaseRoot, destination.SkillsDir);
+        private static string ForeignMessage(ShippedSkill skill, Located located, SkillOptions options) {
+            if (located.Inspection.Note != null)
+                return $"Skipped '{skill.Name}': {located.Folder} {located.Inspection.Note}.";
+            if (located.PrefixTried)
+                return $"Skipped '{skill.Name}': {located.PlainFolder} and {located.Folder} exist and were not installed by pyRevit.";
+            if (options.Prefix && skill.Name.StartsWith(NamePrefix, StringComparison.Ordinal))
+                return $"Skipped '{skill.Name}': {located.Folder} exists and was not installed by pyRevit, and a name starting with {NamePrefix} is not prefixed again.";
+            return $"Skipped '{skill.Name}': {located.Folder} exists and was not installed by pyRevit. Use --prefix to install it as {NamePrefix}{skill.Name}.";
+        }
+
+        private static Located Locate(SkillDestination destination, ShippedSkill skill, bool prefixOnClash) {
+            var plainFolder = Path.Combine(destination.SkillsDir, skill.Name);
+            var plain = Inspect(plainFolder, skill);
+            var located = new Located { Name = skill.Name, Folder = plainFolder, Inspection = plain, PlainFolder = plainFolder };
+            var prefixedName = NamePrefix + skill.Name;
+            var canPrefix = !skill.Name.StartsWith(NamePrefix, StringComparison.Ordinal) && SkillFiles.IsValidName(prefixedName);
+            var clash = plain.State == SkillState.Foreign && plain.Note == null && prefixOnClash;
+            if (!canPrefix || !(clash || plain.State == SkillState.Missing))
+                return located;
+            var prefixedFolder = Path.Combine(destination.SkillsDir, prefixedName);
+            var prefixed = Inspect(prefixedFolder, skill);
+            if (clash || IsOwned(prefixed.State))
+                return new Located { Name = prefixedName, Folder = prefixedFolder, Inspection = prefixed, PlainFolder = plainFolder, PrefixTried = true };
+            return located;
+        }
+
+        private static Located PlainMissing(SkillDestination destination, ShippedSkill skill) {
+            return new Located {
+                Name = skill.Name,
+                Folder = Path.Combine(destination.SkillsDir, skill.Name),
+                Inspection = new Inspection { State = SkillState.Missing },
+            };
+        }
+
+        private static Inspection Inspect(string folder, ShippedSkill skill) {
+            var check = SkillFiles.Verify(folder);
+            if (!check.Exists)
+                return new Inspection { State = SkillState.Missing };
+            if (check.Marker == null)
+                return new Inspection { State = SkillState.Foreign, Note = check.Note };
+            if (!check.Intact)
+                return new Inspection { State = SkillState.Edited, Extras = check.Extras, Note = check.Note };
+            return new Inspection { State = check.Marker.Sha256 == skill.Digest ? SkillState.Current : SkillState.Stale };
+        }
+
+        private static bool IsOwned(SkillState state) {
+            return state == SkillState.Current || state == SkillState.Stale || state == SkillState.Edited;
+        }
+
+        private static string Describe(List<string> extras, string note) {
+            var parts = new List<string>();
+            if (extras != null && extras.Count > 0)
+                parts.Add(" (" + string.Join(", ", extras.Take(10)) + (extras.Count > 10 ? ", ..." : string.Empty) + ")");
+            if (note != null)
+                parts.Add(" (" + note + ")");
+            return string.Concat(parts);
+        }
+
+        private static bool PrepareSkillsDir(SkillContext context, SkillDestination destination, bool create) {
+            SkillFiles.AssertInside(context.BaseRoot, destination.SkillsDir);
+            SkillFiles.AssertNoLink(context.BaseRoot, destination.SkillsDir);
             if (Directory.Exists(destination.SkillsDir))
                 return true;
             if (create)
@@ -290,235 +302,29 @@ namespace pyRevitCLI {
                 throw new PyRevitException("The shipped agent skills were not found. Run this command from a pyRevit install or clone that has pyrevitlib/pyrevit/agent/skills.");
             var skills = new List<ShippedSkill>();
             foreach (var directory in Directory.GetDirectories(shippedSkillsDir).OrderBy(path => path, StringComparer.Ordinal)) {
-                var skill = IsLink(directory) ? null : PyRevitAgentSkills.ReadSkill(directory, PyRevitAgentSkills.ShippedSource);
+                var skill = SkillFiles.IsLink(directory) ? null : PyRevitAgentSkills.ReadSkill(directory, PyRevitAgentSkills.ShippedSource);
                 if (skill == null)
                     continue;
                 if (skill.Name != Path.GetFileName(directory)) {
                     report.Warnings.Add($"Skipped {directory}: the skill name '{skill.Name}' differs from its folder name.");
                     continue;
                 }
-                var files = CollectFiles(directory);
-                skills.Add(new ShippedSkill { Name = skill.Name, Directory = directory, Files = files, Digest = Digest(files, null) });
+                var files = SkillFiles.CollectFiles(directory);
+                skills.Add(new ShippedSkill { Name = skill.Name, Files = files, Digest = SkillFiles.Digest(files) });
             }
             return skills;
         }
 
-        private static List<(string Relative, string Path)> CollectFiles(string root) {
-            var files = new List<(string Relative, string Path)>();
-            Collect(root, root, files);
-            return files.OrderBy(file => file.Relative, StringComparer.Ordinal).ToList();
-        }
-
-        private static void Collect(string root, string directory, List<(string Relative, string Path)> files) {
-            foreach (var file in Directory.GetFiles(directory, "*.md")) {
-                if (IsLink(file))
-                    continue;
-                if (files.Count >= MaxFilesPerSkill)
-                    throw new PyRevitException($"{root} has more than {MaxFilesPerSkill} markdown files.");
-                if (new FileInfo(file).Length > MaxFileBytes)
-                    throw new PyRevitException($"{file} is over the {MaxFileBytes / 1024} KiB limit.");
-                files.Add((Path.GetRelativePath(root, file).Replace('\\', '/'), file));
-            }
-            foreach (var child in Directory.GetDirectories(directory))
-                if (!IsLink(child))
-                    Collect(root, child, files);
-        }
-
-        private static string Digest(List<(string Relative, string Path)> files, string restoreName) {
-            using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)) {
-                foreach (var file in files) {
-                    var bytes = ReadFile(file, restoreName);
-                    sha256.AppendData(Encoding.UTF8.GetBytes(file.Relative));
-                    sha256.AppendData(new byte[] { 0 });
-                    sha256.AppendData(BitConverter.GetBytes((long)bytes.Length));
-                    sha256.AppendData(bytes);
-                }
-                return BitConverter.ToString(sha256.GetHashAndReset()).Replace("-", string.Empty).ToLowerInvariant();
-            }
-        }
-
-        private static byte[] ReadFile((string Relative, string Path) file, string rename) {
-            var bytes = File.ReadAllBytes(file.Path);
-            return rename != null && file.Relative == SkillFile ? RenameSkill(bytes, rename) : bytes;
-        }
-
-        private static byte[] RenameSkill(byte[] bytes, string name) {
-            var lines = new UTF8Encoding(false).GetString(bytes).Split('\n').ToList();
-            for (var index = 1; index < lines.Count && lines[index].Trim() != "---"; index++) {
-                if (lines[index].StartsWith("name:", StringComparison.OrdinalIgnoreCase)) {
-                    lines[index] = "name: " + name + (lines[index].EndsWith("\r") ? "\r" : string.Empty);
-                    return new UTF8Encoding(false).GetBytes(string.Join("\n", lines));
-                }
-            }
-            throw new PyRevitException($"SKILL.md has no name line to rewrite for '{name}'.");
-        }
-
-        private static Found Inspect(string folder, ShippedSkill skill) {
-            if (!IsLink(folder) && !Directory.Exists(folder))
-                return Found.Missing;
-            if (IsLink(folder))
-                throw new PyRevitException($"Refusing {folder}: it is a link.");
-            var marker = ReadMarker(folder);
-            if (marker == null)
-                return Found.Foreign;
-            string installed;
-            try {
-                installed = Digest(CollectFiles(folder), Path.GetFileName(folder) == skill.Name ? null : skill.Name);
-            }
-            catch (Exception ex) when (ex is PyRevitException || ex is IOException || ex is UnauthorizedAccessException) {
-                return Found.Edited;
-            }
-            if (installed != marker.Value<string>("sha256"))
-                return Found.Edited;
-            return marker.Value<string>("sha256") == skill.Digest ? Found.Current : Found.Stale;
-        }
-
-        private static JObject ReadMarker(string folder) {
-            var path = Path.Combine(folder, MarkerFile);
-            try {
-                if (!File.Exists(path) || IsLink(path) || new FileInfo(path).Length > MaxMarkerBytes)
-                    return null;
-                var marker = JObject.Parse(File.ReadAllText(path));
-                return marker.Value<string>("source") == PyRevitAgentSkills.ShippedSource && marker.Value<string>("sha256") != null ? marker : null;
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is pyRevitLabs.Json.JsonException) {
-                return null;
-            }
-        }
-
-        private static void WriteSkill(Destination destination, ShippedSkill skill, string installedName, bool replace, SkillsReport report) {
-            var destinationFolder = Path.Combine(destination.SkillsDir, installedName);
-            AssertInside(destination.SkillsDir, destinationFolder);
-            var temp = Path.Combine(destination.SkillsDir, TempPrefix + Guid.NewGuid().ToString("N"));
-            try {
-                Directory.CreateDirectory(temp);
-                var rename = installedName == skill.Name ? null : installedName;
-                foreach (var file in skill.Files) {
-                    var target = Path.Combine(temp, file.Relative.Replace('/', Path.DirectorySeparatorChar));
-                    Directory.CreateDirectory(Path.GetDirectoryName(target));
-                    File.WriteAllBytes(target, ReadFile(file, rename));
-                }
-                var marker = new JObject { ["source"] = PyRevitAgentSkills.ShippedSource };
-                var version = CurrentVersion();
-                if (version != null)
-                    marker["version"] = version;
-                marker["sha256"] = skill.Digest;
-                File.WriteAllText(Path.Combine(temp, MarkerFile), marker.ToString());
-
-                if (!replace) {
-                    Directory.Move(temp, destinationFolder);
-                    return;
-                }
-                if (ContainsLink(destinationFolder))
-                    throw new PyRevitException($"Refusing to replace {destinationFolder}: it contains a link.");
-                var aside = Path.Combine(destination.SkillsDir, TempPrefix + Guid.NewGuid().ToString("N"));
-                Directory.Move(destinationFolder, aside);
-                try {
-                    Directory.Move(temp, destinationFolder);
-                }
-                catch {
-                    Directory.Move(aside, destinationFolder);
-                    throw;
-                }
-                try {
-                    Directory.Delete(aside, recursive: true);
-                }
-                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
-                    report.Warnings.Add($"Could not remove the old copy {aside}: {ex.Message}");
-                }
-            }
-            finally {
-                if (Directory.Exists(temp) && !IsLink(temp))
-                    Directory.Delete(temp, recursive: true);
-            }
-        }
-
-        private static string CurrentVersion() {
-            var version = typeof(PyRevitAgentSkillInstaller).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-            if (string.IsNullOrWhiteSpace(version))
-                return null;
-            var plus = version.IndexOf('+');
-            return plus > 0 ? version.Substring(0, plus) : version;
-        }
-
-        private static void WarnLongDescription(string folder, SkillsReport report) {
-            WarnLongDescription(folder, report.Warnings, "Skill");
-        }
-
         private static void WarnLongDescription(string folder, List<string> warnings, string label) {
-            var path = Path.Combine(folder, SkillFile);
+            var path = Path.Combine(folder, SkillFiles.SkillFile);
             try {
-                if (!File.Exists(path) || IsLink(path) || new FileInfo(path).Length > MaxFileBytes)
+                if (!File.Exists(path) || SkillFiles.IsLink(path) || new FileInfo(path).Length > SkillFiles.MaxFileBytes)
                     return;
                 var frontMatter = PyRevitAgentSkills.ParseFrontMatter(File.ReadAllLines(path));
                 if (frontMatter.TryGetValue("description", out var description) && description.Length > MaxDescriptionChars)
                     warnings.Add($"{label} {folder}: the description has {description.Length} characters; agents may shorten or drop it above {MaxDescriptionChars}.");
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
-            }
-        }
-
-        private static void WarnOverlappingFolders(string scope, string projectRoot, string home, SkillsReport report) {
-            var baseRoot = scope == ScopeProject ? projectRoot : home;
-            if (string.IsNullOrWhiteSpace(baseRoot))
-                return;
-            foreach (var (client, project, user) in ClientReads) {
-                var owners = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-                foreach (var parts in scope == ScopeProject ? project : user) {
-                    var skillsDir = Path.Combine(new[] { Path.GetFullPath(baseRoot) }.Concat(parts).ToArray());
-                    try {
-                        AssertNoLink(Path.GetFullPath(baseRoot), skillsDir);
-                    }
-                    catch (PyRevitException) {
-                        continue;
-                    }
-                    if (!Directory.Exists(skillsDir))
-                        continue;
-                    foreach (var directory in Directory.GetDirectories(skillsDir).Where(path => !IsLink(path) && ReadMarker(path) != null)) {
-                        var name = Path.GetFileName(directory);
-                        if (!owners.TryGetValue(name, out var folders))
-                            owners[name] = folders = new List<string>();
-                        folders.Add(skillsDir);
-                    }
-                }
-                foreach (var entry in owners.Where(entry => entry.Value.Count > 1).OrderBy(entry => entry.Key, StringComparer.Ordinal))
-                    report.Warnings.Add($"{client} reads '{entry.Key}' from {entry.Value.Count} folders ({string.Join(", ", entry.Value)}); keep one copy.");
-            }
-        }
-
-        private static void AssertInside(string root, string path) {
-            var boundary = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-            if (!(Path.GetFullPath(path) + Path.DirectorySeparatorChar).StartsWith(boundary, StringComparison.OrdinalIgnoreCase))
-                throw new PyRevitException($"Refusing {path}: it is outside {root}.");
-        }
-
-        private static void AssertNoLink(string baseRoot, string path) {
-            var boundary = Path.GetFullPath(baseRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            for (var current = new DirectoryInfo(Path.GetFullPath(path)); current != null; current = current.Parent) {
-                if (string.Equals(current.FullName.TrimEnd(Path.DirectorySeparatorChar), boundary, StringComparison.OrdinalIgnoreCase))
-                    return;
-                if (IsLink(current.FullName))
-                    throw new PyRevitException($"Refusing {current.FullName}: it is a link (junction or symlink).");
-            }
-            throw new PyRevitException($"Refusing {path}: it is outside {baseRoot}.");
-        }
-
-        private static bool ContainsLink(string directory) {
-            foreach (var entry in Directory.GetFileSystemEntries(directory)) {
-                if (IsLink(entry))
-                    return true;
-                if (Directory.Exists(entry) && ContainsLink(entry))
-                    return true;
-            }
-            return false;
-        }
-
-        private static bool IsLink(string path) {
-            try {
-                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
-            }
-            catch (Exception ex) when (ex is FileNotFoundException || ex is DirectoryNotFoundException) {
-                return false;
             }
         }
     }

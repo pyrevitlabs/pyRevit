@@ -417,7 +417,7 @@ namespace pyRevitCLI {
                             { "--scope=<scope>",        "project (default) or user, for 'agent skills'" },
                             { "--target=<targets>",     "Comma-separated agents (default), antigravity, claude, copilot, opencode, for 'agent skills'" },
                             { "--path=<folder>",        "Project folder for the project scope (default: current folder); never the skills folder itself" },
-                            { "--force",                "Replace a pyRevit-installed skill that was edited by hand; never touches a folder pyRevit did not write" },
+                            { "--force",                "Replace (install) or remove (uninstall) a pyRevit-installed skill that was edited or holds extra files, naming them first; never touches a folder pyRevit did not write" },
                             { "--prefix",               "Install a skill whose name is taken by another folder as pyrevit-<name>" },
                         });
 
