@@ -131,6 +131,8 @@ class _Entry(object):
         "hidden",
         "size",
         "near",
+        "lines_only",
+        "requested",
     )
 
     def __init__(self, element, bbox, transform, link, source, group, hidden, near):
@@ -143,6 +145,8 @@ class _Entry(object):
         self.hidden = hidden
         self.size = (bbox.Max - bbox.Min).GetLength()
         self.near = near
+        self.lines_only = False
+        self.requested = False
 
 
 def _near_focus(bbox, transform, focus):
@@ -207,8 +211,11 @@ class ModelStream(object):
 
     Elements that are not 3D geometry are left out: view-specific elements,
     the categories in ``NON_GEOMETRY_CATEGORIES`` and any element without
-    triangles at the detail level. That includes elements Revit gives only as
-    lines there, such as pipe fittings below Fine. Each mesh carries its
+    triangles at the detail level. Elements that are only lines there but have
+    a shape at Fine, such as pipe fittings, are set aside: they are listed by
+    :meth:`dropped_groups` and drawn at Fine when :meth:`load_group` asks for
+    their category. One element per family type is read at Fine to decide, so
+    that nothing is listed which loading would not draw. Each mesh carries its
     category as ``group`` and, for a linked
     element, the link's title as ``link``, so the page can toggle a link's walls
     apart from the host's. Rooms, spaces and parts are streamed for the host
@@ -228,7 +235,8 @@ class ModelStream(object):
         remaining, smallest elements are left out; :meth:`dropped_groups`
         lists them by category and :meth:`load_group` streams one category's
         share anyway, up to ``MAX_FORCED_POINTS`` more points. Elements deleted
-        between chunks are skipped.
+        between chunks are skipped. What was loaded on request is set aside
+        again when the model is streamed anew.
     """
 
     def __init__(
@@ -259,6 +267,8 @@ class ModelStream(object):
         self._points = 0
         self._points_limit = MAX_TOTAL_POINTS
         self._dropped = []
+        self._line_only = []
+        self._fine_shapes = {}
 
     @property
     def done(self):
@@ -358,9 +368,13 @@ class ModelStream(object):
         return len(self._entries or ())
 
     def dropped_groups(self):
-        """List the elements left out as ``{source, group, link, hidden, count}``."""
+        """List the elements not loaded as ``{source, group, link, hidden, count}``.
+
+        These are the elements the point limit left out and those that are only
+        lines at the detail level.
+        """
         groups = {}
-        for entry in self._dropped:
+        for entry in self._dropped + self._line_only:
             key = (entry.source, entry.group)
             if key not in groups:
                 groups[key] = {
@@ -374,17 +388,25 @@ class ModelStream(object):
         return list(groups.values())
 
     def load_group(self, source, group):
-        """Queue the left-out elements of one category and return how many.
+        """Queue the elements of one category that are not loaded and return how many.
 
         The queued elements stream in the next chunks within
         ``MAX_FORCED_POINTS`` further points; any that do not fit stay in
-        :meth:`dropped_groups`.
+        :meth:`dropped_groups`. Those that are only lines at the detail level
+        are read at Fine.
         """
-        wanted = [e for e in self._dropped if e.source == source and e.group == group]
+        wanted = [
+            e
+            for e in self._dropped + self._line_only
+            if e.source == source and e.group == group
+        ]
         if not wanted:
             return 0
         wanted_ids = set(id(entry) for entry in wanted)
         self._dropped = [e for e in self._dropped if id(e) not in wanted_ids]
+        self._line_only = [e for e in self._line_only if id(e) not in wanted_ids]
+        for entry in wanted:
+            entry.requested = True
         self._points_limit = self._points + MAX_FORCED_POINTS
         self._entries.extend(wanted)
         return len(wanted)
@@ -415,19 +437,13 @@ class ModelStream(object):
                 break
             if not entry.element.IsValidObject:
                 continue
-            budget = min(MAX_ELEMENT_POINTS, remaining)
-            builder, approx = tessellate_element(
-                entry.element,
-                entry.bbox,
-                self.origin,
-                budget,
-                detail_level=self.detail_level,
-                edges=False,
-                transform=entry.transform,
-                box_when_empty=False,
-                coarse_retry=True,
+            level = DB.ViewDetailLevel.Fine if entry.lines_only else self.detail_level
+            builder, approx = self._tessellate(
+                entry, min(MAX_ELEMENT_POINTS, remaining), level
             )
             if not builder.indices:
+                if builder.edges and level != DB.ViewDetailLevel.Fine:
+                    self._set_aside(entry)
                 continue
             self._points += builder.point_count
             meshes.append(
@@ -443,6 +459,42 @@ class ModelStream(object):
                 }
             )
         return {"meshes": meshes, "progress": [self._cursor, len(self._entries)]}
+
+    def _tessellate(self, entry, budget, detail_level):
+        return tessellate_element(
+            entry.element,
+            entry.bbox,
+            self.origin,
+            budget,
+            detail_level=detail_level,
+            edges=False,
+            transform=entry.transform,
+            box_when_empty=False,
+            coarse_retry=True,
+        )
+
+    def _has_fine_shape(self, entry):
+        """Tell whether reading ``entry`` at Fine would draw it, asked once per type."""
+        type_id = int(get_elementid_value(entry.element.GetTypeId()))
+        key = (entry.source, type_id)
+        if type_id <= 0:
+            key = (entry.source, None, int(get_elementid_value(entry.element.Id)))
+        if key not in self._fine_shapes:
+            builder, _ = self._tessellate(
+                entry, MAX_ELEMENT_POINTS, DB.ViewDetailLevel.Fine
+            )
+            self._fine_shapes[key] = bool(builder.indices)
+        return self._fine_shapes[key]
+
+    def _set_aside(self, entry):
+        """Keep a lines-only element for loading at Fine, or queue it if asked for."""
+        if not self._has_fine_shape(entry):
+            return
+        entry.lines_only = True
+        if entry.requested:
+            self._entries.append(entry)
+        else:
+            self._line_only.append(entry)
 
 
 def _world_bounds(box):

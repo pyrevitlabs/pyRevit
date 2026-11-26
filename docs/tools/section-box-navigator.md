@@ -81,14 +81,14 @@ To keep the picture readable, the preview shows the levels inside the box and th
 
 The preview follows the **detail level**, **phase**, **phase filter** and **design options** of the view, and loads the model again when one of them changes or you switch to a view that differs.
 
-- At **Coarse** and **Medium**, Revit gives pyRevit only lines for some elements, without a 3D shape, and the preview leaves them out. In the Snowdon Towers Plumbing sample that comes with Revit, these are pipe fittings and pipe accessories at both levels, and duct fittings at Coarse. Set the view to **Fine** to see them. Other families can behave differently.
+- At **Coarse** and **Medium**, Revit gives pyRevit only lines for some elements, without a 3D shape. The preview does not draw them at first: their category shows how many are **not loaded**. Click **Load** to draw them in the shape they have at **Fine**, without changing the view, or set the view to Fine. In the Snowdon Towers Plumbing sample that comes with Revit, these are pipe fittings and pipe accessories at both levels, and duct fittings at Coarse. Other families can behave differently. They are not loaded again after the preview reloads the model.
 - The preview is not a copy of the view: for example, it shows pipes with a 3D shape at Coarse and Medium, where the view draws them as lines.
 - A view whose phase filter is **None** shows every phase.
 - Each design option set shows its primary option, unless the view is dedicated to an option, or you are editing one. Choices made on the **Design Options** tab of Visibility/Graphics are not available to pyRevit.
 - Linked models show their primary design options and are not filtered by phase.
 - Visibility/Graphics, view filters and hidden elements are not applied, so you can drag the box over geometry the view hides.
 
-Very large models are loaded up to a size limit, large elements and those near the box first. A category with elements left out says how many are **not loaded**, with a **Load** link.
+Very large models are loaded up to a size limit, large elements and those near the box first. A category with elements left out by the limit also says how many are **not loaded**, with a **Load** link.
 
 ### View range of plan views
 
@@ -126,6 +126,6 @@ The navigator remembers these settings, the nudge amounts and the preview's disp
 
 **The window opens too small.** The navigator remembers its size and position. Resize the window once and it opens at that size from then on. To go back to the default size, close the navigator and delete the file ending in `last_window_position_Section Box Navigator.pym` in `%APPDATA%\pyRevit\<Revit version>`. Do not use `pyrevit caches clear` for this: it closes running Revit sessions and deletes all stored pyRevit data of that version.
 
-**Pipe or duct fittings are missing from the 3D preview.** Set the detail level of the view to **Fine**. See [Which elements are shown](#which-elements-are-shown).
+**Pipe or duct fittings are missing from the 3D preview.** In a Coarse or Medium view, click **Load** next to their category, or set the detail level of the view to **Fine**. See [Which elements are shown](#which-elements-are-shown).
 
 **Other elements are missing from the 3D preview.** Check the category list on the right: the category may be unticked, or show elements as **not loaded**. Rooms and spaces start unticked. Elements of another phase or of a design option the view does not show are left out on purpose.

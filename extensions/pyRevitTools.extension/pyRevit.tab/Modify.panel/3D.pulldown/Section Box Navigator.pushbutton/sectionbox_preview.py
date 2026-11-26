@@ -10,8 +10,9 @@ Page -> Python actions: ``ready``, ``apply_box``, ``apply_view_range``
 (new heights of view range planes), ``use_scope_box``,
 ``bookmark_save``, ``bookmark_apply``, ``bookmark_rename``,
 ``bookmark_delete``, ``fit_visible``, ``load_group`` (stream the elements of
-one category that the point limit left out), ``save_settings`` (the page's
-display and box toggles, kept in the navigator's config).
+one category that are not loaded: left out by the point limit, or only lines at
+the view's detail level), ``save_settings`` (the page's display and box
+toggles, kept in the navigator's config).
 Python -> page events: ``scene`` (a model chunk), ``view`` (box, kind and
 bookmarks of the active view), ``box`` (the box changed in Revit), ``guides``
 (levels, grids and scope boxes), ``sources`` (link geometry added or removed,
@@ -516,9 +517,9 @@ class PreviewSession(object):
         script.save_config()
 
     def _on_load_group(self, payload, request_id):
-        """Queue the left-out elements of a category and stream them.
+        """Queue the elements of a category that are not loaded and stream them.
 
-        A request that finds nothing left out still restarts a stream that an
+        A request that finds nothing to load still restarts a stream that an
         error interrupted: the elements it queued stay in the stream, so the
         retry after the error resumes them instead of reporting an empty
         category.
