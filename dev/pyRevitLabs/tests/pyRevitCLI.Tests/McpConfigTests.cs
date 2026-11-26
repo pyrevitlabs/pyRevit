@@ -134,6 +134,52 @@ public class McpProjectConfigTests : IDisposable {
         }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AClaudeProjectConfigFileThatIsALinkIsRefused(bool install) {
+        var outside = Path.Combine(Directory.CreateTempSubdirectory("pyrevit-mcp-outside-").FullName, ".mcp.json");
+        File.WriteAllText(outside, "{}");
+        try {
+            if (!TryCreateFileSymlink(Path.Combine(project, ".mcp.json"), outside))
+                return;
+
+            if (install)
+                Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Claude, project: true));
+            else
+                Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.UninstallMcp(McpClientKind.Claude, project: true));
+
+            Assert.Empty(cli.Calls);
+            Assert.Equal("{}", File.ReadAllText(outside));
+        }
+        finally {
+            Directory.Delete(Path.GetDirectoryName(outside), recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AClaudeProjectSettingsFolderThatIsAJunctionIsRefused() {
+        var elsewhere = Directory.CreateTempSubdirectory("pyrevit-mcp-elsewhere-").FullName;
+        try {
+            Assert.True(TryCreateJunction(Path.Combine(project, ".claude"), elsewhere, out var error), "mklink /J failed: " + error);
+
+            Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Claude, project: true));
+
+            Assert.Empty(cli.Calls);
+        }
+        finally {
+            Directory.Delete(Path.Combine(project, ".claude"));
+            Directory.Delete(elsewhere, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AClaudeProjectInstallRunsItsCliInAPlainProject() {
+        PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Claude, project: true);
+
+        Assert.Contains(cli.Calls, call => call.Contains("--scope project"));
+    }
+
     private static bool TryCreateFileSymlink(string link, string target) {
         try {
             File.CreateSymbolicLink(link, target);

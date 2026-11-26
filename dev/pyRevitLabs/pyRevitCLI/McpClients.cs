@@ -155,6 +155,11 @@ namespace pyRevitCLI {
 
         protected override string Tool => "claude";
 
+        protected override string[] ProjectTargets() {
+            var folder = Environment.CurrentDirectory;
+            return new[] { folder, Path.Combine(folder, ".claude"), Path.Combine(folder, ".mcp.json") };
+        }
+
         protected override string AddArguments(string command, bool project) {
             return $"mcp add --scope {Scope(project)} {PyRevitCLIAgentCmds.McpServerName} -- \"{command}\" mcp";
         }
