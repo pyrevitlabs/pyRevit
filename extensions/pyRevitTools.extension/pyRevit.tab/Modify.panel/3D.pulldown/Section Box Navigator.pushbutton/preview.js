@@ -1,5 +1,6 @@
 /*
- * Interactive 3D preview of a section or crop box for the Section Box Navigator.
+ * Interactive 3D preview of a section or crop box, and of a plan's view range,
+ * for the Section Box Navigator.
  *
  * Needs lib/scene3d/gl.js (window.pyRevitScene3D) loaded first. Exposes
  * window.pyRevitSectionBoxPreview {mount, api}. The pure box and snapping math
@@ -33,6 +34,15 @@
   const LABEL_PAD_PX = 14;
   const BOX_ONLY_ALPHA = 0.35;
   const AXIS_NAMES = ["x", "y", "z"];
+  const RANGE_ORDER = { floor: ["top", "cut", "bottom", "depth"], ceiling: ["depth", "top", "cut"] };
+  const RANGE_STRINGS = { top: "PreviewRangeTop", cut: "PreviewRangeCut", bottom: "PreviewRangeBottom", depth: "PreviewRangeDepth" };
+  const RANGE_COLORS = { top: [0.0, 0.66, 0.2], cut: [0.86, 0.12, 0.12], bottom: [0.16, 0.36, 0.92], depth: [0.95, 0.5, 0.0] };
+  const RANGE_HANDLE_AT = { top: 0.2, cut: 0.4, bottom: 0.6, depth: 0.8 };
+  const RANGE_COINCIDENT_FT = 1e-5;
+  const RANGE_TOP_PITCH = (80 * Math.PI) / 180;
+  const RANGE_CHIP_PX = 18;
+  const RANGE_HANDLE_GAP_PX = 12;
+  const RANGE_DEFAULT_STEP_FT = 1 / 24;
   const BOX_EDGES = [
     [0, 1], [1, 3], [3, 2], [2, 0], [4, 5], [5, 7], [7, 6], [6, 4], [0, 4], [1, 5], [2, 6], [3, 7],
   ];
@@ -311,7 +321,92 @@
     return bySource;
   }
 
-  const SETTING_KEYS = ["model", "levels", "allLevels", "grids", "names", "scope", "cut", "ghost", "live", "snap", "sideWidth"];
+  /** Whether any segment of a grid passes through the plan footprint of a box. */
+  function crossesFootprint(grid, box) {
+    return grid.segs.some((seg) => {
+      const a = worldToLocal(box, [seg[0], seg[1], box.origin[2]]);
+      const b = worldToLocal(box, [seg[2], seg[3], box.origin[2]]);
+      let enter = 0, leave = 1;
+      for (let k = 0; k < 2; k++) {
+        const d = b[k] - a[k];
+        if (Math.abs(d) < 1e-9) {
+          if (a[k] < box.min[k] || a[k] > box.max[k]) return false;
+          continue;
+        }
+        const t0 = (box.min[k] - a[k]) / d, t1 = (box.max[k] - a[k]) / d;
+        enter = Math.max(enter, Math.min(t0, t1));
+        leave = Math.min(leave, Math.max(t0, t1));
+      }
+      return enter <= leave;
+    });
+  }
+
+  /** Indexes of the grids to show around a box: those crossing it, plus the next one each side face would snap to when dragged outward. */
+  function relevantGrids(grids, box) {
+    const crossing = new Set();
+    grids.forEach((grid, index) => {
+      if (crossesFootprint(grid, box)) crossing.add(index);
+    });
+    const shown = new Set(crossing);
+    for (let axis = 0; axis < 2; axis++) {
+      for (let side = 0; side < 2; side++) {
+        const p = faceCenter(box, axis, side), n = faceNormal(box, axis, side);
+        let best = null;
+        grids.forEach((grid, index) => {
+          if (crossing.has(index)) return;
+          for (const c of snapCandidates(p, n, { grids: [grid] })) {
+            if (c.t > 0 && (best === null || c.t < best.t)) best = { t: c.t, index };
+          }
+        });
+        if (best) shown.add(best.index);
+      }
+    }
+    return shown;
+  }
+
+  /**
+   * The heights that change when one view range plane is dragged to z, given the planes as the drag started.
+   *
+   * A plane stops at its neighbours in the plan's order, except that a bottom plane dragged below a view
+   * depth it coincided with takes the view depth along. Returns {id: z} for each plane that moves.
+   * sectionbox_viewrange_rules.py holds the same order.
+   */
+  function dragRangePlane(planes, id, z, ceiling) {
+    const heights = {};
+    for (const plane of planes) heights[plane.id] = plane.z;
+    const order = (ceiling ? RANGE_ORDER.ceiling : RANGE_ORDER.floor).filter((name) => name in heights);
+    const index = order.indexOf(id);
+    if (index < 0) return {};
+    const higher = order[index - 1], lower = order[index + 1];
+    const carries = !ceiling && id === "bottom" && lower === "depth" && Math.abs(heights.bottom - heights.depth) <= RANGE_COINCIDENT_FT;
+    let next = z;
+    if (higher !== undefined) next = Math.min(next, heights[higher]);
+    if (lower !== undefined && !carries) next = Math.max(next, heights[lower]);
+    const moved = { [id]: next };
+    if (carries && next < heights.depth) moved.depth = next;
+    return moved;
+  }
+
+  /** The planes with the heights in moved applied, their project elevations shifted by the same amounts. */
+  function withHeights(planes, moved) {
+    return planes.map((plane) =>
+      plane.id in moved ? Object.assign({}, plane, { z: moved[plane.id], elevation: plane.elevation + moved[plane.id] - plane.z }) : plane
+    );
+  }
+
+  /** The height whose offset from levelZ is the multiple of step nearest to that of z. */
+  function roundToStep(z, levelZ, step) {
+    return levelZ + Math.round((z - levelZ) / step) * step;
+  }
+
+  /** A typed offset as a number, accepting a decimal comma; null when it is not one. */
+  function parseOffset(text) {
+    const cleaned = String(text).trim().replace(",", ".");
+    const value = Number(cleaned);
+    return cleaned && isFinite(value) ? value : null;
+  }
+
+  const SETTING_KEYS = ["model", "levels", "allLevels", "grids", "allGrids", "names", "scope", "viewRange", "cut", "ghost", "live", "snap", "sideWidth"];
 
   /** The persisted display and box settings in a stored object, with unknown or malformed entries dropped. */
   function sanitizeSettings(stored) {
@@ -342,6 +437,7 @@
     closestOnAxis, snapCandidates, bestSnap, scopePlanes, snapYaw, moveFace, yawOf, setYaw,
     fitToWorldBounds, insideBox, distanceToSegment2d, triangleHit,
     gridChord, gridsAlongView, isElevationCamera, pinToViewport, groupKey, filterGroups, sanitizeSettings,
+    relevantGrids, dragRangePlane, withHeights, roundToStep, parseOffset,
   };
 
   const MESH_VS = `#version 300 es
@@ -387,12 +483,14 @@ out vec4 outColor;
 void main() { outColor = uColor; }`;
 
   const COLORS = {
-    boxLine: [0.18, 0.50, 0.93],
-    boxFace: [0.18, 0.50, 0.93],
     level: [0.88, 0.47, 0.0],
     grid: [0.38, 0.52, 0.0],
     scope: [0.56, 0.27, 0.68],
-    snap: [0.96, 0.65, 0.14],
+    snap: [0.953, 0.612, 0.071],
+  };
+  const THEME_COLORS = {
+    light: { box: [0.173, 0.243, 0.314], background: [0.957, 0.965, 0.973] },
+    dark: { box: [0.498, 0.651, 0.8], background: [0.106, 0.141, 0.18] },
   };
 
   function hashHue(text) {
@@ -462,9 +560,11 @@ void main() { outColor = uColor; }`;
       this.progress = [0, 0];
       this.loading = true;
       this.flags = {
-        model: true, levels: true, grids: true, names: true, scope: true,
-        cut: "ghost", ghost: 0.12, live: false, snap: true, allLevels: false, sideWidth: null,
+        model: true, levels: true, grids: true, names: true, scope: true, viewRange: true,
+        cut: "ghost", ghost: 0.12, live: false, snap: true, allLevels: false, allGrids: false, sideWidth: null,
       };
+      this.rememberedVisibility = new Map();
+      this.failure = null;
       Object.assign(this.flags, sanitizeSettings(payload.settings));
       this.categoryTerm = "";
       this.collapsed = new Set();
@@ -476,6 +576,7 @@ void main() { outColor = uColor; }`;
       this.snapHighlight = null;
       this.pendingFrame = 0;
       this.requests = new Map();
+      this.rangeRequests = new Set();
       this._build();
       this._bindBridge();
       this.setCameraPreset(this.view.camera ? "view" : "iso");
@@ -495,6 +596,7 @@ void main() { outColor = uColor; }`;
 
     _post(action, payload) {
       const requestId = Math.random().toString(36).slice(2);
+      if (action === "apply_view_range") this.rangeRequests.add(requestId);
       return new Promise((resolve) => {
         this.requests.set(requestId, resolve);
         if (window.chrome && window.chrome.webview) {
@@ -563,17 +665,24 @@ void main() { outColor = uColor; }`;
     }
 
     onResult(payload) {
+      const forRange = this.rangeRequests.delete(payload.requestId);
       const resolve = this.requests.get(payload.requestId);
       if (resolve) {
         this.requests.delete(payload.requestId);
         this.pending = Math.max(0, this.pending - 1);
         resolve(payload);
       }
-      if (payload.ok) this.setStatus(this.t("PreviewApplied"), "ok");
-      else this.setStatus(format(this.t("PreviewFailed"), payload.message || ""), "error");
+      if (payload.ok) {
+        this.failure = null;
+        this.setStatus(this.t("PreviewApplied"), "ok");
+      } else {
+        this.failure = format(this.t(forRange ? "PreviewRangeFailed" : "PreviewFailed"), payload.message || "");
+        this.setStatus(this.failure, "error");
+      }
     }
 
     onSources(payload) {
+      if (payload.dropAll) this.dropModel();
       if (payload.done) {
         this.loading = false;
         this._setDropped(payload.dropped || []);
@@ -589,10 +698,33 @@ void main() { outColor = uColor; }`;
     }
 
     _newGroup(source, name, link, hidden) {
+      const key = groupKey(source, name);
       return {
-        name, source, link: link || null, color: groupColor(name, link), visible: !hidden,
+        name, source, link: link || null, color: groupColor(name, link),
+        visible: this.rememberedVisibility.has(key) ? this.rememberedVisibility.get(key) : !hidden,
         count: 0, boxes: 0, dropped: 0, requested: false,
       };
+    }
+
+    /** Forgets every streamed element, keeping which categories the user hid, before the model is streamed again. */
+    dropModel() {
+      for (const [key, group] of this.groups) this.rememberedVisibility.set(key, group.visible);
+      this._deleteBatches(this.batches);
+      this.batches = [];
+      this.elements.clear();
+      this.groups.clear();
+      this.modelBounds = null;
+      this.progress = [0, 0];
+      this._clearHover();
+      this._renderCategories();
+    }
+
+    _deleteBatches(batches) {
+      if (!this.gl) return;
+      for (const batch of batches) {
+        if (batch.vao) this.gl.deleteVertexArray(batch.vao);
+        for (const buffer of batch.buffers || []) this.gl.deleteBuffer(buffer);
+      }
     }
 
     _setDropped(dropped) {
@@ -654,7 +786,7 @@ void main() { outColor = uColor; }`;
         this.flatProgram = compile(gl, FLAT_VS, FLAT_FS);
         this.dynamic = { lines: gl.createBuffer(), fill: gl.createBuffer() };
       }
-      this.dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      this.applyTheme(this.view.theme);
 
       this._buildToolbar();
       this._buildSide();
@@ -665,6 +797,13 @@ void main() { outColor = uColor; }`;
       this.resizeObserver.observe(this.stage);
       this._resize();
       this.refreshChrome();
+    }
+
+    /** Follows the host's theme, or the browser's color scheme when the host sends none. */
+    applyTheme(theme) {
+      const preferred = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      this.dark = theme ? theme === "dark" : preferred;
+      document.documentElement.dataset.theme = this.dark ? "dark" : "light";
     }
 
     _sideLimit() {
@@ -733,7 +872,9 @@ void main() { outColor = uColor; }`;
 
     _bar(caption, ...children) {
       const bar = el("div", "sbp-bar");
-      bar.append(el("span", "sbp-bar-caption", caption), ...children);
+      const content = el("div", "sbp-bar-content");
+      content.append(...children);
+      bar.append(el("span", "sbp-bar-caption", caption), content);
       this.toolbar.append(bar);
     }
 
@@ -749,8 +890,10 @@ void main() { outColor = uColor; }`;
       this._toggle(showGroup, this.t("PreviewLevels"), "levels");
       this._toggle(showGroup, this.t("PreviewAllLevels"), "allLevels");
       this._toggle(showGroup, this.t("PreviewGrids"), "grids");
+      this._toggle(showGroup, this.t("PreviewAllGrids"), "allGrids");
       this._toggle(showGroup, this.t("PreviewNames"), "names");
       this._toggle(showGroup, this.t("PreviewScopeBoxes"), "scope");
+      this.rangeToggle = this._toggle(showGroup, this.t("PreviewViewRange"), "viewRange", () => this.refreshChrome());
       const cutGroup = el("div", "sbp-group");
       cutGroup.append(el("span", "sbp-caption", this.t("PreviewCut")));
       this.cutSelect = el("select", "sbp-select");
@@ -963,8 +1106,169 @@ void main() { outColor = uColor; }`;
       this.rotateHandle = el("div", "sbp-handle sbp-handle-rotate", "⟳");
       this.rotateHandle.addEventListener("pointerdown", (e) => this._startRotateDrag(e));
       this.handleLayer.append(this.rotateHandle);
+      this.rangeHandles = {};
+      for (const id of Object.keys(RANGE_STRINGS)) this.rangeHandles[id] = this._buildRangeHandle(id);
       this.snapLabel = el("div", "sbp-snap-label");
       this.handleLayer.append(this.snapLabel);
+    }
+
+    _buildRangeHandle(id) {
+      const handle = el("div", "sbp-plane-handle");
+      handle.dataset.plane = id;
+      handle.addEventListener("pointerdown", (e) => this._startRangeDrag(e, id));
+      const chip = el("button", "sbp-plane-chip");
+      chip.type = "button";
+      chip.dataset.plane = id;
+      chip.addEventListener("click", () => this._typeRangeOffset(id));
+      const color = `rgb(${RANGE_COLORS[id].map((c) => Math.round(c * 255)).join(",")})`;
+      handle.style.background = color;
+      chip.style.borderColor = color;
+      handle.style.display = "none";
+      chip.style.display = "none";
+      this.handleLayer.append(handle, chip);
+      return { handle, chip };
+    }
+
+    /** The view range planes on screen: none while the toggle is off or the view has no view range. */
+    _rangePlanes() {
+      const range = this.view.viewRange;
+      return this.flags.viewRange && range && this.view.box ? range.planes : [];
+    }
+
+    _rangeEditable() {
+      return this._rangePlanes().length > 0 && !this.view.viewRange.template;
+    }
+
+    /** Why some of the view range cannot be seen or edited, or null. */
+    _rangeNotice() {
+      const range = this.view.viewRange;
+      if (!this.flags.viewRange || !range) return null;
+      if (range.template) return format(this.t("PreviewRangeTemplate"), range.template);
+      if (!range.relative || !range.relative.length) return null;
+      return format(this.t("PreviewRangeRelative"), range.relative.map((id) => this.t(RANGE_STRINGS[id])).join(", "));
+    }
+
+    _rangeHandlePoint(plane) {
+      const box = this.view.box;
+      const at = RANGE_HANDLE_AT[plane.id];
+      const p = localToWorld(box, [
+        box.min[0] + at * (box.max[0] - box.min[0]),
+        box.min[1] + at * (box.max[1] - box.min[1]),
+        box.min[2],
+      ]);
+      return [p[0], p[1], plane.z];
+    }
+
+    _rangeCorners(z) {
+      const box = this.view.box;
+      return [[box.min[0], box.min[1]], [box.max[0], box.min[1]], [box.max[0], box.max[1]], [box.min[0], box.max[1]]].map(([x, y]) => {
+        const p = localToWorld(box, [x, y, box.min[2]]);
+        return [p[0], p[1], z];
+      });
+    }
+
+    _rangeLabel(plane, dragged) {
+      const offset = plane.z - plane.levelZ;
+      const sign = offset < 0 ? "−" : "+";
+      const text = `${this.t(RANGE_STRINGS[plane.id])}: ${plane.level} ${sign} ${this.fmt(Math.abs(offset))}`;
+      return dragged ? `${text} (${this.fmt(plane.elevation)})` : text;
+    }
+
+    _setRangePlanes(planes) {
+      this.view.viewRange = Object.assign({}, this.view.viewRange, { planes });
+    }
+
+    _commitRange(changes) {
+      this.pending += 1;
+      this.editRevision += 1;
+      this._post("apply_view_range", { planes: changes, revision: this.editRevision });
+      this.requestRender();
+    }
+
+    /** The current heights of every plane the drag has moved at some point, so a plane carried and then released is restored. */
+    _draggedHeights(drag) {
+      const changes = {};
+      for (const plane of this.view.viewRange.planes) {
+        if (drag.touched.has(plane.id)) changes[plane.id] = plane.z;
+      }
+      return changes;
+    }
+
+    _startRangeDrag(e, id) {
+      if (this.drag || !this._rangeEditable()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.currentTarget;
+      capture(target, e.pointerId, true);
+      const planes0 = this.view.viewRange.planes.map((plane) => Object.assign({}, plane));
+      const p0 = this._rangeHandlePoint(planes0.find((plane) => plane.id === id));
+      const ray = this._ray(e);
+      const t0 = ray ? closestOnAxis(p0, [0, 0, 1], ray.origin, ray.dir) : null;
+      this.drag = { kind: "range", plane: id, planes0, p0, t0: t0 || 0, touched: new Set(), lastSend: 0 };
+      const move = (ev) => this._moveRangeDrag(ev);
+      const detach = () => {
+        target.removeEventListener("pointermove", move);
+        target.removeEventListener("pointerup", up);
+        capture(target, e.pointerId, false);
+      };
+      const up = () => {
+        detach();
+        this._endDrag();
+      };
+      this.drag.detach = detach;
+      target.addEventListener("pointermove", move);
+      target.addEventListener("pointerup", up);
+    }
+
+    _moveRangeDrag(e) {
+      const d = this.drag;
+      if (!d || d.kind !== "range") return;
+      const ray = this._ray(e);
+      if (!ray) return;
+      const t = closestOnAxis(d.p0, [0, 0, 1], ray.origin, ray.dir);
+      if (t === null) return;
+      const start = d.planes0.find((plane) => plane.id === d.plane);
+      let z = start.z + t - d.t0;
+      let snap = null;
+      if (this.flags.snap && !e.altKey) {
+        const candidates = snapCandidates(d.p0, [0, 0, 1], { levels: this.guides.levels });
+        const res = bestSnap(z - d.p0[2], candidates, this._toleranceFt(d.p0, SNAP_PIXELS));
+        if (res.snap) {
+          z = d.p0[2] + res.t;
+          snap = res.snap;
+        }
+      }
+      if (!snap) z = roundToStep(z, start.levelZ, this.units.dragStep || RANGE_DEFAULT_STEP_FT);
+      const moved = dragRangePlane(d.planes0, d.plane, z, this.view.viewRange.ceiling);
+      for (const id of Object.keys(moved)) {
+        if (Math.abs(moved[id] - d.planes0.find((plane) => plane.id === id).z) > RANGE_COINCIDENT_FT) d.touched.add(id);
+      }
+      this._setRangePlanes(withHeights(d.planes0, moved));
+      this._setSnapHighlight(snap && Math.abs(moved[d.plane] - z) <= RANGE_COINCIDENT_FT ? snap : null, d);
+      this.requestRender();
+      this._liveCommit();
+    }
+
+    _typeRangeOffset(id) {
+      if (this.drag || !this._rangeEditable()) return;
+      const planes = this.view.viewRange.planes;
+      const plane = planes.find((item) => item.id === id);
+      if (!plane) return;
+      const unit = this.units.symbol || (Math.abs(this.units.factor - 12) < 0.001 ? "in" : "ft");
+      const prompt = format(this.t("PreviewRangeOffsetPrompt"), this.t(RANGE_STRINGS[id]), plane.level, unit);
+      const answer = window.prompt(prompt, ((plane.z - plane.levelZ) * this.units.factor).toFixed(this.units.decimals));
+      if (answer === null) return;
+      const offset = parseOffset(answer);
+      if (offset === null) {
+        this.setStatus(this.t("PreviewRangeNotANumber"), "error");
+        return;
+      }
+      const z = plane.levelZ + offset / this.units.factor;
+      const changes = { [id]: z };
+      const moved = dragRangePlane(planes, id, z, this.view.viewRange.ceiling);
+      if (id !== "depth" && moved.depth !== undefined) changes.depth = moved.depth;
+      this._setRangePlanes(withHeights(planes, changes));
+      this._commitRange(changes);
     }
 
     setMode(mode) {
@@ -990,12 +1294,18 @@ void main() { outColor = uColor; }`;
       this.statusText.className = "sbp-status-text sbp-" + (kind || "info");
     }
 
+    /** Why the crop, the view range or both cannot be edited, or null. */
+    _warnings() {
+      const blockers = { scope_box: "PreviewBlockedScopeBox", crop_shape: "PreviewBlockedCropShape" };
+      const crop = this.view.blocker ? this.t(blockers[this.view.blocker]) : null;
+      return [crop, this._rangeNotice()].filter(Boolean).join(" ") || null;
+    }
+
     _resetStatus() {
       if (this.glMissing) this.setStatus("WebGL2 is not available", "error");
       else if (!this.view.box) this.setStatus(this.t("PreviewNoBox"), "warn");
-      else if (this.view.blocker === "scope_box") this.setStatus(this.t("PreviewBlockedScopeBox"), "warn");
-      else if (this.view.blocker === "crop_shape") this.setStatus(this.t("PreviewBlockedCropShape"), "warn");
-      else if (!this.loading) this.setStatus(this.t("PreviewHelp"), "info");
+      else if (this._warnings()) this.setStatus(this._warnings(), "warn");
+      else if (!this.loading) this.setStatus(this.t(this._rangeEditable() ? "PreviewRangeHelp" : "PreviewHelp"), "info");
     }
 
     refreshChrome() {
@@ -1006,6 +1316,7 @@ void main() { outColor = uColor; }`;
       }
       this.rotateHandle.style.display = box && this.view.kind === "3d" ? "" : "none";
       this.alignBtn.style.display = this.view.kind === "3d" ? "" : "none";
+      this.rangeToggle.parentNode.style.display = this.view.viewRange ? "" : "none";
       this._resetStatus();
       this._updateSize();
       this._renderBookmarks();
@@ -1031,8 +1342,11 @@ void main() { outColor = uColor; }`;
       if (!resetCamera && typeof payload.revision === "number" && payload.revision < this.editRevision) return;
       this.view = payload;
       this.drag = null;
+      if (payload.theme) this.applyTheme(payload.theme);
       this._buildGuideBuffers();
       this.refreshChrome();
+      if (this.failure && !resetCamera) this.setStatus(this.failure, "error");
+      this.failure = null;
       if (resetCamera) this.setCameraPreset(payload.camera ? "view" : "iso");
       this.requestRender();
     }
@@ -1045,6 +1359,7 @@ void main() { outColor = uColor; }`;
     }
 
     dropLinks() {
+      this._deleteBatches(this.batches.filter((b) => b.source !== 0));
       this.batches = this.batches.filter((b) => b.source === 0);
       for (const [key, element] of [...this.elements]) if (element.source !== 0) this.elements.delete(key);
       for (const [key, group] of [...this.groups]) if (group.source !== 0) this.groups.delete(key);
@@ -1155,8 +1470,9 @@ void main() { outColor = uColor; }`;
         }
         ranges.push({ key: part.key, start: rangeStart, end: offset });
       }
-      const vao = this.gl ? this._vao(this.meshProgram, this._buffer(pos), this._buffer(nrm)) : null;
-      const batch = { group: name, source: entry.source, approx: entry.approx, vao, count: entry.triangles * 3, pos };
+      const buffers = this.gl ? [this._buffer(pos), this._buffer(nrm)] : [];
+      const vao = this.gl ? this._vao(this.meshProgram, buffers[0], buffers[1]) : null;
+      const batch = { group: name, source: entry.source, approx: entry.approx, vao, buffers, count: entry.triangles * 3, pos };
       this.batches.push(batch);
       for (const range of ranges) {
         const element = this.elements.get(range.key);
@@ -1228,8 +1544,13 @@ void main() { outColor = uColor; }`;
       if (!d) return;
       if (d.detach) d.detach();
       this.drag = null;
-      this.view.box = d.box0;
-      if (d.sent) this._commitBox(d.box0);
+      if (d.kind === "range") {
+        this._setRangePlanes(d.planes0);
+        if (d.sent) this._commitRange(this._draggedHeights(d));
+      } else {
+        this.view.box = d.box0;
+        if (d.sent) this._commitBox(d.box0);
+      }
       this.snapHighlight = null;
       this.snapLabel.style.display = "none";
       this._updateSize();
@@ -1375,12 +1696,28 @@ void main() { outColor = uColor; }`;
       return { lo: base.lo - pad, hi: base.hi + pad };
     }
 
+    /** All grids with the toggle on, without a box or while picking one to align to; else the ones around the box. */
+    _visibleGridIndexes() {
+      const grids = this.guides.grids;
+      const all = grids.map((_, i) => i);
+      if (this.flags.allGrids || !this.view.box || this.mode === "grid") return all;
+      const shown = relevantGrids(grids, this.view.box);
+      const snap = this.snapHighlight;
+      if (snap && snap.kind === "grid") {
+        grids.forEach((grid, i) => {
+          if (grid.name === snap.name) shown.add(i);
+        });
+      }
+      return all.filter((i) => shown.has(i));
+    }
+
     _elevationGridLines() {
       const grids = this.guides.grids;
       const span = this._gridSpan();
-      return gridsAlongView(grids, this.camera.yaw, GRID_ALONG_VIEW).map((index) => ({
-        index, mid: this.gridChords[index].mid, lo: span.lo, hi: span.hi,
-      }));
+      const visible = new Set(this._visibleGridIndexes());
+      return gridsAlongView(grids, this.camera.yaw, GRID_ALONG_VIEW)
+        .filter((index) => visible.has(index))
+        .map((index) => ({ index, mid: this.gridChords[index].mid, lo: span.lo, hi: span.hi }));
     }
 
     _guideSegments() {
@@ -1398,7 +1735,8 @@ void main() { outColor = uColor; }`;
         });
       }
       const out = [];
-      for (const grid of grids) {
+      for (const index of this._visibleGridIndexes()) {
+        const grid = grids[index];
         for (const s of grid.segs) out.push({ grid, seg: s, a: [s[0], s[1], this.gridZ], b: [s[2], s[3], this.gridZ] });
       }
       return out;
@@ -1566,9 +1904,11 @@ void main() { outColor = uColor; }`;
       if (!this.flags.live || !d || this.pending) return;
       const now = performance.now();
       if (now - d.lastSend < LIVE_INTERVAL_MS) return;
+      if (d.kind === "range" && !d.touched.size) return;
       d.lastSend = now;
       d.sent = true;
-      this._commitBox(this.view.box, true);
+      if (d.kind === "range") this._commitRange(this._draggedHeights(d));
+      else this._commitBox(this.view.box, true);
     }
 
     _endDrag() {
@@ -1576,7 +1916,11 @@ void main() { outColor = uColor; }`;
       this.drag = null;
       this.snapHighlight = null;
       this.snapLabel.style.display = "none";
-      if (d) this._commitBox(this.view.box);
+      if (d && d.kind === "range") {
+        if (d.touched.size) this._commitRange(this._draggedHeights(d));
+      } else if (d) {
+        this._commitBox(this.view.box);
+      }
       this._buildGuideBuffers();
       this.requestRender();
     }
@@ -1723,7 +2067,7 @@ void main() { outColor = uColor; }`;
     _drawScene(eye, viewProj) {
       const gl = this.gl;
       gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-      const bg = this.dark ? [0.11, 0.12, 0.14] : [0.972, 0.976, 0.98];
+      const bg = this._themeColors().background;
       gl.clearColor(bg[0], bg[1], bg[2], 1);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.enable(gl.DEPTH_TEST);
@@ -1757,6 +2101,10 @@ void main() { outColor = uColor; }`;
       }
       this._renderGuides(gl, viewProj);
       gl.bindVertexArray(null);
+    }
+
+    _themeColors() {
+      return this.dark ? THEME_COLORS.dark : THEME_COLORS.light;
     }
 
     _drawBoxOnlyElements(gl, mp, mode) {
@@ -1862,15 +2210,34 @@ void main() { outColor = uColor; }`;
         for (const scope of this.guides.scopeBoxes) this._drawWireBox(gl, fp, scope.box, COLORS.scope, 0.9);
       }
       if (this.view.box) this._drawBoxOverlay(gl, fp);
+      this._drawViewRange(gl, fp);
       if (this.hover) this._drawWireBox(gl, fp, this.hover.box, COLORS.snap, 1);
       gl.enable(gl.DEPTH_TEST);
+    }
+
+    _drawViewRange(gl, fp) {
+      const planes = this._rangePlanes();
+      if (!planes.length) return;
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      for (const plane of planes) {
+        const color = RANGE_COLORS[plane.id];
+        const q = this._rangeCorners(plane.z);
+        const active = this.drag && this.drag.plane === plane.id;
+        this._drawDynamic(gl, fp, new Float32Array([...q[0], ...q[1], ...q[2], ...q[0], ...q[2], ...q[3]]), gl.TRIANGLES, [...color, active ? 0.2 : 0.05]);
+        this._drawDynamic(gl, fp, new Float32Array([...q[0], ...q[1], ...q[1], ...q[2], ...q[2], ...q[3], ...q[3], ...q[0]]), gl.LINES, [...color, 0.95]);
+      }
+      gl.disable(gl.BLEND);
     }
 
     _drawPlanGrids(gl, fp) {
       const grids = this.guides.grids;
       gl.uniform4fv(fp.uniforms.uColor, [...COLORS.grid, 0.9]);
       gl.bindVertexArray(this.gridVao);
-      gl.drawArrays(gl.LINES, 0, this.gridRanges.length ? this.gridRanges[this.gridRanges.length - 1].first + this.gridRanges[this.gridRanges.length - 1].count : 0);
+      for (const index of this._visibleGridIndexes()) {
+        const range = this.gridRanges[index];
+        gl.drawArrays(gl.LINES, range.first, range.count);
+      }
       const snap = this.snapHighlight;
       if (snap && snap.kind === "grid") {
         const index = grids.findIndex((g) => g.name === snap.name);
@@ -1938,9 +2305,10 @@ void main() { outColor = uColor; }`;
         const q = idx.map((i) => corners[i]);
         all.push(...q[0], ...q[1], ...q[2], ...q[0], ...q[2], ...q[3]);
       }
-      this._drawDynamic(gl, fp, new Float32Array(all), gl.TRIANGLES, [...COLORS.boxFace, 0.05]);
+      const boxColor = this._themeColors().box;
+      this._drawDynamic(gl, fp, new Float32Array(all), gl.TRIANGLES, [...boxColor, 0.05]);
       gl.disable(gl.BLEND);
-      this._drawWireBox(gl, fp, box, COLORS.boxLine, 1);
+      this._drawWireBox(gl, fp, box, boxColor, 1);
       void editable;
     }
 
@@ -1990,7 +2358,8 @@ void main() { outColor = uColor; }`;
             add(this.guides.grids[line.index].name, this._pinnedGridPoint(viewProj, line), "sbp-label-grid");
           }
         } else if (this.flags.grids) {
-          for (const grid of this.guides.grids) {
+          for (const index of this._visibleGridIndexes()) {
+            const grid = this.guides.grids[index];
             if (!grid.segs.length) continue;
             const first = grid.segs[0], last = grid.segs[grid.segs.length - 1];
             const a = this._project(viewProj, [first[0], first[1], this.gridZ]);
@@ -2021,7 +2390,45 @@ void main() { outColor = uColor; }`;
       );
     }
 
+    _placeRangeHandles(viewProj) {
+      const planes = this._rangePlanes();
+      const topDown = Math.abs(this.camera.pitch) > RANGE_TOP_PITCH;
+      const editable = this._rangeEditable();
+      const placed = [], handles = [];
+      for (const [id, parts] of Object.entries(this.rangeHandles)) {
+        const plane = planes.find((item) => item.id === id);
+        const p = plane && !topDown ? this._project(viewProj, this._rangeHandlePoint(plane)) : null;
+        parts.handle.style.display = p && editable ? "" : "none";
+        parts.chip.style.display = p ? "" : "none";
+        if (!p) continue;
+        const dragged = !!(this.drag && this.drag.plane === id);
+        parts.handle.style.left = p.x + "px";
+        parts.handle.style.top = p.y + "px";
+        parts.handle.classList.toggle("sbp-active", dragged);
+        parts.chip.textContent = this._rangeLabel(plane, dragged);
+        parts.chip.title = this.fmt(plane.elevation);
+        parts.chip.disabled = !editable;
+        const w = parts.chip.offsetWidth || parts.chip.textContent.length * LABEL_CHAR_PX + LABEL_PAD_PX;
+        const fits = p.x + RANGE_HANDLE_GAP_PX + w <= this.canvas.clientWidth;
+        placed.push({ parts, x: fits ? p.x + RANGE_HANDLE_GAP_PX : Math.max(0, p.x - RANGE_HANDLE_GAP_PX - w), y: p.y, w });
+        if (editable) handles.push({ x: p.x - RANGE_HANDLE_GAP_PX + 2, y: p.y, w: 2 * RANGE_HANDLE_GAP_PX - 4 });
+      }
+      const kept = handles;
+      for (const item of placed.sort((a, b) => a.y - b.y)) {
+        let clash = true;
+        while (clash) {
+          const other = kept.find((o) => item.x < o.x + o.w && o.x < item.x + item.w && Math.abs(item.y - o.y) < RANGE_CHIP_PX);
+          clash = !!other;
+          if (other) item.y = other.y + RANGE_CHIP_PX + 1;
+        }
+        kept.push(item);
+        item.parts.chip.style.left = item.x + "px";
+        item.parts.chip.style.top = item.y + "px";
+      }
+    }
+
     _placeHandles(viewProj) {
+      this._placeRangeHandles(viewProj);
       const box = this.view.box;
       if (!box) return;
       const editable = new Set(this.view.editable || []);
@@ -2050,7 +2457,8 @@ void main() { outColor = uColor; }`;
         }
       }
       if (this.drag && this.snapLabel.style.display !== "none") {
-        const ref = this.drag.face ? faceCenter(box, this.drag.axis, this.drag.side) : boxCenter(box);
+        const dragged = this.drag.kind === "range" && this._rangePlanes().find((item) => item.id === this.drag.plane);
+        const ref = dragged ? this._rangeHandlePoint(dragged) : this.drag.face ? faceCenter(box, this.drag.axis, this.drag.side) : boxCenter(box);
         const p = this._project(viewProj, ref);
         if (p) {
           this.snapLabel.style.left = p.x + 14 + "px";

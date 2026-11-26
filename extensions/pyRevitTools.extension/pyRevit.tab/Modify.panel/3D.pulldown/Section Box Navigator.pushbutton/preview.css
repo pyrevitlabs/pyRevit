@@ -1,47 +1,52 @@
 :root {
-  --sbp-bg: #f8f9fa;
+  --sbp-chrome: #2c3e50;
+  --sbp-chrome-text: #ffffff;
+  --sbp-chrome-muted: #b9c6d3;
+  --sbp-chrome-field: #23303d;
+  --sbp-chrome-border: rgba(255, 255, 255, 0.28);
+  --sbp-accent: #f39c12;
+  --sbp-accent-text: #23303d;
+  --sbp-bg: #f4f6f8;
   --sbp-panel: #ffffff;
-  --sbp-text: #1f2328;
-  --sbp-muted: #626b76;
-  --sbp-border: #d0d7de;
-  --sbp-accent: #2f80ed;
-  --sbp-handle: #2f80ed;
+  --sbp-text: #23303d;
+  --sbp-muted: #5f6f7f;
+  --sbp-border: #d3dae1;
+  --sbp-link: #2c3e50;
+  --sbp-handle: #2c3e50;
   --sbp-handle-text: #ffffff;
-  --sbp-warn: #b35c00;
-  --sbp-error: #c62828;
-  --sbp-ok: #2e7d32;
-  --scene3d-cube-face: #e3e7ec;
-  --scene3d-cube-edge: #c6ced7;
-  --scene3d-cube-hover: #2f80ed;
-  --scene3d-cube-line: #9aa4af;
-  --scene3d-cube-text: #4b5662;
-  --scene3d-cube-ring: rgba(150, 160, 172, 0.55);
-  --scene3d-cube-compass: #3f4852;
+  --sbp-warn: #e17700;
+  --sbp-error: #c7254e;
+  --sbp-ok: #618401;
+  --scene3d-cube-face: #e8ecf0;
+  --scene3d-cube-edge: #d3dae1;
+  --scene3d-cube-hover: #f39c12;
+  --scene3d-cube-line: #9fb0c0;
+  --scene3d-cube-text: #23303d;
+  --scene3d-cube-ring: rgba(95, 111, 127, 0.4);
+  --scene3d-cube-compass: #23303d;
   --scene3d-cube-compass-halo: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --sbp-bg: #1c1e22;
-    --sbp-panel: #25282d;
-    --sbp-text: #e6e8eb;
-    --sbp-muted: #9aa3ad;
-    --sbp-border: #3a3f46;
-    --sbp-accent: #6aa8ff;
-    --sbp-handle: #6aa8ff;
-    --sbp-handle-text: #101418;
-    --sbp-warn: #ffb74d;
-    --sbp-error: #ff8a80;
-    --sbp-ok: #81c784;
-    --scene3d-cube-face: #7d8793;
-    --scene3d-cube-edge: #626c77;
-    --scene3d-cube-hover: #6aa8ff;
-    --scene3d-cube-line: #4a525b;
-    --scene3d-cube-text: #eef1f4;
-    --scene3d-cube-ring: rgba(120, 130, 142, 0.6);
-    --scene3d-cube-compass: #eef1f4;
-    --scene3d-cube-compass-halo: #1c1e22;
-  }
+:root[data-theme="dark"] {
+  --sbp-bg: #1b242e;
+  --sbp-panel: #23303d;
+  --sbp-text: #e8edf2;
+  --sbp-muted: #9fb0c0;
+  --sbp-border: #3d5166;
+  --sbp-link: #f5b041;
+  --sbp-handle: #7fa6cc;
+  --sbp-handle-text: #23303d;
+  --sbp-warn: #ffa24d;
+  --sbp-error: #ff7b9c;
+  --sbp-ok: #a6d34a;
+  --scene3d-cube-face: #3d5166;
+  --scene3d-cube-edge: #2c3e50;
+  --scene3d-cube-hover: #f39c12;
+  --scene3d-cube-line: #5f7f9f;
+  --scene3d-cube-text: #e8edf2;
+  --scene3d-cube-ring: rgba(127, 166, 204, 0.45);
+  --scene3d-cube-compass: #e8edf2;
+  --scene3d-cube-compass-halo: #1b242e;
 }
 
 html,
@@ -68,15 +73,45 @@ body {
   flex-direction: column;
   gap: 4px;
   padding: 6px 8px;
-  background: var(--sbp-panel);
+  background: var(--sbp-chrome);
+  color: var(--sbp-chrome-text);
   border-bottom: 1px solid var(--sbp-border);
+}
+
+.sbp-toolbar input[type="checkbox"],
+.sbp-toolbar input[type="range"] {
+  accent-color: var(--sbp-accent);
+}
+
+.sbp-toolbar .sbp-select,
+.sbp-toolbar .sbp-btn {
+  background: var(--sbp-chrome-field);
+  color: var(--sbp-chrome-text);
+  border-color: var(--sbp-chrome-border);
+}
+
+.sbp-toolbar .sbp-btn:hover:not(:disabled) {
+  border-color: var(--sbp-accent);
+}
+
+.sbp-toolbar .sbp-caption,
+.sbp-toolbar .sbp-bar-caption {
+  color: var(--sbp-chrome-muted);
 }
 
 .sbp-bar {
   display: flex;
   align-items: center;
-  gap: 4px 12px;
+  gap: 12px;
+}
+
+.sbp-bar-content {
+  display: flex;
+  flex: 1;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-width: 0;
 }
 
 .sbp-bar-caption {
@@ -110,19 +145,18 @@ body {
   position: relative;
 }
 
-.sbp-btn.sbp-action {
+.sbp-toolbar .sbp-btn.sbp-action {
   border-color: var(--sbp-accent);
-  color: var(--sbp-accent);
   font-weight: 600;
 }
 
-.sbp-btn.sbp-action:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--sbp-accent) 14%, transparent);
+.sbp-toolbar .sbp-btn.sbp-action:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--sbp-accent) 24%, var(--sbp-chrome-field));
 }
 
-.sbp-btn.sbp-action.sbp-on {
+.sbp-toolbar .sbp-btn.sbp-action.sbp-on {
   background: var(--sbp-accent);
-  color: var(--sbp-handle-text);
+  color: var(--sbp-accent-text);
 }
 
 .sbp-overlay {
@@ -134,7 +168,7 @@ body {
 }
 
 .sbp-hover-line {
-  stroke: #f5a623;
+  stroke: var(--sbp-accent);
   stroke-width: 4;
   stroke-linecap: round;
   opacity: 0.95;
@@ -145,8 +179,8 @@ body {
   display: none;
   padding: 2px 7px;
   border-radius: 3px;
-  background: #f5a623;
-  color: #1f2328;
+  background: var(--sbp-accent);
+  color: var(--sbp-accent-text);
   font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
@@ -206,7 +240,7 @@ body {
 
 .sbp-btn.sbp-on {
   background: var(--sbp-accent);
-  color: var(--sbp-handle-text);
+  color: var(--sbp-accent-text);
   border-color: var(--sbp-accent);
 }
 
@@ -290,8 +324,8 @@ body {
 
 .sbp-handle:hover,
 .sbp-handle.sbp-active {
-  background: #f5a623;
-  box-shadow: 0 0 0 1px #f5a623;
+  background: var(--sbp-accent);
+  box-shadow: 0 0 0 1px var(--sbp-accent);
 }
 
 .sbp-handle-rotate {
@@ -306,13 +340,51 @@ body {
   line-height: 1;
 }
 
+.sbp-plane-handle {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  margin: -7px 0 0 -7px;
+  transform: rotate(45deg);
+  border: 2px solid var(--sbp-panel);
+  box-shadow: 0 0 0 1px var(--sbp-text);
+  pointer-events: auto;
+  cursor: ns-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.sbp-plane-handle:hover,
+.sbp-plane-handle.sbp-active {
+  box-shadow: 0 0 0 3px var(--sbp-accent);
+}
+
+.sbp-plane-chip {
+  position: absolute;
+  transform: translateY(-50%);
+  padding: 0 5px;
+  border: 1px solid var(--sbp-border);
+  border-left-width: 4px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--sbp-panel) 90%, transparent);
+  color: var(--sbp-text);
+  font: 11px "Segoe UI", sans-serif;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: text;
+}
+
+.sbp-plane-chip:disabled {
+  cursor: default;
+}
+
 .sbp-snap-label {
   position: absolute;
   display: none;
   padding: 2px 6px;
   border-radius: 3px;
-  background: #f5a623;
-  color: #1f2328;
+  background: var(--sbp-accent);
+  color: var(--sbp-accent-text);
   font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
@@ -344,7 +416,7 @@ body {
 }
 
 .sbp-link {
-  color: var(--sbp-accent);
+  color: var(--sbp-link);
   cursor: pointer;
   font-weight: 400;
 }
@@ -489,5 +561,5 @@ body {
 }
 
 .sbp-splitter:hover {
-  background: color-mix(in srgb, var(--sbp-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--sbp-accent) 60%, transparent);
 }

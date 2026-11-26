@@ -387,6 +387,7 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
         self.assertEqual(
             result["last"]["keys"],
             [
+                "allGrids",
                 "allLevels",
                 "cut",
                 "ghost",
@@ -398,6 +399,7 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
                 "scope",
                 "sideWidth",
                 "snap",
+                "viewRange",
             ],
         )
         saved, width, main_width = result["clamped"]
@@ -429,6 +431,113 @@ class SectionBoxPreviewPageTests(unittest.TestCase):
         self.assertEqual(result["owner_move"], 1)
         self.assertEqual(result["after_foreign_up"], 2)
         self.assertEqual(result["after_cancel"], [True, True])
+
+    def test_only_the_grids_crossing_the_box_and_the_next_ones_are_shown(self):
+        result = self.scenario("relevant_grids")
+        self.assertEqual(result["around"], ["E1", "IN", "N1", "S1", "W1"])
+        self.assertEqual(result["rotated"], ["E1", "IN", "N1", "S1", "W1"])
+        self.assertEqual(result["diagonal"], ["D", "E1"])
+        self.assertEqual(result["visible"], 5)
+        self.assertTrue(result["with_snapped"])
+        self.assertTrue(set(result["labels"]) <= set(result["around"]))
+        self.assertTrue(result["labels"])
+        self.assertEqual(
+            (result["picking"], result["all"], result["without_box"]), (9, 9, 9)
+        )
+
+    def test_the_host_theme_wins_over_the_browser_color_scheme(self):
+        result = self.scenario("theme")
+        navy = "rgb(44, 62, 80)"
+        self.assertEqual(result["dark"], ["dark", True, "rgb(27, 36, 46)", navy])
+        self.assertEqual(result["light"], ["light", False, "rgb(244, 246, 248)", navy])
+        self.assertEqual(result["switched"], result["dark"])
+        self.assertTrue(result["fallback"])
+
+    def test_view_range_planes_stop_at_neighbours_and_bottom_carries_view_depth(self):
+        result = self.scenario("range_math")
+        self.assertEqual(result["cut_up"], {"cut": 8})
+        self.assertEqual(result["cut_down"], {"cut": 0})
+        self.assertEqual(result["top_down"], {"top": 4})
+        self.assertEqual(result["carried"], {"bottom": -2, "depth": -2})
+        self.assertEqual(result["separated_up"], {"bottom": 2})
+        self.assertEqual(result["depth_down"], {"depth": -5})
+        self.assertEqual(result["depth_up"], {"depth": 0})
+        self.assertEqual(result["apart_bottom"], {"bottom": -3})
+        self.assertEqual(result["ceiling_cut_down"], {"cut": -50})
+        self.assertEqual(result["ceiling_top_up"], {"top": 12})
+        self.assertEqual(result["ceiling_depth_down"], {"depth": 9})
+        self.assertEqual(result["unlimited"], {"cut": 99})
+        self.assertEqual(result["unknown"], {})
+        self.assertEqual(result["raised"], [6, 106])
+        self.assertEqual(result["rounded"], 10.25)
+        self.assertEqual(result["typed"], [1.5, -2.25, None, None])
+
+    def test_plan_views_show_a_handle_per_view_range_plane_unless_read_only(self):
+        result = self.scenario("range_handles")
+        self.assertEqual(result["handles"], 4)
+        self.assertEqual(result["distinct_positions"], 4)
+        self.assertEqual(
+            sorted(result["chips"]),
+            [
+                "PreviewRangeBottom: L2 + 0.00 ft",
+                "PreviewRangeCut: L2 + 4.00 ft",
+                "PreviewRangeDepth: L2 + 0.00 ft",
+                "PreviewRangeTop: L2 + 8.00 ft",
+            ],
+        )
+        self.assertTrue(result["chip_gaps_ok"])
+        self.assertEqual(result["chips_over_handles"], [])
+        self.assertEqual(result["chips_off_stage"], [])
+        self.assertEqual(result["help"], "PreviewRangeHelp")
+        self.assertTrue(result["toggle_shown"])
+        self.assertEqual(result["top_camera"], [0, 0])
+        self.assertEqual(result["toggled_off"], [0, 0, "PreviewHelp"])
+        self.assertEqual(result["template"], [0, 4, True, "PreviewRangeTemplate Plans"])
+        self.assertIsNone(result["template_drag"])
+        self.assertEqual(
+            result["blocked_and_template"],
+            "PreviewBlockedScopeBox PreviewRangeTemplate Plans",
+        )
+        self.assertEqual(
+            result["relative"], [3, "PreviewRangeRelative PreviewRangeTop"]
+        )
+        self.assertEqual(result["without_range"], [0, "none"])
+
+    def test_dragging_a_view_range_plane_posts_only_what_moved(self):
+        result = self.scenario("range_dragging")
+        self.assertEqual(result["rounded_while_dragging"], 5)
+        self.assertEqual(result["elevation_shifted"], 105)
+        self.assertIn("(105.00 ft)", result["dragged_label"])
+        self.assertEqual(result["stopped_at_top"], 8)
+        self.assertEqual(result["committed"], [{"cut": 8}])
+        self.assertEqual(result["snapped"], [-6, -6, "L1"])
+        self.assertEqual(result["back_up"], [1, 0])
+        self.assertEqual(result["carried_commit"], [{"bottom": 1, "depth": 0}])
+        self.assertEqual(result["cancelled"], [8, 0])
+        self.assertEqual(result["click_without_move"], 0)
+        self.assertEqual(result["live_cancel"], [{"top": 10}, {"top": 8}])
+
+    def test_a_typed_offset_is_posted_and_a_rejection_stays_readable(self):
+        result = self.scenario("range_typing")
+        self.assertEqual(result["preset"], "0.00")
+        self.assertEqual(result["typed"], [{"bottom": -2.5, "depth": -2.5}])
+        self.assertEqual(result["status_after_rejection"][0], "PreviewRangeFailed")
+        self.assertIn("sbp-error", result["status_after_rejection"][1])
+        self.assertEqual(result["status_later"], "PreviewRangeHelp")
+        self.assertEqual(result["not_a_number"], ["PreviewRangeNotANumber", 0])
+        self.assertEqual(result["cancelled"], 0)
+
+    def test_streaming_the_model_again_keeps_the_hidden_categories_hidden(self):
+        result = self.scenario("model_reload")
+        self.assertEqual(result["dropped"], [0, 0, 0, True])
+        self.assertEqual(result["visible"], [["Walls", False], ["Roofs", True]])
+        self.assertEqual(result["bounds_before"], [501, 501, 90])
+        self.assertIsNone(result["bounds_dropped"])
+        self.assertEqual(
+            result["bounds_reloaded"], {"min": [0, 0, 0], "max": [1, 1, 0]}
+        )
+        self.assertEqual(result["radius"], 1)
+        self.assertEqual(result["fit_to_model_target"], [0.5, 0.5, 0])
 
     def test_a_failed_stream_re_enables_the_load_links(self):
         result = self.scenario("stream_error_clears_requests")
