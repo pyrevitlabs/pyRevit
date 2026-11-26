@@ -75,6 +75,9 @@ namespace pyRevitCLI {
                 if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
                     throw new PyRevitException($"Project folder not found: {root}");
                 baseRoot = Path.GetFullPath(root);
+                var skillsFolder = SkillTargets.EndingSkillsFolder(baseRoot);
+                if (skillsFolder != null)
+                    throw new PyRevitException($"--path is the project folder, not a skills folder: {baseRoot} ends in {skillsFolder}. Pass the folder that contains it.");
             }
             else {
                 if (path != null)
@@ -157,6 +160,18 @@ namespace pyRevitCLI {
                 .GroupBy(entry => entry.Dir, StringComparer.OrdinalIgnoreCase)
                 .Select(group => new SkillDestination { Label = string.Join("+", group.Select(entry => entry.Name)), SkillsDir = group.Key })
                 .ToList();
+        }
+
+        /// <summary>
+        /// The project-level skills folder (such as <c>.agents/skills</c>) that <paramref name="path"/> ends in, or null.
+        /// </summary>
+        internal static string EndingSkillsFolder(string path) {
+            var segments = path.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            return Folders.Values
+                .Select(folder => folder.Project)
+                .Where(parts => segments.Length >= parts.Length && segments.Skip(segments.Length - parts.Length).SequenceEqual(parts, StringComparer.OrdinalIgnoreCase))
+                .Select(parts => string.Join(Path.DirectorySeparatorChar.ToString(), parts))
+                .FirstOrDefault();
         }
 
         private static string SkillsDir(string baseRoot, string[] parts) {

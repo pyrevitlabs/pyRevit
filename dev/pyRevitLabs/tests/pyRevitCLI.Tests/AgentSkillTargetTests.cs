@@ -99,4 +99,18 @@ public class AgentSkillTargetTests : SkillInstallFixture {
                 return directory.FullName;
         throw new DirectoryNotFoundException("docs/agent-runtime.md not found above " + AppContext.BaseDirectory);
     }
+
+    [Theory]
+    [InlineData(".agents/skills")]
+    [InlineData(".claude/skills")]
+    [InlineData(".github/skills")]
+    [InlineData(".opencode/skills")]
+    public void ThePathOptionMayNotBeASkillsFolderItself(string skillsFolder) {
+        var skills = Directory.CreateDirectory(Skills(project, skillsFolder.Split('/'))).FullName;
+
+        var error = Assert.Throws<PyRevitException>(() => SkillContext.Create("agents", "project", skills + Path.DirectorySeparatorChar, project, home, shipped));
+
+        Assert.Contains("project folder", error.Message);
+        Assert.Contains(skillsFolder.Replace('/', Path.DirectorySeparatorChar), error.Message);
+    }
 }

@@ -243,7 +243,7 @@ namespace pyRevitCLI {
                 }
                 else {
                     if (!check.Intact)
-                        report.Warnings.Add($"Removing {directory} with --force deletes{Describe(check.Extras, check.Note)}.");
+                        report.Warnings.Add(ForceDeleteWarning("Removing", directory, check.Extras, check.Note));
                     Directory.Delete(directory, recursive: true);
                     action.State = SkillState.Removed;
                 }
@@ -295,9 +295,11 @@ namespace pyRevitCLI {
         }
 
         private static string ForceReplaceWarning(Inspection inspection, string folder) {
-            return inspection.State == SkillState.Edited && (inspection.Extras.Count > 0 || inspection.Note != null)
-                ? $"Replacing {folder} with --force deletes{Describe(inspection.Extras, inspection.Note)}."
-                : null;
+            return inspection.State == SkillState.Edited ? ForceDeleteWarning("Replacing", folder, inspection.Extras, inspection.Note) : null;
+        }
+
+        private static string ForceDeleteWarning(string verb, string folder, List<string> extras, string note) {
+            return $"{verb} {folder} with --force deletes the whole folder, including your edits{Describe(extras, note)}.";
         }
 
         private static string EditedMessage(string folder, List<string> extras, string note, string outcome) {

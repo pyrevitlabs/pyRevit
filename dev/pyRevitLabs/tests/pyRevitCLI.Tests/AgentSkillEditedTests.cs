@@ -79,4 +79,17 @@ public class AgentSkillEditedTests : SkillInstallFixture {
         Assert.DoesNotContain(report.Actions, action => action.Skill == "mine");
         Assert.Equal("my own skill", File.ReadAllText(Path.Combine(forged, "SKILL.md")));
     }
+
+    [Fact]
+    public void TheForceWarningsAlwaysSayTheWholeFolderIsDeleted() {
+        Install();
+        File.AppendAllText(AgentsSkill("alpha", "SKILL.md"), "my edit");
+
+        var replaced = Install(force: true);
+        File.AppendAllText(AgentsSkill("alpha", "SKILL.md"), "my edit");
+        var removed = Uninstall(force: true);
+
+        Assert.Contains(replaced.Warnings, warning => warning.Contains("with --force deletes the whole folder, including your edits."));
+        Assert.Contains(removed.Warnings, warning => warning.Contains("with --force deletes the whole folder, including your edits."));
+    }
 }
