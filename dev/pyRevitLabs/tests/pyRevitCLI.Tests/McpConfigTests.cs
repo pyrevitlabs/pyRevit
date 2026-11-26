@@ -208,6 +208,28 @@ public class McpProjectConfigTests : IDisposable {
     }
 
     [Fact]
+    public void ExpandedVariablesAreSplitBeforeEntriesAreChecked() {
+        var previousPath = Environment.GetEnvironmentVariable("PATH");
+        try {
+            Environment.SetEnvironmentVariable("PYREVIT_TEST_DIRS", @"C:\trusted" + Path.PathSeparator + @".\bin");
+            Environment.SetEnvironmentVariable("PYREVIT_TEST_ONE", @"C:\plain dir");
+            Environment.SetEnvironmentVariable("PATH", "%PYREVIT_TEST_DIRS%" + Path.PathSeparator + "%PYREVIT_TEST_ONE%");
+
+            var entries = PyRevitCLIAgentCmds.FreshPath().Split(Path.PathSeparator);
+
+            Assert.Contains(@"C:\trusted", entries);
+            Assert.Contains(@"C:\plain dir", entries);
+            Assert.DoesNotContain(@".\bin", entries);
+            Assert.All(entries, entry => Assert.True(Path.IsPathFullyQualified(entry), entry));
+        }
+        finally {
+            Environment.SetEnvironmentVariable("PATH", previousPath);
+            Environment.SetEnvironmentVariable("PYREVIT_TEST_DIRS", null);
+            Environment.SetEnvironmentVariable("PYREVIT_TEST_ONE", null);
+        }
+    }
+
+    [Fact]
     public void RelativePathEntriesAreNotUsedToFindClientTools() {
         var previousPath = Environment.GetEnvironmentVariable("PATH");
         try {

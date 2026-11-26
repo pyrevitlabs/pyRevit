@@ -570,8 +570,9 @@ namespace pyRevitCLI {
                     Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User),
                 }
                 .Where(value => !string.IsNullOrEmpty(value))
+                .Select(Environment.ExpandEnvironmentVariables)
                 .SelectMany(value => value.Split(Path.PathSeparator))
-                .Select(entry => Environment.ExpandEnvironmentVariables(entry.Trim().Trim('"').Trim()))
+                .Select(entry => entry.Trim().Trim('"').Trim())
                 .Where(entry => entry.Length > 0 && Path.IsPathFullyQualified(entry))
                 .Distinct(StringComparer.OrdinalIgnoreCase);
             return string.Join(Path.PathSeparator.ToString(), entries);
