@@ -33,7 +33,9 @@ from scene3d.meshing import (
 from sectionbox_geometry import get_box_info, get_crop_edit_blocker
 from sectionbox_guides import drop_repeated_grids, drop_repeated_levels
 from sectionbox_sources import get_scope_boxes, scope_box_to_bounding_box
-from sectionbox_utils import get_view_range_and_crop, is_2d_view
+from sectionbox_utils import is_2d_view
+from sectionbox_viewrange import is_ceiling_plan, plane_elevations, view_range_payload
+from sectionbox_viewrange_rules import BOTTOM, CUT, TOP
 
 get_elementid_value = get_elementid_value_func()
 
@@ -93,7 +95,7 @@ def _model_category_filter(doc):
     return DB.ElementMulticategoryFilter(ids)
 
 
-def _model_element_ids(doc):
+def _model_element_ids(doc, scene_filter=None, host=True):
     """Return the ids of the view-independent elements of model categories.
 
     The ids come from one native collector pass that creates no element
@@ -106,6 +108,8 @@ def _model_element_ids(doc):
         .WhereElementIsViewIndependent()
         .WherePasses(_model_category_filter(doc))
     )
+    if scene_filter is not None:
+        collector = scene_filter.apply(collector, doc, host)
     return list(collector.ToElementIds())
 
 
@@ -197,10 +201,14 @@ class ModelStream(object):
         focus (DB.BoundingBoxXYZ | None): world bounds, normally of the section
             box. Elements touching it are streamed before the rest, so the
             region the user cuts appears first and is the last to be left out.
+        scene_filter (sectionbox_scene_filter.SceneFilter | None): the phase
+            and design options to stream; None streams all of them.
 
     Elements that are not 3D geometry are left out: view-specific elements,
     the categories in ``NON_GEOMETRY_CATEGORIES`` and any element without
-    geometry. Each mesh carries its category as ``group`` and, for a linked
+    geometry. Elements that only draw as lines below Fine detail, such as
+    pipe fittings, are read at Fine. Each mesh carries its category as
+    ``group`` and, for a linked
     element, the link's title as ``link``, so the page can toggle a link's walls
     apart from the host's. Rooms, spaces and parts are streamed for the host
     model flagged ``hidden`` (the page starts with their category unticked) and
@@ -222,12 +230,21 @@ class ModelStream(object):
         between chunks are skipped.
     """
 
-    def __init__(self, doc, origin, include_links, links_only=False, focus=None):
+    def __init__(
+        self,
+        doc,
+        origin,
+        include_links,
+        links_only=False,
+        focus=None,
+        scene_filter=None,
+    ):
         self.doc = doc
         self.origin = origin
         self.include_links = include_links
         self.links_only = links_only
         self.focus = focus
+        self.scene_filter = scene_filter
         self._entries = None
         self._reading = None
         self._read_count = 0
@@ -282,7 +299,7 @@ class ModelStream(object):
         while queue:
             source, doc, transform, title, ids = queue[0]
             if ids is None:
-                ids = _model_element_ids(doc)
+                ids = _model_element_ids(doc, self.scene_filter, source == 0)
                 queue[0][4] = ids
                 self._read_total += len(ids)
             position = reading["position"]
@@ -402,6 +419,7 @@ class ModelStream(object):
                 transform=entry.transform,
                 box_when_empty=False,
                 coarse_retry=True,
+                fine_retry=True,
             )
             if not builder.indices:
                 continue
@@ -499,9 +517,14 @@ def box_from_payload(payload, origin, template=None):
 
 
 def _plan_display_box(view, crop):
-    """Return the crop box with its Z range replaced by the view range's extent."""
-    ranges = get_view_range_and_crop(view, view.Document)
-    top, bottom = ranges["top_elevation"], ranges["bottom_elevation"]
+    """Return the crop box with its Z range replaced by the view range's extent.
+
+    The extent runs from the top plane down to the bottom plane, or on a
+    ceiling plan down to the cut plane. Without both the crop box is kept.
+    """
+    elevations = plane_elevations(view)
+    top = elevations.get(TOP)
+    bottom = elevations.get(CUT if is_ceiling_plan(view) else BOTTOM)
     if top is None or bottom is None:
         return crop
     transform = crop.Transform
@@ -524,7 +547,8 @@ def view_payload(view, datafilename, origin):
         (dict): ``kind`` ("3d" or "crop"), ``name``, ``box`` (None when the
         view has no box), ``editable`` (face ids the page may drag: ``x0``,
         ``x1``, ``y0``, ``y1``, ``z0``, ``z1``) and ``blocker`` (why a crop
-        cannot be edited, or None).
+        cannot be edited, or None). Plan views with a crop box also get
+        ``viewRange``, see :func:`sectionbox_viewrange.view_range_payload`.
     """
     is_3d = isinstance(view, DB.View3D)
     info = get_box_info(view, datafilename) if is_3d or is_2d_view(view) else None
@@ -557,6 +581,7 @@ def view_payload(view, datafilename, origin):
         payload["editable"] = [] if payload["blocker"] else ["x0", "x1", "y0", "y1"]
         if isinstance(view, DB.ViewPlan):
             box = _plan_display_box(view, box)
+            payload["viewRange"] = view_range_payload(view, origin)
     payload["box"] = box_payload(box, origin)
     return payload
 
@@ -641,7 +666,13 @@ def north_angle(doc):
 
 
 def units_payload(doc):
-    """Describe the project length unit: ``factor`` (feet to unit), ``symbol``, ``decimals``."""
+    """Describe the project length unit for the page.
+
+    Returns:
+        (dict): ``factor`` (feet to unit), ``symbol``, ``decimals`` and
+        ``dragStep``, the feet a freely dragged view range offset is rounded
+        to: half an inch in imperial projects, else 10 mm.
+    """
     length_unit, _, _, symbol = units.get_unit_info(DB.SpecTypeId.Length, doc)
     factor = DB.UnitUtils.Convert(1.0, DB.UnitTypeId.Feet, length_unit)
     if factor >= 100:
@@ -650,4 +681,10 @@ def units_payload(doc):
         decimals = 3
     else:
         decimals = 2
-    return {"factor": factor, "symbol": symbol or "", "decimals": decimals}
+    imperial = any(abs(factor - per_foot) < 0.001 for per_foot in (1.0, 12.0))
+    return {
+        "factor": factor,
+        "symbol": symbol or "",
+        "decimals": decimals,
+        "dragStep": 1.0 / 24.0 if imperial else 10.0 / 304.8,
+    }
