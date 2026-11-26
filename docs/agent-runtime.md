@@ -248,7 +248,7 @@ can load the shipped skills from disk instead of calling `get_skill`. Copy them 
 ```
 pyrevit agent skills install [--scope=<project|user>] [--target=<targets>] [--path=<folder>] [--force] [--prefix]
 pyrevit agent skills status [--json] [--scope=<project|user>] [--target=<targets>] [--path=<folder>]
-pyrevit agent skills uninstall [--scope=<project|user>] [--target=<targets>] [--path=<folder>]
+pyrevit agent skills uninstall [--scope=<project|user>] [--target=<targets>] [--path=<folder>] [--force]
 ```
 
 `--scope=project` (default) writes below `--path`, the project root (default: the current folder),
@@ -263,18 +263,25 @@ combined with `--path`. `--target` takes a comma-separated list; the default is 
 | `copilot` | `.github/skills` | `~/.copilot/skills` | VS Code |
 | `opencode` | `.opencode/skills` | `~/.config/opencode/skills` | opencode |
 
-Each shipped skill folder is copied whole (markdown files only) under its own name, with a
-`.pyrevit-skill.json` marker (`source`, `version`, `sha256`) that identifies it as pyRevit-owned.
-User skills and `INSTRUCTIONS.md` are never copied.
+Each shipped skill folder is copied whole (markdown files only) under its own name. User skills and
+`INSTRUCTIONS.md` are never copied. Each copy gets a `.pyrevit-skill.json` file that records
+that pyRevit wrote it, the shipped version and two digests. It is an ownership record that is checked
+against the folder content, not proof of origin: a folder counts as pyRevit-owned only while its markdown
+files match the recorded digest and it holds nothing else.
 
 - `install` is idempotent: a current copy is left alone and a stale pyRevit-owned copy is refreshed.
-- A folder with the skill's name but without the marker is never overwritten, replaced or deleted. The
-  skill is skipped with a warning, or installed as `pyrevit-<name>` with `--prefix`.
-- `--force` only repairs a pyRevit-owned copy whose files were edited by hand.
+- A folder with the skill's name that is not pyRevit-owned (no valid marker, a plain file, or a link) is never
+  overwritten, replaced or deleted. The skill is skipped with a warning, or installed as `pyrevit-<name>` with
+  `--prefix`; the folder and the `name` line of the copied `SKILL.md` change together.
+- An owned copy that was edited, or that holds extra files (notes, scripts, images), is reported as `edited`
+  and kept. `--force` replaces it on `install` and removes it on `uninstall`, after a warning that names
+  the extra files, which are deleted with it.
 - `status` reports `current`, `stale`, `edited`, `missing` or `foreign` per skill and target, and warns when
   one client would read the same pyRevit-owned skill from several folders. A stale copy is a warning, not an error.
-- `uninstall` removes only folders that carry the marker.
-- The command refuses links (junctions, symlinks) on the way to a skills folder and skill files over 128 KiB.
+- `uninstall` removes only owned folders, and leftover `.pyrevit-tmp-*` folders of an interrupted run.
+- A skill that cannot be written (for example a locked file) is reported as `failed` and the run goes on; the
+  command then exits with an error and the old copy stays.
+- The command refuses links (junctions, symlinks) on the way to a skills folder, and skill files over 128 KiB.
 - Shipped descriptions stay at most 240 characters, because some clients budget the metadata of all skills
   and may shorten or drop longer ones; `install` and `status` warn about longer ones.
 - The Antigravity CLI needs `/skills reload` after an install. Claude Code reads `.claude/skills`, so add
