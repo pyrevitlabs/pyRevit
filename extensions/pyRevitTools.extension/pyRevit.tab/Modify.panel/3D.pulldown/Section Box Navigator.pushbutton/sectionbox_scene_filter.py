@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Phase and design option filtering of the 3D preview's model.
+"""Which elements the 3D preview streams, and at which detail level.
 
-The preview follows the phase, phase filter and design options of the view it
-shows. Visibility/Graphics, view filters and hidden elements are deliberately
-not applied, so the box can be dragged over geometry the view hides.
+The preview follows the detail level, phase, phase filter and design options of
+the view it shows. Visibility/Graphics, view filters and hidden elements are
+deliberately not applied, so the box can be dragged over geometry the view
+hides.
 
 Note:
     The choices on a view's Visibility/Graphics "Design Options" tab cannot be
@@ -86,10 +87,11 @@ def _design_options(doc):
 
 
 class SceneFilter(object):
-    """Which elements of the host model and of links the preview streams.
+    """What the preview streams of the host model and of links.
 
-    Linked models show their primary design options and are not filtered by
-    phase, which would need the link's phase mapping.
+    Linked models are read at the same detail level, show their primary design
+    options and are not filtered by phase, which would need the link's phase
+    mapping.
 
     Args:
         phase_id (DB.ElementId | None): the view's phase; None shows all phases,
@@ -98,19 +100,35 @@ class SceneFilter(object):
             phase filter shows. Elements without a phase status always pass.
         active_option (int | None): id value of the option being edited.
         view_option (int | None): id value of the option the view is dedicated to.
+        detail_level (DB.ViewDetailLevel | None): level the geometry is read
+            at; None and Undefined read at Medium.
 
     Attributes:
-        key (tuple): filters with equal keys stream the same elements.
+        key (tuple): filters with equal keys stream the same geometry.
     """
 
     def __init__(
-        self, phase_id=None, statuses=(), active_option=None, view_option=None
+        self,
+        phase_id=None,
+        statuses=(),
+        active_option=None,
+        view_option=None,
+        detail_level=None,
     ):
         self.phase_id = phase_id
         self.statuses = tuple(statuses)
         self.active_option = active_option
         self.view_option = view_option
-        self.key = (_id_value(phase_id), self.statuses, active_option, view_option)
+        if detail_level is None or detail_level == DB.ViewDetailLevel.Undefined:
+            detail_level = DB.ViewDetailLevel.Medium
+        self.detail_level = detail_level
+        self.key = (
+            _id_value(phase_id),
+            self.statuses,
+            active_option,
+            view_option,
+            str(detail_level),
+        )
 
     @classmethod
     def for_view(cls, view):
@@ -132,6 +150,7 @@ class SceneFilter(object):
             statuses,
             _id_value(DB.DesignOption.GetActiveDesignOptionId(view.Document)),
             _id_value(view_option),
+            view.DetailLevel,
         )
 
     def apply(self, collector, doc, host):

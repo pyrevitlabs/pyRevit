@@ -2,7 +2,7 @@
 
 Loads ``lib/scene3d/meshing.py`` with a stubbed ``pyrevit`` module so no Revit
 is involved, and checks the packed scene JSON round trip, the point budget, the
-link transform, the detail level retries and non-ASCII text.
+link transform and non-ASCII text.
 """
 
 import base64
@@ -13,8 +13,6 @@ import struct
 import sys
 import types
 import unittest
-
-import pytest
 
 TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
@@ -42,7 +40,7 @@ class Shift:
 def load_meshing():
     stub = types.ModuleType("pyrevit")
     stub.DB = types.SimpleNamespace(
-        ViewDetailLevel=types.SimpleNamespace(Coarse=1, Medium=2, Fine=3),
+        ViewDetailLevel=types.SimpleNamespace(Coarse=1, Medium=2),
         XYZ=Point,
     )
     previous = sys.modules.get("pyrevit")
@@ -192,73 +190,6 @@ class MeshingTests(unittest.TestCase):
         self.assertTrue(approx)
         self.assertEqual(len(builder.indices), 36)
         self.assertEqual(detail_levels, [2, 1])
-
-    def tessellate_fitting(
-        self, fine_retry, fine_vertices=3, budget=200, medium_triangles=False
-    ):
-        """Tessellate an element that, like a pipe fitting, has triangles only at Fine."""
-        m = self.meshing
-        calls = []
-        original = m.element_geometry, m.walk_geometry
-
-        def walk(detail_level, builder, edges=True, level_of_detail=None):
-            calls.append((detail_level, level_of_detail))
-            has_triangles = detail_level == 3 or medium_triangles
-            if not has_triangles:
-                builder.add_polyline([Point(0, 0, 0), Point(1, 0, 0)])
-                return
-            if not fine_vertices:
-                return
-            builder._reserve(fine_vertices)
-            builder.positions.extend([0.0] * (3 * fine_vertices))
-            builder.indices.extend([0, 1, 2])
-
-        m.element_geometry = lambda element, detail_level: detail_level
-        m.walk_geometry = walk
-        try:
-            bbox = types.SimpleNamespace(Min=Point(0, 0, 0), Max=Point(1, 1, 1))
-            builder, approx = m.tessellate_element(
-                object(),
-                bbox,
-                Point(0, 0, 0),
-                budget,
-                edges=False,
-                box_when_empty=False,
-                coarse_retry=True,
-                fine_retry=fine_retry,
-            )
-        finally:
-            m.element_geometry, m.walk_geometry = original
-        return builder, approx, calls
-
-    @pytest.mark.regression
-    def test_fine_retry_gives_a_pipe_fitting_that_draws_as_lines_a_shape(self):
-        """Fittings were missing from the preview: discourse.pyrevitlabs.io/t/10788/7."""
-        builder, approx, calls = self.tessellate_fitting(fine_retry=True)
-        self.assertEqual((builder.indices, approx), ([0, 1, 2], False))
-        self.assertEqual(
-            calls, [(2, None), (3, self.meshing.FINE_RETRY_LEVEL_OF_DETAIL)]
-        )
-
-    def test_without_fine_retry_an_element_of_lines_has_no_triangles(self):
-        builder, approx, calls = self.tessellate_fitting(fine_retry=False)
-        self.assertEqual((builder.indices, approx), ([], False))
-        self.assertEqual(calls, [(2, None)])
-
-    def test_fine_retry_is_skipped_for_an_element_with_triangles(self):
-        _, _, calls = self.tessellate_fitting(fine_retry=True, medium_triangles=True)
-        self.assertEqual(calls, [(2, None)])
-
-    def test_fine_retry_without_triangles_keeps_the_first_result(self):
-        builder, approx, _ = self.tessellate_fitting(fine_retry=True, fine_vertices=0)
-        self.assertEqual((builder.indices, len(builder.edges), approx), ([], 6, False))
-
-    def test_a_fine_shape_over_budget_is_drawn_as_its_box(self):
-        builder, approx, _ = self.tessellate_fitting(
-            fine_retry=True, fine_vertices=100, budget=60
-        )
-        self.assertTrue(approx)
-        self.assertEqual(len(builder.indices), 36)
 
     def tessellate_curves_only_at_coarse(self, edges):
         m = self.meshing

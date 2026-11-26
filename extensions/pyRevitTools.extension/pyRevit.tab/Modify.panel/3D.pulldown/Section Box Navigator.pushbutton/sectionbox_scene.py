@@ -201,14 +201,15 @@ class ModelStream(object):
         focus (DB.BoundingBoxXYZ | None): world bounds, normally of the section
             box. Elements touching it are streamed before the rest, so the
             region the user cuts appears first and is the last to be left out.
-        scene_filter (sectionbox_scene_filter.SceneFilter | None): the phase
-            and design options to stream; None streams all of them.
+        scene_filter (sectionbox_scene_filter.SceneFilter | None): the detail
+            level, phase and design options to stream; None reads every phase
+            and option at Medium.
 
     Elements that are not 3D geometry are left out: view-specific elements,
     the categories in ``NON_GEOMETRY_CATEGORIES`` and any element without
-    geometry. Elements that only draw as lines below Fine detail, such as
-    pipe fittings, are read at Fine. Each mesh carries its category as
-    ``group`` and, for a linked
+    triangles at the detail level. That includes elements Revit gives only as
+    lines there, such as pipe fittings below Fine. Each mesh carries its
+    category as ``group`` and, for a linked
     element, the link's title as ``link``, so the page can toggle a link's walls
     apart from the host's. Rooms, spaces and parts are streamed for the host
     model flagged ``hidden`` (the page starts with their category unticked) and
@@ -245,6 +246,11 @@ class ModelStream(object):
         self.links_only = links_only
         self.focus = focus
         self.scene_filter = scene_filter
+        self.detail_level = (
+            DB.ViewDetailLevel.Medium
+            if scene_filter is None
+            else scene_filter.detail_level
+        )
         self._entries = None
         self._reading = None
         self._read_count = 0
@@ -415,11 +421,11 @@ class ModelStream(object):
                 entry.bbox,
                 self.origin,
                 budget,
+                detail_level=self.detail_level,
                 edges=False,
                 transform=entry.transform,
                 box_when_empty=False,
                 coarse_retry=True,
-                fine_retry=True,
             )
             if not builder.indices:
                 continue

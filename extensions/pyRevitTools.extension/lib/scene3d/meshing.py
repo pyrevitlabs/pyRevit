@@ -16,7 +16,6 @@ from pyrevit import DB
 
 BOX_POINT_COUNT = 8 + 2 * 12
 COARSE_LEVEL_OF_DETAIL = 0.1
-FINE_RETRY_LEVEL_OF_DETAIL = 0.4
 _PACKED_TOKEN = re.compile(r"@@PACKED(\d+)@@")
 
 
@@ -280,13 +279,11 @@ def _has_geometry(element, detail_level):
     return bool(probe.indices or probe.edges)
 
 
-def _tessellate_again(
-    element, origin, budget, edges, transform, detail_level, level_of_detail
-):
+def _tessellate_coarse(element, origin, budget, edges, transform):
     builder = MeshBuilder(origin, budget, transform)
-    geometry = element_geometry(element, detail_level)
+    geometry = element_geometry(element, DB.ViewDetailLevel.Coarse)
     if geometry is not None:
-        walk_geometry(geometry, builder, edges, level_of_detail)
+        walk_geometry(geometry, builder, edges, COARSE_LEVEL_OF_DETAIL)
     return builder
 
 
@@ -300,7 +297,6 @@ def tessellate_element(
     transform=None,
     box_when_empty=True,
     coarse_retry=False,
-    fine_retry=False,
 ):
     """Tessellate ``element`` within ``budget`` points.
 
@@ -325,12 +321,6 @@ def tessellate_element(
             Coarse and curved faces then fit the budget and keep their shape.
             A retry that draws nothing the caller wants (no triangles, or no
             segments either when ``edges`` is set) falls back to the box too.
-        fine_retry (bool): when the geometry has lines but no triangles, read
-            it again at Fine detail. MEP pipe fittings and accessories draw
-            as center lines below Fine, so without this they have no shape. An
-            element whose Fine geometry has no triangles either keeps the first
-            result; one whose Fine geometry exceeds ``budget`` falls back to
-            the box.
 
     Returns:
         (tuple[MeshBuilder, bool]): the builder and whether it holds the
@@ -351,30 +341,12 @@ def tessellate_element(
             geometry = element_geometry(element, detail_level)
             if geometry is not None:
                 walk_geometry(geometry, builder, edges)
-            if fine_retry and builder.edges and not builder.indices:
-                fine = _tessellate_again(
-                    element,
-                    origin,
-                    budget,
-                    edges,
-                    transform,
-                    DB.ViewDetailLevel.Fine,
-                    FINE_RETRY_LEVEL_OF_DETAIL,
-                )
-                if fine.indices:
-                    builder = fine
         except Exception as error:
             approx = True
             if coarse_retry and isinstance(error, BudgetExceeded):
                 try:
-                    retried = _tessellate_again(
-                        element,
-                        origin,
-                        budget,
-                        edges,
-                        transform,
-                        DB.ViewDetailLevel.Coarse,
-                        COARSE_LEVEL_OF_DETAIL,
+                    retried = _tessellate_coarse(
+                        element, origin, budget, edges, transform
                     )
                     drawn = retried.indices or (edges and retried.edges)
                     if drawn:

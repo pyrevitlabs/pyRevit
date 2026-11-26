@@ -490,7 +490,10 @@ class PreviewSession(object):
         )
 
     def _model_filter_changed(self, view):
-        """Stream the model again when ``view`` shows another phase or design option."""
+        """Stream the model again when ``view`` reads it differently.
+
+        That is another detail level, phase, phase filter or design option.
+        """
         if not self._ready:
             return
         scene_filter = SceneFilter.for_view(view)

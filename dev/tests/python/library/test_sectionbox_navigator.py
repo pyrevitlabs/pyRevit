@@ -1,8 +1,8 @@
 """Host-free tests for the Section Box Navigator's lookups and strings.
 
-Covers which design option each set shows in the 3D preview, which level a box
-edge sits on, and that every language file has the same strings. The Revit
-modules are loaded with a stubbed ``pyrevit``.
+Covers which design option, phase and detail level the 3D preview follows,
+which level a box edge sits on, and that every language file has the same
+strings. The Revit modules are loaded with a stubbed ``pyrevit``.
 """
 
 import importlib.util
@@ -12,6 +12,8 @@ import sys
 import types
 import unittest
 import xml.dom.minidom
+
+import pytest
 
 TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
@@ -104,12 +106,15 @@ class ShownDesignOptionTests(unittest.TestCase):
         )
 
 
-class PhaseFilterTests(unittest.TestCase):
+class FollowedViewTests(unittest.TestCase):
     PHASE, FILTER = 5, 6
 
-    def follow(self, filter_id, hidden=()):
+    def follow(self, filter_id, hidden=(), detail_level="Medium"):
         module = load_with_stubs("sectionbox_scene_filter")
         db = module.DB
+        db.ViewDetailLevel = types.SimpleNamespace(
+            Undefined="Undefined", Coarse="Coarse", Medium="Medium", Fine="Fine"
+        )
         db.ElementId = types.SimpleNamespace(InvalidElementId=-1)
         db.BuiltInParameter = types.SimpleNamespace(
             VIEW_PHASE="phase",
@@ -128,6 +133,7 @@ class PhaseFilterTests(unittest.TestCase):
         )
         values = {"phase": self.PHASE, "phase_filter": filter_id, "option": -1}
         view = types.SimpleNamespace(
+            DetailLevel=detail_level,
             Document=types.SimpleNamespace(GetElement=lambda _: phase_filter),
             get_Parameter=lambda name: types.SimpleNamespace(
                 AsElementId=lambda: values[name]
@@ -144,6 +150,24 @@ class PhaseFilterTests(unittest.TestCase):
         """Revit shows later phases too, which a status filter would leave out."""
         followed = self.follow(-1)
         self.assertEqual((followed.phase_id, followed.statuses), (None, ()))
+
+    @pytest.mark.regression
+    def test_the_view_detail_level_is_followed(self):
+        """Fittings stayed missing in Fine views: discourse.pyrevitlabs.io/t/10788/7."""
+        for level in ("Coarse", "Medium", "Fine"):
+            with self.subTest(level=level):
+                self.assertEqual(
+                    self.follow(-1, detail_level=level).detail_level, level
+                )
+        self.assertEqual(
+            self.follow(-1, detail_level="Undefined").detail_level, "Medium"
+        )
+
+    def test_another_detail_level_streams_the_model_again(self):
+        self.assertNotEqual(
+            self.follow(-1, detail_level="Medium").key,
+            self.follow(-1, detail_level="Fine").key,
+        )
 
 
 class LevelAtElevationTests(unittest.TestCase):
