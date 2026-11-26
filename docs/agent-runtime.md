@@ -253,7 +253,9 @@ pyrevit agent skills uninstall [--scope=<project|user>] [--target=<targets>] [--
 
 `--scope=project` (default) writes below `--path`, the project root (default: the current folder),
 and never into the skills folder itself. `--scope=user` writes into the user profile and cannot be
-combined with `--path`. `--target` takes a comma-separated list; the default is `agents`.
+combined with `--path`, which may not be a skills folder itself. The user folder comes from the Windows profile API, so
+`USERPROFILE` or `HOME` overrides are ignored and a user-scope run always targets the real profile.
+`--target` takes a comma-separated list; the default is `agents`.
 
 | Target | Project folder | User folder | Read by |
 |---|---|---|---|
