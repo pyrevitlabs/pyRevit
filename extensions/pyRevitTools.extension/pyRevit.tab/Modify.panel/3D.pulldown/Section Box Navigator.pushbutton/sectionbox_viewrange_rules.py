@@ -5,8 +5,10 @@
 
 Invariant:
     Plans that look down keep Top >= Cut >= Bottom >= View Depth. Reflected
-    ceiling plans look up and keep View Depth >= Top >= Cut; their Bottom is
-    unused, Revit holds it at the cut plane, so it is never written.
+    ceiling plans look up and keep View Depth >= Top >= Cut. Their Bottom is
+    not shown or edited, but Revit does not move it with the cut plane and
+    rejects a cut plane below it, so it must be written along with the cut
+    plane.
 
     A plane set to Unlimited has no elevation and limits no other plane.
 """
