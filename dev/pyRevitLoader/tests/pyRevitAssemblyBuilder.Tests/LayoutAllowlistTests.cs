@@ -61,6 +61,23 @@ namespace pyRevitAssemblyBuilder.Tests
         }
 
         [Test]
+        public void ListedButton_IsVisible_WhenItsNameContainsTheSeparatorMarker()
+        {
+            var builder = new TestExtensionBuilder(TestTempDir, "MarkerInName");
+            builder.Create();
+            var panel = builder.AddTab("Tab").AddPanel("Panel");
+            panel.AddPushButton("First");
+            panel.AddPushButton("Export---CSV");
+            panel.WithBundleYaml(@"layout:
+  - Export---CSV
+  - First");
+
+            var extension = Parse(builder);
+
+            Assert.That(VisibleChildNames(extension, "Panel"), Is.EqualTo(new[] { "Export---CSV", "First" }));
+        }
+
+        [Test]
         public void EveryButton_IsVisible_WhenTheContainerHasNoLayout()
         {
             var builder = new TestExtensionBuilder(TestTempDir, "NoLayout");

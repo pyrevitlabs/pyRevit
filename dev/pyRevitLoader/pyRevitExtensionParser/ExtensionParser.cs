@@ -734,8 +734,9 @@ namespace pyRevitExtensionParser
                 for (int idx = 0; idx < component.LayoutOrder.Count; idx++)
                 {
                     var layoutItem = component.LayoutOrder[idx];
+                    var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
 
-                    if (layoutItem.Contains("---"))
+                    if (matchingComponent == null && layoutItem.Contains("---"))
                     {
                         if (idx < lastLayoutIndex)
                         {
@@ -750,7 +751,7 @@ namespace pyRevitExtensionParser
                         continue;
                     }
 
-                    if (layoutItem.Contains(">>>"))
+                    if (matchingComponent == null && layoutItem.Contains(">>>"))
                     {
                         if (idx < lastLayoutIndex)
                         {
@@ -766,7 +767,6 @@ namespace pyRevitExtensionParser
                         continue;
                     }
 
-                    var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
                     if (matchingComponent != null && !reorderedChildren.Contains(matchingComponent))
                     {
                         if (component.LayoutItemTitles != null &&
