@@ -7,11 +7,13 @@ All other parameters are user-configured via the config dialog.
 """
 
 import os.path as op
+from collections import Counter
 
 from pyrevit import forms, HOST_APP, framework, revit, script
 from pyrevit import DB, UI
 from pyrevit.revit import is_yesno_parameter, query
 from pyrevit.revit.events import execute_in_revit_context
+from pyrevit.revit.valuecodec import ValueCodec
 from pyrevit.revit.db import create as revit_create
 from pyrevit.userconfig import user_config
 from pyrevit.compat import get_elementid_value_func
@@ -185,58 +187,17 @@ def _set_workset(doc, element, workset_id):
     return False
 
 
-def _set_additional_param(doc, element, param_name, value_str):
-    """Set a String/Integer/Double parameter from a string value."""
+def _write_param(codec, element, param_name, value_str, refusals):
+    """Write the text of a pane field; record why it could not be written.
+
+    An element without the parameter is skipped.
+    """
     try:
         param = element.LookupParameter(param_name)
-        if param is None or param.IsReadOnly:
-            return False
-        st = param.StorageType
-        if st == DB.StorageType.String:
-            param.Set(value_str)
-        elif st == DB.StorageType.Double:
-            fti = param.Definition.GetDataType()
-            uti = doc.GetUnits().GetFormatOptions(fti).GetUnitTypeId()
-            value = DB.UnitUtils.ConvertToInternalUnits(float(value_str), uti)
-            param.Set(value)
-        elif st == DB.StorageType.Integer:
-            param.Set(int(value_str))
-        else:
-            return False
-        return True
-    except Exception:
-        return False
-
-
-def _set_elementid_param(doc, element, param_name, new_val, ref_class, bic=None):
-    """Set an ElementId parameter by resolving new_val as an element name."""
-    try:
-        param = element.LookupParameter(param_name)
-        if param is None or param.IsReadOnly:
-            return False
-
-        collector = None
-        if ref_class is not None:
-            try:
-                collector = query.get_elements_by_class(ref_class, doc=doc)
-            except Exception:
-                pass
-        if collector is None and bic is not None:
-            collector = query.get_elements_by_categories([bic], doc=doc)
-        if collector is None:
-            return False
-
-        found_id = None
-        for bic_el in collector:
-            if hasattr(bic_el, "Name") and bic_el.Name == new_val:
-                found_id = bic_el.Id
-                break
-        if found_id:
-            param.Set(found_id)
-            return True
-        return False
-    except Exception:
-        return False
+        if param is not None:
+            codec.write(param, value_str)
+    except Exception as ex:
+        refusals[(param_name, str(ex))] += 1
 
 
 # ---------------------------------------------------------------------------
@@ -272,6 +233,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
         self._elements = []
         self._doc = None
         self._worksets = []  # [(name, WorksetId)]
+        self._codec = None
 
         self._copy_clipboard = []  # list of PropKeyValue
         self._suppress_dirty = False
@@ -581,6 +543,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
         if not entries:
             return
         doc = self._doc
+        self._codec = ValueCodec(doc)
         for kind, value in entries:
             if kind == "header":
                 row = self._make_header_row(value)
@@ -626,22 +589,17 @@ class CustomPropertiesPanel(forms.WPFPanel):
                 if p.IsReadOnly:
                     readonly_param = True
                 st = p.StorageType
-                if st == DB.StorageType.String:
-                    vals.append(p.AsString() or "")
-                elif st == DB.StorageType.Double:
-                    fti = p.Definition.GetDataType()
-                    uti = doc.GetUnits().GetFormatOptions(fti).GetUnitTypeId()
-                    val = DB.UnitUtils.ConvertFromInternalUnits(p.AsDouble(), uti)
-                    vals.append(str(round(val, 6)))
+                if st in (DB.StorageType.String, DB.StorageType.Double):
+                    vals.append(self._codec.read(p))
                 elif st == DB.StorageType.Integer:
                     if not yesno_param:
                         yesno_param = is_yesno_parameter(p.Definition)
                     if yesno_param:
                         vals.append(str(p.AsInteger()))
                     else:
-                        val_str = p.AsValueString() or str(p.AsInteger())
+                        val_str = self._codec.read(p)
                         vals.append(val_str)
-                        if not opaque_int_param:
+                        if val_str and not opaque_int_param:
                             try:
                                 int(val_str)
                             except (ValueError, TypeError):
@@ -716,7 +674,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
                 if eid == DB.ElementId.InvalidElementId:
                     has_invalid = True
-                    current_names.append(e.Name if hasattr(e, "Name") else "")
+                    current_names.append("")
                     continue
 
                 ref_el = doc.GetElement(eid)
@@ -774,8 +732,6 @@ class CustomPropertiesPanel(forms.WPFPanel):
         combo.IsEditable = True
         combo.Margin = framework.Windows.Thickness(0, 2, 0, 2)
         combo.VerticalContentAlignment = framework.Windows.VerticalAlignment.Center
-        combo.Tag = (ref_class, ref_bic)
-
         for opt in options:
             combo.Items.Add(opt)
 
@@ -1178,30 +1134,31 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
         st = param.StorageType
         try:
+            codec = ValueCodec(doc)
             if st == DB.StorageType.String:
                 raw_value = param.AsString() or ""
                 ui_text = raw_value
             elif st == DB.StorageType.Double:
-                fti = param.Definition.GetDataType()
-                uti = doc.GetUnits().GetFormatOptions(fti).GetUnitTypeId()
                 raw_value = param.AsDouble()
-                display_val = DB.UnitUtils.ConvertFromInternalUnits(raw_value, uti)
-                ui_text = str(round(display_val, 6))
+                ui_text = codec.read(param)
             elif st == DB.StorageType.Integer:
                 raw_value = param.AsInteger()
                 if is_yesno_parameter(param.Definition):
                     ui_text = str(raw_value)
                 else:
-                    ui_text = param.AsValueString() or str(raw_value)
+                    ui_text = codec.read(param) or str(raw_value)
             elif st == DB.StorageType.ElementId:
                 eid = param.AsElementId()
                 raw_value = get_elementid_value(eid)
                 ref_el = doc.GetElement(eid)
-                ui_text = (
-                    ref_el.Name
-                    if ref_el and hasattr(ref_el, "Name")
-                    else str(raw_value)
-                )
+                if eid == DB.ElementId.InvalidElementId:
+                    ui_text = ""
+                else:
+                    ui_text = (
+                        ref_el.Name
+                        if ref_el and hasattr(ref_el, "Name")
+                        else str(raw_value)
+                    )
             else:
                 return None
         except Exception:
@@ -1548,20 +1505,37 @@ class CustomPropertiesPanel(forms.WPFPanel):
         elements = list(self._elements)
 
         def _do_apply():
+            codec = ValueCodec(doc)
+            refusals = Counter()
             try:
                 with revit.Transaction("Custom Properties Pane - Apply", doc=doc):
                     for element in elements:
-                        self._apply_to_element(doc, element, pending)
+                        self._apply_to_element(doc, element, pending, codec, refusals)
             except Exception as ex:
                 self.logger.error("Apply failed: {}".format(ex))
+            for (param_name, reason), count in refusals.most_common():
+                self.logger.warning(
+                    "'{}' was not set on {} of {} elements: {}".format(
+                        param_name, count, len(elements), reason
+                    )
+                )
 
         execute_in_revit_context(_do_apply)
 
     def _collect_pending(self):
+        """Return the edited fields; untouched ones must not be written back.
+
+        Shown numbers are rounded, so writing an unedited field would change
+        the value.
+        """
         p = {}
 
         ws_text = self.workset_combo.Text.strip()
-        if ws_text and ws_text != self._varies:
+        if (
+            ws_text
+            and ws_text != self._varies
+            and self._is_field_changed(self.workset_combo)
+        ):
             match = [wid for name, wid in self._worksets if name == ws_text]
             p["workset_id"] = match[0] if match else None
 
@@ -1581,12 +1555,11 @@ class CustomPropertiesPanel(forms.WPFPanel):
                         field = cc
                     elif isinstance(cc, framework.Controls.CheckBox):
                         field = cc
-                if lbl and field:
+                if lbl and field and self._is_field_changed(field):
                     if isinstance(field, framework.Controls.CheckBox):
                         if not field.IsEnabled:
                             continue
                         val = "1" if bool(field.IsChecked) else "0"
-                        ref_class, bic = None, None
                     else:
                         tag = getattr(field, "Tag", None)
                         raw_int = (
@@ -1603,30 +1576,21 @@ class CustomPropertiesPanel(forms.WPFPanel):
                             if raw_int is None:
                                 continue  # opaque int not pasted — nothing to apply
                             val = str(raw_int)
-                            ref_class, bic = None, None
                         else:
                             val = field.Text.strip()
                             if not val or val == self._varies:
                                 continue
                             if raw_int is not None:
                                 val = str(raw_int)
-                                ref_class, bic = None, None
-                            else:
-                                ref_class, bic = (
-                                    tag if isinstance(tag, tuple) else (None, None)
-                                )
-                    p["additional"][lbl.Text] = (val, ref_class, bic)
+                    p["additional"][lbl.Text] = val
             except Exception:
                 pass
 
         return p
 
-    def _apply_to_element(self, doc, element, pending):
+    def _apply_to_element(self, doc, element, pending, codec, refusals):
         if "workset_id" in pending and pending["workset_id"] is not None:
             _set_workset(doc, element, pending["workset_id"])
 
-        for pname, (pval, ref_class, bic) in (pending.get("additional") or {}).items():
-            if ref_class is not None or bic is not None:
-                _set_elementid_param(doc, element, pname, pval, ref_class, bic)
-            else:
-                _set_additional_param(doc, element, pname, pval)
+        for pname, pval in (pending.get("additional") or {}).items():
+            _write_param(codec, element, pname, pval, refusals)

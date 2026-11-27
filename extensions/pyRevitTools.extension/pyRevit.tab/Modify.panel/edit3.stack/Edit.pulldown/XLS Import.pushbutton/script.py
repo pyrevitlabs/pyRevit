@@ -5,12 +5,11 @@ from collections import Counter, namedtuple
 
 from pyrevit import script, forms, revit, HOST_APP
 from pyrevit import DB
-from pyrevit.revit import get_parameter_data_type, is_yesno_parameter
-from pyrevit.compat import get_elementid_value_func, get_elementid_from_value_func
+from pyrevit.revit import get_parameter_data_type
+from pyrevit.revit.units import ValueRefused, decimal_symbol
+from pyrevit.revit.valuecodec import UNIT_NUMBER, ValueCodec, as_text
+from pyrevit.compat import get_elementid_from_value_func
 
-import xls_values
-
-get_elementid_value = get_elementid_value_func()
 get_elementid_from_value = get_elementid_from_value_func()
 
 logger = script.get_logger()
@@ -95,7 +94,7 @@ def load_metadata(workbook):
 
 def parse_column(header):
     """Split a header cell into the parameter name and its unit tag."""
-    header = xls_values.format_text_value(header)
+    header = as_text(header)
     tag_match = unit_tag_pattern.search(header)
     unit_tag = tag_match.group(1).strip() if tag_match else ""
     return Column(unit_postfix_pattern.sub("", header).strip(), unit_tag)
@@ -149,88 +148,59 @@ class ImportSummary(object):
             )
         )
         lines.append(
-            "- Units: from the `_metadata` sheet where it lists one, otherwise "
-            "from the column header symbol, otherwise project units"
+            "- Units: from the `_metadata` sheet where it lists one for the "
+            "parameter, otherwise from the column header symbol, otherwise "
+            "project units"
+        )
+        lines.append(
+            "- Numbers in text cells: the project's decimal symbol (`{}`) "
+            "applies, and text with a unit is read by Revit".format(decimal_symbol(doc))
         )
         output.print_md("\n".join(lines))
 
 
 class ParameterWriter(object):
-    """Converts an Excel cell and writes it into a parameter.
+    """Writes an Excel cell into a parameter through the shared value codec.
 
-    Every rejected value raises ``ValueError`` and leaves the parameter
-    untouched; any other exception comes from Revit.
+    The script only adds what the workbook knows: the unit that a number is
+    expressed in. A rejected value raises ``ValueRefused`` and leaves the
+    parameter untouched; any other exception comes from Revit.
     """
 
     def __init__(self, metadata):
         self.metadata = metadata
-        self.reference_ids_by_category = {}
+        self.codec = ValueCodec(doc, UNIT_NUMBER)
         self.unit_ids_by_symbol = {}
         self.warned_unit_tags = set()
 
     def write(self, param, column, cell_value):
-        storage_type = param.StorageType
-        if storage_type == DB.StorageType.String:
-            self.set_value(param, xls_values.format_text_value(cell_value))
-        elif storage_type == DB.StorageType.Integer:
-            self.set_value(param, self.convert_integer(param, cell_value))
-        elif storage_type == DB.StorageType.Double:
-            self.set_value(param, self.convert_double(param, column, cell_value))
-        elif storage_type == DB.StorageType.ElementId:
-            self.set_value(param, self.find_referenced_id(param, cell_value))
-        else:
-            raise ValueError("unsupported storage type {}".format(storage_type))
-
-    @staticmethod
-    def set_value(param, value):
-        if param.Set(value) is False:
-            raise ValueError("Revit rejected the value")
-
-    def convert_integer(self, param, cell_value):
-        if get_elementid_value(param.Id) == int(
-            DB.BuiltInParameter.ELEM_PARTITION_PARAM
-        ):
-            workset_name = str(cell_value)
-            workset = revit.query.find_workset(workset_name)
-            if not workset:
-                raise ValueError("workset '{}' not found".format(workset_name))
-            return workset.Id.IntegerValue
-        if is_yesno_parameter(param.Definition):
-            return xls_values.parse_yes_no(cell_value)
-        return xls_values.parse_whole_number(cell_value)
-
-    def convert_double(self, param, column, cell_value):
-        number = xls_values.parse_number(cell_value)
-        unit_type_id = self.get_unit_type_id(param, column)
-        if unit_type_id:
-            return DB.UnitUtils.ConvertToInternalUnits(number, unit_type_id)
-        return number
+        unit_type_id = None
+        if param.StorageType == DB.StorageType.Double:
+            unit_type_id = self.get_unit_type_id(param, column)
+        self.codec.write(param, cell_value, unit_id=unit_type_id)
 
     def get_unit_type_id(self, param, column):
         """Pick the unit the cell is expressed in.
 
         Order: the ``_metadata`` sheet, then the unit symbol in the column
-        header, then the project units.
+        header. Each counts only if it is a unit of this parameter. None means
+        the project units.
         """
-        metadata_entry = self.metadata.get(column.name)
-        if metadata_entry and metadata_entry[1]:
-            return metadata_entry[1]
-
         forge_type_id = get_parameter_data_type(param.Definition)
         if not (forge_type_id and DB.UnitUtils.IsMeasurableSpec(forge_type_id)):
             return None
-        try:
-            project_unit_id = project_units.GetFormatOptions(
-                forge_type_id
-            ).GetUnitTypeId()
-        except Exception as e:
-            logger.warning(
-                "Could not get project unit for '{}': {}".format(column.name, e)
-            )
-            return None
+
+        metadata_entry = self.metadata.get(column.name)
+        if (
+            metadata_entry
+            and metadata_entry[1]
+            and DB.UnitUtils.IsValidUnit(forge_type_id, metadata_entry[1])
+        ):
+            return metadata_entry[1]
 
         if not column.unit_tag:
-            return project_unit_id
+            return None
+        project_unit_id = project_units.GetFormatOptions(forge_type_id).GetUnitTypeId()
         header_unit_id = self.find_unit_by_symbol(
             forge_type_id, column.unit_tag, project_unit_id
         )
@@ -244,7 +214,7 @@ class ParameterWriter(object):
                     column.unit_tag, column.name
                 )
             )
-        return project_unit_id
+        return None
 
     def find_unit_by_symbol(self, forge_type_id, unit_tag, project_unit_id):
         cache_key = (forge_type_id.TypeId, unit_tag)
@@ -272,41 +242,6 @@ class ParameterWriter(object):
             return DB.LabelUtils.GetLabelForSymbol(symbol_id)
         except Exception:
             return None
-
-    def find_referenced_id(self, param, element_name):
-        category_id = self.get_referenced_category_id(param)
-        if category_id is None:
-            raise ValueError(
-                "cannot tell which kind of element this empty parameter references"
-            )
-        cache_key = get_elementid_value(category_id)
-        if cache_key not in self.reference_ids_by_category:
-            ids_by_name = {}
-            for element in revit.query.get_elements_by_categories([category_id]):
-                ids_by_name.setdefault(revit.query.get_name(element), element.Id)
-            self.reference_ids_by_category[cache_key] = ids_by_name
-        element_id = self.reference_ids_by_category[cache_key].get(element_name)
-        if element_id is None:
-            raise ValueError("no element named '{}'".format(element_name))
-        return element_id
-
-    @staticmethod
-    def get_referenced_category_id(param):
-        """Find the category id of the elements an ElementId parameter points to.
-
-        Only Material parameters declare it in their spec. For the others the
-        category of the current value is used, so an empty parameter of
-        another kind cannot be resolved.
-        """
-        if (
-            get_parameter_data_type(param.Definition)
-            == DB.SpecTypeId.Reference.Material
-        ):
-            return DB.ElementId(DB.BuiltInCategory.OST_Materials)
-        current_element = doc.GetElement(param.AsElementId())
-        if current_element and current_element.Category:
-            return current_element.Category.Id
-        return None
 
 
 def main():
@@ -372,7 +307,7 @@ def main():
                     try:
                         writer.write(param, column, cell_value)
                         summary.values_set += 1
-                    except ValueError as e:
+                    except ValueRefused as e:
                         logger.warning(
                             "Cannot set '{}' on element {}: {}".format(
                                 column.name, el_id_val, e
