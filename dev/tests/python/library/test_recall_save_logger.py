@@ -73,14 +73,16 @@ class RecallSaveLoggerTests(unittest.TestCase):
                 name="n", datatype=None, value=1, istype=False, display_value="1"
             ),
         )
-        content = types.SimpleNamespace(
-            _memfile="memory.dat", _items=[item], _recall_target_type="Elements"
+        window = types.SimpleNamespace(
+            _memfile="memory.dat",
+            _items=[item],
+            _recall_target_type="Elements",
+            recall_logger=captured,
         )
-        window = types.SimpleNamespace(_content=content, recall_logger=captured)
         import tempfile
 
         with tempfile.TemporaryDirectory() as folder:
-            content._memfile = folder + "/memory.dat"
+            window._memfile = folder + "/memory.dat"
             _load_save_recall(fresh)(window)
         self.assertEqual(1, len(captured.warnings))
         self.assertEqual([], fresh.warnings)
