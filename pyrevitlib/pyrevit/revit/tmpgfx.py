@@ -203,6 +203,11 @@ class Handler(UI.ITemporaryGraphicsHandler):  # compat-ignore: imported only on 
         """Remove a control payload of *doc* by index."""
         self._control_map.pop(self._control_key(doc, index), None)
 
+    def _forget_document(self, doc_key):
+        """Drop the payloads of a document identified by its hash code."""
+        for key in [key for key in self._control_map if key[0] == doc_key]:
+            del self._control_map[key]
+
     def _clear_controls(self, doc, indices):
         """Remove the payloads of *doc* for a list of indices."""
         for idx in indices:
@@ -548,6 +553,7 @@ def get_manager(tool_name, doc, handler_factory=None):
     for key, (document, _) in list(managers.items()):
         if not document.IsValidObject:
             del managers[key]
+            state["handler"]._forget_document(key)
     key = doc.GetHashCode()
     if key not in managers:
         managers[key] = (doc, ControlManager(doc, handler=state["handler"]))

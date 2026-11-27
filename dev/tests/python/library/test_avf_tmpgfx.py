@@ -163,6 +163,20 @@ class Schema:
 
     def SetUnits(self, names, multipliers):
         self.units = list(names)
+        self.multipliers = list(multipliers)
+
+    @property
+    def Description(self):
+        return self.description
+
+    def GetNumberOfUnits(self):
+        return len(self.units)
+
+    def GetUnitsName(self, index):
+        return self.units[index]
+
+    def GetUnitsMultiplier(self, index):
+        return self.multipliers[index]
 
 
 class SpatialFieldManager:
@@ -553,6 +567,60 @@ class ShowValuesTests(ShowValuesCase):
         self.assertFalse(self.show({2: 3}, name="A")["untracked_result"])
         self.assertEqual([1.0, 3.0], self.sfm.values_of("A"))
 
+    def add_the_old_way(self, value, unit):
+        self.avf.display_avf_values(
+            {self.elements[0]: value}, self.view, schema_name="A", unit=unit
+        )
+        return next(s for s in self.sfm.schemas.values() if s.Name == "A")
+
+    def test_a_result_added_some_other_way_keeps_its_unit(self):
+        schema = self.add_the_old_way(90, "min")
+        for _ in range(2):
+            self.show({2: 5}, name="A")
+            self.show({3: 6}, name="A", keep_others=True)
+        self.assertIs(schema, next(iter(self.sfm.schemas.values())))
+        self.assertEqual(["min"], schema.units)
+        self.assertEqual("AVF values from pyRevit", schema.description)
+
+    def test_changing_a_borrowed_result_is_refused_before_anything_changes(self):
+        self.add_the_old_way(90, "min")
+        self.show({2: 5}, name="A")
+        for options in ({"unit": "h"}, {"description": "mine"}):
+            with self.subTest(options=options):
+                with self.assertRaises(RuntimeError):
+                    self.show({3: 6}, name="A", **options)
+        self.assertEqual([5.0, 90.0], self.sfm.values_of("A"))
+        self.assertTrue(self.show({3: 6}, name="A", unit="min")["shown"])
+
+    def test_a_cleared_view_frees_the_name_again(self):
+        self.add_the_old_way(90, "min")
+        self.show({2: 5}, name="A")
+        self.sfm.Clear()
+        self.show({2: 5}, name="A", unit="h")
+        self.assertEqual(["h"], next(iter(self.sfm.schemas.values())).units)
+
+    def custom_style(self):
+        style = DisplayStyle("mine", "custom")
+        style.Id = ElementId(77)
+        self.view.Document.elements[77] = style
+        return style
+
+    def test_a_custom_style_is_restored_while_keeping_values(self):
+        self.custom_style()
+        self.show({1: 1}, name="A", style=self.view.Document.elements[77])
+        self.show({2: 2}, name="B")
+        report = self.show({3: 3}, name="A", keep_others=True)
+        self.assertEqual("mine", report["style"])
+        self.assertEqual(ElementId(77), self.view.AnalysisDisplayStyleId)
+
+    def test_a_deleted_custom_style_leaves_the_view_style(self):
+        self.show({1: 1}, name="A", style=self.custom_style())
+        self.show({2: 2}, name="B")
+        del self.view.Document.elements[77]
+        report = self.show({3: 3}, name="A", keep_others=True)
+        self.assertIsNone(report["style"])
+        self.assertEqual("pyRevit AVF Marker - B", self.view.AnalysisDisplayStyleId)
+
     def test_keys_can_be_elements_ids_or_integers(self):
         report = self.show(
             [(self.elements[0], 1), (ElementId(2), "2.5"), (3, 3), (404, 4)]
@@ -740,6 +808,23 @@ class SamplePointTests(unittest.TestCase):
         face = Face("wall", XYZ(0.0, 0.0, 1.0), inside=outside_the_opening)
         point = avf._get_sample_uv(face)
         self.assertTrue(outside_the_opening(point), (point.U, point.V))
+
+    def test_face_that_no_sample_hits_is_not_used(self):
+        view = View3D()
+        sfm = SpatialFieldManager()
+        avf = load_avf(sfm, view)
+
+        def narrow_border(uv):
+            return uv.U < 0.1 or uv.U > 1.9
+
+        element = Element(Face("frame", XYZ(0.0, 0.0, 1.0), inside=narrow_border))
+        self.assertIsNone(
+            avf._get_sample_uv(Face("f", XYZ(0, 0, 1), inside=narrow_border))
+        )
+        results = avf.display_avf_values({element: 1.0}, view)
+        self.assertTrue(results[1][0])
+        self.assertEqual([()], sfm.anchors)
+        self.assertEqual("xyz", sfm.updates[0][1][0])
 
 
 class Guid:
@@ -964,11 +1049,16 @@ class ToolTests(unittest.TestCase):
         self.assertIs(first.handler, second.handler)
         self.assertEqual(1, len(self.tmpgfx.service.servers))
 
-    def test_closed_documents_are_dropped(self):
+    def test_closed_documents_are_dropped_with_their_payloads(self):
         closed = Document(2)
-        self.get_manager(document=closed).add_control("icon.bmp", None, self.view)
+        self.get_manager(document=closed).add_control(
+            "icon.bmp", None, self.view, payload="held"
+        )
+        self.get_manager().add_control("icon.bmp", None, self.view, payload="open")
         closed.IsValidObject = False
-        self.get_manager()
+        handler = self.get_manager("second").handler
+        self.assertEqual(["open"], list(handler._control_map.values()))
+        self.assertEqual(1, self.tmpgfx.dispose("Tool"))
         self.assertEqual(0, self.tmpgfx.dispose("Tool"))
 
     def test_dispose_leaves_other_tools_and_controls_alone(self):

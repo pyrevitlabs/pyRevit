@@ -184,7 +184,7 @@ def _get_sample_uv(face):
         )
         if face.IsInside(candidate):
             return candidate
-    return center
+    return None
 
 
 def _can_anchor_to_faces(view):
@@ -223,7 +223,10 @@ def _get_face_anchor(element, view):
     )
     if face is None or face.Reference is None:
         return None
-    return face.Reference, _get_sample_uv(face)
+    sample_uv = _get_sample_uv(face)
+    if sample_uv is None:
+        return None
+    return face.Reference, sample_uv
 
 
 def _get_center(element, view):
@@ -506,6 +509,38 @@ def _normalize_unit_pairs(unit):
     return [[unit_name, float(factor)] for unit_name, factor in _get_unit_pairs(unit)]
 
 
+def _read_unit_pairs(schema):
+    return [
+        [schema.GetUnitsName(index), float(schema.GetUnitsMultiplier(index))]
+        for index in range(schema.GetNumberOfUnits())
+    ]
+
+
+def _find_borrowed_schema(sfm, name, previous):
+    """Return the result called *name* if its settings are not ours to change.
+
+    That is a result :func:`show_values` did not register itself. It can hold
+    values added some other way, whose numbers mean something only with its
+    current unit.
+    """
+    if sfm is None or (previous is not None and not previous["borrowed"]):
+        return None
+    schema_id = _find_schema_id(sfm, name)
+    return None if schema_id is None else sfm.GetResultSchema(schema_id)
+
+
+def _check_borrowed_settings(schema, unit, description):
+    unit_differs = unit is not None and _normalize_unit_pairs(unit) != _read_unit_pairs(
+        schema
+    )
+    if unit_differs or (description is not None and description != schema.Description):
+        raise PyRevitException(
+            "The result '{}' was not created by show_values, so its unit and "
+            "description cannot change: it can hold other values. Use another "
+            "name, or clear_avf_results to remove it.".format(schema.Name)
+        )
+
+
 def _choose_unit_pairs(unit, retained, passed_ids):
     """Return the unit pairs to use and whether they differ from *retained*."""
     if retained is None:
@@ -557,10 +592,21 @@ def _check_view(view, name):
         )
 
 
-def _choose_style(style, retained):
+def _choose_style(style, retained, doc):
     if not hasattr(style, "lower") or style != "auto":
         return style
-    return "marker" if retained is None else retained["style"]
+    if retained is None:
+        return "marker"
+    stored = retained["style"]
+    if stored is None or hasattr(stored, "lower"):
+        return stored
+    return doc.GetElement(get_elementid_from_value(stored))
+
+
+def _describe_style(style):
+    if style is None or hasattr(style, "lower"):
+        return style
+    return int(get_elementid_value(style.Id))
 
 
 def _check_style(view, style, marker_size_mm):
@@ -621,13 +667,16 @@ def show_values(
             ``(unit_name, multiplier)`` pairs the viewer can switch
             between. Numbers are not converted from Revit internal units.
             None means ``"Value"``, or the current unit when other values
-            are kept. One unit applies to all values of a name.
+            are kept. One unit applies to all values of a name. A result of
+            this name that :func:`show_values` did not create keeps its unit
+            and description, and asking for different ones raises.
         style (str or DB.Analysis.AnalysisDisplayStyle, optional):
             ``"marker"`` for a dot with the number, ``"colored"`` for a
             painted surface (orthographic 3D view without a section box, not
             wireframe), an existing style, or None to keep the view's current
             style. ``"auto"`` means ``"marker"``, or what the last call for
-            this name used when other values are kept. A view has one style,
+            this name used when other values are kept (the view's style
+            stays if that one was deleted since). A view has one style,
             so the last call decides how all names look.
         marker_size_mm (float, optional): Marker size on paper in
             millimetres, for markers. None keeps the size the style has,
@@ -665,19 +714,24 @@ def show_values(
     numbers = _read_values(values, keep_others)
     doc = view.Document
     elements_and_values, removals, failed = _find_elements(numbers, doc)
-    previous = _get_tracked_entry(
-        DB.Analysis.SpatialFieldManager.GetSpatialFieldManager(view), view, name
-    )
+    existing_sfm = DB.Analysis.SpatialFieldManager.GetSpatialFieldManager(view)
+    previous = _get_tracked_entry(existing_sfm, view, name)
+    borrowed_schema = _find_borrowed_schema(existing_sfm, name, previous)
     retained = previous if keep_others and previous and previous["values"] else None
-    style = _choose_style(style, retained)
+    style = _choose_style(style, retained, doc)
     _check_style(view, style, marker_size_mm)
     passed_ids = set(removals) | set(failed)
     passed_ids.update(
         int(get_elementid_value(element.Id)) for element, _ in elements_and_values
     )
-    unit_pairs, unit_changed = _choose_unit_pairs(unit, retained, passed_ids)
-    if description is None:
-        description = retained["description"] if retained else name
+    if borrowed_schema is not None:
+        _check_borrowed_settings(borrowed_schema, unit, description)
+        unit_pairs, unit_changed = _read_unit_pairs(borrowed_schema), False
+        description = borrowed_schema.Description
+    else:
+        unit_pairs, unit_changed = _choose_unit_pairs(unit, retained, passed_ids)
+        if description is None:
+            description = retained["description"] if retained else name
     face_candidate_ids = _get_face_candidate_ids(
         [element for element, _ in elements_and_values], view
     )
@@ -696,11 +750,12 @@ def show_values(
         if not keep_others:
             removed = _remove_primitives(sfm, current.values())
             current = {}
-        schema = _build_schema(name, description, unit_pairs, True)
-        if schema_id is None:
-            schema_id = sfm.RegisterResult(schema)
-        else:
-            sfm.SetResultSchema(schema_id, schema)
+        if borrowed_schema is None:
+            schema = _build_schema(name, description, unit_pairs, True)
+            if schema_id is None:
+                schema_id = sfm.RegisterResult(schema)
+            else:
+                sfm.SetResultSchema(schema_id, schema)
 
         def drop(elem_id):
             key = str(elem_id)
@@ -737,7 +792,8 @@ def show_values(
                 "values": current,
                 "unit": unit_pairs,
                 "description": description,
-                "style": style if style in ("marker", "colored") else None,
+                "style": _describe_style(style),
+                "borrowed": borrowed_schema is not None,
             },
         )
 
