@@ -23,6 +23,7 @@ PANE = (
     / "extensions/pyRevitTools.extension/lib/panes/customprops/pane.py"
 )
 PANE_METHODS = ("_collect_pending", "_is_field_changed", "_get_field_original")
+PASTE_METHODS = ("paste_clicked", "_on_field_text_changed")
 PastedNumber = namedtuple("PastedNumber", ["text", "internal_value", "data_type"])
 
 
@@ -83,7 +84,7 @@ def _row(name, field, original):
 class _PaneTestCase(unittest.TestCase):
     def setUp(self):
         namespace = _load_definitions(
-            PANE_METHODS + ("paste_clicked", "_pasted_number"),
+            PANE_METHODS + PASTE_METHODS + ("_pasted_number",),
             framework=_fake_framework(),
             DB=types.SimpleNamespace(
                 StorageType=types.SimpleNamespace(Double="Double", Integer="Integer")
@@ -93,9 +94,7 @@ class _PaneTestCase(unittest.TestCase):
             _RAW_INT_TAG="_raw_int",
             _PASTED_NUMBER_TAG="_pasted_number",
         )
-        methods = dict(
-            (name, namespace[name]) for name in PANE_METHODS + ("paste_clicked",)
-        )
+        methods = dict((name, namespace[name]) for name in PANE_METHODS + PASTE_METHODS)
         self.pane = type("Pane", (object,), methods)()
         self.pane._varies = "<varies>"
         self.pane._worksets = [("Shared", 5)]
@@ -165,11 +164,23 @@ class PastedNumberTests(_PaneTestCase):
             self.collect(row)["additional"]["Length"].internal_value,
         )
 
+    def type_into(self, field, *texts):
+        self.pane._suppress_dirty = False
+        for text in texts:
+            field.Text = text
+            self.pane._on_field_text_changed(field, None)
+
     def test_typing_after_a_paste_wins(self):
         field = _TextBox(Text="1500")
         row = self.paste(field)
-        field.Text = "1200"
+        self.type_into(field, "1200")
         self.assertEqual({"Length": "1200"}, self.collect(row)["additional"])
+
+    def test_retyping_the_pasted_text_writes_what_was_typed(self):
+        field = _TextBox(Text="1500")
+        row = self.paste(field)
+        self.type_into(field, "1", "1000")
+        self.assertEqual({"Length": "1000"}, self.collect(row)["additional"])
 
     def test_a_blank_copy_is_not_written(self):
         row = self.paste(_TextBox(Text="1500"), shown="")

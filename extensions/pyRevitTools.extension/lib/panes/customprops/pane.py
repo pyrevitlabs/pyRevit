@@ -894,6 +894,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
     def _on_field_text_changed(self, sender, args):
         if not self._suppress_dirty:
+            sender.Tag = None
             self._mark_field_dirty(sender)
 
     # ── UI helpers ────────────────────────────────────────────────────────────
