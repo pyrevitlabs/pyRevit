@@ -56,10 +56,23 @@ public class AgentSkillCommandTextTests : SkillInstallFixture {
     }
 
     [Fact]
-    public void TheStaleWarningIsStrippedOfBidiCharactersInThePath() {
-        var warning = PyRevitCLIAgentCmds.StaleWarning("project", "agents", "C:\\my" + (char)0x202E + "proj");
+    public void ATrailingBackslashInAQuotedPathIsDoubledSoItCannotEscapeTheClosingQuote() {
+        Assert.Equal("pyrevit agent skills install --scope=project --target=agents --path=\"C:\\my proj\\\\\"", PyRevitCLIAgentCmds.RefreshCommand("project", "agents", "C:\\my proj\\"));
+        Assert.Equal("pyrevit agent skills install --scope=project --target=agents --path=\"C:\\a \\\"b\\\\\\\"c\"", PyRevitCLIAgentCmds.RefreshCommand("project", "agents", "C:\\a \"b\\\"c"));
+        Assert.Equal("pyrevit agent skills install --scope=project --target=agents --path=C:\\", PyRevitCLIAgentCmds.RefreshCommand("project", "agents", "C:\\"));
+    }
 
-        Assert.DoesNotContain(((char)0x202E).ToString(), warning, StringComparison.Ordinal);
-        Assert.Contains("--path=C:\\myproj", warning);
+    [Fact]
+    public void TheStaleWarningPrintsTheCommandOnlyWhenNoArgumentNeedsSanitizing() {
+        var unchanged = PyRevitCLIAgentCmds.StaleWarning("project", "agents", "C:\\my proj");
+        var changed = PyRevitCLIAgentCmds.StaleWarning("user", "claude", "C:\\my" + (char)0x202E + "proj");
+
+        Assert.Contains("Run 'pyrevit agent skills install --scope=project --target=agents --path=\"C:\\my proj\"'", unchanged);
+        Assert.DoesNotContain("pyrevit agent skills install --scope", changed);
+        Assert.DoesNotContain("--path=", changed);
+        Assert.Contains("cannot be shown", changed);
+        Assert.Contains("scope user", changed);
+        Assert.Contains("target claude", changed);
+        Assert.DoesNotContain(((char)0x202E).ToString(), changed, StringComparison.Ordinal);
     }
 }

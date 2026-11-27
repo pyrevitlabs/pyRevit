@@ -425,17 +425,40 @@ namespace pyRevitCLI {
                 + (path == null ? string.Empty : $" --path={QuoteForShell(path)}");
         }
 
+        /// <summary>
+        /// Quotes a command line value the way Windows argument parsing reads it back: backslashes before a quote
+        /// (embedded or closing) are doubled and embedded quotes are escaped.
+        /// </summary>
         private static string QuoteForShell(string value) {
-            return value.Any(character => char.IsWhiteSpace(character) || "\"'&|<>^%()$;`!".IndexOf(character) >= 0)
-                ? "\"" + value.Replace("\"", "\\\"") + "\""
-                : value;
+            if (!value.Any(character => char.IsWhiteSpace(character) || "\"'&|<>^%()$;`!".IndexOf(character) >= 0))
+                return value;
+            var quoted = new System.Text.StringBuilder("\"");
+            var backslashes = 0;
+            foreach (var character in value) {
+                if (character == '\\') {
+                    backslashes++;
+                    continue;
+                }
+                quoted.Append('\\', character == '"' ? backslashes * 2 + 1 : backslashes);
+                quoted.Append(character);
+                backslashes = 0;
+            }
+            return quoted.Append('\\', backslashes * 2).Append('"').ToString();
         }
 
         /// <summary>
-        /// The warning printed when installed skills are stale, with the exact command that refreshes them.
+        /// The warning printed when installed skills are stale. It carries the exact refresh command only when no
+        /// argument of it changes under console sanitizing; otherwise it asks the user to repeat the original options,
+        /// because a sanitized path would select a different folder.
         /// </summary>
         internal static string StaleWarning(string scope, string targets, string path) {
-            return SkillFiles.Printable($"Warning: some installed skills are stale. Run '{RefreshCommand(scope, targets, path)}' to refresh them.");
+            var prefix = "Warning: some installed skills are stale. ";
+            var command = RefreshCommand(scope, targets, path);
+            if (SkillFiles.Printable(command) == command)
+                return $"{prefix}Run '{command}' to refresh them.";
+            var safeScope = SkillFiles.Printable(scope.Trim().ToLowerInvariant());
+            var safeTargets = SkillFiles.Printable(string.Join(",", SkillTargets.ParseTargets(targets)));
+            return $"{prefix}Repeat your original 'pyrevit agent skills install' options (scope {safeScope}, target {safeTargets}) to refresh them; the --path contains characters that cannot be shown.";
         }
 
         private static void PrintSkillLine(string line) {
