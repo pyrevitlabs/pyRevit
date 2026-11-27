@@ -94,6 +94,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var document = AgentDocumentBinding.Parse(parameters["document"]);
             if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || IsNetworkOrDevicePath(workspace) || !Directory.Exists(workspace)))
                 throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing local folder.");
+            if (!string.IsNullOrWhiteSpace(workspace))
+                RejectLinkedWorkspace(workspace);
             var timeoutSeconds = AgentParams.Get<double?>(parameters, "timeout_s") ?? DefaultTimeoutSeconds;
             if (double.IsNaN(timeoutSeconds) || timeoutSeconds <= 0 || timeoutSeconds > MaxTimeoutSeconds)
                 throw new AgentException("invalid_params", $"'timeout_s' must be more than 0 and at most {MaxTimeoutSeconds}.");
@@ -117,6 +119,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </remarks>
         private static bool IsNetworkOrDevicePath(string path) {
             return path.Length >= 2 && IsSeparator(path[0]) && IsSeparator(path[1]);
+        }
+
+        /// <remarks>
+        /// Checked when the request is parsed, so it does not stop a folder from being swapped for
+        /// a link before the run imports from it. Any folder on the path that reports the reparse
+        /// attribute (junction, symlink, mount point) counts; cloud placeholder folders, such as a
+        /// OneDrive root, do not report it and are not detected.
+        /// </remarks>
+        private static void RejectLinkedWorkspace(string workspace) {
+            var folder = Path.GetFullPath(workspace);
+            try {
+                for (var current = new DirectoryInfo(folder); current != null; current = current.Parent)
+                    if (current.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                        throw new AgentException("invalid_params", $"'workspace' must not be or sit behind a link or junction; '{current.FullName}' is one.");
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+                throw new AgentException("invalid_params", $"'workspace' could not be checked for links ({ex.Message}).");
+            }
         }
 
         private static bool IsSeparator(char character) {

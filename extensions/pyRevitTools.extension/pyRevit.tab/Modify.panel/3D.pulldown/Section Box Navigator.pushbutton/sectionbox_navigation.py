@@ -144,6 +144,22 @@ def get_next_level_below(z_coordinate, all_levels, tolerance):
     return None, None
 
 
+def get_level_at(z_coordinate, all_levels, tolerance):
+    """Get the level at the given Z coordinate, or None.
+
+    ``tolerance`` is the one :func:`get_next_level_above` and
+    :func:`get_next_level_below` skip, so the level named here is the one they
+    leave out. A host level wins over a linked one at the same elevation.
+    """
+    linked = None
+    for level in all_levels:
+        if abs(level.ProjectElevation - z_coordinate) <= tolerance:
+            if not hasattr(level, "SourceLink"):
+                return level
+            linked = linked or level
+    return linked
+
+
 def find_next_grid_in_direction(start_point, direction_vector, grids, tolerance):
     """
     Find the next grid line from start_point in the given direction (in XY plane).

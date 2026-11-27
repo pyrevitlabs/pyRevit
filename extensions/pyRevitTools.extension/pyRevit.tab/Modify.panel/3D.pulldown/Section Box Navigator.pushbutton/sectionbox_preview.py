@@ -2,19 +2,22 @@
 """Interactive 3D preview of the section or crop box in a docked output window.
 
 The page (``preview.js``, ``preview.css``) draws the model, levels, grids and
-scope boxes and lets the user drag the box faces with snapping; this module
-streams the model to it, applies the boxes it posts and keeps bookmarks.
+scope boxes and lets the user drag the box faces and, on plan views, the view
+range planes with snapping; this module streams the model to it, applies what
+it posts and keeps bookmarks.
 
-Page -> Python actions: ``ready``, ``apply_box``, ``use_scope_box``,
+Page -> Python actions: ``ready``, ``apply_box``, ``apply_view_range``
+(new heights of view range planes), ``use_scope_box``,
 ``bookmark_save``, ``bookmark_apply``, ``bookmark_rename``,
 ``bookmark_delete``, ``fit_visible``, ``load_group`` (stream the elements of
-one category that the point limit left out), ``save_settings`` (the page's
-display and box toggles, kept in the navigator's config).
+one category that are not loaded: left out by the point limit, or only lines at
+the view's detail level), ``save_settings`` (the page's display and box
+toggles, kept in the navigator's config).
 Python -> page events: ``scene`` (a model chunk), ``view`` (box, kind and
 bookmarks of the active view), ``box`` (the box changed in Revit), ``guides``
-(levels, grids and scope boxes), ``sources`` (link geometry added or
-removed, or streaming finished with the elements left out per category),
-``result``, ``error``.
+(levels, grids and scope boxes), ``sources`` (link geometry added or removed,
+the whole model dropped to be streamed again, or streaming finished with the
+elements left out per category), ``result``, ``error``.
 
 Important:
     Handlers outlive the command, so the bundle must run on a persistent
@@ -26,7 +29,7 @@ import json
 import os
 import uuid
 
-from pyrevit import DB, HOST_APP, script
+from pyrevit import DB, HOST_APP, forms, script
 from pyrevit.compat import get_elementid_from_value_func
 from pyrevit.framework import Controls, System
 from pyrevit.revit import events
@@ -48,11 +51,19 @@ from sectionbox_scene import (
     view_focus_bounds,
     view_payload,
 )
+from sectionbox_scene_filter import SceneFilter
 from sectionbox_settings import dump_settings, parse_settings
 from sectionbox_sources import (
     get_visible_model_elements,
     scope_box_to_bounding_box,
 )
+from sectionbox_viewrange import (
+    ViewRangeError,
+    build_view_range,
+    controlling_template_name,
+    has_view_range,
+)
+from sectionbox_viewrange_rules import BOTTOM, CUT, DEPTH, TOP
 
 logger = script.get_logger()
 get_elementid_from_value = get_elementid_from_value_func()
@@ -64,10 +75,17 @@ PIN_TOOLTIP = "Keep On Top"
 BOOKMARK_SLOT = "SectionBoxPreviewBookmarks"
 SETTINGS_OPTION = "preview_settings"
 MIN_EXTENT_FT = 1e-6
+RANGE_PLANE_STRINGS = {
+    TOP: "PreviewRangeTop",
+    CUT: "PreviewRangeCut",
+    BOTTOM: "PreviewRangeBottom",
+    DEPTH: "PreviewRangeDepth",
+}
 PAGE_STRINGS = (
     "PreviewTitle",
     "PreviewLevels",
     "PreviewGrids",
+    "PreviewAllGrids",
     "PreviewNames",
     "PreviewScopeBoxes",
     "PreviewModel",
@@ -125,6 +143,17 @@ PAGE_STRINGS = (
     "PreviewNotLoaded",
     "PreviewLoadGroup",
     "PreviewSearch",
+    "PreviewViewRange",
+    "PreviewRangeTop",
+    "PreviewRangeCut",
+    "PreviewRangeBottom",
+    "PreviewRangeDepth",
+    "PreviewRangeTemplate",
+    "PreviewRangeRelative",
+    "PreviewRangeOffsetPrompt",
+    "PreviewRangeNotANumber",
+    "PreviewRangeFailed",
+    "PreviewRangeHelp",
 )
 
 
@@ -204,9 +233,11 @@ class PreviewSession(object):
         self._ready = False
         self._generation = 0
         self._linked = False
+        self._model_filter = SceneFilter()
         for action, handler in (
             ("ready", self._on_ready),
             ("apply_box", self._on_apply_box),
+            ("apply_view_range", self._on_apply_view_range),
             ("use_scope_box", self._on_use_scope_box),
             ("bookmark_save", self._on_bookmark_save),
             ("bookmark_apply", self._on_bookmark_apply),
@@ -315,6 +346,7 @@ class PreviewSession(object):
         if self._same_document():
             self._send("view" if changed_view else "box", self._view_payload(view))
             self._send("guides", self._guides_payload())
+            self._model_filter_changed(view)
             self._linked_changed()
             return
         self.origin = scene_origin(self.doc, info["box"] if info else None)
@@ -399,6 +431,7 @@ class PreviewSession(object):
     def _view_payload(self, view):
         payload = view_payload(view, self.datafilename, self.origin)
         payload["generation"] = self._view_generation
+        payload["theme"] = "dark" if forms.is_dark_theme() else "light"
         if self._applied_revision is not None:
             payload["revision"] = self._applied_revision
         payload["bookmarks"] = self._bookmark_entries(view, payload["kind"])
@@ -419,20 +452,58 @@ class PreviewSession(object):
         self._ready = True
         self._send("guides", self._guides_payload())
         self._linked = self.include_links()
-        focus = self._focus_bounds()
-        self._streams = [ModelStream(self.doc, self.origin, False, focus=focus)]
-        if self._linked:
-            self._streams.append(self._link_stream(focus))
+        self._model_filter = SceneFilter.for_view(self._followed_view())
+        self._streams = self._new_streams()
         self._stream_all()
 
+    def _followed_view(self):
+        return self.doc.GetElement(self.view_id) if self.view_id else None
+
     def _focus_bounds(self):
-        view = self.doc.GetElement(self.view_id) if self.view_id else None
+        view = self._followed_view()
         if view is None:
             return None
         return view_focus_bounds(view, self.datafilename)
 
+    def _new_streams(self):
+        focus = self._focus_bounds()
+        streams = [
+            ModelStream(
+                self.doc,
+                self.origin,
+                False,
+                focus=focus,
+                scene_filter=self._model_filter,
+            )
+        ]
+        if self._linked:
+            streams.append(self._link_stream(focus))
+        return streams
+
     def _link_stream(self, focus=None):
-        return ModelStream(self.doc, self.origin, True, links_only=True, focus=focus)
+        return ModelStream(
+            self.doc,
+            self.origin,
+            True,
+            links_only=True,
+            focus=focus,
+            scene_filter=self._model_filter,
+        )
+
+    def _model_filter_changed(self, view):
+        """Stream the model again when ``view`` reads it differently.
+
+        That is another detail level, phase, phase filter or design option.
+        """
+        if not self._ready:
+            return
+        scene_filter = SceneFilter.for_view(view)
+        if scene_filter.key == self._model_filter.key:
+            return
+        self._model_filter = scene_filter
+        self._streams = self._new_streams()
+        self._send("sources", {"dropAll": True, "loading": True})
+        self._stream_all()
 
     def _load_settings(self):
         if self.config is None:
@@ -446,9 +517,9 @@ class PreviewSession(object):
         script.save_config()
 
     def _on_load_group(self, payload, request_id):
-        """Queue the left-out elements of a category and stream them.
+        """Queue the elements of a category that are not loaded and stream them.
 
-        A request that finds nothing left out still restarts a stream that an
+        A request that finds nothing to load still restarts a stream that an
         error interrupted: the elements it queued stay in the stream, so the
         retry after the error resumes them instead of reporting an empty
         category.
@@ -536,6 +607,7 @@ class PreviewSession(object):
         event = "box" if view.Id == self.view_id else "view"
         self._follow(view)
         self._send(event, self._view_payload(view))
+        self._model_filter_changed(view)
 
     def sync_box(self, view):
         """Send the view's current box after the navigator's buttons changed it."""
@@ -607,6 +679,34 @@ class PreviewSession(object):
             self._finish(view, request_id, False, str(ex))
             return
         self._finish(view, request_id, True)
+
+    def _on_apply_view_range(self, payload, request_id):
+        view = self._active_view(payload)
+        self._applied_revision = payload.get("revision")
+        try:
+            self._write_view_range(view, payload["planes"])
+        except Exception as ex:
+            self._finish(view, request_id, False, self._view_range_problem(ex))
+            return
+        self._finish(view, request_id, True)
+
+    def _write_view_range(self, view, planes):
+        if not has_view_range(view):
+            raise ValueError("The view has no view range")
+        template = controlling_template_name(view)
+        if template:
+            raise ValueError(self.get_string("PreviewRangeTemplate").format(template))
+        changes = dict((plane, float(z) + self.origin.Z) for plane, z in planes.items())
+        view_range = build_view_range(view, changes)
+        self._commit_edit("Adjust View Range", lambda: view.SetViewRange(view_range))
+
+    def _view_range_problem(self, error):
+        if isinstance(error, ViewRangeError) and error.reason == "order":
+            higher, lower = (
+                self.get_string(RANGE_PLANE_STRINGS[plane]) for plane in error.planes
+            )
+            return self.get_string("PreviewRangeInvalid").format(higher, lower)
+        return str(error)
 
     def _on_use_scope_box(self, payload, request_id):
         view = self._active_view(payload)

@@ -226,7 +226,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         }
 
         /// <summary>
-        /// Checks if a component is supported based on Revit version constraints and beta status.
+        /// Checks if a component is supported, as decided by <see cref="ComponentSupportUtils.IsSupported"/>.
         /// </summary>
         /// <param name="component">The component to check.</param>
         /// <returns>True if the component should be loaded, false otherwise.</returns>
@@ -265,12 +265,8 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return;
             }
 
-            // Check version compatibility and beta status before processing
             if (!IsComponentSupported(component))
-            {
-                _logger.Debug($"Skipping component '{component.DisplayName}' due to version incompatibility or beta status.");
                 return;
-            }
 
             switch (component.Type)
             {

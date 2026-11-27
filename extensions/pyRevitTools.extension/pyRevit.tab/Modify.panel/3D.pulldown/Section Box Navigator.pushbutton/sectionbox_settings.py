@@ -10,7 +10,18 @@ Nothing here imports Revit.
 
 import json
 
-FLAG_KEYS = ("model", "levels", "allLevels", "grids", "names", "scope", "live", "snap")
+FLAG_KEYS = (
+    "model",
+    "levels",
+    "allLevels",
+    "grids",
+    "allGrids",
+    "names",
+    "scope",
+    "viewRange",
+    "live",
+    "snap",
+)
 CUT_MODES = ("ghost", "hide", "off")
 GHOST_MIN = 0.02
 GHOST_MAX = 0.6

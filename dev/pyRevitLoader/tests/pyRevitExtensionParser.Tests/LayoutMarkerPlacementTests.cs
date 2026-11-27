@@ -87,7 +87,7 @@ namespace pyRevitExtensionParser.Tests
             Assert.That(children, Is.EqualTo(new[] { "First", "---", "Second" }));
         }
 
-        /// <summary>Components missing from the layout still follow the laid out ones.</summary>
+        /// <summary>Components missing from the layout stay in the parsed tree, behind the laid out ones.</summary>
         [Test]
         public void UnlistedComponents_FollowTheLayout_WhenAnEarlierEntryHasNoBundle()
         {

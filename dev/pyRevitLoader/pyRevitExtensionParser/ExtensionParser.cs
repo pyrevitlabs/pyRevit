@@ -708,6 +708,8 @@ namespace pyRevitExtensionParser
         /// Recursively reorders the given component's Children in-place
         /// according to its own LayoutOrder.  If LayoutOrder is null or empty,
         /// we skip sorting here but still recurse into children.
+        /// Children that a LayoutOrder does not list are marked <see cref="ParsedComponent.IsExcludedByLayout"/>
+        /// and kept behind the listed ones. Layout directives only see the listed ones.
         /// </summary>
         /// <param name="component">The component to reorder</param>
         /// <param name="extension">The root extension (to store external layout directives)</param>
@@ -732,8 +734,9 @@ namespace pyRevitExtensionParser
                 for (int idx = 0; idx < component.LayoutOrder.Count; idx++)
                 {
                     var layoutItem = component.LayoutOrder[idx];
+                    var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
 
-                    if (layoutItem.Contains("---"))
+                    if (matchingComponent == null && layoutItem.Contains("---"))
                     {
                         if (idx < lastLayoutIndex)
                         {
@@ -748,7 +751,7 @@ namespace pyRevitExtensionParser
                         continue;
                     }
 
-                    if (layoutItem.Contains(">>>"))
+                    if (matchingComponent == null && layoutItem.Contains(">>>"))
                     {
                         if (idx < lastLayoutIndex)
                         {
@@ -764,7 +767,6 @@ namespace pyRevitExtensionParser
                         continue;
                     }
 
-                    var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
                     if (matchingComponent != null && !reorderedChildren.Contains(matchingComponent))
                     {
                         if (component.LayoutItemTitles != null &&
@@ -777,18 +779,18 @@ namespace pyRevitExtensionParser
                     }
                 }
 
-                // Add any components not in layout order at the end
+                // Apply layout directives (before, after, beforeall, afterall)
+                // External directives (where target is not found) are stored for post-UI-build sorting
+                ApplyLayoutDirectives(component, reorderedChildren, extension, tabName);
+
                 foreach (var child in component.Children)
                 {
                     if (child != null && !reorderedChildren.Contains(child))
                     {
+                        child.IsExcludedByLayout = true;
                         reorderedChildren.Add(child);
                     }
                 }
-
-                // Apply layout directives (before, after, beforeall, afterall)
-                // External directives (where target is not found) are stored for post-UI-build sorting
-                ApplyLayoutDirectives(component, reorderedChildren, extension, tabName);
 
                 component.Children = reorderedChildren;
             }

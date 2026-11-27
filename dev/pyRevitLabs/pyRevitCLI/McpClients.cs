@@ -34,9 +34,17 @@ namespace pyRevitCLI {
 
         public abstract McpClientKind Kind { get; }
 
-        public abstract void Install(string command, bool project);
+        public void Install(string command, bool project) {
+            if (project)
+                RejectLinkedProjectTargets();
+            InstallRegistration(command, project);
+        }
+
+        protected abstract void InstallRegistration(string command, bool project);
 
         public void Uninstall(bool project) {
+            if (project)
+                RejectLinkedProjectTargets();
             RemoveRegistration(project);
             Console.WriteLine($"Removed MCP server \"{PyRevitCLIAgentCmds.McpServerName}\" from {Kind}.");
         }
@@ -54,6 +62,31 @@ namespace pyRevitCLI {
         public abstract void UninstallFromUserProfile(bool ownedOnly, string home, string appData);
 
         protected abstract void RemoveRegistration(bool project);
+
+        /// <summary>
+        /// The paths a project-scope install or removal touches: the current folder, plus the
+        /// config file and its folder for clients that write one themselves.
+        /// </summary>
+        protected virtual string[] ProjectTargets() {
+            return new[] { Environment.CurrentDirectory };
+        }
+
+        /// <summary>
+        /// Refuses a project-scope write when a target, or any folder above it, is a link or
+        /// junction, so the config isn't written outside the project.
+        /// </summary>
+        /// <remarks>
+        /// Checked when the command runs; it does not guard against a swap before the write. Only
+        /// folders that report the reparse-point attribute are refused; cloud placeholder folders
+        /// are not detected.
+        /// </remarks>
+        private void RejectLinkedProjectTargets() {
+            foreach (var target in ProjectTargets()) {
+                var link = ReparsePoints.FindLink(target);
+                if (link != null)
+                    throw new PyRevitException($"{link} is a link or junction, so the project config is not changed; run this from the real project folder.");
+            }
+        }
 
         protected static bool IsThisInstall(string registered) {
             var current = Environment.ProcessPath;
@@ -82,7 +115,7 @@ namespace pyRevitCLI {
 
         protected abstract string ReadRegisteredCommand(string home);
 
-        public override void Install(string command, bool project) {
+        protected override void InstallRegistration(string command, bool project) {
             RejectUnsupportedScope(project);
             PyRevitCLIAgentCmds.ClientCli(Tool, RemoveArguments(project), true);
             PyRevitCLIAgentCmds.ClientCli(Tool, AddArguments(command, project), false);
@@ -122,6 +155,11 @@ namespace pyRevitCLI {
         public override McpClientKind Kind => McpClientKind.Claude;
 
         protected override string Tool => "claude";
+
+        protected override string[] ProjectTargets() {
+            var folder = Environment.CurrentDirectory;
+            return new[] { folder, Path.Combine(folder, ".claude"), Path.Combine(folder, ".mcp.json") };
+        }
 
         protected override string AddArguments(string command, bool project) {
             return $"mcp add --scope {Scope(project)} {PyRevitCLIAgentCmds.McpServerName} -- \"{command}\" mcp";
@@ -190,12 +228,16 @@ namespace pyRevitCLI {
             return entry?.Value<string>("command");
         }
 
-        public override void Install(string command, bool project) {
+        protected override void InstallRegistration(string command, bool project) {
             UpdateJsonConfig(ConfigPath(project), ServersKey, Entry(command));
         }
 
         protected override void RemoveRegistration(bool project) {
             UpdateJsonConfig(ConfigPath(project), ServersKey, null);
+        }
+
+        protected override string[] ProjectTargets() {
+            return new[] { Environment.CurrentDirectory, Path.GetDirectoryName(ProjectConfigPath()), ProjectConfigPath() };
         }
 
         public override void UninstallFromUserProfile(bool ownedOnly, string home, string appData) {
