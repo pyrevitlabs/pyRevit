@@ -382,15 +382,26 @@ namespace pyRevitLabs.PyRevit {
         /// <c>true</c> or <c>false</c> for <c>enabled</c>, <c>user_skills</c> and <c>reckless</c>; a policy for
         /// <c>policy</c> (the most permissive one users may select); an engine for <c>engine</c>.
         /// </param>
+        /// <param name="restrictAccess">
+        /// Apply <see cref="RestrictAdminConfigAccess"/> before writing, so standard users cannot edit
+        /// the pin. Every real lock passes true; false only suits test files the caller owns.
+        /// </param>
         /// <remarks>
         /// Side effects: rewrites the machine config. Requires an elevated process in practice
-        /// (checked by the caller); pair with <see cref="RestrictAdminConfigAccess"/> so
-        /// standard users cannot edit the pin.
+        /// (checked by the caller).
+        /// Invariant: the pin is written only after the value is validated and the permissions are
+        /// restricted. A failed permission change must not leave a pin standard users can edit.
         /// </remarks>
-        /// <exception cref="PyRevitException"><paramref name="key"/> or <paramref name="value"/> is not valid.</exception>
-        public static void LockAgentKey(string key, string value) {
+        /// <exception cref="PyRevitException">
+        /// <paramref name="key"/> or <paramref name="value"/> is not valid, or the permissions could not
+        /// be restricted. Nothing is pinned in either case.
+        /// </exception>
+        public static void LockAgentKey(string key, string value, bool restrictAccess = false) {
             EnsureLockableKey(key);
-            AgentAdminPolicy.SetPin(key, NormalizeAgentLockValue(key, value));
+            string normalized = NormalizeAgentLockValue(key, value);
+            if (restrictAccess)
+                RestrictAdminConfigAccess();
+            AgentAdminPolicy.SetPin(key, normalized);
         }
 
         /// <summary>Removes the administrator pin on <paramref name="key"/>.</summary>
@@ -415,15 +426,21 @@ namespace pyRevitLabs.PyRevit {
         /// Important: without this, the account that first created the machine config owns it and can
         /// rewrite its own ACL, which would make an admin pin advisory. Does not harden the containing
         /// folder; its inherited rights decide whether standard users can replace the file.
-        /// Requires an elevated process.
+        /// Creates the file empty when missing, so a pin written afterwards lands in a restricted file;
+        /// a file created here is removed again if the change fails. Requires an elevated process.
         /// </remarks>
         /// <exception cref="PyRevitException">The permissions could not be changed.</exception>
         public static void RestrictAdminConfigAccess() {
             string path = AgentAdminPolicy.MachineConfigPath;
-            if (!File.Exists(path))
-                return;
+            bool created = false;
 
             try {
+                if (!File.Exists(path)) {
+                    Directory.CreateDirectory(Path.GetDirectoryName(path));
+                    using (new FileStream(path, FileMode.CreateNew)) { }
+                    created = true;
+                }
+
                 var info = new FileInfo(path);
                 var security = info.GetAccessControl();
                 security.SetOwner(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null));
@@ -442,6 +459,8 @@ namespace pyRevitLabs.PyRevit {
                 info.SetAccessControl(security);
             }
             catch (Exception ex) {
+                if (created)
+                    TryDeleteFile(path);
                 throw new PyRevitException($"Could not restrict permissions on \"{path}\"", ex);
             }
         }
@@ -513,6 +532,15 @@ namespace pyRevitLabs.PyRevit {
             }
             catch {
                 return sid.Value;
+            }
+        }
+
+        private static void TryDeleteFile(string path) {
+            try {
+                File.Delete(path);
+            }
+            catch (Exception ex) {
+                _logger.Debug("Could not remove \"{@Path}\": {@Error}", path, ex.Message);
             }
         }
 

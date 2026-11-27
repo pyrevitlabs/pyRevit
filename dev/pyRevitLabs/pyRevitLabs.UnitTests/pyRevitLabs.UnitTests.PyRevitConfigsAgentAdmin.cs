@@ -228,6 +228,22 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        public void LockAgentKey_InvalidValue_ThrowsBeforeTouchingPermissions() {
+            Assert.ThrowsException<PyRevitException>(
+                () => PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentEnabledKey, "maybe", restrictAccess: true));
+            Assert.IsFalse(File.Exists(_adminConfig));
+        }
+
+        [TestMethod]
+        public void LockAgentKey_EmptyMachineConfig_IsPinned() {
+            WriteAdminConfig(string.Empty);
+
+            PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentEnabledKey, "false");
+
+            Assert.AreEqual("false", PyRevitConfigs.GetAgentPin(PyRevitConsts.ConfigsAgentEnabledKey));
+        }
+
+        [TestMethod]
         public void UnlockAgentKey_RestoresTheUserValue() {
             WriteUserConfig("[agent]\r\nenabled = true\r\n");
             PyRevitConfigs.LockAgentKey(PyRevitConsts.ConfigsAgentEnabledKey, "false");

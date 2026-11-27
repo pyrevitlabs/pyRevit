@@ -413,8 +413,7 @@ namespace pyRevitCLI {
                 throw new PyRevitException($"Give the value to lock \"{key}\" to.");
 
             RequireElevation();
-            PyRevitConfigs.LockAgentKey(key, value);
-            PyRevitConfigs.RestrictAdminConfigAccess();
+            PyRevitConfigs.LockAgentKey(key, value, restrictAccess: true);
             Console.WriteLine("Locked agent setting \"{0}\" for all users. Running Revit sessions pick it up on the next agent request.", key);
             WarnAboutFolderPermissions();
         }
