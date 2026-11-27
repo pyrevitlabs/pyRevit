@@ -11767,7 +11767,11 @@ against the folder content, not proof of origin: a folder counts as pyRevit-owne
 that very folder (a copied folder with a copied record is treated as your own), its markdown files match the
 recorded digest and it holds nothing else.</p>
 <ul>
-<li><code>install</code> is idempotent: a current copy is left alone and a stale pyRevit-owned copy is refreshed.</li>
+<li><code>install</code> is idempotent: a current copy is left alone and a stale pyRevit-owned copy is refreshed.
+  <code>current</code> means the folder content equals what the installer would write for the shipped skill, whatever the
+  record claims; a folder that differs only from the shipped skill reads <code>stale</code> and is refreshed. A refresh
+  re-checks the copy after moving it aside and keeps it (reported as <code>edited</code>) if it changed in between, which
+  narrows but does not remove the window for an edit made at the same moment.</li>
 <li>A folder with the skill's name that is not pyRevit-owned (no valid marker, a plain file, or a link) is never
   overwritten, replaced or deleted. The skill is skipped with a warning, or installed as <code>pyrevit-&lt;name&gt;</code> with
   <code>--prefix</code>; the folder and the <code>name</code> line of the copied <code>SKILL.md</code> change together.</li>
