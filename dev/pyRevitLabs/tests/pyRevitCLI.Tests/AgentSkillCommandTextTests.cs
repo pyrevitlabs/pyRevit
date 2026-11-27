@@ -101,4 +101,27 @@ public class AgentSkillCommandTextTests : SkillInstallFixture {
 
         Assert.Contains("Run 'pyrevit agent skills install --scope=project --target=agents --path=\"" + path + "\"'", warning);
     }
+
+    [Theory]
+    [InlineData(0x2018)]
+    [InlineData(0x2019)]
+    [InlineData(0x201A)]
+    [InlineData(0x201B)]
+    [InlineData(0x27)]
+    [InlineData(0x2013)]
+    [InlineData(0xA0)]
+    [InlineData(0x09)]
+    public void AQuoteLikeOrDashLikeCharacterInThePathGetsTheInstructionAndNoCommand(int codePoint) {
+        var warning = PyRevitCLIAgentCmds.StaleWarning("project", "agents", "C:\\repos\\O" + (char)codePoint + "Connor");
+
+        Assert.DoesNotContain("--path=", warning);
+        Assert.Contains("a shell would interpret", warning);
+    }
+
+    [Fact]
+    public void AnAccentedLetterPathStillGetsTheCommand() {
+        var warning = PyRevitCLIAgentCmds.StaleWarning("project", "agents", "C:\\Users\\Jos" + (char)0xE9 + "\\proj");
+
+        Assert.Contains("Run 'pyrevit agent skills install --scope=project --target=agents --path=C:\\Users\\Jos" + (char)0xE9 + "\\proj'", warning);
+    }
 }
