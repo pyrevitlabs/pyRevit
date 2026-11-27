@@ -4,10 +4,13 @@
 Minimal end-to-end smoke test for pyrevit.revit.avf. Each run adds a value to
 one element, or updates it. Orthographic 3D views without a section box also
 offer a colored surface instead of a text marker.
+"""
+
+__doc__ = """Show a number on a picked element with the Analysis Visualization Framework.
+Run again to add another element, or pick the same element to change its number.
 
 Shift-click:
-Remove all numbers of this button from the active view.
-"""
+Remove all numbers of this button from the active view."""
 
 import math
 

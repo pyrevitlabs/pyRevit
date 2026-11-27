@@ -952,7 +952,6 @@ def display_avf_values(
         schema_id = _get_or_create_schema(
             sfm, schema_name, schema_desc, unit, visible=visible
         )
-        _mark_result_shared(sfm, view, schema_name)
 
         for elem_id, value, face_anchor, center in anchors:
             try:
@@ -965,6 +964,9 @@ def display_avf_values(
                     "Could not display element ID {}: {}".format(elem_id, ex)
                 )
                 results[elem_id] = (False, None)
+
+        if any(success for success, _ in results.values()):
+            _mark_result_shared(sfm, view, schema_name)
 
     return results
 
@@ -1005,7 +1007,6 @@ def update_avf_values(
         schema_id = _get_or_create_schema(
             sfm, schema_name, schema_desc, unit, visible=visible
         )
-        _mark_result_shared(sfm, view, schema_name)
 
         for element, new_value in element_value_dict.items():
             elem_id = get_elementid_value(element.Id)
@@ -1028,6 +1029,9 @@ def update_avf_values(
                     "Error updating element ID {}: {}".format(elem_id, ex)
                 )
                 results[elem_id] = False
+
+        if any(results.values()):
+            _mark_result_shared(sfm, view, schema_name)
 
     return results
 
@@ -1206,7 +1210,6 @@ def display_avf_values_at_points(
         schema_id = _get_or_create_schema(
             sfm, schema_name, schema_desc, unit, visible=visible
         )
-        _mark_result_shared(sfm, view, schema_name)
 
         for start in range(0, len(point_value_pairs), max_points_per_primitive):
             chunk = point_value_pairs[start : start + max_points_per_primitive]
@@ -1225,5 +1228,8 @@ def display_avf_values_at_points(
             sfp_id = sfm.AddSpatialFieldPrimitive()
             sfm.UpdateSpatialFieldPrimitive(sfp_id, domain_pts, vals, schema_id)
             sfp_ids.append(sfp_id)
+
+        if sfp_ids:
+            _mark_result_shared(sfm, view, schema_name)
 
     return sfp_ids

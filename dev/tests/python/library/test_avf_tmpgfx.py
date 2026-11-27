@@ -612,6 +612,29 @@ class ShowValuesTests(ShowValuesCase):
                 schema = next(iter(self.sfm.schemas.values()))
                 self.assertEqual(["min"], schema.units)
 
+    def test_a_lower_level_call_that_writes_nothing_locks_nothing(self):
+        def display(values):
+            self.avf.display_avf_values(values, self.view, schema_name="A")
+
+        def points(pairs):
+            self.avf.display_avf_values_at_points(pairs, self.view, schema_name="A")
+
+        def update(values):
+            self.avf.update_avf_values({}, values, self.view, schema_name="A")
+
+        calls = {
+            "display nothing": lambda: display({}),
+            "no points": lambda: points([]),
+            "update nothing": lambda: update({}),
+            "update unknown": lambda: update({self.elements[1]: 1.0}),
+        }
+        for label, write_nothing in calls.items():
+            with self.subTest(call=label):
+                self.setUp()
+                self.show({1: 5}, name="A", unit="min")
+                write_nothing()
+                self.show({1: 1}, name="A", unit="h")
+
     def test_a_unit_revit_rejects_removes_nothing(self):
         self.show({1: 10}, name="A")
         self.view.AnalysisDisplayStyleId = "mine"
