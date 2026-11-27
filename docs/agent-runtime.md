@@ -304,6 +304,39 @@ Installed copies are guidance, not policy: they cannot carry or change approvals
 policy. The MCP tools `list_skills` and `get_skill` and the server instructions are unchanged and remain the
 fallback for every client.
 
+#### Skills over MCP
+
+`pyrevit mcp` speaks two protocol revisions on one process, chosen per request:
+
+- **2025-06-18** (with the fallbacks 2025-03-26 and 2024-11-05): a client that sends `initialize` gets exactly the
+  stateful behavior and output of earlier releases.
+- **2026-07-28**: a request whose `params._meta` carries `io.modelcontextprotocol/protocolVersion` and
+  `io.modelcontextprotocol/clientCapabilities` is answered statelessly; there is no handshake. A client probes
+  with `server/discover` and falls back to `initialize` when that fails. `supportedVersions` is exactly
+  `["2026-07-28"]`; another requested version gets error -32022 with the supported list, and a missing `_meta`
+  key gets -32602. Results carry `resultType: "complete"`, and `server/discover`, `tools/list`, `resources/list`,
+  `resources/read` and the skills results also carry `ttlMs` (300000) and `cacheScope` (`public`).
+  Progress and `notifications/cancelled` work as before. `ping` still answers; `subscriptions/listen` and
+  `resources/templates/list` are not implemented.
+
+To a 2026-07-28 client the server always declares the Skills extension `io.modelcontextprotocol/skills` and
+`resources` in `server/discover`; it does not wait for the client to advertise it. It serves `skills/list`,
+`skills/get`, `resources/list` and `resources/read` on `skill://<name>/...` URIs:
+
+- Only the skills shipped with pyRevit are served. User skills (`%APPDATA%\pyRevit\agent\skills`) are never
+  listed and a URI for one is refused with -32602.
+- A skill is `skill://<name>/SKILL.md`; its `frontmatter` carries every front matter key as written, and
+  `resources` is the complete manifest (`SKILL.md` and every other markdown file, each once).
+- `digest` is `sha256:` plus the lowercase hex SHA-256 of the file's raw bytes and `size` is its byte length.
+  `resources/read` returns the text decoded from those same bytes, so a client can verify both.
+  Claude Code binds its approval of a skill to these digests, so a pyRevit upgrade that changes a skill asks
+  again.
+- Markdown files only, 128 KiB per file and 256 files per skill. A skill whose folder name differs from its
+  `name`, or that breaks a limit, is skipped. There is one page of results; a non-empty `cursor` is refused.
+  `resources/directory/read` is not offered (`directoryRead` stays false).
+- The tools `list_skills` and `get_skill` and the server `instructions` are unchanged and remain the fallback for
+  every client, including those that only speak the older revisions.
+
 ### Navigation links
 
 `inspect_elements` returns an element `link` with a destination, document reference and element
