@@ -1,22 +1,29 @@
+# -*- coding: utf-8 -*-
+"""Select all revision clouds that belong to a revision picked from a list."""
+
+from pyrevit import forms, script
 from pyrevit import revit, DB
-from pyrevit import forms
+from pyrevit.coreutils import applocales
+
+RESOURCES = script.get_bundle_file("resources.xaml")
 
 
-def select_clouds(revision_element):
-    cl = DB.FilteredElementCollector(revit.doc)
-    revclouds = cl.OfCategory(
-        DB.BuiltInCategory.OST_RevisionClouds
-    ).WhereElementIsNotElementType()
-
-    clouds = []
-
-    for revcloud in revclouds:
-        if revcloud.RevisionId == revision_element.Id:
-            clouds.append(revcloud.Id)
-
-    revit.get_selection().set_to(clouds)
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
-revision = forms.select_revisions(button_name="Select Revision Clouds", multiple=False)
-if revision:
-    select_clouds(revision)
+def main():
+    revision = forms.select_revisions(
+        title=_t("dialog_title"), button_name=_t("button_name"), multiple=False
+    )
+    if not revision:
+        return
+    clouds = revit.query.get_elements_by_class(DB.RevisionCloud, doc=revit.doc)
+    cloud_ids = [cloud.Id for cloud in clouds if cloud.RevisionId == revision.Id]
+    if not cloud_ids:
+        forms.alert(_t("no_clouds"), exitscript=True)
+    revit.get_selection().set_to(cloud_ids)
+
+
+if __name__ == "__main__":
+    main()

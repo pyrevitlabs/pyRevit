@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_category">Elemente ohne Beschriftung suchen, Kategorie:</sys:String>
+    <sys:String x:Key="no_elements">In der aktiven Ansicht wurden keine Elemente der Kategorie {} gefunden.</sys:String>
+    <sys:String x:Key="all_tagged">Alle Elemente der Kategorie {} in der aktiven Ansicht sind beschriftet.</sys:String>
+</ResourceDictionary>

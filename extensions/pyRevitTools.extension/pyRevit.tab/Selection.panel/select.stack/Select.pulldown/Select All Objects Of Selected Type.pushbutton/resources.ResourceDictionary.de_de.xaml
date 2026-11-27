@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_selection">Wählen Sie zuerst mindestens ein Element aus.</sys:String>
+    <sys:String x:Key="no_suitable">Kein Element der Auswahl lässt sich nach Typ abgleichen.</sys:String>
+    <sys:String x:Key="model_elements">Modellelemente ({})</sys:String>
+    <sys:String x:Key="view_elements">Elemente der Ansicht {} ({})</sys:String>
+    <sys:String x:Key="column_id">ID</sys:String>
+    <sys:String x:Key="column_class">Klasse</sys:String>
+</ResourceDictionary>
