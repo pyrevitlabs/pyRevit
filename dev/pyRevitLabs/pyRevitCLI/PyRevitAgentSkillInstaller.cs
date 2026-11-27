@@ -245,10 +245,12 @@ namespace pyRevitCLI {
 
         private static SkillAction RemoveOwned(SkillDestination destination, string directory, bool force, SkillsReport report) {
             var name = Path.GetFileName(directory);
-            if (name.StartsWith(SkillFiles.TempPrefix, StringComparison.Ordinal) || SkillFiles.IsLink(directory))
+            if (name.StartsWith(SkillFiles.TempPrefix, StringComparison.Ordinal))
                 return null;
             var action = new SkillAction { Target = destination.Label, Skill = name, Folder = directory };
             try {
+                if (SkillFiles.IsLink(directory))
+                    return null;
                 var check = SkillFiles.Verify(directory);
                 if (check.Marker == null)
                     return null;
@@ -297,7 +299,7 @@ namespace pyRevitCLI {
                         var forceWarning = ForceReplaceWarning(inspection, located.Folder);
                         if (forceWarning != null)
                             report.Warnings.Add(forceWarning);
-                        var leftover = SkillFiles.WriteAtomically(destination.SkillsDir, skill, located.Name, replace);
+                        var leftover = SkillFiles.WriteAtomically(destination.SkillsDir, skill, located.Name, replace, expectIntact: inspection.State == SkillState.Stale);
                         if (leftover != null)
                             report.Warnings.Add(leftover);
                         action.State = replace ? SkillState.Updated : SkillState.Installed;
@@ -305,6 +307,10 @@ namespace pyRevitCLI {
                 }
                 if (IsOwned(action.State))
                     WarnLongDescription(located.Folder, report.Warnings, SkillLabel);
+            }
+            catch (SkillChangedException ex) {
+                action.State = SkillState.Edited;
+                report.Warnings.Add($"Skipped '{skill.Name}': {ex.Message}");
             }
             catch (Exception ex) when (SkillFiles.IsRecoverable(ex)) {
                 action.State = SkillState.Failed;
@@ -364,7 +370,14 @@ namespace pyRevitCLI {
                 return new Inspection { State = SkillState.Foreign, Note = check.Note };
             if (!check.Intact)
                 return new Inspection { State = SkillState.Edited, Extras = check.Extras, Note = check.Note };
-            return new Inspection { State = check.Marker.Sha256 == skill.Digest ? SkillState.Current : SkillState.Stale };
+            string expected;
+            try {
+                expected = SkillFiles.ExpectedDigest(skill, Path.GetFileName(folder));
+            }
+            catch (Exception ex) when (SkillFiles.IsRecoverable(ex)) {
+                return new Inspection { State = SkillState.Edited, Note = ex.Message };
+            }
+            return new Inspection { State = check.ContentDigest == expected ? SkillState.Current : SkillState.Stale };
         }
 
         private static bool IsOwned(SkillState state) {

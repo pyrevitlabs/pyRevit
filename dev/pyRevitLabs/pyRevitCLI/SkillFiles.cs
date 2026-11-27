@@ -45,8 +45,17 @@ namespace pyRevitCLI {
         public bool Exists { get; set; }
         public SkillMarker Marker { get; set; }
         public bool Intact { get; set; }
+        public string ContentDigest { get; set; }
         public List<string> Extras { get; } = new List<string>();
         public string Note { get; set; }
+    }
+
+    /// <summary>
+    /// Raised when an installed copy changed between its inspection and its replacement.
+    /// </summary>
+    internal sealed class SkillChangedException : PyRevitException {
+        public SkillChangedException(string message) : base(message) {
+        }
     }
 
     /// <summary>
@@ -66,6 +75,7 @@ namespace pyRevitCLI {
         internal const int MaxFileBytes = 128 * 1024;
         internal static readonly TimeSpan StaleTempAge = TimeSpan.FromMinutes(10);
         internal static readonly TimeSpan LockTimeout = TimeSpan.FromSeconds(30);
+        internal static Action<string> BeforeSwap;
         private const string MarkerFile = ".pyrevit-skill.json";
         private const int MaxFilesPerSkill = 256;
         private const int MaxMarkerBytes = 4 * 1024;
@@ -125,10 +135,18 @@ namespace pyRevitCLI {
                     Collect(root, child, files);
         }
 
-        private static string Digest(List<(string Relative, string Path)> files) {
+        /// <summary>
+        /// The digest an installed copy named <paramref name="installedName"/> has when its content is exactly what
+        /// the installer writes for <paramref name="skill"/> (a prefixed copy has its <c>name</c> line rewritten).
+        /// </summary>
+        internal static string ExpectedDigest(ShippedSkill skill, string installedName) {
+            return installedName == skill.Name ? skill.Digest : Digest(skill.Files, installedName);
+        }
+
+        private static string Digest(List<(string Relative, string Path)> files, string renameTo = null) {
             using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)) {
                 foreach (var file in files) {
-                    var bytes = File.ReadAllBytes(file.Path);
+                    var bytes = ReadFile(file, renameTo);
                     sha256.AppendData(Encoding.UTF8.GetBytes(file.Relative));
                     sha256.AppendData(new byte[] { 0 });
                     sha256.AppendData(BitConverter.GetBytes((long)bytes.Length));
@@ -237,7 +255,8 @@ namespace pyRevitCLI {
             try {
                 var files = CollectFiles(folder);
                 check.Extras.AddRange(Extras(folder, folder, new HashSet<string>(files.Select(file => file.Relative), StringComparer.Ordinal)));
-                check.Intact = check.Extras.Count == 0 && Digest(files) == check.Marker.InstalledSha256;
+                check.ContentDigest = Digest(files);
+                check.Intact = check.Extras.Count == 0 && check.ContentDigest == check.Marker.InstalledSha256;
             }
             catch (Exception ex) when (IsRecoverable(ex)) {
                 check.Note = ex.Message;
@@ -304,11 +323,19 @@ namespace pyRevitCLI {
         /// <summary>
         /// Writes <paramref name="skill"/> to <c>skillsDir/installedName</c> through a temporary folder.
         /// </summary>
+        /// <param name="expectIntact">
+        /// The copy being replaced was intact when it was inspected, so it is checked again after it is moved aside.
+        /// </param>
         /// <returns>A warning when the replaced copy could not be deleted, otherwise null.</returns>
+        /// <exception cref="SkillChangedException">
+        /// The copy was edited between the inspection and the swap; it was put back and kept.
+        /// </exception>
         /// <remarks>
-        /// On failure the previous copy, if any, is still in place and the temporary folder is removed.
+        /// On failure the previous copy, if any, is still in place and the temporary folder is removed. The re-check
+        /// after moving the copy aside narrows, but does not remove, the window in which an edit made at the same
+        /// moment is lost.
         /// </remarks>
-        internal static string WriteAtomically(string skillsDir, ShippedSkill skill, string installedName, bool replace) {
+        internal static string WriteAtomically(string skillsDir, ShippedSkill skill, string installedName, bool replace, bool expectIntact) {
             if (!IsValidName(installedName))
                 throw new PyRevitException($"'{installedName}' is not a valid skill folder name.");
             var destination = Path.Combine(skillsDir, installedName);
@@ -316,7 +343,8 @@ namespace pyRevitCLI {
             var temp = Path.Combine(skillsDir, TempPrefix + Guid.NewGuid().ToString("N"));
             try {
                 Stage(temp, skill, installedName);
-                return SwapIn(temp, destination, skillsDir, replace);
+                BeforeSwap?.Invoke(destination);
+                return SwapIn(temp, destination, skillsDir, replace, expectIntact);
             }
             finally {
                 if (Directory.Exists(temp) && !IsLink(temp))
@@ -335,7 +363,7 @@ namespace pyRevitCLI {
             WriteMarker(temp, skill, installedName, Digest(CollectFiles(temp)));
         }
 
-        private static string SwapIn(string temp, string destination, string skillsDir, bool replace) {
+        private static string SwapIn(string temp, string destination, string skillsDir, bool replace, bool expectIntact) {
             if (!replace) {
                 Directory.Move(temp, destination);
                 return null;
@@ -345,6 +373,10 @@ namespace pyRevitCLI {
             var aside = Path.Combine(skillsDir, TempPrefix + Guid.NewGuid().ToString("N"));
             Directory.Move(destination, aside);
             TryTouch(aside);
+            if (expectIntact && !Check(aside, ReadMarker).Intact) {
+                PutBack(aside, destination, new IOException("the copy changed"));
+                throw new SkillChangedException($"{destination} was edited while the install was running, so it was kept.");
+            }
             try {
                 Directory.Move(temp, destination);
             }

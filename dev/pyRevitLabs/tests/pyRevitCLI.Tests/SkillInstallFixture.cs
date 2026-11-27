@@ -24,9 +24,23 @@ public abstract class SkillInstallFixture : IDisposable {
     }
 
     public void Dispose() {
-        foreach (var junction in junctions.Where(Directory.Exists))
-            Directory.Delete(junction);
-        Directory.Delete(temp, recursive: true);
+        try {
+            foreach (var junction in junctions)
+                TryDeleteJunction(junction);
+        }
+        finally {
+            Directory.Delete(temp, recursive: true);
+        }
+    }
+
+    private static void TryDeleteJunction(string junction) {
+        try {
+            if (Directory.Exists(junction))
+                Directory.Delete(junction);
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+            Console.Error.WriteLine($"Could not remove junction {junction}: {ex.Message}");
+        }
     }
 
     internal void WriteShipped(string name, string description, string body) {

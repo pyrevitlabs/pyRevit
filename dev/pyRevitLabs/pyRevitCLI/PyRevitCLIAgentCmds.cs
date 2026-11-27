@@ -397,8 +397,45 @@ namespace pyRevitCLI {
             report.Warnings.AddRange(PyRevitAgentSkillInstaller.UserSkillWarnings(UserSkillsToCheck()));
             PrintSkillsReport(report);
             ThrowOnFailures(report);
-            if (!context.Includes("claude") && report.Actions.Any(action => action.State == SkillState.Installed || action.State == SkillState.Updated))
-                Console.WriteLine("Claude Code reads .claude/skills (add --target=claude). The Antigravity CLI needs '/skills reload' after an install.");
+            foreach (var line in SkillsAdvice(context, report))
+                Console.WriteLine(line);
+        }
+
+        /// <summary>
+        /// The follow-up hints after an install: Claude Code reads another folder, and the Antigravity CLI needs a reload.
+        /// Empty when nothing was installed or updated.
+        /// </summary>
+        internal static List<string> SkillsAdvice(SkillContext context, SkillsReport report) {
+            var advice = new List<string>();
+            if (!report.Actions.Any(action => action.State == SkillState.Installed || action.State == SkillState.Updated))
+                return advice;
+            if (!context.Includes("claude"))
+                advice.Add("Claude Code reads .claude/skills (add --target=claude).");
+            if (context.Includes("antigravity") || (context.Scope == SkillScope.Project && context.Includes("agents")))
+                advice.Add("The Antigravity CLI needs '/skills reload' after an install.");
+            return advice;
+        }
+
+        /// <summary>
+        /// The install command that refreshes exactly what a status run inspected.
+        /// </summary>
+        internal static string RefreshCommand(string scope, string targets, string path) {
+            return $"pyrevit agent skills install --scope={scope} --target={targets}" + (path == null ? string.Empty : $" --path=\"{path}\"");
+        }
+
+        /// <summary>
+        /// The <c>status --json</c> text; every string is stripped of control and bidi characters like the text output.
+        /// </summary>
+        internal static string SkillsJson(SkillsReport report) {
+            return new JObject {
+                ["skills"] = new JArray(report.Actions.Select(action => new JObject {
+                    ["target"] = SkillFiles.Printable(action.Target),
+                    ["skill"] = SkillFiles.Printable(action.Skill),
+                    ["state"] = action.State.Label(),
+                    ["folder"] = SkillFiles.Printable(action.Folder),
+                })),
+                ["warnings"] = new JArray(report.Warnings.Select(SkillFiles.Printable)),
+            }.ToString(Formatting.Indented);
         }
 
         /// <summary>
@@ -409,20 +446,12 @@ namespace pyRevitCLI {
             var report = PyRevitAgentSkillInstaller.Status(SkillsContext(scope, targets, path));
             report.Warnings.AddRange(PyRevitAgentSkillInstaller.UserSkillWarnings(UserSkillsToCheck()));
             if (json) {
-                Console.WriteLine(new JObject {
-                    ["skills"] = new JArray(report.Actions.Select(action => new JObject {
-                        ["target"] = action.Target,
-                        ["skill"] = action.Skill,
-                        ["state"] = action.State.Label(),
-                        ["folder"] = action.Folder,
-                    })),
-                    ["warnings"] = new JArray(report.Warnings),
-                }.ToString(Formatting.Indented));
+                Console.WriteLine(SkillsJson(report));
                 return;
             }
             PrintSkillsReport(report);
             if (report.Actions.Any(action => action.State == SkillState.Stale))
-                Console.WriteLine("Warning: some installed skills are stale. Run 'pyrevit agent skills install' to refresh them.");
+                Console.WriteLine($"Warning: some installed skills are stale. Run '{RefreshCommand(scope, targets, path)}' to refresh them.");
         }
 
         /// <summary>

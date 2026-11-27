@@ -201,4 +201,44 @@ public class AgentSkillInstallTests : SkillInstallFixture {
         process.WaitForExit();
         Assert.Equal(0, process.ExitCode);
     }
+
+    [Fact]
+    public void AnEditMadeWhileInstallingIsPutBackAndReportedEdited() {
+        Install();
+        File.WriteAllText(Path.Combine(shipped, "alpha", "extra.md"), "extra v2");
+        SkillFiles.BeforeSwap = destination => {
+            if (destination.StartsWith(temp, StringComparison.OrdinalIgnoreCase))
+                File.AppendAllText(Path.Combine(destination, "extra.md"), " my edit");
+        };
+
+        SkillsReport report;
+        try {
+            report = Install();
+        }
+        finally {
+            SkillFiles.BeforeSwap = null;
+        }
+
+        Assert.Equal(SkillState.Edited, StateOf(report, "alpha"));
+        Assert.Contains("my edit", File.ReadAllText(AgentsSkill("alpha", "extra.md")));
+        Assert.Empty(Directory.GetDirectories(Skills(project, ".agents", "skills"), ".pyrevit-tmp-*"));
+        Assert.Contains(report.Warnings, warning => warning.Contains("alpha") && warning.Contains("while"));
+    }
+
+    [WindowsFact]
+    public void AChildThatDeniesAttributeAccessDoesNotStopUninstall() {
+        Install();
+        var alpha = AgentsSkill("alpha");
+        Icacls(alpha, "/deny *S-1-1-0:(RA)");
+        SkillsReport removed;
+        try {
+            removed = Uninstall(force: true);
+        }
+        finally {
+            if (Directory.Exists(alpha))
+                Icacls(alpha, "/remove:d *S-1-1-0");
+        }
+
+        Assert.Equal(SkillState.Removed, StateOf(removed, "beta"));
+    }
 }

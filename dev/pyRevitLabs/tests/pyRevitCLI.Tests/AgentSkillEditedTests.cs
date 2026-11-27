@@ -92,4 +92,33 @@ public class AgentSkillEditedTests : SkillInstallFixture {
         Assert.Contains(replaced.Warnings, warning => warning.Contains("with --force deletes the whole folder, including your edits."));
         Assert.Contains(removed.Warnings, warning => warning.Contains("with --force deletes the whole folder, including your edits."));
     }
+
+    [Fact]
+    public void AForgedMarkerOverDifferentContentIsNotReportedCurrentAndIsRefreshed() {
+        Install();
+        File.WriteAllText(AgentsSkill("alpha", "SKILL.md"), "different");
+        var markerPath = AgentsSkill("alpha", ".pyrevit-skill.json");
+        var marker = JObject.Parse(File.ReadAllText(markerPath));
+        marker["installedSha256"] = DigestOf(AgentsSkill("alpha"));
+        File.WriteAllText(markerPath, marker.ToString());
+
+        Assert.Equal(SkillState.Stale, StateOf(Status(), "alpha"));
+        var report = Install();
+
+        Assert.Equal(SkillState.Updated, StateOf(report, "alpha"));
+        Assert.Contains("alpha body", File.ReadAllText(AgentsSkill("alpha", "SKILL.md")));
+        Assert.Equal(SkillState.Current, StateOf(Status(), "alpha"));
+    }
+
+    private static string DigestOf(string folder) {
+        using var sha256 = System.Security.Cryptography.IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.SHA256);
+        foreach (var file in Directory.GetFiles(folder, "*.md", SearchOption.AllDirectories).OrderBy(path => Path.GetRelativePath(folder, path).Replace('\\', '/'), StringComparer.Ordinal)) {
+            var bytes = File.ReadAllBytes(file);
+            sha256.AppendData(Encoding.UTF8.GetBytes(Path.GetRelativePath(folder, file).Replace('\\', '/')));
+            sha256.AppendData(new byte[] { 0 });
+            sha256.AppendData(BitConverter.GetBytes((long)bytes.Length));
+            sha256.AppendData(bytes);
+        }
+        return Convert.ToHexString(sha256.GetHashAndReset()).ToLowerInvariant();
+    }
 }
