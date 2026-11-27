@@ -10,6 +10,8 @@ using pyRevitLabs.PyRevit;
 namespace pyRevitLabs.UnitTests {
     /// <summary>Tests how administrator pins in the machine config override the user's agent settings.</summary>
     [TestClass]
+    [TestCategory("HostFree")]
+    [TestCategory("Unit")]
     [DoNotParallelize]
     public class PyRevitConfigsAgentAdminTests {
         private string _tempRoot;

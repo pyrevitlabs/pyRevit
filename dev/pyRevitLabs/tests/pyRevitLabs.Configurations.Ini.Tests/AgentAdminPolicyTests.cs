@@ -6,6 +6,8 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// Verifies which machine-config content counts as an administrator lock on the agent host.
 /// </summary>
 [Collection(ConfigurationDiagnosticsCollection.Name)]
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class AgentAdminPolicyTests : IDisposable
 {
     private readonly string tempRoot = Path.Combine(Path.GetTempPath(), "agentAdmin_" + Guid.NewGuid().ToString("N"));

@@ -3,6 +3,8 @@ using pyRevitLabs.PyRevit;
 
 namespace pyRevitCLI.Tests;
 
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
 public class AgentLockCmdsTests {
     [Fact]
     public void LockingASettingWithoutAValueIsRejectedBeforeAnythingIsWritten() {
