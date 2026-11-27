@@ -76,8 +76,9 @@ namespace pyRevitCLI {
         /// junction, so the config isn't written outside the project.
         /// </summary>
         /// <remarks>
-        /// Checked when the command runs; it does not guard against a swap before the write. A
-        /// project under a linked or cloud-synced folder is refused too.
+        /// Checked when the command runs; it does not guard against a swap before the write. Only
+        /// folders that report the reparse-point attribute are refused; cloud placeholder folders
+        /// are not detected.
         /// </remarks>
         private void RejectLinkedProjectTargets() {
             foreach (var target in ProjectTargets()) {

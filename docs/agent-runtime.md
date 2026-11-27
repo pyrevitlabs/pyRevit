@@ -44,8 +44,9 @@ runtime is independent of the Routes server and doesn't need it enabled.
     A project install is refused when the current folder or the client's config folder is a
     link or junction, or the config file itself is a link, so the file isn't written outside the
     project. The check runs when the command starts and walks every folder above the target, so a
-    project under a linked or cloud-synced folder is refused too; it doesn't guard against a swap
-    afterwards. The client's own tool
+    only folders that report the reparse-point attribute (junctions, symlinks, mount points) are
+    refused; cloud placeholder folders such as a OneDrive root are not detected. The check doesn't
+    guard against a swap afterwards. The client's own tool
     (`claude`) is looked up in absolute `PATH` entries and the usual install folders only; relative
     entries are skipped. The entry pins the absolute path of this `pyrevit.exe`, so review
     a project file before you commit it.
@@ -649,8 +650,9 @@ pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --ow
 
 `--timeout` defaults to 300 and is capped at 3600; [reckless mode](#reckless-mode) ignores it.
 `--workspace` must be an existing local folder; network (UNC) paths are refused, and so is a folder that is a link or junction or sits behind one (the error names the link). The
-check runs when the request is parsed, not at import time, and a workspace under a linked or
-cloud-synced folder is refused too. Give workspace modules unique names: the folder is last on
+check runs when the request is parsed, not at import time. Only folders that report the
+reparse-point attribute (junctions, symlinks, mount points) are refused; cloud placeholder
+folders such as a OneDrive root are not detected. Give workspace modules unique names: the folder is last on
 `sys.path`, so a name a library module has resolves to the library.
 
 When its output is redirected to a pipe or file, the CLI writes UTF-8 without a BOM for every command. Readers must decode it as UTF-8; in PowerShell, set `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` first, or a legacy code page shows non-ASCII text as mojibake. In Windows PowerShell 5.1, `>` is equivalent to `Out-File` with no parameters, which writes UTF-16LE, so to keep the CLI's UTF-8 bytes redirect in `cmd` (`cmd /c "pyrevit ... > out.json"`) or pipe to `Out-File -Encoding utf8`. Read a BOM-less UTF-8 file with `Get-Content -Encoding UTF8`, because Windows PowerShell 5.1 otherwise decodes it with the system's active (ANSI) code page, which `[Console]::OutputEncoding` does not change.

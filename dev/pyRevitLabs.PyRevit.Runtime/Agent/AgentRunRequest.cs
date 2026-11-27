@@ -123,8 +123,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         /// <remarks>
         /// Checked when the request is parsed, so it does not stop a folder from being swapped for
-        /// a link before the run imports from it. A workspace under a linked or cloud-synced
-        /// folder is refused too, because any ancestor with the reparse attribute counts.
+        /// a link before the run imports from it. Any folder on the path that reports the reparse
+        /// attribute (junction, symlink, mount point) counts; cloud placeholder folders, such as a
+        /// OneDrive root, do not report it and are not detected.
         /// </remarks>
         private static void RejectLinkedWorkspace(string workspace) {
             var folder = Path.GetFullPath(workspace);

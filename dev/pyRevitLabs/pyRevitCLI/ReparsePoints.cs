@@ -8,8 +8,9 @@ namespace pyRevitCLI {
     /// <remarks>
     /// Note: the answer holds at the time of the call; it does not stop a link from being
     /// swapped in before the path is used. Same semantics as the runtime's workspace check:
-    /// any existing path component with the reparse attribute counts, so a folder behind a
-    /// linked or cloud-synced parent is reported too.
+    /// any existing path component that reports the reparse attribute (junction, symlink, mount
+    /// point) counts. Cloud placeholder folders, such as a OneDrive root, do not report it to
+    /// this process and are not detected.
     /// </remarks>
     internal static class ReparsePoints {
         /// <summary>
