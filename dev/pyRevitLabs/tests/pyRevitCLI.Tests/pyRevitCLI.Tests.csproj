@@ -60,6 +60,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Include="Goldens\*.jsonl" CopyToOutputDirectory="PreserveNewest"/>
         <None Include="..\..\pyRevitCLI\Resources\UsagePatterns.txt" Link="UsagePatterns.txt" CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
