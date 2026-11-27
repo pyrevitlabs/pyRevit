@@ -98,7 +98,9 @@ class PageBridge(object):
         if not isinstance(message, dict) or message.get("channel") != self.channel:
             return
         action = message.get("action")
-        handler = self.handlers.get(action)
+        handler = (
+            None if isinstance(action, (dict, list)) else self.handlers.get(action)
+        )
         if handler is None:
             mlogger.debug("No handler for action '%s'", action)
             return

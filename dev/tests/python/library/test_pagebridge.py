@@ -164,6 +164,12 @@ class PageBridgeTests(unittest.TestCase):
         self.page_says("nope")
         self.assertEqual(self.output.posted, [])
 
+    def test_an_unhashable_action_is_ignored(self):
+        self.bridge.start()
+        for action in ([], ["push"], {}, {"name": "push"}):
+            self.page_says(action)
+        self.assertEqual(self.output.posted, [])
+
     def test_handler_failure_is_sent_back_as_an_error_event(self):
         def fail(payload, request_id):
             raise ValueError("bad cell")
