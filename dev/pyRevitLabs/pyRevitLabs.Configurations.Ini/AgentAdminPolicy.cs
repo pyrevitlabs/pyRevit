@@ -127,6 +127,8 @@ public sealed class AgentAdminPolicy {
     /// A key that is present but blank (<c>enabled =</c>, as an unset template variable leaves it)
     /// is a pin with an invalid value, not an absent pin, so it fails closed too: it is returned as
     /// an empty string and the consumer reads it as the strictest value.
+    /// A value with an unmatched quote (<c>enabled = "true</c>) is returned with the quote, so it is
+    /// invalid and fails closed the same way.
     /// </remarks>
     public static AgentAdminPolicy Load(string configPath) {
         var policy = new AgentAdminPolicy();
@@ -390,7 +392,16 @@ public sealed class AgentAdminPolicy {
     private static string? Read(IniData data, string key) {
         if (!data.Sections.ContainsSection(SectionName) || !data[SectionName].ContainsKey(key))
             return null;
-        return (data[SectionName][key] ?? string.Empty).Trim().Trim('"').Trim();
+        return Unquote((data[SectionName][key] ?? string.Empty).Trim());
+    }
+
+    /// <summary>
+    /// Strips one pair of quotes wrapping the whole value. A quote without its partner is left in
+    /// place, so the value is invalid and reads as the strictest one instead of as the quoted word.
+    /// </summary>
+    private static string Unquote(string value) {
+        bool wrapped = value.Length >= 2 && value[0] == '"' && value[value.Length - 1] == '"';
+        return wrapped ? value.Substring(1, value.Length - 2).Trim() : value;
     }
 
     /// <summary>

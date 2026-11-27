@@ -254,6 +254,31 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
+    public void Load_AQuotedPin_IsUnquoted()
+    {
+        var policy = AgentAdminPolicy.Load(WriteConfig("[agent.admin]\r\nenabled = \"true\"\r\npolicy = \" auto \"\r\n"));
+
+        Assert.Equal("true", policy.Enabled);
+        Assert.Equal("auto", policy.Policy);
+    }
+
+    [Fact]
+    public void Current_PinsWithAnUnmatchedQuote_ReadAsTheStrictestValues()
+    {
+        AgentAdminPolicy.OverrideMachineConfigPath(WriteConfig(
+            "[agent.admin]\r\nenabled = \"true\r\npolicy = auto\"\r\nengine = \"cpython\r\n"
+            + "user_skills = true\"\r\nreckless = \"\r\n"));
+
+        var policy = AgentAdminPolicy.Current;
+
+        Assert.Equal("false", policy.Enabled);
+        Assert.Equal("readonly", policy.Policy);
+        Assert.Equal("ironpython", policy.Engine);
+        Assert.Equal("false", policy.UserSkills);
+        Assert.Equal("false", policy.Reckless);
+    }
+
+    [Fact]
     public void Current_AnExtraConfigFileDoesNotHideTheRealOne()
     {
         File.WriteAllText(Path.Combine(tempRoot, "acme-config.ini"), "[agent.admin]\r\nenabled = false\r\n");
