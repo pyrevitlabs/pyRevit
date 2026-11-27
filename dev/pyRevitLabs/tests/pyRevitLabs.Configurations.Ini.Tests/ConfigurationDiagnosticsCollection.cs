@@ -5,8 +5,7 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// handler or the machine config override, so one class cannot capture another's warnings.
 /// </summary>
 [CollectionDefinition(Name)]
-public class ConfigurationDiagnosticsCollection
-{
+public class ConfigurationDiagnosticsCollection {
     /// <summary>The collection name the serialized test classes join.</summary>
     public const string Name = "ConfigurationDiagnostics";
 }

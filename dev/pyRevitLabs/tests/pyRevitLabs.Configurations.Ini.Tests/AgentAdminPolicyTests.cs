@@ -8,34 +8,29 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 [Collection(ConfigurationDiagnosticsCollection.Name)]
 [Trait("Environment", "HostFree")]
 [Trait("Level", "Unit")]
-public class AgentAdminPolicyTests : IDisposable
-{
+public class AgentAdminPolicyTests : IDisposable {
     private readonly string tempRoot = Path.Combine(Path.GetTempPath(), "agentAdmin_" + Guid.NewGuid().ToString("N"));
 
     public AgentAdminPolicyTests() => Directory.CreateDirectory(tempRoot);
 
-    public void Dispose()
-    {
+    public void Dispose() {
         AgentAdminPolicy.OverrideMachineConfigPath(null);
         Directory.Delete(tempRoot, recursive: true);
     }
 
-    private string WriteConfig(string content)
-    {
+    private string WriteConfig(string content) {
         string path = Path.Combine(tempRoot, "pyRevit_config.ini");
         File.WriteAllText(path, content);
         return path;
     }
 
     [Fact]
-    public void Load_MissingFile_PinsNothing()
-    {
+    public void Load_MissingFile_PinsNothing() {
         Assert.True(AgentAdminPolicy.Load(Path.Combine(tempRoot, "absent.ini")).IsEmpty);
     }
 
     [Fact]
-    public void Load_AdminSection_ReturnsEveryPinnedKey()
-    {
+    public void Load_AdminSection_ReturnsEveryPinnedKey() {
         var policy = AgentAdminPolicy.Load(WriteConfig(
             "[agent.admin]\r\nenabled = false\r\npolicy = readonly\r\nengine = cpython\r\nuser_skills = false\r\nreckless = false\r\n"));
 
@@ -47,8 +42,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Load_PlainAgentSectionInMachineConfig_IsNotALock()
-    {
+    public void Load_PlainAgentSectionInMachineConfig_IsNotALock() {
         var policy = AgentAdminPolicy.Load(WriteConfig(
             "[agent]\r\nenabled = true\r\npolicy = auto\r\nengine = cpython\r\n"));
 
@@ -56,8 +50,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Load_OnlySomeKeysPinned_LeavesTheRestNull()
-    {
+    public void Load_OnlySomeKeysPinned_LeavesTheRestNull() {
         var policy = AgentAdminPolicy.Load(WriteConfig("[agent.admin]\r\npolicy = ask\r\n"));
 
         Assert.Equal("ask", policy.Policy);
@@ -68,8 +61,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Current_PicksUpAChangeToTheFile()
-    {
+    public void Current_PicksUpAChangeToTheFile() {
         string path = WriteConfig("[agent.admin]\r\nenabled = false\r\n");
         AgentAdminPolicy.OverrideMachineConfigPath(path);
         Assert.Equal("false", AgentAdminPolicy.Current.Enabled);
@@ -81,8 +73,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void SetPin_CreatesTheFileAndRoundTrips()
-    {
+    public void SetPin_CreatesTheFileAndRoundTrips() {
         string path = Path.Combine(tempRoot, "pyRevit_config.ini");
         AgentAdminPolicy.OverrideMachineConfigPath(path);
 
@@ -95,8 +86,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void SetPin_KeepsOtherSectionsIntact()
-    {
+    public void SetPin_KeepsOtherSectionsIntact() {
         string path = WriteConfig("[core]\r\nuserlocale = en_us\r\n\r\n[agent]\r\nenabled = true\r\n");
         AgentAdminPolicy.OverrideMachineConfigPath(path);
 
@@ -109,8 +99,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void ClearPin_RemovesOnlyThatKey()
-    {
+    public void ClearPin_RemovesOnlyThatKey() {
         AgentAdminPolicy.OverrideMachineConfigPath(WriteConfig("[agent.admin]\r\nenabled = false\r\npolicy = ask\r\n"));
 
         AgentAdminPolicy.ClearPin(AgentAdminPolicy.EnabledKey);
@@ -120,8 +109,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void ClearAllPins_LeavesNothingPinned()
-    {
+    public void ClearAllPins_LeavesNothingPinned() {
         AgentAdminPolicy.OverrideMachineConfigPath(WriteConfig("[agent.admin]\r\nenabled = false\r\npolicy = ask\r\n"));
 
         AgentAdminPolicy.ClearAllPins();
@@ -130,8 +118,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void ClearPin_WhenTheFileIsMissing_DoesNotCreateIt()
-    {
+    public void ClearPin_WhenTheFileIsMissing_DoesNotCreateIt() {
         string path = Path.Combine(tempRoot, "pyRevit_config.ini");
         AgentAdminPolicy.OverrideMachineConfigPath(path);
 
@@ -142,38 +129,32 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void SetPin_OnAReadOnlyConfig_WritesAndRestoresTheAttribute()
-    {
+    public void SetPin_OnAReadOnlyConfig_WritesAndRestoresTheAttribute() {
         string path = WriteConfig("[core]\r\nuserlocale = en_us\r\n");
         File.SetAttributes(path, FileAttributes.ReadOnly);
         AgentAdminPolicy.OverrideMachineConfigPath(path);
-        try
-        {
+        try {
             AgentAdminPolicy.SetPin(AgentAdminPolicy.EnabledKey, "false");
 
             Assert.Equal("false", AgentAdminPolicy.Current.Enabled);
             Assert.True((File.GetAttributes(path) & FileAttributes.ReadOnly) != 0);
         }
-        finally
-        {
+        finally {
             File.SetAttributes(path, FileAttributes.Normal);
         }
     }
 
     [Fact]
-    public void SetPin_UnknownKey_Throws()
-    {
+    public void SetPin_UnknownKey_Throws() {
         AgentAdminPolicy.OverrideMachineConfigPath(Path.Combine(tempRoot, "pyRevit_config.ini"));
 
         Assert.Throws<ArgumentException>(() => AgentAdminPolicy.SetPin("tab_highlight", "false"));
     }
 
     [Fact]
-    public void Load_AnUnreadableFile_FailsClosed()
-    {
+    public void Load_AnUnreadableFile_FailsClosed() {
         string path = WriteConfig("[agent.admin]\r\nenabled = true\r\npolicy = auto\r\n");
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
-        {
+        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None)) {
             var policy = AgentAdminPolicy.Load(path);
 
             Assert.True(policy.ReadFailed);
@@ -185,13 +166,11 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Current_DoesNotCacheAFailedRead()
-    {
+    public void Current_DoesNotCacheAFailedRead() {
         string path = WriteConfig("[agent.admin]\r\nenabled = true\r\n");
         AgentAdminPolicy.OverrideMachineConfigPath(path);
 
-        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
-        {
+        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None)) {
             Assert.True(AgentAdminPolicy.Current.ReadFailed);
         }
 
@@ -201,8 +180,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void SetPin_ReplacesTheFileAtomicallyAndLeavesNoTemporaryFile()
-    {
+    public void SetPin_ReplacesTheFileAtomicallyAndLeavesNoTemporaryFile() {
         string path = WriteConfig("[core]\r\nuserlocale = en_us\r\n");
         AgentAdminPolicy.OverrideMachineConfigPath(path);
 
@@ -213,8 +191,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Current_ATruncatedFileWithTheSameTimestampIsNotCachedOverTheFinishedOne()
-    {
+    public void Current_ATruncatedFileWithTheSameTimestampIsNotCachedOverTheFinishedOne() {
         const string finished = "[agent.admin]\r\nenabled = false\r\n";
         string path = WriteConfig(finished);
         DateTime stamp = File.GetLastWriteTimeUtc(path);
@@ -231,8 +208,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Load_ABlankPin_IsPresentRatherThanAbsent()
-    {
+    public void Load_ABlankPin_IsPresentRatherThanAbsent() {
         var policy = AgentAdminPolicy.Load(WriteConfig("[agent.admin]\r\nenabled =\r\npolicy = \"\"\r\n"));
 
         Assert.Equal(string.Empty, policy.Enabled);
@@ -242,8 +218,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Current_BlankPins_ReadAsTheStrictestValues()
-    {
+    public void Current_BlankPins_ReadAsTheStrictestValues() {
         AgentAdminPolicy.OverrideMachineConfigPath(WriteConfig(
             "[agent.admin]\r\nenabled =\r\npolicy =\r\nengine =\r\nuser_skills =\r\nreckless =\r\n"));
 
@@ -257,8 +232,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Load_AQuotedPin_IsUnquoted()
-    {
+    public void Load_AQuotedPin_IsUnquoted() {
         var policy = AgentAdminPolicy.Load(WriteConfig("[agent.admin]\r\nenabled = \"true\"\r\npolicy = \" auto \"\r\n"));
 
         Assert.Equal("true", policy.Enabled);
@@ -266,8 +240,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Current_PinsWithAnUnmatchedQuote_ReadAsTheStrictestValues()
-    {
+    public void Current_PinsWithAnUnmatchedQuote_ReadAsTheStrictestValues() {
         AgentAdminPolicy.OverrideMachineConfigPath(WriteConfig(
             "[agent.admin]\r\nenabled = \"true\r\npolicy = auto\"\r\nengine = \"cpython\r\n"
             + "user_skills = true\"\r\nreckless = \"\r\n"));
@@ -282,8 +255,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Current_ConflictingEnginePins_WarnAndNameTheFiles()
-    {
+    public void Current_ConflictingEnginePins_WarnAndNameTheFiles() {
         File.WriteAllText(Path.Combine(tempRoot, "acme-config.ini"), "[agent.admin]\r\nengine = cpython\r\n");
         File.WriteAllText(Path.Combine(tempRoot, "pyRevit_config.ini"), "[agent.admin]\r\nengine = ironpython\r\n");
         AgentAdminPolicy.OverrideMachineConfigDirectory(tempRoot);
@@ -296,8 +268,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Current_AgreeingEnginePins_DoNotWarn()
-    {
+    public void Current_AgreeingEnginePins_DoNotWarn() {
         File.WriteAllText(Path.Combine(tempRoot, "acme-config.ini"), "[agent.admin]\r\nengine = CPython\r\n");
         File.WriteAllText(Path.Combine(tempRoot, "pyRevit_config.ini"), "[agent.admin]\r\nengine = cpython\r\n");
         AgentAdminPolicy.OverrideMachineConfigDirectory(tempRoot);
@@ -312,32 +283,27 @@ public class AgentAdminPolicyTests : IDisposable
     /// warnings are dropped: test classes outside this collection may report through the same
     /// static handler concurrently.
     /// </summary>
-    private static List<string> CaptureEngineWarnings(Action action)
-    {
+    private static List<string> CaptureEngineWarnings(Action action) {
         var warnings = new List<string>();
         var gate = new object();
         Action<string>? previous = ConfigurationDiagnostics.Warn;
-        ConfigurationDiagnostics.Warn = message =>
-        {
+        ConfigurationDiagnostics.Warn = message => {
             if (!message.Contains("agent engines"))
                 return;
             lock (gate)
                 warnings.Add(message);
         };
-        try
-        {
+        try {
             action();
         }
-        finally
-        {
+        finally {
             ConfigurationDiagnostics.Warn = previous;
         }
         return warnings;
     }
 
     [Fact]
-    public void Current_AnExtraConfigFileDoesNotHideTheRealOne()
-    {
+    public void Current_AnExtraConfigFileDoesNotHideTheRealOne() {
         File.WriteAllText(Path.Combine(tempRoot, "acme-config.ini"), "[agent.admin]\r\nenabled = false\r\n");
         File.WriteAllText(Path.Combine(tempRoot, "pyRevit_config.ini"), "[core]\r\nuserlocale = en_us\r\n");
         AgentAdminPolicy.OverrideMachineConfigDirectory(tempRoot);
@@ -346,8 +312,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Current_TheStrictestPinWinsAcrossFiles()
-    {
+    public void Current_TheStrictestPinWinsAcrossFiles() {
         File.WriteAllText(
             Path.Combine(tempRoot, "a-config.ini"),
             "[agent.admin]\r\nenabled = false\r\npolicy = auto\r\nengine = cpython\r\nuser_skills = true\r\nreckless = true\r\n");
@@ -366,8 +331,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void Current_AnUnparseableExtraFile_FailsClosed()
-    {
+    public void Current_AnUnparseableExtraFile_FailsClosed() {
         File.WriteAllText(Path.Combine(tempRoot, "pyRevit_config.ini"), "[agent.admin]\r\nenabled = true\r\n");
         File.WriteAllText(Path.Combine(tempRoot, "junk-config.ini"), "this line is not ini\r\n");
         AgentAdminPolicy.OverrideMachineConfigDirectory(tempRoot);
@@ -379,8 +343,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void SetPin_RemovesTheSamePinFromOtherFiles()
-    {
+    public void SetPin_RemovesTheSamePinFromOtherFiles() {
         File.WriteAllText(Path.Combine(tempRoot, "pyRevit_config.ini"), "[core]\r\nuserlocale = en_us\r\n");
         string other = Path.Combine(tempRoot, "acme-config.ini");
         File.WriteAllText(other, "[agent.admin]\r\nenabled = false\r\npolicy = ask\r\n");
@@ -395,8 +358,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void ClearAllPins_ClearsEveryFile()
-    {
+    public void ClearAllPins_ClearsEveryFile() {
         File.WriteAllText(Path.Combine(tempRoot, "pyRevit_config.ini"), "[agent.admin]\r\nenabled = false\r\n");
         File.WriteAllText(Path.Combine(tempRoot, "acme-config.ini"), "[agent.admin]\r\npolicy = ask\r\n");
         AgentAdminPolicy.OverrideMachineConfigDirectory(tempRoot);
@@ -407,8 +369,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void SetPin_OnAnUnparseableConfig_AbortsAndLeavesTheFileAlone()
-    {
+    public void SetPin_OnAnUnparseableConfig_AbortsAndLeavesTheFileAlone() {
         const string content = "[core]\r\nuserlocale = en_us\r\nthis line is not ini\r\n";
         string path = WriteConfig(content);
         AgentAdminPolicy.OverrideMachineConfigPath(path);
@@ -420,8 +381,7 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void ClearPin_OnAnUnparseableConfig_AbortsAndLeavesTheFileAlone()
-    {
+    public void ClearPin_OnAnUnparseableConfig_AbortsAndLeavesTheFileAlone() {
         const string content = "[agent.admin]\r\nenabled = false\r\nthis line is not ini\r\n";
         string path = WriteConfig(content);
         AgentAdminPolicy.OverrideMachineConfigPath(path);
@@ -434,17 +394,14 @@ public class AgentAdminPolicyTests : IDisposable
     }
 
     [Fact]
-    public void ResolveMachineConfigPath_IgnoresTheProgramDataOverride()
-    {
+    public void ResolveMachineConfigPath_IgnoresTheProgramDataOverride() {
         string? previous = Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar);
-        try
-        {
+        try {
             Environment.SetEnvironmentVariable(PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar, tempRoot);
 
             Assert.False(AgentAdminPolicy.ResolveMachineConfigPath().StartsWith(tempRoot, StringComparison.OrdinalIgnoreCase));
         }
-        finally
-        {
+        finally {
             Environment.SetEnvironmentVariable(PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar, previous);
         }
     }
