@@ -25,38 +25,6 @@ internal sealed class ClientCliRecorder : IDisposable {
     }
 }
 
-internal static class SymlinkSupport {
-    public static readonly string SkipReason = Probe();
-
-    private static string Probe() {
-        var folder = Directory.CreateTempSubdirectory("pyrevit-symlink-probe-").FullName;
-        try {
-            var target = Path.Combine(folder, "target.txt");
-            File.WriteAllText(target, "x");
-            File.CreateSymbolicLink(Path.Combine(folder, "link.txt"), target);
-            return null;
-        }
-        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
-            return "Creating a file symbolic link needs developer mode or administrator rights.";
-        }
-        finally {
-            Directory.Delete(folder, recursive: true);
-        }
-    }
-}
-
-public sealed class SymlinkFactAttribute : FactAttribute {
-    public SymlinkFactAttribute() {
-        Skip = SymlinkSupport.SkipReason;
-    }
-}
-
-public sealed class SymlinkTheoryAttribute : TheoryAttribute {
-    public SymlinkTheoryAttribute() {
-        Skip = SymlinkSupport.SkipReason;
-    }
-}
-
 [Collection(CliGlobalState.Name)]
 [Trait("Environment", "HostFree")]
 [Trait("Level", "Integration")]
@@ -148,43 +116,32 @@ public class McpProjectConfigTests : IDisposable {
         }
     }
 
-    [SymlinkFact]
+    [Fact]
     public void AProjectConfigFileThatIsALinkIsRefused() {
-        var outside = Path.Combine(Directory.CreateTempSubdirectory("pyrevit-mcp-outside-").FullName, "opencode.json");
-        File.WriteAllText(outside, "{}");
-        var linkPath = Path.Combine(project, "opencode.json");
-        try {
-            Assert.True(TryCreateFileSymlink(linkPath, outside));
-
+        var configPath = Path.Combine(project, "opencode.json");
+        File.WriteAllText(configPath, "{}");
+        using (ReportAsLink(configPath)) {
             Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.OpenCode, project: true));
+        }
 
-            Assert.Equal("{}", File.ReadAllText(outside));
-        }
-        finally {
-            Directory.Delete(Path.GetDirectoryName(outside), recursive: true);
-        }
+        Assert.Equal("{}", File.ReadAllText(configPath));
     }
 
-    [SymlinkTheory]
+    [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public void AClaudeProjectConfigFileThatIsALinkIsRefused(bool install) {
-        var outside = Path.Combine(Directory.CreateTempSubdirectory("pyrevit-mcp-outside-").FullName, ".mcp.json");
-        File.WriteAllText(outside, "{}");
-        try {
-            Assert.True(TryCreateFileSymlink(Path.Combine(project, ".mcp.json"), outside));
-
+        var configPath = Path.Combine(project, ".mcp.json");
+        File.WriteAllText(configPath, "{}");
+        using (ReportAsLink(configPath)) {
             if (install)
                 Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Claude, project: true));
             else
                 Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.UninstallMcp(McpClientKind.Claude, project: true));
+        }
 
-            Assert.Empty(cli.Calls);
-            Assert.Equal("{}", File.ReadAllText(outside));
-        }
-        finally {
-            Directory.Delete(Path.GetDirectoryName(outside), recursive: true);
-        }
+        Assert.Empty(cli.Calls);
+        Assert.Equal("{}", File.ReadAllText(configPath));
     }
 
     [Fact]
@@ -210,13 +167,23 @@ public class McpProjectConfigTests : IDisposable {
         Assert.Contains(cli.Calls, call => call.Contains("--scope project"));
     }
 
-    private static bool TryCreateFileSymlink(string link, string target) {
-        try {
-            File.CreateSymbolicLink(link, target);
-            return true;
+    private static IDisposable ReportAsLink(string path) {
+        var previous = ReparsePoints.AttributeReader;
+        ReparsePoints.AttributeReader = candidate => string.Equals(candidate, path, StringComparison.OrdinalIgnoreCase)
+            ? FileAttributes.ReparsePoint
+            : previous(candidate);
+        return new Restore(() => ReparsePoints.AttributeReader = previous);
+    }
+
+    private sealed class Restore : IDisposable {
+        private readonly Action action;
+
+        public Restore(Action action) {
+            this.action = action;
         }
-        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
-            return false;
+
+        public void Dispose() {
+            action();
         }
     }
 

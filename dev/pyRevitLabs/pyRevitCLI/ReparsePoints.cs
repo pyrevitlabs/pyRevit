@@ -18,8 +18,14 @@ namespace pyRevitCLI {
         /// </summary>
         public static bool IsLink(string path) {
             return (File.Exists(path) || Directory.Exists(path))
-                && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+                && (AttributeReader(path) & FileAttributes.ReparsePoint) != 0;
         }
+
+        /// <summary>
+        /// Reads the attributes of an existing path. Replaced by tests, so the link checks run
+        /// without the operating system permission to create a symbolic link.
+        /// </summary>
+        internal static Func<string, FileAttributes> AttributeReader = File.GetAttributes;
 
         /// <summary>
         /// The first path, from <paramref name="path"/> upward, that is a link or junction, or null.
