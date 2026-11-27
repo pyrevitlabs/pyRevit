@@ -14,7 +14,7 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="pyRevitLabs.Configurations.Ini.Tests" />
-        <InternalsVisibleTo Include="pyRevitLabs.UnitTests" />
+        <InternalsVisibleTo Include="pyRevitLabs.PyRevit.Integration.Tests" />
     </ItemGroup>
 
     <ItemGroup>
