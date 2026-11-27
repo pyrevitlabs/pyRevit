@@ -1,7 +1,0 @@
-title: AVF
-tooltip: |-
-  Show a number on a picked element with the Analysis Visualization Framework.
-  Run again to add another element, or pick the same element to change its number.
-
-  Shift-click:
-  Remove all numbers of this button from the active view.

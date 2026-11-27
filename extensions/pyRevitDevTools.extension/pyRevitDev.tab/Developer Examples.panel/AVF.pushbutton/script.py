@@ -4,6 +4,9 @@
 Minimal end-to-end smoke test for pyrevit.revit.avf. Each run adds a value to
 one element, or updates it. Orthographic 3D views without a section box also
 offer a colored surface instead of a text marker.
+
+Shift-click:
+Remove all numbers of this button from the active view.
 """
 
 import math
