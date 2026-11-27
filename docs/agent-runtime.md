@@ -325,17 +325,31 @@ To a 2026-07-28 client the server always declares the Skills extension `io.model
 
 - Only the skills shipped with pyRevit are served. User skills (`%APPDATA%\pyRevit\agent\skills`) are never
   listed and a URI for one is refused with -32602.
-- A skill is `skill://<name>/SKILL.md`; its `frontmatter` carries every front matter key as written, and
-  `resources` is the complete manifest (`SKILL.md` and every other markdown file, each once).
+- A skill is `skill://<name>/SKILL.md`; its `frontmatter` is its `SKILL.md` front matter, and `resources` is the
+  complete manifest (`SKILL.md` and every other markdown file, each once). The front matter must be flat
+  `key: value` scalar lines (no indentation, lists, comments, block or flow values, repeated keys) with `name`
+  and a non-empty `description`, so that what is served equals what the file says; richer YAML is not
+  translated, the skill is skipped instead.
 - `digest` is `sha256:` plus the lowercase hex SHA-256 of the file's raw bytes and `size` is its byte length.
   `resources/read` returns the text decoded from those same bytes, so a client can verify both.
   Claude Code binds its approval of a skill to these digests, so a pyRevit upgrade that changes a skill asks
   again.
-- Markdown files only, 128 KiB per file and 256 files per skill. A skill whose folder name differs from its
-  `name`, or that breaks a limit, is skipped. There is one page of results; a non-empty `cursor` is refused.
+- Markdown files only, 128 KiB per file and 256 files per skill. A skill is skipped whole, with one line on
+  standard error (standard output carries only the protocol), when its folder name differs from its `name`,
+  its front matter is not flat or has no description, it breaks a limit, a file is not UTF-8, or its folder holds
+  anything other than listed markdown files (links, other file types). There is one page of results; a
+  non-empty `cursor` is refused.
   `resources/directory/read` is not offered (`directoryRead` stays false).
 - The tools `list_skills` and `get_skill` and the server `instructions` are unchanged and remain the fallback for
-  every client, including those that only speak the older revisions.
+  every client, including those that only speak the older revisions. The `instructions` (in `initialize` and in
+  `server/discover`) list every skill by name, with the description for shipped skills only; the name of a user
+  skill appears there when user skills are enabled, its description never. The extension itself never serves
+  user skills.
+- A request without the modern `_meta` keys is a legacy request by design: `server/discover` and the skills
+  methods without them answer -32601, and a client that probes with `_meta`, as the specification requires,
+  works. Every modern success result carries the server name and version in `_meta`.
+- Each answer is built fresh from the shipped folder when it is made, but skills answers carry `ttlMs` 300000,
+  so a client may cache them for up to five minutes.
 
 ### Navigation links
 
