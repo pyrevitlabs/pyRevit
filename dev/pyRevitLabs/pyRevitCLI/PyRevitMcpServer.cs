@@ -29,6 +29,10 @@ namespace pyRevitCLI {
     /// session and every write goes through one lock.
     /// Implements the tools subset of MCP (initialize, ping, tools/list, tools/call) with
     /// newline-delimited JSON-RPC 2.0; no SDK dependency.
+    /// Two protocol eras are served concurrently on one process. A request whose <c>params._meta</c> carries the
+    /// 2026-07-28 protocol keys (see <see cref="McpProtocol"/>) is answered statelessly under the new rules, and may
+    /// use <c>server/discover</c> and the skills extension (see <see cref="SkillsExtension"/>); every other request
+    /// takes the legacy path, whose output is unchanged. No state survives between requests of either era.
     /// Malformed request fields receive JSON-RPC errors; notifications receive no response.
     /// Unexpected dispatch failures receive an internal error without ending the session.
     /// Tool arguments are checked against the tool's inputSchema before any request reaches
@@ -138,7 +142,10 @@ namespace pyRevitCLI {
                 }
 
                 var parameters = message["params"] as JObject ?? new JObject();
+                var modern = McpProtocol.IsModern(parameters);
                 try {
+                    if (modern)
+                        McpProtocol.Validate(parameters);
                     switch (method) {
                         case "initialize":
                             if ((parameters["protocolVersion"] as JValue)?.Value is not string) {
@@ -148,10 +155,26 @@ namespace pyRevitCLI {
                             Write(Result(id, Initialize(parameters)));
                             break;
                         case "ping":
-                            Write(Result(id, new JObject()));
+                            Write(Result(id, modern ? McpProtocol.Complete(new JObject()) : new JObject()));
+                            break;
+                        case "server/discover" when modern:
+                            Write(Result(id, McpProtocol.Discover(PyRevitCLI.CLIInfoVersion, PyRevitAgentSkills.Instructions(PyRevitAgentSkills.Load()))));
+                            break;
+                        case "skills/list" when modern:
+                            Write(Result(id, ShippedSkills().List(parameters)));
+                            break;
+                        case "skills/get" when modern:
+                            Write(Result(id, ShippedSkills().Get(UriOf(parameters))));
+                            break;
+                        case "resources/list" when modern:
+                            Write(Result(id, ShippedSkills().ResourcesList(parameters)));
+                            break;
+                        case "resources/read" when modern:
+                            Write(Result(id, ShippedSkills().Read(UriOf(parameters))));
                             break;
                         case "tools/list":
-                            Write(Result(id, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }));
+                            var described = new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) };
+                            Write(Result(id, modern ? McpProtocol.Complete(described, cacheable: true) : described));
                             break;
                         case "tools/call":
                             inFlight.RemoveAll(call => call.Task.IsCompleted);
@@ -160,7 +183,7 @@ namespace pyRevitCLI {
                             var tracked = pendingCalls.TryAdd(key, cancellation);
                             inFlight.Add((Task.Run(() => {
                                 try {
-                                    CallTool(id, parameters, cancellation);
+                                    CallTool(id, parameters, cancellation, modern);
                                 }
                                 finally {
                                     if (tracked)
@@ -172,6 +195,9 @@ namespace pyRevitCLI {
                             Write(Error(id, -32601, "Method not found"));
                             break;
                     }
+                }
+                catch (McpRequestException ex) {
+                    Write(Error(id, ex.Code, ex.Message, ex.Details));
                 }
                 catch (Exception) {
                     Write(Error(id, -32603, "Internal error"));
@@ -187,6 +213,14 @@ namespace pyRevitCLI {
                 return;
             var abandoned = inFlight.Where(call => !call.Task.IsCompleted).Select(call => call.Key);
             System.Console.Error.WriteLine("pyrevit mcp: exiting with calls still running (request ids: " + string.Join(", ", abandoned) + ")");
+        }
+
+        private static SkillsExtension ShippedSkills() {
+            return new SkillsExtension(PyRevitAgentSkills.ShippedSkillsDir);
+        }
+
+        private static string UriOf(JObject parameters) {
+            return (parameters["uri"] as JValue)?.Value as string;
         }
 
         private static JObject Initialize(JObject parameters) {
@@ -224,7 +258,7 @@ namespace pyRevitCLI {
             }
         }
 
-        private void CallTool(JToken id, JObject parameters, CancellationTokenSource cancellation) {
+        private void CallTool(JToken id, JObject parameters, CancellationTokenSource cancellation, bool modern) {
             callCancellation.Value = cancellation.Token;
             Timer progress = null;
             sentRequestId.Value = null;
@@ -276,7 +310,7 @@ namespace pyRevitCLI {
                 }
                 StopProgress(progress);
                 progress = null;
-                AnswerUnlessCancelled(cancellation, Result(id, result));
+                AnswerUnlessCancelled(cancellation, Result(id, modern ? McpProtocol.Complete(result) : result));
             }
             finally {
                 StopProgress(progress);
@@ -609,11 +643,14 @@ namespace pyRevitCLI {
             return new JObject { ["jsonrpc"] = "2.0", ["id"] = id, ["result"] = result };
         }
 
-        private static JObject Error(JToken id, int code, string message) {
+        private static JObject Error(JToken id, int code, string message, JObject data = null) {
+            var error = new JObject { ["code"] = code, ["message"] = message };
+            if (data != null)
+                error["data"] = data;
             return new JObject {
                 ["jsonrpc"] = "2.0",
                 ["id"] = id,
-                ["error"] = new JObject { ["code"] = code, ["message"] = message },
+                ["error"] = error,
             };
         }
 
