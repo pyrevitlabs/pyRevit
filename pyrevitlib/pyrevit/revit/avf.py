@@ -436,6 +436,18 @@ def _remember_entry(view, name, entry):
     AppDomain.CurrentDomain.SetData(_STATE_SLOT, json.dumps(state, ensure_ascii=False))
 
 
+def _mark_result_shared(sfm, view, name):
+    """Stop treating the settings of a result as owned by :func:`show_values`.
+
+    Called by the lower level writers, because values they add to a result
+    mean something only with the unit it has at that time.
+    """
+    entry = _get_tracked_entry(sfm, view, name)
+    if entry and not entry["borrowed"]:
+        entry["borrowed"] = True
+        _remember_entry(view, name, entry)
+
+
 def _remove_primitives(sfm, primitive_ids):
     removed = 0
     for sfp_id in primitive_ids:
@@ -704,6 +716,8 @@ def show_values(
             without analysis display, a colored surface outside a suitable
             3D view, a value that is not a finite number, or a new unit while
             values in the old one are kept. Nothing is changed in that case.
+            Also raised if Revit rolled the style change back; the values are
+            not rolled back with it.
 
     Note:
         Assigning the style changes the view and is saved with the model.
@@ -736,12 +750,19 @@ def show_values(
         [element for element, _ in elements_and_values], view
     )
     anchors = _resolve_anchors(elements_and_values, view, face_candidate_ids)
+    new_schema = (
+        _build_schema(name, description, unit_pairs, True)
+        if borrowed_schema is None
+        else None
+    )
     shown, on_faces = [], []
+    style_id = style_name = None
 
     with Transaction("Show AVF Values", doc=doc):
         display_style = _prepare_style(doc, name, style, marker_size_mm)
         if display_style is not None:
-            view.AnalysisDisplayStyleId = display_style.Id
+            style_id, style_name = display_style.Id, query.get_name(display_style)
+            view.AnalysisDisplayStyleId = style_id
         sfm = _get_or_create_sfm(view)
         schema_id = _find_schema_id(sfm, name)
         untracked_result = schema_id is not None and previous is None
@@ -750,12 +771,11 @@ def show_values(
         if not keep_others:
             removed = _remove_primitives(sfm, current.values())
             current = {}
-        if borrowed_schema is None:
-            schema = _build_schema(name, description, unit_pairs, True)
+        if new_schema is not None:
             if schema_id is None:
-                schema_id = sfm.RegisterResult(schema)
+                schema_id = sfm.RegisterResult(new_schema)
             else:
-                sfm.SetResultSchema(schema_id, schema)
+                sfm.SetResultSchema(schema_id, new_schema)
 
         def drop(elem_id):
             key = str(elem_id)
@@ -797,11 +817,17 @@ def show_values(
             },
         )
 
+    if style_id is not None and view.AnalysisDisplayStyleId != style_id:
+        raise PyRevitException(
+            "Revit did not keep the display style change of this view. AVF "
+            "edits are not undone with it, so values may have changed; "
+            "clear_values removes those of '{}'.".format(name)
+        )
     _refresh_if_active(view)
     return {
         "view_id": int(get_elementid_value(view.Id)),
         "name": name,
-        "style": query.get_name(display_style) if display_style else None,
+        "style": style_name,
         "shown": shown,
         "on_faces": on_faces,
         "present": sorted(int(elem_id) for elem_id in current),
@@ -921,6 +947,7 @@ def display_avf_values(
         schema_id = _get_or_create_schema(
             sfm, schema_name, schema_desc, unit, visible=visible
         )
+        _mark_result_shared(sfm, view, schema_name)
 
         for elem_id, value, face_anchor, center in anchors:
             try:
@@ -973,6 +1000,7 @@ def update_avf_values(
         schema_id = _get_or_create_schema(
             sfm, schema_name, schema_desc, unit, visible=visible
         )
+        _mark_result_shared(sfm, view, schema_name)
 
         for element, new_value in element_value_dict.items():
             elem_id = get_elementid_value(element.Id)
@@ -1173,6 +1201,7 @@ def display_avf_values_at_points(
         schema_id = _get_or_create_schema(
             sfm, schema_name, schema_desc, unit, visible=visible
         )
+        _mark_result_shared(sfm, view, schema_name)
 
         for start in range(0, len(point_value_pairs), max_points_per_primitive):
             chunk = point_value_pairs[start : start + max_points_per_primitive]

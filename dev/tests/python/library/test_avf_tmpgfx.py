@@ -162,6 +162,8 @@ class Schema:
         self.IsVisible = True
 
     def SetUnits(self, names, multipliers):
+        if any(multiplier <= 0 for multiplier in multipliers):
+            raise ValueError("must be positive")
         self.units = list(names)
         self.multipliers = list(multipliers)
 
@@ -591,6 +593,47 @@ class ShowValuesTests(ShowValuesCase):
                     self.show({3: 6}, name="A", **options)
         self.assertEqual([5.0, 90.0], self.sfm.values_of("A"))
         self.assertTrue(self.show({3: 6}, name="A", unit="min")["shown"])
+
+    def test_a_result_shared_later_keeps_its_unit(self):
+        writers = {
+            "display": lambda: self.add_the_old_way(120, "min"),
+            "points": lambda: self.avf.display_avf_values_at_points(
+                [(XYZ(0.0, 0.0, 0.0), 120.0)], self.view, schema_name="A"
+            ),
+        }
+        for label, write_the_old_way in writers.items():
+            with self.subTest(writer=label):
+                self.setUp()
+                self.show({2: 5}, name="A", unit="min")
+                write_the_old_way()
+                with self.assertRaises(RuntimeError):
+                    self.show({2: 5}, name="A", unit="h")
+                self.show({2: 6}, name="A")
+                schema = next(iter(self.sfm.schemas.values()))
+                self.assertEqual(["min"], schema.units)
+
+    def test_a_unit_revit_rejects_removes_nothing(self):
+        self.show({1: 10}, name="A")
+        self.view.AnalysisDisplayStyleId = "mine"
+        with self.assertRaises(ValueError):
+            self.show({2: 20}, name="A", unit=[("h", 0)])
+        self.assertEqual([10.0], self.sfm.values_of("A"))
+        self.assertEqual("mine", self.view.AnalysisDisplayStyleId)
+
+    def test_a_rolled_back_style_raises_and_values_stay_clearable(self):
+        view = self.view
+
+        class RolledBack(Context):
+            def __exit__(self, *args):
+                view.AnalysisDisplayStyleId = None
+                return False
+
+        committed, self.avf.Transaction = self.avf.Transaction, RolledBack
+        with self.assertRaises(RuntimeError):
+            self.show({1: 10}, name="A")
+        self.avf.Transaction = committed
+        self.assertEqual(1, self.avf.clear_values(self.view, "A"))
+        self.assertEqual([], self.sfm.values_of("A"))
 
     def test_a_cleared_view_frees_the_name_again(self):
         self.add_the_old_way(90, "min")
