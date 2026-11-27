@@ -140,6 +140,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <summary>
+        /// Whether an agent run executes now, so nothing that loosens what agents may do succeeds.
+        /// </summary>
+        public bool IsRunExecuting {
+            get {
+                lock (sync)
+                    return runsExecuting > 0;
+            }
+        }
+
         /// <summary>The id of the active or paused session, or null when there is none.</summary>
         public string SessionId {
             get {

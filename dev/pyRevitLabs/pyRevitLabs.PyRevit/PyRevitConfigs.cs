@@ -472,6 +472,33 @@ namespace pyRevitLabs.PyRevit {
         }
 
         /// <summary>
+        /// How recordings start: <c>user</c> when the user starts one in the agent panel, where a
+        /// start asked for by the CLI or an agent waits for their click, or <c>auto</c> when such a
+        /// start begins recording at once. The host reads it only when pyRevit loads, so a change
+        /// applies after the next reload. Unknown values read as <c>user</c>, so a typo never lets
+        /// an agent record unasked.
+        /// </summary>
+        public static string GetAgentRecordingStart() {
+            IConfigurationService cfg = GetConfigFile();
+            var start = cfg.GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentRecordingStartKey,
+                PyRevitConsts.ConfigsAgentRecordingStartDefault);
+            return string.Equals(start?.Trim(), PyRevitConsts.ConfigsAgentRecordingStartAuto, StringComparison.OrdinalIgnoreCase)
+                ? PyRevitConsts.ConfigsAgentRecordingStartAuto
+                : PyRevitConsts.ConfigsAgentRecordingStartUser;
+        }
+
+        /// <exception cref="PyRevitException">Any value other than <c>user</c> or <c>auto</c>.</exception>
+        public static void SetAgentRecordingStart(string start) {
+            if (start != PyRevitConsts.ConfigsAgentRecordingStartUser && start != PyRevitConsts.ConfigsAgentRecordingStartAuto)
+                throw new PyRevitException($"Unknown agent recording start \"{start}\"");
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentRecordingStartKey, start);
+        }
+
+        /// <summary>
         /// Whether agent runs skip the Python runner's in-script checks: the run timeout, the
         /// loop and handler rewriting that enforces it, and per-line transaction tracking.
         /// </summary>

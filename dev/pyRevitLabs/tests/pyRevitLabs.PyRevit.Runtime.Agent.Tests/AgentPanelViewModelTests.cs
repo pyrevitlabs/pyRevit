@@ -42,6 +42,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             ["AgentPanel.Waiting.Revit"] = "{0} waiting",
             ["AgentPanel.Kind.modify"] = "Change",
             ["AgentPanel.Kind.query"] = "Query",
+            ["AgentPanel.Recording.Off"] = "not recording",
+            ["AgentPanel.Recording.On"] = "recording since {0} for {1} min",
+            ["AgentPanel.RecordingRequest.WithScreenshots"] = "{0} min with screenshots",
+            ["AgentPanel.RecordingRequest.WithoutScreenshots"] = "{0} min without screenshots",
         };
 
         private readonly FakeBackend backend = new FakeBackend();
@@ -502,6 +506,95 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
             Assert.Equal("AgentPanel.Policy.Auto", Panel().PolicyText);
         }
 
+        private static JObject RecordingRequest(string reason, bool screenshots, int maxDurationSeconds) {
+            return new JObject {
+                ["recording"] = false,
+                ["start"] = "user",
+                ["pending_request"] = new JObject {
+                    ["reason"] = reason,
+                    ["requested"] = Started.ToString("o"),
+                    ["options"] = new JObject { ["screenshots"] = screenshots, ["max_duration_s"] = maxDurationSeconds },
+                },
+            };
+        }
+
+        [Fact]
+        public void WhileTheHostIsOffTheRecorderIsHidden() {
+            backend.HostRunning = false;
+            backend.Recording = RecordingRequest("Reproduce the crash", true, 1800);
+
+            var panel = Panel();
+
+            Assert.False(panel.ShowsRecording || panel.CanRecord || panel.CanStopRecording || panel.HasRecordingRequest || panel.IsRecording);
+        }
+
+        [Fact]
+        public void WithNothingRecordedTheUserCanRecordWithOrWithoutASession() {
+            var withoutSession = Panel();
+            backend.Session = Session("active");
+            var withSession = Panel();
+
+            foreach (var panel in new[] { withoutSession, withSession }) {
+                Assert.True(panel.ShowsRecording);
+                Assert.True(panel.CanRecord);
+                Assert.False(panel.IsRecording || panel.CanStopRecording || panel.HasRecordingRequest);
+                Assert.Equal("not recording", panel.RecordingLine);
+            }
+        }
+
+        [Fact]
+        public void ARunningRecordingSaysSinceWhenAndCanOnlyBeStopped() {
+            backend.Recording = new JObject {
+                ["recording"] = true,
+                ["started"] = Started.ToString("o"),
+                ["options"] = new JObject { ["screenshots"] = true, ["max_duration_s"] = 1800 },
+                ["pending_request"] = new JObject { ["reason"] = "stale" },
+            };
+
+            var panel = Panel();
+
+            Assert.True(panel.IsRecording);
+            Assert.True(panel.CanStopRecording);
+            Assert.False(panel.CanRecord || panel.HasRecordingRequest);
+            Assert.Equal("recording since " + Local(Started) + " for 30 min", panel.RecordingLine);
+        }
+
+        [Fact]
+        public void ARequestToRecordShowsItsReasonLimitsAndTimeInPlaceOfThePlainButton() {
+            backend.Recording = RecordingRequest("Reproduce the crash", false, 90);
+
+            var panel = Panel();
+
+            Assert.True(panel.HasRecordingRequest);
+            Assert.False(panel.CanRecord || panel.IsRecording);
+            Assert.Equal("Reproduce the crash", panel.RecordingRequestReason);
+            Assert.Equal("2 min without screenshots", panel.RecordingRequestLimits);
+            Assert.Equal("asked " + Local(Started), panel.RecordingRequestTime);
+        }
+
+        [Fact]
+        public void ARequestToRecordWithoutAReasonSaysSoAndNamesItsScreenshots() {
+            backend.Recording = RecordingRequest(null, true, 1800);
+
+            var panel = Panel();
+
+            Assert.Equal("no reason", panel.RecordingRequestReason);
+            Assert.Equal("30 min with screenshots", panel.RecordingRequestLimits);
+        }
+
+        [Fact]
+        public void TheRecorderButtonsStartStopAndDeclineAndShowWhatWentWrong() {
+            var panel = Panel();
+
+            panel.RecordCommand.Execute(null);
+            panel.StopRecordingCommand.Execute(null);
+            panel.DeclineRecordingCommand.Execute(null);
+            backend.RecordingFailure("Revit is busy and could not stop the recording.");
+
+            Assert.Equal(new[] { "StartRecording", "StopRecording", "DeclineRecording" }, backend.Calls);
+            Assert.Equal("Revit is busy and could not stop the recording.", panel.ErrorText);
+        }
+
         [Fact]
         public void RefreshTellsTheViewThatEverythingChanged() {
             var panel = Panel();
@@ -634,6 +727,24 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
 
             public void Decline() {
                 Record("Decline");
+            }
+
+            public JObject Recording { get; set; } = new JObject { ["recording"] = false, ["start"] = "user" };
+
+            public Action<string> RecordingFailure { get; private set; }
+
+            public void StartRecording(Action<string> onError) {
+                Record("StartRecording");
+                RecordingFailure = onError;
+            }
+
+            public void StopRecording(Action<string> onError) {
+                Record("StopRecording");
+                RecordingFailure = onError;
+            }
+
+            public void DeclineRecording() {
+                Record("DeclineRecording");
             }
 
             private void Record(string call) {

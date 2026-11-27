@@ -454,6 +454,15 @@ class SettingsWindow(forms.WPFWindow):
         self.agent_session_user_rb.IsChecked = (
             self._agent_session_start_at_open != "auto"
         )
+        self._agent_recording_start_at_open = (
+            PyRevit.PyRevitConfigs.GetAgentRecordingStart()
+        )
+        self.agent_recording_auto_rb.IsChecked = (
+            self._agent_recording_start_at_open == "auto"
+        )
+        self.agent_recording_user_rb.IsChecked = (
+            self._agent_recording_start_at_open != "auto"
+        )
         self.agent_tab_highlight_cb.IsChecked = (
             PyRevit.PyRevitConfigs.GetAgentTabHighlight()
         )
@@ -1078,16 +1087,19 @@ class SettingsWindow(forms.WPFWindow):
         request_reload = False
         enabled = bool(self.agent_cb.IsChecked)
         session_start = "auto" if self.agent_session_auto_rb.IsChecked else "user"
-        session_start_changed = session_start != self._agent_session_start_at_open
-        if enabled != self._agent_enabled_at_open or (
-            enabled and session_start_changed
-        ):
+        recording_start = "auto" if self.agent_recording_auto_rb.IsChecked else "user"
+        start_changed = (
+            session_start != self._agent_session_start_at_open
+            or recording_start != self._agent_recording_start_at_open
+        )
+        if enabled != self._agent_enabled_at_open or (enabled and start_changed):
             request_reload = forms.alert(
                 self.get_locale_string("Agent.Changed"), yes=True, no=True
             )
 
         PyRevit.PyRevitConfigs.SetAgentEnabled(enabled)
         PyRevit.PyRevitConfigs.SetAgentSessionStart(session_start)
+        PyRevit.PyRevitConfigs.SetAgentRecordingStart(recording_start)
         PyRevit.PyRevitConfigs.SetAgentTabHighlight(
             bool(self.agent_tab_highlight_cb.IsChecked)
         )

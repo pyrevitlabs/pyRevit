@@ -29,7 +29,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// offers no event for an arbitrary command; this is the best effort the recorder makes.
     /// Invariant: <see cref="Dispose"/> unsubscribes every handler.
     /// </remarks>
-    internal sealed class AgentRecorderSession : IDisposable {
+    internal sealed class AgentRecordingWatch : IDisposable {
         private const int MaxElementsPerChange = 25;
         private const int MaxSelectionIds = 20;
         private const int MaxElementsScanned = 200;
@@ -43,7 +43,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private string pendingScreenshot;
         private HashSet<long> lastSelection = new HashSet<long>();
 
-        public AgentRecorderSession(UIApplication uiApp, AgentRecordingStore store) {
+        public AgentRecordingWatch(UIApplication uiApp, AgentRecordingStore store) {
             this.uiApp = uiApp;
             app = uiApp.Application;
             this.store = store;
@@ -246,7 +246,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 action();
             }
             catch (Exception ex) {
-                logger.Debug("Session recorder handler failed: {0}", ex.Message);
+                logger.Debug("Recorder handler failed: {0}", ex.Message);
             }
         }
     }

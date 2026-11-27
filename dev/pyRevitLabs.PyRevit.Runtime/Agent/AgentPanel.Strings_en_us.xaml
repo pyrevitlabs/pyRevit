@@ -38,6 +38,15 @@
     <system:String x:Key="AgentPanel.Request.Time">Asked at {0}</system:String>
     <system:String x:Key="AgentPanel.Decline">Decline</system:String>
 
+    <system:String x:Key="AgentPanel.Recording.Title">Recording</system:String>
+    <system:String x:Key="AgentPanel.Recording.Off">Nothing is being recorded. A recording keeps what happens in Revit, in every open document, for an agent to read afterwards.</system:String>
+    <system:String x:Key="AgentPanel.Recording.On">Recording since {0}. It stops by itself after {1} min.</system:String>
+    <system:String x:Key="AgentPanel.Record">Record</system:String>
+    <system:String x:Key="AgentPanel.StopRecording">Stop recording</system:String>
+    <system:String x:Key="AgentPanel.RecordingRequest.Title">An agent or the pyRevit CLI asks to record what happens in Revit</system:String>
+    <system:String x:Key="AgentPanel.RecordingRequest.WithScreenshots">It would record for up to {0} min, with screenshots of the active view.</system:String>
+    <system:String x:Key="AgentPanel.RecordingRequest.WithoutScreenshots">It would record for up to {0} min, without screenshots.</system:String>
+
     <system:String x:Key="AgentPanel.Label.Policy">Changes</system:String>
     <system:String x:Key="AgentPanel.Label.Client">Client</system:String>
     <system:String x:Key="AgentPanel.Label.Waiting">Waiting</system:String>

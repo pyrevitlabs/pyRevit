@@ -408,6 +408,9 @@
     <system:String x:Key="Agent.SessionStart">Sesiones de agentes</system:String>
     <system:String x:Key="Agent.SessionStart.User">Iniciar en el panel de agentes: los agentes solo trabajan en los documentos que elijas (recomendado)</system:String>
     <system:String x:Key="Agent.SessionStart.Auto">Iniciar automáticamente: la primera solicitud de un agente inicia una sesión en todos los documentos abiertos</system:String>
+    <system:String x:Key="Agent.RecordingStart">Grabaciones</system:String>
+    <system:String x:Key="Agent.RecordingStart.User">Iniciar en el panel de agentes: una grabación solicitada por la CLI o un agente espera tu clic (recomendado)</system:String>
+    <system:String x:Key="Agent.RecordingStart.Auto">Iniciar automáticamente: la CLI o un agente graba lo que ocurre en Revit sin preguntar</system:String>
     <system:String x:Key="Agent.TabHighlight">Resaltar la pestaña del documento durante la ejecución del agente</system:String>
     <system:String x:Key="Agent.Policy">Cambios en el modelo</system:String>
     <system:String x:Key="Agent.Policy.Ask">Pedir mi aprobación en Revit antes de cada cambio</system:String>

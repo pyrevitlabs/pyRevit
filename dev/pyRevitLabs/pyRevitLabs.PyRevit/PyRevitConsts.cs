@@ -144,6 +144,14 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsAgentSessionStartAuto = "auto";
         public const string ConfigsAgentSessionStartDefault = ConfigsAgentSessionStartUser;
         /// <summary>
+        /// How recordings start: <c>user</c>, with the user's click in the agent panel, or
+        /// <c>auto</c>, at once when the CLI or an agent asks.
+        /// </summary>
+        public const string ConfigsAgentRecordingStartKey = "recording_start";
+        public const string ConfigsAgentRecordingStartUser = "user";
+        public const string ConfigsAgentRecordingStartAuto = "auto";
+        public const string ConfigsAgentRecordingStartDefault = ConfigsAgentRecordingStartUser;
+        /// <summary>
         /// Runs agent scripts without the in-script timeout and transaction checks. Off unless
         /// the user opts in.
         /// </summary>

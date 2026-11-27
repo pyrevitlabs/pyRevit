@@ -1,8 +1,9 @@
-"""Extension trace API for the pyRevit session recorder.
+"""Extension trace API for the pyRevit recorder.
 
-The recorder is an explicit record/stop mode (``pyrevit agent record start`` and
-``stop``). While it is not recording, every function here does nothing, so
-extensions can call :func:`mark` unconditionally.
+The recorder is an explicit record/stop mode: the user starts a recording in
+the agent panel, or accepts one asked for with ``pyrevit agent record start``.
+While it is not recording, every function here does nothing, so extensions can
+call :func:`mark` unconditionally.
 
 Example:
     >>> from pyrevit import recorder
@@ -38,17 +39,17 @@ def _serialize(data):
 
 
 def is_recording():
-    """Whether a session recording is active.
+    """Whether a recording is active.
 
     Returns:
-        bool: True between ``record start`` and ``record stop``.
+        bool: True from the moment a recording starts until it stops.
     """
     recorder_type = _resolve()
     return bool(recorder_type is not None and recorder_type.IsRecording)
 
 
 def mark(source, data=None):
-    """Emit a structured breadcrumb into the active session recording.
+    """Emit a structured breadcrumb into the active recording.
 
     Does nothing when no recording is active, and never raises: a tracing
     failure must not break the extension that emits it.

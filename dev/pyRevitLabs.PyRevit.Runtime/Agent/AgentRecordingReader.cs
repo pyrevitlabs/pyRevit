@@ -129,17 +129,21 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        /// <remarks>
+        /// The session id comes from the first event, which a recording writes when it starts.
+        /// </remarks>
         private static JObject DescribeUnfinished(string directory) {
             var count = 0;
-            JToken started = null;
+            JObject first = null;
             foreach (var entry in ReadEvents(Path.Combine(directory, "events.jsonl"))) {
-                started = started ?? entry["time"];
+                first = first ?? entry;
                 count++;
             }
             return new JObject {
                 ["id"] = Path.GetFileName(directory).Split('-').Last(),
                 ["status"] = IsLive(directory) ? "recording" : "incomplete",
-                ["started"] = started,
+                ["session_id"] = first?["session_id"],
+                ["started"] = first?["time"],
                 ["event_count"] = count,
             };
         }

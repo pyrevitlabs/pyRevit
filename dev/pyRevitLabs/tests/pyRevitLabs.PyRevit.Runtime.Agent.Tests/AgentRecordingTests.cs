@@ -159,6 +159,30 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent.Tests {
         }
 
         [Fact]
+        public void ARecordingMadeDuringASessionKeepsItsIdInTheSummary() {
+            var during = Track(AgentRecordingStore.Create(root, new AgentRecordingOptions(), "session-1"));
+            var outside = NewStore();
+
+            Assert.Equal("session-1", during.SessionId);
+            Assert.Equal("session-1", during.Stop("user").Value<string>("session_id"));
+            Assert.Equal("session-1", AgentRecordingReader.ReadRecording(during.Directory, 0, 10).Value<string>("session_id"));
+            Assert.Null(outside.SessionId);
+            Assert.Null(outside.Stop("user").Value<string>("session_id"));
+        }
+
+        [Fact]
+        public void AnUnfinishedRecordingTakesItsSessionFromItsFirstEvent() {
+            var store = Track(AgentRecordingStore.Create(root, new AgentRecordingOptions(), "session-1"));
+            store.Append("recording_started", new JObject { ["session_id"] = store.SessionId });
+            store.Append("mark", null);
+
+            var recording = AgentRecordingReader.ReadRecording(store.Directory, 0, 10);
+
+            Assert.Equal("recording", recording.Value<string>("status"));
+            Assert.Equal("session-1", recording.Value<string>("session_id"));
+        }
+
+        [Fact]
         public void APageStopsAtTheSizeCapAndPointsToTheNextOffset() {
             var store = NewStore();
             for (var i = 0; i < 5; i++)

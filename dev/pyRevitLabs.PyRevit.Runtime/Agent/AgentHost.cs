@@ -221,6 +221,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
         }
 
+        private static string ReadRecordingStart() {
+            try {
+                return PyRevitConfigs.GetAgentRecordingStart();
+            }
+            catch (Exception ex) {
+                logger.Warn("Could not read [agent] recording_start, so recordings start in the agent panel: {0}", ex.Message);
+                return AgentRecorder.StartUser;
+            }
+        }
+
         /// <summary>
         /// Whether <c>[agent] enabled</c> is on in the pyRevit config; false when it can't be read.
         /// </summary>
@@ -239,8 +249,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// session manager on every load and reload.
         /// </summary>
         /// <remarks>
-        /// <c>[agent] session_start</c> is applied here only, so a config edit from outside Revit
-        /// can't make sessions start automatically mid-session.
+        /// <c>[agent] session_start</c> and <c>[agent] recording_start</c> are applied here only,
+        /// so a config edit from outside Revit can't make sessions or recordings start
+        /// automatically while Revit runs.
         /// The agent panel is registered here on the first load, even when the host is disabled:
         /// Revit accepts a dockable pane only during startup and never removes one, so turning
         /// the host on later needs just a reload.
@@ -276,6 +287,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
 
             AgentSessions.Configure(uiApp.Application, ReadSessionStart());
+            AgentRecorder.Configure(ReadRecordingStart());
             AgentAwarenessWatch.Attach(uiApp);
 
             var started = false;
@@ -312,6 +324,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </summary>
         public static void Stop() {
             AgentRecorder.StopIfActive("host_stopped");
+            AgentRecorder.Consent.Clear();
             AgentSessions.EndForHostStop();
             DisposeTabHighlight();
             var stopped = false;
@@ -433,7 +446,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <remarks>
-    /// Session recordings are pruned by the same pass, by their own retention policy
+    /// Recordings are pruned by the same pass, by their own retention policy
     /// (<see cref="AgentRecordingStore.Retention"/> and <see cref="AgentRecordingStore.MaxRecordings"/>).
     /// Run records and captures older than <see cref="RecordRetention"/> are deleted when the
     /// host starts and again, at most once per <see cref="PruneInterval"/>, when a run record is

@@ -385,8 +385,8 @@ namespace pyRevitCLI {
                             { "runs",                   "List recent agent runs" },
                             { "show",                   "Print the record of an agent run" },
                             { "session",                "Show (status), request, pause or end the agent session; only Revit can start one" },
-                            { "record",                 "Start, stop or check a session recording of what happens in Revit" },
-                            { "recordings",             "List recent session recordings" },
+                            { "record",                 "Start, stop or check a recording of what happens in Revit; the user confirms a start in Revit" },
+                            { "recordings",             "List recent recordings" },
                         },
                         options: new Dictionary<string, string>() {
                             { "--json",                 "Print status as json" },
@@ -410,7 +410,7 @@ namespace pyRevitCLI {
                             { "--title=<request_title>", "What 'agent capture' or 'agent inspect' is for; shown in Revit's agent panel" },
                             { "--limit=<count>",        "Number of runs to list (default 20)" },
                             { "<run_id>",               "Run id printed by 'agent run' or 'agent runs', or the request id (req-...) of a request that got no answer" },
-                            { "--reason=<reason>",      "Why the session is needed; shown to the user in Revit" },
+                            { "--reason=<reason>",      "Why the session or recording is needed; shown to the user in Revit" },
                             { "<action>",               "start, stop or status, for 'agent record'" },
                             { "--no-screenshots",       "Record without screenshots" },
                             { "--screenshot-interval=<seconds>", "Minimum seconds between screenshots, 0 to 3600 (default 5); 0 takes one at every opportunity until --max-screenshots is reached" },
@@ -444,7 +444,7 @@ namespace pyRevitCLI {
                         header: "Manage pyRevit configurations",
                         mgmtCommands: new Dictionary<string, string>() {
                             { "routes",                 "Routes configurations" },
-                            { "agent",                  "Agent host configurations (enable, policy, default engine, user skills, session start, reckless runs)" },
+                            { "agent",                  "Agent host configurations (enable, policy, default engine, user skills, session and recording start, reckless runs)" },
                             { "telemetry",              "Script Telemetry configurations" },
                             { "apptelemetry",           "Application Telemetry configurations" },
                         },
@@ -511,6 +511,8 @@ namespace pyRevitCLI {
                             { "policy",                 "What agent scripts may do to the model" },
                             { "engine",                 "Python engine for agent runs that do not name one (default ironpython)" },
                             { "skills",                 "Let the agent use the user's own skills" },
+                            { "sessionstart",           "How agent sessions start: user (default), in Revit's agent panel, or auto, with an agent's first request" },
+                            { "recordingstart",         "How recordings start: user (default), with your click in Revit's agent panel, or auto, when the CLI or an agent asks" },
                             { "reckless",               "Run scripts without a timeout and transaction tracking; needs confirmation in Revit" },
                         },
                         options: new Dictionary<string, string>() {

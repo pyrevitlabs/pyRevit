@@ -82,6 +82,27 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         void End(Action<string> onError);
 
         void Decline();
+
+        /// <summary>
+        /// The recorder's state as <c>recording_status</c> describes it: the active recording,
+        /// if any, and the request to record that waits for the user.
+        /// </summary>
+        JObject Recording { get; }
+
+        /// <summary>
+        /// Starts a recording, with the limits of the pending request when there is one. Revit
+        /// does the work later, so a failure is reported through <paramref name="onError"/> on
+        /// the UI thread.
+        /// </summary>
+        void StartRecording(Action<string> onError);
+
+        /// <summary>
+        /// Stops the active recording. Revit does the work later, so a failure is reported
+        /// through <paramref name="onError"/> on the UI thread.
+        /// </summary>
+        void StopRecording(Action<string> onError);
+
+        void DeclineRecording();
     }
 
     /// <summary>
@@ -196,9 +217,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <summary>
-    /// The agent panel's state and actions: the session and its documents, what an agent is
-    /// waiting for, the last request it made, and the log of everything agents did in this Revit
-    /// session.
+    /// The agent panel's state and actions: the session and its documents, the recorder, what
+    /// an agent is waiting for, the last request it made, and the log of everything agents did
+    /// in this Revit session.
     /// </summary>
     /// <remarks>
     /// Must be used on the UI thread. <see cref="Refresh"/> rereads everything from the backend,
@@ -232,6 +253,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     StartChosen();
             });
             DeclineCommand = new AgentPanelCommand(() => Act(backend.Decline));
+            RecordCommand = new AgentPanelCommand(() => Post(backend.StartRecording));
+            StopRecordingCommand = new AgentPanelCommand(() => Post(backend.StopRecording));
+            DeclineRecordingCommand = new AgentPanelCommand(() => Act(backend.DeclineRecording));
             Log = new AgentLogViewModel(text, ShowElement, new AgentLogImages(backend.LoadThumbnail, OpenImage));
             Refresh();
         }
@@ -288,6 +312,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string AcceptLabel { get; private set; }
         public bool CanAccept { get; private set; }
 
+        /// <summary>Whether the recorder is shown at all: only while the host runs.</summary>
+        public bool ShowsRecording { get; private set; }
+
+        public bool IsRecording { get; private set; }
+
+        /// <summary>Since when a recording runs and when it stops by itself, or that none runs.</summary>
+        public string RecordingLine { get; private set; }
+
+        /// <summary>
+        /// Whether the user can start a recording with the default limits: none runs and no
+        /// request waits, which has its own button and limits.
+        /// </summary>
+        public bool CanRecord { get; private set; }
+
+        public bool CanStopRecording { get; private set; }
+
+        /// <summary>Whether the CLI or an agent asked to record and waits for the user.</summary>
+        public bool HasRecordingRequest { get; private set; }
+
+        public string RecordingRequestReason { get; private set; }
+        public string RecordingRequestLimits { get; private set; }
+        public string RecordingRequestTime { get; private set; }
+
         public string PolicyText { get; private set; }
         public string ClientText { get; private set; }
         public bool HasLast { get; private set; }
@@ -304,6 +351,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public ICommand EndCommand { get; }
         public ICommand AcceptCommand { get; }
         public ICommand DeclineCommand { get; }
+
+        /// <summary>Starts a recording: the pending request's when one waits, else a default one.</summary>
+        public ICommand RecordCommand { get; }
+
+        public ICommand StopRecordingCommand { get; }
+        public ICommand DeclineRecordingCommand { get; }
 
         public AgentLogViewModel Log { get; }
 
@@ -341,6 +394,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             RequestTime = request == null ? string.Empty : strings.Format("AgentPanel.Request.Time", LocalTime(request.Value<string>("requested")));
             CanAccept = StateKind == "paused" || CanStart;
             AcceptLabel = StateKind == "paused" ? strings.Text("AgentPanel.Resume") : StartLabel;
+            DescribeRecording(running ? backend.Recording ?? new JObject() : new JObject(), running);
 
             PolicyText = strings.Text("AgentPanel.Policy." + Capitalize(backend.Policy ?? "ask"));
             var activity = backend.Activity;
@@ -491,6 +545,35 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 PausedReason = strings.Text("AgentPanel.Paused.ByAgent");
             else
                 PausedReason = strings.Format("AgentPanel.Paused.ByHost", pausedReason);
+        }
+
+        private void DescribeRecording(JObject recording, bool running) {
+            ShowsRecording = running;
+            IsRecording = running && recording.Value<bool?>("recording") == true;
+            var request = running && !IsRecording ? recording["pending_request"] as JObject : null;
+            HasRecordingRequest = request != null;
+            CanRecord = running && !IsRecording && !HasRecordingRequest;
+            CanStopRecording = IsRecording;
+            RecordingLine = IsRecording
+                ? strings.Format("AgentPanel.Recording.On", LocalTime(recording.Value<string>("started")), Minutes(recording["options"] as JObject))
+                : strings.Text("AgentPanel.Recording.Off");
+            RecordingRequestReason = request?.Value<string>("reason") ?? strings.Text("AgentPanel.Request.NoReason");
+            RecordingRequestTime = request == null
+                ? string.Empty
+                : strings.Format("AgentPanel.Request.Time", LocalTime(request.Value<string>("requested")));
+            var limits = request?["options"] as JObject;
+            RecordingRequestLimits = request == null
+                ? string.Empty
+                : strings.Format(
+                    limits?.Value<bool?>("screenshots") == false
+                        ? "AgentPanel.RecordingRequest.WithoutScreenshots"
+                        : "AgentPanel.RecordingRequest.WithScreenshots",
+                    Minutes(limits));
+        }
+
+        private static int Minutes(JObject options) {
+            var seconds = options?.Value<double?>("max_duration_s") ?? 0;
+            return (int)Math.Ceiling(seconds / 60);
         }
 
         private void DescribeLast(AgentRequestRecord last) {

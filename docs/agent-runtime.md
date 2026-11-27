@@ -94,6 +94,7 @@ or `codex` command line tools, so those two entries stay; run `pyrevit mcp unins
 | `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only; it does not sandbox Python or prevent file, network, or process side effects. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. A stricter policy applies at the next request. A looser one applies only after you confirm it in a Revit prompt before the next modify run; No keeps the stricter one until Revit restarts. |
 | `[agent] engine` | `pyrevit configs agent engine (ironpython \| cpython)` | Engine for runs that don't name one. Default `ironpython` (the attached IronPython). |
 | `[agent] session_start` | `pyrevit configs agent sessionstart (user \| auto)` | `user` (default): model requests need a session the user starts in the agent panel. `auto`: the first model request starts a session on every open document, and documents opened later join it; nothing but the user's **Pause** stops agents. Read only when pyRevit loads, and a reload from inside an agent run can't set it to `auto`. Also in pyRevit Settings. |
+| `[agent] recording_start` | `pyrevit configs agent recordingstart (user \| auto)` | `user` (default): a [recording](#recorder) starts with the user's click in the agent panel, and a start the CLI or an agent asks for waits there as a request. `auto`: such a start begins recording at once. Read only when pyRevit loads, and a reload from inside an agent run can't set it to `auto`. Also in pyRevit Settings. |
 | `[agent] reckless` | `pyrevit configs agent reckless (enable \| disable)` | Default `false`. `true` runs scripts without the runner's in-script checks: no timeout and no transaction tracking. Turning it on needs your confirmation in Revit, like a looser policy. See [Reckless mode](#reckless-mode) for the risks. |
 
 Run any of these commands without a value to print the current setting.
@@ -128,7 +129,7 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 | `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long |
 | `run_modify` | after approval | Run a changing script against the `document` it names. `dry_run=true` previews the change set and rolls back |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
-| `get_recording` | no | A [session recording](#session-recorder) the user made: a JSON timeline of element changes, pyRevit commands and output, logs, extension breadcrumbs and screenshot files. Without `recording_id` it lists recent recordings. Works without Revit |
+| `get_recording` | no | A [recording](#recorder) the user made: a JSON timeline of element changes, pyRevit commands and output, logs, extension breadcrumbs and screenshot files. Without `recording_id` it lists recent recordings. Works without Revit |
 | `lookup_pyrevit_api` | no | Signature, docstring and import line of a pyrevitlib or rpw function, a module listing, or a search by words. Works without Revit |
 | `list_automation` | no | The marked pyrevitlib and rpw operations (see [Automation operations](#automation-operations)), with `invocable` and the `inputs` each takes. Works without Revit |
 | `run_automation` | never | Run an invocable operation by id with a JSON input object, in the `document` it names when the operation needs one. Runs as a query, so changes are rolled back; it accepts no Python source |
@@ -271,6 +272,11 @@ While a document outside the session, or none, is active, the panel says so, and
 names an active document outside the session without its view, selection or levels. Agents still work in the session's
 documents by their keys; only `show_elements` and `capture_view` need the
 document to be active, and get `wrong_document` until the user switches to it.
+
+**Record** starts a [recording](#recorder) and **Stop recording** ends it, with or without a
+session. A start the CLI or an agent asked for shows as a request with its reason and limits,
+to record or decline. A recording carries on when the panel is closed, and stops by itself at
+its time limit.
 
 The panel also shows the policy, the MCP client that called last, the last request, and what a
 waiting request is held up by (the approval prompt or a Revit dialog). Its activity log lists
@@ -807,24 +813,45 @@ instance, including per-launch sessions, shares this folder, so a host start or 
 recorded run, in the same Revit session or another one, can delete a record older than 14 days
 even while the session that made it is still open.
 
-### Session recorder
+### Recorder
 
 !!! note "pyRevit 7.2.0 or later"
 
-    The session recorder is not part of pyRevit 7.1.0.
+    The recorder is not part of pyRevit 7.1.0.
 
-An agent only sees a bug through what the user says afterwards. The session recorder records what happens in Revit between two
+An agent only sees a bug through what the user says afterwards. The recorder records what happens in Revit between two
 explicit user actions, so the agent can read the sequence that led to a bug.
 
 ```shell
 pyrevit agent record start [--no-screenshots] [--screenshot-interval=5] [--max-screenshots=20]
-                           [--max-events=5000] [--max-duration=1800] [--revit=<year>]
+                           [--max-events=5000] [--max-duration=1800] [--reason=<reason>]
+                           [--revit=<year>]
 pyrevit agent record stop
 pyrevit agent record status
 pyrevit agent recordings [--limit=<count>]
 ```
 
 The options take numbers in these ranges: `--screenshot-interval` 0 to 3600 seconds (`0` allows a screenshot at every opportunity until `--max-screenshots` is reached), `--max-screenshots` 0 to 100 (`0` takes none), `--max-events` 1 to 20000 and `--max-duration` 1 to 14400 seconds. All but the interval must be whole numbers. A value that is not a number or is outside its range is refused with the option's name.
+
+A recording shows an agent what the user did in every open document, so starting one takes the
+user's consent, apart from an [agent session](#sessions-and-the-agent-panel), which lets agents
+act in chosen documents:
+
+- **Record** in the agent panel starts a recording with the default limits.
+- `pyrevit agent record start`, the pipe's `recording_start`, starts nothing by itself. It
+  leaves a request with its `--reason` and limits, which the user takes or declines in the panel,
+  and answers at once with `requested: true`. `record status` shows the `pending_request` until
+  the user answers, the `declined_request` after a decline, and the recording once it runs. A
+  new request replaces the pending one.
+- With `[agent] recording_start` set to `auto`, a start from the CLI or an agent begins
+  recording at once.
+- Stopping a recording, its status and `get_recording` are open to the CLI and agents either way.
+- Code in an agent run can neither start a recording as the user nor make recordings start
+  automatically; both are refused with `recording_locked`.
+
+A recording made during an agent session carries that session's `session_id`, in its summary
+and its first event. A session can start or end while a recording runs, so each `agent_run`
+event names its own.
 
 The user starts a recording, reproduces the problem and stops it. Then the agent calls
 `get_recording` (with `recording_id`, `offset` and `limit` to page the timeline). There is no
@@ -838,7 +865,7 @@ Each event in `events.jsonl` has `seq`, `t_ms` (since the start), `time` and a `
 | `element_changes` | One per `DocumentChanged`: document, operation, transaction names, counts, and up to 25 each of added and modified elements (id, category, family and type name, location as point, curve endpoints or bounding box) and deleted ids. No parameter values |
 | `command` | `start` and `end` of every pyRevit command or script, with result code and traceback |
 | `output` | Text a command printed to its output window or console; consecutive writes are merged into one event, flushed at the next other event or when Revit is idle |
-| `agent_run` | The outcome of each agent run (`run_query`, `run_modify`): status, decision, error with traceback, and its captured output. The `command` event of an agent run only brackets it, since agent scripts capture their own output and report failure here |
+| `agent_run` | The outcome of each agent run (`run_query`, `run_modify`): its session id, document and title, status, decision, error with traceback, and its captured output. The `command` event of an agent run only brackets it, since agent scripts capture their own output and report failure here |
 | `log` | Logger messages at info level and above that pyRevit shows, with logger name and level (`20` info, `30` warning, `40` error) |
 | `mark` | Breadcrumbs from [`pyrevit.recorder.mark`](#extension-trace-api) |
 | `view_activated`, `selection_changed` | View changes, and selection changes seen when Revit is idle (first 20 ids) |
@@ -1097,8 +1124,8 @@ Deliberately **not** reused:
 | `pyRevitLabs.PyRevit` `PyRevitConfigs` | `Get/SetAgentEnabled`, `Get/SetAgentPolicy`, `Get/SetAgentEngine`, `Get/SetAgentSessionStart`, `Get/SetAgentReckless`, `Get/SetAgentUserSkillsEnabled`, `Get/SetAgentTabHighlight`. |
 | `pyRevitCLI` | `PyRevitAgentClient` (discovery and pipe protocol), `PyRevitCLIAgentCmds` (`agent`, `configs agent`, `mcp install` and `uninstall`), `PyRevitMcpServer` (`pyrevit mcp`). |
 | `pyRevitDevTools` `Debug.panel/Agent Tests.pulldown` | In-Revit end-to-end tests that drive the host through `AgentHost.HandleRequest`. |
-| `dev/pyRevitLabs.PyRevit.Runtime/Agent/AgentRecorder*.cs`, `AgentRecording*.cs` | The [session recorder](#session-recorder): facade, Revit event session, Revit-free store and reader (the reader is also compiled into `pyRevitCLI` for `get_recording`). |
-| `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.Agent.Tests` | Unit tests of the run guard against Revit test doubles, and of the parts with no Revit dependency: sessions, the activity log, change awareness, the panel's view models, and the recording store, reader, limits and throttle; run in CI. |
+| `dev/pyRevitLabs.PyRevit.Runtime/Agent/AgentRecorder*.cs`, `AgentRecording*.cs` | The [recorder](#recorder): facade, Revit event watch, and the Revit-free consent, store and reader (the reader is also compiled into `pyRevitCLI` for `get_recording`). |
+| `dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.Agent.Tests` | Unit tests of the run guard against Revit test doubles, and of the parts with no Revit dependency: sessions, the activity log, change awareness, the panel's view models, and the recording consent, store, reader, limits and throttle; run in CI. |
 
 ### Pipe protocol
 
@@ -1113,6 +1140,8 @@ Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `show`, `capture`, `lookup_api`, `recording_start`,
 `recording_stop`, `recording_status`, and the session requests `session_status`,
 `request_session`, `pause_session` and `end_session`.
+`recording_start` takes the recording's limits and a `reason`; while recordings start in the
+agent panel it answers with the recorder's status and `requested: true` instead of starting one.
 `get_context` with `keep_changes` reports `since_last_call` without clearing it;
 `run_automation` uses it before its run. `run`, `inspect_elements`, `show` and `capture` take a
 `document` key and work in the active document without one. Errors

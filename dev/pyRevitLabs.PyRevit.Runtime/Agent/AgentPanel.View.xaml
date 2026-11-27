@@ -387,6 +387,73 @@
                 </StackPanel>
             </Border>
 
+            <Border Style="{StaticResource Card}"
+                    Background="{DynamicResource AgentPanel.Notice}"
+                    Margin="0,10,0,0"
+                    Visibility="{Binding HasRecordingRequest, Converter={StaticResource Shown}}">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource AgentPanel.RecordingRequest.Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding RecordingRequestReason}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding RecordingRequestLimits}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding RecordingRequestTime}" Style="{StaticResource Muted}" Margin="0,4,0,10" />
+                    <WrapPanel>
+                        <Button Style="{StaticResource Action}" Command="{Binding RecordCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE7C8;" />
+                                <TextBlock Text="{DynamicResource AgentPanel.Record}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Action}" Command="{Binding DeclineRecordingCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE711;" />
+                                <TextBlock Text="{DynamicResource AgentPanel.Decline}" />
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}"
+                    Margin="0,10,0,0"
+                    Visibility="{Binding ShowsRecording, Converter={StaticResource Shown}}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="10" Height="10" Margin="0,0,8,0" VerticalAlignment="Center">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{DynamicResource AgentPanel.Idle}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsRecording}" Value="True">
+                                            <Setter Property="Fill" Value="{DynamicResource AgentPanel.Error}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock Text="{DynamicResource AgentPanel.Recording.Title}" FontSize="14" FontWeight="SemiBold" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding RecordingLine}" Margin="18,4,0,12" TextWrapping="Wrap" />
+                    <WrapPanel>
+                        <Button Style="{StaticResource Action}"
+                                Command="{Binding RecordCommand}"
+                                Visibility="{Binding CanRecord, Converter={StaticResource Shown}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE7C8;" />
+                                <TextBlock Text="{DynamicResource AgentPanel.Record}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Action}"
+                                Command="{Binding StopRecordingCommand}"
+                                Visibility="{Binding CanStopRecording, Converter={StaticResource Shown}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE71A;" />
+                                <TextBlock Text="{DynamicResource AgentPanel.StopRecording}" />
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
             <Grid Margin="4,16,4,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />

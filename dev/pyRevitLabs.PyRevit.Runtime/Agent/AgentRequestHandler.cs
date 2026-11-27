@@ -29,7 +29,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// request arrives and again when Revit picks it up. Requests answered on the pipe thread
     /// (<c>ping</c>, <c>lookup_api</c>, <c>recording_status</c> and the session requests) stay
     /// open without a session, and so do <c>recording_start</c> and <c>recording_stop</c>, which
-    /// start and stop the user's own recorder and touch nothing in the model.
+    /// touch nothing in the model. A recording shows what the user did, so it has its own
+    /// consent: <c>recording_start</c> only leaves a request for the user to take in the agent
+    /// panel, and starts a recording itself only while recordings start automatically.
     /// The pipe can request and pause a session, and end one the user started, but never start
     /// or resume one, or add a document to it. While sessions start automatically, Revit starts
     /// one when it picks up a request.
@@ -152,6 +154,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         describe: result => AgentLogDetails.FromCapture(result as JObject ?? new JObject(), AgentPaths.CapturesDir));
                 case "recording_start":
                     var recordingOptions = ParseParameters(() => AgentRecordingOptions.FromJson(parameters));
+                    if (!AgentRecorder.StartsAutomatically)
+                        return AgentRecorder.Request(recordingOptions, AgentRequestText.Reason(parameters));
                     return RunOnMainThread(app => AgentRecorder.Start(app, recordingOptions), StartTimeout(parameters));
                 case "recording_stop":
                     return RunOnMainThread(_ => AgentRecorder.Stop("user"), StartTimeout(parameters));
@@ -359,7 +363,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <remarks>
         /// Invariant: only <see cref="InvokeOnMainThread"/> and the recording requests call this.
         /// Starting or stopping a recording subscribes to Revit events, so it needs the main
-        /// thread, but it reads and changes nothing in the model, so it needs no session.
+        /// thread, but it reads and changes nothing in the model, so it needs no session. Whether
+        /// a start is allowed at all is <see cref="AgentRecorder"/>'s own consent.
         /// </remarks>
         private static JToken RunOnMainThread(
             Func<Autodesk.Revit.UI.UIApplication, JToken> work, TimeSpan startTimeout, bool failFastOnModalDialog = false) {

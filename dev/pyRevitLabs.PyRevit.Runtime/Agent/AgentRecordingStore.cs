@@ -122,10 +122,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private FileStream events;
         private JObject stoppedSummary;
 
-        private AgentRecordingStore(string id, string directory, AgentRecordingOptions options) {
+        private AgentRecordingStore(string id, string directory, AgentRecordingOptions options, string sessionId) {
             Id = id;
             Directory = directory;
             Options = options;
+            SessionId = sessionId;
             activeLock = new FileStream(Path.Combine(directory, AgentRecordingReader.LockFileName), FileMode.Create, FileAccess.Write, FileShare.Read);
             events = new FileStream(Path.Combine(directory, "events.jsonl"), FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
         }
@@ -133,15 +134,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string Id { get; }
         public string Directory { get; }
         public AgentRecordingOptions Options { get; }
+
+        /// <summary>
+        /// The agent session open when the recording started, or null when there was none. Runs
+        /// recorded later carry their own session id, since a session can start or end meanwhile.
+        /// </summary>
+        public string SessionId { get; }
+
+        public DateTime StartedUtc => startedUtc;
         public TimeSpan Elapsed => clock.Elapsed;
         public string ScreenshotsDirectory => Path.Combine(Directory, "screenshots");
 
-        public static AgentRecordingStore Create(string root, AgentRecordingOptions options) {
+        public static AgentRecordingStore Create(string root, AgentRecordingOptions options, string sessionId = null) {
             var id = Guid.NewGuid().ToString("N").Substring(0, 8);
             var directory = Path.Combine(root, DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) + "-" + id);
             System.IO.Directory.CreateDirectory(directory);
             try {
-                return new AgentRecordingStore(id, directory, options);
+                return new AgentRecordingStore(id, directory, options, sessionId);
             }
             catch (Exception) {
                 System.IO.Directory.Delete(directory, recursive: true);
@@ -221,6 +230,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 var summary = new JObject {
                     ["id"] = Id,
                     ["status"] = "stopped",
+                    ["session_id"] = SessionId,
                     ["stop_reason"] = reason,
                     ["started"] = startedUtc.ToString("o", CultureInfo.InvariantCulture),
                     ["stopped"] = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),

@@ -410,6 +410,9 @@
     <system:String x:Key="Agent.SessionStart">Сеансы агентов</system:String>
     <system:String x:Key="Agent.SessionStart.User">Запускать на панели агентов: агенты работают только в выбранных вами документах (рекомендуется)</system:String>
     <system:String x:Key="Agent.SessionStart.Auto">Запускать автоматически: первый запрос агента запускает сеанс во всех открытых документах</system:String>
+    <system:String x:Key="Agent.RecordingStart">Записи</system:String>
+    <system:String x:Key="Agent.RecordingStart.User">Запускать на панели агентов: запись, запрошенная CLI или агентом, ждёт вашего щелчка (рекомендуется)</system:String>
+    <system:String x:Key="Agent.RecordingStart.Auto">Запускать автоматически: CLI или агент записывает происходящее в Revit без запроса</system:String>
     <system:String x:Key="Agent.TabHighlight">Подсвечивать вкладку документа во время работы агента</system:String>
     <system:String x:Key="Agent.Policy">Изменения модели</system:String>
     <system:String x:Key="Agent.Policy.Ask">Запрашивать моё подтверждение в Revit перед каждым изменением</system:String>

@@ -73,6 +73,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 AgentSessions.Tracker.Changed += QueueRefresh;
                 AgentHost.Activity.Changed += QueueRefresh;
                 AgentHost.StateChanged += QueueRefresh;
+                AgentRecorder.StateChanged += QueueRefresh;
+                AgentRecorder.Consent.Changed += QueueRefresh;
                 AgentHost.ConfigChanged += QueueRefresh;
                 AgentPanel.DocumentsChanged += QueueRefresh;
                 waitingTimer = new DispatcherTimer(WaitingRefreshInterval, DispatcherPriority.Background, (_, __) => Refresh(), Dispatcher);
@@ -261,6 +263,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public void Decline() {
             AgentSessions.Decline();
+        }
+
+        public JObject Recording => AgentRecorder.Status();
+
+        public void StartRecording(Action<string> onError) {
+            PostToRevit("start the recording", onError, app => {
+                AgentRecorder.StartInRevit(app);
+                return null;
+            });
+        }
+
+        /// <remarks>
+        /// Posted, because a recording unsubscribes from Revit's events in a Revit API context.
+        /// </remarks>
+        public void StopRecording(Action<string> onError) {
+            PostToRevit("stop the recording", onError, app => {
+                AgentRecorder.Stop("user");
+                return null;
+            });
+        }
+
+        public void DeclineRecording() {
+            AgentRecorder.Decline();
         }
 
         /// <summary>

@@ -90,7 +90,7 @@ Usage:
 	pyrevit agent show <run_id>
 	pyrevit agent session (status | pause | end) [--revit=<revit_year>]
 	pyrevit agent session request [--reason=<reason>] [--revit=<revit_year>]
-	pyrevit agent record <action> [--no-screenshots] [--screenshot-interval=<seconds>] [--max-screenshots=<count>] [--max-events=<count>] [--max-duration=<seconds>] [--revit=<revit_year>]
+	pyrevit agent record <action> [--no-screenshots] [--screenshot-interval=<seconds>] [--max-screenshots=<count>] [--max-events=<count>] [--max-duration=<seconds>] [--reason=<reason>] [--revit=<revit_year>]
 	pyrevit agent recordings [--limit=<count>]
 	pyrevit mcp (-h | --help)
 	pyrevit mcp [--revit=<revit_year>]
@@ -124,6 +124,7 @@ Usage:
 	pyrevit configs agent engine [(ironpython | cpython)] [--log=<log_file>]
 	pyrevit configs agent skills [(enable | disable)] [--log=<log_file>]
 	pyrevit configs agent sessionstart [(user | auto)] [--log=<log_file>]
+	pyrevit configs agent recordingstart [(user | auto)] [--log=<log_file>]
 	pyrevit configs agent reckless [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry utc [(yes | no)] [--log=<log_file>]

@@ -301,13 +301,21 @@ namespace pyRevitCLI {
         };
 
         /// <summary>
-        /// <c>pyrevit agent record</c>: starts, stops or reports a session recording in the running Revit.
+        /// <c>pyrevit agent record</c>: asks for, stops or reports a recording in the running Revit.
         /// </summary>
+        /// <param name="reason">Why a recording is wanted, shown to the user in Revit with the request to start it.</param>
         /// <exception cref="PyRevitException">
         /// The action is unknown, or a start option is not a number or is outside the range the host accepts;
         /// the message names the command line option, not the host's parameter.
         /// </exception>
-        public static void Record(string action, bool screenshots, string screenshotInterval, string maxScreenshots, string maxEvents, string maxDuration, string revitSelector) {
+        /// <remarks>
+        /// A start only records at once while <c>[agent] recording_start</c> is <c>auto</c>. Otherwise the host
+        /// leaves a request for the user to take in the agent panel, and the printed status says so: only a
+        /// click in Revit lets an agent see what the user does there.
+        /// </remarks>
+        public static void Record(
+            string action, bool screenshots, string screenshotInterval, string maxScreenshots, string maxEvents, string maxDuration,
+            string revitSelector, string reason = null) {
             var normalizedAction = (action ?? string.Empty).ToLowerInvariant();
             if (normalizedAction != "start" && normalizedAction != "stop" && normalizedAction != "status")
                 throw new PyRevitException("The record action must be start, stop or status: " + action);
@@ -318,6 +326,8 @@ namespace pyRevitCLI {
                 AddNumber(parameters, "max_screenshots", maxScreenshots);
                 AddNumber(parameters, "max_events", maxEvents);
                 AddNumber(parameters, "max_duration_s", maxDuration);
+                if (reason != null)
+                    parameters["reason"] = reason;
             }
             var instance = PyRevitAgentClient.Resolve(revitSelector);
             switch (normalizedAction) {
@@ -357,7 +367,7 @@ namespace pyRevitCLI {
                 throw new PyRevitException("--limit must be a positive whole number: " + limit);
             var recordings = AgentRecordingReader.List(PyRevitAgentClient.RecordingsDir, count);
             if (recordings.Count == 0) {
-                Console.WriteLine("No session recordings.");
+                Console.WriteLine("No recordings.");
                 return;
             }
             foreach (var recording in recordings)
@@ -436,6 +446,21 @@ namespace pyRevitCLI {
             }
             else
                 Console.WriteLine("Agent sessions start: " + PyRevitConfigs.GetAgentSessionStart());
+        }
+
+        /// <summary>
+        /// <c>pyrevit configs agent recordingstart</c>: sets how recordings start, or prints it
+        /// when <paramref name="start"/> is null.
+        /// </summary>
+        public static void ConfigureRecordingStart(string start) {
+            if (start != null) {
+                PyRevitConfigs.SetAgentRecordingStart(start);
+                Console.WriteLine(start == PyRevitConsts.ConfigsAgentRecordingStartAuto
+                    ? "Recordings start when the CLI or an agent asks, without a click in Revit. Reload pyRevit or restart Revit to apply."
+                    : "Recordings start when you start one in the agent panel. Reload pyRevit or restart Revit to apply.");
+            }
+            else
+                Console.WriteLine("Recordings start: " + PyRevitConfigs.GetAgentRecordingStart());
         }
 
         /// <summary>

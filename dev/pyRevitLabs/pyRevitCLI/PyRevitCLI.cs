@@ -614,7 +614,8 @@ namespace pyRevitCLI {
                         maxScreenshots: TryGetValue("--max-screenshots"),
                         maxEvents: TryGetValue("--max-events"),
                         maxDuration: TryGetValue("--max-duration"),
-                        revitSelector: TryGetValue("--revit")
+                        revitSelector: TryGetValue("--revit"),
+                        reason: TryGetValue("--reason")
                         );
 
                 else if (all("recordings"))
@@ -900,6 +901,12 @@ namespace pyRevitCLI {
                         PyRevitCLIAgentCmds.ConfigureSessionStart(
                             arguments["user"].IsTrue ? PyRevitConsts.ConfigsAgentSessionStartUser
                             : arguments["auto"].IsTrue ? PyRevitConsts.ConfigsAgentSessionStartAuto
+                            : null);
+
+                    else if (all("recordingstart"))
+                        PyRevitCLIAgentCmds.ConfigureRecordingStart(
+                            arguments["user"].IsTrue ? PyRevitConsts.ConfigsAgentRecordingStartUser
+                            : arguments["auto"].IsTrue ? PyRevitConsts.ConfigsAgentRecordingStartAuto
                             : null);
                     else if (all("reckless"))
                         PyRevitCLIAgentCmds.ConfigureReckless(

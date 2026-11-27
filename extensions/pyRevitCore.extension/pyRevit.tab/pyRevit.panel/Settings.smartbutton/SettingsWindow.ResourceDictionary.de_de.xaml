@@ -408,6 +408,9 @@
     <system:String x:Key="Agent.SessionStart">Agent-Sitzungen</system:String>
     <system:String x:Key="Agent.SessionStart.User">Im Agent-Panel starten: Agents arbeiten nur in den Dokumenten, die Sie auswählen (empfohlen)</system:String>
     <system:String x:Key="Agent.SessionStart.Auto">Automatisch starten: Die erste Anfrage eines Agents startet eine Sitzung in allen geöffneten Dokumenten</system:String>
+    <system:String x:Key="Agent.RecordingStart">Aufzeichnungen</system:String>
+    <system:String x:Key="Agent.RecordingStart.User">Im Agent-Panel starten: Eine von der CLI oder einem Agent angeforderte Aufzeichnung wartet auf Ihren Klick (empfohlen)</system:String>
+    <system:String x:Key="Agent.RecordingStart.Auto">Automatisch starten: Die CLI oder ein Agent zeichnet ohne Rückfrage auf, was in Revit geschieht</system:String>
     <system:String x:Key="Agent.TabHighlight">Dokumentregisterkarte während Agent-Ausführungen hervorheben</system:String>
     <system:String x:Key="Agent.Policy">Modelländerungen</system:String>
     <system:String x:Key="Agent.Policy.Ask">Vor jeder Änderung meine Freigabe in Revit anfordern</system:String>

@@ -408,6 +408,9 @@
     <system:String x:Key="Agent.SessionStart">Agent Sessions</system:String>
     <system:String x:Key="Agent.SessionStart.User">Start in the Agent panel: agents work only in the documents you choose (recommended)</system:String>
     <system:String x:Key="Agent.SessionStart.Auto">Start automatically: an agent's first request starts a session on every open document</system:String>
+    <system:String x:Key="Agent.RecordingStart">Recordings</system:String>
+    <system:String x:Key="Agent.RecordingStart.User">Start in the Agent panel: a recording the CLI or an agent asks for waits for your click (recommended)</system:String>
+    <system:String x:Key="Agent.RecordingStart.Auto">Start automatically: the CLI or an agent starts recording what happens in Revit without asking</system:String>
     <system:String x:Key="Agent.TabHighlight">Highlight the document tab during agent runs</system:String>
     <system:String x:Key="Agent.Policy">Model Changes</system:String>
     <system:String x:Key="Agent.Policy.Ask">Ask for my approval in Revit before every change</system:String>

@@ -402,6 +402,9 @@
     <system:String x:Key="Agent.SessionStart">에이전트 세션</system:String>
     <system:String x:Key="Agent.SessionStart.User">에이전트 패널에서 시작: 에이전트는 선택한 문서에서만 작업합니다 (권장)</system:String>
     <system:String x:Key="Agent.SessionStart.Auto">자동으로 시작: 에이전트의 첫 요청이 열려 있는 모든 문서에서 세션을 시작합니다</system:String>
+    <system:String x:Key="Agent.RecordingStart">기록</system:String>
+    <system:String x:Key="Agent.RecordingStart.User">에이전트 패널에서 시작: CLI나 에이전트가 요청한 기록은 사용자의 클릭을 기다립니다 (권장)</system:String>
+    <system:String x:Key="Agent.RecordingStart.Auto">자동으로 시작: CLI나 에이전트가 묻지 않고 Revit에서 일어나는 일을 기록합니다</system:String>
     <system:String x:Key="Agent.TabHighlight">에이전트 실행 중 문서 탭 강조 표시</system:String>
     <system:String x:Key="Agent.Policy">모델 변경</system:String>
     <system:String x:Key="Agent.Policy.Ask">변경할 때마다 Revit에서 승인 요청</system:String>

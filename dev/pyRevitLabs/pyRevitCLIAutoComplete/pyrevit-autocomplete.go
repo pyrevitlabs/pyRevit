@@ -603,6 +603,7 @@ func main() {
 							"--max-events":          complete.PredictNothing,
 							"--max-screenshots":     complete.PredictNothing,
 							"--no-screenshots":      complete.PredictNothing,
+							"--reason":              complete.PredictNothing,
 							"--revit":               complete.PredictNothing,
 							"--screenshot-interval": complete.PredictNothing,
 						},
@@ -1111,6 +1112,25 @@ func main() {
 								},
 							},
 							"sessionstart": complete.Command{
+								Sub: complete.Commands{
+									"user": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+									"auto": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+								},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
+							"recordingstart": complete.Command{
 								Sub: complete.Commands{
 									"user": complete.Command{
 										Sub: complete.Commands{},
