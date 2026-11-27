@@ -410,7 +410,7 @@ class _WorkspaceLoopGuard(object):
                 return None
         except Exception:
             return None
-        if found is None:
+        if found is None or getattr(found, "loader", found) is None:
             return None
         origin = getattr(found, "origin", None) or getattr(found, "filename", None)
         if origin is None:

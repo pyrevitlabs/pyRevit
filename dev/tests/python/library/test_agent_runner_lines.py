@@ -1486,6 +1486,36 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
                     self.runner._leave_workspace(folder, token)
                     self.assertEqual(expected, patched)
 
+    def test_bare_folder_earlier_on_the_path_does_not_block_the_workspace(self):
+        """A folder without __init__ is no module: the workspace module or package still imports."""
+        earlier = self._workspace(
+            {
+                "bare_module_name/data.txt": "x",
+                "bare_package_name/data.txt": "x",
+                "real_package_name/__init__.py": "SOURCE = 'earlier'\n",
+            }
+        )
+        workspace = self._workspace(
+            {
+                "bare_module_name.py": "SOURCE = 'workspace'\n",
+                "bare_package_name/__init__.py": "SOURCE = 'workspace'\n",
+                "real_package_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        with (
+            mock.patch.object(sys, "path", [earlier] + sys.path),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import bare_module_name\nimport bare_package_name\n"
+                "import real_package_name\n"
+                "assert bare_module_name.SOURCE == 'workspace'\n"
+                "assert bare_package_name.SOURCE == 'workspace'\n"
+                "assert real_package_name.SOURCE == 'earlier'\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
+
     def test_sys_path_order_still_picks_the_module(self):
         """A folder placed before the workspace keeps winning its imports."""
         workspace = self._workspace({"shared.py": "SOURCE = 'workspace'\n"})
