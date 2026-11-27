@@ -186,6 +186,37 @@ public class McpModernProtocolTests : IDisposable {
     }
 
     [Fact]
+    public void AModernRequestNeedsAStringOrIntegerId() {
+        JObject WithId(JToken id) {
+            var request = Modern(0, "ping");
+            request["id"] = id;
+            return request;
+        }
+
+        var responses = Serve(WithId(JValue.CreateNull()), WithId(new JValue(1.5)), WithId(new JValue("abc")), WithId(new JValue(7)));
+
+        Assert.Equal(4, responses.Count);
+        Assert.Equal(-32600, responses[0]["error"].Value<int>("code"));
+        Assert.Equal(-32600, responses[1]["error"].Value<int>("code"));
+        Assert.Equal("abc", responses[2].Value<string>("id"));
+        Assert.Equal("complete", responses[2]["result"].Value<string>("resultType"));
+        Assert.Equal(7, responses[3].Value<int>("id"));
+    }
+
+    [Fact]
+    public void ALegacyRequestStillAcceptsNullAndFloatIds() {
+        var nullId = Legacy(0, "ping");
+        nullId["id"] = JValue.CreateNull();
+        var floatId = Legacy(0, "ping");
+        floatId["id"] = new JValue(1.5);
+
+        var responses = Serve(nullId, floatId);
+
+        Assert.Equal(2, responses.Count);
+        Assert.All(responses, response => Assert.Null(response["error"]));
+    }
+
+    [Fact]
     public void AProgressTokenAloneDoesNotMakeARequestModern() {
         var meta = new JObject { ["progressToken"] = "p1" };
 

@@ -143,6 +143,10 @@ namespace pyRevitCLI {
 
                 var parameters = message["params"] as JObject ?? new JObject();
                 var modern = McpProtocol.IsModern(parameters);
+                if (modern && id.Type != JTokenType.Integer && id.Type != JTokenType.String) {
+                    Write(Error(null, -32600, "Invalid Request: a modern request needs a string or integer id."));
+                    continue;
+                }
                 try {
                     if (modern)
                         McpProtocol.Validate(parameters);

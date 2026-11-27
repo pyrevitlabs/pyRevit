@@ -66,8 +66,9 @@ namespace pyRevitCLI {
 
         /// <summary>
         /// Marks <paramref name="result"/> as a modern-era result and adds the server info to its <c>_meta</c>;
-        /// <paramref name="cacheable"/> adds the <c>ttlMs</c> and <c>cacheScope</c> hints for results that are
-        /// identical for every client.
+        /// <paramref name="cacheable"/> adds the <c>ttlMs</c> and <c>cacheScope</c> hints. <c>public</c> is accurate
+        /// here because the server is a local stdio process with no intermediaries and its answers depend only on the
+        /// user's own profile (for example the enabled user skill names in the instructions), not on the client.
         /// </summary>
         public static JObject Complete(JObject result, bool cacheable = false) {
             result.AddFirst(new JProperty("resultType", "complete"));
