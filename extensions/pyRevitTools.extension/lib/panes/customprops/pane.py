@@ -1195,6 +1195,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
             display_value=ui_text,
             categories=[element.Category] if element.Category else [],
         )
+        pkv.display_value = ui_text
         if st == DB.StorageType.Double:
             pkv.data_type = get_parameter_data_type(param.Definition)
         return pkv
@@ -1486,7 +1487,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
                     except Exception:
                         pass
 
-            base_name = "{} == {}".format(pkv.name, pkv.display_value)
+            base_name = "{} == {}".format(pkv.name, pkv.display_value or pkv.value)
             if len(base_name) > 100:
                 base_name = base_name[:97] + "..."
             existing = set(f.Name for f in query.get_rule_filters(doc))

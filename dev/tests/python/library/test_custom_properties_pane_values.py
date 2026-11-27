@@ -18,21 +18,24 @@ import unittest
 import pytest
 
 
-PANE = (
-    Path(__file__).resolve().parents[4]
-    / "extensions/pyRevitTools.extension/lib/panes/customprops/pane.py"
-)
+LIB = Path(__file__).resolve().parents[4] / "extensions/pyRevitTools.extension/lib"
+PANE = LIB / "panes/customprops/pane.py"
+MATCH_UTILS = LIB / "match/match_utils.py"
 PANE_METHODS = ("_collect_pending", "_is_field_changed", "_get_field_original")
 PASTE_METHODS = ("paste_clicked", "_on_field_text_changed")
 PastedNumber = namedtuple("PastedNumber", ["text", "internal_value", "data_type"])
 
 
-def _load_definitions(names, **namespace):
-    tree = ast.parse(PANE.read_text(encoding="utf-8"))
+def _load_definitions(names, source=PANE, **namespace):
+    tree = ast.parse(source.read_text(encoding="utf-8"))
     found = [node for node in ast.walk(tree) if getattr(node, "name", "") in set(names)]
     tree.body = found
-    exec(compile(tree, str(PANE), "exec"), namespace)
+    exec(compile(tree, str(source), "exec"), namespace)
     return namespace
+
+
+def _property_value_class():
+    return _load_definitions(("PropKeyValue",), source=MATCH_UTILS)["PropKeyValue"]
 
 
 class _Control(object):
@@ -244,9 +247,10 @@ class RefusalReportTests(unittest.TestCase):
 
 
 @pytest.mark.regression
-class CopyReferenceTests(unittest.TestCase):
-    def copied_text(self, element_id, target):
-        invalid = -1
+class CopyTests(unittest.TestCase):
+    """Copies through the real ``PropKeyValue``, which replaces blank text."""
+
+    def copy(self, parameter, target=None):
         namespace = _load_definitions(
             ("_build_pkv_for_param",),
             DB=types.SimpleNamespace(
@@ -256,30 +260,42 @@ class CopyReferenceTests(unittest.TestCase):
                     Integer="Integer",
                     ElementId="ElementId",
                 ),
-                ElementId=types.SimpleNamespace(InvalidElementId=invalid),
+                ElementId=types.SimpleNamespace(InvalidElementId=-1),
             ),
-            ValueCodec=lambda doc: None,
-            PropKeyValue=lambda **values: types.SimpleNamespace(**values),
+            ValueCodec=lambda doc: types.SimpleNamespace(read=lambda param: ""),
+            PropKeyValue=_property_value_class(),
             get_elementid_value=int,
-        )
-        parameter = types.SimpleNamespace(
-            StorageType="ElementId", AsElementId=lambda: element_id
+            get_parameter_data_type=lambda definition: definition,
         )
         element = types.SimpleNamespace(
             LookupParameter=lambda name: parameter, Category=None
         )
         pane = types.SimpleNamespace(_elements=[element])
         document = types.SimpleNamespace(GetElement=lambda found: target)
-        return namespace["_build_pkv_for_param"](pane, "Material", document)
+        return namespace["_build_pkv_for_param"](pane, "Value", document)
+
+    def reference(self, element_id):
+        return types.SimpleNamespace(
+            StorageType="ElementId", AsElementId=lambda: element_id
+        )
 
     def test_an_empty_reference_copies_as_blank_text(self):
-        copied = self.copied_text(-1, None)
+        copied = self.copy(self.reference(-1))
         self.assertEqual("", copied.display_value)
         self.assertEqual(-1, copied.value)
 
     def test_a_reference_copies_the_element_name(self):
         target = types.SimpleNamespace(Name="Concrete")
-        self.assertEqual("Concrete", self.copied_text(7, target).display_value)
+        copied = self.copy(self.reference(7), target)
+        self.assertEqual("Concrete", copied.display_value)
+
+    def test_a_number_without_a_value_copies_as_blank_text(self):
+        parameter = types.SimpleNamespace(
+            StorageType="Double", AsDouble=lambda: 0.0, Definition="length"
+        )
+        copied = self.copy(parameter)
+        self.assertEqual("", copied.display_value)
+        self.assertEqual("length", copied.data_type)
 
 
 if __name__ == "__main__":
