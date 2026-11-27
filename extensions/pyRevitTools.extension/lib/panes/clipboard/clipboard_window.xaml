@@ -3,4 +3,8 @@
         Title="Match Properties – Recall"
         Width="420"
         SizeToContent="Height"
-        ResizeMode="CanResizeWithGrip"/>
+        ResizeMode="CanResizeWithGrip"
+        Closing="_on_closing"
+        Background="{DynamicResource pyRevitWindowBackgroundBrush}">
+@@CONTENT@@
+</Window>
