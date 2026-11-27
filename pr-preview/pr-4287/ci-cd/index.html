@@ -11426,6 +11426,7 @@
 </tr>
 </tbody>
 </table>
+<p>Each <code>X.Y</code> folder records the release it was built from in <code>.release</code>. A deploy of an older patch than the one already published is skipped, so a slow build of <code>7.1.0</code> never replaces <code>7.1.1</code>. An equal release does publish, so build the minor that the <code>docs</code> branch documents from <code>ref: docs</code>, not from its tag, or the tag's older text replaces the doc fixes.</p>
 <p>The build wraps <code>mkdocs.yml</code> in a generated config that sets <code>site_url</code> to <code>/latest/</code>, so every version's canonical link points at the latest docs, and adds the version selector to older tags whose <code>mkdocs.yml</code> predates it.</p>
 <p>After copying the site, <code>publish-gh-pages.sh</code> runs <code>.github/scripts/docs_versions.py</code>, which keeps <code>versions.json</code> and rebuilds what derives from the highest <code>X.Y</code>:</p>
 <ul>
