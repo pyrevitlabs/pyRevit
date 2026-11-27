@@ -32,7 +32,7 @@ from pyrevit.revit import units
   ```
 
   Names differ between templates; use the names this returns, never names from memory.
-- **Keep plan data in the workspace.** Put dimensions, wall lines, openings and rooms in a module such as `house_plan.py` in a folder, pass that folder as `workspace` to `run_query` and `run_modify`, and `import house_plan`. It is re-imported fresh on every run. Don't paste the same data into every script.
+- **Keep plan data in the workspace.** Put dimensions, wall lines, openings and rooms in a module such as `house_plan.py` in a folder, pass that folder as `workspace` to `run_query` and `run_modify`, and `import house_plan`. Give workspace modules unique names, because a name a library module has resolves to the library. It is re-imported fresh on every run. Don't paste the same data into every script.
 - **Coordinates are in feet**, with one origin. The create functions accept drawing strings (`"32'-6\""`, `"900mm"`); for your own arithmetic, convert with `units.parse_length`.
 
 ## Build in stages

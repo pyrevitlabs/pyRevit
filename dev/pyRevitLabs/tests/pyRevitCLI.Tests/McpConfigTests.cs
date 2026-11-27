@@ -61,6 +61,230 @@ public class McpProjectConfigTests : IDisposable {
     }
 
     [Fact]
+    public void AProjectConfigFolderThatIsAJunctionIsRefused() {
+        var elsewhere = Directory.CreateTempSubdirectory("pyrevit-mcp-elsewhere-").FullName;
+        try {
+            Assert.True(TryCreateJunction(Path.Combine(project, ".cursor"), elsewhere, out var error), "mklink /J failed: " + error);
+
+            Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Cursor, project: true));
+
+            Assert.Empty(Directory.GetFileSystemEntries(elsewhere));
+        }
+        finally {
+            Directory.Delete(Path.Combine(project, ".cursor"));
+            Directory.Delete(elsewhere, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AProjectFolderThatIsAJunctionIsRefusedForClientCliInstalls() {
+        var real = Directory.CreateTempSubdirectory("pyrevit-mcp-real-").FullName;
+        var link = Path.Combine(Path.GetTempPath(), "pyrevit-mcp-link-" + Guid.NewGuid().ToString("N"));
+        try {
+            Assert.True(TryCreateJunction(link, real, out var error), "mklink /J failed: " + error);
+            Environment.CurrentDirectory = link;
+
+            Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Claude, project: true));
+
+            Assert.Empty(cli.Calls);
+        }
+        finally {
+            Environment.CurrentDirectory = project;
+            Directory.Delete(link);
+            Directory.Delete(real, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AProjectFolderBehindAJunctionIsRefused() {
+        var real = Directory.CreateTempSubdirectory("pyrevit-mcp-real-").FullName;
+        Directory.CreateDirectory(Path.Combine(real, "inner"));
+        var link = Path.Combine(Path.GetTempPath(), "pyrevit-mcp-link-" + Guid.NewGuid().ToString("N"));
+        try {
+            Assert.True(TryCreateJunction(link, real, out var error), "mklink /J failed: " + error);
+            Environment.CurrentDirectory = Path.Combine(link, "inner");
+
+            var refused = Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Cursor, project: true));
+
+            Assert.Contains(link, refused.Message);
+            Assert.False(Directory.Exists(Path.Combine(real, "inner", ".cursor")));
+        }
+        finally {
+            Environment.CurrentDirectory = project;
+            Directory.Delete(link);
+            Directory.Delete(real, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AProjectConfigFileThatIsALinkIsRefused() {
+        var configPath = Path.Combine(project, "opencode.json");
+        File.WriteAllText(configPath, "{}");
+        using (ReportAsLink(configPath)) {
+            Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.OpenCode, project: true));
+        }
+
+        Assert.Equal("{}", File.ReadAllText(configPath));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AClaudeProjectConfigFileThatIsALinkIsRefused(bool install) {
+        var configPath = Path.Combine(project, ".mcp.json");
+        File.WriteAllText(configPath, "{}");
+        using (ReportAsLink(configPath)) {
+            if (install)
+                Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Claude, project: true));
+            else
+                Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.UninstallMcp(McpClientKind.Claude, project: true));
+        }
+
+        Assert.Empty(cli.Calls);
+        Assert.Equal("{}", File.ReadAllText(configPath));
+    }
+
+    [Fact]
+    public void AClaudeProjectSettingsFolderThatIsAJunctionIsRefused() {
+        var elsewhere = Directory.CreateTempSubdirectory("pyrevit-mcp-elsewhere-").FullName;
+        try {
+            Assert.True(TryCreateJunction(Path.Combine(project, ".claude"), elsewhere, out var error), "mklink /J failed: " + error);
+
+            Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Claude, project: true));
+
+            Assert.Empty(cli.Calls);
+        }
+        finally {
+            Directory.Delete(Path.Combine(project, ".claude"));
+            Directory.Delete(elsewhere, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AClaudeProjectInstallRunsItsCliInAPlainProject() {
+        PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Claude, project: true);
+
+        Assert.Contains(cli.Calls, call => call.Contains("--scope project"));
+    }
+
+    private static IDisposable ReportAsLink(string path) {
+        var previous = ReparsePoints.AttributeReader;
+        ReparsePoints.AttributeReader = candidate => string.Equals(candidate, path, StringComparison.OrdinalIgnoreCase)
+            ? FileAttributes.ReparsePoint
+            : previous(candidate);
+        return new Restore(() => ReparsePoints.AttributeReader = previous);
+    }
+
+    private sealed class Restore : IDisposable {
+        private readonly Action action;
+
+        public Restore(Action action) {
+            this.action = action;
+        }
+
+        public void Dispose() {
+            action();
+        }
+    }
+
+    [Fact]
+    public void QuotedAndNetworkPathEntriesAreKeptAndRelativeOnesDropped() {
+        var previousPath = Environment.GetEnvironmentVariable("PATH");
+        try {
+            Environment.SetEnvironmentVariable("PATH", "\"C:\\quoted dir\"" + Path.PathSeparator + @"\\server\share\bin" + Path.PathSeparator + "\"relative dir\"");
+
+            var entries = PyRevitCLIAgentCmds.FreshPath().Split(Path.PathSeparator);
+
+            Assert.Contains(@"C:\quoted dir", entries);
+            Assert.Contains(@"\\server\share\bin", entries);
+            Assert.DoesNotContain("relative dir", entries);
+        }
+        finally {
+            Environment.SetEnvironmentVariable("PATH", previousPath);
+        }
+    }
+
+    [Fact]
+    public void ExpandedVariablesAreSplitBeforeEntriesAreChecked() {
+        var previousPath = Environment.GetEnvironmentVariable("PATH");
+        var previousDirs = Environment.GetEnvironmentVariable("PYREVIT_TEST_DIRS");
+        var previousOne = Environment.GetEnvironmentVariable("PYREVIT_TEST_ONE");
+        try {
+            Environment.SetEnvironmentVariable("PYREVIT_TEST_DIRS", @"C:\trusted" + Path.PathSeparator + @".\bin");
+            Environment.SetEnvironmentVariable("PYREVIT_TEST_ONE", @"C:\plain dir");
+            Environment.SetEnvironmentVariable("PATH", "%PYREVIT_TEST_DIRS%" + Path.PathSeparator + "%PYREVIT_TEST_ONE%");
+
+            var entries = PyRevitCLIAgentCmds.FreshPath().Split(Path.PathSeparator);
+
+            Assert.Contains(@"C:\trusted", entries);
+            Assert.Contains(@"C:\plain dir", entries);
+            Assert.DoesNotContain(@".\bin", entries);
+            Assert.All(entries, entry => Assert.True(Path.IsPathFullyQualified(entry), entry));
+        }
+        finally {
+            Environment.SetEnvironmentVariable("PATH", previousPath);
+            Environment.SetEnvironmentVariable("PYREVIT_TEST_DIRS", previousDirs);
+            Environment.SetEnvironmentVariable("PYREVIT_TEST_ONE", previousOne);
+        }
+    }
+
+    [Theory]
+    [InlineData(@"C:\tools\claude.cmd", true)]
+    [InlineData(@"C:\tools\claude.bat", true)]
+    [InlineData(@"C:\tools\claude.exe", false)]
+    public void ClientToolsAreStartedWithoutTheCurrentFolderOnTheSearchPath(string executable, bool viaCmd) {
+        var previous = Environment.GetEnvironmentVariable("NoDefaultCurrentDirectoryInExePath");
+        try {
+            Environment.SetEnvironmentVariable("NoDefaultCurrentDirectoryInExePath", "0");
+
+            var start = PyRevitCLIAgentCmds.BuildClientStartInfo(executable, "mcp list");
+
+            Assert.Equal(viaCmd ? Path.Combine(Environment.SystemDirectory, "cmd.exe") : executable, start.FileName);
+            Assert.Equal("1", start.Environment["NoDefaultCurrentDirectoryInExePath"]);
+            Assert.Equal(PyRevitCLIAgentCmds.FreshPath(), start.Environment["PATH"]);
+            if (viaCmd)
+                Assert.Contains("\"" + executable + "\"", start.Arguments);
+            else
+                Assert.Equal("mcp list", start.Arguments);
+        }
+        finally {
+            Environment.SetEnvironmentVariable("NoDefaultCurrentDirectoryInExePath", previous);
+        }
+    }
+
+    [Fact]
+    public void RelativePathEntriesAreNotUsedToFindClientTools() {
+        var previousPath = Environment.GetEnvironmentVariable("PATH");
+        try {
+            Environment.SetEnvironmentVariable("PATH", @"relative\bin" + Path.PathSeparator + "." + Path.PathSeparator + @"C:\absolute\bin");
+
+            var entries = PyRevitCLIAgentCmds.FreshPath().Split(Path.PathSeparator);
+
+            Assert.DoesNotContain(@"relative\bin", entries);
+            Assert.DoesNotContain(".", entries);
+            Assert.Contains(@"C:\absolute\bin", entries);
+            Assert.All(entries, entry => Assert.True(Path.IsPathFullyQualified(entry), entry));
+        }
+        finally {
+            Environment.SetEnvironmentVariable("PATH", previousPath);
+        }
+    }
+
+    private static bool TryCreateJunction(string link, string target, out string error) {
+        var start = new System.Diagnostics.ProcessStartInfo("cmd.exe", $"/c mklink /J \"{link}\" \"{target}\"") {
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        using (var process = System.Diagnostics.Process.Start(start)) {
+            error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+            return process.ExitCode == 0;
+        }
+    }
+
+    [Fact]
     public void VsCodeGetsAStdioEntryUnderServers() {
         PyRevitCLIAgentCmds.InstallMcp(McpClientKind.VSCode, project: true);
 

@@ -15,6 +15,8 @@ public partial class McpServerTests : IDisposable {
         "run_automation", "lookup_revit_api", "get_run", "get_recording",
     };
 
+    private static readonly string[] OpenWorldTools = { "run_query", "run_modify" };
+
     private static readonly string[] PresentationTools = { "show_elements", "navigate_revit_link", "capture_view" };
 
     private readonly FakeAgentHost host = new FakeAgentHost();
@@ -525,7 +527,9 @@ public partial class McpServerTests : IDisposable {
                 Assert.True(properties[required.Value<string>()] != null, name + " requires an undeclared property");
             var readOnly = ReadOnlyTools.Contains(name);
             Assert.Equal(readOnly, tool["annotations"].Value<bool>("readOnlyHint"));
-            Assert.Equal(!readOnly && !PresentationTools.Contains(name), tool["annotations"].Value<bool>("destructiveHint"));
+            var destructive = !readOnly && !PresentationTools.Contains(name);
+            Assert.Equal(destructive, tool["annotations"].Value<bool>("destructiveHint"));
+            Assert.Equal(OpenWorldTools.Contains(name), tool["annotations"].Value<bool>("openWorldHint"));
         }
     }
 

@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRecordingReader.cs" Link="Agent\AgentRecordingReader.cs" />
+    <Compile Include="..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentPipeName.cs" Link="Agent\AgentPipeName.cs" />
     <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
     <ProjectReference Include="..\pyRevitLabs.CommonCLI\pyRevitLabs.CommonCLI.csproj" />
     <ProjectReference Include="..\pyRevitLabs.Language\pyRevitLabs.Language.csproj" />

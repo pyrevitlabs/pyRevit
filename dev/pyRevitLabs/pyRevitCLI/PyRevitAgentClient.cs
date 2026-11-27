@@ -17,6 +17,8 @@ using pyRevitLabs.Common;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 
+using PyRevitLabs.PyRevit.Runtime.Agent;
+
 namespace pyRevitCLI {
     /// <summary>
     /// A running Revit whose pyRevit agent host registered itself under
@@ -195,6 +197,8 @@ namespace pyRevitCLI {
         /// </summary>
         internal static int ConnectTimeoutMs = 10000;
 
+        private static readonly pyRevitLabs.NLog.Logger logger = pyRevitLabs.NLog.LogManager.GetCurrentClassLogger();
+
         internal const string CloneSelectorPrefix = "clone:";
 
         /// <summary>
@@ -218,6 +222,11 @@ namespace pyRevitCLI {
 
         internal static Func<Process, string> ProcessNameReader = process => process.ProcessName;
         internal static Func<Process, DateTime> ProcessStartTimeReader = process => process.StartTime;
+
+        /// <summary>
+        /// Reads the user a process runs as; null when it can't be read. Replaced by tests.
+        /// </summary>
+        internal static Func<int, SecurityIdentifier> ProcessOwnerReader = ReadProcessOwner;
         /// <summary>
         /// Whether a pipe exists, read from the pipe namespace listing.
         /// </summary>
@@ -256,6 +265,10 @@ namespace pyRevitCLI {
             foreach (var file in Directory.GetFiles(InstancesDir, "*.json")) {
                 try {
                     var data = JObject.Parse(File.ReadAllText(file));
+                    if (!AgentPipeName.IsValid(data.Value<string>("pipe"))) {
+                        logger.Warn("Ignoring agent registration {0}: its pipe name is not one a pyRevit agent host registers.", Path.GetFileName(file));
+                        continue;
+                    }
                     var instance = new AgentInstance {
                         ProcessId = data.Value<int>("pid"),
                         Pipe = data.Value<string>("pipe"),
@@ -376,11 +389,86 @@ namespace pyRevitCLI {
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool GetNamedPipeServerProcessId(SafePipeHandle pipe, out uint serverProcessId);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint desiredAccess, bool inheritHandle, int processId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr handle);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool OpenProcessToken(IntPtr process, uint desiredAccess, out IntPtr token);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool GetTokenInformation(IntPtr token, int informationClass, IntPtr information, int length, out int returnLength);
+
+        private const uint ProcessQueryLimitedInformation = 0x1000;
+        private const uint TokenQuery = 0x8;
+        private const int TokenUser = 1;
+
+        /// <summary>
+        /// The user SID of a process's token, or null when the process or its token can't be opened.
+        /// </summary>
+        /// <remarks>
+        /// Compared by user SID, so an elevated Revit of the same user matches. Whether a
+        /// non-elevated client can open an elevated process's token is unverified; if it can't, the
+        /// result is null and the call is refused. The host never runs elevated.
+        /// </remarks>
+        private static SecurityIdentifier ReadProcessOwner(int processId) {
+            var process = OpenProcess(ProcessQueryLimitedInformation, false, processId);
+            if (process == IntPtr.Zero)
+                return null;
+            try {
+                if (!OpenProcessToken(process, TokenQuery, out var token))
+                    return null;
+                try {
+                    GetTokenInformation(token, TokenUser, IntPtr.Zero, 0, out var length);
+                    if (length <= 0)
+                        return null;
+                    var buffer = Marshal.AllocHGlobal(length);
+                    try {
+                        return GetTokenInformation(token, TokenUser, buffer, length, out _)
+                            ? new SecurityIdentifier(Marshal.ReadIntPtr(buffer))
+                            : null;
+                    }
+                    finally {
+                        Marshal.FreeHGlobal(buffer);
+                    }
+                }
+                finally {
+                    CloseHandle(token);
+                }
+            }
+            finally {
+                CloseHandle(process);
+            }
+        }
+
+        private static void RequireRegisteredPipe(AgentInstance instance) {
+            if (!AgentPipeName.IsValid(instance.Pipe))
+                throw new AgentClientException(
+                    "pipe_error",
+                    $"Revit {instance.RevitVersion} (pid {instance.ProcessId}) registered an unexpected agent pipe name; no request was sent.",
+                    AgentOutcome.NotSent);
+        }
+
         private static void RequireServerProcess(NamedPipeClientStream pipe, AgentInstance instance) {
             if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle, out var serverProcessId) || serverProcessId != (uint)instance.ProcessId)
                 throw new AgentClientException(
                     "pipe_error",
                     $"The agent pipe of Revit {instance.RevitVersion} (pid {instance.ProcessId}) is served by another process; "
+                    + "no request was sent.",
+                    AgentOutcome.NotSent);
+            var owner = ProcessOwnerReader(instance.ProcessId);
+            if (owner == null)
+                throw new AgentClientException(
+                    "pipe_error",
+                    $"Could not read the owner of process {instance.ProcessId}, which serves the agent pipe of Revit {instance.RevitVersion}; "
+                    + "no request was sent.",
+                    AgentOutcome.NotSent);
+            if (!owner.Equals(WindowsIdentity.GetCurrent().User))
+                throw new AgentClientException(
+                    "pipe_error",
+                    $"The agent pipe of Revit {instance.RevitVersion} (pid {instance.ProcessId}) is served by a process of another user; "
                     + "no request was sent.",
                     AgentOutcome.NotSent);
         }
@@ -432,6 +520,7 @@ namespace pyRevitCLI {
                 ["params"] = parameters ?? new JObject(),
             };
 
+            RequireRegisteredPipe(instance);
             var sent = false;
             string responseLine;
             try {
