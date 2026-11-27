@@ -29,12 +29,12 @@ import uuid
 from pyrevit import DB, HOST_APP, forms, revit, script
 from pyrevit.compat import IRONPY, get_elementid_from_value_func
 from pyrevit.framework import List
+from pyrevit.output.bridge import PageBridge
 from pyrevit.revit import events
 
 import invisibility_fixes as fixes
 import invisibility_scene as scene
 from scene3d import read_asset as read_lib_asset
-from scene3d.bridge import PageBridge
 from scene3d.meshing import scene_to_json
 from invisibility_ghost import GhostPreview, zoom_to
 from invisibility_reveal import (
