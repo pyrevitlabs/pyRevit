@@ -10,7 +10,7 @@ TEST_ENVIRONMENT = "HostFree"
 TEST_LEVEL = "Unit"
 
 import ast
-from collections import Counter
+from collections import Counter, namedtuple
 from pathlib import Path
 import types
 import unittest
@@ -23,6 +23,7 @@ PANE = (
     / "extensions/pyRevitTools.extension/lib/panes/customprops/pane.py"
 )
 PANE_METHODS = ("_collect_pending", "_is_field_changed", "_get_field_original")
+PastedNumber = namedtuple("PastedNumber", ["text", "internal_value", "data_type"])
 
 
 def _load_definitions(names, **namespace):
@@ -79,16 +80,22 @@ def _row(name, field, original):
     return row
 
 
-@pytest.mark.regression
-class ApplyOnlyEditedFieldsTests(unittest.TestCase):
+class _PaneTestCase(unittest.TestCase):
     def setUp(self):
         namespace = _load_definitions(
-            PANE_METHODS,
+            PANE_METHODS + ("paste_clicked", "_pasted_number"),
             framework=_fake_framework(),
+            DB=types.SimpleNamespace(
+                StorageType=types.SimpleNamespace(Double="Double", Integer="Integer")
+            ),
+            PastedNumber=PastedNumber,
             _SEL_CB_TAG="sel_checkbox",
             _RAW_INT_TAG="_raw_int",
+            _PASTED_NUMBER_TAG="_pasted_number",
         )
-        methods = dict((name, namespace[name]) for name in PANE_METHODS)
+        methods = dict(
+            (name, namespace[name]) for name in PANE_METHODS + ("paste_clicked",)
+        )
         self.pane = type("Pane", (object,), methods)()
         self.pane._varies = "<varies>"
         self.pane._worksets = [("Shared", 5)]
@@ -99,6 +106,9 @@ class ApplyOnlyEditedFieldsTests(unittest.TestCase):
         self.pane.additional_panel = types.SimpleNamespace(Children=list(rows))
         return self.pane._collect_pending()
 
+
+@pytest.mark.regression
+class ApplyOnlyEditedFieldsTests(_PaneTestCase):
     def test_untouched_fields_are_not_written_back(self):
         pending = self.collect(
             _row("Length", _TextBox(Text="1500"), "1500"),
@@ -123,9 +133,85 @@ class ApplyOnlyEditedFieldsTests(unittest.TestCase):
 
 
 @pytest.mark.regression
+class PastedNumberTests(_PaneTestCase):
+    """Issue #4259: shown numbers are rounded, so a paste keeps the exact one."""
+
+    def paste(self, field, shown="1000"):
+        copied = types.SimpleNamespace(
+            name="Length",
+            datatype="Double",
+            value=3.2821522309711,
+            display_value=shown,
+            data_type="length",
+        )
+        row = _row("Length", field, field.Text)
+        self.pane._copy_clipboard = [copied]
+        self.pane._find_field_for_param = lambda name: field
+        self.pane._mark_field_dirty = lambda changed: None
+        self.pane.paste_clicked(None, None)
+        return row
+
+    def test_a_pasted_number_keeps_its_exact_value(self):
+        row = self.paste(_TextBox(Text="1500"))
+        self.assertEqual(
+            PastedNumber("1000", 3.2821522309711, "length"),
+            self.collect(row)["additional"]["Length"],
+        )
+
+    def test_it_is_applied_even_when_the_target_shows_the_same_text(self):
+        row = self.paste(_TextBox(Text="1000"))
+        self.assertEqual(
+            3.2821522309711,
+            self.collect(row)["additional"]["Length"].internal_value,
+        )
+
+    def test_typing_after_a_paste_wins(self):
+        field = _TextBox(Text="1500")
+        row = self.paste(field)
+        field.Text = "1200"
+        self.assertEqual({"Length": "1200"}, self.collect(row)["additional"])
+
+    def test_a_blank_copy_is_not_written(self):
+        row = self.paste(_TextBox(Text="1500"), shown="")
+        self.assertEqual({}, self.collect(row)["additional"])
+
+
+@pytest.mark.regression
+class PastedNumberWriteTests(unittest.TestCase):
+    def write_to(self, data_type):
+        written = []
+        namespace = _load_definitions(
+            ("_write_param",),
+            PastedNumber=PastedNumber,
+            UNIT_INTERNAL="internal",
+            get_parameter_data_type=lambda definition: definition,
+            ValueCodec=lambda doc, mode: types.SimpleNamespace(
+                write=lambda param, value: written.append((mode, value))
+            ),
+        )
+        codec = types.SimpleNamespace(
+            doc=None, write=lambda param, value: written.append(("display", value))
+        )
+        parameter = types.SimpleNamespace(Definition=data_type)
+        element = types.SimpleNamespace(LookupParameter=lambda name: parameter)
+        namespace["_write_param"](
+            codec, element, "Length", PastedNumber("1000", 3.25, "length"), Counter()
+        )
+        return written
+
+    def test_the_same_data_type_gets_the_exact_internal_value(self):
+        self.assertEqual([("internal", 3.25)], self.write_to("length"))
+
+    def test_another_data_type_gets_the_shown_text(self):
+        self.assertEqual([("display", "1000")], self.write_to("angle"))
+
+
+@pytest.mark.regression
 class RefusalReportTests(unittest.TestCase):
     def setUp(self):
-        self.write = _load_definitions(("_write_param",))["_write_param"]
+        self.write = _load_definitions(("_write_param",), PastedNumber=PastedNumber)[
+            "_write_param"
+        ]
 
     def apply(self, codec, parameter):
         element = types.SimpleNamespace(LookupParameter=lambda name: parameter)

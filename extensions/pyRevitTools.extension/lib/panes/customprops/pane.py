@@ -7,13 +7,13 @@ All other parameters are user-configured via the config dialog.
 """
 
 import os.path as op
-from collections import Counter
+from collections import Counter, namedtuple
 
 from pyrevit import forms, HOST_APP, framework, revit, script
 from pyrevit import DB, UI
-from pyrevit.revit import is_yesno_parameter, query
+from pyrevit.revit import get_parameter_data_type, is_yesno_parameter, query
 from pyrevit.revit.events import execute_in_revit_context
-from pyrevit.revit.valuecodec import ValueCodec
+from pyrevit.revit.valuecodec import UNIT_INTERNAL, ValueCodec
 from pyrevit.revit.db import create as revit_create
 from pyrevit.userconfig import user_config
 from pyrevit.compat import get_elementid_value_func
@@ -31,6 +31,9 @@ SHOW_WS_INFO = "show_worksharing_info"
 
 _SEL_CB_TAG = "sel_checkbox"
 _RAW_INT_TAG = "_raw_int"
+_PASTED_NUMBER_TAG = "_pasted_number"
+
+PastedNumber = namedtuple("PastedNumber", ["text", "internal_value", "data_type"])
 
 # ---------------------------------------------------------------------------
 # Config helpers
@@ -187,15 +190,32 @@ def _set_workset(doc, element, workset_id):
     return False
 
 
-def _write_param(codec, element, param_name, value_str, refusals):
-    """Write the text of a pane field; record why it could not be written.
+def _pasted_number(field):
+    """Return the copied number that a field still shows, or None."""
+    tag = getattr(field, "Tag", None)
+    if isinstance(tag, tuple) and len(tag) == 2 and tag[0] == _PASTED_NUMBER_TAG:
+        if field.Text == tag[1].text:
+            return tag[1]
+    return None
 
-    An element without the parameter is skipped.
+
+def _write_param(codec, element, param_name, value, refusals):
+    """Write what a pane field holds; record why it could not be written.
+
+    A pasted number is written with its exact internal value to a parameter of
+    the data type it was copied from, and as its shown text to any other. An
+    element without the parameter is skipped.
     """
     try:
         param = element.LookupParameter(param_name)
-        if param is not None:
-            codec.write(param, value_str)
+        if param is None:
+            return
+        if isinstance(value, PastedNumber):
+            if get_parameter_data_type(param.Definition) == value.data_type:
+                ValueCodec(codec.doc, UNIT_INTERNAL).write(param, value.internal_value)
+                return
+            value = value.text
+        codec.write(param, value)
     except Exception as ex:
         refusals[(param_name, str(ex))] += 1
 
@@ -914,6 +934,8 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
     def _is_field_changed(self, field):
         try:
+            if _pasted_number(field) is not None:
+                return True
             original = self._get_field_original(field)
             if isinstance(field, framework.Controls.TextBox):
                 return field.Text != (original if original is not None else "")
@@ -1164,7 +1186,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
         except Exception:
             return None
 
-        return PropKeyValue(
+        pkv = PropKeyValue(
             name=param_name,
             datatype=st,
             value=raw_value,
@@ -1172,6 +1194,9 @@ class CustomPropertiesPanel(forms.WPFPanel):
             display_value=ui_text,
             categories=[element.Category] if element.Category else [],
         )
+        if st == DB.StorageType.Double:
+            pkv.data_type = get_parameter_data_type(param.Definition)
+        return pkv
 
     def _get_checked_param_names(self):
         """Return names of additional-panel rows whose selection checkbox is ticked."""
@@ -1218,6 +1243,13 @@ class CustomPropertiesPanel(forms.WPFPanel):
                 if isinstance(field, framework.Controls.TextBox):
                     if not field.IsReadOnly:
                         field.Text = pkv.display_value
+                        if pkv.datatype == DB.StorageType.Double and pkv.display_value:
+                            field.Tag = (
+                                _PASTED_NUMBER_TAG,
+                                PastedNumber(
+                                    pkv.display_value, pkv.value, pkv.data_type
+                                ),
+                            )
                     elif pkv.datatype == DB.StorageType.Integer:
                         field.Text = pkv.display_value
                         field.Tag = (_RAW_INT_TAG, pkv.value)
@@ -1560,6 +1592,8 @@ class CustomPropertiesPanel(forms.WPFPanel):
                         if not field.IsEnabled:
                             continue
                         val = "1" if bool(field.IsChecked) else "0"
+                    elif _pasted_number(field) is not None:
+                        val = _pasted_number(field)
                     else:
                         tag = getattr(field, "Tag", None)
                         raw_int = (
