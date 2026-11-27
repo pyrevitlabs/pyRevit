@@ -1,18 +1,26 @@
 # -*- coding: utf-8 -*-
-"""Message channel between a page in the output window and Python.
+"""Message channel between an interactive page in the output window and Python.
 
 Page -> Python messages are ``{channel, action, payload, requestId}``;
 Python -> page messages are ``{channel, event, payload}``. Messages on other
 channels, for example from a previous run printed into the same window, are
 ignored.
+
+Tools that render an interactive page (a report, a grid, a preview) create one
+:class:`PageBridge` per page, register a handler per page action
+(:meth:`PageBridge.register`, or the lower-level ``handlers`` dict) and
+:meth:`PageBridge.start` it. The page side posts with
+``window.chrome.webview.postMessage`` and listens with
+``window.chrome.webview.addEventListener("message", ...)``.
 """
 
 import json
 import uuid
 
-from pyrevit import script
+from pyrevit.compat import safe_strtype
+from pyrevit.coreutils.logger import get_logger
 
-logger = script.get_logger()
+mlogger = get_logger(__name__)
 
 
 class PageBridge(object):
@@ -21,6 +29,12 @@ class PageBridge(object):
     Args:
         output (pyrevit.output.PyRevitOutputWindow): the output window.
         prefix (str): channel name prefix; a random suffix makes it unique.
+
+    Attributes:
+        channel (str): channel name the page must put on every message.
+        handlers (dict): action name -> ``handler(payload, request_id)``,
+            filled by the tool before :meth:`start`. A handler owns its reply;
+            :meth:`register` builds handlers that reply on their behalf.
 
     Important:
         ``output.on_message`` handlers outlive the command, so the bundle must
@@ -32,6 +46,37 @@ class PageBridge(object):
         self.output = output
         self.channel = "{}-{}".format(prefix, uuid.uuid4().hex)
         self.handlers = {}
+
+    def register(self, action, function, expected=()):
+        """Serve ``action`` with ``function(payload)`` and reply with what it returns.
+
+        A return value is answered as a successful ``result``. An exception is
+        answered as a failed ``result`` carrying its text, so the page's
+        request never stays pending.
+
+        Args:
+            action (str): action name the page posts.
+            function (callable): ``function(payload)`` returning a
+                JSON-serializable value.
+            expected (tuple): exception classes that are routine refusals whose
+                message is meant for the user. They are logged without a
+                traceback; any other exception is logged with one.
+        """
+
+        def handler(payload, request_id):
+            try:
+                result = function(payload)
+            except expected as ex:
+                mlogger.info("Action '%s' refused: %s", action, safe_strtype(ex))
+                self.reply(request_id, False, safe_strtype(ex))
+                return
+            except Exception as ex:
+                mlogger.exception("Action '%s' failed", action)
+                self.reply(request_id, False, safe_strtype(ex))
+                return
+            self.reply(request_id, True, result)
+
+        self.handlers[action] = handler
 
     def start(self):
         """Subscribe to the output window; return False when it cannot receive."""
@@ -47,16 +92,20 @@ class PageBridge(object):
         action = message.get("action")
         handler = self.handlers.get(action)
         if handler is None:
-            logger.debug("No handler for action '%s'", action)
+            mlogger.debug("No handler for action '%s'", action)
             return
         request_id = message.get("requestId")
         try:
             handler(message.get("payload") or {}, request_id)
         except Exception as ex:
-            logger.debug("Handler '%s' failed: %s", action, ex)
+            mlogger.debug("Handler '%s' failed: %s", action, ex)
             self.send(
                 "error",
-                {"action": action, "requestId": request_id, "message": str(ex)},
+                {
+                    "action": action,
+                    "requestId": request_id,
+                    "message": safe_strtype(ex),
+                },
             )
 
     def send(self, event, payload=None, raw_payload=None):
@@ -88,5 +137,11 @@ class PageBridge(object):
         )
 
     def reply(self, request_id, ok, message=None):
-        """Answer a request with a ``result`` event."""
+        """Answer a request with a ``result`` event.
+
+        Args:
+            request_id (object): ``requestId`` of the page message.
+            ok (bool): whether the request succeeded.
+            message (object): JSON-serializable text or data for the page.
+        """
         self.send("result", {"requestId": request_id, "ok": ok, "message": message})
