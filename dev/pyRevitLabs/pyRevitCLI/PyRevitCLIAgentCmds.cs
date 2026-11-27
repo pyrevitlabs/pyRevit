@@ -398,7 +398,7 @@ namespace pyRevitCLI {
             PrintSkillsReport(report);
             ThrowOnFailures(report);
             foreach (var line in SkillsAdvice(context, report))
-                Console.WriteLine(line);
+                PrintSkillLine(line);
         }
 
         /// <summary>
@@ -420,7 +420,26 @@ namespace pyRevitCLI {
         /// The install command that refreshes exactly what a status run inspected.
         /// </summary>
         internal static string RefreshCommand(string scope, string targets, string path) {
-            return $"pyrevit agent skills install --scope={scope} --target={targets}" + (path == null ? string.Empty : $" --path=\"{path}\"");
+            var canonicalTargets = string.Join(",", SkillTargets.ParseTargets(targets));
+            return $"pyrevit agent skills install --scope={QuoteForShell(scope.Trim().ToLowerInvariant())} --target={QuoteForShell(canonicalTargets)}"
+                + (path == null ? string.Empty : $" --path={QuoteForShell(path)}");
+        }
+
+        private static string QuoteForShell(string value) {
+            return value.Any(character => char.IsWhiteSpace(character) || "\"'&|<>^%()$;`!".IndexOf(character) >= 0)
+                ? "\"" + value.Replace("\"", "\\\"") + "\""
+                : value;
+        }
+
+        /// <summary>
+        /// The warning printed when installed skills are stale, with the exact command that refreshes them.
+        /// </summary>
+        internal static string StaleWarning(string scope, string targets, string path) {
+            return SkillFiles.Printable($"Warning: some installed skills are stale. Run '{RefreshCommand(scope, targets, path)}' to refresh them.");
+        }
+
+        private static void PrintSkillLine(string line) {
+            Console.WriteLine(SkillFiles.Printable(line));
         }
 
         /// <summary>
@@ -451,7 +470,7 @@ namespace pyRevitCLI {
             }
             PrintSkillsReport(report);
             if (report.Actions.Any(action => action.State == SkillState.Stale))
-                Console.WriteLine($"Warning: some installed skills are stale. Run '{RefreshCommand(scope, targets, path)}' to refresh them.");
+                PrintSkillLine(StaleWarning(scope, targets, path));
         }
 
         /// <summary>
@@ -464,14 +483,14 @@ namespace pyRevitCLI {
             PrintSkillsReport(report);
             ThrowOnFailures(report);
             if (!report.Actions.Any(action => action.State == SkillState.Removed))
-                Console.WriteLine("No pyRevit skills removed.");
+                PrintSkillLine("No pyRevit skills removed.");
         }
 
         private static void PrintSkillsReport(SkillsReport report) {
             foreach (var action in report.Actions)
-                Console.WriteLine(SkillFiles.Printable($"{action.State.Label(),-9} {action.Skill} ({action.Target}: {action.Folder})"));
+                PrintSkillLine($"{action.State.Label(),-9} {action.Skill} ({action.Target}: {action.Folder})");
             foreach (var warning in report.Warnings)
-                Console.WriteLine(SkillFiles.Printable("Warning: " + warning));
+                PrintSkillLine("Warning: " + warning);
         }
 
         private static void ThrowOnFailures(SkillsReport report) {
