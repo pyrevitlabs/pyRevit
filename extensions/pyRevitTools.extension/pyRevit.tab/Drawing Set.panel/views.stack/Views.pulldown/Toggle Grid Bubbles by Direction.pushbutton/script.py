@@ -27,6 +27,7 @@ PLAN_VIEWS = [
     DB.ViewType.EngineeringPlan,
 ]
 ELEVATION_VIEWS = [DB.ViewType.Elevation, DB.ViewType.Section]
+DEGREE = b"\xc2\xb0".decode("utf-8")
 
 
 def angle_to_dot_product_threshold(angle_degrees):
@@ -653,9 +654,13 @@ class ToggleGridWindow(forms.WPFWindow):
         elif self.coordinate_system == "elevation_mode":
             coord_status = "View Type: Elevation/Section"
         else:
-            coord_status = "Coordinates: {} ({}° tolerance)".format(
-                coord_system_map.get(self.coordinate_system, self.coordinate_system),
-                self.angle_tolerance,
+            coord_status = (
+                "Coordinates: {} (".format(
+                    coord_system_map.get(self.coordinate_system, self.coordinate_system)
+                )
+                + "{}".format(self.angle_tolerance)
+                + DEGREE
+                + " tolerance)"
             )
         self.status_coordinate_system.Text = coord_status
 
