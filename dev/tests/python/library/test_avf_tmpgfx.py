@@ -678,6 +678,30 @@ class ShowValuesTests(ShowValuesCase):
         self.assertEqual([], report["shown"])
         self.assertIn("another document", report["failed"][1])
 
+    def foreign_element(self, element_id):
+        element = slab(element_id=element_id)
+        element.Document = Document(2)
+        return element
+
+    def test_an_id_passed_twice_across_documents_changes_nothing(self):
+        self.show({1: 10}, name="A", unit="min", keep_others=True)
+        foreign = self.foreign_element(1)
+        for pairs in ([(foreign, 1), (1, 2)], [(1, 2), (foreign, 1)]):
+            with self.subTest(first=pairs[0][0] is foreign):
+                with self.assertRaises(RuntimeError):
+                    self.show(pairs, name="A", unit="h", keep_others=True)
+        self.assertEqual([10.0], self.sfm.values_of("A"))
+
+    def test_a_foreign_element_does_not_stand_in_for_a_local_one(self):
+        self.show({1: 10}, name="A", unit="min", keep_others=True)
+        foreign = self.foreign_element(1)
+        with self.assertRaises(RuntimeError):
+            self.show([(foreign, 1)], name="A", unit="h", keep_others=True)
+        report = self.show([(foreign, 1), (2, 20)], name="A", keep_others=True)
+        self.assertEqual([1, 2], report["present"])
+        self.assertIn("another document", report["failed"][1])
+        self.assertEqual([10.0, 20.0], self.sfm.values_of("A"))
+
     def test_a_value_revit_rejects_leaves_no_empty_primitive(self):
         self.sfm.rejects_values = True
         report = self.show({1: 1})

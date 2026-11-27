@@ -485,16 +485,17 @@ def _find_elements(numbers, doc):
 
     Returns:
         tuple: ``(element, number)`` pairs to show, element ids whose value
-            is to be removed (they need not exist anymore) and failures by id.
+            is to be removed (they need not exist anymore), failures by id and
+            failures of elements of other documents by id. Ids of the latter
+            say nothing about the values in *doc*, so they must never be used
+            to look one up.
     """
-    found, removals, failed, seen = {}, [], {}, set()
+    found, removals, failed, foreign, seen = {}, [], {}, {}, set()
     for key, number in numbers:
-        element = None
+        element, is_foreign = None, False
         if hasattr(key, "Id"):
             elem_id = int(get_elementid_value(key.Id))
-            if not key.Document.Equals(doc):
-                failed[elem_id] = "belongs to another document than the view"
-                continue
+            is_foreign = not key.Document.Equals(doc)
             element = key
         else:
             element_id = (
@@ -508,13 +509,16 @@ def _find_elements(numbers, doc):
                 "Element ID {} was passed more than once".format(elem_id)
             )
         seen.add(elem_id)
-        if number is None:
+        if is_foreign:
+            foreign[elem_id] = "belongs to another document than the view"
+        elif number is None:
             removals.append(elem_id)
         elif element is None:
             failed[elem_id] = "no element with this id in the view's document"
         else:
             found[elem_id] = (element, number)
-    return [found[elem_id] for elem_id in sorted(found)], sorted(removals), failed
+    shown = [found[elem_id] for elem_id in sorted(found)]
+    return shown, sorted(removals), failed, foreign
 
 
 def _normalize_unit_pairs(unit):
@@ -727,7 +731,7 @@ def show_values(
     _check_view(view, name)
     numbers = _read_values(values, keep_others)
     doc = view.Document
-    elements_and_values, removals, failed = _find_elements(numbers, doc)
+    elements_and_values, removals, failed, foreign = _find_elements(numbers, doc)
     existing_sfm = DB.Analysis.SpatialFieldManager.GetSpatialFieldManager(view)
     previous = _get_tracked_entry(existing_sfm, view, name)
     borrowed_schema = _find_borrowed_schema(existing_sfm, name, previous)
@@ -823,6 +827,7 @@ def show_values(
             "edits are not undone with it, so values may have changed; "
             "clear_values removes those of '{}'.".format(name)
         )
+    failed.update(foreign)
     _refresh_if_active(view)
     return {
         "view_id": int(get_elementid_value(view.Id)),
