@@ -273,6 +273,10 @@ that very folder (a copied folder with a copied record is treated as your own), 
 recorded digest and it holds nothing else.
 
 - `install` is idempotent: a current copy is left alone and a stale pyRevit-owned copy is refreshed.
+  `current` means the folder content equals what the installer would write for the shipped skill, whatever the
+  record claims; a folder that differs only from the shipped skill reads `stale` and is refreshed. A refresh
+  re-checks the copy after moving it aside and keeps it (reported as `edited`) if it changed in between, which
+  narrows but does not remove the window for an edit made at the same moment.
 - A folder with the skill's name that is not pyRevit-owned (no valid marker, a plain file, or a link) is never
   overwritten, replaced or deleted. The skill is skipped with a warning, or installed as `pyrevit-<name>` with
   `--prefix`; the folder and the `name` line of the copied `SKILL.md` change together.
