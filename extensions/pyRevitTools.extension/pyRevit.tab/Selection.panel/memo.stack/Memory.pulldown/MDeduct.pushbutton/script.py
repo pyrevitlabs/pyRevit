@@ -19,9 +19,9 @@ try:
     newsel = prevsel.difference(selected_ids)
     f.close()
     f = open(datafile, "wb")
-    pl.dump(newsel, f)
+    pl.dump(newsel, f, 2)
     f.close()
 except Exception:
     f = open(datafile, "wb")
-    pl.dump([], f)
+    pl.dump([], f, 2)
     f.close()

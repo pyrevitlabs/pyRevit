@@ -14,13 +14,14 @@ from pyrevit.revit import is_yesno_parameter, query
 from pyrevit.revit.events import execute_in_revit_context
 from pyrevit.revit.db import create as revit_create
 from pyrevit.userconfig import user_config
-from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import get_elementid_value_func, get_elementid_from_value_func
 from pyrevit.coreutils import applocales, unique_name
 
 from match.match_utils import PropKeyValue
 from match import filter_utils
 
 get_elementid_value = get_elementid_value_func()
+get_elementid_from_value = get_elementid_from_value_func()
 
 CONFIG_SECTION = "PYREVITTOOLS_CUSTOMPROPS_CONFIG"
 WS_POSTFIX = "_WS_INFO"
@@ -1504,7 +1505,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
             # Convert value to the type create_param_value_filter expects
             if pkv.datatype == DB.StorageType.ElementId:
-                param_value = DB.ElementId(pkv.value)
+                param_value = get_elementid_from_value(pkv.value)
             else:
                 param_value = pkv.value
 

@@ -72,16 +72,16 @@ def copy_zoomstate(sender, args):
             f = open(get_datafile(event_doc), "wb")
             try:
                 # dump current view type
-                pl.dump(type(args.CurrentActiveView).__name__, f)
+                pl.dump(type(args.CurrentActiveView).__name__, f, 2)
                 # dump zoom and center
-                pl.dump([revit.serialize(x) for x in cornerlist], f)
+                pl.dump([revit.serialize(x) for x in cornerlist], f, 2)
                 # dump ViewOrientation3D
                 if isinstance(args.CurrentActiveView, DB.View3D):
                     orientation = args.CurrentActiveView.GetOrientation()
-                    pl.dump(revit.serialize(orientation), f)
+                    pl.dump(revit.serialize(orientation), f, 2)
                 elif isinstance(args.CurrentActiveView, DB.ViewSection):
                     direction = args.CurrentActiveView.ViewDirection
-                    pl.dump(revit.serialize(direction), f)
+                    pl.dump(revit.serialize(direction), f, 2)
             except Exception as copy_ex:
                 logger.dev_log("copy_zoomstate::store", str(copy_ex))
             finally:
