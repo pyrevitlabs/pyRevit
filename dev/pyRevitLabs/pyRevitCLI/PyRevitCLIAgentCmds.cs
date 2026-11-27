@@ -447,18 +447,26 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
+        /// Characters that PowerShell, cmd.exe or a POSIX shell still expand or treat as syntax inside double quotes
+        /// (substitution, variables, history, escapes, smart quotes). A value holding one is never put in a printed command.
+        /// </summary>
+        private const string UnsafeInDoubleQuotes = "$`%!^\"\u201C\u201D\u201E";
+
+        /// <summary>
         /// The warning printed when installed skills are stale. It carries the exact refresh command only when no
-        /// argument of it changes under console sanitizing; otherwise it asks the user to repeat the original options,
-        /// because a sanitized path would select a different folder.
+        /// argument of it changes under console sanitizing and none holds a character a shell would interpret inside
+        /// double quotes; otherwise it asks the user to repeat the original options, because a sanitized path would
+        /// select a different folder and an interpreted one could run something.
         /// </summary>
         internal static string StaleWarning(string scope, string targets, string path) {
             var prefix = "Warning: some installed skills are stale. ";
             var command = RefreshCommand(scope, targets, path);
-            if (SkillFiles.Printable(command) == command)
+            var values = new[] { scope.Trim(), string.Join(",", SkillTargets.ParseTargets(targets)), path ?? string.Empty };
+            if (SkillFiles.Printable(command) == command && !values.Any(value => value.IndexOfAny(UnsafeInDoubleQuotes.ToCharArray()) >= 0))
                 return $"{prefix}Run '{command}' to refresh them.";
             var safeScope = SkillFiles.Printable(scope.Trim().ToLowerInvariant());
             var safeTargets = SkillFiles.Printable(string.Join(",", SkillTargets.ParseTargets(targets)));
-            return $"{prefix}Repeat your original 'pyrevit agent skills install' options (scope {safeScope}, target {safeTargets}) to refresh them; the --path contains characters that cannot be shown.";
+            return $"{prefix}Repeat your original 'pyrevit agent skills install' options (scope {safeScope}, target {safeTargets}) to refresh them; the --path contains characters that cannot be shown or that a shell would interpret.";
         }
 
         private static void PrintSkillLine(string line) {
