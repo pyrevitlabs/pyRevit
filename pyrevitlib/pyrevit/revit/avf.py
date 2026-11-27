@@ -10,64 +10,87 @@ Typical usage::
     from pyrevit import revit
     from pyrevit.revit import avf
 
-    values = {wall1: 12.5, wall2: 44.0}
-    # use get_or_create_colored_surface_display_style(...) instead for a
-    # gradient/heatmap look rather than text markers (3D views only)
-    style = avf.get_or_create_marker_display_style(revit.doc, "MyTool_AVF")
-    with revit.Transaction("Show values"):
-        revit.active_view.AnalysisDisplayStyleId = style.Id
-        results = avf.display_avf_values(values, revit.active_view, unit="ea")
+    report = avf.show_values(
+        revit.active_view,
+        {wall1: 12.5, wall2.Id: 44.0, 316542: 7},
+        name="Fire rating",
+        unit="min",
+    )
+    avf.show_values(
+        revit.active_view, {wall1: 90, wall2: None}, "Fire rating", keep_others=True
+    )
+    avf.clear_values(revit.active_view, "Fire rating")
+
+Use :func:`show_values` and :func:`clear_values`. By default each call makes
+the view show exactly the values passed under ``name``. To add, change or
+remove single values without knowing the others, pass ``keep_others=True``;
+None as a value removes it. Both assign a display style, refresh the view and
+report what happened to every element. Other names, and results of other
+tools, are left alone.
+
+The remaining functions are lower level building blocks. They add values
+without replacing earlier ones, and their caller keeps the primitive ids,
+assigns a display style and refreshes the view.
 
 Notes / known limitations:
-    - Values are drawn only if the view has an AnalysisDisplayStyle
-      assigned (``View.AnalysisDisplayStyleId``). The display functions do
-      not assign one.
+    - Nothing is drawn without an AnalysisDisplayStyle on the view
+      (``View.AnalysisDisplayStyleId``). Only :func:`show_values` assigns
+      one.
     - Marker size belongs to the display style, not to the values:
       ``AnalysisDisplayMarkersAndTextSettings.MarkerSize`` is a length on
       paper in Revit internal units (feet). A marker spans about
       ``MarkerSize * view.Scale`` feet in the model. The API default is
-      1/96 ft (about 3.2 mm on paper); for a size in millimetres assign
-      ``millimetres / 304.8``.
+      1/96 ft (about 3.2 mm on paper). :func:`show_values` takes
+      millimetres as ``marker_size_mm``.
+    - Values are numbers shown as given. ``unit`` is a label, nothing is
+      converted from Revit internal units.
     - Values are anchored to faces only in orthographic 3D views without an
       active section box, for elements visible in that view. Everywhere else
       they are placed at the element's bounding-box center, which text
       markers draw but a colored-surface style cannot paint.
     - Face selection uses the largest planar-or-curved face turned toward
-      the viewer. It is sampled at its UV-bounding-box center, which is an
-      approximation for strongly curved faces (cylinders, etc.) and can
-      fall into an opening.
-    - SpatialFieldManager results (the actual point/value data) are NOT
-      saved with the document - they live only for the current session
-      and are gone on reopen even without calling ``clear_avf_results``.
-      What IS saved with the model is the AnalysisDisplayStyle itself and
-      its assignment to a view (``View.AnalysisDisplayStyleId``), so a
-      view can "remember" how it should render results without remembering
-      the results. Call ``clear_avf_results`` to remove results within a
-      session (e.g. before recomputing).
+      the viewer. It is sampled at the point of that face nearest to the
+      middle of its UV bounding box, which is an approximation for strongly
+      curved faces (cylinders, etc.).
+    - AVF results are NOT saved with the document: they live only for the
+      current session. What IS saved with the model is the
+      AnalysisDisplayStyle and its assignment to a view.
     - Rolling a transaction group back does not reliably remove AVF
-      results.
-    - Two display styles are provided: ``get_or_create_marker_display_style``
-      (text markers, good for discrete/inspectable values) and
-      ``get_or_create_colored_surface_display_style`` (gradient heatmap,
-      good for continuous/comparative values).
+      results. A rolled back script or a dry run can leave values behind,
+      so remove them with :func:`clear_values`.
+    - Revit cannot list a view's primitives. :func:`show_values` remembers
+      its own in the Revit process, shared by all engines.
     - The write functions open their own transaction, which becomes a
-      SubTransaction when one is already open on the active document.
+      SubTransaction when one is already open on the view's document.
 """
 
-from pyrevit import DB
+import json
+import math
+
+from pyrevit import DB, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit.revit import Transaction, query
-from pyrevit.framework import List, System
+from pyrevit.framework import AppDomain, List, System
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import get_elementid_from_value_func
 
 get_elementid_value = get_elementid_value_func()
+get_elementid_from_value = get_elementid_from_value_func()
 
 mlogger = get_logger(__name__)
 
 _FACING_TOLERANCE = 1e-6
+_SAMPLE_STEPS = 8
+_STATE_SLOT = "PYREVIT_AVF_SHOWN_VALUES"
+_MEASUREMENT_NAME = "Value"
+_MILLIMETRES_PER_FOOT = 304.8
+_STYLE_KINDS = {"marker": "Marker", "colored": "Colored Surface"}
+_PROHIBITED_NAME_CHARACTERS = "\\:{}[]|;<>?`~"
 
 __all__ = (
+    "show_values",
+    "clear_values",
     "get_face_facing_direction",
     "clear_avf_results",
     "display_avf_values",
@@ -145,6 +168,25 @@ def _get_uv_center(face):
     )
 
 
+def _get_sample_uv(face):
+    center = _get_uv_center(face)
+    if face.IsInside(center):
+        return center
+    bbox = face.GetBoundingBox()
+    fractions = [step / float(_SAMPLE_STEPS) for step in range(1, _SAMPLE_STEPS)]
+    for u_fraction, v_fraction in sorted(
+        ((u, v) for u in fractions for v in fractions),
+        key=lambda pair: (pair[0] - 0.5) ** 2 + (pair[1] - 0.5) ** 2,
+    ):
+        candidate = DB.UV(
+            bbox.Min.U + (bbox.Max.U - bbox.Min.U) * u_fraction,
+            bbox.Min.V + (bbox.Max.V - bbox.Min.V) * v_fraction,
+        )
+        if face.IsInside(candidate):
+            return candidate
+    return center
+
+
 def _can_anchor_to_faces(view):
     return (
         isinstance(view, DB.View3D)
@@ -169,7 +211,7 @@ def _get_face_candidate_ids(elements, view):
         .WherePasses(DB.ElementIdSetFilter(element_ids))
         .ToElementIds()
     )
-    return set(get_elementid_value(element_id) for element_id in visible_ids)
+    return set(int(get_elementid_value(element_id)) for element_id in visible_ids)
 
 
 def _get_face_anchor(element, view):
@@ -181,7 +223,7 @@ def _get_face_anchor(element, view):
     )
     if face is None or face.Reference is None:
         return None
-    return face.Reference, _get_uv_center(face)
+    return face.Reference, _get_sample_uv(face)
 
 
 def _get_center(element, view):
@@ -191,15 +233,15 @@ def _get_center(element, view):
     return (bbox.Min + bbox.Max) / 2.0
 
 
-def _resolve_anchors(element_value_dict, view, face_candidate_ids):
+def _resolve_anchors(elements_and_values, view, face_candidate_ids):
     """Read every element's face anchor and center before anything is added.
 
     Adding a primitive makes the next geometry or view query regenerate,
     which can take seconds, so no query may run between two primitives.
     """
     anchors = []
-    for element, value in element_value_dict.items():
-        elem_id = get_elementid_value(element.Id)
+    for element, value in elements_and_values:
+        elem_id = int(get_elementid_value(element.Id))
         face_anchor = center = None
         if elem_id in face_candidate_ids:
             try:
@@ -234,6 +276,25 @@ def _add_point_primitive(sfm, point):
     return sfp_id, DB.Analysis.FieldDomainPointsByXYZ(xyz_list)
 
 
+def _add_anchored_value(sfm, schema_id, value, face_anchor, center):
+    """Add one value and return ``(primitive id, True if anchored to a face)``."""
+    primitive = _add_face_primitive(sfm, *face_anchor) if face_anchor else None
+    on_face = primitive is not None
+    if primitive is None:
+        if center is None:
+            raise PyRevitException("not visible in the view (no bounding box)")
+        primitive = _add_point_primitive(sfm, center)
+    sfp_id, domain_points = primitive
+    try:
+        sfm.UpdateSpatialFieldPrimitive(
+            sfp_id, domain_points, _make_field_values(value), schema_id
+        )
+    except Exception:
+        sfm.RemoveSpatialFieldPrimitive(sfp_id)
+        raise
+    return sfp_id, on_face
+
+
 def _get_or_create_sfm(view, number_of_measurements=1):
     """Get the existing SpatialFieldManager for a view, or create one.
 
@@ -257,33 +318,21 @@ def _get_or_create_sfm(view, number_of_measurements=1):
                 "Could not create a SpatialFieldManager for view '{}'. "
                 "Does this view type support AVF? ({})".format(view.Name, ex)
             )
+        if number_of_measurements == 1:
+            measurement_names = List[System.String]()
+            measurement_names.Add(_MEASUREMENT_NAME)
+            sfm.SetMeasurementNames(measurement_names)
     return sfm
 
 
-def _get_or_create_schema(sfm, schema_name, schema_desc, units, visible=True):
-    """Get an existing AVF result schema by name, or register a new one.
-
-    Args:
-        sfm (DB.Analysis.SpatialFieldManager): Manager to register on.
-        schema_name (str): Name for the schema.
-        schema_desc (str): Description for the schema.
-        units (str or list[tuple[str, float]]): Either a single unit
-            label (display-only, no conversion applied to your values),
-            or a list of ``(unit_name, multiplier)`` pairs to let the
-            viewer toggle between multiple display units of the same
-            underlying value - e.g. ``[("Feet", 1), ("Inches", 12)]``.
-        visible (bool, optional): Whether the schema is visible in the
-            view's AVF legend/toggle list. Defaults to True.
-
-    Returns:
-        int: Schema id (result index), for use with
-            ``UpdateSpatialFieldPrimitive``.
-    """
+def _find_schema_id(sfm, schema_name):
     for sid in sfm.GetRegisteredResults():
-        existing_schema = sfm.GetResultSchema(sid)
-        if existing_schema.Name == schema_name:
+        if sfm.GetResultSchema(sid).Name == schema_name:
             return sid
+    return None
 
+
+def _get_unit_pairs(units):
     try:
         text_types = (basestring,)  # noqa: F821
     except NameError:  # Python 3
@@ -304,7 +353,10 @@ def _get_or_create_schema(sfm, schema_name, schema_desc, units, visible=True):
         raise PyRevitException(
             "Unit names must be non-empty and unique. Got: {}".format(unit_names)
         )
+    return unit_pairs
 
+
+def _build_schema(schema_name, schema_desc, unit_pairs, visible):
     unit_name_list = List[System.String]()
     unit_multiplier_list = List[System.Double]()
     for unit_name, multiplier in unit_pairs:
@@ -313,7 +365,420 @@ def _get_or_create_schema(sfm, schema_name, schema_desc, units, visible=True):
     schema = DB.Analysis.AnalysisResultSchema(schema_name, schema_desc)
     schema.SetUnits(unit_name_list, unit_multiplier_list)
     schema.IsVisible = visible
-    return sfm.RegisterResult(schema)
+    return schema
+
+
+def _get_or_create_schema(sfm, schema_name, schema_desc, units, visible=True):
+    """Get an existing AVF result schema by name, or register a new one.
+
+    Args:
+        sfm (DB.Analysis.SpatialFieldManager): Manager to register on.
+        schema_name (str): Name for the schema.
+        schema_desc (str): Description for the schema.
+        units (str or list[tuple[str, float]]): Either a single unit
+            label (display-only, no conversion applied to your values),
+            or a list of ``(unit_name, multiplier)`` pairs to let the
+            viewer toggle between multiple display units of the same
+            underlying value - e.g. ``[("Feet", 1), ("Inches", 12)]``.
+        visible (bool, optional): Whether the schema is visible in the
+            view's AVF legend/toggle list. Defaults to True.
+
+    Returns:
+        int: Schema id (result index), for use with
+            ``UpdateSpatialFieldPrimitive``. An existing schema keeps its
+            units and description.
+    """
+    schema_id = _find_schema_id(sfm, schema_name)
+    if schema_id is not None:
+        return schema_id
+    return sfm.RegisterResult(
+        _build_schema(schema_name, schema_desc, _get_unit_pairs(units), visible)
+    )
+
+
+def _load_state():
+    stored = AppDomain.CurrentDomain.GetData(_STATE_SLOT)
+    return json.loads(stored) if stored else {}
+
+
+def _get_state_key(view, name):
+    return "{}|{}|{}".format(
+        view.Document.GetHashCode(), int(get_elementid_value(view.Id)), name
+    )
+
+
+def _get_tracked_entry(sfm, view, name):
+    """Return what is remembered about *name* in *view*, or None if unknown.
+
+    Primitive ids are only trusted while the result they were added to is
+    still registered at the same index. Revit does not reuse indices within
+    a SpatialFieldManager, so clearing it invalidates what was remembered.
+    """
+    if sfm is None:
+        return None
+    entry = _load_state().get(_get_state_key(view, name))
+    if not entry:
+        return None
+    registered = [int(sid) for sid in sfm.GetRegisteredResults()]
+    if entry["result"] not in registered:
+        return None
+    if sfm.GetResultSchema(entry["result"]).Name != name:
+        return None
+    return entry
+
+
+def _remember_entry(view, name, entry):
+    state = _load_state()
+    state[_get_state_key(view, name)] = entry
+    AppDomain.CurrentDomain.SetData(_STATE_SLOT, json.dumps(state, ensure_ascii=False))
+
+
+def _remove_primitives(sfm, primitive_ids):
+    removed = 0
+    for sfp_id in primitive_ids:
+        try:
+            sfm.RemoveSpatialFieldPrimitive(sfp_id)
+            removed += 1
+        except Exception as ex:
+            mlogger.debug("AVF primitive {} is already gone: {}".format(sfp_id, ex))
+    return removed
+
+
+def _read_values(values, allow_removal):
+    pairs = values.items() if hasattr(values, "items") else values
+    numbers = []
+    for key, value in pairs:
+        if value is None:
+            if not allow_removal:
+                raise PyRevitException(
+                    "None removes a value and needs keep_others=True"
+                )
+            numbers.append((key, None))
+            continue
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            raise PyRevitException("Not a number: {!r}".format(value))
+        if math.isnan(number) or math.isinf(number):
+            raise PyRevitException("Values must be finite. Got: {!r}".format(value))
+        numbers.append((key, number))
+    return numbers
+
+
+def _find_elements(numbers, doc):
+    """Sort ``(key, value)`` pairs by what has to happen to each element.
+
+    Returns:
+        tuple: ``(element, number)`` pairs to show, element ids whose value
+            is to be removed (they need not exist anymore) and failures by id.
+    """
+    found, removals, failed, seen = {}, [], {}, set()
+    for key, number in numbers:
+        element = None
+        if hasattr(key, "Id"):
+            elem_id = int(get_elementid_value(key.Id))
+            if not key.Document.Equals(doc):
+                failed[elem_id] = "belongs to another document than the view"
+                continue
+            element = key
+        else:
+            element_id = (
+                key if isinstance(key, DB.ElementId) else get_elementid_from_value(key)
+            )
+            elem_id = int(get_elementid_value(element_id))
+            if number is not None:
+                element = doc.GetElement(element_id)
+        if elem_id in seen:
+            raise PyRevitException(
+                "Element ID {} was passed more than once".format(elem_id)
+            )
+        seen.add(elem_id)
+        if number is None:
+            removals.append(elem_id)
+        elif element is None:
+            failed[elem_id] = "no element with this id in the view's document"
+        else:
+            found[elem_id] = (element, number)
+    return [found[elem_id] for elem_id in sorted(found)], sorted(removals), failed
+
+
+def _normalize_unit_pairs(unit):
+    return [[unit_name, float(factor)] for unit_name, factor in _get_unit_pairs(unit)]
+
+
+def _choose_unit_pairs(unit, retained, passed_ids):
+    """Return the unit pairs to use and whether they differ from *retained*."""
+    if retained is None:
+        return _normalize_unit_pairs("Value" if unit is None else unit), False
+    if unit is None:
+        return retained["unit"], False
+    unit_pairs = _normalize_unit_pairs(unit)
+    if unit_pairs == retained["unit"]:
+        return unit_pairs, False
+    if any(int(elem_id) not in passed_ids for elem_id in retained["values"]):
+        raise PyRevitException(
+            "One unit applies to all values of a name. To change it while keeping "
+            "others, pass every one of them, or use keep_others=False."
+        )
+    return unit_pairs, True
+
+
+def _get_style_name(kind, name):
+    safe_name = "".join(
+        "_" if char in _PROHIBITED_NAME_CHARACTERS else char for char in name
+    )
+    return "pyRevit AVF {} - {}".format(_STYLE_KINDS[kind], safe_name)
+
+
+def _prepare_style(doc, name, style, marker_size_mm):
+    if style is None:
+        return None
+    if style == "colored":
+        return get_or_create_colored_surface_display_style(
+            doc, _get_style_name(style, name)
+        )
+    if style != "marker":
+        return style
+    marker_style = get_or_create_marker_display_style(doc, _get_style_name(style, name))
+    if marker_size_mm is not None:
+        settings = marker_style.GetMarkersAndTextSettings()
+        settings.MarkerSize = marker_size_mm / _MILLIMETRES_PER_FOOT
+        with Transaction("Set AVF Marker Size", doc=doc):
+            marker_style.SetMarkersAndTextSettings(settings)
+    return marker_style
+
+
+def _check_view(view, name):
+    if not name:
+        raise PyRevitException("name must be a non-empty string")
+    if not view.AllowsAnalysisDisplay():
+        raise PyRevitException(
+            "View '{}' cannot display analysis results".format(view.Name)
+        )
+
+
+def _choose_style(style, retained):
+    if not hasattr(style, "lower") or style != "auto":
+        return style
+    return "marker" if retained is None else retained["style"]
+
+
+def _check_style(view, style, marker_size_mm):
+    if style == "colored" and not _can_anchor_to_faces(view):
+        raise PyRevitException(
+            "A colored surface needs faces, which are only used in an orthographic "
+            "3D view without an active section box. Use such a view or "
+            "style='marker'."
+        )
+    if hasattr(style, "lower") and style not in _STYLE_KINDS:
+        raise PyRevitException(
+            "style must be 'auto', 'marker', 'colored', an AnalysisDisplayStyle "
+            "or None. "
+            "Got: {!r}".format(style)
+        )
+    if marker_size_mm is not None and (style != "marker" or marker_size_mm <= 0):
+        raise PyRevitException(
+            "marker_size_mm must be positive and needs style='marker'"
+        )
+
+
+def _refresh_if_active(view):
+    uidoc = HOST_APP.uidoc
+    if not uidoc or not uidoc.Document.Equals(view.Document):
+        return
+    if uidoc.ActiveView and uidoc.ActiveView.Id == view.Id:
+        uidoc.RefreshActiveView()
+
+
+def show_values(
+    view,
+    values,
+    name="pyRevitAVF",
+    unit=None,
+    style="auto",
+    marker_size_mm=None,
+    description=None,
+    keep_others=False,
+):
+    """Show or update numbers on elements in a view: markers or a heatmap.
+
+    By default the view then shows exactly *values* under the result called
+    *name*: calling it again replaces everything the earlier call showed
+    under that name. With ``keep_others=True`` only the elements passed are
+    added, updated or removed and all other values of *name* stay. Both ways
+    are safe to repeat. Values under other names always stay.
+
+    Args:
+        view (DB.View): View to draw in. Its document must be modifiable.
+        values (dict or list[tuple]): Element -> number. A key is a
+            ``DB.Element``, a ``DB.ElementId`` or an element id as int. With
+            ``keep_others``, None instead of a number removes that element's
+            value, also if the element no longer exists. Without it, an
+            empty collection removes all values of *name*.
+        name (str, optional): Identifies this set of values. It is also the
+            result name in the legend.
+        unit (str or list[tuple[str, float]], optional): Unit label, or
+            ``(unit_name, multiplier)`` pairs the viewer can switch
+            between. Numbers are not converted from Revit internal units.
+            None means ``"Value"``, or the current unit when other values
+            are kept. One unit applies to all values of a name.
+        style (str or DB.Analysis.AnalysisDisplayStyle, optional):
+            ``"marker"`` for a dot with the number, ``"colored"`` for a
+            painted surface (orthographic 3D view without a section box, not
+            wireframe), an existing style, or None to keep the view's current
+            style. ``"auto"`` means ``"marker"``, or what the last call for
+            this name used when other values are kept. A view has one style,
+            so the last call decides how all names look.
+        marker_size_mm (float, optional): Marker size on paper in
+            millimetres, for markers. None keeps the size the style has,
+            about 3.2 mm for a new one.
+        description (str, optional): Text under the legend. None means
+            *name*, or the current text when other values are kept.
+        keep_others (bool, optional): Keep the values of *name* on elements
+            that are not in *values*. Defaults to False.
+
+    Returns:
+        dict: ``view_id``, ``name``, ``style`` (name of the assigned style or
+            None), ``shown`` (element ids added or updated by this call),
+            ``on_faces`` (those of them anchored to a face; only these can be
+            painted by a colored surface), ``present`` (all element ids that
+            now have a value under *name*), ``failed`` (element id ->
+            reason; with ``keep_others`` such an element keeps its earlier
+            value unless the unit changed), ``removed`` (number of earlier
+            values removed or replaced) and ``untracked_result`` (True when
+            *name* already existed but its values were not added through
+            this function, so they could not be replaced). All values are
+            plain Python types.
+
+    Raises:
+        PyRevitException: For a request that cannot work, such as a view
+            without analysis display, a colored surface outside a suitable
+            3D view, a value that is not a finite number, or a new unit while
+            values in the old one are kept. Nothing is changed in that case.
+
+    Note:
+        Assigning the style changes the view and is saved with the model.
+        The values themselves are not saved, and rolling back an enclosing
+        transaction group does not reliably remove them.
+    """
+    _check_view(view, name)
+    numbers = _read_values(values, keep_others)
+    doc = view.Document
+    elements_and_values, removals, failed = _find_elements(numbers, doc)
+    previous = _get_tracked_entry(
+        DB.Analysis.SpatialFieldManager.GetSpatialFieldManager(view), view, name
+    )
+    retained = previous if keep_others and previous and previous["values"] else None
+    style = _choose_style(style, retained)
+    _check_style(view, style, marker_size_mm)
+    passed_ids = set(removals) | set(failed)
+    passed_ids.update(
+        int(get_elementid_value(element.Id)) for element, _ in elements_and_values
+    )
+    unit_pairs, unit_changed = _choose_unit_pairs(unit, retained, passed_ids)
+    if description is None:
+        description = retained["description"] if retained else name
+    face_candidate_ids = _get_face_candidate_ids(
+        [element for element, _ in elements_and_values], view
+    )
+    anchors = _resolve_anchors(elements_and_values, view, face_candidate_ids)
+    shown, on_faces = [], []
+
+    with Transaction("Show AVF Values", doc=doc):
+        display_style = _prepare_style(doc, name, style, marker_size_mm)
+        if display_style is not None:
+            view.AnalysisDisplayStyleId = display_style.Id
+        sfm = _get_or_create_sfm(view)
+        schema_id = _find_schema_id(sfm, name)
+        untracked_result = schema_id is not None and previous is None
+        current = dict(previous["values"]) if previous else {}
+        removed = 0
+        if not keep_others:
+            removed = _remove_primitives(sfm, current.values())
+            current = {}
+        schema = _build_schema(name, description, unit_pairs, True)
+        if schema_id is None:
+            schema_id = sfm.RegisterResult(schema)
+        else:
+            sfm.SetResultSchema(schema_id, schema)
+
+        def drop(elem_id):
+            key = str(elem_id)
+            return _remove_primitives(sfm, [current.pop(key)] if key in current else [])
+
+        for elem_id in removals:
+            removed += drop(elem_id)
+
+        for elem_id, value, face_anchor, center in anchors:
+            try:
+                sfp_id, on_face = _add_anchored_value(
+                    sfm, schema_id, value, face_anchor, center
+                )
+            except Exception as ex:
+                failed[elem_id] = str(ex)
+                if unit_changed:
+                    removed += drop(elem_id)
+                continue
+            removed += drop(elem_id)
+            current[str(elem_id)] = int(sfp_id)
+            shown.append(elem_id)
+            if on_face:
+                on_faces.append(elem_id)
+
+        if unit_changed:
+            for elem_id in failed:
+                removed += drop(elem_id)
+
+        _remember_entry(
+            view,
+            name,
+            {
+                "result": int(schema_id),
+                "values": current,
+                "unit": unit_pairs,
+                "description": description,
+                "style": style if style in ("marker", "colored") else None,
+            },
+        )
+
+    _refresh_if_active(view)
+    return {
+        "view_id": int(get_elementid_value(view.Id)),
+        "name": name,
+        "style": query.get_name(display_style) if display_style else None,
+        "shown": shown,
+        "on_faces": on_faces,
+        "present": sorted(int(elem_id) for elem_id in current),
+        "failed": failed,
+        "removed": removed,
+        "untracked_result": untracked_result,
+    }
+
+
+def clear_values(view, name="pyRevitAVF"):
+    """Remove numbers shown on elements in a view by :func:`show_values`.
+
+    Other names and results of other tools stay. The display style stays
+    assigned to the view.
+
+    Args:
+        view (DB.View): View to remove the values from.
+        name (str, optional): The name passed to :func:`show_values`.
+
+    Returns:
+        int: Number of values removed. 0 when nothing is known under *name*,
+            for example because the whole view was cleared meanwhile.
+    """
+    sfm = DB.Analysis.SpatialFieldManager.GetSpatialFieldManager(view)
+    entry = _get_tracked_entry(sfm, view, name)
+    if not entry or not entry["values"]:
+        return 0
+    with Transaction("Clear AVF Values", doc=view.Document):
+        removed = _remove_primitives(sfm, entry["values"].values())
+        entry["values"] = {}
+        _remember_entry(view, name, entry)
+    _refresh_if_active(view)
+    return removed
 
 
 def clear_avf_results(view):
@@ -330,7 +795,7 @@ def clear_avf_results(view):
     """
     sfm = DB.Analysis.SpatialFieldManager.GetSpatialFieldManager(view)
     if sfm:
-        with Transaction("Clear AVF Results"):
+        with Transaction("Clear AVF Results", doc=view.Document):
             sfm.Clear()
 
 
@@ -393,9 +858,9 @@ def display_avf_values(
         if use_bbox_center
         else _get_face_candidate_ids(list(element_value_dict), view)
     )
-    anchors = _resolve_anchors(element_value_dict, view, face_candidate_ids)
+    anchors = _resolve_anchors(element_value_dict.items(), view, face_candidate_ids)
 
-    with Transaction("Display AVF Values"):
+    with Transaction("Display AVF Values", doc=view.Document):
         sfm = _get_or_create_sfm(view)
         schema_id = _get_or_create_schema(
             sfm, schema_name, schema_desc, unit, visible=visible
@@ -403,27 +868,13 @@ def display_avf_values(
 
         for elem_id, value, face_anchor, center in anchors:
             try:
-                primitive = (
-                    _add_face_primitive(sfm, *face_anchor) if face_anchor else None
+                sfp_id, _ = _add_anchored_value(
+                    sfm, schema_id, value, face_anchor, center
                 )
-                if primitive is None:
-                    if center is None:
-                        mlogger.warning(
-                            "Element ID {} has no bounding box in view "
-                            "'{}' (not visible?)".format(elem_id, view.Name)
-                        )
-                        results[elem_id] = (False, None)
-                        continue
-                    primitive = _add_point_primitive(sfm, center)
-                sfp_id, domain_pts = primitive
-
-                vals = _make_field_values(value)
-                sfm.UpdateSpatialFieldPrimitive(sfp_id, domain_pts, vals, schema_id)
                 results[elem_id] = (True, sfp_id)
-
             except Exception as ex:
-                mlogger.exception(
-                    "Error processing element ID {}: {}".format(elem_id, ex)
+                mlogger.warning(
+                    "Could not display element ID {}: {}".format(elem_id, ex)
                 )
                 results[elem_id] = (False, None)
 
@@ -461,7 +912,7 @@ def update_avf_values(
     """
     results = {}
 
-    with Transaction("Update AVF Values"):
+    with Transaction("Update AVF Values", doc=view.Document):
         sfm = _get_or_create_sfm(view)
         schema_id = _get_or_create_schema(
             sfm, schema_name, schema_desc, unit, visible=visible
@@ -505,7 +956,7 @@ def remove_avf_primitive(view, sfp_id):
     sfm = DB.Analysis.SpatialFieldManager.GetSpatialFieldManager(view)
     if sfm is None:
         return False
-    with Transaction("Remove AVF Primitive"):
+    with Transaction("Remove AVF Primitive", doc=view.Document):
         try:
             sfm.RemoveSpatialFieldPrimitive(sfp_id)
             return True
@@ -546,7 +997,7 @@ def get_or_create_marker_display_style(doc, style_name, show_legend=False):
         if style.Name == style_name:
             return style
 
-    with Transaction("Create Analysis Display Style"):
+    with Transaction("Create Analysis Display Style", doc=doc):
         color_settings = DB.Analysis.AnalysisDisplayColorSettings()
         legend_settings = DB.Analysis.AnalysisDisplayLegendSettings()
         legend_settings.ShowLegend = show_legend
@@ -603,7 +1054,7 @@ def get_or_create_colored_surface_display_style(
         if style.Name == style_name:
             return style
 
-    with Transaction("Create Analysis Display Style"):
+    with Transaction("Create Analysis Display Style", doc=doc):
         surface_settings = DB.Analysis.AnalysisDisplayColoredSurfaceSettings()
         surface_settings.ShowGridLines = show_grid_lines
 
@@ -661,7 +1112,7 @@ def display_avf_values_at_points(
 
     sfp_ids = []
 
-    with Transaction("Display AVF Point Values"):
+    with Transaction("Display AVF Point Values", doc=view.Document):
         sfm = _get_or_create_sfm(view)
         schema_id = _get_or_create_schema(
             sfm, schema_name, schema_desc, unit, visible=visible
