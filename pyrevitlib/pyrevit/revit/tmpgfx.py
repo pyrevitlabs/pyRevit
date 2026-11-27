@@ -15,6 +15,20 @@ Usage::
     # ... later ...
     mgr.clear(view)
     mgr.unregister()
+
+Notes:
+    - Clicks arrive after the creating script has ended, so a bundle that
+      places controls needs a persistent engine (``engine: persistent:
+      true`` in ``bundle.yaml``).
+    - Revit calls every registered handler for a click, whoever added the
+      control. :class:`Handler` filters out controls it does not own.
+    - Revit kept showing an already loaded image after the file at that
+      path changed; restart Revit or use a new file name.
+    - Icons must be BMP files. Transparency comes from the background color
+      RGB(0, 128, 128) only. Save them as 24-bit: an alpha channel is not
+      honored the way image editors write it.
+    - In testing on Revit 2026, controls were drawn in 3D and floor plan
+      views but not in structural plan views.
 """
 
 import traceback
@@ -46,6 +60,9 @@ class Handler(UI.ITemporaryGraphicsHandler):  # compat-ignore: imported only on 
     """Base ITemporaryGraphicsHandler implementation.
 
     Subclass and override :meth:`on_click` to react to control clicks.
+    Only clicks on controls added through a :class:`ControlManager` that
+    uses this handler are dispatched. Controls of other handlers, other
+    add-ins, or added with the raw API are ignored.
     The handler is automatically registered with the external service on
     construction unless *register* is ``False``.
 
@@ -79,7 +96,7 @@ class Handler(UI.ITemporaryGraphicsHandler):  # compat-ignore: imported only on 
             self.name = name
             self.description = description
             self.vendor_id = vendor_id
-            # index -> arbitrary payload
+            # (document hash, index) -> arbitrary payload
             self._control_map = {}
 
             if register:
@@ -105,17 +122,20 @@ class Handler(UI.ITemporaryGraphicsHandler):  # compat-ignore: imported only on 
         return _BUILTIN_SERVICE
 
     def OnClick(self, command_data):
-        """Dispatch a click event to :meth:`on_click`.
+        """Dispatch a click on an owned control to :meth:`on_click`.
 
         Args:
-            command_data (InCanvasControlClickCommandData):
-                Revit-supplied click data; ``command_data.Index`` identifies
-                the control that was clicked.
+            command_data (UI.TemporaryGraphicsCommandData):
+                Revit-supplied click data. ``Document`` and ``Index``
+                together identify the clicked control, because indices are
+                numbered per document.
         """
         try:
             idx = command_data.Index
-            payload = self._control_map.get(idx)
-            self.on_click(idx, payload)
+            key = self._control_key(command_data.Document, idx)
+            if key not in self._control_map:
+                return
+            self.on_click(idx, self._control_map[key])
         except Exception:
             print(traceback.format_exc())
 
@@ -165,18 +185,22 @@ class Handler(UI.ITemporaryGraphicsHandler):  # compat-ignore: imported only on 
 
     # Internal map access (used by ControlManager)
 
-    def _register_control(self, index, payload):
-        """Store a payload keyed by control index."""
-        self._control_map[index] = payload
+    @staticmethod
+    def _control_key(doc, index):
+        return (doc.GetHashCode(), index)
 
-    def _unregister_control(self, index):
-        """Remove a control payload by index."""
-        self._control_map.pop(index, None)
+    def _register_control(self, doc, index, payload):
+        """Store a payload for a control of *doc*."""
+        self._control_map[self._control_key(doc, index)] = payload
 
-    def _clear_controls(self, indices):
-        """Remove all payloads for a given list of indices."""
+    def _unregister_control(self, doc, index):
+        """Remove a control payload of *doc* by index."""
+        self._control_map.pop(self._control_key(doc, index), None)
+
+    def _clear_controls(self, doc, indices):
+        """Remove the payloads of *doc* for a list of indices."""
         for idx in indices:
-            self._control_map.pop(idx, None)
+            self._unregister_control(doc, idx)
 
 
 # ControlManager
@@ -229,6 +253,7 @@ class ControlManager(object):
                 a "transparent" background color effect over the provided
                 bitmap, the bitmap should use color RGB(0, 128, 128) as its
                 background and it will be cleared during rendering by Revit.
+                Do not rely on an alpha channel.
             position (DB.XYZ):
                 World-space position for the control anchor point.
             view (DB.View):
@@ -250,7 +275,7 @@ class ControlManager(object):
             if view_id not in self._view_controls:
                 self._view_controls[view_id] = []
             self._view_controls[view_id].append(index)
-            self._handler._register_control(index, payload)
+            self._handler._register_control(self._doc, index, payload)
             return index
         except Exception:
             print(traceback.format_exc())
@@ -271,7 +296,7 @@ class ControlManager(object):
                     self._view_controls[view_id].remove(index)
                 except ValueError:
                     pass
-            self._handler._unregister_control(index)
+            self._handler._unregister_control(self._doc, index)
         except Exception:
             print(traceback.format_exc())
 
@@ -286,7 +311,7 @@ class ControlManager(object):
             indices = list(self._view_controls.get(view_id, []))
             for idx in indices:
                 self._mgr.RemoveControl(idx)
-            self._handler._clear_controls(indices)
+            self._handler._clear_controls(self._doc, indices)
             self._view_controls[view_id] = []
         except Exception:
             print(traceback.format_exc())
@@ -300,7 +325,7 @@ class ControlManager(object):
                         self._mgr.RemoveControl(idx)
                     except Exception:
                         pass
-                self._handler._clear_controls(indices)
+                self._handler._clear_controls(self._doc, indices)
             self._view_controls = {}
         except Exception:
             print(traceback.format_exc())
@@ -363,6 +388,12 @@ class ControlManager(object):
         previous script run (e.g. after a pyRevit reload) without knowing
         which view they belong to.
 
+        Warning:
+            The Revit manager is shared by every tool working on the
+            document. This adopts their controls too, so a following
+            :meth:`clear_all` or :meth:`unregister` removes them. To clean
+            up only your own controls, keep your manager instead.
+
         Indices that are tracked internally but absent from Revit are pruned
         so the dict does not grow stale.
 
@@ -395,7 +426,7 @@ class ControlManager(object):
                         bucket.remove(idx)
                     except ValueError:
                         pass
-                    self._handler._unregister_control(idx)
+                    self._handler._unregister_control(self._doc, idx)
                     pruned.append(idx)
 
             return recovered, pruned
@@ -408,6 +439,9 @@ class ControlManager(object):
 
         Useful after a script reload when you want a guaranteed clean slate
         without caring about preserving any existing controls.
+
+        Warning:
+            This includes controls created by other tools and add-ins.
 
         Returns:
             list[int]: Indices that were removed.

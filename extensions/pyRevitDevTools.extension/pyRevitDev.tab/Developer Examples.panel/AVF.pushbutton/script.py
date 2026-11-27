@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """Developer example: pick an element, display a number on it via AVF.
 
-Minimal end-to-end smoke test for pyrevit.revit.avf. Pick any element with
-solid geometry visible in the active view, type in a number, choose a
-display style (text marker or colored surface), and it gets painted onto
-the element.
+Minimal end-to-end smoke test for pyrevit.revit.avf. Pick any element
+visible in the active view, type in a number, and it gets painted onto the
+element. 3D views without a section box also offer a colored surface instead
+of a text marker.
 """
 
-from pyrevit import revit, forms
+from pyrevit import DB, revit, forms
 from pyrevit.revit import avf
 
 doc = revit.doc
@@ -36,10 +36,13 @@ except ValueError:
     forms.alert("'{}' is not a number.".format(value_str), exitscript=True)
 
 # 3. Pick a display style, get-or-create it, and assign it to the view.
-style_choice = forms.CommandSwitchWindow.show(
-    ["Text Marker", "Colored Surface"],
-    message="Pick an AVF display style:",
-)
+if isinstance(view, DB.View3D) and not view.IsSectionBoxActive:
+    style_choice = forms.CommandSwitchWindow.show(
+        ["Text Marker", "Colored Surface"],
+        message="Pick an AVF display style:",
+    )
+else:
+    style_choice = "Text Marker"
 
 if style_choice is None:
     forms.alert("Cancelled.", exitscript=True)
@@ -73,7 +76,7 @@ if success:
     )
 else:
     forms.alert(
-        "Could not find a viewer-facing face on the selected element.\n"
-        "Try an element with solid geometry (wall, floor, generic model), "
-        "or adapt the script to pass use_bbox_center=True."
+        "Could not display a value on the selected element.\n"
+        "Check that it is visible in the active view. The pyRevit output "
+        "window shows the error."
     )
