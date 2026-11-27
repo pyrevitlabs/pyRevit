@@ -11843,8 +11843,10 @@ fallback for every client.</p>
 <li>A skill is <code>skill://&lt;name&gt;/SKILL.md</code>; its <code>frontmatter</code> is its <code>SKILL.md</code> front matter, and <code>resources</code> is the
   complete manifest (<code>SKILL.md</code> and every other markdown file, each once). The front matter must be flat
   <code>key: value</code> scalar lines (no indentation, lists, comments, block or flow values, repeated keys) with <code>name</code>
-  and a non-empty <code>description</code>, so that what is served equals what the file says; richer YAML is not
-  translated, the skill is skipped instead.</li>
+  and a non-empty <code>description</code>. A value is either a plain scalar that starts with no YAML indicator (tags,
+  anchors, aliases, <code>%</code>, <code>@</code>, backtick and the like) and holds no <code>#</code> comment or <code>:</code>, or a single- or
+  double-quoted scalar without escapes, doubled quotes or embedded quotes. What is served then equals what a
+  YAML parser reads; anything richer is not translated, the skill is skipped instead.</li>
 <li><code>digest</code> is <code>sha256:</code> plus the lowercase hex SHA-256 of the file's raw bytes and <code>size</code> is its byte length.
   <code>resources/read</code> returns the text decoded from those same bytes, so a client can verify both.
   Claude Code binds its approval of a skill to these digests, so a pyRevit upgrade that changes a skill asks
