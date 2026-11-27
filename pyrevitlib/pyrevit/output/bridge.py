@@ -95,8 +95,11 @@ class PageBridge(object):
             mlogger.debug("No handler for action '%s'", action)
             return
         request_id = message.get("requestId")
+        payload = message.get("payload")
+        if payload is None:
+            payload = {}
         try:
-            handler(message.get("payload") or {}, request_id)
+            handler(payload, request_id)
         except Exception as ex:
             mlogger.debug("Handler '%s' failed: %s", action, ex)
             self.send(

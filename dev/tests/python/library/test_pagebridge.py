@@ -89,6 +89,7 @@ class RecordingOutput:
         self.listeners.remove(handler)
 
     def post_message(self, data):
+        json.dumps(data)
         self.posted.append(data)
         return True
 
@@ -137,6 +138,17 @@ class PageBridgeTests(unittest.TestCase):
         self.bridge.start()
         self.page_says("pull", None)
         self.assertEqual(seen, [{}])
+
+    def test_false_valued_payloads_reach_the_handler_unchanged(self):
+        seen = []
+        self.bridge.handlers["set"] = lambda payload, request_id: seen.append(payload)
+        self.bridge.start()
+        for payload in (False, 0, "", []):
+            self.page_says("set", payload)
+        self.assertEqual(
+            [(type(value), value) for value in seen],
+            [(bool, False), (int, 0), (str, ""), (list, [])],
+        )
 
     def test_messages_on_other_channels_are_ignored(self):
         seen = []
@@ -221,6 +233,14 @@ class PageBridgeTests(unittest.TestCase):
             self.output.posted[0]["payload"],
             {"requestId": 2, "ok": False, "message": "boom"},
         )
+
+    def test_an_unserializable_return_value_is_answered_with_an_error_event(self):
+        self.bridge.register("push", lambda payload: object())
+        self.bridge.start()
+        self.page_says("push", request_id=4)
+        self.assertEqual([sent["event"] for sent in self.output.posted], ["error"])
+        self.assertEqual(self.output.posted[0]["payload"]["action"], "push")
+        self.assertEqual(self.output.posted[0]["payload"]["requestId"], 4)
 
     def test_an_expected_refusal_is_answered_without_an_error_log(self):
         class Refusal(Exception):
