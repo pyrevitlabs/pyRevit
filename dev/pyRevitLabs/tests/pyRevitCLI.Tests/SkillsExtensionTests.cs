@@ -146,12 +146,43 @@ public class SkillsExtensionTests : IDisposable {
     }
 
     [Fact]
+    public void ASimpleQuotedOrPlainValueIsServedWithTheContentAYamlParserWouldProduce() {
+        using var skills = new TempSkills();
+        skills.Plant("plain", "---\nname: plain\ndescription: Use when it's fine, e.g. \"x\" and a:b\n---\n");
+        skills.Plant("double", "---\nname: double\ndescription: \"Use when double: quoted # not a comment\"\n---\n");
+        skills.Plant("single", "---\nname: single\ndescription: 'Use when single \"quoted\"'\n---\n");
+
+        var descriptions = new SkillsExtension(skills.Root).List()["skills"]
+            .ToDictionary(skill => skill["frontmatter"].Value<string>("name"), skill => skill["frontmatter"].Value<string>("description"));
+
+        Assert.Equal("Use when it's fine, e.g. \"x\" and a:b", descriptions["plain"]);
+        Assert.Equal("Use when double: quoted # not a comment", descriptions["double"]);
+        Assert.Equal("Use when single \"quoted\"", descriptions["single"]);
+    }
+
+    [Fact]
     public void AMissingSkillsFolderIsAnEmptyList() {
         Assert.Empty(new SkillsExtension(null).List()["skills"]);
         Assert.Empty(new SkillsExtension(Path.Combine(Path.GetTempPath(), "pyrevit-no-such-folder-" + Guid.NewGuid())).List()["skills"]);
     }
 
     [Theory]
+    [InlineData("double-quoted unicode escape", "---\nname: bad\ndescription: \"Use \\u0052evit\"\n---\n")]
+    [InlineData("double-quoted escaped quote", "---\nname: bad\ndescription: \"say \\\"hi\\\"\"\n---\n")]
+    [InlineData("double-quoted backslash", "---\nname: bad\ndescription: \"a\\nb\"\n---\n")]
+    [InlineData("double-quoted embedded quote", "---\nname: bad\ndescription: \"a\" b\"\n---\n")]
+    [InlineData("single-quoted doubled quote", "---\nname: bad\ndescription: 'it''s'\n---\n")]
+    [InlineData("quote never closed", "---\nname: bad\ndescription: \"open\n---\n")]
+    [InlineData("text after the closing quote", "---\nname: bad\ndescription: \"a\" b\n---\n")]
+    [InlineData("tag", "---\nname: bad\ndescription: !!str guidance\n---\n")]
+    [InlineData("anchor", "---\nname: bad\ndescription: &a x\n---\n")]
+    [InlineData("alias", "---\nname: bad\ndescription: *a\n---\n")]
+    [InlineData("directive character", "---\nname: bad\ndescription: %x\n---\n")]
+    [InlineData("reserved at sign", "---\nname: bad\ndescription: @x\n---\n")]
+    [InlineData("reserved backtick", "---\nname: bad\ndescription: `x\n---\n")]
+    [InlineData("explicit key indicator", "---\nname: bad\ndescription: ? x\n---\n")]
+    [InlineData("nested mapping", "---\nname: bad\ndescription: a: b\n---\n")]
+    [InlineData("trailing colon", "---\nname: bad\ndescription: a:\n---\n")]
     [InlineData("indented", "---\nname: bad\ndescription: x\nmetadata:\n  author: y\n---\n")]
     [InlineData("list item", "---\nname: bad\ndescription: x\ntags:\n- a\n---\n")]
     [InlineData("comment line", "---\nname: bad\n# note\ndescription: x\n---\n")]

@@ -19,7 +19,8 @@ namespace pyRevitCLI {
     /// text is decoded without altering a BOM or line endings. A URI resolves only by exact lookup in the
     /// manifest built here, so no path outside a skill's own markdown files can be requested.
     /// Invariant: <c>frontmatter</c> must equal the <c>SKILL.md</c> front matter, so only flat <c>key: value</c>
-    /// scalar lines are accepted (no indentation, lists, comments, block or flow values); <c>name</c> and
+    /// scalar lines whose values the flat reader decodes exactly as YAML would are accepted (no indentation, lists,
+    /// comments, block or flow values, tags, anchors, quote escapes); <c>name</c> and
     /// <c>description</c> must be present under exactly those keys.
     /// A skill is skipped whole, never served partly, with one line on standard error (standard output carries
     /// the protocol), when its directory name differs from its <c>name</c>, its front matter is not flat or lacks
@@ -179,11 +180,35 @@ namespace pyRevitCLI {
                 return "is not 'key: value'";
             if (value.Length == 0)
                 return "has an empty value";
-            if ("|>[{".IndexOf(value[0]) >= 0)
-                return "has a block or flow value";
+            var valueProblem = ValueProblem(value);
+            if (valueProblem != null)
+                return valueProblem;
+            return keys.Add(line.Substring(0, separator).Trim()) ? null : "repeats a key";
+        }
+
+        /// <summary>
+        /// Allowlist of the values the flat reader reads exactly as a YAML parser would: a plain scalar that starts
+        /// with no YAML indicator and holds no comment or nested mapping, or a quoted scalar whose content has no
+        /// escape, no doubled or embedded quote and nothing after the closing quote.
+        /// </summary>
+        private static string ValueProblem(string value) {
+            const string indicators = "!&*%@`|>[{#-?:,]}'\"";
+            if (value[0] == '"' || value[0] == '\'') {
+                var quote = value[0];
+                if (value.Length < 2 || value[value.Length - 1] != quote)
+                    return "has an unclosed quote or text after the closing quote";
+                var content = value.Substring(1, value.Length - 2);
+                if (content.IndexOf(quote) >= 0 || (quote == '"' && content.Contains('\\')))
+                    return "has a quoted value with an escape or an embedded quote";
+                return null;
+            }
+            if (indicators.IndexOf(value[0]) >= 0)
+                return "starts with a YAML indicator";
             if (value.Contains(" #"))
                 return "has a trailing comment";
-            return keys.Add(line.Substring(0, separator).Trim()) ? null : "repeats a key";
+            if (value.Contains(": ") || value.EndsWith(":"))
+                return "has a nested mapping";
+            return null;
         }
 
         private static void RequireNoCursor(JObject parameters) {

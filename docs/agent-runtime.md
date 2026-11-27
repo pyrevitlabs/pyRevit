@@ -328,8 +328,10 @@ To a 2026-07-28 client the server always declares the Skills extension `io.model
 - A skill is `skill://<name>/SKILL.md`; its `frontmatter` is its `SKILL.md` front matter, and `resources` is the
   complete manifest (`SKILL.md` and every other markdown file, each once). The front matter must be flat
   `key: value` scalar lines (no indentation, lists, comments, block or flow values, repeated keys) with `name`
-  and a non-empty `description`, so that what is served equals what the file says; richer YAML is not
-  translated, the skill is skipped instead.
+  and a non-empty `description`. A value is either a plain scalar that starts with no YAML indicator (tags,
+  anchors, aliases, `%`, `@`, backtick and the like) and holds no ` #` comment or `: `, or a single- or
+  double-quoted scalar without escapes, doubled quotes or embedded quotes. What is served then equals what a
+  YAML parser reads; anything richer is not translated, the skill is skipped instead.
 - `digest` is `sha256:` plus the lowercase hex SHA-256 of the file's raw bytes and `size` is its byte length.
   `resources/read` returns the text decoded from those same bytes, so a client can verify both.
   Claude Code binds its approval of a skill to these digests, so a pyRevit upgrade that changes a skill asks
