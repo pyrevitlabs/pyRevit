@@ -822,6 +822,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tools/tab-coloring/" class="md-nav__link">
         
   
@@ -11193,13 +11221,13 @@
 </span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>pyrevit extensions origin &lt;extension_name&gt; --reset [--log=&lt;log_file&gt;]
 </span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>pyrevit extensions origin &lt;extension_name&gt; [&lt;origin_url&gt;] [--log=&lt;log_file&gt;]
 </span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>pyrevit extensions paths [(-h | --help)]
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>pyrevit extensions paths forget --all [--log=&lt;log_file&gt;]
-</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>pyrevit extensions paths (add | forget) &lt;extensions_path&gt; [--log=&lt;log_file&gt;]
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>pyrevit extensions paths (add | forget) &lt;extensions_path&gt; [--log=&lt;log_file&gt;]
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>pyrevit extensions paths forget --all [--log=&lt;log_file&gt;]
 </span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>pyrevit extensions (enable | disable) &lt;extension_name&gt; [--log=&lt;log_file&gt;]
 </span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>pyrevit extensions (enable | disable) &lt;clone_name&gt; &lt;extension_name&gt; [--log=&lt;log_file&gt;]
 </span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>pyrevit extensions sources [(-h | --help)]
-</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>pyrevit extensions sources forget --all [--log=&lt;log_file&gt;]
-</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>pyrevit extensions sources (add | forget) &lt;source_json_or_url&gt; [--log=&lt;log_file&gt;]
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>pyrevit extensions sources (add | forget) &lt;source_json_or_url&gt; [--log=&lt;log_file&gt;]
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>pyrevit extensions sources forget --all [--log=&lt;log_file&gt;]
 </span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>pyrevit extensions update (--all | &lt;extension_name&gt;) [--log=&lt;log_file&gt;] [(--username=&lt;username&gt; --password=&lt;password&gt; | --token=&lt;auth_token&gt;)]
 </span></code></pre></div>
 <h2 id="releases"><code>releases</code></h2>
@@ -11225,9 +11253,9 @@
 <h2 id="run"><code>run</code></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pyrevit run (-h | --help)
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>pyrevit run commands
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>pyrevit run &lt;script_or_command_name&gt; [--revit=&lt;revit_year&gt;] [--inputs=&lt;inputs_json&gt; | --inputs-file=&lt;inputs_file&gt;] [--purge] [--allowdialogs] [--import=&lt;import_path&gt;]
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>pyrevit run &lt;script_or_command_name&gt; --models=&lt;model_list_file&gt; --revit=&lt;revit_year&gt; [--inputs=&lt;inputs_json&gt; | --inputs-file=&lt;inputs_file&gt;] [--purge] [--allowdialogs] [--import=&lt;import_path&gt;]
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>pyrevit run &lt;script_or_command_name&gt; &lt;model_file&gt; [--revit=&lt;revit_year&gt;] [--inputs=&lt;inputs_json&gt; | --inputs-file=&lt;inputs_file&gt;] [--purge] [--allowdialogs] [--import=&lt;import_path&gt;]
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>pyrevit run &lt;script_or_command_name&gt; [--revit=&lt;revit_year&gt;] [--clone=&lt;clone_name_or_path&gt;] [--inputs=&lt;inputs_json&gt; | --inputs-file=&lt;inputs_file&gt;] [--purge] [--allowdialogs] [--import=&lt;import_path&gt;]
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>pyrevit run &lt;script_or_command_name&gt; --models=&lt;model_list_file&gt; --revit=&lt;revit_year&gt; [--clone=&lt;clone_name_or_path&gt;] [--inputs=&lt;inputs_json&gt; | --inputs-file=&lt;inputs_file&gt;] [--purge] [--allowdialogs] [--import=&lt;import_path&gt;]
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>pyrevit run &lt;script_or_command_name&gt; &lt;model_file&gt; [--revit=&lt;revit_year&gt;] [--clone=&lt;clone_name_or_path&gt;] [--inputs=&lt;inputs_json&gt; | --inputs-file=&lt;inputs_file&gt;] [--purge] [--allowdialogs] [--import=&lt;import_path&gt;]
 </span></code></pre></div>
 <h2 id="launch"><code>launch</code></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>pyrevit launch (-h | --help)
@@ -11262,7 +11290,7 @@
 </span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>pyrevit config --from=&lt;template_config_path&gt; [--log=&lt;log_file&gt;]
 </span></code></pre></div>
 <h2 id="configs"><code>configs</code></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>pyrevit configs (-h | --help)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>pyrevit configs [&lt;config_words&gt;...] (-h | --help)
 </span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>pyrevit configs bincache [(enable | disable)] [--log=&lt;log_file&gt;]
 </span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>pyrevit configs checkupdates [(enable | disable)] [--log=&lt;log_file&gt;]
 </span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>pyrevit configs autoupdate [(enable | disable)] [--log=&lt;log_file&gt;]
@@ -11277,36 +11305,35 @@
 </span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>pyrevit configs usercanconfig [(yes | no)] [--log=&lt;log_file&gt;]
 </span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>pyrevit configs colordocs [(enable | disable)] [--log=&lt;log_file&gt;]
 </span><span id="__span-19-15"><a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>pyrevit configs tooltipdebuginfo [(enable | disable)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>pyrevit configs routes [(-h | --help)]
-</span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>pyrevit configs routes [(enable | disable)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-18"><a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>pyrevit configs routes port [&lt;port_number&gt;] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-19"><a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>pyrevit configs routes coreapi [(enable | disable)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-20"><a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>pyrevit configs agent [(-h | --help)]
-</span><span id="__span-19-21"><a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a>pyrevit configs agent [(enable | disable)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-22"><a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a>pyrevit configs agent policy [(readonly | ask | auto)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-23"><a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a>pyrevit configs agent engine [(ironpython | cpython)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-24"><a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a>pyrevit configs agent skills [(enable | disable)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-25"><a id="__codelineno-19-25" name="__codelineno-19-25" href="#__codelineno-19-25"></a>pyrevit configs agent reckless [(enable | disable)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-26"><a id="__codelineno-19-26" name="__codelineno-19-26" href="#__codelineno-19-26"></a>pyrevit configs agent lock [--log=&lt;log_file&gt;]
-</span><span id="__span-19-27"><a id="__codelineno-19-27" name="__codelineno-19-27" href="#__codelineno-19-27"></a>pyrevit configs agent lock enabled (true | false) [--log=&lt;log_file&gt;]
-</span><span id="__span-19-28"><a id="__codelineno-19-28" name="__codelineno-19-28" href="#__codelineno-19-28"></a>pyrevit configs agent lock policy (readonly | ask | auto) [--log=&lt;log_file&gt;]
-</span><span id="__span-19-29"><a id="__codelineno-19-29" name="__codelineno-19-29" href="#__codelineno-19-29"></a>pyrevit configs agent lock engine (ironpython | cpython) [--log=&lt;log_file&gt;]
-</span><span id="__span-19-30"><a id="__codelineno-19-30" name="__codelineno-19-30" href="#__codelineno-19-30"></a>pyrevit configs agent lock skills (true | false) [--log=&lt;log_file&gt;]
-</span><span id="__span-19-31"><a id="__codelineno-19-31" name="__codelineno-19-31" href="#__codelineno-19-31"></a>pyrevit configs agent lock reckless (true | false) [--log=&lt;log_file&gt;]
-</span><span id="__span-19-32"><a id="__codelineno-19-32" name="__codelineno-19-32" href="#__codelineno-19-32"></a>pyrevit configs agent unlock (enabled | policy | engine | skills | reckless | --all) [--log=&lt;log_file&gt;]
-</span><span id="__span-19-33"><a id="__codelineno-19-33" name="__codelineno-19-33" href="#__codelineno-19-33"></a>pyrevit configs telemetry [(-h | --help)]
-</span><span id="__span-19-34"><a id="__codelineno-19-34" name="__codelineno-19-34" href="#__codelineno-19-34"></a>pyrevit configs telemetry [(enable | disable)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-35"><a id="__codelineno-19-35" name="__codelineno-19-35" href="#__codelineno-19-35"></a>pyrevit configs telemetry utc [(yes | no)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-36"><a id="__codelineno-19-36" name="__codelineno-19-36" href="#__codelineno-19-36"></a>pyrevit configs telemetry (file | server) [&lt;dest_path&gt;] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-37"><a id="__codelineno-19-37" name="__codelineno-19-37" href="#__codelineno-19-37"></a>pyrevit configs telemetry hooks [(yes | no)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-38"><a id="__codelineno-19-38" name="__codelineno-19-38" href="#__codelineno-19-38"></a>pyrevit configs apptelemetry [(enable | disable)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-39"><a id="__codelineno-19-39" name="__codelineno-19-39" href="#__codelineno-19-39"></a>pyrevit configs apptelemetry flags [&lt;flags&gt;] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-40"><a id="__codelineno-19-40" name="__codelineno-19-40" href="#__codelineno-19-40"></a>pyrevit configs apptelemetry server [&lt;server_path&gt;] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-41"><a id="__codelineno-19-41" name="__codelineno-19-41" href="#__codelineno-19-41"></a>pyrevit configs outputcss [&lt;css_path&gt;] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-42"><a id="__codelineno-19-42" name="__codelineno-19-42" href="#__codelineno-19-42"></a>pyrevit configs seed [--lock] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-43"><a id="__codelineno-19-43" name="__codelineno-19-43" href="#__codelineno-19-43"></a>pyrevit configs seedshippeddefaults [--log=&lt;log_file&gt;]
-</span><span id="__span-19-44"><a id="__codelineno-19-44" name="__codelineno-19-44" href="#__codelineno-19-44"></a>pyrevit configs &lt;option_path&gt; [(enable | disable)] [--log=&lt;log_file&gt;]
-</span><span id="__span-19-45"><a id="__codelineno-19-45" name="__codelineno-19-45" href="#__codelineno-19-45"></a>pyrevit configs &lt;option_path&gt; [&lt;option_value&gt;] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>pyrevit configs routes [(enable | disable)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>pyrevit configs routes port [&lt;port_number&gt;] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-18"><a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>pyrevit configs routes coreapi [(enable | disable)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-19"><a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>pyrevit configs agent [(enable | disable)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-20"><a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>pyrevit configs agent policy [(readonly | ask | auto)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-21"><a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a>pyrevit configs agent engine [(ironpython | cpython)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-22"><a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a>pyrevit configs agent skills [(enable | disable)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-23"><a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a>pyrevit configs agent reckless [(enable | disable)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-24"><a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a>pyrevit configs agent lock [--log=&lt;log_file&gt;]
+</span><span id="__span-19-25"><a id="__codelineno-19-25" name="__codelineno-19-25" href="#__codelineno-19-25"></a>pyrevit configs agent lock enabled (true | false) [--log=&lt;log_file&gt;]
+</span><span id="__span-19-26"><a id="__codelineno-19-26" name="__codelineno-19-26" href="#__codelineno-19-26"></a>pyrevit configs agent lock policy (readonly | ask | auto) [--log=&lt;log_file&gt;]
+</span><span id="__span-19-27"><a id="__codelineno-19-27" name="__codelineno-19-27" href="#__codelineno-19-27"></a>pyrevit configs agent lock engine (ironpython | cpython) [--log=&lt;log_file&gt;]
+</span><span id="__span-19-28"><a id="__codelineno-19-28" name="__codelineno-19-28" href="#__codelineno-19-28"></a>pyrevit configs agent lock skills (true | false) [--log=&lt;log_file&gt;]
+</span><span id="__span-19-29"><a id="__codelineno-19-29" name="__codelineno-19-29" href="#__codelineno-19-29"></a>pyrevit configs agent lock reckless (true | false) [--log=&lt;log_file&gt;]
+</span><span id="__span-19-30"><a id="__codelineno-19-30" name="__codelineno-19-30" href="#__codelineno-19-30"></a>pyrevit configs agent unlock (enabled | policy | engine | skills | reckless | --all) [--log=&lt;log_file&gt;]
+</span><span id="__span-19-31"><a id="__codelineno-19-31" name="__codelineno-19-31" href="#__codelineno-19-31"></a>pyrevit configs telemetry [(enable | disable)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-32"><a id="__codelineno-19-32" name="__codelineno-19-32" href="#__codelineno-19-32"></a>pyrevit configs telemetry utc [(yes | no)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-33"><a id="__codelineno-19-33" name="__codelineno-19-33" href="#__codelineno-19-33"></a>pyrevit configs telemetry (file | server) [&lt;dest_path&gt;] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-34"><a id="__codelineno-19-34" name="__codelineno-19-34" href="#__codelineno-19-34"></a>pyrevit configs telemetry hooks [(yes | no)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-35"><a id="__codelineno-19-35" name="__codelineno-19-35" href="#__codelineno-19-35"></a>pyrevit configs apptelemetry [(-h | --help)]
+</span><span id="__span-19-36"><a id="__codelineno-19-36" name="__codelineno-19-36" href="#__codelineno-19-36"></a>pyrevit configs apptelemetry [(enable | disable)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-37"><a id="__codelineno-19-37" name="__codelineno-19-37" href="#__codelineno-19-37"></a>pyrevit configs apptelemetry flags [&lt;flags&gt;] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-38"><a id="__codelineno-19-38" name="__codelineno-19-38" href="#__codelineno-19-38"></a>pyrevit configs apptelemetry server [&lt;server_path&gt;] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-39"><a id="__codelineno-19-39" name="__codelineno-19-39" href="#__codelineno-19-39"></a>pyrevit configs outputcss [&lt;css_path&gt;] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-40"><a id="__codelineno-19-40" name="__codelineno-19-40" href="#__codelineno-19-40"></a>pyrevit configs seed [--lock] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-41"><a id="__codelineno-19-41" name="__codelineno-19-41" href="#__codelineno-19-41"></a>pyrevit configs seedshippeddefaults [--log=&lt;log_file&gt;]
+</span><span id="__span-19-42"><a id="__codelineno-19-42" name="__codelineno-19-42" href="#__codelineno-19-42"></a>pyrevit configs reset [&lt;section&gt;] [--dryrun] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-43"><a id="__codelineno-19-43" name="__codelineno-19-43" href="#__codelineno-19-43"></a>pyrevit configs &lt;option_path&gt; [(enable | disable)] [--log=&lt;log_file&gt;]
+</span><span id="__span-19-44"><a id="__codelineno-19-44" name="__codelineno-19-44" href="#__codelineno-19-44"></a>pyrevit configs &lt;option_path&gt; [&lt;option_value&gt;] [--log=&lt;log_file&gt;]
 </span></code></pre></div>
 <h2 id="doctor"><code>doctor</code></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>pyrevit doctor (-h | --help)

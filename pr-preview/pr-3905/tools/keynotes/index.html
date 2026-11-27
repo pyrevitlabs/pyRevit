@@ -979,6 +979,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../tab-coloring/" class="md-nav__link">
         
   
@@ -10890,14 +10918,10 @@
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>6.01    &lt;placeholder&gt;   A6.0
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>7.01    08 0000 - STOREFRONT WINDOW SYSTEM  A7.0
 </span></code></pre></div>
-<p>Now create an empty test model, and launch the <strong>Manage Keynotes</strong> tool. The tool will inspect the keynote file attached to the model and will notify you that it doesn't have any attached to it. The tool will help you attach a keynote and configure that for the pyRevit Keynote Manager.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-08-56-30-keynotes.png" /></p>
-<p>Click <strong>OK</strong> and select the keynote file we just created</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-01-21-open.png" /></p>
-<p>Keynote manager will notify you that the file needs to be configured for this tool. Click <strong>Convert</strong></p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-01-36-keynotes.png" /></p>
-<p>Keynote manager converts the text file in place and tells you when it is done. It copies the file before converting. When the conversion fails, that copy is kept and its path is shown, so the original content is not lost.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-02-19-keynotes.png" /></p>
+<p>Now create an empty test model, and launch the <strong>Manage Keynotes</strong> tool. When the keynote file of the model cannot be found, the tool says <em>Keynote file not found</em> and asks you to select one. Select the keynote file we just created.</p>
+<p>Keynote Manager then tells you that the file needs to be converted for this tool. Click <strong>Convert</strong>.</p>
+<p><img alt="Keynote Manager offering to convert a keynote file" src="../../assets/tools/keynotes/keynotes-convert-prompt.png" /></p>
+<p>Keynote Manager converts the text file in place and opens it. It copies the file to the pyRevit data folder before converting, and keeps that copy. When the conversion fails, the original content is restored, or the path of the copy is shown when it cannot be restored.</p>
 <p>Take a look at the converted keynote file. It should look similar to this</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># @datastore("txt") @source("..\My Project\MyKeynotes.txt") @version("0.1") @encoding("UTF-16")
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a># ===================== @db(txn_db:"Internal DB")
@@ -10929,8 +10953,10 @@
 <li>Store history of changes to keynotes</li>
 </ul>
 <h2 id="manage-keynotes-window">Manage Keynotes Window</h2>
-<p>The window shows the keynote file as one tree. The top-level rows are groups (the categories of the keynote file) and the rows under them are keynotes, which can have child keynotes of their own.</p>
+<p>The window shows the keynote file as one tree. The top-level rows are groups (the categories of the keynote file) and the rows under them are keynotes, which can have child keynotes of their own. The status bar shows the keynote file and how many groups and keynotes it holds, and how many keynotes are used in the model.</p>
+<p><img alt="Keynote Manager window" src="../../assets/tools/keynotes/keynote-manager.png" /></p>
 <h3 id="file-toolbar">File toolbar</h3>
+<p><img alt="File toolbar" src="../../assets/tools/keynotes/keynote-manager-file-toolbar.png" /></p>
 <table>
 <thead>
 <tr>
@@ -10973,6 +10999,7 @@
 <p>The search bar filters the tree as you type. <strong>Filters</strong> adds a ready-made filter to the search: used or unused keynotes, locked or unlocked ones, element, material or user keynotes only, a regular expression, or a CSI MasterFormat division number. The regular expression and division filters also have an <em>Exclude</em> form.</p>
 <h3 id="editing-the-tree">Editing the tree</h3>
 <p>The toolbar above the tree works on the selected rows. Most of them are also in the right-click menu.</p>
+<p><img alt="Tree toolbar" src="../../assets/tools/keynotes/keynote-manager-tree-toolbar.png" /></p>
 <table>
 <thead>
 <tr>
@@ -11040,11 +11067,14 @@
 <p>A group that still has keynotes, and a keynote that has child keynotes or is used in the model, cannot be deleted.</p>
 <h3 id="copying-keynotes-between-projects">Copying keynotes between projects</h3>
 <p><strong>Copy</strong> and <strong>Paste here</strong> also work between two projects that use different keynote files. Before anything is written, the <strong>Paste Keynotes</strong> window lists every copied row with what is currently in the target file and the result: added, text replaced, already there, or locked by another user. Only the ticked rows are written. Taking a row that conflicts replaces the text of the target keynote and keeps its place in the tree.</p>
+<p><img alt="Paste Keynotes window" src="../../assets/tools/keynotes/paste-keynotes.png" /></p>
 <h3 id="placing-keynotes">Placing Keynotes</h3>
 <p>Select the kind of keynote to place under <strong>Place</strong>: <strong>User</strong>, <strong>Element</strong> or <strong>Material</strong>. Then select a keynote and click the place button, or Alt+click the keynote in the tree. Revit starts its keynote tool with that key.</p>
 <p>Groups cannot be placed, and neither can a keynote that another user has locked.</p>
-<p><strong>Find in model</strong> lists the places where the selected keynote is used in the pyRevit output window. Click an element id in the list to go to that keynote.</p>
-<p><img alt="" src="../../assets/tools/keynotes/2019-08-28-09-19-23-keynotes.png" /></p>
+<p><strong>Find in model</strong> lists the places where the selected keynote is used in the pyRevit output window, one line per keynote tag. Click an element id in the list to go to that keynote. In a workshared model, the line also names the last user who edited the tag.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Keynote: 2157876 | Source: User | View: Level 1
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Keynote: 2157877 | Source: User | View: Level 1
+</span></code></pre></div>
 <h2 id="working-with-a-shared-keynote-file">Working with a shared keynote file</h2>
 <p>Keynote Manager can operate in two modes:</p>
 <ul>
@@ -11071,19 +11101,19 @@
 <h2 id="edit-locks">Edit Locks</h2>
 <p>When a user edits a keynote, Keynote Manager will write some info inside the keynote file (hidden to Revit) that a user has borrowed that specific keynote for editing. When a Revit session closes or crashes while a keynote is being edited, its lock stays in the file. Use the release locks button in the file toolbar: it names every lock holder and asks you to check with them first, because it cannot tell an abandoned lock from one a colleague holds right now.</p>
 <p>If that is not possible, clear the content of <code>Locks Table</code> in the keynote file by hand. These locks are written in between the two lines below</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a># --------------------- @table(locks_table:"Locks Table")
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>&gt;&gt;&gt; locks are listed here...
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a># ===================== @db(keynotesdb:"pyRevit Keynotes Manager DB")
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a># --------------------- @table(locks_table:"Locks Table")
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>&gt;&gt;&gt; locks are listed here...
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a># ===================== @db(keynotesdb:"pyRevit Keynotes Manager DB")
 </span></code></pre></div>
 <p>For example a lock with id <code>tf5n6dURvk+JrZQ5r3gD5g==</code> exists in this keynote file example:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a># @datastore("txt") @source("C:\Projects\Keynotes.txt") ...
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a># ===================== @db(txn_db:"Internal DB")
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a># --------------------- @table(locks_table:"Locks Table")
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a># tf5n6dURvk+JrZQ5r3gD5g==  workstation-01  jdoe    w8/8rO/UOUyP0vs1oS53zA== ...
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a># ===================== @db(keynotesdb:"pyRevit Keynotes Manager DB")
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>C1  CATEGORY ONE
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>C2  OTHER CATEGORY
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a># --------------------- @table(keynotes:"Keynotes Table")
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a># @datastore("txt") @source("C:\Projects\Keynotes.txt") ...
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a># ===================== @db(txn_db:"Internal DB")
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a># --------------------- @table(locks_table:"Locks Table")
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a># tf5n6dURvk+JrZQ5r3gD5g==  workstation-01  jdoe    w8/8rO/UOUyP0vs1oS53zA== ...
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a># ===================== @db(keynotesdb:"pyRevit Keynotes Manager DB")
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>C1  CATEGORY ONE
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>C2  OTHER CATEGORY
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a># --------------------- @table(keynotes:"Keynotes Table")
 </span></code></pre></div>
 <p>So to clear the locks, remove the lock lines. Coordinate this with your team so you are the only person changing the file</p>
 

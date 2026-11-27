@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../print-sheets/">
+        <link rel="prev" href="../section-box-navigator/">
       
       
         <link rel="next" href="../get-rvt-info/">
@@ -807,6 +807,34 @@
     
   
     Print Sheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
   
 
     
@@ -10716,23 +10744,20 @@
 
 
 <h1 id="tab-coloring">Tab Coloring</h1>
+<p>pyRevit can colorize Revit tabs by the open document. Open the pyRevit <strong>Settings</strong> and turn on <strong>Colorize Open Documents</strong> under <strong>UI / UX</strong> → <strong>Tab Coloring</strong>.</p>
+<p><img alt="Tab Coloring settings" src="../../assets/tools/tab-coloring/settings-tab-coloring.png" /></p>
 <div class="admonition note">
 <p class="admonition-title">Screenshots</p>
-<p>The screenshots on this page come from an older version of pyRevit. The options are the same.</p>
+<p>The screenshots of Revit tabs, of the ribbon button and of the output window on this page come from an older version of pyRevit. The behaviour is the same.</p>
 </div>
-<p>pyRevit can colorize Revit tabs by the open document. Open the pyRevit <strong>Settings</strong> and turn on <strong>Colorize Open Documents</strong> under <strong>UI / UX</strong> → <strong>Tab Coloring</strong>.</p>
-<p><img alt="" src="../../assets/tools/tab-coloring/revit-y57zkxv9zq.png" /></p>
 <p>Save settings and the open tabs will be colored by document</p>
 <p><img alt="" src="../../assets/tools/tab-coloring/revit-z7xzjies6z.png" /></p>
 <p>The <strong>Tab Coloring</strong> button in the <strong>Toggles</strong> panel turns the coloring on and off for the current session.</p>
 <p><img alt="" src="../../assets/tools/tab-coloring/2019-09-07-12-29-33-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png" /></p>
 <h3 id="setting-colorizer-theme">Setting Colorizer Theme</h3>
-<p>Select the styling option for <em>Project</em> and <em>Family</em> tabs separately:</p>
-<p><img alt="" src="../../assets/tools/tab-coloring/revit-cx0hce9v6f.png" /></p>
-<p>You can select a series of color swatches under the "By Order" section to colorize the document tabs as they open:</p>
-<p><img alt="" src="../../assets/tools/tab-coloring/revit-6hgqpazvan.png" /></p>
-<p>Under "By Filter", you can select a series of colors and Regular expression patterns to colorize tabs by their title. In the example below, all the tabs that match the regex pattern <code>Level \d</code>, will be colorized with magenta:</p>
-<p><img alt="" src="../../assets/tools/tab-coloring/revit-r8fbzzewep.png" /></p>
+<p>Select the styling option for <em>Project</em> and <em>Family</em> tabs separately, in <strong>Project Tab Style</strong> and <strong>Family Tab Style</strong>. The preview below them shows the result.</p>
+<p>The color swatches under <strong>By Order</strong> colorize the document tabs as they open. Use <strong>+</strong> and <strong>-</strong> to add and remove colors, and <strong>Reset</strong> to go back to the default colors.</p>
+<p>Under <strong>By Filter</strong>, you can select a series of colors and regular expression patterns to colorize tabs by their title. For example, with the pattern <code>Level \d</code> and a magenta swatch, all the tabs that match the pattern are colorized with magenta:</p>
 <p><img alt="" src="../../assets/tools/tab-coloring/revit-avqufsmsfh.png" /></p>
 <h4 id="developer-tip">Developer Tip</h4>
 <p>If you want to know the id and assigned color for each document, SHIFT-Click on the Tab Coloring tool</p>

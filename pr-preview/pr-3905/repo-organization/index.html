@@ -822,6 +822,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../tools/tab-coloring/" class="md-nav__link">
         
   
@@ -10618,8 +10646,8 @@
 <p>The pyRevit repository is organized in the following folders:</p>
 <ul>
 <li><code>bin</code> is <strong>not tracked in git</strong>. It holds runtime binaries (DLLs, engines, CLI, CPython under <code>cengines/</code>, etc.) produced locally by <code>dotnet run -- ci</code> in <a href="https://github.com/pyrevitlabs/pyRevit/tree/develop/build"><code>build/</code></a> or downloaded by <code>pyrevit clone</code> / <code>pyrevit clones update</code> from public CI Release assets. See <a href="../dev-guide/#clone-workflows">Clone workflows</a> for the two supported setups. Static sources live under <a href="https://github.com/pyrevitlabs/pyRevit/blob/develop/release/bin-assets/"><code>release/bin-assets/</code></a>, <a href="https://github.com/pyrevitlabs/pyRevit/blob/develop/release/cengines/"><code>release/cengines/</code></a>, and <a href="https://github.com/pyrevitlabs/pyRevit/blob/develop/release/pyrevit-hosts.json"><code>release/pyrevit-hosts.json</code></a>.</li>
-<li><code>build</code> is the C# ModularPipelines project that builds, tests, stamps, signs and publishes the product, plus its own unit tests in <code>build/tests/</code>. See <a href="https://github.com/pyrevitlabs/pyRevit/blob/develop/build/README.md"><code>build/README.md</code></a> and <a href="../ci-cd/">CI/CD</a>.</li>
-<li><code>dev</code> is where the C# code resides. <code>dev/scripts</code> holds the repository's Python tooling and its host-free CPython test suites: <code>test_&lt;script&gt;.py</code> covers a script in that folder and runs through a <code>pipenv run test-*</code> entry, while <code>test_standalone_*.py</code> covers a <code>pyrevitlib</code> module without a Revit host and is what CI runs (see <a href="../ci-cd/#ciyml-triggers-and-path-filter">CI/CD</a>).</li>
+<li><code>build</code> is the C# ModularPipelines project that builds, stamps, signs and publishes the product, plus its own unit tests in <code>build/tests/</code>. See <a href="https://github.com/pyrevitlabs/pyRevit/blob/develop/build/README.md"><code>build/README.md</code></a> and <a href="../ci-cd/">CI/CD</a>.</li>
+<li><code>dev</code> holds C# source and developer tooling. C# suites live under their owning area's <code>tests/</code> directory; see the <a href="../testing/#ownership-and-placement">test ownership map</a>. <code>dev/tests</code> owns shared discovery, coverage baselines, and API-free Python suites under <code>python/tooling/</code> and <code>python/library/</code>. <code>dev/checks</code> holds compatibility and config validators; <code>dev/hooks</code> holds the C# formatting hook. CI and local validation use <code>python dev/tests/run_tests.py</code>.</li>
 <li><code>docs</code> holds the sources of the <a href="https://docs.pyrevitlabs.io/">documentation website</a>, built with mkdocs. <code>docs/gen_ref_pages.py</code> generates the reference API from the <code>pyrevitlib/pyrevit</code> docstrings and copies the <code>*.md</code> files of the repository root into the site. <code>docs/static</code> and <code>docs/images</code> hold the website assets.</li>
 <li><code>extensions</code> holds the pyRevit extensions and the <code>extensions.json</code> catalog. <code>pyRevitCore.extension</code> builds the <code>pyRevit</code> ribbon tab. <code>pyRevitTools</code>, <code>pyRevitTags</code>, <code>pyRevitTutor</code>, <code>pyRevitTemplates</code> and <code>pyRevitBundlesCreatorExtension</code> ship tools that can be enabled from the Extensions button inside pyRevit. <code>pyRevitDevTools</code> and <code>pyRevitDevHooks</code> are for contributors: DevTools runs tests and checks that pyRevit, and your modifications, work in a live Revit; DevHooks logs hook events.</li>
 <li><code>extras</code> holds auxiliary files: icon sources (<code>adskicons</code>), the dark mode generator (<code>dark_mode</code>), bundle translation scripts, and an Advanced Installer project for Revit shortcuts.</li>

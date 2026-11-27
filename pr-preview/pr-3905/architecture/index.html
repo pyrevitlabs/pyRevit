@@ -822,6 +822,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../tools/tab-coloring/" class="md-nav__link">
         
   
@@ -11066,6 +11094,9 @@ imported before a Reload survive it. The contract is asserted by the tests in
 <p><code>pyrevit.forms</code> exports one engine-neutral API, listed once in
 <code>forms/_common.py</code>. IronPython adds the legacy names it exported before the
 module split (<code>forms/_ipy_legacy.py</code>, listed in <code>forms/_legacy_exports.py</code>).
+<code>forms.warning</code> and <code>forms.set_data_context</code> are attributes only: they stay
+out of <code>__all__</code>, so <code>from pyrevit.forms import *</code> cannot shadow a script's
+own <code>warning</code>.
 CPython imports any real <code>pyrevit.forms</code> submodule on first access and reports
 any other public name as unsupported. Shared behavior lives in <code>forms/base.py</code>
 (window resources, loading and ownership), <code>forms/_theme.py</code> (palette,
@@ -11275,8 +11306,9 @@ the WPF Dispatcher, where it could terminate Revit.</p>
 for real WPF/pythonnet tests on .NET Framework 4.8, .NET 8 and .NET 10 using the
 shipped CPython interpreter. The fixture substitutes Revit dependencies; it does
 not validate Revit ownership or host events. The proxies have their own real-WPF
-tests in <code>dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Binding.Tests</code>. Portable tests run with
-<code>python -m unittest discover -s dev/scripts -p 'test_standalone_forms*.py'</code>.
+tests in <code>dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Forms.Binding.Tests</code>. Portable tests
+live in <code>dev/tests/python/library/test_forms_*.py</code> and run through the shared runner
+with <code>pipenv run test --language python</code>; <code>pytest</code> on one of those files suits a focused run.
 The sibling <code>pyRevitLabs.PyRevit.Forms.IronPython.Tests</code> project drives the same
 interactive cases with the shipped IronPython 2.7 and 3 engines (select with
 <code>-p:IronPythonVersion=IPY2712PR</code> or <code>IPY342</code>). The build pipeline's test gate

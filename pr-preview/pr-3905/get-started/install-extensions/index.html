@@ -885,6 +885,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tools/tab-coloring/" class="md-nav__link">
         
   
@@ -10683,21 +10711,16 @@
 
 <h1 id="install-extensions">Install extensions</h1>
 <p>Use the <strong>Extensions</strong> tool in the <strong>pyRevit</strong> panel to install third-party extensions.</p>
-<div class="admonition note">
-<p class="admonition-title">Screenshots</p>
-<p>The screenshots on this page come from an older version of pyRevit. The steps are the same.</p>
-</div>
-<p>The Extensions window, shows all the registered extensions that you can install on your machine.</p>
-<p><img alt="" src="../../assets/get-started/install-extensions/2019-08-28-08-44-00-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png" /></p>
-<p>To install an extension, select the extension that you want, take a look at the information about that extension and the website, then click on the Install Extension button and select the destination (By default there is only one destination)</p>
-<p>pyRevit will install the extension and will reload automatically.</p>
+<p>The Extension Manager lists all the registered extensions you can install on your machine, and the ones already installed.</p>
+<p><img alt="Extension Manager with an extension selected" src="../../assets/get-started/install-extensions/extension-manager.png" /></p>
+<p>To install an extension, select it in the list and look at its information and website below the list. Its Git URL is filled in. <strong>Path</strong> is the folder the extension is installed into, the pyRevit extensions folder by default; use <strong>Pick Installation path</strong> to change it. A private repository needs a <strong>Token</strong>. Then click <strong>Install Extension</strong>.</p>
+<p>pyRevit installs the extension, adds its folder to the extension folders when needed, and reloads.</p>
 <p>Most extensions will add their own tab in Revit UI with their tools inside.</p>
-<p><img alt="" src="../../assets/get-started/install-extensions/2019-08-28-08-46-53-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png" /></p>
+<p>To install an extension that is not in the list, click <strong>Deselect</strong> if an extension is selected, then type its Git URL and click <strong>Add and install</strong>.</p>
 <h2 id="adding-extension-manually">Adding Extension Manually</h2>
-<p>To manually add an extension to pyRevit, open the pyRevit <strong>Settings</strong> and add the folder that contains the extension under <strong>Custom Extension Directories</strong></p>
-<p><img alt="" src="../../assets/get-started/install-extensions/2019-08-30-12-08-18-pyrevit-settings.png" /></p>
-<p>In this example the extension is called <code>Test.extension</code> and is inside the <code>gits</code> folder on the desktop. The folder to add is the parent, <code>gits</code>, not the <code>.extension</code> folder itself.</p>
-<p><img alt="" src="../../assets/get-started/install-extensions/2019-12-03-14-15-24-pyrevit-settings.png" /></p>
+<p>To manually add an extension to pyRevit, open the pyRevit <strong>Settings</strong> and add the folder that contains the extension under <strong>Custom Extension Directories</strong>. Add the parent folder of the <code>.extension</code> folder, not the <code>.extension</code> folder itself. For example, for <code>C:\ProgramData\pyRevit-docs\Extensions\Test.extension</code>, add <code>C:\ProgramData\pyRevit-docs\Extensions</code>.</p>
+<p><img alt="Custom Extension Directories in the Settings window" src="../../assets/get-started/install-extensions/settings-custom-extension-directories.png" /></p>
+<p>Click <strong>Save Settings and Reload</strong> to load the extension. <strong>Just Save Settings</strong> keeps it for the next reload.</p>
 
 
 

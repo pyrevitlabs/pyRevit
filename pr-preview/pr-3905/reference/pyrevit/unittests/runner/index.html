@@ -824,6 +824,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../tools/tab-coloring/" class="md-nav__link">
         
   
@@ -8769,6 +8797,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#pyrevit.unittests.runner.PyRevitTestResult.addExpectedFailure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        addExpectedFailure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyrevit.unittests.runner.PyRevitTestResult.addUnexpectedSuccess" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        addUnexpectedSuccess
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8929,6 +8979,17 @@
     <span class="md-ellipsis">
       
         run_test_case
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyrevit.unittests.runner.was_successful" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        was_successful
       
     </span>
   </a>
@@ -11388,6 +11449,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#pyrevit.unittests.runner.PyRevitTestResult.addExpectedFailure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        addExpectedFailure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyrevit.unittests.runner.PyRevitTestResult.addUnexpectedSuccess" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        addUnexpectedSuccess
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11548,6 +11631,17 @@
     <span class="md-ellipsis">
       
         run_test_case
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyrevit.unittests.runner.was_successful" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        was_successful
       
     </span>
   </a>
@@ -12281,10 +12375,7 @@ a single well-formed document. Reporting is off unless
 <span class="normal"><a href="#__codelineno-0-171">171</a></span>
 <span class="normal"><a href="#__codelineno-0-172">172</a></span>
 <span class="normal"><a href="#__codelineno-0-173">173</a></span>
-<span class="normal"><a href="#__codelineno-0-174">174</a></span>
-<span class="normal"><a href="#__codelineno-0-175">175</a></span>
-<span class="normal"><a href="#__codelineno-0-176">176</a></span>
-<span class="normal"><a href="#__codelineno-0-177">177</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="k">def</span><span class="w"> </span><span class="nf">stopTestRun</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-174">174</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="k">def</span><span class="w"> </span><span class="nf">stopTestRun</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 </span><span id="__span-0-162"><a id="__codelineno-0-162" name="__codelineno-0-162"></a><span class="w">    </span><span class="sd">"""Writes the JUnit report, when one is configured.</span>
 </span><span id="__span-0-163"><a id="__codelineno-0-163" name="__codelineno-0-163"></a>
 </span><span id="__span-0-164"><a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">    The whole report goes out in one file here rather than per test, so the result is</span>
@@ -12295,12 +12386,9 @@ a single well-formed document. Reporting is off unless
 </span><span id="__span-0-169"><a id="__codelineno-0-169" name="__codelineno-0-169"></a>    <span class="k">if</span> <span class="n">stop_test_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-170"><a id="__codelineno-0-170" name="__codelineno-0-170"></a>        <span class="n">stop_test_run</span><span class="p">()</span>
 </span><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a>
-</span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a>        <span class="n">written</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_junit</span><span class="o">.</span><span class="n">write</span><span class="p">()</span>
-</span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a>        <span class="k">if</span> <span class="n">written</span><span class="p">:</span>
-</span><span id="__span-0-175"><a id="__codelineno-0-175" name="__codelineno-0-175"></a>            <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Wrote JUnit report: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">written</span><span class="p">)</span>
-</span><span id="__span-0-176"><a id="__codelineno-0-176" name="__codelineno-0-176"></a>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">report_error</span><span class="p">:</span>
-</span><span id="__span-0-177"><a id="__codelineno-0-177" name="__codelineno-0-177"></a>        <span class="n">mlogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Could not write JUnit report: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">report_error</span><span class="p">)</span>
+</span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a>    <span class="n">written</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_junit</span><span class="o">.</span><span class="n">write</span><span class="p">()</span>
+</span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a>    <span class="k">if</span> <span class="n">written</span><span class="p">:</span>
+</span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a>        <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Wrote JUnit report: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">written</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -12354,23 +12442,23 @@ a single well-formed document. Reporting is off unless
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-179">179</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-176">176</a></span>
+<span class="normal"><a href="#__codelineno-0-177">177</a></span>
+<span class="normal"><a href="#__codelineno-0-178">178</a></span>
+<span class="normal"><a href="#__codelineno-0-179">179</a></span>
 <span class="normal"><a href="#__codelineno-0-180">180</a></span>
 <span class="normal"><a href="#__codelineno-0-181">181</a></span>
 <span class="normal"><a href="#__codelineno-0-182">182</a></span>
 <span class="normal"><a href="#__codelineno-0-183">183</a></span>
-<span class="normal"><a href="#__codelineno-0-184">184</a></span>
-<span class="normal"><a href="#__codelineno-0-185">185</a></span>
-<span class="normal"><a href="#__codelineno-0-186">186</a></span>
-<span class="normal"><a href="#__codelineno-0-187">187</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-179"><a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="k">def</span><span class="w"> </span><span class="nf">startTest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">):</span>
-</span><span id="__span-0-180"><a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="w">    </span><span class="sd">"""Starts the test.</span>
-</span><span id="__span-0-181"><a id="__codelineno-0-181" name="__codelineno-0-181"></a>
-</span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="sd">        test (TestCase): unit test</span>
-</span><span id="__span-0-184"><a id="__codelineno-0-184" name="__codelineno-0-184"></a><span class="sd">    """</span>
-</span><span id="__span-0-185"><a id="__codelineno-0-185" name="__codelineno-0-185"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">startTest</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
-</span><span id="__span-0-186"><a id="__codelineno-0-186" name="__codelineno-0-186"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_started</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">test</span><span class="p">)]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-</span><span id="__span-0-187"><a id="__codelineno-0-187" name="__codelineno-0-187"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Running test: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDescription</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
+<span class="normal"><a href="#__codelineno-0-184">184</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-176"><a id="__codelineno-0-176" name="__codelineno-0-176"></a><span class="k">def</span><span class="w"> </span><span class="nf">startTest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">):</span>
+</span><span id="__span-0-177"><a id="__codelineno-0-177" name="__codelineno-0-177"></a><span class="w">    </span><span class="sd">"""Starts the test.</span>
+</span><span id="__span-0-178"><a id="__codelineno-0-178" name="__codelineno-0-178"></a>
+</span><span id="__span-0-179"><a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-180"><a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="sd">        test (TestCase): unit test</span>
+</span><span id="__span-0-181"><a id="__codelineno-0-181" name="__codelineno-0-181"></a><span class="sd">    """</span>
+</span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">startTest</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+</span><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_started</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">test</span><span class="p">)]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+</span><span id="__span-0-184"><a id="__codelineno-0-184" name="__codelineno-0-184"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Running test: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDescription</span><span class="p">(</span><span class="n">test</span><span class="p">))</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -12424,25 +12512,25 @@ a single well-formed document. Reporting is off unless
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-189">189</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-186">186</a></span>
+<span class="normal"><a href="#__codelineno-0-187">187</a></span>
+<span class="normal"><a href="#__codelineno-0-188">188</a></span>
+<span class="normal"><a href="#__codelineno-0-189">189</a></span>
 <span class="normal"><a href="#__codelineno-0-190">190</a></span>
 <span class="normal"><a href="#__codelineno-0-191">191</a></span>
 <span class="normal"><a href="#__codelineno-0-192">192</a></span>
 <span class="normal"><a href="#__codelineno-0-193">193</a></span>
 <span class="normal"><a href="#__codelineno-0-194">194</a></span>
-<span class="normal"><a href="#__codelineno-0-195">195</a></span>
-<span class="normal"><a href="#__codelineno-0-196">196</a></span>
-<span class="normal"><a href="#__codelineno-0-197">197</a></span>
-<span class="normal"><a href="#__codelineno-0-198">198</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-189"><a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="k">def</span><span class="w"> </span><span class="nf">addSuccess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">):</span>
-</span><span id="__span-0-190"><a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="w">    </span><span class="sd">"""Adds a test success.</span>
-</span><span id="__span-0-191"><a id="__codelineno-0-191" name="__codelineno-0-191"></a>
-</span><span id="__span-0-192"><a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-193"><a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">        test (TestCase): unit test case</span>
-</span><span id="__span-0-194"><a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="sd">    """</span>
-</span><span id="__span-0-195"><a id="__codelineno-0-195" name="__codelineno-0-195"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">addSuccess</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
-</span><span id="__span-0-196"><a id="__codelineno-0-196" name="__codelineno-0-196"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">DEBUG_OKAY_RESULT</span><span class="p">)</span>
-</span><span id="__span-0-197"><a id="__codelineno-0-197" name="__codelineno-0-197"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">RESULT_DIV_OKAY</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getDescription</span><span class="p">(</span><span class="n">test</span><span class="p">)))</span>
-</span><span id="__span-0-198"><a id="__codelineno-0-198" name="__codelineno-0-198"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_report</span><span class="p">(</span><span class="s2">"success"</span><span class="p">,</span> <span class="n">test</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-195">195</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-186"><a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="k">def</span><span class="w"> </span><span class="nf">addSuccess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">):</span>
+</span><span id="__span-0-187"><a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="w">    </span><span class="sd">"""Adds a test success.</span>
+</span><span id="__span-0-188"><a id="__codelineno-0-188" name="__codelineno-0-188"></a>
+</span><span id="__span-0-189"><a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-190"><a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">        test (TestCase): unit test case</span>
+</span><span id="__span-0-191"><a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">    """</span>
+</span><span id="__span-0-192"><a id="__codelineno-0-192" name="__codelineno-0-192"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">addSuccess</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+</span><span id="__span-0-193"><a id="__codelineno-0-193" name="__codelineno-0-193"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">DEBUG_OKAY_RESULT</span><span class="p">)</span>
+</span><span id="__span-0-194"><a id="__codelineno-0-194" name="__codelineno-0-194"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">RESULT_DIV_OKAY</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getDescription</span><span class="p">(</span><span class="n">test</span><span class="p">)))</span>
+</span><span id="__span-0-195"><a id="__codelineno-0-195" name="__codelineno-0-195"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_report</span><span class="p">(</span><span class="s2">"success"</span><span class="p">,</span> <span class="n">test</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -12512,7 +12600,10 @@ a single well-formed document. Reporting is off unless
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-200">200</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-197">197</a></span>
+<span class="normal"><a href="#__codelineno-0-198">198</a></span>
+<span class="normal"><a href="#__codelineno-0-199">199</a></span>
+<span class="normal"><a href="#__codelineno-0-200">200</a></span>
 <span class="normal"><a href="#__codelineno-0-201">201</a></span>
 <span class="normal"><a href="#__codelineno-0-202">202</a></span>
 <span class="normal"><a href="#__codelineno-0-203">203</a></span>
@@ -12521,22 +12612,19 @@ a single well-formed document. Reporting is off unless
 <span class="normal"><a href="#__codelineno-0-206">206</a></span>
 <span class="normal"><a href="#__codelineno-0-207">207</a></span>
 <span class="normal"><a href="#__codelineno-0-208">208</a></span>
-<span class="normal"><a href="#__codelineno-0-209">209</a></span>
-<span class="normal"><a href="#__codelineno-0-210">210</a></span>
-<span class="normal"><a href="#__codelineno-0-211">211</a></span>
-<span class="normal"><a href="#__codelineno-0-212">212</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="k">def</span><span class="w"> </span><span class="nf">addError</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
-</span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="w">    </span><span class="sd">"""Adds a test error.</span>
-</span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a>
-</span><span id="__span-0-203"><a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-204"><a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">        test (TestCase): unit test case</span>
-</span><span id="__span-0-205"><a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">        err (OptExcInfo): test exception info</span>
-</span><span id="__span-0-206"><a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">    """</span>
-</span><span id="__span-0-207"><a id="__codelineno-0-207" name="__codelineno-0-207"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">addError</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-</span><span id="__span-0-208"><a id="__codelineno-0-208" name="__codelineno-0-208"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">DEBUG_FAIL_RESULT</span><span class="p">)</span>
-</span><span id="__span-0-209"><a id="__codelineno-0-209" name="__codelineno-0-209"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">RESULT_DIV_ERROR</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getDescription</span><span class="p">(</span><span class="n">test</span><span class="p">)))</span>
-</span><span id="__span-0-210"><a id="__codelineno-0-210" name="__codelineno-0-210"></a>    <span class="n">details</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception_detail</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-</span><span id="__span-0-211"><a id="__codelineno-0-211" name="__codelineno-0-211"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_report</span><span class="p">(</span><span class="s2">"error"</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">_exception_summary</span><span class="p">(</span><span class="n">err</span><span class="p">),</span> <span class="n">detail</span><span class="o">=</span><span class="n">details</span><span class="p">)</span>
-</span><span id="__span-0-212"><a id="__codelineno-0-212" name="__codelineno-0-212"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_write_exception</span><span class="p">(</span><span class="n">details</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-209">209</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-197"><a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="k">def</span><span class="w"> </span><span class="nf">addError</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
+</span><span id="__span-0-198"><a id="__codelineno-0-198" name="__codelineno-0-198"></a><span class="w">    </span><span class="sd">"""Adds a test error.</span>
+</span><span id="__span-0-199"><a id="__codelineno-0-199" name="__codelineno-0-199"></a>
+</span><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">        test (TestCase): unit test case</span>
+</span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">        err (OptExcInfo): test exception info</span>
+</span><span id="__span-0-203"><a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">    """</span>
+</span><span id="__span-0-204"><a id="__codelineno-0-204" name="__codelineno-0-204"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">addError</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+</span><span id="__span-0-205"><a id="__codelineno-0-205" name="__codelineno-0-205"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">DEBUG_FAIL_RESULT</span><span class="p">)</span>
+</span><span id="__span-0-206"><a id="__codelineno-0-206" name="__codelineno-0-206"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">RESULT_DIV_ERROR</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getDescription</span><span class="p">(</span><span class="n">test</span><span class="p">)))</span>
+</span><span id="__span-0-207"><a id="__codelineno-0-207" name="__codelineno-0-207"></a>    <span class="n">details</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception_detail</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+</span><span id="__span-0-208"><a id="__codelineno-0-208" name="__codelineno-0-208"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_report</span><span class="p">(</span><span class="s2">"error"</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">_exception_summary</span><span class="p">(</span><span class="n">err</span><span class="p">),</span> <span class="n">detail</span><span class="o">=</span><span class="n">details</span><span class="p">)</span>
+</span><span id="__span-0-209"><a id="__codelineno-0-209" name="__codelineno-0-209"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_write_exception</span><span class="p">(</span><span class="n">details</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -12606,7 +12694,10 @@ a single well-formed document. Reporting is off unless
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-214">214</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-211">211</a></span>
+<span class="normal"><a href="#__codelineno-0-212">212</a></span>
+<span class="normal"><a href="#__codelineno-0-213">213</a></span>
+<span class="normal"><a href="#__codelineno-0-214">214</a></span>
 <span class="normal"><a href="#__codelineno-0-215">215</a></span>
 <span class="normal"><a href="#__codelineno-0-216">216</a></span>
 <span class="normal"><a href="#__codelineno-0-217">217</a></span>
@@ -12615,22 +12706,19 @@ a single well-formed document. Reporting is off unless
 <span class="normal"><a href="#__codelineno-0-220">220</a></span>
 <span class="normal"><a href="#__codelineno-0-221">221</a></span>
 <span class="normal"><a href="#__codelineno-0-222">222</a></span>
-<span class="normal"><a href="#__codelineno-0-223">223</a></span>
-<span class="normal"><a href="#__codelineno-0-224">224</a></span>
-<span class="normal"><a href="#__codelineno-0-225">225</a></span>
-<span class="normal"><a href="#__codelineno-0-226">226</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-214"><a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="k">def</span><span class="w"> </span><span class="nf">addFailure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
-</span><span id="__span-0-215"><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="w">    </span><span class="sd">"""Adds a test failure.</span>
-</span><span id="__span-0-216"><a id="__codelineno-0-216" name="__codelineno-0-216"></a>
-</span><span id="__span-0-217"><a id="__codelineno-0-217" name="__codelineno-0-217"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-218"><a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">        test (TestCase): unit test case</span>
-</span><span id="__span-0-219"><a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">        err (OptExcInfo): test exception info</span>
-</span><span id="__span-0-220"><a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    """</span>
-</span><span id="__span-0-221"><a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">addFailure</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-</span><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">DEBUG_FAIL_RESULT</span><span class="p">)</span>
-</span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">RESULT_DIV_FAIL</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getDescription</span><span class="p">(</span><span class="n">test</span><span class="p">)))</span>
-</span><span id="__span-0-224"><a id="__codelineno-0-224" name="__codelineno-0-224"></a>    <span class="n">details</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception_detail</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-</span><span id="__span-0-225"><a id="__codelineno-0-225" name="__codelineno-0-225"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_report</span><span class="p">(</span><span class="s2">"failure"</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">_exception_summary</span><span class="p">(</span><span class="n">err</span><span class="p">),</span> <span class="n">detail</span><span class="o">=</span><span class="n">details</span><span class="p">)</span>
-</span><span id="__span-0-226"><a id="__codelineno-0-226" name="__codelineno-0-226"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_write_exception</span><span class="p">(</span><span class="n">details</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-223">223</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-211"><a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="k">def</span><span class="w"> </span><span class="nf">addFailure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
+</span><span id="__span-0-212"><a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="w">    </span><span class="sd">"""Adds a test failure.</span>
+</span><span id="__span-0-213"><a id="__codelineno-0-213" name="__codelineno-0-213"></a>
+</span><span id="__span-0-214"><a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-215"><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">        test (TestCase): unit test case</span>
+</span><span id="__span-0-216"><a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">        err (OptExcInfo): test exception info</span>
+</span><span id="__span-0-217"><a id="__codelineno-0-217" name="__codelineno-0-217"></a><span class="sd">    """</span>
+</span><span id="__span-0-218"><a id="__codelineno-0-218" name="__codelineno-0-218"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">addFailure</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+</span><span id="__span-0-219"><a id="__codelineno-0-219" name="__codelineno-0-219"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">DEBUG_FAIL_RESULT</span><span class="p">)</span>
+</span><span id="__span-0-220"><a id="__codelineno-0-220" name="__codelineno-0-220"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">RESULT_DIV_FAIL</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getDescription</span><span class="p">(</span><span class="n">test</span><span class="p">)))</span>
+</span><span id="__span-0-221"><a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="n">details</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception_detail</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+</span><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_report</span><span class="p">(</span><span class="s2">"failure"</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">_exception_summary</span><span class="p">(</span><span class="n">err</span><span class="p">),</span> <span class="n">detail</span><span class="o">=</span><span class="n">details</span><span class="p">)</span>
+</span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_write_exception</span><span class="p">(</span><span class="n">details</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -12700,23 +12788,177 @@ a single well-formed document. Reporting is off unless
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-228">228</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-225">225</a></span>
+<span class="normal"><a href="#__codelineno-0-226">226</a></span>
+<span class="normal"><a href="#__codelineno-0-227">227</a></span>
+<span class="normal"><a href="#__codelineno-0-228">228</a></span>
 <span class="normal"><a href="#__codelineno-0-229">229</a></span>
 <span class="normal"><a href="#__codelineno-0-230">230</a></span>
 <span class="normal"><a href="#__codelineno-0-231">231</a></span>
 <span class="normal"><a href="#__codelineno-0-232">232</a></span>
-<span class="normal"><a href="#__codelineno-0-233">233</a></span>
-<span class="normal"><a href="#__codelineno-0-234">234</a></span>
-<span class="normal"><a href="#__codelineno-0-235">235</a></span>
-<span class="normal"><a href="#__codelineno-0-236">236</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-228"><a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="k">def</span><span class="w"> </span><span class="nf">addSkip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">reason</span><span class="p">):</span>
-</span><span id="__span-0-229"><a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="w">    </span><span class="sd">"""Adds a skipped test.</span>
-</span><span id="__span-0-230"><a id="__codelineno-0-230" name="__codelineno-0-230"></a>
-</span><span id="__span-0-231"><a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-232"><a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">        test (TestCase): unit test case</span>
-</span><span id="__span-0-233"><a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">        reason (str): why it was skipped</span>
-</span><span id="__span-0-234"><a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">    """</span>
-</span><span id="__span-0-235"><a id="__codelineno-0-235" name="__codelineno-0-235"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">addSkip</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
-</span><span id="__span-0-236"><a id="__codelineno-0-236" name="__codelineno-0-236"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_report</span><span class="p">(</span><span class="s2">"skipped"</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">reason</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-233">233</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-225"><a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="k">def</span><span class="w"> </span><span class="nf">addSkip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">reason</span><span class="p">):</span>
+</span><span id="__span-0-226"><a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="w">    </span><span class="sd">"""Adds a skipped test.</span>
+</span><span id="__span-0-227"><a id="__codelineno-0-227" name="__codelineno-0-227"></a>
+</span><span id="__span-0-228"><a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-229"><a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">        test (TestCase): unit test case</span>
+</span><span id="__span-0-230"><a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">        reason (str): why it was skipped</span>
+</span><span id="__span-0-231"><a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">    """</span>
+</span><span id="__span-0-232"><a id="__codelineno-0-232" name="__codelineno-0-232"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">addSkip</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+</span><span id="__span-0-233"><a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_report</span><span class="p">(</span><span class="s2">"skipped"</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">reason</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="pyrevit.unittests.runner.PyRevitTestResult.addExpectedFailure" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">addExpectedFailure</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span></code>
+
+</h5>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Adds an expected failure, reported as skipped.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>test</code>
+            </td>
+            <td>
+                  <code><span title="TestCase">TestCase</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>unit test case</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>err</code>
+            </td>
+            <td>
+                  <code><span title="OptExcInfo">OptExcInfo</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>test exception info</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-259">259</a></span>
+<span class="normal"><a href="#__codelineno-0-260">260</a></span>
+<span class="normal"><a href="#__codelineno-0-261">261</a></span>
+<span class="normal"><a href="#__codelineno-0-262">262</a></span>
+<span class="normal"><a href="#__codelineno-0-263">263</a></span>
+<span class="normal"><a href="#__codelineno-0-264">264</a></span>
+<span class="normal"><a href="#__codelineno-0-265">265</a></span>
+<span class="normal"><a href="#__codelineno-0-266">266</a></span>
+<span class="normal"><a href="#__codelineno-0-267">267</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="k">def</span><span class="w"> </span><span class="nf">addExpectedFailure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
+</span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="w">    </span><span class="sd">"""Adds an expected failure, reported as skipped.</span>
+</span><span id="__span-0-261"><a id="__codelineno-0-261" name="__codelineno-0-261"></a>
+</span><span id="__span-0-262"><a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-263"><a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">        test (TestCase): unit test case</span>
+</span><span id="__span-0-264"><a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="sd">        err (OptExcInfo): test exception info</span>
+</span><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="sd">    """</span>
+</span><span id="__span-0-266"><a id="__codelineno-0-266" name="__codelineno-0-266"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">addExpectedFailure</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+</span><span id="__span-0-267"><a id="__codelineno-0-267" name="__codelineno-0-267"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_report</span><span class="p">(</span><span class="s2">"skipped"</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">"expected failure"</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="pyrevit.unittests.runner.PyRevitTestResult.addUnexpectedSuccess" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">addUnexpectedSuccess</span><span class="p">(</span><span class="n">test</span><span class="p">)</span></code>
+
+</h5>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Adds an unexpected success, reported as a failure.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>test</code>
+            </td>
+            <td>
+                  <code><span title="TestCase">TestCase</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>unit test case</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-269">269</a></span>
+<span class="normal"><a href="#__codelineno-0-270">270</a></span>
+<span class="normal"><a href="#__codelineno-0-271">271</a></span>
+<span class="normal"><a href="#__codelineno-0-272">272</a></span>
+<span class="normal"><a href="#__codelineno-0-273">273</a></span>
+<span class="normal"><a href="#__codelineno-0-274">274</a></span>
+<span class="normal"><a href="#__codelineno-0-275">275</a></span>
+<span class="normal"><a href="#__codelineno-0-276">276</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-269"><a id="__codelineno-0-269" name="__codelineno-0-269"></a><span class="k">def</span><span class="w"> </span><span class="nf">addUnexpectedSuccess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">):</span>
+</span><span id="__span-0-270"><a id="__codelineno-0-270" name="__codelineno-0-270"></a><span class="w">    </span><span class="sd">"""Adds an unexpected success, reported as a failure.</span>
+</span><span id="__span-0-271"><a id="__codelineno-0-271" name="__codelineno-0-271"></a>
+</span><span id="__span-0-272"><a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-273"><a id="__codelineno-0-273" name="__codelineno-0-273"></a><span class="sd">        test (TestCase): unit test case</span>
+</span><span id="__span-0-274"><a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    """</span>
+</span><span id="__span-0-275"><a id="__codelineno-0-275" name="__codelineno-0-275"></a>    <span class="nb">super</span><span class="p">(</span><span class="n">PyRevitTestResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">addUnexpectedSuccess</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+</span><span id="__span-0-276"><a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_report</span><span class="p">(</span><span class="s2">"failure"</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">"unexpected success"</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -12854,33 +13096,33 @@ Defaults to <code>PyRevitTestResult</code>.</p>
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
-                    <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-283">283</a></span>
-<span class="normal"><a href="#__codelineno-0-284">284</a></span>
-<span class="normal"><a href="#__codelineno-0-285">285</a></span>
-<span class="normal"><a href="#__codelineno-0-286">286</a></span>
-<span class="normal"><a href="#__codelineno-0-287">287</a></span>
-<span class="normal"><a href="#__codelineno-0-288">288</a></span>
-<span class="normal"><a href="#__codelineno-0-289">289</a></span>
-<span class="normal"><a href="#__codelineno-0-290">290</a></span>
-<span class="normal"><a href="#__codelineno-0-291">291</a></span>
-<span class="normal"><a href="#__codelineno-0-292">292</a></span>
-<span class="normal"><a href="#__codelineno-0-293">293</a></span>
+                    <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-293">293</a></span>
 <span class="normal"><a href="#__codelineno-0-294">294</a></span>
 <span class="normal"><a href="#__codelineno-0-295">295</a></span>
-<span class="normal"><a href="#__codelineno-0-296">296</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-283"><a id="__codelineno-0-283" name="__codelineno-0-283"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-</span><span id="__span-0-284"><a id="__codelineno-0-284" name="__codelineno-0-284"></a>    <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-0-285"><a id="__codelineno-0-285" name="__codelineno-0-285"></a>    <span class="n">verbosity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-0-286"><a id="__codelineno-0-286" name="__codelineno-0-286"></a>    <span class="n">failfast</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-287"><a id="__codelineno-0-287" name="__codelineno-0-287"></a>    <span class="n">use_buffer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-288"><a id="__codelineno-0-288" name="__codelineno-0-288"></a>    <span class="n">resultclass</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-289"><a id="__codelineno-0-289" name="__codelineno-0-289"></a>    <span class="n">suite_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-290"><a id="__codelineno-0-290" name="__codelineno-0-290"></a><span class="p">):</span>
-</span><span id="__span-0-291"><a id="__codelineno-0-291" name="__codelineno-0-291"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="n">verbosity</span>
-</span><span id="__span-0-292"><a id="__codelineno-0-292" name="__codelineno-0-292"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">failfast</span> <span class="o">=</span> <span class="n">failfast</span>
-</span><span id="__span-0-293"><a id="__codelineno-0-293" name="__codelineno-0-293"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">use_buffer</span> <span class="o">=</span> <span class="n">use_buffer</span>
-</span><span id="__span-0-294"><a id="__codelineno-0-294" name="__codelineno-0-294"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">suite_name</span> <span class="o">=</span> <span class="n">suite_name</span>
-</span><span id="__span-0-295"><a id="__codelineno-0-295" name="__codelineno-0-295"></a>    <span class="k">if</span> <span class="n">resultclass</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">resultclass</span> <span class="o">=</span> <span class="n">resultclass</span>
+<span class="normal"><a href="#__codelineno-0-296">296</a></span>
+<span class="normal"><a href="#__codelineno-0-297">297</a></span>
+<span class="normal"><a href="#__codelineno-0-298">298</a></span>
+<span class="normal"><a href="#__codelineno-0-299">299</a></span>
+<span class="normal"><a href="#__codelineno-0-300">300</a></span>
+<span class="normal"><a href="#__codelineno-0-301">301</a></span>
+<span class="normal"><a href="#__codelineno-0-302">302</a></span>
+<span class="normal"><a href="#__codelineno-0-303">303</a></span>
+<span class="normal"><a href="#__codelineno-0-304">304</a></span>
+<span class="normal"><a href="#__codelineno-0-305">305</a></span>
+<span class="normal"><a href="#__codelineno-0-306">306</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-293"><a id="__codelineno-0-293" name="__codelineno-0-293"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="__span-0-294"><a id="__codelineno-0-294" name="__codelineno-0-294"></a>    <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-0-295"><a id="__codelineno-0-295" name="__codelineno-0-295"></a>    <span class="n">verbosity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a>    <span class="n">failfast</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-0-297"><a id="__codelineno-0-297" name="__codelineno-0-297"></a>    <span class="n">use_buffer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-0-298"><a id="__codelineno-0-298" name="__codelineno-0-298"></a>    <span class="n">resultclass</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-299"><a id="__codelineno-0-299" name="__codelineno-0-299"></a>    <span class="n">suite_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-300"><a id="__codelineno-0-300" name="__codelineno-0-300"></a><span class="p">):</span>
+</span><span id="__span-0-301"><a id="__codelineno-0-301" name="__codelineno-0-301"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="n">verbosity</span>
+</span><span id="__span-0-302"><a id="__codelineno-0-302" name="__codelineno-0-302"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">failfast</span> <span class="o">=</span> <span class="n">failfast</span>
+</span><span id="__span-0-303"><a id="__codelineno-0-303" name="__codelineno-0-303"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">use_buffer</span> <span class="o">=</span> <span class="n">use_buffer</span>
+</span><span id="__span-0-304"><a id="__codelineno-0-304" name="__codelineno-0-304"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">suite_name</span> <span class="o">=</span> <span class="n">suite_name</span>
+</span><span id="__span-0-305"><a id="__codelineno-0-305" name="__codelineno-0-305"></a>    <span class="k">if</span> <span class="n">resultclass</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-306"><a id="__codelineno-0-306" name="__codelineno-0-306"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">resultclass</span> <span class="o">=</span> <span class="n">resultclass</span>
 </span></code></pre></div></td></tr></table></div>
                   </details>
 
@@ -13068,17 +13310,7 @@ Defaults to <code>PyRevitTestResult</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-301">301</a></span>
-<span class="normal"><a href="#__codelineno-0-302">302</a></span>
-<span class="normal"><a href="#__codelineno-0-303">303</a></span>
-<span class="normal"><a href="#__codelineno-0-304">304</a></span>
-<span class="normal"><a href="#__codelineno-0-305">305</a></span>
-<span class="normal"><a href="#__codelineno-0-306">306</a></span>
-<span class="normal"><a href="#__codelineno-0-307">307</a></span>
-<span class="normal"><a href="#__codelineno-0-308">308</a></span>
-<span class="normal"><a href="#__codelineno-0-309">309</a></span>
-<span class="normal"><a href="#__codelineno-0-310">310</a></span>
-<span class="normal"><a href="#__codelineno-0-311">311</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-311">311</a></span>
 <span class="normal"><a href="#__codelineno-0-312">312</a></span>
 <span class="normal"><a href="#__codelineno-0-313">313</a></span>
 <span class="normal"><a href="#__codelineno-0-314">314</a></span>
@@ -13141,80 +13373,90 @@ Defaults to <code>PyRevitTestResult</code>.</p>
 <span class="normal"><a href="#__codelineno-0-371">371</a></span>
 <span class="normal"><a href="#__codelineno-0-372">372</a></span>
 <span class="normal"><a href="#__codelineno-0-373">373</a></span>
-<span class="normal"><a href="#__codelineno-0-374">374</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-301"><a id="__codelineno-0-301" name="__codelineno-0-301"></a><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">):</span>
-</span><span id="__span-0-302"><a id="__codelineno-0-302" name="__codelineno-0-302"></a><span class="w">    </span><span class="sd">"""Runs a test suite.</span>
-</span><span id="__span-0-303"><a id="__codelineno-0-303" name="__codelineno-0-303"></a>
-</span><span id="__span-0-304"><a id="__codelineno-0-304" name="__codelineno-0-304"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-305"><a id="__codelineno-0-305" name="__codelineno-0-305"></a><span class="sd">        test (TestSuite): Test suite to run</span>
-</span><span id="__span-0-306"><a id="__codelineno-0-306" name="__codelineno-0-306"></a>
-</span><span id="__span-0-307"><a id="__codelineno-0-307" name="__codelineno-0-307"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a><span class="sd">        (PyRevitTestResult): Test suite results.</span>
-</span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a><span class="sd">    """</span>
-</span><span id="__span-0-310"><a id="__codelineno-0-310" name="__codelineno-0-310"></a>    <span class="c1"># setup results object</span>
-</span><span id="__span-0-311"><a id="__codelineno-0-311" name="__codelineno-0-311"></a>    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_result</span><span class="p">()</span>
-</span><span id="__span-0-312"><a id="__codelineno-0-312" name="__codelineno-0-312"></a>    <span class="n">result</span><span class="o">.</span><span class="n">failfast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">failfast</span>
-</span><span id="__span-0-313"><a id="__codelineno-0-313" name="__codelineno-0-313"></a>    <span class="n">result</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_buffer</span>
-</span><span id="__span-0-314"><a id="__codelineno-0-314" name="__codelineno-0-314"></a>
-</span><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a>    <span class="c1"># start clock</span>
-</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a>    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-</span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a>
-</span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a>    <span class="c1"># find run test methods</span>
-</span><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a>    <span class="n">start_test_run</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"startTestRun"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="k">if</span> <span class="n">start_test_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a>        <span class="n">start_test_run</span><span class="p">()</span>
-</span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-0-323"><a id="__codelineno-0-323" name="__codelineno-0-323"></a>        <span class="n">test</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-</span><span id="__span-0-324"><a id="__codelineno-0-324" name="__codelineno-0-324"></a>    <span class="k">finally</span><span class="p">:</span>
-</span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a>        <span class="n">stop_test_run</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"stopTestRun"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a>        <span class="k">if</span> <span class="n">stop_test_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a>            <span class="n">stop_test_run</span><span class="p">()</span>
-</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a>
-</span><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a>    <span class="c1"># stop clock and calculate run time</span>
-</span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a>    <span class="n">stop_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-</span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a>    <span class="n">time_taken</span> <span class="o">=</span> <span class="n">stop_time</span> <span class="o">-</span> <span class="n">start_time</span>
-</span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a>
-</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a>    <span class="c1"># print errots</span>
-</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a>    <span class="n">result</span><span class="o">.</span><span class="n">printErrors</span><span class="p">()</span>
-</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a>    <span class="n">test_count</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">testsRun</span>
-</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a>        <span class="s2">"Ran </span><span class="si">%d</span><span class="s2"> test</span><span class="si">%s</span><span class="s2"> in </span><span class="si">%.3f</span><span class="s2">s"</span><span class="p">,</span>
-</span><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a>        <span class="n">test_count</span><span class="p">,</span>
-</span><span id="__span-0-339"><a id="__codelineno-0-339" name="__codelineno-0-339"></a>        <span class="n">test_count</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="s2">"s"</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
-</span><span id="__span-0-340"><a id="__codelineno-0-340" name="__codelineno-0-340"></a>        <span class="n">time_taken</span><span class="p">,</span>
-</span><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a>    <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-374">374</a></span>
+<span class="normal"><a href="#__codelineno-0-375">375</a></span>
+<span class="normal"><a href="#__codelineno-0-376">376</a></span>
+<span class="normal"><a href="#__codelineno-0-377">377</a></span>
+<span class="normal"><a href="#__codelineno-0-378">378</a></span>
+<span class="normal"><a href="#__codelineno-0-379">379</a></span>
+<span class="normal"><a href="#__codelineno-0-380">380</a></span>
+<span class="normal"><a href="#__codelineno-0-381">381</a></span>
+<span class="normal"><a href="#__codelineno-0-382">382</a></span>
+<span class="normal"><a href="#__codelineno-0-383">383</a></span>
+<span class="normal"><a href="#__codelineno-0-384">384</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-311"><a id="__codelineno-0-311" name="__codelineno-0-311"></a><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">):</span>
+</span><span id="__span-0-312"><a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="w">    </span><span class="sd">"""Runs a test suite.</span>
+</span><span id="__span-0-313"><a id="__codelineno-0-313" name="__codelineno-0-313"></a>
+</span><span id="__span-0-314"><a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">        test (TestSuite): Test suite to run</span>
+</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a>
+</span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">        (PyRevitTestResult): Test suite results.</span>
+</span><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">    """</span>
+</span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="c1"># setup results object</span>
+</span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a>    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_result</span><span class="p">()</span>
+</span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a>    <span class="n">result</span><span class="o">.</span><span class="n">failfast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">failfast</span>
+</span><span id="__span-0-323"><a id="__codelineno-0-323" name="__codelineno-0-323"></a>    <span class="n">result</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_buffer</span>
+</span><span id="__span-0-324"><a id="__codelineno-0-324" name="__codelineno-0-324"></a>
+</span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a>    <span class="c1"># start clock</span>
+</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a>    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+</span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a>
+</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a>    <span class="c1"># find run test methods</span>
+</span><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a>    <span class="n">start_test_run</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"startTestRun"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a>    <span class="k">if</span> <span class="n">start_test_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a>        <span class="n">start_test_run</span><span class="p">()</span>
+</span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a>        <span class="n">test</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a>    <span class="k">finally</span><span class="p">:</span>
+</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a>        <span class="n">stop_test_run</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"stopTestRun"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a>        <span class="k">if</span> <span class="n">stop_test_run</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a>            <span class="n">stop_test_run</span><span class="p">()</span>
+</span><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a>
+</span><span id="__span-0-339"><a id="__codelineno-0-339" name="__codelineno-0-339"></a>    <span class="c1"># stop clock and calculate run time</span>
+</span><span id="__span-0-340"><a id="__codelineno-0-340" name="__codelineno-0-340"></a>    <span class="n">stop_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+</span><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a>    <span class="n">time_taken</span> <span class="o">=</span> <span class="n">stop_time</span> <span class="o">-</span> <span class="n">start_time</span>
 </span><span id="__span-0-342"><a id="__codelineno-0-342" name="__codelineno-0-342"></a>
-</span><span id="__span-0-343"><a id="__codelineno-0-343" name="__codelineno-0-343"></a>    <span class="n">expected_fails</span> <span class="o">=</span> <span class="n">unexpected_successes</span> <span class="o">=</span> <span class="n">skipped</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-344"><a id="__codelineno-0-344" name="__codelineno-0-344"></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-0-345"><a id="__codelineno-0-345" name="__codelineno-0-345"></a>        <span class="n">results</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span>
-</span><span id="__span-0-346"><a id="__codelineno-0-346" name="__codelineno-0-346"></a>            <span class="nb">len</span><span class="p">,</span>
-</span><span id="__span-0-347"><a id="__codelineno-0-347" name="__codelineno-0-347"></a>            <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">expectedFailures</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">unexpectedSuccesses</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">skipped</span><span class="p">),</span>
-</span><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a>        <span class="p">)</span>
-</span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a>    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-</span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a>        <span class="k">pass</span>
-</span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a>        <span class="n">expected_fails</span><span class="p">,</span> <span class="n">unexpected_successes</span><span class="p">,</span> <span class="n">skipped</span> <span class="o">=</span> <span class="n">results</span>
-</span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a>
-</span><span id="__span-0-354"><a id="__codelineno-0-354" name="__codelineno-0-354"></a>    <span class="n">infos</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">wasSuccessful</span><span class="p">():</span>
-</span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a>        <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"FAILED"</span><span class="p">)</span>
-</span><span id="__span-0-357"><a id="__codelineno-0-357" name="__codelineno-0-357"></a>        <span class="n">failed</span><span class="p">,</span> <span class="n">errored</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">failures</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">))</span>
-</span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a>        <span class="k">if</span> <span class="n">failed</span><span class="p">:</span>
-</span><span id="__span-0-359"><a id="__codelineno-0-359" name="__codelineno-0-359"></a>            <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"failures=</span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">failed</span><span class="p">)</span>
-</span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a>        <span class="k">if</span> <span class="n">errored</span><span class="p">:</span>
-</span><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a>            <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"errors=</span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">errored</span><span class="p">)</span>
-</span><span id="__span-0-362"><a id="__codelineno-0-362" name="__codelineno-0-362"></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-363"><a id="__codelineno-0-363" name="__codelineno-0-363"></a>        <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">DEBUG_OKAY_RESULT</span><span class="p">)</span>
-</span><span id="__span-0-364"><a id="__codelineno-0-364" name="__codelineno-0-364"></a>
-</span><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a>    <span class="k">if</span> <span class="n">skipped</span><span class="p">:</span>
-</span><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a>        <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"skipped=</span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">skipped</span><span class="p">)</span>
-</span><span id="__span-0-367"><a id="__codelineno-0-367" name="__codelineno-0-367"></a>    <span class="k">if</span> <span class="n">expected_fails</span><span class="p">:</span>
-</span><span id="__span-0-368"><a id="__codelineno-0-368" name="__codelineno-0-368"></a>        <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"expected failures=</span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">expected_fails</span><span class="p">)</span>
-</span><span id="__span-0-369"><a id="__codelineno-0-369" name="__codelineno-0-369"></a>    <span class="k">if</span> <span class="n">unexpected_successes</span><span class="p">:</span>
-</span><span id="__span-0-370"><a id="__codelineno-0-370" name="__codelineno-0-370"></a>        <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"unexpected successes=</span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">unexpected_successes</span><span class="p">)</span>
-</span><span id="__span-0-371"><a id="__codelineno-0-371" name="__codelineno-0-371"></a>    <span class="k">if</span> <span class="n">infos</span><span class="p">:</span>
-</span><span id="__span-0-372"><a id="__codelineno-0-372" name="__codelineno-0-372"></a>        <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">" (</span><span class="si">%s</span><span class="s2">)"</span><span class="p">,</span> <span class="p">(</span><span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">infos</span><span class="p">),))</span>
-</span><span id="__span-0-373"><a id="__codelineno-0-373" name="__codelineno-0-373"></a>
-</span><span id="__span-0-374"><a id="__codelineno-0-374" name="__codelineno-0-374"></a>    <span class="k">return</span> <span class="n">result</span>
+</span><span id="__span-0-343"><a id="__codelineno-0-343" name="__codelineno-0-343"></a>    <span class="c1"># print errots</span>
+</span><span id="__span-0-344"><a id="__codelineno-0-344" name="__codelineno-0-344"></a>    <span class="n">result</span><span class="o">.</span><span class="n">printErrors</span><span class="p">()</span>
+</span><span id="__span-0-345"><a id="__codelineno-0-345" name="__codelineno-0-345"></a>    <span class="n">test_count</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">testsRun</span>
+</span><span id="__span-0-346"><a id="__codelineno-0-346" name="__codelineno-0-346"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+</span><span id="__span-0-347"><a id="__codelineno-0-347" name="__codelineno-0-347"></a>        <span class="s2">"Ran </span><span class="si">%d</span><span class="s2"> test</span><span class="si">%s</span><span class="s2"> in </span><span class="si">%.3f</span><span class="s2">s"</span><span class="p">,</span>
+</span><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a>        <span class="n">test_count</span><span class="p">,</span>
+</span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a>        <span class="n">test_count</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="s2">"s"</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+</span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a>        <span class="n">time_taken</span><span class="p">,</span>
+</span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a>    <span class="p">)</span>
+</span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a>
+</span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a>    <span class="n">expected_fails</span> <span class="o">=</span> <span class="n">unexpected_successes</span> <span class="o">=</span> <span class="n">skipped</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-0-354"><a id="__codelineno-0-354" name="__codelineno-0-354"></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a>        <span class="n">results</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span>
+</span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a>            <span class="nb">len</span><span class="p">,</span>
+</span><span id="__span-0-357"><a id="__codelineno-0-357" name="__codelineno-0-357"></a>            <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">expectedFailures</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">unexpectedSuccesses</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">skipped</span><span class="p">),</span>
+</span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a>        <span class="p">)</span>
+</span><span id="__span-0-359"><a id="__codelineno-0-359" name="__codelineno-0-359"></a>    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+</span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a>        <span class="k">pass</span>
+</span><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-362"><a id="__codelineno-0-362" name="__codelineno-0-362"></a>        <span class="n">expected_fails</span><span class="p">,</span> <span class="n">unexpected_successes</span><span class="p">,</span> <span class="n">skipped</span> <span class="o">=</span> <span class="n">results</span>
+</span><span id="__span-0-363"><a id="__codelineno-0-363" name="__codelineno-0-363"></a>
+</span><span id="__span-0-364"><a id="__codelineno-0-364" name="__codelineno-0-364"></a>    <span class="n">infos</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">wasSuccessful</span><span class="p">():</span>
+</span><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a>        <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"FAILED"</span><span class="p">)</span>
+</span><span id="__span-0-367"><a id="__codelineno-0-367" name="__codelineno-0-367"></a>        <span class="n">failed</span><span class="p">,</span> <span class="n">errored</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">failures</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">))</span>
+</span><span id="__span-0-368"><a id="__codelineno-0-368" name="__codelineno-0-368"></a>        <span class="k">if</span> <span class="n">failed</span><span class="p">:</span>
+</span><span id="__span-0-369"><a id="__codelineno-0-369" name="__codelineno-0-369"></a>            <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"failures=</span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">failed</span><span class="p">)</span>
+</span><span id="__span-0-370"><a id="__codelineno-0-370" name="__codelineno-0-370"></a>        <span class="k">if</span> <span class="n">errored</span><span class="p">:</span>
+</span><span id="__span-0-371"><a id="__codelineno-0-371" name="__codelineno-0-371"></a>            <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"errors=</span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">errored</span><span class="p">)</span>
+</span><span id="__span-0-372"><a id="__codelineno-0-372" name="__codelineno-0-372"></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-373"><a id="__codelineno-0-373" name="__codelineno-0-373"></a>        <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">DEBUG_OKAY_RESULT</span><span class="p">)</span>
+</span><span id="__span-0-374"><a id="__codelineno-0-374" name="__codelineno-0-374"></a>
+</span><span id="__span-0-375"><a id="__codelineno-0-375" name="__codelineno-0-375"></a>    <span class="k">if</span> <span class="n">skipped</span><span class="p">:</span>
+</span><span id="__span-0-376"><a id="__codelineno-0-376" name="__codelineno-0-376"></a>        <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"skipped=</span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">skipped</span><span class="p">)</span>
+</span><span id="__span-0-377"><a id="__codelineno-0-377" name="__codelineno-0-377"></a>    <span class="k">if</span> <span class="n">expected_fails</span><span class="p">:</span>
+</span><span id="__span-0-378"><a id="__codelineno-0-378" name="__codelineno-0-378"></a>        <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"expected failures=</span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">expected_fails</span><span class="p">)</span>
+</span><span id="__span-0-379"><a id="__codelineno-0-379" name="__codelineno-0-379"></a>    <span class="k">if</span> <span class="n">unexpected_successes</span><span class="p">:</span>
+</span><span id="__span-0-380"><a id="__codelineno-0-380" name="__codelineno-0-380"></a>        <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"unexpected successes=</span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">unexpected_successes</span><span class="p">)</span>
+</span><span id="__span-0-381"><a id="__codelineno-0-381" name="__codelineno-0-381"></a>    <span class="k">if</span> <span class="n">infos</span><span class="p">:</span>
+</span><span id="__span-0-382"><a id="__codelineno-0-382" name="__codelineno-0-382"></a>        <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">" (</span><span class="si">%s</span><span class="s2">)"</span><span class="p">,</span> <span class="p">(</span><span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">infos</span><span class="p">),))</span>
+</span><span id="__span-0-383"><a id="__codelineno-0-383" name="__codelineno-0-383"></a>
+</span><span id="__span-0-384"><a id="__codelineno-0-384" name="__codelineno-0-384"></a>    <span class="k">return</span> <span class="n">result</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -13300,39 +13542,39 @@ Defaults to <code>PyRevitTestResult</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-377">377</a></span>
-<span class="normal"><a href="#__codelineno-0-378">378</a></span>
-<span class="normal"><a href="#__codelineno-0-379">379</a></span>
-<span class="normal"><a href="#__codelineno-0-380">380</a></span>
-<span class="normal"><a href="#__codelineno-0-381">381</a></span>
-<span class="normal"><a href="#__codelineno-0-382">382</a></span>
-<span class="normal"><a href="#__codelineno-0-383">383</a></span>
-<span class="normal"><a href="#__codelineno-0-384">384</a></span>
-<span class="normal"><a href="#__codelineno-0-385">385</a></span>
-<span class="normal"><a href="#__codelineno-0-386">386</a></span>
-<span class="normal"><a href="#__codelineno-0-387">387</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-387">387</a></span>
 <span class="normal"><a href="#__codelineno-0-388">388</a></span>
 <span class="normal"><a href="#__codelineno-0-389">389</a></span>
 <span class="normal"><a href="#__codelineno-0-390">390</a></span>
 <span class="normal"><a href="#__codelineno-0-391">391</a></span>
 <span class="normal"><a href="#__codelineno-0-392">392</a></span>
-<span class="normal"><a href="#__codelineno-0-393">393</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-377"><a id="__codelineno-0-377" name="__codelineno-0-377"></a><span class="k">def</span><span class="w"> </span><span class="nf">run_module_tests</span><span class="p">(</span><span class="n">test_module</span><span class="p">):</span>
-</span><span id="__span-0-378"><a id="__codelineno-0-378" name="__codelineno-0-378"></a><span class="w">    </span><span class="sd">"""Runs the unit tests of the given module.</span>
-</span><span id="__span-0-379"><a id="__codelineno-0-379" name="__codelineno-0-379"></a>
-</span><span id="__span-0-380"><a id="__codelineno-0-380" name="__codelineno-0-380"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-381"><a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="sd">        test_module (module): module with tests</span>
-</span><span id="__span-0-382"><a id="__codelineno-0-382" name="__codelineno-0-382"></a>
-</span><span id="__span-0-383"><a id="__codelineno-0-383" name="__codelineno-0-383"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-384"><a id="__codelineno-0-384" name="__codelineno-0-384"></a><span class="sd">        (PyRevitTestResult): tests results.</span>
-</span><span id="__span-0-385"><a id="__codelineno-0-385" name="__codelineno-0-385"></a><span class="sd">    """</span>
-</span><span id="__span-0-386"><a id="__codelineno-0-386" name="__codelineno-0-386"></a>    <span class="n">test_runner</span> <span class="o">=</span> <span class="n">PyRevitTestRunner</span><span class="p">(</span><span class="n">suite_name</span><span class="o">=</span><span class="n">test_module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
-</span><span id="__span-0-387"><a id="__codelineno-0-387" name="__codelineno-0-387"></a>    <span class="n">test_loader</span> <span class="o">=</span> <span class="n">TestLoader</span><span class="p">()</span>
-</span><span id="__span-0-388"><a id="__codelineno-0-388" name="__codelineno-0-388"></a>    <span class="c1"># load all testcases from the given module into a testsuite</span>
-</span><span id="__span-0-389"><a id="__codelineno-0-389" name="__codelineno-0-389"></a>    <span class="n">test_suite</span> <span class="o">=</span> <span class="n">test_loader</span><span class="o">.</span><span class="n">loadTestsFromModule</span><span class="p">(</span><span class="n">test_module</span><span class="p">)</span>
-</span><span id="__span-0-390"><a id="__codelineno-0-390" name="__codelineno-0-390"></a>    <span class="c1"># run the test suite</span>
-</span><span id="__span-0-391"><a id="__codelineno-0-391" name="__codelineno-0-391"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Running test suite for module: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">test_module</span><span class="p">)</span>
-</span><span id="__span-0-392"><a id="__codelineno-0-392" name="__codelineno-0-392"></a>    <span class="n">OutputWriter</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">RESULT_TEST_SUITE_START</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suite</span><span class="o">=</span><span class="n">test_module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
-</span><span id="__span-0-393"><a id="__codelineno-0-393" name="__codelineno-0-393"></a>    <span class="k">return</span> <span class="n">test_runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">test_suite</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-393">393</a></span>
+<span class="normal"><a href="#__codelineno-0-394">394</a></span>
+<span class="normal"><a href="#__codelineno-0-395">395</a></span>
+<span class="normal"><a href="#__codelineno-0-396">396</a></span>
+<span class="normal"><a href="#__codelineno-0-397">397</a></span>
+<span class="normal"><a href="#__codelineno-0-398">398</a></span>
+<span class="normal"><a href="#__codelineno-0-399">399</a></span>
+<span class="normal"><a href="#__codelineno-0-400">400</a></span>
+<span class="normal"><a href="#__codelineno-0-401">401</a></span>
+<span class="normal"><a href="#__codelineno-0-402">402</a></span>
+<span class="normal"><a href="#__codelineno-0-403">403</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-387"><a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="k">def</span><span class="w"> </span><span class="nf">run_module_tests</span><span class="p">(</span><span class="n">test_module</span><span class="p">):</span>
+</span><span id="__span-0-388"><a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="w">    </span><span class="sd">"""Runs the unit tests of the given module.</span>
+</span><span id="__span-0-389"><a id="__codelineno-0-389" name="__codelineno-0-389"></a>
+</span><span id="__span-0-390"><a id="__codelineno-0-390" name="__codelineno-0-390"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-391"><a id="__codelineno-0-391" name="__codelineno-0-391"></a><span class="sd">        test_module (module): module with tests</span>
+</span><span id="__span-0-392"><a id="__codelineno-0-392" name="__codelineno-0-392"></a>
+</span><span id="__span-0-393"><a id="__codelineno-0-393" name="__codelineno-0-393"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-394"><a id="__codelineno-0-394" name="__codelineno-0-394"></a><span class="sd">        (PyRevitTestResult): tests results.</span>
+</span><span id="__span-0-395"><a id="__codelineno-0-395" name="__codelineno-0-395"></a><span class="sd">    """</span>
+</span><span id="__span-0-396"><a id="__codelineno-0-396" name="__codelineno-0-396"></a>    <span class="n">test_runner</span> <span class="o">=</span> <span class="n">PyRevitTestRunner</span><span class="p">(</span><span class="n">suite_name</span><span class="o">=</span><span class="n">test_module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+</span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a>    <span class="n">test_loader</span> <span class="o">=</span> <span class="n">TestLoader</span><span class="p">()</span>
+</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a>    <span class="c1"># load all testcases from the given module into a testsuite</span>
+</span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a>    <span class="n">test_suite</span> <span class="o">=</span> <span class="n">test_loader</span><span class="o">.</span><span class="n">loadTestsFromModule</span><span class="p">(</span><span class="n">test_module</span><span class="p">)</span>
+</span><span id="__span-0-400"><a id="__codelineno-0-400" name="__codelineno-0-400"></a>    <span class="c1"># run the test suite</span>
+</span><span id="__span-0-401"><a id="__codelineno-0-401" name="__codelineno-0-401"></a>    <span class="n">mlogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Running test suite for module: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">test_module</span><span class="p">)</span>
+</span><span id="__span-0-402"><a id="__codelineno-0-402" name="__codelineno-0-402"></a>    <span class="n">OutputWriter</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">RESULT_TEST_SUITE_START</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suite</span><span class="o">=</span><span class="n">test_module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+</span><span id="__span-0-403"><a id="__codelineno-0-403" name="__codelineno-0-403"></a>    <span class="k">return</span> <span class="n">test_runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">test_suite</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -13409,33 +13651,151 @@ Defaults to <code>PyRevitTestResult</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-396">396</a></span>
-<span class="normal"><a href="#__codelineno-0-397">397</a></span>
-<span class="normal"><a href="#__codelineno-0-398">398</a></span>
-<span class="normal"><a href="#__codelineno-0-399">399</a></span>
-<span class="normal"><a href="#__codelineno-0-400">400</a></span>
-<span class="normal"><a href="#__codelineno-0-401">401</a></span>
-<span class="normal"><a href="#__codelineno-0-402">402</a></span>
-<span class="normal"><a href="#__codelineno-0-403">403</a></span>
-<span class="normal"><a href="#__codelineno-0-404">404</a></span>
-<span class="normal"><a href="#__codelineno-0-405">405</a></span>
-<span class="normal"><a href="#__codelineno-0-406">406</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-406">406</a></span>
 <span class="normal"><a href="#__codelineno-0-407">407</a></span>
 <span class="normal"><a href="#__codelineno-0-408">408</a></span>
-<span class="normal"><a href="#__codelineno-0-409">409</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-396"><a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="k">def</span><span class="w"> </span><span class="nf">run_test_case</span><span class="p">(</span><span class="n">test_case</span><span class="p">):</span>
-</span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="w">    </span><span class="sd">"""Runs the unit test of the given TestCase class.</span>
-</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a>
-</span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-400"><a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="sd">        test_case (type[TestCase]): TestCase class with tests</span>
-</span><span id="__span-0-401"><a id="__codelineno-0-401" name="__codelineno-0-401"></a>
-</span><span id="__span-0-402"><a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-403"><a id="__codelineno-0-403" name="__codelineno-0-403"></a><span class="sd">        (PyRevitTestResult): tests results.</span>
-</span><span id="__span-0-404"><a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">    """</span>
-</span><span id="__span-0-405"><a id="__codelineno-0-405" name="__codelineno-0-405"></a>    <span class="n">suite_name</span> <span class="o">=</span> <span class="s2">"</span><span class="si">{0}</span><span class="s2">.</span><span class="si">{1}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test_case</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span> <span class="n">test_case</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
-</span><span id="__span-0-406"><a id="__codelineno-0-406" name="__codelineno-0-406"></a>    <span class="n">test_runner</span> <span class="o">=</span> <span class="n">PyRevitTestRunner</span><span class="p">(</span><span class="n">suite_name</span><span class="o">=</span><span class="n">suite_name</span><span class="p">)</span>
-</span><span id="__span-0-407"><a id="__codelineno-0-407" name="__codelineno-0-407"></a>    <span class="n">suite</span> <span class="o">=</span> <span class="n">TestLoader</span><span class="p">()</span><span class="o">.</span><span class="n">loadTestsFromTestCase</span><span class="p">(</span><span class="n">test_case</span><span class="p">)</span>
-</span><span id="__span-0-408"><a id="__codelineno-0-408" name="__codelineno-0-408"></a>    <span class="n">OutputWriter</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">RESULT_TEST_SUITE_START</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suite</span><span class="o">=</span><span class="n">suite</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
-</span><span id="__span-0-409"><a id="__codelineno-0-409" name="__codelineno-0-409"></a>    <span class="k">return</span> <span class="n">test_runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">suite</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-409">409</a></span>
+<span class="normal"><a href="#__codelineno-0-410">410</a></span>
+<span class="normal"><a href="#__codelineno-0-411">411</a></span>
+<span class="normal"><a href="#__codelineno-0-412">412</a></span>
+<span class="normal"><a href="#__codelineno-0-413">413</a></span>
+<span class="normal"><a href="#__codelineno-0-414">414</a></span>
+<span class="normal"><a href="#__codelineno-0-415">415</a></span>
+<span class="normal"><a href="#__codelineno-0-416">416</a></span>
+<span class="normal"><a href="#__codelineno-0-417">417</a></span>
+<span class="normal"><a href="#__codelineno-0-418">418</a></span>
+<span class="normal"><a href="#__codelineno-0-419">419</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-406"><a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="k">def</span><span class="w"> </span><span class="nf">run_test_case</span><span class="p">(</span><span class="n">test_case</span><span class="p">):</span>
+</span><span id="__span-0-407"><a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="w">    </span><span class="sd">"""Runs the unit test of the given TestCase class.</span>
+</span><span id="__span-0-408"><a id="__codelineno-0-408" name="__codelineno-0-408"></a>
+</span><span id="__span-0-409"><a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-410"><a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">        test_case (type[TestCase]): TestCase class with tests</span>
+</span><span id="__span-0-411"><a id="__codelineno-0-411" name="__codelineno-0-411"></a>
+</span><span id="__span-0-412"><a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-413"><a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">        (PyRevitTestResult): tests results.</span>
+</span><span id="__span-0-414"><a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">    """</span>
+</span><span id="__span-0-415"><a id="__codelineno-0-415" name="__codelineno-0-415"></a>    <span class="n">suite_name</span> <span class="o">=</span> <span class="s2">"</span><span class="si">{0}</span><span class="s2">.</span><span class="si">{1}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test_case</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span> <span class="n">test_case</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+</span><span id="__span-0-416"><a id="__codelineno-0-416" name="__codelineno-0-416"></a>    <span class="n">test_runner</span> <span class="o">=</span> <span class="n">PyRevitTestRunner</span><span class="p">(</span><span class="n">suite_name</span><span class="o">=</span><span class="n">suite_name</span><span class="p">)</span>
+</span><span id="__span-0-417"><a id="__codelineno-0-417" name="__codelineno-0-417"></a>    <span class="n">suite</span> <span class="o">=</span> <span class="n">TestLoader</span><span class="p">()</span><span class="o">.</span><span class="n">loadTestsFromTestCase</span><span class="p">(</span><span class="n">test_case</span><span class="p">)</span>
+</span><span id="__span-0-418"><a id="__codelineno-0-418" name="__codelineno-0-418"></a>    <span class="n">OutputWriter</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">RESULT_TEST_SUITE_START</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">suite</span><span class="o">=</span><span class="n">suite</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+</span><span id="__span-0-419"><a id="__codelineno-0-419" name="__codelineno-0-419"></a>    <span class="k">return</span> <span class="n">test_runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">suite</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="pyrevit.unittests.runner.was_successful" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">was_successful</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Whether a run passed, counting unexpected successes as failures.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>result</code>
+            </td>
+            <td>
+                  <code><span title="unittest.TestResult">TestResult</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>tests results.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True when nothing failed, errored or unexpectedly passed.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Note</summary>
+  <p>IronPython 2.7's <code>TestResult.wasSuccessful</code> ignores
+<code>unexpectedSuccesses</code> (<code>unittest/result.py</code> returns
+<code>len(self.failures) == len(self.errors) == 0</code>), so on the default engine
+relying on that result alone would let an <code>@expectedFailure</code> that
+starts passing look green. CPython does count them.</p>
+</details>
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-422">422</a></span>
+<span class="normal"><a href="#__codelineno-0-423">423</a></span>
+<span class="normal"><a href="#__codelineno-0-424">424</a></span>
+<span class="normal"><a href="#__codelineno-0-425">425</a></span>
+<span class="normal"><a href="#__codelineno-0-426">426</a></span>
+<span class="normal"><a href="#__codelineno-0-427">427</a></span>
+<span class="normal"><a href="#__codelineno-0-428">428</a></span>
+<span class="normal"><a href="#__codelineno-0-429">429</a></span>
+<span class="normal"><a href="#__codelineno-0-430">430</a></span>
+<span class="normal"><a href="#__codelineno-0-431">431</a></span>
+<span class="normal"><a href="#__codelineno-0-432">432</a></span>
+<span class="normal"><a href="#__codelineno-0-433">433</a></span>
+<span class="normal"><a href="#__codelineno-0-434">434</a></span>
+<span class="normal"><a href="#__codelineno-0-435">435</a></span>
+<span class="normal"><a href="#__codelineno-0-436">436</a></span>
+<span class="normal"><a href="#__codelineno-0-437">437</a></span>
+<span class="normal"><a href="#__codelineno-0-438">438</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-422"><a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="k">def</span><span class="w"> </span><span class="nf">was_successful</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+</span><span id="__span-0-423"><a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="w">    </span><span class="sd">"""Whether a run passed, counting unexpected successes as failures.</span>
+</span><span id="__span-0-424"><a id="__codelineno-0-424" name="__codelineno-0-424"></a>
+</span><span id="__span-0-425"><a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-426"><a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="sd">        result (TestResult): tests results.</span>
+</span><span id="__span-0-427"><a id="__codelineno-0-427" name="__codelineno-0-427"></a>
+</span><span id="__span-0-428"><a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-429"><a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">        (bool): True when nothing failed, errored or unexpectedly passed.</span>
+</span><span id="__span-0-430"><a id="__codelineno-0-430" name="__codelineno-0-430"></a>
+</span><span id="__span-0-431"><a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">    Note:</span>
+</span><span id="__span-0-432"><a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">        IronPython 2.7's `TestResult.wasSuccessful` ignores</span>
+</span><span id="__span-0-433"><a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">        `unexpectedSuccesses` (`unittest/result.py` returns</span>
+</span><span id="__span-0-434"><a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">        `len(self.failures) == len(self.errors) == 0`), so on the default engine</span>
+</span><span id="__span-0-435"><a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="sd">        relying on that result alone would let an `@expectedFailure` that</span>
+</span><span id="__span-0-436"><a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">        starts passing look green. CPython does count them.</span>
+</span><span id="__span-0-437"><a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">    """</span>
+</span><span id="__span-0-438"><a id="__codelineno-0-438" name="__codelineno-0-438"></a>    <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">wasSuccessful</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">unexpectedSuccesses</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -13530,7 +13890,7 @@ look like a green button, so command scripts must go through this instead.</p>
                 <p>if the module has failures, errors, or unexpected
 successes. The traceback of each offending test is already in the
 output window, so the message only needs to name the module and the
-counts.</p>
+counts. Success is judged by <code>was_successful</code>.</p>
               </div>
             </td>
           </tr>
@@ -13538,47 +13898,9 @@ counts.</p>
     </table>
 
 
-<details class="note" open>
-  <summary>Note</summary>
-  <p>IronPython 2.7's <code>TestResult.wasSuccessful</code> ignores
-<code>unexpectedSuccesses</code> (<code>unittest/result.py</code> returns
-<code>len(self.failures) == len(self.errors) == 0</code>), so on the default engine
-an <code>@expectedFailure</code> that starts passing does not fail the command.
-CPython does count them, which is why the third count is listed.</p>
-</details>
-
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyrevitlib/pyrevit/unittests/runner.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-412">412</a></span>
-<span class="normal"><a href="#__codelineno-0-413">413</a></span>
-<span class="normal"><a href="#__codelineno-0-414">414</a></span>
-<span class="normal"><a href="#__codelineno-0-415">415</a></span>
-<span class="normal"><a href="#__codelineno-0-416">416</a></span>
-<span class="normal"><a href="#__codelineno-0-417">417</a></span>
-<span class="normal"><a href="#__codelineno-0-418">418</a></span>
-<span class="normal"><a href="#__codelineno-0-419">419</a></span>
-<span class="normal"><a href="#__codelineno-0-420">420</a></span>
-<span class="normal"><a href="#__codelineno-0-421">421</a></span>
-<span class="normal"><a href="#__codelineno-0-422">422</a></span>
-<span class="normal"><a href="#__codelineno-0-423">423</a></span>
-<span class="normal"><a href="#__codelineno-0-424">424</a></span>
-<span class="normal"><a href="#__codelineno-0-425">425</a></span>
-<span class="normal"><a href="#__codelineno-0-426">426</a></span>
-<span class="normal"><a href="#__codelineno-0-427">427</a></span>
-<span class="normal"><a href="#__codelineno-0-428">428</a></span>
-<span class="normal"><a href="#__codelineno-0-429">429</a></span>
-<span class="normal"><a href="#__codelineno-0-430">430</a></span>
-<span class="normal"><a href="#__codelineno-0-431">431</a></span>
-<span class="normal"><a href="#__codelineno-0-432">432</a></span>
-<span class="normal"><a href="#__codelineno-0-433">433</a></span>
-<span class="normal"><a href="#__codelineno-0-434">434</a></span>
-<span class="normal"><a href="#__codelineno-0-435">435</a></span>
-<span class="normal"><a href="#__codelineno-0-436">436</a></span>
-<span class="normal"><a href="#__codelineno-0-437">437</a></span>
-<span class="normal"><a href="#__codelineno-0-438">438</a></span>
-<span class="normal"><a href="#__codelineno-0-439">439</a></span>
-<span class="normal"><a href="#__codelineno-0-440">440</a></span>
-<span class="normal"><a href="#__codelineno-0-441">441</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-441">441</a></span>
 <span class="normal"><a href="#__codelineno-0-442">442</a></span>
 <span class="normal"><a href="#__codelineno-0-443">443</a></span>
 <span class="normal"><a href="#__codelineno-0-444">444</a></span>
@@ -13589,47 +13911,62 @@ CPython does count them, which is why the third count is listed.</p>
 <span class="normal"><a href="#__codelineno-0-449">449</a></span>
 <span class="normal"><a href="#__codelineno-0-450">450</a></span>
 <span class="normal"><a href="#__codelineno-0-451">451</a></span>
-<span class="normal"><a href="#__codelineno-0-452">452</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-412"><a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="k">def</span><span class="w"> </span><span class="nf">assert_module_tests_successful</span><span class="p">(</span><span class="n">test_module</span><span class="p">):</span>
-</span><span id="__span-0-413"><a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="w">    </span><span class="sd">"""Runs a module's unit tests and fails the command if any of them failed.</span>
-</span><span id="__span-0-414"><a id="__codelineno-0-414" name="__codelineno-0-414"></a>
-</span><span id="__span-0-415"><a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">    `run_module_tests` only reports; discarding its result makes a red suite</span>
-</span><span id="__span-0-416"><a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">    look like a green button, so command scripts must go through this instead.</span>
-</span><span id="__span-0-417"><a id="__codelineno-0-417" name="__codelineno-0-417"></a>
-</span><span id="__span-0-418"><a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-419"><a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">        test_module (module): module with tests</span>
-</span><span id="__span-0-420"><a id="__codelineno-0-420" name="__codelineno-0-420"></a>
-</span><span id="__span-0-421"><a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-422"><a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">        (PyRevitTestResult): tests results.</span>
-</span><span id="__span-0-423"><a id="__codelineno-0-423" name="__codelineno-0-423"></a>
-</span><span id="__span-0-424"><a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-425"><a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">        AssertionError: if the module has failures, errors, or unexpected</span>
-</span><span id="__span-0-426"><a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="sd">            successes. The traceback of each offending test is already in the</span>
-</span><span id="__span-0-427"><a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">            output window, so the message only needs to name the module and the</span>
-</span><span id="__span-0-428"><a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">            counts.</span>
-</span><span id="__span-0-429"><a id="__codelineno-0-429" name="__codelineno-0-429"></a>
-</span><span id="__span-0-430"><a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">    Note:</span>
-</span><span id="__span-0-431"><a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">        IronPython 2.7's `TestResult.wasSuccessful` ignores</span>
-</span><span id="__span-0-432"><a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">        `unexpectedSuccesses` (`unittest/result.py` returns</span>
-</span><span id="__span-0-433"><a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">        `len(self.failures) == len(self.errors) == 0`), so on the default engine</span>
-</span><span id="__span-0-434"><a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">        an `@expectedFailure` that starts passing does not fail the command.</span>
-</span><span id="__span-0-435"><a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="sd">        CPython does count them, which is why the third count is listed.</span>
-</span><span id="__span-0-436"><a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">    """</span>
-</span><span id="__span-0-437"><a id="__codelineno-0-437" name="__codelineno-0-437"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">run_module_tests</span><span class="p">(</span><span class="n">test_module</span><span class="p">)</span>
-</span><span id="__span-0-438"><a id="__codelineno-0-438" name="__codelineno-0-438"></a>    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">wasSuccessful</span><span class="p">():</span>
-</span><span id="__span-0-439"><a id="__codelineno-0-439" name="__codelineno-0-439"></a>        <span class="k">return</span> <span class="n">result</span>
-</span><span id="__span-0-440"><a id="__codelineno-0-440" name="__codelineno-0-440"></a>
-</span><span id="__span-0-441"><a id="__codelineno-0-441" name="__codelineno-0-441"></a>    <span class="n">counts</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="__span-0-442"><a id="__codelineno-0-442" name="__codelineno-0-442"></a>        <span class="s2">"</span><span class="si">{}</span><span class="s2">=</span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">issues</span><span class="p">))</span>
-</span><span id="__span-0-443"><a id="__codelineno-0-443" name="__codelineno-0-443"></a>        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">issues</span> <span class="ow">in</span> <span class="p">(</span>
-</span><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a>            <span class="p">(</span><span class="s2">"failures"</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">failures</span><span class="p">),</span>
-</span><span id="__span-0-445"><a id="__codelineno-0-445" name="__codelineno-0-445"></a>            <span class="p">(</span><span class="s2">"errors"</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">),</span>
-</span><span id="__span-0-446"><a id="__codelineno-0-446" name="__codelineno-0-446"></a>            <span class="p">(</span><span class="s2">"unexpected successes"</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">unexpectedSuccesses</span><span class="p">),</span>
-</span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a>        <span class="p">)</span>
-</span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a>        <span class="k">if</span> <span class="n">issues</span>
-</span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a>    <span class="p">]</span>
-</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a>    <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
-</span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a>        <span class="s2">"Unit test failures in </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test_module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">counts</span><span class="p">))</span>
-</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a>    <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-452">452</a></span>
+<span class="normal"><a href="#__codelineno-0-453">453</a></span>
+<span class="normal"><a href="#__codelineno-0-454">454</a></span>
+<span class="normal"><a href="#__codelineno-0-455">455</a></span>
+<span class="normal"><a href="#__codelineno-0-456">456</a></span>
+<span class="normal"><a href="#__codelineno-0-457">457</a></span>
+<span class="normal"><a href="#__codelineno-0-458">458</a></span>
+<span class="normal"><a href="#__codelineno-0-459">459</a></span>
+<span class="normal"><a href="#__codelineno-0-460">460</a></span>
+<span class="normal"><a href="#__codelineno-0-461">461</a></span>
+<span class="normal"><a href="#__codelineno-0-462">462</a></span>
+<span class="normal"><a href="#__codelineno-0-463">463</a></span>
+<span class="normal"><a href="#__codelineno-0-464">464</a></span>
+<span class="normal"><a href="#__codelineno-0-465">465</a></span>
+<span class="normal"><a href="#__codelineno-0-466">466</a></span>
+<span class="normal"><a href="#__codelineno-0-467">467</a></span>
+<span class="normal"><a href="#__codelineno-0-468">468</a></span>
+<span class="normal"><a href="#__codelineno-0-469">469</a></span>
+<span class="normal"><a href="#__codelineno-0-470">470</a></span>
+<span class="normal"><a href="#__codelineno-0-471">471</a></span>
+<span class="normal"><a href="#__codelineno-0-472">472</a></span>
+<span class="normal"><a href="#__codelineno-0-473">473</a></span>
+<span class="normal"><a href="#__codelineno-0-474">474</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-441"><a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="k">def</span><span class="w"> </span><span class="nf">assert_module_tests_successful</span><span class="p">(</span><span class="n">test_module</span><span class="p">):</span>
+</span><span id="__span-0-442"><a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="w">    </span><span class="sd">"""Runs a module's unit tests and fails the command if any of them failed.</span>
+</span><span id="__span-0-443"><a id="__codelineno-0-443" name="__codelineno-0-443"></a>
+</span><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">    `run_module_tests` only reports; discarding its result makes a red suite</span>
+</span><span id="__span-0-445"><a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">    look like a green button, so command scripts must go through this instead.</span>
+</span><span id="__span-0-446"><a id="__codelineno-0-446" name="__codelineno-0-446"></a>
+</span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">        test_module (module): module with tests</span>
+</span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a>
+</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="sd">        (PyRevitTestResult): tests results.</span>
+</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a>
+</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">    Raises:</span>
+</span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a><span class="sd">        AssertionError: if the module has failures, errors, or unexpected</span>
+</span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a><span class="sd">            successes. The traceback of each offending test is already in the</span>
+</span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a><span class="sd">            output window, so the message only needs to name the module and the</span>
+</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a><span class="sd">            counts. Success is judged by `was_successful`.</span>
+</span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="sd">    """</span>
+</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">run_module_tests</span><span class="p">(</span><span class="n">test_module</span><span class="p">)</span>
+</span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a>    <span class="k">if</span> <span class="n">was_successful</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+</span><span id="__span-0-461"><a id="__codelineno-0-461" name="__codelineno-0-461"></a>        <span class="k">return</span> <span class="n">result</span>
+</span><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a>
+</span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a>    <span class="n">counts</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="s2">"</span><span class="si">{}</span><span class="s2">=</span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">issues</span><span class="p">))</span>
+</span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">issues</span> <span class="ow">in</span> <span class="p">(</span>
+</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a>            <span class="p">(</span><span class="s2">"failures"</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">failures</span><span class="p">),</span>
+</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a>            <span class="p">(</span><span class="s2">"errors"</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">),</span>
+</span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a>            <span class="p">(</span><span class="s2">"unexpected successes"</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">unexpectedSuccesses</span><span class="p">),</span>
+</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a>        <span class="p">)</span>
+</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a>        <span class="k">if</span> <span class="n">issues</span>
+</span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a>    <span class="p">]</span>
+</span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a>    <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+</span><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a>        <span class="s2">"Unit test failures in </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test_module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">counts</span><span class="p">))</span>
+</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

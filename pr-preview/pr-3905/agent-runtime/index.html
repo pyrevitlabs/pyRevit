@@ -822,6 +822,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../tools/tab-coloring/" class="md-nav__link">
         
   
@@ -11733,7 +11761,7 @@ items and add <code>total</code> and <code>truncated</code>.</p>
 <p>The CLI validates the inputs, then sends a fixed script that calls
 <code>pyrevit.agent._operations.invoke</code>; the operation's module and function travel in the run's
 inputs, never in the script. <code>invoke</code> checks the live marker and the inputs again inside
-Revit. <code>dev/scripts/test_standalone_automation_marker.py</code> fails when declared inputs don't match the
+Revit. <code>dev/tests/python/library/test_automation_marker.py</code> fails when declared inputs don't match the
 function they mark.</p>
 <div class="admonition tip">
 <p class="admonition-title">Long approvals</p>
@@ -11741,6 +11769,15 @@ function they mark.</p>
 sends progress notifications every 10 seconds while it waits. If your client still
 times out, raise its MCP tool timeout (Claude Code: the <code>MCP_TOOL_TIMEOUT</code>
 environment variable, in milliseconds).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">While the prompt is open</p>
+<p>Revit's taskbar button flashes (<code>FlashWindowEx</code>) until the prompt closes, and it can
+also stop earlier when Revit comes to the front. The prompt holds Revit's main thread, so other
+ExternalEvent add-ins such as Routes wait until it is answered, and other agent requests wait
+or get <code>revit_busy</code>. For unattended automation, set <code>policy = auto</code> before starting Revit.
+Switching from <code>ask</code> to <code>auto</code> during a session makes the next modify run ask you to
+confirm the change, so answer that before leaving Revit unattended.</p>
 </div>
 <h3 id="skills">Skills</h3>
 <p>The guidance agents read lives in markdown, not in the CLI, so it can change without a
@@ -12036,7 +12073,7 @@ reports <code>attached</code>, and <code>clone</code> and the IronPython <code>p
 doesn't know them, instead of <code>Unknown</code> or <code>0</code>.</p>
 <p><code>pyrevitlib/</code> loads live from the clone's working tree, but the runtime DLLs only change on a rebuild.
 <code>get_context.pyrevit.bin_commit</code> is the commit the binaries were built from. When it differs from
-<code>commit</code>, <code>bin_stale: true</code> and a <code>bin_hint</code> ask for a rebuild (<code>dotnet run -c Release -- local</code>), and
+<code>commit</code>, <code>bin_stale: true</code> and a <code>bin_hint</code> ask for a rebuild (<code>dotnet run -c Release -- ci</code>), and
 <code>pyrevit agent status</code> shows the same fields. Nothing is flagged when the clone's commit is unknown.
 The instance record is written when the session starts, so <code>pyrevit agent status</code> asks the live host
 for <code>commit</code>, <code>bin_commit</code> and <code>bin_stale</code> when it pings it, and a checkout with Revit open shows up at
@@ -12202,11 +12239,12 @@ even while the session that made it is still open.</p>
 <p>An agent only sees a bug through what the user says afterwards. The session recorder records what happens in Revit between two
 explicit user actions, so the agent can read the sequence that led to a bug.</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>record<span class="w"> </span>start<span class="w"> </span><span class="o">[</span>--no-screenshots<span class="o">]</span><span class="w"> </span><span class="o">[</span>--screenshot-interval<span class="o">=</span><span class="m">5</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--max-screenshots<span class="o">=</span><span class="m">20</span><span class="o">]</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">                           </span><span class="o">[</span>--max-events<span class="o">=</span><span class="m">5000</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--max-duration<span class="o">=</span><span class="m">1800</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--revit<span class="o">=</span>&lt;year&gt;<span class="o">]</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">                           </span><span class="o">[</span>--max-events<span class="o">=</span><span class="m">5000</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--max-duration<span class="o">=</span><span class="m">1800</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--revit<span class="o">=</span>&lt;year<span class="p">|</span>pid<span class="p">|</span>clone&gt;<span class="o">]</span>
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>record<span class="w"> </span>stop
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>record<span class="w"> </span>status
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>recordings<span class="w"> </span><span class="o">[</span>--limit<span class="o">=</span>&lt;count&gt;<span class="o">]</span>
 </span></code></pre></div>
+<p>The options take numbers in these ranges: <code>--screenshot-interval</code> 0 to 3600 seconds (<code>0</code> allows a screenshot at every opportunity until <code>--max-screenshots</code> is reached), <code>--max-screenshots</code> 0 to 100 (<code>0</code> takes none), <code>--max-events</code> 1 to 20000 and <code>--max-duration</code> 1 to 14400 seconds. All but the interval must be whole numbers. A value that is not a number or is outside its range is refused with the option's name.</p>
 <p>The user starts a recording, reproduces the problem and stops it. Then the agent calls
 <code>get_recording</code> (with <code>recording_id</code>, <code>offset</code> and <code>limit</code> to page the timeline). There is no
 always-on mode: nothing is captured outside a recording, and every hook is a no-op then. It needs
@@ -12301,7 +12339,7 @@ per-year <code>pyRevit.addin</code> that the next plain Revit start loads. The s
 wrong:</p>
 <ol>
 <li><strong>Rebuild only for C# changes.</strong> C# files under <code>dev/</code> and the build pipeline under <code>build/</code>
-   need a rebuild. Python under <code>pyrevitlib</code> or <code>dev/scripts</code> and the skill markdown don't.</li>
+   need a rebuild. Python under <code>pyrevitlib</code> or <code>dev/tests</code> and the skill markdown don't.</li>
 <li>
 <p><strong>Close Revit, stop the MCP servers, then rebuild.</strong> Revit loads pyRevit from the clone's <code>bin\</code>
    and keeps its DLLs open, and each client session runs <code>bin\pyrevit.exe mcp</code> from there too.

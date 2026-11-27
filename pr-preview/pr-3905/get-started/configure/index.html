@@ -769,6 +769,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#agent-runtime-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Runtime (MCP)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#telemetry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -806,17 +817,6 @@
     <span class="md-ellipsis">
       
         Custom Extension Directories
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-runtime-mcp" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Runtime (MCP)
       
     </span>
   </a>
@@ -1025,6 +1025,34 @@
     
   
     Print Sheets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
   
 
     
@@ -10879,6 +10907,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#agent-runtime-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Runtime (MCP)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#telemetry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10916,17 +10955,6 @@
     <span class="md-ellipsis">
       
         Custom Extension Directories
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-runtime-mcp" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Runtime (MCP)
       
     </span>
   </a>
@@ -11004,46 +11032,49 @@
 <h1 id="configure-pyrevit">Configure pyRevit</h1>
 <p>pyRevit ships with a decent set of configuration defaults. To change them, open <strong>Settings</strong> in the <strong>pyRevit</strong> panel of the <strong>pyRevit</strong> tab. Shift-click the button to show the configuration file in Explorer instead.</p>
 <p>The window is a list of sections, described below. <strong>Just Save Settings</strong> saves without reloading, <strong>Save Settings and Reload</strong> saves and reloads pyRevit. Some options need a reload or a Revit restart, and the window says so next to them.</p>
-<div class="admonition note">
-<p class="admonition-title">Screenshots</p>
-<p>The screenshots on this page come from an older version of the window. The options they show are unchanged, the styling is not.</p>
-</div>
 <p>When an administrator has locked the configuration, the window shows <em>pyRevit settings are set by your admin</em> and the settings cannot be changed. See <a href="../../teams/configuration-file/">Configuration file</a>.</p>
 <h2 id="core-settings">Core Settings</h2>
 <h3 id="general">General</h3>
 <p><strong>Rocket Mode</strong> lets pyRevit keep one engine per extension that supports it, which makes tools start faster.</p>
-<p><img alt="" src="../../assets/get-started/configure/2019-08-30-12-02-07-pyrevit-settings.png" /></p>
 <p><strong>Check updates at startup</strong> checks every installed extension for updates when Revit starts.</p>
-<p><img alt="" src="../../assets/get-started/configure/2019-08-30-12-02-23-pyrevit-settings.png" /></p>
-<p><strong>Close other open consoles</strong> closes the output windows that are already open when a new script runs, either those of the same command or all of them.</p>
+<p><img alt="General settings: Rocket Mode and Check updates at startup" src="../../assets/get-started/configure/settings-general.png" /></p>
 <h3 id="engines">Engines</h3>
 <p><strong>Active Engine</strong> is the IronPython engine pyRevit is attached with, and <strong>Active CPython Engine</strong> is the engine used by scripts that ask for CPython. Restart Revit after changing either one. <a href="../../runtime/engines/">Engines</a> lists the engines shipped with pyRevit.</p>
+<p><img alt="Engines settings" src="../../assets/get-started/configure/settings-engines.png" /></p>
 <h3 id="development">Development</h3>
 <p><strong>Load Beta Tools</strong> loads the tools marked as beta.</p>
-<p><img alt="" src="../../assets/get-started/configure/2019-08-30-12-02-50-pyrevit-settings.png" /></p>
+<p><strong>Close other open consoles</strong> closes the output windows that are already open when a new script runs, either those of the same command or all of them.</p>
+<p><img alt="Development settings: Load Beta Tools and Close other open consoles" src="../../assets/get-started/configure/settings-development.png" /></p>
 <h3 id="loader">Loader</h3>
 <p><strong>Read script metadata</strong> makes pyRevit read <code>__title__</code>, <code>__author__</code>, <code>__doc__</code> and the other in-script variables from Python scripts. Turning it off speeds up loading, but commands lose the metadata defined in their scripts. Values from <code>bundle.yaml</code> are used either way.</p>
+<p><img alt="Loader settings" src="../../assets/get-started/configure/settings-loader.png" /></p>
 <h3 id="caching">Caching</h3>
 <p>Select the type of extension cache pyRevit creates on startup.</p>
-<p><img alt="" src="../../assets/get-started/configure/2019-08-30-12-02-59-pyrevit-settings.png" /></p>
+<p><img alt="Caching settings" src="../../assets/get-started/configure/settings-caching.png" /></p>
 <h2 id="environment-variables">Environment Variables</h2>
 <p>Lists the pyRevit environment variables of the current session and their values. Right-click a variable to copy its name or its value.</p>
+<p><img alt="Environment Variables section" src="../../assets/get-started/configure/settings-environment-variables.png" /></p>
 <h2 id="reporting-levels">Reporting Levels</h2>
 <p>pyRevit has a logging system that reports its activity on several levels. Select how much pyRevit shows, especially at load time, and after how many seconds the startup window closes when there is no error.</p>
-<p><img alt="" src="../../assets/get-started/configure/2019-08-30-12-04-19-pyrevit-settings.png" /></p>
 <p><strong>File debug logging</strong> writes all the runtime logs to a file. This slows pyRevit down, so only activate it to debug a problem. See <a href="../../help/reporting-issues/">Reporting issues</a>.</p>
-<p><img alt="" src="../../assets/get-started/configure/2019-08-30-12-04-47-pyrevit-settings.png" /></p>
+<p><img alt="Reporting Levels section" src="../../assets/get-started/configure/settings-reporting-levels.png" /></p>
 <h2 id="startup-checks">Startup Checks</h2>
 <p>Set a required Revit build number and a minimum free space on the host drive. pyRevit shows a warning at startup when the running Revit does not match.</p>
-<p><img alt="" src="../../assets/get-started/configure/2019-08-30-12-05-00-pyrevit-settings.png" /></p>
-<p>Example of a warning message in the output window:</p>
-<p><img alt="" src="../../assets/get-started/configure/2019-08-30-12-15-49-reload.png" /></p>
+<p><img alt="Startup Checks section" src="../../assets/get-started/configure/settings-startup-checks.png" /></p>
+<p>Example of the warning in the output window:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>WARNING: [pyrevit.loader.systemdiag] You are not using the required host build: 20190508_0315
+</span></code></pre></div>
 <h2 id="routes">Routes</h2>
 <p>Turns the Routes server on and off, and its built-in REST API. See <a href="../../teams/routes/">Routes (HTTP API)</a>.</p>
+<p><img alt="Routes section" src="../../assets/get-started/configure/settings-routes.png" /></p>
+<h2 id="agent-runtime-mcp">Agent Runtime (MCP)</h2>
+<p>Lets MCP coding agents read and change the open model through pyRevit. It is off by default. See <a href="../../agent-runtime/">Agent runtime</a>.</p>
+<p><img alt="Agent Runtime section" src="../../assets/get-started/configure/settings-agent-runtime.png" /></p>
 <h2 id="telemetry">Telemetry</h2>
 <p>Sets where pyRevit sends script and application telemetry. Both are off by default. See <a href="../../teams/telemetry/">Telemetry</a>.</p>
 <h2 id="supported-revit-versions">Supported Revit Versions</h2>
 <p>Select the installed Revit versions pyRevit is attached to. pyRevit loads in the versions that are checked.</p>
+<p><img alt="Supported Revit Versions section" src="../../assets/get-started/configure/settings-supported-revit-versions.png" /></p>
 <h2 id="ui-ux">UI / UX</h2>
 <ul>
 <li><strong>Region Settings</strong>: the language of the pyRevit user interface. pyRevit is not yet translated to all the listed languages, see <a href="../../contribute/translate/">Translate pyRevit</a>.</li>
@@ -11051,11 +11082,10 @@
 <li><strong>Tab Coloring</strong>: colors the Revit document tabs by document. See <a href="../../tools/tab-coloring/">Tab Coloring</a>.</li>
 <li><strong>Output Window</strong>: a CSS file to style the output window. Use the default as a starting point.</li>
 </ul>
+<p><img alt="UI / UX section: Region Settings and Ribbon" src="../../assets/get-started/configure/settings-ui-ux.png" /></p>
 <h2 id="custom-extension-directories">Custom Extension Directories</h2>
 <p>Manage the extra folders pyRevit searches for extensions. See <a href="../install-extensions/">Install extensions</a>.</p>
-<p><img alt="" src="../../assets/get-started/configure/2019-08-30-12-08-18-pyrevit-settings.png" /></p>
-<h2 id="agent-runtime-mcp">Agent Runtime (MCP)</h2>
-<p>Lets MCP coding agents read and change the open model through pyRevit. It is off by default. See <a href="../../agent-runtime/">Agent runtime</a>.</p>
+<p><img alt="Custom Extension Directories section" src="../../assets/get-started/configure/settings-custom-extension-directories.png" /></p>
 
 
 
