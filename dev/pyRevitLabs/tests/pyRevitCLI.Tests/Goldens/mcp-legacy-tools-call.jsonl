@@ -1,0 +1,3 @@
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"{}"}],"isError":false}}
+{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"{\"error\":\"unknown_tool\",\"message\":\"Unknown tool: no_such_tool\"}"}],"isError":true}}
+{"jsonrpc":"2.0","id":3,"error":{"code":-32602,"message":"Invalid params: missing or invalid 'name'; expected a non-empty string."}}

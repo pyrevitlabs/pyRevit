@@ -18,18 +18,27 @@ namespace pyRevitCLI {
     /// Invariant: a file is read once; its digest, size and served text all come from the same bytes, and the
     /// text is decoded without altering a BOM or line endings. A URI resolves only by exact lookup in the
     /// manifest built here, so no path outside a skill's own markdown files can be requested.
-    /// A skill is skipped, not served partly, when its directory name differs from its <c>name</c> front matter,
-    /// when it is over the file limits or when a file is not valid UTF-8.
-    /// Construction reads the folder; the server builds one per request, so answers are never stale.
+    /// Invariant: <c>frontmatter</c> must equal the <c>SKILL.md</c> front matter, so only flat <c>key: value</c>
+    /// scalar lines are accepted (no indentation, lists, comments, block or flow values); <c>name</c> and
+    /// <c>description</c> must be present under exactly those keys.
+    /// A skill is skipped whole, never served partly, with one line on standard error (standard output carries
+    /// the protocol), when its directory name differs from its <c>name</c>, its front matter is not flat or lacks
+    /// a description, it breaks a file limit, a file is not valid UTF-8, or its folder holds anything that is not a
+    /// listed markdown file (the manifest must be complete).
+    /// Construction reads the folder and the server builds one per request, so an answer is fresh when it is
+    /// made; clients may still cache it for the <c>ttlMs</c> it carries.
     /// </remarks>
     internal sealed class SkillsExtension {
         private const string MarkdownMimeType = "text/markdown";
+        private const char ByteOrderMark = '﻿';
         private static readonly Encoding StrictUtf8 = new UTF8Encoding(false, true);
+
+        private sealed record ServedFile(string Uri, string Name, string Description, byte[] Bytes, string Text);
 
         private readonly List<JObject> skills = new List<JObject>();
         private readonly Dictionary<string, JObject> skillsByUri = new Dictionary<string, JObject>(StringComparer.Ordinal);
-        private readonly List<(string Uri, string Name, long Size)> files = new List<(string, string, long)>();
-        private readonly Dictionary<string, string> textsByUri = new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly List<ServedFile> files = new List<ServedFile>();
+        private readonly Dictionary<string, ServedFile> filesByUri = new Dictionary<string, ServedFile>(StringComparer.Ordinal);
 
         /// <param name="shippedRoot">The shipped skills folder; null or missing serves nothing.</param>
         public SkillsExtension(string shippedRoot) {
@@ -43,58 +52,138 @@ namespace pyRevitCLI {
                 return;
             }
             foreach (var directory in directories.OrderBy(path => path, StringComparer.Ordinal)) {
+                var name = Path.GetFileName(directory);
                 try {
-                    Add(directory);
+                    var problem = Add(directory, name);
+                    if (problem != null)
+                        Skip(name, problem);
                 }
                 catch (Exception ex) when (SkillFiles.IsRecoverable(ex) || ex is DecoderFallbackException) {
+                    Skip(name, ex.Message);
                 }
             }
         }
 
-        private void Add(string directory) {
-            var name = Path.GetFileName(directory);
-            if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0 || !File.Exists(Path.Combine(directory, SkillFiles.SkillFile)))
-                return;
+        private static void Skip(string name, string reason) {
+            Console.Error.WriteLine($"pyrevit mcp: skill '{SkillFiles.Printable(name)}' is not served: {SkillFiles.Printable(reason)}");
+        }
+
+        private string Add(string directory, string name) {
+            if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
+                return "its folder is a link";
+            if (!File.Exists(Path.Combine(directory, SkillFiles.SkillFile)))
+                return null;
 
             var shipped = SkillFiles.LoadShipped(directory, name);
-            var loaded = new List<(string Uri, string Relative, byte[] Bytes, string Text)>();
-            foreach (var (relative, path) in shipped.Files) {
+            var listed = new HashSet<string>(shipped.Files.Select(file => file.Path), StringComparer.OrdinalIgnoreCase);
+            var unlisted = UnlistedEntry(directory, directory, listed);
+            if (unlisted != null)
+                return $"it holds '{unlisted}', which its manifest could not list";
+
+            var loaded = ReadFiles(name, shipped.Files);
+            var skillUri = $"skill://{name}/{SkillFiles.SkillFile}";
+            var problem = FrontMatterProblem(loaded.Single(file => file.Uri == skillUri).Text, name, out var frontmatter);
+            if (problem != null)
+                return problem;
+
+            var served = loaded
+                .Select(file => file.Uri == skillUri ? file with { Name = name, Description = frontmatter.Value<string>("description") } : file)
+                .ToList();
+            var entry = new JObject { ["uri"] = skillUri, ["frontmatter"] = frontmatter, ["resources"] = Manifest(served, skillUri) };
+            skills.Add(entry);
+            skillsByUri[skillUri] = entry;
+            foreach (var file in served) {
+                files.Add(file);
+                filesByUri[file.Uri] = file;
+            }
+            return null;
+        }
+
+        private static string UnlistedEntry(string root, string directory, HashSet<string> listed) {
+            foreach (var entry in Directory.EnumerateFileSystemEntries(directory)) {
+                var attributes = File.GetAttributes(entry);
+                var isDirectory = (attributes & FileAttributes.Directory) != 0;
+                if ((attributes & FileAttributes.ReparsePoint) != 0 || (!isDirectory && !listed.Contains(entry)))
+                    return Path.GetRelativePath(root, entry);
+                var nested = isDirectory ? UnlistedEntry(root, entry, listed) : null;
+                if (nested != null)
+                    return nested;
+            }
+            return null;
+        }
+
+        private static List<ServedFile> ReadFiles(string name, List<(string Relative, string Path)> shippedFiles) {
+            var loaded = new List<ServedFile>();
+            foreach (var (relative, path) in shippedFiles) {
                 var bytes = File.ReadAllBytes(path);
                 if (bytes.Length > SkillFiles.MaxFileBytes)
-                    return;
+                    throw new IOException($"{relative} is over the {SkillFiles.MaxFileBytes / 1024} KiB limit");
                 var uriPath = string.Join("/", relative.Split('/').Select(Uri.EscapeDataString));
-                loaded.Add(($"skill://{name}/{uriPath}", relative, bytes, StrictUtf8.GetString(bytes)));
+                loaded.Add(new ServedFile($"skill://{name}/{uriPath}", name + "/" + relative, null, bytes, StrictUtf8.GetString(bytes)));
             }
-            var skillFile = loaded.FirstOrDefault(file => file.Relative == SkillFiles.SkillFile);
-            if (skillFile.Bytes == null)
-                return;
+            return loaded;
+        }
 
-            var frontMatter = PyRevitAgentSkills.ParseFrontMatter(FrontMatterLines(skillFile.Text));
-            if (!frontMatter.TryGetValue("name", out var declared) || declared != name || !SkillFiles.IsValidName(name))
-                return;
-
-            var frontmatter = new JObject();
-            foreach (var pair in frontMatter)
-                frontmatter[pair.Key] = pair.Value;
-            var manifest = new JArray(loaded
-                .OrderBy(file => file.Relative == SkillFiles.SkillFile ? 0 : 1)
-                .ThenBy(file => file.Relative, StringComparer.Ordinal)
+        private static JArray Manifest(List<ServedFile> served, string skillUri) {
+            return new JArray(served
+                .OrderBy(file => file.Uri == skillUri ? 0 : 1)
+                .ThenBy(file => file.Uri, StringComparer.Ordinal)
                 .Select(file => new JObject {
                     ["uri"] = file.Uri,
                     ["digest"] = "sha256:" + Convert.ToHexString(SHA256.HashData(file.Bytes)).ToLowerInvariant(),
                     ["size"] = file.Bytes.Length,
                 }));
-            var entry = new JObject { ["uri"] = skillFile.Uri, ["frontmatter"] = frontmatter, ["resources"] = manifest };
-            skills.Add(entry);
-            skillsByUri[skillFile.Uri] = entry;
-            foreach (var file in loaded) {
-                files.Add((file.Uri, name + "/" + file.Relative, file.Bytes.Length));
-                textsByUri[file.Uri] = file.Text;
-            }
         }
 
-        private static string[] FrontMatterLines(string text) {
-            return text.TrimStart('﻿').Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+        /// <summary>
+        /// Checks that <paramref name="text"/> has front matter the flat reader reads without loss and
+        /// returns it as <paramref name="frontmatter"/>; otherwise says what is wrong.
+        /// </summary>
+        private static string FrontMatterProblem(string text, string directoryName, out JObject frontmatter) {
+            frontmatter = null;
+            var lines = text.TrimStart(ByteOrderMark).Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+            if (lines[0].Trim() != "---")
+                return "SKILL.md has no front matter";
+            var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var closed = false;
+            for (var index = 1; index < lines.Length && !closed; index++) {
+                var line = lines[index];
+                closed = line.Trim() == "---";
+                if (closed || line.Trim().Length == 0)
+                    continue;
+                var problem = LineProblem(line, keys);
+                if (problem != null)
+                    return $"front matter line {index} {problem}";
+            }
+            if (!closed)
+                return "front matter is not closed";
+
+            frontmatter = new JObject();
+            foreach (var pair in PyRevitAgentSkills.ParseFrontMatter(lines))
+                frontmatter[pair.Key] = pair.Value;
+            if (frontmatter.Value<string>("name") != directoryName || !SkillFiles.IsValidName(directoryName))
+                return "its name is missing or differs from its folder name";
+            if (string.IsNullOrWhiteSpace(frontmatter.Value<string>("description")))
+                return "its description is missing or empty";
+            return null;
+        }
+
+        private static string LineProblem(string line, HashSet<string> keys) {
+            var separator = line.IndexOf(':');
+            var value = separator > 0 ? line.Substring(separator + 1).Trim() : string.Empty;
+            if (char.IsWhiteSpace(line[0]))
+                return "is indented";
+            if (line[0] == '-' || line[0] == '#')
+                return "is a list item or a comment";
+            if (separator <= 0)
+                return "is not 'key: value'";
+            if (value.Length == 0)
+                return "has an empty value";
+            if ("|>[{".IndexOf(value[0]) >= 0)
+                return "has a block or flow value";
+            if (value.Contains(" #"))
+                return "has a trailing comment";
+            return keys.Add(line.Substring(0, separator).Trim()) ? null : "repeats a key";
         }
 
         private static void RequireNoCursor(JObject parameters) {
@@ -130,17 +219,18 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// <c>resources/list</c>: every served file, one page.
+        /// <c>resources/list</c>: every served file, one page. A skill's <c>SKILL.md</c> entry is named and described
+        /// after its front matter; other files are named by their path.
         /// </summary>
         /// <exception cref="McpRequestException">-32602 for a non-empty cursor.</exception>
         public JObject ResourcesList(JObject parameters = null) {
             RequireNoCursor(parameters);
             return McpProtocol.Complete(new JObject {
-                ["resources"] = new JArray(files.Select(file => new JObject {
-                    ["uri"] = file.Uri,
-                    ["name"] = file.Name,
-                    ["mimeType"] = MarkdownMimeType,
-                    ["size"] = file.Size,
+                ["resources"] = new JArray(files.Select(file => {
+                    var resource = new JObject { ["uri"] = file.Uri, ["name"] = file.Name, ["mimeType"] = MarkdownMimeType, ["size"] = file.Bytes.Length };
+                    if (file.Description != null)
+                        resource["description"] = file.Description;
+                    return resource;
                 })),
             }, cacheable: true);
         }
@@ -150,10 +240,10 @@ namespace pyRevitCLI {
         /// </summary>
         /// <exception cref="McpRequestException">-32602 with the URI for anything not in a manifest.</exception>
         public JObject Read(string uri) {
-            if (uri == null || !textsByUri.TryGetValue(uri, out var text))
+            if (uri == null || !filesByUri.TryGetValue(uri, out var file))
                 throw Unknown(uri);
             return McpProtocol.Complete(new JObject {
-                ["contents"] = new JArray(new JObject { ["uri"] = uri, ["mimeType"] = MarkdownMimeType, ["text"] = text }),
+                ["contents"] = new JArray(new JObject { ["uri"] = uri, ["mimeType"] = MarkdownMimeType, ["text"] = file.Text }),
             }, cacheable: true);
         }
     }

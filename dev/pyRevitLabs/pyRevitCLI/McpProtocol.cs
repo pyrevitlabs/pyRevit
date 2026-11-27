@@ -65,11 +65,15 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
-        /// Marks <paramref name="result"/> as a modern-era result; <paramref name="cacheable"/> adds the
-        /// <c>ttlMs</c> and <c>cacheScope</c> hints for results that are identical for every client.
+        /// Marks <paramref name="result"/> as a modern-era result and adds the server info to its <c>_meta</c>;
+        /// <paramref name="cacheable"/> adds the <c>ttlMs</c> and <c>cacheScope</c> hints for results that are
+        /// identical for every client.
         /// </summary>
         public static JObject Complete(JObject result, bool cacheable = false) {
             result.AddFirst(new JProperty("resultType", "complete"));
+            var meta = result["_meta"] as JObject ?? new JObject();
+            meta[ServerInfoKey] = new JObject { ["name"] = "pyrevit", ["version"] = PyRevitCLI.CLIInfoVersion };
+            result["_meta"] = meta;
             if (cacheable) {
                 result["ttlMs"] = CacheTtlMs;
                 result["cacheScope"] = "public";
@@ -81,16 +85,13 @@ namespace pyRevitCLI {
         /// The <c>server/discover</c> result: the one supported version, the capabilities (the skills extension is
         /// always declared) and the same instructions legacy clients get from <c>initialize</c>.
         /// </summary>
-        public static JObject Discover(string serverVersion, string instructions) {
+        public static JObject Discover(string instructions) {
             return Complete(new JObject {
                 ["supportedVersions"] = new JArray(Version),
                 ["capabilities"] = new JObject {
                     ["tools"] = new JObject(),
                     ["resources"] = new JObject(),
                     ["extensions"] = new JObject { [SkillsExtensionKey] = new JObject() },
-                },
-                ["_meta"] = new JObject {
-                    [ServerInfoKey] = new JObject { ["name"] = "pyrevit", ["version"] = serverVersion },
                 },
                 ["instructions"] = instructions,
             }, cacheable: true);

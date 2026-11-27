@@ -155,26 +155,19 @@ namespace pyRevitCLI {
                             Write(Result(id, Initialize(parameters)));
                             break;
                         case "ping":
-                            Write(Result(id, modern ? McpProtocol.Complete(new JObject()) : new JObject()));
+                            Write(Result(id, Envelope(modern, new JObject())));
                             break;
                         case "server/discover" when modern:
-                            Write(Result(id, McpProtocol.Discover(PyRevitCLI.CLIInfoVersion, PyRevitAgentSkills.Instructions(PyRevitAgentSkills.Load()))));
+                            Write(Result(id, McpProtocol.Discover(PyRevitAgentSkills.Instructions(PyRevitAgentSkills.Load()))));
                             break;
                         case "skills/list" when modern:
-                            Write(Result(id, ShippedSkills().List(parameters)));
-                            break;
                         case "skills/get" when modern:
-                            Write(Result(id, ShippedSkills().Get(UriOf(parameters))));
-                            break;
                         case "resources/list" when modern:
-                            Write(Result(id, ShippedSkills().ResourcesList(parameters)));
-                            break;
                         case "resources/read" when modern:
-                            Write(Result(id, ShippedSkills().Read(UriOf(parameters))));
+                            Write(Result(id, HandleSkillsMethod(method, parameters)));
                             break;
                         case "tools/list":
-                            var described = new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) };
-                            Write(Result(id, modern ? McpProtocol.Complete(described, cacheable: true) : described));
+                            Write(Result(id, Envelope(modern, new JObject { ["tools"] = new JArray(tools.Select(tool => tool.Describe())) }, cacheable: true)));
                             break;
                         case "tools/call":
                             inFlight.RemoveAll(call => call.Task.IsCompleted);
@@ -215,12 +208,22 @@ namespace pyRevitCLI {
             System.Console.Error.WriteLine("pyrevit mcp: exiting with calls still running (request ids: " + string.Join(", ", abandoned) + ")");
         }
 
-        private static SkillsExtension ShippedSkills() {
-            return new SkillsExtension(PyRevitAgentSkills.ShippedSkillsDir);
+        private static JObject Envelope(bool modern, JObject result, bool cacheable = false) {
+            return modern ? McpProtocol.Complete(result, cacheable) : result;
         }
 
-        private static string UriOf(JObject parameters) {
-            return (parameters["uri"] as JValue)?.Value as string;
+        private static JObject HandleSkillsMethod(string method, JObject parameters) {
+            var skills = new SkillsExtension(PyRevitAgentSkills.ShippedSkillsDir);
+            switch (method) {
+                case "skills/list":
+                    return skills.List(parameters);
+                case "resources/list":
+                    return skills.ResourcesList(parameters);
+            }
+            var uri = (parameters["uri"] as JValue)?.Value as string;
+            if (uri == null)
+                throw new McpRequestException(McpProtocol.InvalidParams, "Invalid params: uri is required and must be a string.");
+            return method == "skills/get" ? skills.Get(uri) : skills.Read(uri);
         }
 
         private static JObject Initialize(JObject parameters) {
@@ -310,7 +313,7 @@ namespace pyRevitCLI {
                 }
                 StopProgress(progress);
                 progress = null;
-                AnswerUnlessCancelled(cancellation, Result(id, modern ? McpProtocol.Complete(result) : result));
+                AnswerUnlessCancelled(cancellation, Result(id, Envelope(modern, result)));
             }
             finally {
                 StopProgress(progress);
