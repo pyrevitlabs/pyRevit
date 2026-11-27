@@ -74,6 +74,8 @@ Changes that only touch `pyrevitlib/` do not trigger a preview, even though the 
 | Push to `develop` | `/dev/`. |
 | Manual run | Any `ref`, with an optional `version` override. Use it to backfill older releases, for example `ref: v7.0.1.26312+1155`. Do not go further back than 6.5. |
 
+Each `X.Y` folder records the release it was built from in `.release`. A deploy of an older patch than the one already published is skipped, so a slow build of `7.1.0` never replaces `7.1.1`, and backfilling a minor that the `docs` branch already publishes is a no-op.
+
 The build wraps `mkdocs.yml` in a generated config that sets `site_url` to `/latest/`, so every version's canonical link points at the latest docs, and adds the version selector to older tags whose `mkdocs.yml` predates it.
 
 After copying the site, `publish-gh-pages.sh` runs `.github/scripts/docs_versions.py`, which keeps `versions.json` and rebuilds what derives from the highest `X.Y`:

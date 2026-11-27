@@ -10,9 +10,14 @@
 # root redirects. "publish" and "remove" manage pull request previews. No mode
 # touches another version or another preview.
 #
+# With RELEASE=X.Y.Z, "version" records the release in <version>/.release and
+# skips the deploy when that folder already holds a newer release, so a slow
+# build of an older patch never replaces newer docs.
+#
 # Environment:
 #   PAGES_DIR       checkout of the gh-pages branch with push access (default: gh-pages)
 #   COMMIT_MESSAGE  commit message (default: derived from the arguments)
+#   RELEASE         X.Y.Z release being published by "version" (optional)
 #
 # The push is retried on top of a fresh fetch, so concurrent deploys of other
 # previews do not make this one fail.
@@ -23,6 +28,7 @@ PREVIEW_ROOT="pr-preview"
 PAGES_DIR="${PAGES_DIR:-gh-pages}"
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON="${PYTHON:-python3}"
+RELEASE="${RELEASE:-}"
 
 mode="${1:-}"
 case "$mode" in
@@ -37,6 +43,10 @@ if [[ "$mode" == "version" ]]; then
     echo "error: version must be 'dev' or 'X.Y', got '$target'" >&2
     exit 2
   fi
+  if [[ -n "$RELEASE" && ! "$RELEASE" =~ ^${target//./\.}\.[0-9]+$ ]]; then
+    echo "error: RELEASE must be '$target.<patch>', got '$RELEASE'" >&2
+    exit 2
+  fi
 elif [[ ! "$target" =~ ^${PREVIEW_ROOT}/pr-[0-9]+$ ]]; then
   echo "error: target must be '${PREVIEW_ROOT}/pr-<number>', got '$target'" >&2
   exit 2
@@ -47,6 +57,14 @@ if [[ "$mode" != "remove" ]]; then
   site="$(cd "$site" && pwd)"
 fi
 
+newer_release_published() {
+  [[ -n "$RELEASE" && -f "./$target/.release" ]] || return 1
+  local published
+  published="$(< "./$target/.release")"
+  [[ "$published" != "$RELEASE" && "$(printf '%s
+' "$published" "$RELEASE" | sort -V | tail -n 1)" == "$published" ]]
+}
+
 apply() {
   rm -rf "./$target"
   if [[ "$mode" != "remove" ]]; then
@@ -55,6 +73,7 @@ apply() {
     rm -f "./$target/CNAME"
   fi
   if [[ "$mode" == "version" ]]; then
+    [[ -z "$RELEASE" ]] || echo "$RELEASE" > "./$target/.release"
     [[ -f CNAME || ! -f "$site/CNAME" ]] || cp "$site/CNAME" CNAME
     "$PYTHON" "$SCRIPTS_DIR/docs_versions.py" . "$target"
   fi
@@ -70,6 +89,10 @@ for attempt in 1 2 3 4 5; do
   git fetch --quiet --depth 1 origin "$BRANCH"
   git reset --quiet --hard FETCH_HEAD
   git clean --quiet -fdx
+  if [[ "$mode" == "version" ]] && newer_release_published; then
+    echo "/$target/ already holds $(< "./$target/.release"), newer than $RELEASE. Skipping."
+    break
+  fi
   apply
   git add --all
   if git diff --cached --quiet; then

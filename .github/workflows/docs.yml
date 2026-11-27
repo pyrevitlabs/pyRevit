@@ -1,15 +1,4 @@
 name: pyRevitDocsCI
-# Publishes versioned docs to gh-pages with .github/scripts/publish-gh-pages.sh:
-#
-# - a release tag vX.Y.Z publishes /X.Y/ from the tag,
-# - the docs branch republishes /X.Y/ of the release it documents, so doc
-#   fixes reach the current release without a new tag,
-# - develop publishes /dev/,
-# - a manual run publishes any ref, to backfill older releases.
-#
-# The version folder comes from pyrevitlib/pyrevit/version of the built ref.
-# /latest/ always mirrors the highest X.Y; docs_versions.py rebuilds it and the
-# root redirects on every deploy.
 on:
   push:
     branches:
@@ -71,19 +60,26 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
+          release="$(grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' src/pyrevitlib/pyrevit/version || true)"
           if [[ -n "$INPUT_VERSION" ]]; then
             version="$INPUT_VERSION"
           elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/develop" ]]; then
             version="dev"
           else
-            version="$(grep -oE '^[0-9]+\.[0-9]+' src/pyrevitlib/pyrevit/version || true)"
+            version="${release%.*}"
+          fi
+          if [[ "$release" != "$version".* ]]; then
+            release=""
           fi
           if [[ ! "$version" =~ ^(dev|[0-9]+\.[0-9]+)$ ]]; then
             echo "::error::Could not resolve a version folder (got '$version')."
             exit 1
           fi
           echo "Publishing /$version/"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          {
+            echo "version=$version"
+            echo "release=$release"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Prepare Python 3.14
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -96,9 +92,6 @@ jobs:
           pip install pipenv
           pipenv sync
 
-      # The wrapper config also applies to older tags whose mkdocs.yml predates
-      # versioning. site_url makes every version's canonical link point at
-      # /latest/.
       - name: Build docs
         working-directory: src
         env:
@@ -127,5 +120,6 @@ jobs:
       - name: Deploy docs
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          RELEASE: ${{ steps.version.outputs.release }}
           COMMIT_MESSAGE: "docs: deploy ${{ steps.version.outputs.version }} from ${{ inputs.ref || github.ref_name }}"
         run: bash tools/.github/scripts/publish-gh-pages.sh version "$RUNNER_TEMP/site" "$VERSION"
