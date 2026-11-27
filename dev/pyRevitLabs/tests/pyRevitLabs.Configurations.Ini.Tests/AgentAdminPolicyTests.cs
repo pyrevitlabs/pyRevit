@@ -5,6 +5,7 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// <summary>
 /// Verifies which machine-config content counts as an administrator lock on the agent host.
 /// </summary>
+[Collection(ConfigurationDiagnosticsCollection.Name)]
 public class AgentAdminPolicyTests : IDisposable
 {
     private readonly string tempRoot = Path.Combine(Path.GetTempPath(), "agentAdmin_" + Guid.NewGuid().ToString("N"));
@@ -276,6 +277,60 @@ public class AgentAdminPolicyTests : IDisposable
         Assert.Equal("ironpython", policy.Engine);
         Assert.Equal("false", policy.UserSkills);
         Assert.Equal("false", policy.Reckless);
+    }
+
+    [Fact]
+    public void Current_ConflictingEnginePins_WarnAndNameTheFiles()
+    {
+        File.WriteAllText(Path.Combine(tempRoot, "acme-config.ini"), "[agent.admin]\r\nengine = cpython\r\n");
+        File.WriteAllText(Path.Combine(tempRoot, "pyRevit_config.ini"), "[agent.admin]\r\nengine = ironpython\r\n");
+        AgentAdminPolicy.OverrideMachineConfigDirectory(tempRoot);
+
+        List<string> warnings = CaptureEngineWarnings(() => Assert.Equal("ironpython", AgentAdminPolicy.Current.Engine));
+
+        string warning = Assert.Single(warnings);
+        Assert.Contains("acme-config.ini: cpython", warning);
+        Assert.Contains("pyRevit_config.ini: ironpython", warning);
+    }
+
+    [Fact]
+    public void Current_AgreeingEnginePins_DoNotWarn()
+    {
+        File.WriteAllText(Path.Combine(tempRoot, "acme-config.ini"), "[agent.admin]\r\nengine = CPython\r\n");
+        File.WriteAllText(Path.Combine(tempRoot, "pyRevit_config.ini"), "[agent.admin]\r\nengine = cpython\r\n");
+        AgentAdminPolicy.OverrideMachineConfigDirectory(tempRoot);
+
+        List<string> warnings = CaptureEngineWarnings(() => Assert.Equal("cpython", AgentAdminPolicy.Current.Engine));
+
+        Assert.Empty(warnings);
+    }
+
+    /// <summary>
+    /// Collects the engine-conflict warnings raised while <paramref name="action"/> runs. Other
+    /// warnings are dropped: test classes outside this collection may report through the same
+    /// static handler concurrently.
+    /// </summary>
+    private static List<string> CaptureEngineWarnings(Action action)
+    {
+        var warnings = new List<string>();
+        var gate = new object();
+        Action<string>? previous = ConfigurationDiagnostics.Warn;
+        ConfigurationDiagnostics.Warn = message =>
+        {
+            if (!message.Contains("agent engines"))
+                return;
+            lock (gate)
+                warnings.Add(message);
+        };
+        try
+        {
+            action();
+        }
+        finally
+        {
+            ConfigurationDiagnostics.Warn = previous;
+        }
+        return warnings;
     }
 
     [Fact]

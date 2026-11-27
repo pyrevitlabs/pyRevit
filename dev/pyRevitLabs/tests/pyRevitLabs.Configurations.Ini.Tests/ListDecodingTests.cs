@@ -11,6 +11,7 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// canonical JSON, JSON whose legacy Windows paths carry unescaped backslashes,
 /// and the legacy Python single-quoted literal.
 /// </summary>
+[Collection(ConfigurationDiagnosticsCollection.Name)]
 [Trait("Environment", "HostFree")]
 [Trait("Level", "Unit")]
 public class ListDecodingTests {

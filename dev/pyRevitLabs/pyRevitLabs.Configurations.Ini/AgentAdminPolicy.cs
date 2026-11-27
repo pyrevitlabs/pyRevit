@@ -159,7 +159,29 @@ public sealed class AgentAdminPolicy {
                 return policy;
             loaded.Add(policy);
         }
-        return Merge(loaded);
+        AgentAdminPolicy merged = Merge(loaded);
+        WarnAboutConflictingEngines(paths, loaded, merged.Engine);
+        return merged;
+    }
+
+    /// <summary>
+    /// Reports machine config files that pin different engines. The merge already resolves them to
+    /// <c>ironpython</c>; the warning names the files so an administrator can see why their pin
+    /// is not in force.
+    /// </summary>
+    private static void WarnAboutConflictingEngines(
+        IReadOnlyList<string> paths, List<AgentAdminPolicy> policies, string? resolved) {
+        var pins = paths.Zip(policies, (path, policy) => (path, engine: policy.Engine))
+            .Where(pin => pin.engine != null)
+            .ToList();
+        bool conflicting = pins.Select(pin => pin.engine!.Trim().ToLowerInvariant()).Distinct().Count() > 1;
+        if (!conflicting)
+            return;
+
+        ConfigurationDiagnostics.ReportWarning(
+            "Machine config files pin different agent engines ("
+            + string.Join(", ", pins.Select(pin => Path.GetFileName(pin.path) + ": " + pin.engine))
+            + "); using " + resolved + ".");
     }
 
     private static AgentAdminPolicy Merge(List<AgentAdminPolicy> policies) => new AgentAdminPolicy {
