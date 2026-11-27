@@ -25,6 +25,38 @@ internal sealed class ClientCliRecorder : IDisposable {
     }
 }
 
+internal static class SymlinkSupport {
+    public static readonly string SkipReason = Probe();
+
+    private static string Probe() {
+        var folder = Directory.CreateTempSubdirectory("pyrevit-symlink-probe-").FullName;
+        try {
+            var target = Path.Combine(folder, "target.txt");
+            File.WriteAllText(target, "x");
+            File.CreateSymbolicLink(Path.Combine(folder, "link.txt"), target);
+            return null;
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException) {
+            return "Creating a file symbolic link needs developer mode or administrator rights.";
+        }
+        finally {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+}
+
+public sealed class SymlinkFactAttribute : FactAttribute {
+    public SymlinkFactAttribute() {
+        Skip = SymlinkSupport.SkipReason;
+    }
+}
+
+public sealed class SymlinkTheoryAttribute : TheoryAttribute {
+    public SymlinkTheoryAttribute() {
+        Skip = SymlinkSupport.SkipReason;
+    }
+}
+
 [Collection(CliGlobalState.Name)]
 [Trait("Environment", "HostFree")]
 [Trait("Level", "Integration")]
@@ -116,14 +148,13 @@ public class McpProjectConfigTests : IDisposable {
         }
     }
 
-    [Fact]
+    [SymlinkFact]
     public void AProjectConfigFileThatIsALinkIsRefused() {
         var outside = Path.Combine(Directory.CreateTempSubdirectory("pyrevit-mcp-outside-").FullName, "opencode.json");
         File.WriteAllText(outside, "{}");
         var linkPath = Path.Combine(project, "opencode.json");
         try {
-            if (!TryCreateFileSymlink(linkPath, outside))
-                return;
+            Assert.True(TryCreateFileSymlink(linkPath, outside));
 
             Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.OpenCode, project: true));
 
@@ -134,15 +165,14 @@ public class McpProjectConfigTests : IDisposable {
         }
     }
 
-    [Theory]
+    [SymlinkTheory]
     [InlineData(true)]
     [InlineData(false)]
     public void AClaudeProjectConfigFileThatIsALinkIsRefused(bool install) {
         var outside = Path.Combine(Directory.CreateTempSubdirectory("pyrevit-mcp-outside-").FullName, ".mcp.json");
         File.WriteAllText(outside, "{}");
         try {
-            if (!TryCreateFileSymlink(Path.Combine(project, ".mcp.json"), outside))
-                return;
+            Assert.True(TryCreateFileSymlink(Path.Combine(project, ".mcp.json"), outside));
 
             if (install)
                 Assert.Throws<PyRevitException>(() => PyRevitCLIAgentCmds.InstallMcp(McpClientKind.Claude, project: true));
@@ -228,6 +258,30 @@ public class McpProjectConfigTests : IDisposable {
             Environment.SetEnvironmentVariable("PATH", previousPath);
             Environment.SetEnvironmentVariable("PYREVIT_TEST_DIRS", previousDirs);
             Environment.SetEnvironmentVariable("PYREVIT_TEST_ONE", previousOne);
+        }
+    }
+
+    [Theory]
+    [InlineData(@"C:\tools\claude.cmd", true)]
+    [InlineData(@"C:\tools\claude.bat", true)]
+    [InlineData(@"C:\tools\claude.exe", false)]
+    public void ClientToolsAreStartedWithoutTheCurrentFolderOnTheSearchPath(string executable, bool viaCmd) {
+        var previous = Environment.GetEnvironmentVariable("NoDefaultCurrentDirectoryInExePath");
+        try {
+            Environment.SetEnvironmentVariable("NoDefaultCurrentDirectoryInExePath", "0");
+
+            var start = PyRevitCLIAgentCmds.BuildClientStartInfo(executable, "mcp list");
+
+            Assert.Equal(viaCmd ? Path.Combine(Environment.SystemDirectory, "cmd.exe") : executable, start.FileName);
+            Assert.Equal("1", start.Environment["NoDefaultCurrentDirectoryInExePath"]);
+            Assert.Equal(PyRevitCLIAgentCmds.FreshPath(), start.Environment["PATH"]);
+            if (viaCmd)
+                Assert.Contains("\"" + executable + "\"", start.Arguments);
+            else
+                Assert.Equal("mcp list", start.Arguments);
+        }
+        finally {
+            Environment.SetEnvironmentVariable("NoDefaultCurrentDirectoryInExePath", previous);
         }
     }
 
