@@ -8,13 +8,16 @@ title:
   de_de: Alle Elemente der gewählten Gruppe(n) auswählen
   pt_br: Selecionar Elementos de Grupo
 tooltip:
-  en_us: Replaces current selection with elements inside the groups
-  ko: 현재 선택 항목을 그룹 내 요소로 교체합니다
-  fr_fr: Remplace la sélection actuelle par des éléments à l'intérieur des groupes
-  ru: Заменяет теущее выделение элементами внутри групп.
-  chinese_s: 用组内部的图元替换当前选择集
-  es_es: Reemplaza la selección actual con elementos dentro de los grupos
-  de_de: >-
-    Wählen Sie eine Gruppe oder mehrere Gruppen aus.  Dieser Befehl ersetz die aktuelle Auswahl mit den  Elementen, die sich in den Gruppen befinden.
-  pt_br: Substitui a seleção atual por elementos dentro dos grupos
-context: selection
+  en_us: Replace the selection with the elements inside the selected groups. Selected elements that are not groups are dropped, and a nested group stays selected as a group.
+  ko: 현재 선택 항목을 선택한 그룹 안의 요소로 대체합니다. 그룹이 아닌 선택 요소는 선택에서 제외되고, 중첩된 그룹은 그룹으로 선택된 상태로 유지됩니다.
+  fr_fr: Remplace la sélection par les éléments contenus dans les groupes sélectionnés. Les éléments sélectionnés qui ne sont pas des groupes sont retirés de la sélection, et un groupe imbriqué reste sélectionné en tant que groupe.
+  ru: Заменяет выделение элементами внутри выбранных групп. Выбранные элементы, не являющиеся группами, исключаются из выделения, а вложенная группа остаётся выделенной как группа.
+  chinese_s: 用所选组内部的图元替换当前选择集。不是组的已选图元会从选择集中移除，嵌套组仍作为组保持选中。
+  es_es: Reemplaza la selección por los elementos contenidos en los grupos seleccionados. Los elementos seleccionados que no son grupos se quitan de la selección, y un grupo anidado permanece seleccionado como grupo.
+  de_de: Ersetzt die Auswahl durch die Elemente innerhalb der ausgewählten Gruppen. Ausgewählte Elemente, die keine Gruppen sind, werden aus der Auswahl entfernt, und eine verschachtelte Gruppe bleibt als Gruppe ausgewählt.
+  pt_br: Substitui a seleção pelos elementos dentro dos grupos selecionados. Os elementos selecionados que não são grupos são removidos da seleção, e um grupo aninhado permanece selecionado como grupo.
+context:
+  any:
+    - OST_IOSModelGroups
+    - OST_IOSDetailGroups
+    - OST_IOSAttachedDetailGroups

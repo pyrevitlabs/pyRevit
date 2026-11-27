@@ -1,0 +1,7 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_vertical_reveals">이 프로젝트에서 수직 벽 홈을 찾을 수 없습니다.</sys:String>
+    <sys:String x:Key="no_horizontal_reveals">이 프로젝트에서 수평 벽 홈을 찾을 수 없습니다.</sys:String>
+</ResourceDictionary>
