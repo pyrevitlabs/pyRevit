@@ -25,7 +25,7 @@ pyRevit's build and release pipeline is split across workflows in [`.github/work
 | **`Update Winget manifests`** | [`winget.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/winget.yml) | After a GitHub release is **published**, runs `dotnet run -- winget` to submit WinGet manifest PRs. Strips `ElevationRequirement: elevationProhibited` from generated user-scope installers before submit (see Troubleshooting). |
 | **`Push Chocolatey packages`** | [`choco.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/choco.yml) | After a GitHub release is **published**, downloads the signed `pyrevit` and `pyrevit-cli` `.nupkg` files from that release and runs `dotnet run -- choco` under **`production`** to push them to the Chocolatey community feed. Can also be dispatched with a release tag to push again. |
 | **`pyRevit Revit integration tests`** | [`revit-integration.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/revit-integration.yml) | Signs `bin/` with a throwaway certificate, launches Revit 2022-2027 by default, and fails if any of them shows the unsigned add-in dialog. Needs a self-hosted runner with Revit; see [Revit integration tests](#revit-integration-tests). |
-| **`pyRevitDocsCI`** | [`docs.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs.yml) | Builds the mkdocs site and deploys it to the `gh-pages` branch with `.github/scripts/publish-gh-pages.sh`, which keeps `pr-preview/` intact. Runs on pushes to the `docs` branch that touch `mkdocs.yml`, `docs/`, `pyrevitlib/` or root `*.md` files, on PRs into `master` with the same paths, and on manual dispatch. It does not use the ModularPipelines project. |
+| **`pyRevitDocsCI`** | [`docs.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs.yml) | Builds the mkdocs site and publishes one version of it to `gh-pages` with `.github/scripts/publish-gh-pages.sh`. Release tags publish `/X.Y/`, pushes to the `docs` branch republish the release it documents, pushes to `develop` publish `/dev/`, and a manual run publishes any ref. See [Versioned docs](#versioned-docs). It does not use the ModularPipelines project. |
 | **`pyRevit Docs Check`** | [`docs-check.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-check.yml) | Runs `mkdocs build --strict` on pull requests that touch `docs/`, `mkdocs.yml`, `pyrevitlib/pyrevit/`, root `*.md` files or `Pipfile.lock`, and fails on any build warning (a docstring griffe cannot parse, a broken link). Read-only; it publishes nothing. |
 | **`pyRevit Docs Preview`**, **`pyRevit Docs Preview Deploy`** | [`docs-preview.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview.yml), [`docs-preview-deploy.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs-preview-deploy.yml) | Publishes a preview of the docs for pull requests that touch `docs/` or `mkdocs.yml`. See [Docs previews](#docs-previews). |
 | **`issues-manager`**, **`Close inactive issues`** | [`issues-manager.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/issues-manager.yml), [`stale-issues.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/stale-issues.yml) | Issue housekeeping: slash commands and the `needs-more-info` follow-up on comments, and a daily job that marks `needs-more-info` issues stale after 60 days without activity and closes them 14 days later. |
@@ -63,7 +63,26 @@ The preview is served from the official docs domain, so not every pull request i
 
 Changes that only touch `pyrevitlib/` do not trigger a preview, even though the API reference is generated from it.
 
-Production deploys ([`docs.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs.yml)) replace everything on `gh-pages` except `pr-preview/`. Do not go back to `mkdocs gh-deploy`: it rewrites the whole branch and deletes every open preview. `docs/robots.txt` keeps search engines out of `/pr-preview/`.
+## Versioned docs
+
+[`docs.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/docs.yml) publishes each minor release to its own folder, and Material's version selector (`extra.version.provider: mike` in `mkdocs.yml`) switches between them:
+
+| Trigger | Publishes |
+|---|---|
+| Release tag `vX.Y.Z…` | `/X.Y/`, built from the tag. Later patches overwrite it. |
+| Push to `docs` | `/X.Y/` of the release in `pyrevitlib/pyrevit/version`, so doc fixes reach the current release without a new tag. |
+| Push to `develop` | `/dev/`. |
+| Manual run | Any `ref`, with an optional `version` override. Use it to backfill older releases, for example `ref: v7.0.1.26312+1155`. Do not go further back than 6.5. |
+
+The build wraps `mkdocs.yml` in a generated config that sets `site_url` to `/latest/`, so every version's canonical link points at the latest docs, and adds the version selector to older tags whose `mkdocs.yml` predates it.
+
+After copying the site, `publish-gh-pages.sh` runs `.github/scripts/docs_versions.py`, which keeps `versions.json` and rebuilds what derives from the highest `X.Y`:
+
+- `latest/`, a copy of that version.
+- A redirect page at the root for every page of `latest/`, so links to the old unversioned site (`/get-started/`) and `/` keep working.
+- `404.html`, `robots.txt` (keeps search engines out of `/dev/` and `/pr-preview/`), and `llms.txt` with its links pointing at `/latest/`.
+
+Anything else at the root of `gh-pages` is deleted on every deploy; version folders, `pr-preview/` and `CNAME` are kept. Do not go back to `mkdocs gh-deploy`: it rewrites the whole branch and deletes every version and open preview.
 
 ## Revit integration tests
 

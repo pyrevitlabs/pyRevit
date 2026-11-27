@@ -4,6 +4,10 @@ repo_name: pyrevitlabs/pyRevit
 
 extra:
   homepage: https://pyrevitlabs.io
+  version:
+    provider: mike
+    default: latest
+    alias: true
 
 theme:
   name: material
