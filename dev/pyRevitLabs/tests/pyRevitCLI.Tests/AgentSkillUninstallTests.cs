@@ -124,10 +124,14 @@ public class AgentSkillUninstallTests : SkillInstallFixture {
         File.WriteAllText(markerPath, marker.ToString());
         Age(AgentsSkill(".pyrevit-tmp-forged"));
 
-        Install();
+        var installed = Install();
+        var removed = Uninstall(force: true);
 
         Assert.False(Directory.Exists(Skills(project, ".agents", "x")));
         Assert.False(Directory.Exists("C:/Windows/Temp/x"));
+        Assert.True(Directory.Exists(AgentsSkill(".pyrevit-tmp-forged")));
+        Assert.Contains(installed.Warnings, warning => warning.Contains(".pyrevit-tmp-forged"));
+        Assert.Contains(removed.Warnings, warning => warning.Contains(".pyrevit-tmp-forged"));
     }
 
     private string UnmarkedLeftover(bool aged, params string[] files) {

@@ -187,13 +187,32 @@ namespace pyRevitCLI {
         /// <summary>
         /// Warns about every user skill whose description is over the limit agents handle well.
         /// </summary>
+        /// <remarks>
+        /// Never throws for a folder that cannot be listed or read: that becomes a warning, so a finished install
+        /// or a status report is still printed.
+        /// </remarks>
         public static List<string> UserSkillWarnings(string userSkillsDir) {
             var warnings = new List<string>();
             if (userSkillsDir == null || !Directory.Exists(userSkillsDir))
                 return warnings;
-            foreach (var directory in Directory.GetDirectories(userSkillsDir).Where(path => !SkillFiles.IsLink(path)))
-                WarnLongDescription(directory, warnings, UserSkillLabel);
+            try {
+                foreach (var directory in Directory.GetDirectories(userSkillsDir))
+                    WarnAboutUserSkill(directory, warnings);
+            }
+            catch (Exception ex) when (SkillFiles.IsRecoverable(ex)) {
+                warnings.Add($"{UserSkillLabel}s in {userSkillsDir} could not be checked: {ex.Message}");
+            }
             return warnings;
+        }
+
+        private static void WarnAboutUserSkill(string directory, List<string> warnings) {
+            try {
+                if (!SkillFiles.IsLink(directory))
+                    WarnLongDescription(directory, warnings, UserSkillLabel);
+            }
+            catch (Exception ex) when (SkillFiles.IsRecoverable(ex)) {
+                warnings.Add($"{UserSkillLabel} {directory} could not be checked: {ex.Message}");
+            }
         }
 
         private static void FailDestination(SkillsReport report, SkillDestination destination, Exception ex) {

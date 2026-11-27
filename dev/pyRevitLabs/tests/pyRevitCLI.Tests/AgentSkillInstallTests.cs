@@ -167,4 +167,38 @@ public class AgentSkillInstallTests : SkillInstallFixture {
         Assert.Empty(Directory.GetDirectories(Skills(project, ".agents", "skills"), ".pyrevit-tmp-*"));
         Assert.Contains(report.Warnings, warning => warning.Contains("alpha"));
     }
+
+    [Fact]
+    public void UserSkillWarningsStillNameADescriptionOverTheLimit() {
+        var userSkills = Directory.CreateDirectory(Path.Combine(temp, "user-skills")).FullName;
+        var skill = Directory.CreateDirectory(Path.Combine(userSkills, "long")).FullName;
+        File.WriteAllText(Path.Combine(skill, "SKILL.md"), "---\nname: long\ndescription: " + new string('d', 241) + "\n---\n");
+
+        var warnings = PyRevitAgentSkillInstaller.UserSkillWarnings(userSkills);
+
+        Assert.Contains(warnings, warning => warning.Contains("long") && warning.Contains("241"));
+    }
+
+    [WindowsFact]
+    public void AnUnlistableUserSkillsFolderIsAWarningNotAnException() {
+        var userSkills = Directory.CreateDirectory(Path.Combine(temp, "locked-user-skills")).FullName;
+        Directory.CreateDirectory(Path.Combine(userSkills, "child"));
+        Icacls(userSkills, "/deny *S-1-1-0:(RD)");
+        try {
+            var warnings = PyRevitAgentSkillInstaller.UserSkillWarnings(userSkills);
+
+            Assert.Contains(warnings, warning => warning.Contains(userSkills));
+        }
+        finally {
+            Icacls(userSkills, "/remove:d *S-1-1-0");
+        }
+    }
+
+    private static void Icacls(string folder, string arguments) {
+        var start = new System.Diagnostics.ProcessStartInfo("icacls.exe", $"\"{folder}\" {arguments}") { CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+        using var process = System.Diagnostics.Process.Start(start);
+        process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+        Assert.Equal(0, process.ExitCode);
+    }
 }

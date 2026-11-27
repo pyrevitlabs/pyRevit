@@ -414,7 +414,7 @@ namespace pyRevitCLI {
         /// <remarks>
         /// Only folders older than <see cref="StaleTempAge"/> are touched, so a run in progress is left alone.
         /// A leftover is restored or deleted only when its marker is valid and its content matches the marker
-        /// digest; its recorded name must be a valid skill name. An old leftover without a marker (a copy killed before the
+        /// digest, and its recorded name must be a valid skill name or the leftover is kept. An old leftover without a marker (a copy killed before the
         /// marker was written) is deleted when it holds only markdown files and folders. Anything else is kept
         /// with a warning. Links, and folders that contain one, are never followed.
         /// </remarks>
@@ -444,8 +444,12 @@ namespace pyRevitCLI {
                         warnings.Add($"Kept {directory}: it is a leftover of an interrupted run but its content does not match its marker.");
                         continue;
                     }
-                    var destination = IsValidName(check.Marker.InstalledName) ? Path.Combine(skillsDir, check.Marker.InstalledName) : null;
-                    if (restore && destination != null && !IsLink(destination) && !File.Exists(destination) && !Directory.Exists(destination)) {
+                    if (!IsValidName(check.Marker.InstalledName)) {
+                        warnings.Add($"Kept {directory}: it is a leftover of an interrupted run but its marker records an invalid skill name.");
+                        continue;
+                    }
+                    var destination = Path.Combine(skillsDir, check.Marker.InstalledName);
+                    if (restore && !IsLink(destination) && !File.Exists(destination) && !Directory.Exists(destination)) {
                         Directory.Move(directory, destination);
                         warnings.Add($"Restored {destination} from {directory}, left by an interrupted run.");
                     }
