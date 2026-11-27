@@ -28,10 +28,10 @@ Notes / known limitations:
       ``MarkerSize * view.Scale`` feet in the model. The API default is
       1/96 ft (about 3.2 mm on paper); for a size in millimetres assign
       ``millimetres / 304.8``.
-    - Values are anchored to faces only in 3D views without an active
-      section box, for elements visible in that view. Everywhere else they
-      are placed at the element's bounding-box center, which text markers
-      draw but a colored-surface style cannot paint.
+    - Values are anchored to faces only in orthographic 3D views without an
+      active section box, for elements visible in that view. Everywhere else
+      they are placed at the element's bounding-box center, which text
+      markers draw but a colored-surface style cannot paint.
     - Face selection uses the largest planar-or-curved face turned toward
       the viewer. It is sampled at its UV-bounding-box center, which is an
       approximation for strongly curved faces (cylinders, etc.) and can
@@ -104,7 +104,8 @@ def get_face_facing_direction(
     Warning:
         Passing the reference of a face that the view does not show to
         ``SpatialFieldManager.AddSpatialFieldPrimitive`` can crash Revit,
-        which no ``try``/``except`` can catch.
+        which no ``try``/``except`` can catch. One direction does not tell
+        which faces a perspective view shows.
     """
     geom_elem = query.get_geometry(
         element, compute_references=True, detail_level=detail_level
@@ -145,7 +146,11 @@ def _get_uv_center(face):
 
 
 def _can_anchor_to_faces(view):
-    return isinstance(view, DB.View3D) and not view.IsSectionBoxActive
+    return (
+        isinstance(view, DB.View3D)
+        and not view.IsPerspective
+        and not view.IsSectionBoxActive
+    )
 
 
 def _get_face_candidate_ids(elements, view):
@@ -195,16 +200,19 @@ def _resolve_anchors(element_value_dict, view, face_candidate_ids):
     anchors = []
     for element, value in element_value_dict.items():
         elem_id = get_elementid_value(element.Id)
+        face_anchor = center = None
+        if elem_id in face_candidate_ids:
+            try:
+                face_anchor = _get_face_anchor(element, view)
+            except Exception as ex:
+                mlogger.debug(
+                    "Could not read a face of element ID {}: {}".format(elem_id, ex)
+                )
         try:
-            face_anchor = (
-                _get_face_anchor(element, view)
-                if elem_id in face_candidate_ids
-                else None
-            )
-            anchors.append((elem_id, value, face_anchor, _get_center(element, view)))
+            center = _get_center(element, view)
         except Exception as ex:
             mlogger.exception("Error reading element ID {}: {}".format(elem_id, ex))
-            anchors.append((elem_id, value, None, None))
+        anchors.append((elem_id, value, face_anchor, center))
     return anchors
 
 
@@ -362,8 +370,9 @@ def display_avf_values(
             Defaults to ``"Value"``.
         use_bbox_center (bool, optional): Always use the element's
             bounding-box center as the insertion point. When False, a face
-            turned toward the viewer is used where that is possible: a 3D
-            view without an active section box, an element visible in it,
+            turned toward the viewer is used where that is possible: an
+            orthographic 3D view without an active section box, an element
+            visible in it,
             and a face whose reference Revit accepts (references of family
             instance geometry are often rejected). Otherwise the
             bounding-box center is used as well. In a 3D view that is not

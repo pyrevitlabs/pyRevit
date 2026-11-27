@@ -91,12 +91,14 @@ class View:
 
 class View3D(View):
     IsSectionBoxActive = False
+    IsPerspective = False
 
 
 class Element:
     def __init__(self, *faces, **options):
         self.Id = options.get("element_id", 1)
         self.geometry = [Solid(*faces)]
+        self.get_geometry_error = None
         self.journal = None
 
     def get_BoundingBox(self, view):
@@ -219,8 +221,14 @@ def load_avf(sfm, view):
         debug=lambda *a: None,
         exception=lambda message, *a: pytest.fail(message),
     )
+
+    def get_geometry(element, **options):
+        if element.get_geometry_error:
+            raise element.get_geometry_error
+        return element.geometry
+
     query = types.SimpleNamespace(
-        get_geometry=lambda element, **options: element.geometry,
+        get_geometry=get_geometry,
         get_elements_by_class=lambda *a, **k: [],
     )
     stubs = {
@@ -282,6 +290,17 @@ class DisplayTests(unittest.TestCase):
         view = View3D()
         view.IsSectionBoxActive = True
         self.assert_point_anchor(self.display(view))
+
+    def test_perspective_view_never_passes_a_face_to_revit(self):
+        view = View3D()
+        view.IsPerspective = True
+        self.assert_point_anchor(self.display(view))
+
+    def test_unreadable_face_still_places_a_point(self):
+        element = slab()
+        element.geometry = None
+        element.get_geometry_error = ValueError("no geometry for you")
+        self.assert_point_anchor(self.display(View3D(), element))
 
     def test_hidden_element_never_passes_a_face_to_revit(self):
         view = View3D()

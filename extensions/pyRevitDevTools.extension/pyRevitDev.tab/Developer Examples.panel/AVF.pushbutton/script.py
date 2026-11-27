@@ -3,8 +3,8 @@
 
 Minimal end-to-end smoke test for pyrevit.revit.avf. Pick any element
 visible in the active view, type in a number, and it gets painted onto the
-element. 3D views without a section box also offer a colored surface instead
-of a text marker.
+element. Orthographic 3D views without a section box also offer a colored
+surface instead of a text marker.
 """
 
 from pyrevit import DB, revit, forms
@@ -36,7 +36,11 @@ except ValueError:
     forms.alert("'{}' is not a number.".format(value_str), exitscript=True)
 
 # 3. Pick a display style, get-or-create it, and assign it to the view.
-if isinstance(view, DB.View3D) and not view.IsSectionBoxActive:
+if (
+    isinstance(view, DB.View3D)
+    and not view.IsPerspective
+    and not view.IsSectionBoxActive
+):
     style_choice = forms.CommandSwitchWindow.show(
         ["Text Marker", "Colored Surface"],
         message="Pick an AVF display style:",
@@ -68,11 +72,18 @@ elem_id_val = list(results.keys())[0]
 success, sfp_id = results[elem_id_val]
 
 if success:
+    surface_hint = (
+        "If the surface stays uncolored, Revit accepted no face of this "
+        "element. Run again and pick Text Marker.\n\n"
+        if style_choice == "Colored Surface"
+        else ""
+    )
     forms.alert(
         "Displayed value {} on element ID {}.\n\n"
+        "{}"
         "Run again on other elements, or use "
         "avf.clear_avf_results(view) to remove all markers from "
-        "this view.".format(value, elem_id_val)
+        "this view.".format(value, elem_id_val, surface_hint)
     )
 else:
     forms.alert(
