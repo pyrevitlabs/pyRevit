@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="favourites_title">选择收藏类别</sys:String>
+    <sys:String x:Key="favourites_button">应用</sys:String>
+    <sys:String x:Key="window_title">隔离图元</sys:String>
+    <sys:String x:Key="window_message">临时隔离：</sys:String>
+    <sys:String x:Key="option_room_tags">房间标记</sys:String>
+    <sys:String x:Key="option_model_groups">模型组</sys:String>
+    <sys:String x:Key="option_painted_elements">已涂刷图元</sys:String>
+    <sys:String x:Key="option_model_elements">模型图元</sys:String>
+    <sys:String x:Key="category_option_format">{}（类别）</sys:String>
+    <sys:String x:Key="transaction_isolate">隔离 {}</sys:String>
+    <sys:String x:Key="transaction_reset_isolate">重设临时隐藏/隔离</sys:String>
+    <sys:String x:Key="nothing_to_isolate">没有可隔离的图元。活动视图中没有“{}”对应的图元。</sys:String>
+</ResourceDictionary>

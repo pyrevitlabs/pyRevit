@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="transaction_set_workset">设置活动工作集</sys:String>
+    <sys:String x:Key="transaction_set_work_plane">将活动工作平面设置为标高</sys:String>
+    <sys:String x:Key="transaction_set_phase">设置视图阶段</sys:String>
+    <sys:String x:Key="not_workshared">该模型未启用工作共享。</sys:String>
+    <sys:String x:Key="phase_not_editable">无法修改视图阶段（可能已启用临时视图模式）。</sys:String>
+    <sys:String x:Key="config_title">选择要设置的内容</sys:String>
+    <sys:String x:Key="config_button">保存所选内容</sys:String>
+    <sys:String x:Key="option_set_workset">工作集</sys:String>
+    <sys:String x:Key="option_set_workset_checkout">借用工作集</sys:String>
+    <sys:String x:Key="option_set_workplane_to_level">工作平面设为标高</sys:String>
+    <sys:String x:Key="option_set_workplane_visible">显示工作平面</sys:String>
+    <sys:String x:Key="option_set_phase">阶段</sys:String>
+</ResourceDictionary>

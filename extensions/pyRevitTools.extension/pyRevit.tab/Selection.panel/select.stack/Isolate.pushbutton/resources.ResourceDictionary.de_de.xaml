@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="favourites_title">Favoritenkategorien auswählen</sys:String>
+    <sys:String x:Key="favourites_button">Übernehmen</sys:String>
+    <sys:String x:Key="window_title">Elemente isolieren</sys:String>
+    <sys:String x:Key="window_message">Folgendes vorübergehend isolieren:</sys:String>
+    <sys:String x:Key="option_room_tags">Raumbeschriftungen</sys:String>
+    <sys:String x:Key="option_model_groups">Modellgruppen</sys:String>
+    <sys:String x:Key="option_painted_elements">Eingefärbte Elemente</sys:String>
+    <sys:String x:Key="option_model_elements">Modellelemente</sys:String>
+    <sys:String x:Key="category_option_format">{} (Kategorie)</sys:String>
+    <sys:String x:Key="transaction_isolate">{} isolieren</sys:String>
+    <sys:String x:Key="transaction_reset_isolate">Temporäres Ausblenden/Isolieren zurücksetzen</sys:String>
+    <sys:String x:Key="nothing_to_isolate">Es gibt nichts zu isolieren. Die aktive Ansicht enthält keine Elemente für „{}“.</sys:String>
+</ResourceDictionary>

@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="favourites_title">즐겨찾기 카테고리 선택</sys:String>
+    <sys:String x:Key="favourites_button">적용</sys:String>
+    <sys:String x:Key="choose_category">다음 카테고리의 요소만 선택:</sys:String>
+</ResourceDictionary>

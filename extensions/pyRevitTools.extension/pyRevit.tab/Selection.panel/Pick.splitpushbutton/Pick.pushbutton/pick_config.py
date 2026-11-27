@@ -1,21 +1,16 @@
-"""Activates selection tool that picks a specific type of element.
+# -*- coding: utf-8 -*-
+"""Favourite categories of the Pick button and the dialog to choose them."""
 
-Shift-Click:
-Pick favorites from all available categories
-"""
-
-# pylint: disable=E0401,W0703,C0103
-from pyrevit import revit, DB
-from pyrevit import forms
 from pyrevit import script
+from pyrevit import DB
+from pyrevit.coreutils import applocales
 
+import favouritecategories
 
-logger = script.get_logger()
-my_config = script.get_config("favourite_categories")
-
+RESOURCES = script.get_bundle_file("resources.xaml")
 
 # somehow DB.BuiltInCategory.OST_Truss does not have a corresponding DB.Category
-FREQUENTLY_SELECTED_CATEGORIES = [
+DEFAULT_CATEGORIES = [
     DB.BuiltInCategory.OST_Areas,
     DB.BuiltInCategory.OST_AreaTags,
     DB.BuiltInCategory.OST_AreaSchemeLines,
@@ -39,62 +34,17 @@ FREQUENTLY_SELECTED_CATEGORIES = [
 ]
 
 
-class FSCategoryItem(forms.TemplateListItem):
-    """Wrapper class for frequently selected category list item"""
-
-    pass
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
 def load_configs():
-    """Load list of frequently selected categories from configs or defaults"""
-    fscats = my_config.get_option("fscats", [])
-    revit_cats = [
-        revit.query.get_category(x) for x in (fscats or FREQUENTLY_SELECTED_CATEGORIES)
-    ]
-    return list(filter(None, revit_cats))
-
-
-def save_configs(categories):
-    """Save given list of categories as frequently selected"""
-    my_config.fscats = [x.Name for x in categories]
-    script.save_config()
-
-
-def reset_defaults(options):
-    """Reset frequently selected categories to defaults"""
-    defaults = [revit.query.get_category(x) for x in FREQUENTLY_SELECTED_CATEGORIES]
-    default_names = [x.Name for x in defaults if x]
-    for opt in options:
-        if opt.name in default_names:
-            opt.checked = True
-
-
-def configure_fscats():
-    """Ask for users frequently selected categories"""
-    prev_fscats = load_configs()
-    all_cats = revit.doc.Settings.Categories
-    all_cats = list(all_cats)
-    all_cats.append(
-        revit.doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_AreaSchemeLines)
-    )
-    prev_fscatnames = [x.Name for x in prev_fscats]
-    fscats = forms.SelectFromList.show(
-        sorted(
-            [
-                FSCategoryItem(x, checked=x.Name in prev_fscatnames, name_attr="Name")
-                for x in all_cats
-            ],
-            key=lambda x: x.name,
-        ),
-        title="Select Favorite Categories",
-        button_name="Apply",
-        multiselect=True,
-        resetfunc=reset_defaults,
-    )
-    if fscats:
-        save_configs(fscats)
-    return fscats
+    return favouritecategories.load(DEFAULT_CATEGORIES)
 
 
 if __name__ == "__main__":
-    configure_fscats()
+    favouritecategories.configure(
+        DEFAULT_CATEGORIES,
+        title=_t("favourites_title"),
+        button_name=_t("favourites_button"),
+    )

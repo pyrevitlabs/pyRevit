@@ -9,42 +9,47 @@ title:
   pt_br: Selecionar
 tooltip:
   en_us: |-
-    Activate the selection tool to pick elements from a specific category.
+    Choose one of your favorite categories, then draw a rectangle to select only the elements of that category inside it. The result replaces the current selection.
 
     Shift-click:
-    Choose favorite categories from all available categories.
+    Choose your favorite categories from all categories of the project. The Isolate button uses the same list.
   ko: |-
-    특정 카테고리의 요소를 선택하는 도구를 활성화합니다.
+    즐겨찾기 카테고리 하나를 선택한 다음, 사각형을 그려 그 안에서 해당 카테고리의 요소만 선택합니다. 결과는 현재 선택 항목을 대체합니다.
 
     Shift 키를 누르고 클릭:
-    사용 가능한 카테고리 중 즐겨찾기 카테고리를 선택합니다.
+    프로젝트의 모든 카테고리 중에서 즐겨찾기 카테고리를 선택합니다. 격리 버튼도 같은 목록을 사용합니다.
   fr_fr: |-
-    Active l'outil de sélection qui sélectionne un type d'élément spécifique
+    Choisissez l'une de vos catégories favorites, puis tracez un rectangle pour sélectionner uniquement les éléments de cette catégorie qu'il contient. Le résultat remplace la sélection actuelle.
 
     Maj+clic :
-    Choisissez vos favoris dans toutes les catégories disponibles
+    Choisir vos catégories favorites parmi toutes les catégories du projet. Le bouton Isoler utilise la même liste.
   ru: |-
-    Активирует инструмент выделения, который выбирает определенный тип элемента.
+    Выберите одну из избранных категорий, затем нарисуйте прямоугольник, чтобы выбрать внутри него только элементы этой категории. Результат заменяет текущий выбор.
 
     Shift + Щелчок:
-    Выбрать избранное из всех доступных категорий.
+    Выбрать избранные категории из всех категорий проекта. Кнопка «Изолировать» использует тот же список.
   chinese_s: |-
-    启用选择工具，以便从特定类别中拾取图元。
+    选择一个收藏类别，然后绘制矩形，仅选择其中属于该类别的图元。结果会替换当前选择。
 
     按住 Shift 键单击：
-    从所有可用类别中选择要收藏的类别。
+    从项目的所有类别中选择收藏类别。“隔离”按钮使用同一列表。
   es_es: |-
-    Activa la herramienta de selección que elige un tipo específico de elemento
+    Elija una de sus categorías favoritas y dibuje un rectángulo para seleccionar solo los elementos de esa categoría que contiene. El resultado sustituye la selección actual.
 
     Mayús-clic:
-    Elegir favoritos de todas las categorías disponibles
+    Elegir las categorías favoritas entre todas las categorías del proyecto. El botón Aislar usa la misma lista.
   de_de: |-
-    Aktiviert ein besonderes Auswahlwerkzeug,  das nur einen bestimmten Typ von Elementen auswählt. 
+    Eine der Favoritenkategorien wählen, dann ein Rechteck aufziehen, um nur die Elemente dieser Kategorie darin auszuwählen. Das Ergebnis ersetzt die aktuelle Auswahl.
 
     Bei gedrückter Umschalttaste klicken:
-    In einem Auswahldialog kann man gezielt Kategorien auswählen,  die dann mit dem Auswahlwerkzeug auswählbar sind.
+    Die Favoritenkategorien aus allen Kategorien des Projekts auswählen. Die Schaltfläche „Isolieren“ verwendet dieselbe Liste.
   pt_br: |-
-    Ativa a ferramenta de seleção que escolhe um tipo específico de elemento
+    Escolha uma das suas categorias favoritas e desenhe um retângulo para selecionar apenas os elementos dessa categoria dentro dele. O resultado substitui a seleção atual.
 
     Clique mantendo a tecla Shift pressionada:
-    Escolher favoritos de todas as categorias disponíveis
+    Escolher as categorias favoritas entre todas as categorias do projeto. O botão Isolar usa a mesma lista.
+context:
+  not_any:
+    - active-schedule
+    - active-project-browser
+    - active-system-browser
