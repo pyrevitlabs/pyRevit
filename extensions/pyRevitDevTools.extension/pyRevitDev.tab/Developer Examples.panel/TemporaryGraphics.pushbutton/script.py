@@ -5,6 +5,7 @@ import traceback
 
 from pyrevit import revit, UI, script
 from pyrevit.compat import get_elementid_value_func
+from pyrevit.framework import Guid
 
 from pyrevit.revit.tmpgfx import ControlManager, Handler
 
@@ -16,6 +17,9 @@ uidoc = revit.uidoc
 doc = revit.doc
 
 get_elementid_value = get_elementid_value_func()
+
+STATE_ENVVAR = "PYREVITDEV_TMPGFX_EXAMPLE"
+HANDLER_ID = Guid("6f0c2a7e-5d1b-4f0a-9c57-2b6f8a1d4e93")
 
 # Bundle icon path — resolved once at module level
 
@@ -36,12 +40,11 @@ class WarningHandler(Handler):
     def __init__(self):
         Handler.__init__(
             self,
+            guid=HANDLER_ID,
             name="pyRevit Warning Icon Handler",
             description="Displays element info on warning icon click",
             vendor_id="pyRevit",
         )
-        # keep a doc reference for element lookup
-        self._doc = doc
 
     def on_click(self, index, payload):
         """Show element name and Id when the warning icon is clicked.
@@ -70,6 +73,19 @@ class WarningHandler(Handler):
             print(traceback.format_exc())
 
 
+def get_manager():
+    """Return this document's manager, reusing the one handler of earlier runs."""
+    state = script.get_envvar(STATE_ENVVAR)
+    if not state:
+        state = {"handler": WarningHandler(), "managers": {}}
+        script.set_envvar(STATE_ENVVAR, state)
+    managers = state["managers"]
+    key = doc.GetHashCode()
+    if key not in managers or not managers[key][0].IsValidObject:
+        managers[key] = (doc, ControlManager(doc, handler=state["handler"]))
+    return managers[key][1]
+
+
 # Pick an element
 
 
@@ -86,11 +102,10 @@ if not bbox:
 center = (bbox.Min + bbox.Max) * 0.5
 
 
-# Create handler + manager, place the control
+# Get the shared handler + manager, place the control
 
 
-handler = WarningHandler()
-mgr = ControlManager(doc, handler=handler)
+mgr = get_manager()
 
 active_view = uidoc.ActiveView
 
@@ -113,4 +128,5 @@ print(
     )
 )
 print("Click the icon in the canvas to see element info.")
+print("No icon? Try a 3D view or a floor plan. Shift-click removes the icons.")
 print("Controls in active view: {}".format(mgr.control_count(active_view)))

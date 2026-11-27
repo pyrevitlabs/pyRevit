@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """Developer example: pick an element, display a number on it via AVF.
 
-Minimal end-to-end smoke test for pyrevit.revit.avf. Pick any element with
-solid geometry visible in the active view, type in a number, choose a
-display style (text marker or colored surface), and it gets painted onto
-the element.
+Minimal end-to-end smoke test for pyrevit.revit.avf. Pick any element
+visible in the active view, type in a number, and it gets painted onto the
+element. Orthographic 3D views without a section box also offer a colored
+surface instead of a text marker.
 """
 
-from pyrevit import revit, forms
+from pyrevit import DB, revit, forms
 from pyrevit.revit import avf
 
 doc = revit.doc
@@ -36,10 +36,17 @@ except ValueError:
     forms.alert("'{}' is not a number.".format(value_str), exitscript=True)
 
 # 3. Pick a display style, get-or-create it, and assign it to the view.
-style_choice = forms.CommandSwitchWindow.show(
-    ["Text Marker", "Colored Surface"],
-    message="Pick an AVF display style:",
-)
+if (
+    isinstance(view, DB.View3D)
+    and not view.IsPerspective
+    and not view.IsSectionBoxActive
+):
+    style_choice = forms.CommandSwitchWindow.show(
+        ["Text Marker", "Colored Surface"],
+        message="Pick an AVF display style:",
+    )
+else:
+    style_choice = "Text Marker"
 
 if style_choice is None:
     forms.alert("Cancelled.", exitscript=True)
@@ -65,15 +72,22 @@ elem_id_val = list(results.keys())[0]
 success, sfp_id = results[elem_id_val]
 
 if success:
+    surface_hint = (
+        "If the surface stays uncolored, Revit accepted no face of this "
+        "element. Run again and pick Text Marker.\n\n"
+        if style_choice == "Colored Surface"
+        else ""
+    )
     forms.alert(
         "Displayed value {} on element ID {}.\n\n"
+        "{}"
         "Run again on other elements, or use "
         "avf.clear_avf_results(view) to remove all markers from "
-        "this view.".format(value, elem_id_val)
+        "this view.".format(value, elem_id_val, surface_hint)
     )
 else:
     forms.alert(
-        "Could not find a viewer-facing face on the selected element.\n"
-        "Try an element with solid geometry (wall, floor, generic model), "
-        "or adapt the script to pass use_bbox_center=True."
+        "Could not display a value on the selected element.\n"
+        "Check that it is visible in the active view. The pyRevit output "
+        "window shows the error."
     )
