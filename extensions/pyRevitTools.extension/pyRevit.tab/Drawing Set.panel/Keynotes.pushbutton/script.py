@@ -556,12 +556,13 @@ class RevitActionHandler(UI.IExternalEventHandler):
                     # call sites rely on the user being told why nothing
                     # happened, so this must not be conditional on IsLoaded.
                     try:
+                        message = coreutils.get_exception_message(ex)
                         if window and window.IsLoaded:
                             window.Dispatcher.Invoke(
-                                System.Action(lambda e=str(ex): forms.alert(e))
+                                System.Action(lambda: forms.alert(message))
                             )
                         else:
-                            forms.alert(str(ex))
+                            forms.alert(message)
                     except Exception as disp_ex:
                         logger.debug("Failed to display error in window | %s" % disp_ex)
                 if callback and (succeeded or callback_on_error):
@@ -2362,7 +2363,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     logger.error("KeynoteManager | action failed | %s", ex)
                     # wrapped so an alert failure cannot bypass the gate below
                     try:
-                        forms.alert(str(ex))
+                        forms.alert(coreutils.get_exception_message(ex))
                     except Exception as disp_ex:
                         logger.debug("Failed to display error | %s", disp_ex)
                 if callback and (_succeeded or callback_on_error):
@@ -2872,7 +2873,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 with revit.Transaction("Set Keynote File", doc=self._doc):
                     revit.update.set_keynote_file(kfile, doc=self._doc)
             except Exception as ex:
-                forms.alert(str(ex))
+                forms.alert(coreutils.get_exception_message(ex))
 
     def _preflight_kfile(self, kfile):
         """Prove `kfile` is writable and its folder allows lock sidecars.
@@ -5055,7 +5056,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 kdb.export_legacy_keynotes(self._conn, kfile)
             except Exception as ex:
-                forms.alert(str(ex))
+                forms.alert(coreutils.get_exception_message(ex))
 
     def export_visible_keynotes(self, sender, args):
         kfile = forms.save_file("txt")
@@ -5066,7 +5067,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 kdb.export_legacy_keynotes(self._conn, kfile, include_keys=include)
             except Exception as ex:
-                forms.alert(str(ex))
+                forms.alert(coreutils.get_exception_message(ex))
 
     def _offer_write_lock_release(self, kfile):
         """Offer to clear a write sidecar that a dead session left behind.
