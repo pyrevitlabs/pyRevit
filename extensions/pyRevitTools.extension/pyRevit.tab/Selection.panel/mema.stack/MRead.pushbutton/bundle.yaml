@@ -9,28 +9,39 @@ title:
   de_de: El.im Sp.auswählen
   pt_br: MRead
 tooltip:
-  en_us: >-
-    Read selection from memory
+  en_us: |-
+    Select the elements stored in the selection memory of the active document, like MR on a calculator. Elements that no longer exist are skipped.
 
-    Works like the MR button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files
-  ko: 메모리에서 선택 읽기
-  fr_fr: >-
-    Lire la sélection de la mémoire
+    Each document has its own memory, saved as a .pym file in %appdata%\pyRevit.
+  de_de: |-
+    Wählt die Elemente aus dem Auswahlspeicher des aktiven Dokuments aus, wie MR beim Taschenrechner. Elemente, die es nicht mehr gibt, werden übersprungen.
 
-    Fonctionne comme le bouton MR dans une calculatrice. Il s'agit d'une mémoire dépendante du projet. Chaque projet a sa propre mémoire de sélection enregistrée dans le dossier %appdata%/pyRevit en tant que fichiers *.pym
-  ru: >-
-    Читает выбранные элементы в память проекта.
+    Jedes Dokument hat seinen eigenen Speicher, der als .pym-Datei in %appdata%\pyRevit gespeichert wird.
+  fr_fr: |-
+    Sélectionne les éléments de la mémoire de sélection du document actif, comme MR sur une calculatrice. Les éléments qui n'existent plus sont ignorés.
 
-    Работает как кнопка MR в калькуляторе. Память зависит от каждого проекта. Каждый проект имеет свою память, которая записывается в %appdata%/pyRevit директорию как *.pym файлы.
-  chinese_s: "从内存中读取选择\n功能类似于计算器上的 MR 按钮。此为项目相关的内存。每个项目都有自己的选择内存，保存在 %appdata%/pyRevit 文件夹中，格式为 *.pym 文件"
-  es_es: >-
-    Leer selección de la memoria
+    Chaque document a sa propre mémoire, enregistrée sous forme de fichier .pym dans %appdata%\pyRevit.
+  es_es: |-
+    Selecciona los elementos de la memoria de selección del documento activo, como MR en una calculadora. Los elementos que ya no existen se omiten.
 
-    Funciona como el botón MR en una calculadora. Esta es una memoria dependiente del proyecto. Cada proyecto tiene su propia memoria de selección guardada en la carpeta %appdata%/pyRevit como archivos *.pym
-  de_de: >-
-    Liest die Auswahl aus dem Speicher aus
-    Funktioniert wie die MR Taste auf dem Taschenrechner.  Dies ist ein Projekt-abhängiger Speicher.  Jedes Projekt hat seinen eigenen Auswahlspeicher,  der im Ordner %appdata%/pyRevit als *.pym Datei gespeichert wird.
-  pt_br: >-
-    Ler seleção da memória
-    
-    Funciona como o botão MR em uma calculadora. Esta é uma memória dependente do projeto. Cada projeto tem sua própria memória de seleção salva na pasta %appdata%/pyRevit como arquivos *.pym
+    Cada documento tiene su propia memoria, guardada como archivo .pym en %appdata%\pyRevit.
+  pt_br: |-
+    Seleciona os elementos da memória de seleção do documento ativo, como o MR de uma calculadora. Os elementos que não existem mais são ignorados.
+
+    Cada documento tem sua própria memória, salva como arquivo .pym em %appdata%\pyRevit.
+  ru: |-
+    Выбирает элементы из памяти выбора активного документа, как кнопка MR в калькуляторе. Элементы, которых больше нет, пропускаются.
+
+    У каждого документа своя память, которая хранится в файле .pym в папке %appdata%\pyRevit.
+  chinese_s: |-
+    选择活动文档的选择内存中保存的图元，功能类似于计算器上的 MR 按钮。已不存在的图元将被跳过。
+
+    每个文档都有自己的内存，保存为 %appdata%\pyRevit 中的 .pym 文件。
+  ko: |-
+    활성 문서의 선택 메모리에 저장된 요소를 선택합니다. 계산기의 MR 버튼과 같습니다. 더 이상 존재하지 않는 요소는 건너뜁니다.
+
+    각 문서에는 자체 메모리가 있으며 %appdata%\pyRevit 폴더에 .pym 파일로 저장됩니다.
+context:
+  any:
+    - doc-project
+    - doc-family

@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="memory_empty">La mémoire de sélection de ce document est vide.</sys:String>
+    <sys:String x:Key="memory_stale">Aucun des éléments de la mémoire de sélection n'existe plus dans ce document.</sys:String>
+    <sys:String x:Key="save_transaction">Enregistrer la mémoire de sélection comme filtre de sélection</sys:String>
+    <sys:String x:Key="save_done">{0} éléments enregistrés comme filtre de sélection « {1} ».</sys:String>
+    <sys:String x:Key="save_failed">Revit a refusé la modification : aucun filtre de sélection n'a été enregistré.</sys:String>
+    <sys:String x:Key="purge_nothing">Aucun fichier de mémoire à supprimer.</sys:String>
+    <sys:String x:Key="purge_done">{0} fichiers de mémoire supprimés :</sys:String>
+</ResourceDictionary>

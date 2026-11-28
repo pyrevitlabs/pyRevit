@@ -1,13 +1,6 @@
-import os
-import os.path as op
-import pickle as pl
+# -*- coding: utf-8 -*-
+"""Empty the selection memory of the active document."""
 
-from pyrevit import revit
-from pyrevit import script
+import selectionmemory
 
-
-datafile = script.get_document_data_file("SelList", "pym")
-
-f = open(datafile, "wb")
-pl.dump([], f, 2)
-f.close()
+selectionmemory.write_memory(set())

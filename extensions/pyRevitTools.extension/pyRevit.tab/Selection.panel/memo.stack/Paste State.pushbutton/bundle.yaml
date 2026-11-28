@@ -1,63 +1,60 @@
 title:
-  en_us: Paste State
-  ko: 상태 붙여넣기
-  fr_fr: Coller l'état
-  ru: Вставить
-  chinese_s: 粘贴状态
-  es_es: Pegar estado
-  de_de: Zustand einfügen
-  pt_br: Colar Estado
+  en_us: Paste State ●
+  ko: 상태 붙여넣기 ●
+  fr_fr: Coller l'état ●
+  ru: Вставить ●
+  chinese_s: 粘贴状态 ●
+  es_es: Pegar estado ●
+  de_de: Zustand einfügen ●
+  pt_br: Colar Estado ●
 tooltip:
-  en_us: >-
-    Applies the copied state to the active view
+  en_us: |-
+    Apply a property copied with Copy State to the active view, or to the selected views or viewports. If several copied properties fit, a dialog lets you choose one.
 
-    This works in conjunction with the Copy State tool
+    Shift-click:
+    When pasting a viewport placement, choose whether to align only the X axis, only the Y axis or both.
+  de_de: |-
+    Wendet eine mit Zustand kopieren kopierte Eigenschaft auf die aktive Ansicht oder auf die gewählten Ansichten bzw. Ansichtsfenster an. Passen mehrere kopierte Eigenschaften, wählen Sie in einem Dialog eine aus.
 
-    Shift-Click:
+    Bei gedrückter Umschalttaste klicken:
+    Beim Einfügen der Platzierung eines Ansichtsfensters wählen, ob nur die X-Achse, nur die Y-Achse oder beide ausgerichtet werden.
+  fr_fr: |-
+    Applique une propriété copiée avec Copier l'état à la vue active, ou aux vues ou fenêtres sélectionnées. Si plusieurs propriétés copiées conviennent, une boîte de dialogue permet d'en choisir une.
 
-    Show additional options
-  ko: 복사된 상태를 활성 뷰에 적용합니다
-  fr_fr: >-
-    Applique l'état copié à la vue active
+    Maj+clic :
+    Lors du collage du positionnement d'une fenêtre, choisir d'aligner seulement l'axe X, seulement l'axe Y ou les deux.
+  es_es: |-
+    Aplica una propiedad copiada con Copiar estado a la vista activa, o a las vistas o ventanas gráficas seleccionadas. Si encajan varias propiedades copiadas, un cuadro de diálogo permite elegir una.
 
-    Cela fonctionne en conjonction avec l'outil Copier l'état
+    Mayús-clic:
+    Al pegar la ubicación de una ventana gráfica, elegir si se alinea solo el eje X, solo el eje Y o ambos.
+  pt_br: |-
+    Aplica uma propriedade copiada com Copiar Estado à vista ativa, ou às vistas ou janelas de visualização selecionadas. Se várias propriedades copiadas forem aplicáveis, uma caixa de diálogo permite escolher uma.
 
-    Shift-Clic :
+    Clique mantendo a tecla Shift pressionada:
+    Ao colar o posicionamento de uma janela de visualização, escolher se alinha apenas o eixo X, apenas o eixo Y ou ambos.
+  ru: |-
+    Применяет параметр, скопированный инструментом «Копировать», к активному виду или к выбранным видам или видовым экранам. Если подходит несколько скопированных параметров, в диалоге можно выбрать один.
 
-    Afficher les options supplémentaires
-  ru: >-
-    Применяет скопированное состояние к активному виду.
+    Shift + Щелчок:
+    При вставке положения видового экрана выбрать, выравнивать только по оси X, только по оси Y или по обеим.
+  chinese_s: |-
+    将通过“复制状态”复制的属性应用到活动视图，或所选视图、视口。如果有多个已复制的属性适用，会通过对话框让您选择其中一个。
 
-    Это работает в сочетании с инструментом "Копировать состояние".
+    按住 Shift 键单击：
+    粘贴视口位置时，选择仅对齐 X 轴、仅对齐 Y 轴，或两者都对齐。
+  ko: |-
+    '상태 복사'로 복사한 속성을 활성 뷰 또는 선택한 뷰나 뷰포트에 적용합니다. 적용할 수 있는 복사된 속성이 여러 개이면 대화상자에서 하나를 선택합니다.
 
-    Shift-Click:
-
-    Показать дополнительные настройки.
-  chinese_s: "将复制的状态应用到活动视图\n此工具需与“复制状态”工具配合使用\nShift+单击：\n显示附加选项"
-  es_es: >-
-    Aplica el estado copiado a la vista activa
-
-    Esto funciona en conjunto con la herramienta Copiar estado
-
-    Shift-Clic:
-
-    Mostrar opciones adicionales
-  de_de: >-
-    Fügt den zuvor gespeicherten Zustand einer Ansicht,  in die aktive Ansicht ein. Dieses Werkzeug wird in
-    Kombination mit dem pyRevit Werkzeug "Zustand kopieren"
-    verwendet. 
-
-    Shift-Click:
-
-    Zeigt zusätzliche Optionen an, z.B. Filter in Ansichtsvorlagen übertragen oder
-  pt_br: >-
-    Aplica o estado copiado à vista ativa
-    Isso funciona em conjunto com a ferramenta Copiar Estado
-    Shift-Clique:
-    Mostrar opções adicionais
+    Shift 키를 누르고 클릭:
+    뷰포트 배치를 붙여넣을 때 X축만, Y축만, 또는 둘 다 정렬할지 선택합니다.
 author: >-
   Gui Talarico
 
   {{author}}
 
   Alex Melnikov
+context:
+  any:
+    - doc-project
+    - doc-family

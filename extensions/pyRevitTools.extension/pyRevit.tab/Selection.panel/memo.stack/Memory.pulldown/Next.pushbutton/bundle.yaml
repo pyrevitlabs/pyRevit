@@ -9,42 +9,46 @@ title:
   pt_br: Próximo ●
 tooltip:
   en_us: |-
-    Select the next element in selection memory. A normal click advances one element.
+    Select the next element in the selection memory, in order of element id. A normal click advances one element; after the last element it wraps around to the first.
 
     Shift-click:
-    Advance ten elements in selection memory.
-  ko: |-
-    선택 메모리에서 다음 요소를 선택합니다. 일반 클릭은 한 요소씩 이동합니다.
+    Advance ten elements in the selection memory.
+  de_de: |-
+    Wählt das nächste Element im Auswahlspeicher aus, in der Reihenfolge der Element-IDs. Ein normaler Klick geht ein Element weiter; nach dem letzten Element geht es wieder beim ersten los.
 
-    Shift 키를 누르고 클릭:
-    선택 메모리에서 열 요소씩 이동합니다.
+    Bei gedrückter Umschalttaste klicken:
+    Im Auswahlspeicher zehn Elemente weitergehen.
   fr_fr: |-
-    Sélectionne l'élément suivant dans la mémoire de sélection. Un clic avance d'un élément.
+    Sélectionne l'élément suivant dans la mémoire de sélection, dans l'ordre des identifiants d'élément. Un clic avance d'un élément ; après le dernier élément, on revient au premier.
 
     Maj+clic :
     Avancer de dix éléments dans la mémoire de sélection.
+  es_es: |-
+    Selecciona el siguiente elemento de la memoria de selección, en el orden de sus ID de elemento. Un clic avanza un elemento; después del último, vuelve al primero.
+
+    Mayús-clic:
+    Avanzar diez elementos en la memoria de selección.
+  pt_br: |-
+    Seleciona o próximo elemento na memória de seleção, na ordem dos IDs dos elementos. Um clique normal avança um elemento; depois do último, volta ao primeiro.
+
+    Clique mantendo a tecla Shift pressionada:
+    Avançar dez elementos na memória de seleção.
   ru: |-
-    Выбирает следующий элемент в памяти выбора. Обычный щелчок перемещает на один элемент.
+    Выбирает следующий элемент в памяти выбора в порядке идентификаторов элементов. Обычный щелчок перемещает на один элемент; после последнего элемента переходит к первому.
 
     Shift + Щелчок:
     Перейти на десять элементов вперёд в памяти выбора.
   chinese_s: |-
-    选择选择记忆中的下一个图元。普通单击向前移动一个图元。
+    按图元 ID 顺序选择选择内存中的下一个图元。普通单击向前移动一个图元；到达最后一个图元后回到第一个。
 
     按住 Shift 键单击：
-    在选择记忆中向前移动十个图元。
-  es_es: |-
-    Selecciona el siguiente elemento de la memoria de selección. Un clic avanza un elemento.
+    在选择内存中向前移动十个图元。
+  ko: |-
+    요소 ID 순서대로 선택 메모리의 다음 요소를 선택합니다. 일반 클릭은 한 요소씩 이동하며, 마지막 요소 다음에는 첫 번째 요소로 돌아갑니다.
 
-    Mayús-clic:
-    Avanzar diez elementos en la memoria de selección.
-  de_de: |-
-    Wählt das nächste Element im Auswahlverlauf aus. Ein normaler Klick geht ein Element weiter.
-
-    Bei gedrückter Umschalttaste klicken:
-    Im Auswahlverlauf zehn Elemente weitergehen.
-  pt_br: |-
-    Seleciona o próximo elemento na memória de seleção. Um clique normal avança um elemento.
-
-    Clique mantendo a tecla Shift pressionada:
-    Avançar dez elementos na memória de seleção.
+    Shift 키를 누르고 클릭:
+    선택 메모리에서 열 요소씩 앞으로 이동합니다.
+context:
+  any:
+    - doc-project
+    - doc-family

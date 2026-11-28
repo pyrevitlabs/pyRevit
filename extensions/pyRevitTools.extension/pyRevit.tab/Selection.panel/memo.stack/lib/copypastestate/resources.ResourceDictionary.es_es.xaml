@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="viewzoom_panstate_action_name">Estado del zoom/Desplazamiento de la vista</sys:String>
+    <sys:String x:Key="sectionbox_3Dstate_action_name">Estado de la caja de sección 3D</sys:String>
+    <sys:String x:Key="visibility_graphics_action_name">Visibilidad/gráficos</sys:String>
+    <sys:String x:Key="crop_region_action_name">Región de recorte</sys:String>
+    <sys:String x:Key="viewport_placement_action_name">Ubicación de la ventana gráfica en el plano</sys:String>
+    <sys:String x:Key="filter_overrides_action_name">Modificaciones de filtros</sys:String>
+    <sys:String x:Key="copy_prompt">Seleccione la propiedad que desea copiar a la memoria:</sys:String>
+    <sys:String x:Key="paste_prompt">Seleccione la propiedad que desea pegar</sys:String>
+    <sys:String x:Key="copy_window_width">850</sys:String>
+    <sys:String x:Key="paste_window_width">750</sys:String>
+    <sys:String x:Key="nothing_to_copy">No se puede copiar ninguna propiedad de la vista activa ni de la selección actual.</sys:String>
+    <sys:String x:Key="nothing_to_paste">No hay acciones disponibles para esta vista o no se encontraron datos guardados. Utilice primero "Copiar estado".</sys:String>
+    <sys:String x:Key="view_type_mismatch">El tipo de vista guardado ({0}) es distinto de la vista activa ({1}).</sys:String>
+    <sys:String x:Key="view_orientation_locked">La orientación de la vista activa está bloqueada.</sys:String>
+    <sys:String x:Key="views_not_parallel">Las vistas no son paralelas.</sys:String>
+    <sys:String x:Key="crop_region_unreadable">No se puede leer la región de recorte de la vista seleccionada.</sys:String>
+    <sys:String x:Key="one_viewport_required">Seleccione exactamente una ventana gráfica.</sys:String>
+    <sys:String x:Key="no_filters_on_view">La vista activa o seleccionada no tiene filtros aplicados.</sys:String>
+    <sys:String x:Key="no_filters_selected">No se seleccionó ningún filtro. Cancelado.</sys:String>
+    <sys:String x:Key="no_suitable_views">No hay vistas adecuadas seleccionadas ni activas.</sys:String>
+    <sys:String x:Key="views_with_template_skipped">Algunas vistas seleccionadas usan una plantilla de vista que controla sus filtros. Se omitirán.</sys:String>
+    <sys:String x:Key="alignment_prompt">Seleccione la opción de alineación</sys:String>
+    <sys:String x:Key="axis_prompt">¿Alinear un eje concreto?</sys:String>
+    <sys:String x:Key="filters_dialog_title">Seleccione los filtros que desea copiar</sys:String>
+    <sys:String x:Key="filters_dialog_button">Seleccionar filtros</sys:String>
+    <sys:String x:Key="paste_target_prompt">¿Dónde desea pegar los filtros?</sys:String>
+    <sys:String x:Key="paste_target_view">Vista activa/seleccionada</sys:String>
+    <sys:String x:Key="paste_target_templates">Seleccionar plantillas de vista</sys:String>
+    <sys:String x:Key="align_crop_box">Alinear con la ESQUINA DE LA REGIÓN DE RECORTE al pegar</sys:String>
+    <sys:String x:Key="align_base_point">Alinear con el PUNTO BASE al pegar</sys:String>
+    <sys:String x:Key="align_center">Alinear con el CENTRO de la región de recorte copiada</sys:String>
+    <sys:String x:Key="align_top_left">Alinear con la esquina SUPERIOR IZQUIERDA de la región de recorte copiada</sys:String>
+    <sys:String x:Key="align_top_right">Alinear con la esquina SUPERIOR DERECHA de la región de recorte copiada</sys:String>
+    <sys:String x:Key="align_bottom_left">Alinear con la esquina INFERIOR IZQUIERDA de la región de recorte copiada</sys:String>
+    <sys:String x:Key="align_bottom_right">Alinear con la esquina INFERIOR DERECHA de la región de recorte copiada</sys:String>
+    <sys:String x:Key="paste_section_box">Pegar configuración de la caja de sección</sys:String>
+    <sys:String x:Key="paste_visibility_graphics">Pegar visibilidad/gráficos</sys:String>
+    <sys:String x:Key="paste_crop_region">Pegar región de recorte</sys:String>
+    <sys:String x:Key="paste_viewport_location">Pegar ubicación de la ventana gráfica</sys:String>
+    <sys:String x:Key="paste_filter_overrides">Pegar modificaciones de filtros</sys:String>
+</ResourceDictionary>

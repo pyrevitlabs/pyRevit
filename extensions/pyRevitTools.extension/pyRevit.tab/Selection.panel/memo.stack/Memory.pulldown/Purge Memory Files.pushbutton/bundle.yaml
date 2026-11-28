@@ -8,11 +8,20 @@ title:
   de_de: Speicherdateien löschen
   pt_br: Eliminar Arquivos de Memória
 tooltip:
-  en_us: Deletes all the temporary selection data files folder. This will clear all selection memories
-  ko: 모든 임시 선택 데이터 파일 폴더를 삭제합니다. 이렇게 하면 모든 선택 메모리가 지워집니다
-  fr_fr: Supprime tout le dossier des fichiers de données de sélection temporaire. Cela effacera toutes les mémoires de sélection
-  ru: Удаляет всю папку временных файлов данных выбора. Это очистит всю память выбора.
-  chinese_s: 删除所有临时选择数据文件文件夹。这将清除所有选择内存
-  es_es: Elimina toda la carpeta de archivos de datos de selección temporal. Esto limpiará todas las memorias de selección
-  de_de: Löscht alle temporären Auswahldaten Dateien Ordner. Dies löscht den gesamten Auswahl Speicher
-  pt_br: Exclui toda a pasta de arquivos de dados de seleção temporários. Isso limpará todas as memórias de seleção
+  en_us: |-
+    Delete every .pym memory file of this Revit version from %appdata%\pyRevit, for all documents. This clears all selection memories and the data of Copy State and of other tools that keep their state in .pym files. It cannot be undone.
+  de_de: |-
+    Löscht alle .pym-Speicherdateien dieser Revit-Version aus %appdata%\pyRevit, für alle Dokumente. Dadurch werden alle Auswahlspeicher sowie die Daten von Zustand kopieren und von anderen Werkzeugen gelöscht, die ihren Zustand in .pym-Dateien ablegen. Das kann nicht rückgängig gemacht werden.
+  fr_fr: |-
+    Supprime tous les fichiers de mémoire .pym de cette version de Revit dans %appdata%\pyRevit, pour tous les documents. Cela efface toutes les mémoires de sélection ainsi que les données de Copier l'état et des autres outils qui conservent leur état dans des fichiers .pym. Cette action est irréversible.
+  es_es: |-
+    Elimina todos los archivos de memoria .pym de esta versión de Revit en %appdata%\pyRevit, de todos los documentos. Esto borra todas las memorias de selección y los datos de Copiar estado y de otras herramientas que guardan su estado en archivos .pym. No se puede deshacer.
+  pt_br: |-
+    Exclui todos os arquivos de memória .pym desta versão do Revit em %appdata%\pyRevit, de todos os documentos. Isso limpa todas as memórias de seleção e os dados de Copiar Estado e de outras ferramentas que guardam seu estado em arquivos .pym. Não é possível desfazer.
+  ru: |-
+    Удаляет все файлы памяти .pym этой версии Revit из %appdata%\pyRevit для всех документов. Это очищает всю память выбора, а также данные инструмента «Копировать» и других инструментов, которые хранят своё состояние в файлах .pym. Отменить действие нельзя.
+  chinese_s: |-
+    删除 %appdata%\pyRevit 中此 Revit 版本的所有 .pym 内存文件，涉及所有文档。这会清除所有选择内存，以及“复制状态”和其他将状态保存在 .pym 文件中的工具的数据。此操作无法撤销。
+  ko: |-
+    %appdata%\pyRevit에서 이 Revit 버전의 모든 .pym 메모리 파일을 모든 문서에 대해 삭제합니다. 모든 선택 메모리와 '상태 복사' 및 상태를 .pym 파일로 저장하는 다른 도구의 데이터가 지워집니다. 이 작업은 되돌릴 수 없습니다.
+context: zero-doc

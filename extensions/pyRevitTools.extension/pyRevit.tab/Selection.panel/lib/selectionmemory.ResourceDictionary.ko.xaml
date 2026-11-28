@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="memory_empty">이 문서의 선택 메모리가 비어 있습니다.</sys:String>
+    <sys:String x:Key="memory_stale">선택 메모리의 요소가 이 문서에 더 이상 없습니다.</sys:String>
+    <sys:String x:Key="save_transaction">선택 메모리를 선택 필터로 저장</sys:String>
+    <sys:String x:Key="save_done">요소 {0}개를 선택 필터 "{1}"(으)로 저장했습니다.</sys:String>
+    <sys:String x:Key="save_failed">Revit에서 변경을 거부하여 선택 필터가 저장되지 않았습니다.</sys:String>
+    <sys:String x:Key="purge_nothing">삭제할 메모리 파일이 없습니다.</sys:String>
+    <sys:String x:Key="purge_done">메모리 파일 {0}개를 삭제했습니다:</sys:String>
+</ResourceDictionary>

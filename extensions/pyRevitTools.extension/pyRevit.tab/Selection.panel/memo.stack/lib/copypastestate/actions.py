@@ -1,97 +1,34 @@
 # -*- coding: utf-8 -*-
-"""Copy/Paste State Actions"""
+"""Copy/Paste State actions, one class per view property that can be copied.
+
+Note:
+    The class name of an action is the slot name of its data file (see
+    ``script.store_data``) and the data classes are pickled, so renaming either
+    makes state copied before the change unreadable.
+"""
 
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import math
 
 from pyrevit import PyRevitException
-from pyrevit import revit, DB, EXEC_PARAMS
-from pyrevit.framework import List
-from pyrevit.coreutils import applocales
-from pyrevit.coreutils import logger
+from pyrevit import forms, script
+from pyrevit import revit, DB, EXEC_PARAMS, framework
 from pyrevit.coreutils import moduleutils
 from pyrevit.coreutils import pyutils
-from pyrevit import forms
-from pyrevit import script
 
 from copypastestate import basetypes
+from copypastestate.strings import text
 
 
-RESOURCES = {
-    "viewzoom_panstate_action_name": {
-        "en_us": "View Zoom/Pan State",
-        "fr_fr": "État du zoom/Panoramique de la vue",
-        "ru": "Состояние масштаба/Положения вида",
-        "chinese_s": "视图缩放/平移状态",
-        "ko": "보기 확대/축소 및 이동 상태",
-        "es_es": "Estado del zoom/Desplazamiento de la vista",
-        "de_de": "Zoom-/Verschiebungsstatus der Ansicht",
-        "pt_br": "Estado de zoom/Deslocamento da vista",
-    },
-    "sectionbox_3Dstate_action_name": {
-        "en_us": "3D Section Box State",
-        "fr_fr": "État de la boîte de coupe 3D",
-        "ru": "Состояние Границы 3D вида",
-        "chinese_s": "3D剖面框状态",
-        "ko": "3D 단면 상자 상태",
-        "es_es": "Estado de la caja de sección 3D",
-        "de_de": "Status des 3D-Schnittbereichs",
-        "pt_br": "Estado da caixa de corte 3D",
-    },
-    "visibility_graphics_action_name": {
-        "en_us": "Visibility Graphics",
-        "fr_fr": "Visibilité/graphisme",
-        "ru": "Видимость/графика",
-        "chinese_s": "可见性/图形",
-        "ko": "가시성 그래픽",
-        "es_es": "Visibilidad/gráficos",
-        "de_de": "Sichtbarkeit/Grafiken",
-        "pt_br": "Visibilidade/gráficos",
-    },
-    "crop_region_action_name": {
-        "en_us": "Crop Region",
-        "fr_fr": "Région de recadrage",
-        "ru": "Граница подрезки",
-        "chinese_s": "裁剪区域",
-        "ko": "자르기 영역",
-        "es_es": "Región de recorte",
-        "de_de": "Zuschneidebereich",
-        "pt_br": "Região de corte",
-    },
-    "viewport_placement_action_name": {
-        "en_us": "Viewport Placement on Sheet",
-        "fr_fr": "Positionnement de la fenêtre sur la feuille",
-        "ru": "Положение видового экрана на листе",
-        "chinese_s": "视口在图纸上的位置",
-        "ko": "시트상의 뷰포트 배치",
-        "es_es": "Ubicación de la ventana gráfica en el plano",
-        "de_de": "Platzierung des Ansichtsfensters auf dem Plan",
-        "pt_br": "Posicionamento da janela de visualização na folha",
-    },
-    "filter_overrides_action_name": {
-        "en_us": "Filter Overrides",
-        "fr_fr": "Remplacements des filtres",
-        "ru": "Переопределения фильтров",
-        "chinese_s": "过滤器替换",
-        "ko": "필터 재정의",
-        "es_es": "Modificaciones de filtros",
-        "de_de": "Filterüberschreibungen",
-        "pt_br": "Substituições de filtros",
-    },
-}
-
-
-def _ls(key):
-    return applocales.get_locale_string(RESOURCES[key])
-
-
-mlogger = logger.get_logger(__name__)
+logger = script.get_logger()
 
 
 # =============================================================================
 
 
 class ViewZoomPanStateData(object):
+    """Pickled state of View Zoom/Pan State: view type, zoom corners and orientation."""
+
     def __init__(self, view_type, corner_pts, dir_orient):
         self._view_type = revit.serialize(view_type)
         self._corner_pts = [revit.serialize(x) for x in corner_pts]
@@ -118,7 +55,7 @@ class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
     For 3D and section views, also stores the view orientation.
     """
 
-    name = _ls("viewzoom_panstate_action_name")
+    name = text("viewzoom_panstate_action_name")
     invalid_context_msg = "Type of active view is not supported"
     this_project = False
 
@@ -155,20 +92,21 @@ class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
         active_ui_view = revit.uidoc.GetOpenUIViews()[0]
         if not self.is_compatible_viewtype(revit.active_view, view_type):
             raise PyRevitException(
-                "Saved view type (%s) is different from active view (%s)"
-                % (vzps_data.view_type, type(revit.active_view).ViewType)
+                text("view_type_mismatch").format(
+                    vzps_data.view_type, revit.active_view.ViewType
+                )
             )
         # load ViewOrientation3D
         if isinstance(revit.active_view, DB.View3D):
             if revit.active_view.IsLocked:
-                raise PyRevitException("Current view orientation is locked")
+                raise PyRevitException(text("view_orientation_locked"))
             revit.active_view.SetOrientation(dir_orient)
         elif isinstance(revit.active_view, DB.ViewSection):
             angle = dir_orient.AngleTo(revit.active_view.ViewDirection)
             if not pyutils.almost_equal(angle, math.pi) and not pyutils.almost_equal(
                 angle, 0
             ):
-                raise PyRevitException("Views are not parallel")
+                raise PyRevitException(text("views_not_parallel"))
         active_ui_view.ZoomAndCenterRectangle(vc1, vc2)
 
     @staticmethod
@@ -183,6 +121,8 @@ class ViewZoomPanStateAction(basetypes.CopyPasteStateAction):
 
 
 class SectionBox3DStateData(object):
+    """Pickled state of 3D Section Box State: section box and view orientation."""
+
     def __init__(self, section_box, view_orientation):
         self._section_box = revit.serialize(section_box)
         self._view_orientation = revit.serialize(view_orientation)
@@ -200,7 +140,7 @@ class SectionBox3DStateData(object):
 class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
     """Copies and restores the section box and orientation of a 3D view."""
 
-    name = _ls("sectionbox_3Dstate_action_name")
+    name = text("sectionbox_3Dstate_action_name")
     invalid_context_msg = "You must be on a 3D view to copy and paste 3D section box."
     this_project = False
 
@@ -222,7 +162,7 @@ class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
         )
 
         active_ui_view = revit.uidoc.GetOpenUIViews()[0]
-        with revit.Transaction("Paste Section Box Settings"):
+        with revit.Transaction(text("paste_section_box")):
             revit.active_view.SetSectionBox(sb3d_data.section_box)
             revit.active_view.SetOrientation(sb3d_data.view_orientation)
         active_ui_view.ZoomToFit()
@@ -236,6 +176,8 @@ class SectionBox3DStateAction(basetypes.CopyPasteStateAction):
 
 
 class VisibilityGraphicsData(object):
+    """Pickled state of Visibility Graphics: the view to take the settings from."""
+
     def __init__(self, source_viewid):
         self._source_viewid = revit.serialize(source_viewid)
 
@@ -251,7 +193,7 @@ class VisibilityGraphicsAction(basetypes.CopyPasteStateAction):
     Uses the source view's parameters to update the active view.
     """
 
-    name = _ls("visibility_graphics_action_name")
+    name = text("visibility_graphics_action_name")
     invalid_context_msg = "View does not support Visibility Graphics settings"
 
     def copy(self):
@@ -264,7 +206,7 @@ class VisibilityGraphicsAction(basetypes.CopyPasteStateAction):
 
     def paste(self):
         vg_data = script.load_data(slot_name=self.__class__.__name__)
-        with revit.Transaction("Paste Visibility Graphics"):
+        with revit.Transaction(text("paste_visibility_graphics")):
             revit.active_view.ApplyViewTemplateParameters(
                 revit.doc.GetElement(vg_data.source_viewid)
             )
@@ -280,6 +222,8 @@ class VisibilityGraphicsAction(basetypes.CopyPasteStateAction):
 
 
 class CropRegionData(object):
+    """Pickled state of Crop Region: crop shape or box and whether the crop is active."""
+
     def __init__(self, cropregion_curveloop, crop_bbox, is_active):
         self._cropregion_curveloop = revit.serialize(cropregion_curveloop)
         self._crop_bbox = revit.serialize(crop_bbox)
@@ -307,7 +251,7 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
     Can apply the copied crop region to multiple selected views.
     """
 
-    name = _ls("crop_region_action_name")
+    name = text("crop_region_action_name")
     invalid_context_msg = "Activate a view or select at least one cropable viewport"
     this_project = False
 
@@ -353,14 +297,14 @@ class CropRegionAction(basetypes.CopyPasteStateAction):
                 this_project=False,
             )
         else:
-            raise PyRevitException("Cannot read crop region of selected view")
+            raise PyRevitException(text("crop_region_unreadable"))
 
     def paste(self):
         cr_data = script.load_data(
             slot_name=self.__class__.__name__, this_project=False
         )
         crv_loop = cr_data.cropregion_curveloop
-        with revit.Transaction("Paste Crop Region"):
+        with revit.Transaction(text("paste_crop_region")):
             for view in CropRegionAction.get_cropable_views():
                 if isinstance(view, DB.View3D):
                     if cr_data.crop_bbox:
@@ -400,8 +344,37 @@ ALIGNMENT_OPTIONS = [
     ALIGNMENT_BOTTOM_RIGHT,
 ]
 
+ALIGNMENT_LABEL_KEYS = {
+    ALIGNMENT_CROPBOX: "align_crop_box",
+    ALIGNMENT_BASEPOINT: "align_base_point",
+    ALIGNMENT_CENTER: "align_center",
+    ALIGNMENT_TOP_LEFT: "align_top_left",
+    ALIGNMENT_TOP_RIGHT: "align_top_right",
+    ALIGNMENT_BOTTOM_LEFT: "align_bottom_left",
+    ALIGNMENT_BOTTOM_RIGHT: "align_bottom_right",
+}
+
+
+def select_alignment(options):
+    """Ask the user for one of the alignment ``options``.
+
+    The options are English constants because the copied alignment is pickled and
+    compared after pasting. Only their labels in the dialog are localized.
+
+    Returns:
+        str: The chosen option constant, or None when the dialog is cancelled.
+    """
+    option_by_label = {text(ALIGNMENT_LABEL_KEYS[option]): option for option in options}
+    chosen_label = forms.CommandSwitchWindow.show(
+        [text(ALIGNMENT_LABEL_KEYS[option]) for option in options],
+        message=text("alignment_prompt"),
+    )
+    return option_by_label.get(chosen_label)
+
 
 class ViewportPlacementData(object):
+    """Pickled state of Viewport Placement: alignment mode, viewport center and offset."""
+
     def __init__(self, alignment, center, offset_uv):
         self._alignment = alignment
         self._center = revit.serialize(center)
@@ -428,18 +401,19 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
     with optional axis constraints.
     """
 
-    name = _ls("viewport_placement_action_name")
+    name = text("viewport_placement_action_name")
     invalid_context_msg = "At least one viewport must be selected"
     this_project = False
 
     @staticmethod
     def calculate_offset(view, offset_uv, alignment):
-        """For usage in 'align by viewport corners' mode.
-        Calculates XY-distance between viewport center and specified corner.
+        """Calculate the XY-distance between viewport center and specified corner.
+
+        For usage in 'align by viewport corners' mode.
 
         Args:
-            view (DB.View): [description]
-            offset_uv (DB.UV): [description]
+            view (DB.View): view of the viewport to align
+            offset_uv (DB.UV): half size of the view outline when it was copied
             alignment (str): alignment name (e.g. 'Top Left')
 
         Returns:
@@ -462,8 +436,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
 
     @staticmethod
     def isolate_axis(viewport, new_center, mode=None):
-        """Modifies `new_center` so only one of axises will be changed
-         in comparison with `viewport` center.
+        """Modify `new_center` so only one of the axes differs from the `viewport` center.
 
         Args:
             viewport (DB.Viewport): viewport to compare with
@@ -503,14 +476,14 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
         ]
         if elements_to_hide:
             try:
-                view.HideElements(List[DB.ElementId](elements_to_hide))
+                view.HideElements(framework.to_clr_list(DB.ElementId, elements_to_hide))
             except Exception as exc:
-                mlogger.warn(exc)
+                logger.warning(exc)
         return elements_to_hide
 
     @staticmethod
     def unhide_elements(view, element_ids):
-        """Unhide elements in a view
+        """Unhide elements in a view.
 
         Args:
             view (DB.View): view to apply visibility changes
@@ -518,13 +491,14 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
         """
         if element_ids:
             try:
-                view.UnhideElements(List[DB.ElementId](element_ids))
+                view.UnhideElements(framework.to_clr_list(DB.ElementId, element_ids))
             except Exception as exc:
-                mlogger.warn(exc)
+                logger.warning(exc)
 
     @staticmethod
     def activate_cropbox(view):
-        """Make cropbox active and visible in a view
+        """Make cropbox active and visible in a view.
+
         Args:
             view (DB.View): view to apply changes
 
@@ -547,7 +521,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
 
     @staticmethod
     def recover_cropbox(view, saved_values):
-        """Recovers saved cropbox visibility
+        """Recover saved cropbox visibility.
 
         Args:
             view (DB.View): view to apply changes
@@ -566,6 +540,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
     @staticmethod
     def get_title_block_placement(viewport):
         """Search for a TitleBlock on a viewport sheet.
+
         Returns TitleBlock location on sheet if there is exactly one.
 
         Args:
@@ -629,8 +604,9 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
 
     @staticmethod
     def zero_cropbox(view):
-        """Generates a rectangular curve loop in model coordinates
-        (0,0; 0,1; 1,1; 1,0) parallel to a provided view.
+        """Generate a rectangular curve loop parallel to a provided view.
+
+        The loop is in model coordinates (0,0; 0,1; 1,1; 1,0).
 
         Args:
             view (DB.View): view, to which the curves should be projected
@@ -670,7 +646,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
     def copy(self):
         viewports = revit.get_selection().include(DB.Viewport)
         if len(viewports) != 1:
-            raise PyRevitException("Exactly one viewport must be selected")
+            raise PyRevitException(text("one_viewport_required"))
         viewport = viewports[0]
         view = revit.doc.GetElement(viewport.ViewId)
 
@@ -679,9 +655,7 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
         if view.ViewType in [DB.ViewType.DraftingView, DB.ViewType.Legend]:
             alignment = ALIGNMENT_CROPBOX
         else:
-            alignment = forms.CommandSwitchWindow.show(
-                ALIGNMENT_OPTIONS_COPY, message="Select Alignment Option"
-            )
+            alignment = select_alignment(ALIGNMENT_OPTIONS_COPY)
 
         if not alignment:
             return
@@ -722,18 +696,16 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
         align_axis = None
         if EXEC_PARAMS.config_mode:
             align_axis = forms.CommandSwitchWindow.show(
-                ["X", "Y", "XY"], message="Align specific axis?"
+                ["X", "Y", "XY"], message=text("axis_prompt")
             )
         # read saved values
         alignment = vp_data.alignment
         center = vp_data.center
         offset_uv = vp_data.offset_uv
         if alignment == ALIGNMENT_CROPBOX:
-            corner_alignment = forms.CommandSwitchWindow.show(
-                ALIGNMENT_OPTIONS, message="Select Alignment Option"
-            )
+            corner_alignment = select_alignment(ALIGNMENT_OPTIONS)
 
-        with revit.TransactionGroup("Paste Viewport Location"):
+        with revit.TransactionGroup(text("paste_viewport_location")):
             for viewport in viewports:
                 view = revit.doc.GetElement(viewport.ViewId)
                 title_block_pt = ViewportPlacementAction.get_title_block_placement(
@@ -804,6 +776,8 @@ class ViewportPlacementAction(basetypes.CopyPasteStateAction):
 
 
 class FilterOverridesData(object):
+    """Pickled state of Filter Overrides: the source view and the filters to copy."""
+
     def __init__(self, source_viewid, filter_ids):
         self._source_viewid = revit.serialize(source_viewid)
         self._filter_ids = [revit.serialize(x) for x in filter_ids]
@@ -825,7 +799,7 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
     by the applied view template.
     """
 
-    name = _ls("filter_overrides_action_name")
+    name = text("filter_overrides_action_name")
     invalid_context_msg = ""
 
     @staticmethod
@@ -854,23 +828,23 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
             view = views[0]
             view_filters = revit.query.get_view_filters(view)
             if not view_filters:
-                raise PyRevitException("Active/Selected view has no fitlers applied")
+                raise PyRevitException(text("no_filters_on_view"))
 
             selected_filters = forms.SelectFromList.show(
                 view_filters,
                 name_attr="Name",
-                title="Select filters to copy",
-                button_name="Select filters",
+                title=text("filters_dialog_title"),
+                button_name=text("filters_dialog_button"),
                 multiselect=True,
             )
 
             if not selected_filters:
-                raise PyRevitException("No filters selected. Cancelled.")
+                raise PyRevitException(text("no_filters_selected"))
 
             script.store_data(
                 slot_name=self.__class__.__name__,
                 data=FilterOverridesData(
-                    source_viewid=view.Id, filter_ids=[f.Id for f in view_filters]
+                    source_viewid=view.Id, filter_ids=[f.Id for f in selected_filters]
                 ),
             )
 
@@ -881,13 +855,10 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
         source_filter_ids = fo_data.filter_ids
 
         # to view template or to selected view
-        mode_templates = (
-            forms.CommandSwitchWindow.show(
-                ["Active/Selected View", "Select View Templates"],
-                message="Where do you want to paste filters?",
-            )
-            == "Select View Templates"
-        )
+        mode_templates = forms.CommandSwitchWindow.show(
+            [text("paste_target_view"), text("paste_target_templates")],
+            message=text("paste_target_prompt"),
+        ) == text("paste_target_templates")
         if mode_templates:
             views = forms.select_viewtemplates()
         else:
@@ -897,20 +868,17 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
                 x for x in views if FilterOverridesAction.controlled_by_template(x)
             ]
             if views_controlled_by_template:
-                forms.alert(
-                    "You have selected views with template applied."
-                    " They will be skipped"
-                )
+                forms.alert(text("views_with_template_skipped"))
         if not views:
-            raise PyRevitException("No suitable views selected or active")
+            raise PyRevitException(text("no_suitable_views"))
 
         # check if there are views controlled by template
-        with revit.TransactionGroup("Paste Filter Overrides"):
+        with revit.TransactionGroup(text("paste_filter_overrides")):
             for view in views:
                 with revit.Transaction("Paste filter"):
                     # check if filters are controlled by template
                     if FilterOverridesAction.controlled_by_template(view):
-                        mlogger.warn(
+                        logger.warning(
                             "Skip view '{}'".format(revit.query.get_name(view))
                         )
                         continue

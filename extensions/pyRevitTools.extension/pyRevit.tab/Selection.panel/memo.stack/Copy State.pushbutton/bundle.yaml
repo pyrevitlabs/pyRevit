@@ -8,46 +8,45 @@ title:
   de_de: Zustand kopieren
   pt_br: Copiar Estado
 tooltip:
-  en_us: >-
-    Copies the state of desired parameter of the active
+  en_us: |-
+    Copy a property of the active view, or of the selected views or viewport, to memory so Paste State can apply it elsewhere. A dialog lists what can be copied right now: zoom and pan, visibility graphics, the crop region, filter overrides, the section box of a 3D view and the placement of a viewport on its sheet.
 
-    view to memory. e.g. Visibility Graphics settings or
+    Visibility graphics and filter overrides can only be pasted into the same project.
+  de_de: |-
+    Kopiert eine Eigenschaft der aktiven Ansicht oder der gewählten Ansichten bzw. des gewählten Ansichtsfensters in den Speicher, damit Zustand einfügen sie an anderer Stelle anwenden kann. Ein Dialog zeigt, was gerade kopiert werden kann: Zoom und Verschiebung, Sichtbarkeit/Grafiken, Zuschneidebereich, Filterüberschreibungen, der Schnittbereich einer 3D-Ansicht und die Platzierung eines Ansichtsfensters auf dem Plan.
 
-    Zoom state. Run it and see how it works
-  ko: 활성 뷰의 원하는 매개변수 상태를 복사합니다.
-  fr_fr: >-
-    Copie l'état du paramètre souhaité de la vue
+    Sichtbarkeit/Grafiken und Filterüberschreibungen können nur im selben Projekt eingefügt werden.
+  fr_fr: |-
+    Copie en mémoire une propriété de la vue active, ou des vues ou de la fenêtre sélectionnées, afin que Coller l'état puisse l'appliquer ailleurs. Une boîte de dialogue liste ce qui peut être copié maintenant : zoom et panoramique, visibilité/graphisme, région de recadrage, remplacements des filtres, boîte de coupe d'une vue 3D et positionnement d'une fenêtre sur sa feuille.
 
-    active en mémoire. Par exemple. Paramètres graphiques de visibilité ou
+    La visibilité/le graphisme et les remplacements des filtres ne peuvent être collés que dans le même projet.
+  es_es: |-
+    Copia a la memoria una propiedad de la vista activa, o de las vistas o la ventana gráfica seleccionadas, para que Pegar estado pueda aplicarla en otro lugar. Un cuadro de diálogo muestra lo que se puede copiar en este momento: zoom y desplazamiento, visibilidad/gráficos, región de recorte, modificaciones de filtros, la caja de sección de una vista 3D y la ubicación de una ventana gráfica en su plano.
 
-    État du zoom. Exécutez-le et voyez comment cela fonctionne
-  ru: >-
-    Копирует состояние желаемого параметра активного вида в память.
+    La visibilidad/gráficos y las modificaciones de filtros solo se pueden pegar en el mismo proyecto.
+  pt_br: |-
+    Copia para a memória uma propriedade da vista ativa, ou das vistas ou da janela de visualização selecionadas, para que Colar Estado possa aplicá-la em outro lugar. Uma caixa de diálogo lista o que pode ser copiado agora: zoom e deslocamento, visibilidade/gráficos, região de corte, substituições de filtros, a caixa de corte de uma vista 3D e o posicionamento de uma janela de visualização na folha.
 
-    Например: Настройки видимости графики или состояние масштабирования.
+    Visibilidade/gráficos e substituições de filtros só podem ser colados no mesmo projeto.
+  ru: |-
+    Копирует в память параметр активного вида (или выбранных видов или видового экрана), чтобы инструмент «Вставить» мог применить его в другом месте. В диалоге перечислено то, что можно скопировать сейчас: масштаб и положение, видимость/графика, граница подрезки, переопределения фильтров, граница 3D вида и положение видового экрана на листе.
 
-    Запустите данный инструмент для просмотра как это работает.
-  chinese_s: 将活动视图的所需参数状态（例如可见性/图形设置或缩放状态）复制到内存中。运行它以查看其工作原理
-  es_es: >-
-    Copia el estado del parámetro deseado de la vista
-    activa a la memoria. Por ejemplo, configuración de Visibilidad/Gráficos o
-    estado de Zoom. Ejecútelo y vea cómo funciona
-  de_de: >-
-    Kopiert den Zustand von bestimmten Einstellungen der  aktiven Ansicht in den Speicher. Zur Auswahl stehen  1) View Zoom/Pan State (Zoom- u. Pan-Status der Ansicht)
-    2) Visibility Graphics (Sichtbarkeit/Grafik Einstellungen der Ansicht)
-    3) Crop Region (Zuschneidebereich der Ansicht)
-    4) Filter Overrides (bestimmte Filter Überschreibungen der Ansicht(en) auswählen)
-    Es können auch mehrere Ansichten im Projektbrowser ausgewählt werden,  nur stehen dann eventuell nicht alle Einstellungszustände zur Auswahl.
-    In einer anderen Ansicht kann dann das Werkzeug "Zustand einfügen"  verwendet werden, um den gespeicherten Zustand auf die Ansicht zu übertragen.
-  pt_br: >-
-    Copia o estado do parâmetro desejado da vista
-    
-    ativa para a memória. ex: Configurações de Visibilidade/Gráficos ou
-    
-    estado de Zoom. Execute e veja como funciona
+    Видимость/графику и переопределения фильтров можно вставлять только в том же проекте.
+  chinese_s: |-
+    将活动视图（或所选视图、视口）的某项属性复制到内存中，以便“粘贴状态”在其他位置应用。对话框会列出当前可以复制的内容：缩放和平移、可见性/图形、裁剪区域、过滤器替换、3D 视图的剖面框，以及视口在图纸上的位置。
+
+    可见性/图形和过滤器替换只能粘贴到同一个项目中。
+  ko: |-
+    활성 뷰(또는 선택한 뷰나 뷰포트)의 속성을 메모리에 복사하여 '상태 붙여넣기'로 다른 곳에 적용할 수 있게 합니다. 대화상자에는 지금 복사할 수 있는 항목이 표시됩니다: 확대/축소 및 이동, 가시성 그래픽, 자르기 영역, 필터 재정의, 3D 뷰의 단면 상자, 시트상의 뷰포트 배치.
+
+    가시성 그래픽과 필터 재정의는 같은 프로젝트에만 붙여넣을 수 있습니다.
 author: >-
   Gui Talarico
 
   {{author}}
 
   Alex Melnikov
+context:
+  any:
+    - doc-project
+    - doc-family

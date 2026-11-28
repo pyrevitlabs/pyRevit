@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="memory_empty">Память выбора этого документа пуста.</sys:String>
+    <sys:String x:Key="memory_stale">Ни один из элементов в памяти выбора больше не существует в этом документе.</sys:String>
+    <sys:String x:Key="save_transaction">Сохранить память выбора как фильтр выбора</sys:String>
+    <sys:String x:Key="save_done">Сохранено элементов: {0}. Фильтр выбора: «{1}».</sys:String>
+    <sys:String x:Key="save_failed">Revit отклонил изменение, фильтр выбора не сохранён.</sys:String>
+    <sys:String x:Key="purge_nothing">Нет файлов памяти для удаления.</sys:String>
+    <sys:String x:Key="purge_done">Удалено файлов памяти: {0}</sys:String>
+</ResourceDictionary>

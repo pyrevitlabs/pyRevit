@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="viewzoom_panstate_action_name">Zoom-/Verschiebungsstatus der Ansicht</sys:String>
+    <sys:String x:Key="sectionbox_3Dstate_action_name">Status des 3D-Schnittbereichs</sys:String>
+    <sys:String x:Key="visibility_graphics_action_name">Sichtbarkeit/Grafiken</sys:String>
+    <sys:String x:Key="crop_region_action_name">Zuschneidebereich</sys:String>
+    <sys:String x:Key="viewport_placement_action_name">Platzierung des Ansichtsfensters auf dem Plan</sys:String>
+    <sys:String x:Key="filter_overrides_action_name">Filterüberschreibungen</sys:String>
+    <sys:String x:Key="copy_prompt">Eigenschaft auswählen, die in den Speicher kopiert werden soll:</sys:String>
+    <sys:String x:Key="paste_prompt">Eigenschaft zum Einfügen auswählen</sys:String>
+    <sys:String x:Key="copy_window_width">850</sys:String>
+    <sys:String x:Key="paste_window_width">750</sys:String>
+    <sys:String x:Key="nothing_to_copy">Aus der aktiven Ansicht oder der aktuellen Auswahl kann keine Eigenschaft kopiert werden.</sys:String>
+    <sys:String x:Key="nothing_to_paste">Für diese Ansicht sind keine Aktionen verfügbar oder es wurden keine gespeicherten Daten gefunden. Verwenden Sie zuerst "Zustand kopieren".</sys:String>
+    <sys:String x:Key="view_type_mismatch">Der gespeicherte Ansichtstyp ({0}) unterscheidet sich von der aktiven Ansicht ({1}).</sys:String>
+    <sys:String x:Key="view_orientation_locked">Die Ausrichtung der aktiven Ansicht ist gesperrt.</sys:String>
+    <sys:String x:Key="views_not_parallel">Die Ansichten sind nicht parallel.</sys:String>
+    <sys:String x:Key="crop_region_unreadable">Der Zuschneidebereich der gewählten Ansicht kann nicht gelesen werden.</sys:String>
+    <sys:String x:Key="one_viewport_required">Wählen Sie genau ein Ansichtsfenster aus.</sys:String>
+    <sys:String x:Key="no_filters_on_view">Auf die aktive oder gewählte Ansicht sind keine Filter angewendet.</sys:String>
+    <sys:String x:Key="no_filters_selected">Keine Filter gewählt. Abgebrochen.</sys:String>
+    <sys:String x:Key="no_suitable_views">Es sind keine geeigneten Ansichten gewählt oder aktiv.</sys:String>
+    <sys:String x:Key="views_with_template_skipped">Einige gewählte Ansichten verwenden eine Ansichtsvorlage, die ihre Filter steuert. Sie werden übersprungen.</sys:String>
+    <sys:String x:Key="alignment_prompt">Ausrichtungsoption wählen</sys:String>
+    <sys:String x:Key="axis_prompt">Bestimmte Achse ausrichten?</sys:String>
+    <sys:String x:Key="filters_dialog_title">Zu kopierende Filter wählen</sys:String>
+    <sys:String x:Key="filters_dialog_button">Filter auswählen</sys:String>
+    <sys:String x:Key="paste_target_prompt">Wohin sollen die Filter eingefügt werden?</sys:String>
+    <sys:String x:Key="paste_target_view">Aktive/gewählte Ansicht</sys:String>
+    <sys:String x:Key="paste_target_templates">Ansichtsvorlagen wählen</sys:String>
+    <sys:String x:Key="align_crop_box">Beim Einfügen an der ECKE DES ZUSCHNEIDEBEREICHS ausrichten</sys:String>
+    <sys:String x:Key="align_base_point">Beim Einfügen am BASISPUNKT ausrichten</sys:String>
+    <sys:String x:Key="align_center">An der MITTE des kopierten Zuschneidebereichs ausrichten</sys:String>
+    <sys:String x:Key="align_top_left">An der Ecke OBEN LINKS des kopierten Zuschneidebereichs ausrichten</sys:String>
+    <sys:String x:Key="align_top_right">An der Ecke OBEN RECHTS des kopierten Zuschneidebereichs ausrichten</sys:String>
+    <sys:String x:Key="align_bottom_left">An der Ecke UNTEN LINKS des kopierten Zuschneidebereichs ausrichten</sys:String>
+    <sys:String x:Key="align_bottom_right">An der Ecke UNTEN RECHTS des kopierten Zuschneidebereichs ausrichten</sys:String>
+    <sys:String x:Key="paste_section_box">Schnittbereich-Einstellungen einfügen</sys:String>
+    <sys:String x:Key="paste_visibility_graphics">Sichtbarkeit/Grafik einfügen</sys:String>
+    <sys:String x:Key="paste_crop_region">Zuschneidebereich einfügen</sys:String>
+    <sys:String x:Key="paste_viewport_location">Position des Ansichtsfensters einfügen</sys:String>
+    <sys:String x:Key="paste_filter_overrides">Filterüberschreibungen einfügen</sys:String>
+</ResourceDictionary>

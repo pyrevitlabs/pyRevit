@@ -8,28 +8,36 @@ title:
   de_de: Aktuelle Auswahl vom Speicher abziehen
   pt_br: MDeduct
 tooltip:
-  en_us: >-
-    Deducts selection from memory keeping the rest
+  en_us: |-
+    Remove the selected elements from the selection memory of the active document and keep the rest, like M- on a calculator.
 
-    Works like the M- button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files
-  ko: 메모리에서 선택 항목을 제외하고 나머지를 유지합니다
-  fr_fr: >-
-    Déduit la sélection de la mémoire en gardant le reste
+    Each document has its own memory, saved as a .pym file in %appdata%\pyRevit.
+  de_de: |-
+    Entfernt die gewählten Elemente aus dem Auswahlspeicher des aktiven Dokuments und behält den Rest, wie M- beim Taschenrechner.
 
-    Fonctionne comme le bouton M- d'une calculatrice. Il s'agit d'une mémoire dépendante du projet. Chaque projet a sa propre mémoire de sélection enregistrée dans le dossier %appdata%/pyRevit en tant que fichiers *.pym
-  ru: >-
-    Удаляет выбранные элементы из памяти проекта.
+    Jedes Dokument hat seinen eigenen Speicher, der als .pym-Datei in %appdata%\pyRevit gespeichert wird.
+  fr_fr: |-
+    Retire les éléments sélectionnés de la mémoire de sélection du document actif et garde le reste, comme M- sur une calculatrice.
 
-    Работает как кнопка M- в калькуляторе. Память зависит от каждого проекта. Каждый проект имеет свою память, которая записывается в %appdata%/pyRevit директорию как *.pym файлы.
-  chinese_s: "从内存中减去当前选择，同时保留其余部分\n功能类似于计算器上的 M- 按钮。此为项目相关的内存。每个项目都有自己的选择内存，保存在 %appdata%/pyRevit 文件夹中，格式为 *.pym 文件"
-  es_es: >-
-    Deduce la selección de la memoria manteniendo el resto
+    Chaque document a sa propre mémoire, enregistrée sous forme de fichier .pym dans %appdata%\pyRevit.
+  es_es: |-
+    Quita los elementos seleccionados de la memoria de selección del documento activo y conserva el resto, como M- en una calculadora.
 
-    Funciona como el botón M- en una calculadora. Esta es una memoria dependiente del proyecto. Cada proyecto tiene su propia memoria de selección guardada en la carpeta %appdata%/pyRevit como archivos *.pym
-  de_de: >-
-    Zieht die aktuelle Auswahl vom Speicher ab. Der Rest verbleibt im Speicher
-    Funktioniert wie die M- Taste auf dem Taschenrechner.  Dies ist ein Projekt-abhängiger Speicher.  Jedes Projekt hat seinen eigenen Auswahlspeicher,  der im Ordner %appdata%/pyRevit als *.pym Datei gespeichert wird.
-  pt_br: >-
-    Remove seleção da memória mantendo o restante
-    
-    Funciona como o botão M- em uma calculadora. Esta é uma memória dependente do projeto. Cada projeto tem sua própria memória de seleção salva na pasta %appdata%/pyRevit como arquivos *.pym
+    Cada documento tiene su propia memoria, guardada como archivo .pym en %appdata%\pyRevit.
+  pt_br: |-
+    Remove os elementos selecionados da memória de seleção do documento ativo e mantém o restante, como o M- de uma calculadora.
+
+    Cada documento tem sua própria memória, salva como arquivo .pym em %appdata%\pyRevit.
+  ru: |-
+    Удаляет выбранные элементы из памяти выбора активного документа, остальные остаются, как кнопка M- в калькуляторе.
+
+    У каждого документа своя память, которая хранится в файле .pym в папке %appdata%\pyRevit.
+  chinese_s: |-
+    从活动文档的选择内存中移除所选图元并保留其余部分，功能类似于计算器上的 M- 按钮。
+
+    每个文档都有自己的内存，保存为 %appdata%\pyRevit 中的 .pym 文件。
+  ko: |-
+    선택한 요소를 활성 문서의 선택 메모리에서 제거하고 나머지는 유지합니다. 계산기의 M- 버튼과 같습니다.
+
+    각 문서에는 자체 메모리가 있으며 %appdata%\pyRevit 폴더에 .pym 파일로 저장됩니다.
+context: selection

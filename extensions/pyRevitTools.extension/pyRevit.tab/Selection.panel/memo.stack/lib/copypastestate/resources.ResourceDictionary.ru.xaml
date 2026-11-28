@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="viewzoom_panstate_action_name">Состояние масштаба/Положения вида</sys:String>
+    <sys:String x:Key="sectionbox_3Dstate_action_name">Состояние Границы 3D вида</sys:String>
+    <sys:String x:Key="visibility_graphics_action_name">Видимость/графика</sys:String>
+    <sys:String x:Key="crop_region_action_name">Граница подрезки</sys:String>
+    <sys:String x:Key="viewport_placement_action_name">Положение видового экрана на листе</sys:String>
+    <sys:String x:Key="filter_overrides_action_name">Переопределения фильтров</sys:String>
+    <sys:String x:Key="copy_prompt">Выберите параметр для копирования в память:</sys:String>
+    <sys:String x:Key="paste_prompt">Выберите параметр для вставки</sys:String>
+    <sys:String x:Key="copy_window_width">850</sys:String>
+    <sys:String x:Key="paste_window_width">750</sys:String>
+    <sys:String x:Key="nothing_to_copy">Из активного вида или текущего выделения нельзя скопировать ни один параметр.</sys:String>
+    <sys:String x:Key="nothing_to_paste">Для этого вида нет доступных действий или не найдены сохранённые данные. Сначала используйте "Копировать".</sys:String>
+    <sys:String x:Key="view_type_mismatch">Сохранённый тип вида ({0}) отличается от активного вида ({1}).</sys:String>
+    <sys:String x:Key="view_orientation_locked">Ориентация активного вида заблокирована.</sys:String>
+    <sys:String x:Key="views_not_parallel">Виды не параллельны.</sys:String>
+    <sys:String x:Key="crop_region_unreadable">Не удаётся прочитать границу подрезки выбранного вида.</sys:String>
+    <sys:String x:Key="one_viewport_required">Выберите ровно один видовой экран.</sys:String>
+    <sys:String x:Key="no_filters_on_view">К активному или выбранному виду не применены фильтры.</sys:String>
+    <sys:String x:Key="no_filters_selected">Фильтры не выбраны. Отменено.</sys:String>
+    <sys:String x:Key="no_suitable_views">Нет подходящих выбранных или активных видов.</sys:String>
+    <sys:String x:Key="views_with_template_skipped">Некоторые выбранные виды используют шаблон вида, который управляет их фильтрами. Они будут пропущены.</sys:String>
+    <sys:String x:Key="alignment_prompt">Выберите вариант выравнивания</sys:String>
+    <sys:String x:Key="axis_prompt">Выровнять по определённой оси?</sys:String>
+    <sys:String x:Key="filters_dialog_title">Выберите фильтры для копирования</sys:String>
+    <sys:String x:Key="filters_dialog_button">Выбрать фильтры</sys:String>
+    <sys:String x:Key="paste_target_prompt">Куда вставить фильтры?</sys:String>
+    <sys:String x:Key="paste_target_view">Активный/выбранный вид</sys:String>
+    <sys:String x:Key="paste_target_templates">Выбрать шаблоны видов</sys:String>
+    <sys:String x:Key="align_crop_box">При вставке выровнять по УГЛУ ГРАНИЦЫ ПОДРЕЗКИ</sys:String>
+    <sys:String x:Key="align_base_point">При вставке выровнять по БАЗОВОЙ ТОЧКЕ</sys:String>
+    <sys:String x:Key="align_center">Выровнять по ЦЕНТРУ скопированной границы подрезки</sys:String>
+    <sys:String x:Key="align_top_left">Выровнять по ВЕРХНЕМУ ЛЕВОМУ углу скопированной границы подрезки</sys:String>
+    <sys:String x:Key="align_top_right">Выровнять по ВЕРХНЕМУ ПРАВОМУ углу скопированной границы подрезки</sys:String>
+    <sys:String x:Key="align_bottom_left">Выровнять по НИЖНЕМУ ЛЕВОМУ углу скопированной границы подрезки</sys:String>
+    <sys:String x:Key="align_bottom_right">Выровнять по НИЖНЕМУ ПРАВОМУ углу скопированной границы подрезки</sys:String>
+    <sys:String x:Key="paste_section_box">Вставить настройки Границы 3D вида</sys:String>
+    <sys:String x:Key="paste_visibility_graphics">Вставить видимость/графику</sys:String>
+    <sys:String x:Key="paste_crop_region">Вставить границу подрезки</sys:String>
+    <sys:String x:Key="paste_viewport_location">Вставить положение видового экрана</sys:String>
+    <sys:String x:Key="paste_filter_overrides">Вставить переопределения фильтров</sys:String>
+</ResourceDictionary>

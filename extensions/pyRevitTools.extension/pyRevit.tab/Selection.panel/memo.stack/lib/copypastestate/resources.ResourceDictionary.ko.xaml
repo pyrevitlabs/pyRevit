@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="viewzoom_panstate_action_name">보기 확대/축소 및 이동 상태</sys:String>
+    <sys:String x:Key="sectionbox_3Dstate_action_name">3D 단면 상자 상태</sys:String>
+    <sys:String x:Key="visibility_graphics_action_name">가시성 그래픽</sys:String>
+    <sys:String x:Key="crop_region_action_name">자르기 영역</sys:String>
+    <sys:String x:Key="viewport_placement_action_name">시트상의 뷰포트 배치</sys:String>
+    <sys:String x:Key="filter_overrides_action_name">필터 재정의</sys:String>
+    <sys:String x:Key="copy_prompt">메모리에 복사할 속성을 선택하세요.</sys:String>
+    <sys:String x:Key="paste_prompt">붙여넣을 속성을 선택하세요:</sys:String>
+    <sys:String x:Key="copy_window_width">750</sys:String>
+    <sys:String x:Key="paste_window_width">750</sys:String>
+    <sys:String x:Key="nothing_to_copy">활성 뷰 또는 현재 선택에서 복사할 수 있는 속성이 없습니다.</sys:String>
+    <sys:String x:Key="nothing_to_paste">이 뷰에서 사용할 수 있는 작업이 없거나 저장된 데이터를 찾을 수 없습니다. 먼저 "상태 복사" 기능을 사용하세요.</sys:String>
+    <sys:String x:Key="view_type_mismatch">저장된 뷰 유형({0})이 활성 뷰({1})와 다릅니다.</sys:String>
+    <sys:String x:Key="view_orientation_locked">활성 뷰의 방향이 잠겨 있습니다.</sys:String>
+    <sys:String x:Key="views_not_parallel">뷰가 평행하지 않습니다.</sys:String>
+    <sys:String x:Key="crop_region_unreadable">선택한 뷰의 자르기 영역을 읽을 수 없습니다.</sys:String>
+    <sys:String x:Key="one_viewport_required">뷰포트를 정확히 하나만 선택하세요.</sys:String>
+    <sys:String x:Key="no_filters_on_view">활성 또는 선택한 뷰에 적용된 필터가 없습니다.</sys:String>
+    <sys:String x:Key="no_filters_selected">선택한 필터가 없습니다. 취소되었습니다.</sys:String>
+    <sys:String x:Key="no_suitable_views">선택했거나 활성화된 적합한 뷰가 없습니다.</sys:String>
+    <sys:String x:Key="views_with_template_skipped">선택한 뷰 중 일부는 필터를 제어하는 뷰 템플릿을 사용합니다. 해당 뷰는 건너뜁니다.</sys:String>
+    <sys:String x:Key="alignment_prompt">정렬 옵션을 선택하세요</sys:String>
+    <sys:String x:Key="axis_prompt">특정 축만 정렬할까요?</sys:String>
+    <sys:String x:Key="filters_dialog_title">복사할 필터를 선택하세요</sys:String>
+    <sys:String x:Key="filters_dialog_button">필터 선택</sys:String>
+    <sys:String x:Key="paste_target_prompt">필터를 어디에 붙여넣을까요?</sys:String>
+    <sys:String x:Key="paste_target_view">활성/선택한 뷰</sys:String>
+    <sys:String x:Key="paste_target_templates">뷰 템플릿 선택</sys:String>
+    <sys:String x:Key="align_crop_box">붙여넣을 때 자르기 영역의 모서리에 정렬</sys:String>
+    <sys:String x:Key="align_base_point">붙여넣을 때 기준점에 정렬</sys:String>
+    <sys:String x:Key="align_center">복사한 자르기 영역의 중앙에 정렬</sys:String>
+    <sys:String x:Key="align_top_left">복사한 자르기 영역의 왼쪽 위 모서리에 정렬</sys:String>
+    <sys:String x:Key="align_top_right">복사한 자르기 영역의 오른쪽 위 모서리에 정렬</sys:String>
+    <sys:String x:Key="align_bottom_left">복사한 자르기 영역의 왼쪽 아래 모서리에 정렬</sys:String>
+    <sys:String x:Key="align_bottom_right">복사한 자르기 영역의 오른쪽 아래 모서리에 정렬</sys:String>
+    <sys:String x:Key="paste_section_box">단면 상자 설정 붙여넣기</sys:String>
+    <sys:String x:Key="paste_visibility_graphics">가시성 그래픽 붙여넣기</sys:String>
+    <sys:String x:Key="paste_crop_region">자르기 영역 붙여넣기</sys:String>
+    <sys:String x:Key="paste_viewport_location">뷰포트 위치 붙여넣기</sys:String>
+    <sys:String x:Key="paste_filter_overrides">필터 재정의 붙여넣기</sys:String>
+</ResourceDictionary>

@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="memory_empty">Der Auswahlspeicher dieses Dokuments ist leer.</sys:String>
+    <sys:String x:Key="memory_stale">Keines der Elemente im Auswahlspeicher existiert noch in diesem Dokument.</sys:String>
+    <sys:String x:Key="save_transaction">Auswahlspeicher als Auswahlsatz speichern</sys:String>
+    <sys:String x:Key="save_done">{0} Elemente wurden als Auswahlsatz „{1}“ gespeichert.</sys:String>
+    <sys:String x:Key="save_failed">Revit hat die Änderung abgelehnt, es wurde kein Auswahlsatz gespeichert.</sys:String>
+    <sys:String x:Key="purge_nothing">Es sind keine Speicherdateien zu entfernen.</sys:String>
+    <sys:String x:Key="purge_done">{0} Speicherdateien wurden entfernt:</sys:String>
+</ResourceDictionary>

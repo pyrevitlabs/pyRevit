@@ -1,34 +1,32 @@
-"""Saves current selection memory as a Selection Filter."""
+# -*- coding: utf-8 -*-
+"""Save the selection memory of the active document as a selection filter."""
 
-# pylint: disable=import-error,invalid-name,broad-except
-import os.path as op
-import pickle as pl
-
+from pyrevit import forms
 from pyrevit import coreutils
-from pyrevit import revit, DB
-from pyrevit import script
-from pyrevit.compat import get_elementid_from_value_func
+from pyrevit import revit, DB, framework
 
-logger = script.get_logger()
+import selectionmemory
 
-get_elementid_from_value = get_elementid_from_value_func()
 
-proj_info = revit.query.get_project_info()
-data_file = script.get_document_data_file("SelList", "pym")
-logger.debug(data_file)
+def filter_name():
+    project_name = revit.query.get_project_info().name
+    name_parts = ["SavedSelection", project_name, coreutils.timestamp()]
+    return coreutils.cleanup_filename("_".join(part for part in name_parts if part))
 
-if op.exists(data_file):
-    if proj_info.name:
-        filter_name = "SavedSelection_" + proj_info.name + "_" + coreutils.timestamp()
-    else:
-        filter_name = "SavedSelection_" + coreutils.timestamp()
 
-    with open(data_file, "rb") as f:
-        cursel = pl.load(f)
+def main():
+    element_ids = selectionmemory.require_memory_element_ids()
+    name = filter_name()
+    with revit.Transaction(selectionmemory.text("save_transaction")):
+        selection_filter = DB.SelectionFilterElement.Create(revit.doc, name)
+        selection_filter.SetElementIds(framework.to_clr_list(DB.ElementId, element_ids))
+    if not selection_filter.IsValidObject:
+        forms.alert(selectionmemory.text("save_failed"), exitscript=True)
+    forms.alert(
+        selectionmemory.text("save_done").format(len(element_ids), name),
+        warn_icon=False,
+    )
 
-    with revit.Transaction("pySaveSelection"):
-        selection_filter = DB.SelectionFilterElement.Create(
-            revit.doc, coreutils.cleanup_filename(filter_name)
-        )
-        for elid in cursel:
-            selection_filter.AddSingle(get_elementid_from_value(elid))
+
+if __name__ == "__main__":
+    main()

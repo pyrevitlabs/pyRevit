@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="memory_empty">此文档的选择内存为空。</sys:String>
+    <sys:String x:Key="memory_stale">选择内存中的图元在此文档中已全部不存在。</sys:String>
+    <sys:String x:Key="save_transaction">将选择内存保存为选择过滤器</sys:String>
+    <sys:String x:Key="save_done">已将 {0} 个图元保存为选择过滤器“{1}”。</sys:String>
+    <sys:String x:Key="save_failed">Revit 拒绝了此更改，未保存选择过滤器。</sys:String>
+    <sys:String x:Key="purge_nothing">没有可删除的内存文件。</sys:String>
+    <sys:String x:Key="purge_done">已删除 {0} 个内存文件：</sys:String>
+</ResourceDictionary>

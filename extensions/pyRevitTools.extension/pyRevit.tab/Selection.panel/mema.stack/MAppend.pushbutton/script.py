@@ -1,25 +1,8 @@
-import pickle
+# -*- coding: utf-8 -*-
+"""Add the selected elements to the selection memory of the active document."""
 
-from pyrevit import script
-from pyrevit import revit
-from pyrevit.compat import get_elementid_value_func
+import selectionmemory
 
-
-datafile = script.get_document_data_file("SelList", "pym")
-
-
-selection = revit.get_selection()
-get_elementid_value = get_elementid_value_func()
-selected_ids = {str(get_elementid_value(elid)) for elid in selection.element_ids}
-
-try:
-    f = open(datafile, "rb")
-    prevsel = pickle.load(f)
-    new_selection = prevsel.union(selected_ids)
-    f.close()
-except Exception:
-    new_selection = selected_ids
-
-f = open(datafile, "wb")
-pickle.dump(new_selection, f, 2)
-f.close()
+selectionmemory.write_memory(
+    selectionmemory.read_memory() | selectionmemory.selected_ids()
+)

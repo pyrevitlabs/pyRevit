@@ -1,10 +1,8 @@
-"""Select next element in selection memory.
+# -*- coding: utf-8 -*-
+"""Select the next element of the selection memory."""
 
-Click +1
-Shift+Click +10
-"""
-
-import iter_selection
 from pyrevit import EXEC_PARAMS
 
-iter_selection.iterate("+", 10 if EXEC_PARAMS.config_mode else 1)
+import selectionmemory
+
+selectionmemory.step_through_memory(1, 10 if EXEC_PARAMS.config_mode else 1)
