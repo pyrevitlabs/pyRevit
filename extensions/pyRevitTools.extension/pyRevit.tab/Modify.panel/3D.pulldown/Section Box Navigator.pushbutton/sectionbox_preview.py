@@ -21,7 +21,7 @@ elements left out per category), ``result``, ``error``.
 
 Important:
     Handlers outlive the command, so the bundle must run on a persistent
-    engine, and they run in Revit API context under IronPython only.
+    engine. They run in Revit API context.
 """
 
 import io

@@ -46,8 +46,7 @@ class PageBridge(object):
 
     Important:
         ``output.on_message`` handlers outlive the command, so the bundle must
-        run on a persistent engine. Handlers run in Revit API context under
-        IronPython only.
+        run on a persistent engine. Handlers run in Revit API context.
     """
 
     def __init__(self, output, prefix):
