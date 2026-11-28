@@ -1,6 +1,6 @@
 ---
 name: drawings
-description: Producing drawings and blueprints. Covers sheets with title blocks, placing views and schedules on sheets, tags, room tags, dimensions, text, and preparing sheets for PDF export. Use it for "set up sheets", "make a floor plan drawing", "tag all doors", "dimension the walls", "export to PDF" and similar tasks.
+description: Use when producing drawings, sheets with title blocks, views and schedules on sheets, tags, dimensions, text and PDF export, e.g. "set up sheets", "tag all doors", "export to PDF".
 ---
 
 # Drawings (views, sheets, annotation)

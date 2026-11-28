@@ -45,6 +45,9 @@
         <Compile Include="..\..\pyRevitCLI\PyRevitAgentClient.cs" Link="Sources\PyRevitAgentClient.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitMcpServer.cs" Link="Sources\PyRevitMcpServer.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitAgentSkills.cs" Link="Sources\PyRevitAgentSkills.cs"/>
+        <Compile Include="..\..\pyRevitCLI\PyRevitAgentSkillInstaller.cs" Link="Sources\PyRevitAgentSkillInstaller.cs"/>
+        <Compile Include="..\..\pyRevitCLI\SkillFiles.cs" Link="Sources\SkillFiles.cs"/>
+        <Compile Include="..\..\pyRevitCLI\SkillTargets.cs" Link="Sources\SkillTargets.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentRecordingReader.cs" Link="Sources\AgentRecordingReader.cs"/>
         <Compile Include="..\..\..\pyRevitLabs.PyRevit.Runtime\Agent\AgentPipeName.cs" Link="Sources\AgentPipeName.cs"/>
         <Compile Include="..\..\pyRevitCLI\PyRevitLibraryIndex.cs" Link="Sources\PyRevitLibraryIndex.cs"/>

@@ -1,6 +1,6 @@
 ---
 name: views
-description: Creating, framing and navigating views. Covers finding views, new plans, 3D views, sections and elevations, section boxes and crops, hiding categories, view templates, opening a view and zooming, and taking a picture of the result. Use it for "make a 3D view of the house", "cut a section through the stair", "show me the kitchen", "open the level 2 plan" and similar tasks.
+description: Use when creating, framing or navigating views, 3D views, sections, elevations, section boxes, crops, view templates, opening, zooming and pictures, e.g. "make a 3D view", "cut a section", "open the level 2 plan".
 ---
 
 # Views

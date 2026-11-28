@@ -1,6 +1,6 @@
 ---
 name: modeling
-description: Building and changing model geometry. Covers levels, walls, floors, ceilings, roofs (gable, hip, shed), doors and windows, columns, rooms, re-runnable build stages, and when DirectShape is acceptable. Use it for "model this house", "add walls", "put windows in" and similar tasks.
+description: Use when building or changing model geometry, levels, walls, floors, ceilings, roofs, doors, windows, columns and rooms, e.g. "model this house", "add walls", "put windows in".
 ---
 
 # Modeling

@@ -383,6 +383,171 @@ namespace pyRevitCLI {
         }
 
         /// <summary>
+        /// <c>pyrevit agent skills install</c>: copies the shipped skills into the skill folders of the
+        /// chosen targets and prints what was installed, refreshed or skipped.
+        /// </summary>
+        /// <remarks>
+        /// Writes below the project folder (<paramref name="path"/> or the current folder) or the user
+        /// profile, never anywhere else; see <see cref="PyRevitAgentSkillInstaller"/>.
+        /// </remarks>
+        /// <exception cref="PyRevitException">An argument is invalid, or a skill could not be installed.</exception>
+        public static void InstallSkills(string scope, string targets, string path, bool force, bool prefix) {
+            var context = SkillsContext(scope, targets, path);
+            var report = PyRevitAgentSkillInstaller.Install(context, new SkillOptions { Force = force, Prefix = prefix });
+            report.Warnings.AddRange(PyRevitAgentSkillInstaller.UserSkillWarnings(UserSkillsToCheck()));
+            PrintSkillsReport(report);
+            ThrowOnFailures(report);
+            foreach (var line in SkillsAdvice(context, report))
+                PrintSkillLine(line);
+        }
+
+        /// <summary>
+        /// The follow-up hints after an install: Claude Code reads another folder, and the Antigravity CLI needs a reload.
+        /// Empty when nothing was installed or updated.
+        /// </summary>
+        internal static List<string> SkillsAdvice(SkillContext context, SkillsReport report) {
+            var advice = new List<string>();
+            if (!report.Actions.Any(action => action.State == SkillState.Installed || action.State == SkillState.Updated))
+                return advice;
+            if (!context.Includes("claude"))
+                advice.Add("Claude Code reads .claude/skills (add --target=claude).");
+            if (context.Includes("antigravity") || (context.Scope == SkillScope.Project && context.Includes("agents")))
+                advice.Add("The Antigravity CLI needs '/skills reload' after an install.");
+            return advice;
+        }
+
+        /// <summary>
+        /// The install command that refreshes exactly what a status run inspected.
+        /// </summary>
+        internal static string RefreshCommand(string scope, string targets, string path) {
+            var canonicalTargets = string.Join(",", SkillTargets.ParseTargets(targets));
+            return $"pyrevit agent skills install --scope={QuoteForShell(scope.Trim().ToLowerInvariant())} --target={QuoteForShell(canonicalTargets)}"
+                + (path == null ? string.Empty : $" --path={QuoteForShell(path)}");
+        }
+
+        /// <summary>
+        /// Quotes a command line value the way Windows argument parsing reads it back: backslashes before a quote
+        /// (embedded or closing) are doubled and embedded quotes are escaped.
+        /// </summary>
+        private static string QuoteForShell(string value) {
+            if (!value.Any(character => char.IsWhiteSpace(character) || "\"'&|<>^%()$;`!".IndexOf(character) >= 0))
+                return value;
+            var quoted = new System.Text.StringBuilder("\"");
+            var backslashes = 0;
+            foreach (var character in value) {
+                if (character == '\\') {
+                    backslashes++;
+                    continue;
+                }
+                quoted.Append('\\', character == '"' ? backslashes * 2 + 1 : backslashes);
+                quoted.Append(character);
+                backslashes = 0;
+            }
+            return quoted.Append('\\', backslashes * 2).Append('"').ToString();
+        }
+
+        /// <summary>
+        /// The punctuation, besides letters, digits and the ASCII space, that is inert inside double quotes in
+        /// cmd.exe, PowerShell and POSIX shells. Quotes of any kind, substitution, variable and history characters,
+        /// dashes and other whitespace are deliberately absent.
+        /// </summary>
+        private const string InertPunctuation = " _.,:\\/()&;+-=@#";
+
+        private static bool IsPasteSafe(string value) {
+            return value.All(character => char.IsLetterOrDigit(character) || InertPunctuation.IndexOf(character) >= 0);
+        }
+
+        /// <summary>
+        /// The warning printed when installed skills are stale. It carries the exact refresh command only when no
+        /// argument of it changes under console sanitizing and every value is made only of letters, digits and
+        /// <see cref="InertPunctuation"/>; otherwise it asks the user to repeat the original options, because a
+        /// sanitized path would select a different folder and an interpreted one could run something.
+        /// </summary>
+        internal static string StaleWarning(string scope, string targets, string path) {
+            var prefix = "Warning: some installed skills are stale. ";
+            var command = RefreshCommand(scope, targets, path);
+            var values = new[] { scope.Trim(), string.Join(",", SkillTargets.ParseTargets(targets)), path ?? string.Empty };
+            if (SkillFiles.Printable(command) == command && values.All(IsPasteSafe))
+                return $"{prefix}Run '{command}' to refresh them.";
+            var safeScope = SkillFiles.Printable(scope.Trim().ToLowerInvariant());
+            var safeTargets = SkillFiles.Printable(string.Join(",", SkillTargets.ParseTargets(targets)));
+            return $"{prefix}Repeat your original 'pyrevit agent skills install' options (scope {safeScope}, target {safeTargets}) to refresh them; the --path contains characters that cannot be shown or that a shell would interpret.";
+        }
+
+        private static void PrintSkillLine(string line) {
+            Console.WriteLine(SkillFiles.Printable(line));
+        }
+
+        /// <summary>
+        /// The <c>status --json</c> text; every string is stripped of control and bidi characters like the text output.
+        /// </summary>
+        internal static string SkillsJson(SkillsReport report) {
+            return new JObject {
+                ["skills"] = new JArray(report.Actions.Select(action => new JObject {
+                    ["target"] = SkillFiles.Printable(action.Target),
+                    ["skill"] = SkillFiles.Printable(action.Skill),
+                    ["state"] = action.State.Label(),
+                    ["folder"] = SkillFiles.Printable(action.Folder),
+                })),
+                ["warnings"] = new JArray(report.Warnings.Select(SkillFiles.Printable)),
+            }.ToString(Formatting.Indented);
+        }
+
+        /// <summary>
+        /// <c>pyrevit agent skills status</c>: prints whether each shipped skill is current, stale, edited,
+        /// missing or blocked by a folder pyRevit did not write. A stale copy is a warning, not an error.
+        /// </summary>
+        public static void PrintSkillsStatus(string scope, string targets, string path, bool json) {
+            var report = PyRevitAgentSkillInstaller.Status(SkillsContext(scope, targets, path));
+            report.Warnings.AddRange(PyRevitAgentSkillInstaller.UserSkillWarnings(UserSkillsToCheck()));
+            if (json) {
+                Console.WriteLine(SkillsJson(report));
+                return;
+            }
+            PrintSkillsReport(report);
+            if (report.Actions.Any(action => action.State == SkillState.Stale))
+                PrintSkillLine(StaleWarning(scope, targets, path));
+        }
+
+        /// <summary>
+        /// <c>pyrevit agent skills uninstall</c>: removes the pyRevit-owned skill folders of the chosen targets.
+        /// An edited copy is kept unless <paramref name="force"/>.
+        /// </summary>
+        public static void UninstallSkills(string scope, string targets, string path, bool force) {
+            var context = SkillContext.CreateForUninstall(targets, scope, path, Environment.CurrentDirectory, UserProfile());
+            var report = PyRevitAgentSkillInstaller.Uninstall(context, force);
+            PrintSkillsReport(report);
+            ThrowOnFailures(report);
+            if (!report.Actions.Any(action => action.State == SkillState.Removed))
+                PrintSkillLine("No pyRevit skills removed.");
+        }
+
+        private static void PrintSkillsReport(SkillsReport report) {
+            foreach (var action in report.Actions)
+                PrintSkillLine($"{action.State.Label(),-9} {action.Skill} ({action.Target}: {action.Folder})");
+            foreach (var warning in report.Warnings)
+                PrintSkillLine("Warning: " + warning);
+        }
+
+        private static void ThrowOnFailures(SkillsReport report) {
+            var failed = report.Actions.Count(action => action.State == SkillState.Failed);
+            if (failed > 0)
+                throw new PyRevitException($"{failed} skill(s) failed, see the warnings above.");
+        }
+
+        private static SkillContext SkillsContext(string scope, string targets, string path) {
+            return SkillContext.Create(targets, scope, path, Environment.CurrentDirectory, UserProfile(), PyRevitAgentSkills.ShippedSkillsDir);
+        }
+
+        private static string UserProfile() {
+            return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        }
+
+        private static string UserSkillsToCheck() {
+            return PyRevitConfigs.GetAgentUserSkillsEnabled() ? PyRevitAgentSkills.UserSkillsDir : null;
+        }
+
+        /// <summary>
         /// Registers <c>pyrevit mcp</c> with an MCP client.
         /// </summary>
         /// <remarks>

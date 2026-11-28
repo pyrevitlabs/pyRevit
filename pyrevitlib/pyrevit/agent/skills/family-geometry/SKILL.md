@@ -1,6 +1,6 @@
 ---
 name: family-geometry
-description: Creating content inside Revit families. Covers reference planes, labelled dimensions, locked extrusions, formulas, shared parameters, visibility and graphics, materials, and nested families. Use it for "build a parametric family", "add reference planes and dimensions", "lock the extrusion to the planes", "nest one family in another", "add a shared parameter to a family" and similar tasks. Read family-editing first for opening, saving and loading families.
+description: Use when building geometry inside families, reference planes, labelled dimensions, locked extrusions, formulas, shared parameters, nesting, e.g. "build a parametric family". Read family-editing first.
 ---
 
 # Family geometry

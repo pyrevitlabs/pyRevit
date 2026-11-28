@@ -576,6 +576,40 @@ func main() {
 							"--limit": complete.PredictNothing,
 						},
 					},
+					"skills": complete.Command{
+						Sub: complete.Commands{
+							"install": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--force":  complete.PredictNothing,
+									"--log":    complete.PredictNothing,
+									"--path":   complete.PredictNothing,
+									"--prefix": complete.PredictNothing,
+									"--scope":  complete.PredictNothing,
+									"--target": complete.PredictNothing,
+								},
+							},
+							"status": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--json":   complete.PredictNothing,
+									"--path":   complete.PredictNothing,
+									"--scope":  complete.PredictNothing,
+									"--target": complete.PredictNothing,
+								},
+							},
+							"uninstall": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--force":  complete.PredictNothing,
+									"--path":   complete.PredictNothing,
+									"--scope":  complete.PredictNothing,
+									"--target": complete.PredictNothing,
+								},
+							},
+						},
+						Flags: complete.Flags{},
+					},
 				},
 				Flags: complete.Flags{
 					"--help": complete.PredictNothing,

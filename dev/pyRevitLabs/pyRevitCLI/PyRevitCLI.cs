@@ -544,6 +544,18 @@ namespace pyRevitCLI {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Agent);
 
+                else if (all("skills")) {
+                    var skillTargets = TryGetValue("--target") ?? PyRevitAgentSkillInstaller.DefaultTarget;
+                    var skillScope = TryGetValue("--scope") ?? PyRevitAgentSkillInstaller.DefaultScope;
+                    var skillPath = TryGetValue("--path");
+                    if (all("install"))
+                        PyRevitCLIAgentCmds.InstallSkills(skillScope, skillTargets, skillPath, arguments["--force"].IsTrue, arguments["--prefix"].IsTrue);
+                    else if (all("status"))
+                        PyRevitCLIAgentCmds.PrintSkillsStatus(skillScope, skillTargets, skillPath, arguments["--json"].IsTrue);
+                    else if (all("uninstall"))
+                        PyRevitCLIAgentCmds.UninstallSkills(skillScope, skillTargets, skillPath, arguments["--force"].IsTrue);
+                }
+
                 else if (all("status"))
                     PyRevitCLIAgentCmds.PrintStatus(json: arguments["--json"].IsTrue);
 

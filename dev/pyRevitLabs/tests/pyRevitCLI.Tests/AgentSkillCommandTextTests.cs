@@ -1,0 +1,127 @@
+using pyRevitCLI;
+using pyRevitLabs.Json.Linq;
+
+namespace pyRevitCLI.Tests;
+
+[Trait("Environment", "HostFree")]
+[Trait("Level", "Unit")]
+public class AgentSkillCommandTextTests : SkillInstallFixture {
+    private static SkillsReport Installed() {
+        var report = new SkillsReport();
+        report.Actions.Add(new SkillAction { Target = "agents", Skill = "alpha", State = SkillState.Installed, Folder = "x" });
+        return report;
+    }
+
+    [Fact]
+    public void TheJsonOutputIsStrippedOfControlAndBidiCharactersToo() {
+        var hostile = "a" + (char)0x202E + "b" + (char)0x1b + "c";
+        var report = new SkillsReport();
+        report.Actions.Add(new SkillAction { Target = "agents", Skill = hostile, State = SkillState.Current, Folder = hostile });
+        report.Warnings.Add(hostile);
+
+        var json = PyRevitCLIAgentCmds.SkillsJson(report);
+
+        var parsed = JObject.Parse(json);
+        Assert.Equal("abc", parsed["skills"][0].Value<string>("skill"));
+        Assert.Equal("abc", parsed["skills"][0].Value<string>("folder"));
+        Assert.Equal("abc", parsed["warnings"][0].Value<string>());
+    }
+
+    [Fact]
+    public void TheClaudeAndAntigravityHintsAreIndependent() {
+        var both = PyRevitCLIAgentCmds.SkillsAdvice(Context("claude,antigravity"), Installed());
+        var agents = PyRevitCLIAgentCmds.SkillsAdvice(Context("agents"), Installed());
+        var claudeOnly = PyRevitCLIAgentCmds.SkillsAdvice(Context("claude"), Installed());
+
+        Assert.Single(both);
+        Assert.Contains("/skills reload", both[0]);
+        Assert.Equal(2, agents.Count);
+        Assert.Empty(claudeOnly);
+        Assert.Empty(PyRevitCLIAgentCmds.SkillsAdvice(Context("agents"), new SkillsReport()));
+    }
+
+    [Fact]
+    public void TheRefreshCommandRepeatsTheInspectedScopeTargetsAndPath() {
+        Assert.Equal("pyrevit agent skills install --scope=user --target=claude", PyRevitCLIAgentCmds.RefreshCommand("user", "claude", null));
+        Assert.Equal("pyrevit agent skills install --scope=project --target=agents --path=\"C:\\my proj\"", PyRevitCLIAgentCmds.RefreshCommand("project", "agents", "C:\\my proj"));
+    }
+
+    [Fact]
+    public void TheRefreshCommandUsesCleanTargetNamesAndQuotesValuesThatNeedIt() {
+        var command = PyRevitCLIAgentCmds.RefreshCommand("PROJECT", "agents, claude ,agents", "C:\\my proj");
+
+        Assert.Equal("pyrevit agent skills install --scope=project --target=agents,claude --path=\"C:\\my proj\"", command);
+        Assert.Equal("pyrevit agent skills install --scope=project --target=agents --path=\"C:\\a&b\"", PyRevitCLIAgentCmds.RefreshCommand("project", "agents", "C:\\a&b"));
+        Assert.Equal("pyrevit agent skills install --scope=project --target=agents --path=C:\\plain", PyRevitCLIAgentCmds.RefreshCommand("project", "agents", "C:\\plain"));
+    }
+
+    [Fact]
+    public void ATrailingBackslashInAQuotedPathIsDoubledSoItCannotEscapeTheClosingQuote() {
+        Assert.Equal("pyrevit agent skills install --scope=project --target=agents --path=\"C:\\my proj\\\\\"", PyRevitCLIAgentCmds.RefreshCommand("project", "agents", "C:\\my proj\\"));
+        Assert.Equal("pyrevit agent skills install --scope=project --target=agents --path=\"C:\\a \\\"b\\\\\\\"c\"", PyRevitCLIAgentCmds.RefreshCommand("project", "agents", "C:\\a \"b\\\"c"));
+        Assert.Equal("pyrevit agent skills install --scope=project --target=agents --path=C:\\", PyRevitCLIAgentCmds.RefreshCommand("project", "agents", "C:\\"));
+    }
+
+    [Fact]
+    public void TheStaleWarningPrintsTheCommandOnlyWhenNoArgumentNeedsSanitizing() {
+        var unchanged = PyRevitCLIAgentCmds.StaleWarning("project", "agents", "C:\\my proj");
+        var changed = PyRevitCLIAgentCmds.StaleWarning("user", "claude", "C:\\my" + (char)0x202E + "proj");
+
+        Assert.Contains("Run 'pyrevit agent skills install --scope=project --target=agents --path=\"C:\\my proj\"'", unchanged);
+        Assert.DoesNotContain("pyrevit agent skills install --scope", changed);
+        Assert.DoesNotContain("--path=", changed);
+        Assert.Contains("cannot be shown", changed);
+        Assert.Contains("scope user", changed);
+        Assert.Contains("target claude", changed);
+        Assert.DoesNotContain(((char)0x202E).ToString(), changed, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("C:\\repos\\$(calc)")]
+    [InlineData("C:\\repos\\a`b")]
+    [InlineData("C:\\repos\\%TEMP%")]
+    [InlineData("C:\\repos\\a!b")]
+    [InlineData("C:\\repos\\a^b")]
+    [InlineData("C:\\repos\\a\"b")]
+    public void APathAShellWouldInterpretInsideDoubleQuotesGetsTheInstructionAndNoCommand(string path) {
+        var warning = PyRevitCLIAgentCmds.StaleWarning("project", "agents", path);
+
+        Assert.DoesNotContain("--path=", warning);
+        Assert.DoesNotContain("pyrevit agent skills install --scope", warning);
+        Assert.Contains("a shell would interpret", warning);
+        Assert.Contains("scope project", warning);
+        Assert.Contains("target agents", warning);
+    }
+
+    [Theory]
+    [InlineData("C:\\my proj\\a&b")]
+    [InlineData("C:\\repos (x86);keep\\proj")]
+    public void OrdinaryPathsWithSpacesAmpersandsAndParenthesesStillGetTheCommand(string path) {
+        var warning = PyRevitCLIAgentCmds.StaleWarning("project", "agents", path);
+
+        Assert.Contains("Run 'pyrevit agent skills install --scope=project --target=agents --path=\"" + path + "\"'", warning);
+    }
+
+    [Theory]
+    [InlineData(0x2018)]
+    [InlineData(0x2019)]
+    [InlineData(0x201A)]
+    [InlineData(0x201B)]
+    [InlineData(0x27)]
+    [InlineData(0x2013)]
+    [InlineData(0xA0)]
+    [InlineData(0x09)]
+    public void AQuoteLikeOrDashLikeCharacterInThePathGetsTheInstructionAndNoCommand(int codePoint) {
+        var warning = PyRevitCLIAgentCmds.StaleWarning("project", "agents", "C:\\repos\\O" + (char)codePoint + "Connor");
+
+        Assert.DoesNotContain("--path=", warning);
+        Assert.Contains("a shell would interpret", warning);
+    }
+
+    [Fact]
+    public void AnAccentedLetterPathStillGetsTheCommand() {
+        var warning = PyRevitCLIAgentCmds.StaleWarning("project", "agents", "C:\\Users\\Jos" + (char)0xE9 + "\\proj");
+
+        Assert.Contains("Run 'pyrevit agent skills install --scope=project --target=agents --path=C:\\Users\\Jos" + (char)0xE9 + "\\proj'", warning);
+    }
+}

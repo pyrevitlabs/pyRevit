@@ -1,6 +1,6 @@
 ---
 name: pyrevit-library
-description: Map of the shared Python libraries every script can import, pyrevitlib (pyrevit.revit) and rpw, and how to find a function in them. Read it before writing raw Revit API code for lookups, element or view creation, parameters, units, transactions or navigation.
+description: Use before writing raw Revit API code, map of the pyrevitlib (pyrevit.revit) and rpw helpers for lookups, element and view creation, parameters, units, transactions and navigation.
 ---
 
 # pyrevitlib and rpw
