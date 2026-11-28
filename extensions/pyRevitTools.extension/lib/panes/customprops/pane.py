@@ -31,7 +31,7 @@ ADD_PARAMS = "additional_parameters"
 SHOW_WS_INFO = "show_worksharing_info"
 
 _SEL_CB_TAG = "sel_checkbox"
-_RAW_INT_TAG = "_raw_int"
+_COPIED_INTEGER_TAG = "_copied_integer"
 _PASTED_NUMBER_TAG = "_pasted_number"
 
 PastedNumber = namedtuple("PastedNumber", ["text", "internal_value", "data_type"])
@@ -157,6 +157,44 @@ def _get_ws_info(doc, element):
     except Exception:
         pass
     return "", "", ""
+
+
+def _is_workset_parameter(definition):
+    return (
+        getattr(definition, "BuiltInParameter", None)
+        == DB.BuiltInParameter.ELEM_PARTITION_PARAM
+    )
+
+
+def _reference_label(element):
+    """Return the text that names a referenced element in the pane.
+
+    Element types are qualified with their family. Two families can have a type
+    of the same name, and ``ValueCodec`` resolves the bare name to the one in
+    use or refuses it as ambiguous.
+    """
+    name = query.get_name(element)
+    if isinstance(element, DB.ElementType) and element.FamilyName:
+        return "{}: {}".format(element.FamilyName, name)
+    return name
+
+
+def _reference_options(elements, category_id):
+    """Return the sorted labels of the elements in a category, or of all."""
+    labels = set(
+        _reference_label(element)
+        for element in elements
+        if category_id is None
+        or (element.Category and element.Category.Id == category_id)
+    )
+    labels.discard("")
+    return sorted(labels)
+
+
+def _filter_base_name(pkv):
+    """Return a view filter name; Revit does not allow a colon in one."""
+    name = "{} == {}".format(pkv.name, pkv.display_value or pkv.value)
+    return name.replace(":", " -")
 
 
 def _has_design_options(doc):
@@ -682,6 +720,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
     def _make_elementid_row(self, param_name, doc):
         current_names = []
         ref_class = None
+        ref_category_id = None
         ref_bic = None
         has_invalid = False
 
@@ -704,6 +743,8 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
                 if ref_class is None:
                     ref_class = ref_el.GetType()
+                    if ref_el.Category:
+                        ref_category_id = ref_el.Category.Id
 
                 if ref_bic is None:
                     try:
@@ -713,9 +754,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
                     except Exception:
                         pass
 
-                current_names.append(
-                    ref_el.Name if hasattr(ref_el, "Name") else str(eid)
-                )
+                current_names.append(_reference_label(ref_el))
 
             except Exception:
                 pass
@@ -727,19 +766,15 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
         if ref_class is not None:
             try:
-                collector = query.get_elements_by_class(ref_class, doc=doc)
-                options = sorted(
-                    set(el.Name for el in collector if hasattr(el, "Name") and el.Name)
-                )
+                collector = query.get_types_by_class(ref_class, doc=doc)
+                options = _reference_options(collector, ref_category_id)
             except Exception:
                 pass
 
         if not options and ref_bic is not None:
             try:
                 collector = query.get_elements_by_categories([ref_bic], doc=doc)
-                options = sorted(
-                    set(el.Name for el in collector if hasattr(el, "Name") and el.Name)
-                )
+                options = _reference_options(collector, None)
             except Exception:
                 pass
 
@@ -1178,11 +1213,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
                 if eid == DB.ElementId.InvalidElementId:
                     ui_text = ""
                 else:
-                    ui_text = (
-                        ref_el.Name
-                        if ref_el and hasattr(ref_el, "Name")
-                        else str(raw_value)
-                    )
+                    ui_text = _reference_label(ref_el) if ref_el else str(raw_value)
             else:
                 return None
         except Exception:
@@ -1197,6 +1228,10 @@ class CustomPropertiesPanel(forms.WPFPanel):
             categories=[element.Category] if element.Category else [],
         )
         pkv.display_value = ui_text
+        if st == DB.StorageType.Integer:
+            pkv.paste_value = (
+                ui_text if _is_workset_parameter(param.Definition) else raw_value
+            )
         if st == DB.StorageType.Double:
             pkv.data_type = get_parameter_data_type(param.Definition)
         return pkv
@@ -1255,7 +1290,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
                             )
                     elif pkv.datatype == DB.StorageType.Integer:
                         field.Text = pkv.display_value
-                        field.Tag = (_RAW_INT_TAG, pkv.value)
+                        field.Tag = (_COPIED_INTEGER_TAG, pkv.paste_value)
                 elif isinstance(field, framework.Controls.ComboBox):
                     idx = field.Items.IndexOf(pkv.display_value)
                     if idx >= 0:
@@ -1488,7 +1523,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
                     except Exception:
                         pass
 
-            base_name = "{} == {}".format(pkv.name, pkv.display_value or pkv.value)
+            base_name = _filter_base_name(pkv)
             if len(base_name) > 100:
                 base_name = base_name[:97] + "..."
             existing = set(f.Name for f in query.get_rule_filters(doc))
@@ -1599,26 +1634,26 @@ class CustomPropertiesPanel(forms.WPFPanel):
                         val = _pasted_number(field)
                     else:
                         tag = getattr(field, "Tag", None)
-                        raw_int = (
+                        copied_integer = (
                             tag[1]
                             if isinstance(tag, tuple)
                             and len(tag) == 2
-                            and tag[0] == _RAW_INT_TAG
+                            and tag[0] == _COPIED_INTEGER_TAG
                             else None
                         )
                         if (
                             isinstance(field, framework.Controls.TextBox)
                             and field.IsReadOnly
                         ):
-                            if raw_int is None:
+                            if copied_integer is None:
                                 continue  # opaque int not pasted — nothing to apply
-                            val = str(raw_int)
+                            val = str(copied_integer)
                         else:
                             val = field.Text.strip()
                             if not val or val == self._varies:
                                 continue
-                            if raw_int is not None:
-                                val = str(raw_int)
+                            if copied_integer is not None:
+                                val = str(copied_integer)
                     p["additional"][lbl.Text] = val
             except Exception:
                 pass

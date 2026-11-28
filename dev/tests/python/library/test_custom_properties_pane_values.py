@@ -64,6 +64,10 @@ class _Button(_Control):
     pass
 
 
+class _ElementType(_Control):
+    pass
+
+
 def _fake_framework():
     return types.SimpleNamespace(
         Controls=types.SimpleNamespace(
@@ -94,7 +98,7 @@ class _PaneTestCase(unittest.TestCase):
             ),
             PastedNumber=PastedNumber,
             _SEL_CB_TAG="sel_checkbox",
-            _RAW_INT_TAG="_raw_int",
+            _COPIED_INTEGER_TAG="_copied_integer",
             _PASTED_NUMBER_TAG="_pasted_number",
         )
         methods = dict((name, namespace[name]) for name in PANE_METHODS + PASTE_METHODS)
@@ -191,6 +195,37 @@ class PastedNumberTests(_PaneTestCase):
 
 
 @pytest.mark.regression
+class PastedIntegerTests(_PaneTestCase):
+    """Integers shown as text are read-only fields that only a paste can fill."""
+
+    def apply_paste(self, pasted_value, shown):
+        field = _TextBox(Text="Other", IsReadOnly=True)
+        row = _row("Value", field, field.Text)
+        self.pane._copy_clipboard = [
+            types.SimpleNamespace(
+                name="Value",
+                datatype="Integer",
+                value=5,
+                paste_value=pasted_value,
+                display_value=shown,
+            )
+        ]
+        self.pane._find_field_for_param = lambda name: field
+        self.pane._mark_field_dirty = lambda changed: None
+        self.pane.paste_clicked(None, None)
+        return self.collect(row)["additional"]
+
+    def test_a_named_value_is_written_as_its_number(self):
+        self.assertEqual({"Value": "5"}, self.apply_paste(5, "Column"))
+
+    def test_a_workset_is_written_by_name(self):
+        self.assertEqual(
+            {"Value": "Shared Levels"},
+            self.apply_paste("Shared Levels", "Shared Levels"),
+        )
+
+
+@pytest.mark.regression
 class PastedNumberWriteTests(unittest.TestCase):
     def write_to(self, data_type):
         written = []
@@ -247,13 +282,59 @@ class RefusalReportTests(unittest.TestCase):
 
 
 @pytest.mark.regression
+class ReferenceOptionTests(unittest.TestCase):
+    def test_same_named_types_of_the_category_are_told_apart(self):
+        namespace = _load_definitions(
+            ("_reference_label", "_reference_options"),
+            DB=types.SimpleNamespace(ElementType=_ElementType),
+            query=types.SimpleNamespace(get_name=lambda element: element.Name),
+        )
+        framing = types.SimpleNamespace(Id="framing")
+        columns = types.SimpleNamespace(Id="columns")
+        elements = [
+            _ElementType(Name="Standard", FamilyName=family, Category=category)
+            for family, category in (
+                ("Round", framing),
+                ("Square", framing),
+                ("Post", columns),
+            )
+        ]
+        self.assertEqual(
+            ["Round: Standard", "Square: Standard"],
+            namespace["_reference_options"](elements, "framing"),
+        )
+
+
+@pytest.mark.regression
+class FilterNameTests(unittest.TestCase):
+    def name_for(self, display_value, value=7):
+        build = _load_definitions(("_filter_base_name",))["_filter_base_name"]
+        return build(
+            types.SimpleNamespace(name="Type", display_value=display_value, value=value)
+        )
+
+    def test_a_qualified_type_gives_a_name_revit_accepts(self):
+        self.assertEqual(
+            "Type == Round Column - Standard",
+            self.name_for("Round Column: Standard"),
+        )
+
+    def test_a_blank_text_falls_back_to_the_value(self):
+        self.assertEqual("Type == 7", self.name_for(""))
+
+
+@pytest.mark.regression
 class CopyTests(unittest.TestCase):
     """Copies through the real ``PropKeyValue``, which replaces blank text."""
 
-    def copy(self, parameter, target=None):
+    def copy(self, parameter, target=None, shown=""):
         namespace = _load_definitions(
-            ("_build_pkv_for_param",),
+            ("_build_pkv_for_param", "_reference_label", "_is_workset_parameter"),
             DB=types.SimpleNamespace(
+                ElementType=_ElementType,
+                BuiltInParameter=types.SimpleNamespace(
+                    ELEM_PARTITION_PARAM="partition"
+                ),
                 StorageType=types.SimpleNamespace(
                     String="String",
                     Double="Double",
@@ -262,7 +343,9 @@ class CopyTests(unittest.TestCase):
                 ),
                 ElementId=types.SimpleNamespace(InvalidElementId=-1),
             ),
-            ValueCodec=lambda doc: types.SimpleNamespace(read=lambda param: ""),
+            ValueCodec=lambda doc: types.SimpleNamespace(read=lambda param: shown),
+            query=types.SimpleNamespace(get_name=lambda element: element.Name),
+            is_yesno_parameter=lambda definition: False,
             PropKeyValue=_property_value_class(),
             get_elementid_value=int,
             get_parameter_data_type=lambda definition: definition,
@@ -288,6 +371,27 @@ class CopyTests(unittest.TestCase):
         target = types.SimpleNamespace(Name="Concrete")
         copied = self.copy(self.reference(7), target)
         self.assertEqual("Concrete", copied.display_value)
+
+    def test_a_reference_to_a_type_copies_its_family_too(self):
+        target = _ElementType(Name="Standard", FamilyName="Round Column")
+        copied = self.copy(self.reference(7), target)
+        self.assertEqual("Round Column: Standard", copied.display_value)
+
+    def integer(self, built_in_parameter):
+        return types.SimpleNamespace(
+            StorageType="Integer",
+            AsInteger=lambda: 5,
+            Definition=types.SimpleNamespace(BuiltInParameter=built_in_parameter),
+        )
+
+    def test_a_workset_is_pasted_by_name(self):
+        copied = self.copy(self.integer("partition"), shown="Shared Levels")
+        self.assertEqual("Shared Levels", copied.paste_value)
+        self.assertEqual(5, copied.value)
+
+    def test_another_integer_is_pasted_by_number(self):
+        copied = self.copy(self.integer("usage"), shown="Column")
+        self.assertEqual(5, copied.paste_value)
 
     def test_a_number_without_a_value_copies_as_blank_text(self):
         parameter = types.SimpleNamespace(
