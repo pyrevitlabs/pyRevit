@@ -1,0 +1,6 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_suitable">선택한 요소 중 카테고리가 있는 요소가 없습니다.</sys:String>
+</ResourceDictionary>

@@ -37,6 +37,32 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
+        /// Defers <paramref name="provider"/> until the returned value is first read, then keeps the paths it gave.
+        /// </summary>
+        /// <param name="onError">Receives the exception when <paramref name="provider"/> throws.</param>
+        /// <remarks>
+        /// Important: when <paramref name="provider"/> throws, the value is an empty list and the provider is not
+        /// called again. A plain <see cref="Lazy{T}"/> caches the exception instead and rethrows it on every read,
+        /// which would fail the setup of every later smart button, ComboBox and checkbox rather than only their
+        /// imports from library extensions.
+        /// </remarks>
+        public static Lazy<List<string>> ReadOnFirstUse(Func<IEnumerable<string>> provider, Action<Exception> onError)
+        {
+            return new Lazy<List<string>>(() =>
+            {
+                try
+                {
+                    return new List<string>(provider?.Invoke() ?? Array.Empty<string>());
+                }
+                catch (Exception ex)
+                {
+                    onError(ex);
+                    return new List<string>();
+                }
+            });
+        }
+
+        /// <summary>
         /// Order-stable fragment for the command-assembly cache seed.
         /// Sorted so enumeration order of library extensions cannot miss the cache.
         /// </summary>

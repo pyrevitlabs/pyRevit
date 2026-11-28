@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="transaction_set_workset">활성 작업 세트 설정</sys:String>
+    <sys:String x:Key="transaction_set_work_plane">활성 작업 기준면을 레벨로 설정</sys:String>
+    <sys:String x:Key="transaction_set_phase">뷰 단계 설정</sys:String>
+    <sys:String x:Key="not_workshared">이 모델은 작업 공유가 설정되어 있지 않습니다.</sys:String>
+    <sys:String x:Key="phase_not_editable">뷰 단계를 수정할 수 없습니다(임시 뷰 모드가 활성화되어 있을 수 있음).</sys:String>
+    <sys:String x:Key="config_title">설정할 항목 선택</sys:String>
+    <sys:String x:Key="config_button">선택 저장</sys:String>
+    <sys:String x:Key="option_set_workset">작업 세트</sys:String>
+    <sys:String x:Key="option_set_workset_checkout">작업 세트 체크아웃</sys:String>
+    <sys:String x:Key="option_set_workplane_to_level">작업 기준면을 레벨로</sys:String>
+    <sys:String x:Key="option_set_workplane_visible">작업 기준면 표시</sys:String>
+    <sys:String x:Key="option_set_phase">단계</sys:String>
+</ResourceDictionary>

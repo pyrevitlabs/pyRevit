@@ -28,6 +28,7 @@ include = [
     "dev/tests/run_tests.py",
     "pyrevitlib/pyrevit_automation.py",
     "pyrevitlib/pyrevit/coreutils/logger.py",
+    "pyrevitlib/pyrevit/output/bridge.py",
     "pyrevitlib/pyrevit/unittests/junit.py",
     "pyrevitlib/pyrevit/unittests/runner.py",
     "pyrevitlib/pyrevit/revit/events.py",

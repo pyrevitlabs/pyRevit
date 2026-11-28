@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="dialog_title">Selecionar uma revisão</sys:String>
+    <sys:String x:Key="button_name">Selecionar nuvens de revisão</sys:String>
+    <sys:String x:Key="no_clouds">Esta revisão não tem nuvens de revisão.</sys:String>
+</ResourceDictionary>

@@ -325,6 +325,15 @@ class _WorkspaceLoopGuard(object):
     stops loops inside workspace code. Everything outside the workspace,
     pyrevitlib and rpw included, imports as usual and stays unguarded.
 
+    A top-level workspace module never shadows a module that another
+    ``sys.meta_path`` finder or an earlier ``sys.path`` entry (a folder, a ZIP
+    file) can already resolve, whatever form that module has: the hook hands
+    the import to that provider, returning its spec or loader, so the result
+    does not depend on where the provider sits in ``sys.meta_path``. The
+    standard library, which some engines serve from archives or a resource
+    importer, behind a path finder that would find the workspace first, is
+    covered that way.
+
     Note:
         Both the PEP 302 protocol (``find_module``/``load_module``, IronPython
         2.7) and the PEP 451 one (``find_spec``/``exec_module``) are
@@ -361,6 +370,57 @@ class _WorkspaceLoopGuard(object):
                 return found if self._is_workspace_file(found[0]) else None
         return None
 
+    def _provided_elsewhere(self, fullname):
+        for finder in list(sys.meta_path):
+            if finder is not self:
+                found = self._ask(finder, fullname, True)
+                if found is not None:
+                    return found
+        import pkgutil
+
+        for entry in list(sys.path):
+            if not entry or not isinstance(entry, str):
+                continue
+            if _is_under(op.join(op.abspath(entry), "x"), self._root):
+                break
+            try:
+                importer = pkgutil.get_importer(entry)
+            except Exception:
+                continue
+            found = None if importer is None else self._ask(importer, fullname, False)
+            if found is not None:
+                return found
+        return None
+
+    def _ask(self, provider, fullname, is_finder):
+        try:
+            if hasattr(provider, "find_spec"):
+                found = (
+                    provider.find_spec(fullname, None)
+                    if is_finder
+                    else provider.find_spec(fullname)
+                )
+            elif hasattr(provider, "find_module"):
+                found = (
+                    provider.find_module(fullname, None)
+                    if is_finder
+                    else provider.find_module(fullname)
+                )
+            else:
+                return None
+        except Exception:
+            return None
+        if found is None or getattr(found, "loader", found) is None:
+            return None
+        origin = getattr(found, "origin", None) or getattr(found, "filename", None)
+        if origin is None:
+            loader = getattr(found, "loader", found)
+            try:
+                origin = loader.get_filename(fullname)
+            except Exception:
+                origin = None
+        return None if self._is_workspace_file(origin) else found
+
     def _is_workspace_file(self, filename):
         return _is_under(filename, self._root) and not any(
             _is_under(filename, prefix) for prefix in self._libraries
@@ -373,6 +433,10 @@ class _WorkspaceLoopGuard(object):
     def find_module(self, fullname, path=None):
         if not self._locate(fullname, path):
             return None
+        if path is None:
+            provided = self._provided_elsewhere(fullname)
+            if provided is not None:
+                return getattr(provided, "loader", provided)
         self._paths[fullname] = path
         return self
 
@@ -399,6 +463,13 @@ class _WorkspaceLoopGuard(object):
         if not located:
             return None
         import importlib.util
+
+        if path is None:
+            provided = self._provided_elsewhere(fullname)
+            if provided is not None:
+                if hasattr(provided, "loader"):
+                    return provided
+                return importlib.util.spec_from_loader(fullname, provided)
 
         filename, is_package = located
         return importlib.util.spec_from_file_location(
@@ -1722,7 +1793,18 @@ def _build_namespace(context):
 
 
 def _enter_workspace(workspace):
-    """Put the agent's workspace folder on sys.path with its modules unloaded.
+    """Append the agent's workspace folder to sys.path with its modules unloaded.
+
+    The folder goes last so a workspace module can't shadow a standard library
+    or pyRevit module of the same name. An entry that is already on
+    ``sys.path``, from an earlier run, a script or ``PYTHONPATH``, is moved to
+    the end for the run and put back by :func:`_leave_workspace`, right after
+    the entry that preceded it.
+
+    Returns:
+        A token for :func:`_leave_workspace`: ``(workspace, moved)``, where
+        ``moved`` lists the ``(preceding_entry, entry)`` pairs taken out of
+        ``sys.path`` in their original order, or None when no workspace is set.
 
     The script engine is reused between runs, so a module imported from the
     workspace would otherwise keep the code of the first run that imported
@@ -1732,10 +1814,20 @@ def _enter_workspace(workspace):
     if not workspace:
         return None
     _unload_modules_under(workspace)
-    added = workspace not in sys.path
-    if added:
-        sys.path.insert(0, workspace)
-    return workspace if added else None
+    root = _folder_prefix(workspace)
+    original = list(sys.path)
+    moved = [
+        (original[index - 1] if index else None, entry)
+        for index, entry in enumerate(original)
+        if isinstance(entry, str) and entry and _folder_prefix(entry) == root
+    ]
+    sys.path[:] = [
+        entry
+        for entry in original
+        if not (isinstance(entry, str) and entry and _folder_prefix(entry) == root)
+    ]
+    sys.path.append(workspace)
+    return workspace, moved
 
 
 def _is_under(module_file, root):
@@ -1830,8 +1922,13 @@ def _is_runtime_module(module_file):
     return any(_is_under(module_file, prefix) for prefix in prefixes if prefix)
 
 
-def _leave_workspace(workspace, added_to_path):
-    """Unload the workspace's modules and drop the ``sys.path`` entry the run added.
+def _leave_workspace(workspace, token):
+    """Unload the workspace's modules and restore ``sys.path`` as it was before the run.
+
+    ``token`` is what :func:`_enter_workspace` returned: the entry the run
+    appended is removed and each entry it moved is put back right after the
+    entry that preceded it, at the front when it was first, or at the end
+    when that entry is gone.
 
     A module left loaded would shadow a module of the same name in a different
     workspace folder on a later run, since ``import`` returns the cached module
@@ -1839,8 +1936,19 @@ def _leave_workspace(workspace, added_to_path):
     """
     if workspace:
         _unload_modules_under(workspace)
-    if added_to_path and added_to_path in sys.path:
-        sys.path.remove(added_to_path)
+    if token:
+        appended, moved = token
+        for index in range(len(sys.path) - 1, -1, -1):
+            if sys.path[index] == appended:
+                del sys.path[index]
+                break
+        for preceding, entry in moved:
+            if preceding is None:
+                sys.path.insert(0, entry)
+            elif preceding in sys.path:
+                sys.path.insert(sys.path.index(preceding) + 1, entry)
+            else:
+                sys.path.append(entry)
 
 
 def _elementid_value(element_id):

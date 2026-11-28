@@ -1,39 +1,38 @@
-from pyrevit.framework import List
-from pyrevit import revit, DB, UI
-from pyrevit import forms
-# pylint: disable=invalid-name
+# -*- coding: utf-8 -*-
+"""Select all revision clouds that share a comment with the selected revision clouds."""
+
+from pyrevit import forms, script
+from pyrevit import revit, DB
+from pyrevit.coreutils import applocales
+
+RESOURCES = script.get_bundle_file("resources.xaml")
 
 
-selection = revit.get_selection()
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
-# collect all revision clouds
-cl = DB.FilteredElementCollector(revit.doc)
-revclouds = cl.OfCategory(
-    DB.BuiltInCategory.OST_RevisionClouds
-).WhereElementIsNotElementType()
+def comment_of(cloud):
+    parameter = cloud.get_Parameter(DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)
+    return parameter.AsString() if parameter else None
 
 
-if not revclouds:
-    forms.alert("At least one Revision Cloud must be selected.")
+def main():
+    selected_clouds = [
+        element
+        for element in revit.get_selection().elements
+        if isinstance(element, DB.RevisionCloud)
+    ]
+    comments = {comment_of(cloud) for cloud in selected_clouds}
+    comments.discard(None)
+    comments.discard("")
+    if not comments:
+        forms.alert(_t("no_comment"), exitscript=True)
+    clouds = revit.query.get_elements_by_class(DB.RevisionCloud, doc=revit.doc)
+    revit.get_selection().set_to(
+        [cloud.Id for cloud in clouds if comment_of(cloud) in comments]
+    )
 
-# get selected revision cloud info
-src_comment = None
-for el in selection.elements:
-    if isinstance(el, DB.RevisionCloud):
-        cparam = el.get_Parameter(DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)
-        src_comment = cparam.AsString()
 
-# find matching clouds
-if src_comment:
-    clouds = []
-    for revcloud in revclouds:
-        cparam = revcloud.get_Parameter(DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)
-        dest_comment = cparam.AsString()
-        if src_comment == dest_comment:
-            clouds.append(revcloud.Id)
-
-    # Replace revit selection with matched clouds
-    revit.get_selection().set_to(clouds)
-else:
-    forms.alert("Selected revision cloud has no comments.")
+if __name__ == "__main__":
+    main()

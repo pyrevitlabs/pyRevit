@@ -190,6 +190,21 @@ int main()
 
 ![](../../assets/build-extensions/scripting/output/2019-08-28-11-29-07-output-tests.png)
 
+### Scrolling to the Top
+
+The output window follows the end of the output while a script prints. For long reports, call `scroll_to_top()` after the last print to show the beginning instead. [See documentation here](https://docs.pyrevitlabs.io/reference/pyrevit/output/#pyrevit.output.PyRevitOutputWindow.scroll_to_top).
+
+```python
+from pyrevit import script
+
+output = script.get_output()
+
+for i in range(500):
+    output.print_md('Line {}'.format(i))
+
+output.scroll_to_top()
+```
+
 ### Showing Progress
 
 #### Output Progress Bar

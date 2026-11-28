@@ -6,6 +6,7 @@ of element id strings, and the position of Next and Prev in ``SelListPrevNextInd
 Older pyRevit releases read and write the same files, so the formats must not change.
 Next and Prev also store the id of the element they selected last in
 ``SelListPrevNextLastId``, which older releases ignore.
+All of these files are written with pickle protocol 2, so that every engine can read them.
 """
 
 import bisect
@@ -43,20 +44,20 @@ def _last_visited_file():
     return script.get_document_data_file(LAST_VISITED_ID, DATA_FILE_EXTENSION)
 
 
-def _load(path):
+def _load(path, report_failure):
     if not op.exists(path):
         return None
     try:
         with open(path, "rb") as data_file:
             return pickle.load(data_file)
-    except Exception:
-        logger.exception("{} could not be read.".format(path))
+    except Exception as load_err:
+        report_failure("{} could not be read. | {}".format(path, load_err))
         return None
 
 
 def _dump(path, data):
     with open(path, "wb") as data_file:
-        pickle.dump(data, data_file)
+        pickle.dump(data, data_file, 2)
 
 
 def read_memory():
@@ -65,7 +66,7 @@ def read_memory():
     A missing or unreadable memory file reads as an empty memory. An unreadable file
     is logged. Memories written as a list by older releases are read as well.
     """
-    stored = _load(_memory_file())
+    stored = _load(_memory_file(), logger.exception)
     return set(stored) if stored else set()
 
 
@@ -128,11 +129,11 @@ def step_through_memory(direction, step_size=1):
     element_ids = require_memory_element_ids()
     get_elementid_value = get_elementid_value_func()
     element_id_values = [get_elementid_value(element_id) for element_id in element_ids]
-    last_value = _load(_last_visited_file())
+    last_value = _load(_last_visited_file(), logger.debug)
     if last_value is not None:
         index = _stepped_index(element_id_values, last_value, direction, step_size)
     else:
-        stored_index = _load(_index_file())
+        stored_index = _load(_index_file(), logger.debug)
         index = 0 if stored_index is None else stored_index + direction * step_size
     index %= len(element_ids)
     revit.get_selection().set_to([element_ids[index]])

@@ -45,6 +45,8 @@ from pyrevit.revit import units, ui
 | Navigation | `ui.request_view_change(view)`, `ui.zoom_to_elements(elements)`, `ui.zoom_fit()` |
 | Units | `units.parse_length("32'-6\"")` (feet), `units.parse_slope("8:12")` (rise over run), `units.format_length(value)` |
 | Parameters | `query.get_param(element, name)`, `update.update_param_value(param, value)` |
+| Numbers on elements in a view, as markers or a heatmap | `from pyrevit.revit import avf`: `avf.show_values(view, {element_or_id: number}, name=..., unit=...)` reports what was shown and why anything failed. By default it replaces every value of `name`; to add or change single values pass `keep_others=True`, where None as a value removes one. `avf.clear_values(view, name)` removes all values of a name. A dry run or a rolled back run can leave the values in the view, so clear them yourself |
+| Clickable icons in a view, for buttons (Revit 2022+) | `from pyrevit.revit import tmpgfx`: `tmpgfx.get_manager(tool_name, doc, HandlerSubclass)` and `tmpgfx.dispose(tool_name)`. The bundle needs `engine: persistent: true` |
 | Element ids across Revit versions | `from pyrevit.compat import get_elementid_value_func` |
 | Wrappers with a friendlier API | `from rpw import db`: `db.Collector(of_class="Wall", is_not_type=True)`, `db.Element(element).parameters["Comments"].value`, `db.Room`, `db.Wall`, `db.View`, graphic overrides |
 

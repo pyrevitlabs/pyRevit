@@ -8,12 +8,12 @@ title:
   de_de: Alle Elemente der aktuell ausgewählten Familie auswählen
   pt_br: Selecionar Todos os Elementos da Mesma Família
 tooltip:
-  en_us: Selects all elements (in model) of the same family as the currently selected object
-  ko: 현재 선택한 객체와 같은 패밀리의 모든 요소(모델 내)를 선택합니다
-  fr_fr: Sélectionne tous les éléments (dans le modèle) de la même famille que l'objet actuellement sélectionné
-  ru: Выделяет все элементы (в модели) с одинковым семейством, что и текущий выделенный элемент.
-  chinese_s: 选择（模型中）与当前选定对象属于同一族的所有图元
-  es_es: Selecciona todos los elementos (en el modelo) de la misma familia que el objeto actualmente seleccionado
-  de_de: Es werden alle Elemente im Modell ausgewählt die der gleichen Familien angehören wie das aktuell ausgewählte Objekt
-  pt_br: Seleciona todos os elementos (no modelo) da mesma família que o objeto atualmente selecionado
+  en_us: Select all instances in the project of the families of the selected elements, whatever their type. Family instances and family types picked in the Project Browser work. Other elements, such as walls, are ignored.
+  ko: 선택한 요소의 패밀리에 속한 프로젝트의 모든 인스턴스를 유형과 관계없이 선택합니다. 패밀리 인스턴스와 프로젝트 탐색기에서 선택한 패밀리 유형에서 작동합니다. 벽 같은 다른 요소는 무시됩니다.
+  fr_fr: Sélectionne toutes les instances, quel que soit leur type, des familles des éléments sélectionnés dans le projet. Les instances de famille et les types de famille choisis dans le navigateur de projet fonctionnent. Les autres éléments, comme les murs, sont ignorés.
+  ru: Выделяет в проекте все экземпляры семейств выбранных элементов, независимо от типоразмера. Работает с экземплярами семейств и с типоразмерами, выбранными в диспетчере проекта. Остальные элементы, например стены, игнорируются.
+  chinese_s: 选择项目中所选图元所属族的所有实例，不论类型。适用于族实例，也适用于在项目浏览器中选中的族类型。其他图元（例如墙）会被忽略。
+  es_es: Selecciona todas las instancias del proyecto de las familias de los elementos seleccionados, sea cual sea su tipo. Funciona con instancias de familia y con tipos de familia elegidos en el Navegador de proyectos. Los demás elementos, como los muros, se ignoran.
+  de_de: Wählt alle Exemplare der Familien der ausgewählten Elemente im Projekt aus, unabhängig vom Typ. Familienexemplare und im Projektbrowser gewählte Familientypen funktionieren. Andere Elemente, etwa Wände, werden ignoriert.
+  pt_br: Seleciona todas as instâncias do projeto das famílias dos elementos selecionados, seja qual for o tipo. Funciona com instâncias de família e com tipos de família escolhidos no Navegador de projeto. Os demais elementos, como paredes, são ignorados.
 context: selection

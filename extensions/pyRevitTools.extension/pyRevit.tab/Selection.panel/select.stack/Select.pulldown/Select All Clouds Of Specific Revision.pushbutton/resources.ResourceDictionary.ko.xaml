@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="dialog_title">수정 사항 선택</sys:String>
+    <sys:String x:Key="button_name">수정 기호 선택</sys:String>
+    <sys:String x:Key="no_clouds">이 수정 사항에는 수정 기호가 없습니다.</sys:String>
+</ResourceDictionary>

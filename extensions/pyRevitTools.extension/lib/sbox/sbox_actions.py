@@ -13,7 +13,7 @@ def toggle(doc, datafilename):
     current_view = doc.ActiveView
     if not isinstance(current_view, DB.View3D):
         return
-    current_view_id_value = get_elementid_value(current_view.Id)
+    current_view_id_value = int(get_elementid_value(current_view.Id))
     sectionbox_active_state = current_view.IsSectionBoxActive
 
     try:
@@ -196,7 +196,7 @@ def temp_switch(doc, temp_datafilename, padding=1.0, target_view=None):
 
             del view_data[view_key]
             with open(temp_datafilename, "wb") as f:
-                script.pickle.dump(view_data, f)
+                script.pickle.dump(view_data, f, 2)
 
             return "restored"
 
@@ -232,7 +232,7 @@ def temp_switch(doc, temp_datafilename, padding=1.0, target_view=None):
 
                 view_data[view_key] = current_state
                 with open(temp_datafilename, "wb") as f:
-                    script.pickle.dump(view_data, f)
+                    script.pickle.dump(view_data, f, 2)
 
                 return "set"
 

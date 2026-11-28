@@ -96,7 +96,6 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.caret
   - pymdownx.keys
-  - pymdownx.highlight
   - admonition
   - md_in_html
   - toc
@@ -114,6 +113,7 @@ nav:
     - Keynotes: tools/keynotes.md
     - Patterns: tools/patterns.md
     - Print Sheets: tools/print-sheets.md
+    - Section Box Navigator: tools/section-box-navigator.md
     - Tab Coloring: tools/tab-coloring.md
     - Get RVT Info: tools/get-rvt-info.md
     - Packages and Tags: tools/packages-and-tags.md

@@ -1,17 +1,10 @@
 # -*- coding: UTF-8 -*-
 import System
 import re
-
-from rpw.ui.forms import (
-    FlexForm,
-    Label,
-    ComboBox,
-    Separator,
-    Button,
-    CheckBox,
-)
+from collections import OrderedDict
 
 from pyrevit import script, DB, HOST_APP, revit
+from pyrevit import forms
 from pyrevit.forms import alert, ProgressBar
 from pyrevit.revit.db.create import FamilyLoaderOptionsHandler
 from pyrevit.compat import get_elementid_value_func
@@ -20,6 +13,10 @@ output = script.get_output()
 logger = script.get_logger()
 
 get_elementid_value = get_elementid_value_func()
+
+SWITCH_FAMILIES = "Fonts used in Families"
+SWITCH_TEXT_NOTES = "Text Notes Fonts in Project"
+SWITCH_DIMENSIONS = "Dimensions Fonts in Project"
 
 
 def rename_element_type_if_needed(element_type, old_font, new_font_name):
@@ -32,7 +29,7 @@ def rename_element_type_if_needed(element_type, old_font, new_font_name):
     Returns:
         None
     """
-    current_name = DB.Element.Name.GetValue(element_type)
+    current_name = revit.query.get_name(element_type)
     # Use case-insensitive check to see if the old font name is part of the type name
     if old_font.lower() in current_name.lower():
         # Use case-insensitive replace
@@ -42,7 +39,7 @@ def rename_element_type_if_needed(element_type, old_font, new_font_name):
                 re.escape(old_font), new_font_name, current_name, flags=re.IGNORECASE
             )
             if new_name != current_name:
-                DB.Element.Name.SetValue(element_type, new_name)
+                element_type.Name = new_name
                 logger.debug(
                     "Renamed type from '{}' to '{}'".format(current_name, new_name)
                 )
@@ -107,7 +104,7 @@ def update_nested_generic_annotations(host_family_doc, font_name):
                             param.Set(font_name)
                             found_in_this_nested = True
                             results.append(
-                                (DB.Element.Name.GetValue(et), old_font, font_name)
+                                (revit.query.get_name(et), old_font, font_name)
                             )
 
                 # Recursive call for families nested even deeper
@@ -179,7 +176,7 @@ def process_family_document(family_doc, new_font_name):
                             found = True
                             result.append(
                                 (
-                                    DB.Element.Name.GetValue(element_type),
+                                    revit.query.get_name(element_type),
                                     old_font,
                                     new_font_name,
                                 )
@@ -187,7 +184,7 @@ def process_family_document(family_doc, new_font_name):
                 except Exception as e:
                     logger.error(
                         "Error updating type '{}' in family '{}': {}".format(
-                            DB.Element.Name.GetValue(element_type),
+                            revit.query.get_name(element_type),
                             family_doc.Title,
                             str(e),
                         )
@@ -263,12 +260,12 @@ def update_text_types(doc, element_types, font_name):
                         rename_element_type_if_needed(elem_type, old_font, font_name)
                         param.Set(font_name)
                         results.append(
-                            (DB.Element.Name.GetValue(elem_type), old_font, font_name)
+                            (revit.query.get_name(elem_type), old_font, font_name)
                         )
             except Exception as e:
                 logger.error(
                     "**Error updating {}: {}**".format(
-                        DB.Element.Name.GetValue(elem_type), str(e)
+                        revit.query.get_name(elem_type), str(e)
                     )
                 )
     return results
@@ -285,19 +282,15 @@ def main():
 
     # --- LOGIC FOR FAMILY DOCUMENT ---
     if doc.IsFamilyDocument:
-        components = [
-            Label("Replace all fonts in this family."),
-            Separator(),
-            Label("Select Target Font:"),
-            ComboBox("font", options=font_names, default="Arial"),
-            Button("OK"),
-        ]
-        form = FlexForm("Replace Fonts in Family", components)
-        form.show()
-        if not form.values:
+        selected_font = forms.SelectFromList.show(
+            font_names,
+            title="Replace Fonts in Family",
+            multiselect=False,
+            button_name="Replace Fonts",
+        )
+        if not selected_font:
             return
 
-        selected_font = form.values["font"]
         output.print_md(
             "# Updating fonts in current family to: **{}**".format(selected_font)
         )
@@ -321,32 +314,35 @@ def main():
         return  # End script execution for family document
 
     # --- LOGIC FOR PROJECT DOCUMENT ---
-    components = [
-        Label("Change all text fonts in the project to a new font."),
-        Label("This will update all text fonts in families, dimensions,"),
-        Label("and text notes. This will NOT update fonts in"),
-        Label("schedules or tags."),
-        Separator(),
-        Label("Pick Target Font:"),
-        ComboBox("font", options=font_names, default="Arial"),
-        Separator(),
-        Label("Elements to change:"),
-        CheckBox("families", "Fonts used in Families", default=True),
-        CheckBox("textnotes", "Text Notes Fonts in Project", default=True),
-        CheckBox("dimensions", "Dimensions Fonts in Project", default=True),
-        Button("OK"),
-    ]
-
-    form = FlexForm("Change Font in Elements", components)
-    form.show()
-    if not form.values:
+    selected_font = forms.SelectFromList.show(
+        font_names,
+        title="Pick Target Font",
+        multiselect=False,
+        button_name="Next",
+    )
+    if not selected_font:
         alert("No values selected.")
         return
 
-    selected_font = form.values["font"]
+    choice, switches = forms.CommandSwitchWindow.show(
+        ["Replace Fonts (schedules and tags are not updated)"],
+        switches=OrderedDict(
+            [
+                (SWITCH_FAMILIES, True),
+                (SWITCH_TEXT_NOTES, True),
+                (SWITCH_DIMENSIONS, True),
+            ]
+        ),
+        title="Change Font in Elements",
+        message="Replace fonts with '{}'".format(selected_font),
+    )
+    if not choice:
+        alert("No values selected.")
+        return
+
     output.print_md("# Update Fonts To: **{}**".format(selected_font))
 
-    if form.values["families"]:
+    if switches[SWITCH_FAMILIES]:
         families = [
             family
             for family in DB.FilteredElementCollector(doc)
@@ -386,7 +382,7 @@ def main():
 
     text_types = []
     dim_types = []
-    if form.values["textnotes"]:
+    if switches[SWITCH_TEXT_NOTES]:
         text_types = (
             DB.FilteredElementCollector(doc).OfClass(DB.TextNoteType).ToElements()
         )
@@ -396,7 +392,7 @@ def main():
             logger.debug("Updated text note type: {}: {} → {}".format(r[0], r[1], r[2]))
         output.print_md("\n**Total text types updated: {}**".format(len(result)))
 
-    if form.values["dimensions"]:
+    if switches[SWITCH_DIMENSIONS]:
         dim_types = (
             DB.FilteredElementCollector(doc).OfClass(DB.DimensionType).ToElements()
         )

@@ -2,9 +2,15 @@
 from pyrevit import forms, revit
 from pyrevit import DB, UI
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import get_elementid_value_func, get_elementid_from_value_func
 
 get_elementid_value = get_elementid_value_func()
+get_elementid_from_value = get_elementid_from_value_func()
+
+try:
+    PLAIN_TYPES = (bool, int, long, float, str, unicode, type(None))
+except NameError:
+    PLAIN_TYPES = (bool, int, float, str, type(None))
 
 
 class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
@@ -66,9 +72,43 @@ class PropKeyValue(object):
     def __repr__(self):
         return str(self.__dict__)
 
+    def __getstate__(self):
+        """Return a state of plain Python values readable by every engine.
+
+        The .NET StorageType is stored by name and a .NET numeric value, such
+        as the Int64 of an ElementId on IronPython 2.7, is stored as an int.
+        """
+        state = dict(self.__dict__)
+        state["datatype"] = self.datatype.ToString()
+        value = state["value"]
+        if not isinstance(value, PLAIN_TYPES):
+            try:
+                state["value"] = int(value)
+            except (TypeError, ValueError):
+                state["value"] = str(value)
+        return state
+
+    def __setstate__(self, state):
+        """Restore the state and convert a stored datatype name to DB.StorageType.
+
+        A datatype already stored as the enum, as older builds wrote it, is kept.
+        """
+        self.__dict__.update(state)
+        if isinstance(self.datatype, PLAIN_TYPES):
+            self.datatype = getattr(DB.StorageType, self.datatype)
+
 
 def match_prop(dest_inst, dest_type, src_props):
-    """Match given properties on target instance or type"""
+    """Match given properties on target instance or type.
+
+    Args:
+        dest_type (DB.ElementType or None): If None, type properties are skipped.
+
+    Note:
+        An ElementId property carries a saved integer id, rebuilt through
+        get_elementid_from_value() because DB.ElementId(int) can be rejected as
+        an ambiguous overload for a plain int on IronPython 2.7 with Revit 2024+.
+    """
     mlogger = get_logger(__name__)
     for pkv in src_props:
         mlogger.debug("Applying %s", pkv.name)
@@ -91,7 +131,7 @@ def match_prop(dest_inst, dest_type, src_props):
                     dparam.Set(pkv.value or 0.0)
                 elif dparam.StorageType == DB.StorageType.ElementId:
                     if not isinstance(pkv.value, DB.ElementId):
-                        dparam.Set(DB.ElementId(pkv.value))
+                        dparam.Set(get_elementid_from_value(pkv.value))
                     else:
                         dparam.Set(pkv.value)
                 else:

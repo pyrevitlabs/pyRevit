@@ -1,43 +1,27 @@
-"""Keep only editable elements in current selection.
+# -*- coding: utf-8 -*-
+"""Keep only editable elements of the selection, or of a picked rectangle."""
 
-If nothing is selected, pick a region to filter editable elements from.
-Works in both workshared and non-workshared documents.
-"""
+from pyrevit import script
+from pyrevit import revit, DB
 
-from pyrevit import revit
-from pyrevit import DB, UI
+import selectionpick
 
-doc = revit.doc
+logger = script.get_logger()
 
 
-def is_editable(el):
-    if not doc.IsWorkshared:
+def is_editable(element):
+    if not revit.doc.IsWorkshared:
         return True
     try:
-        status = DB.WorksharingUtils.GetCheckoutStatus(doc, el.Id)
-        return status in (
-            DB.CheckoutStatus.NotOwned,
-            DB.CheckoutStatus.OwnedByCurrentUser,
-        )
-    except Exception:
+        status = DB.WorksharingUtils.GetCheckoutStatus(revit.doc, element.Id)
+    except Exception as err:
+        logger.debug("{} | {}".format(element.Id, err))
         return True
+    return status in (
+        DB.CheckoutStatus.NotOwned,
+        DB.CheckoutStatus.OwnedByCurrentUser,
+    )
 
 
-class EditableSelectionFilter(UI.Selection.ISelectionFilter):
-    def AllowElement(self, element):
-        return is_editable(element)
-
-    def AllowReference(self, reference, point):
-        return False
-
-
-selection = list(revit.get_selection())
-if selection:
-    editable = [el for el in selection if is_editable(el)]
-    revit.get_selection().set_to(editable)
-else:
-    try:
-        elements = revit.pick_rectangle(pick_filter=EditableSelectionFilter())
-        revit.get_selection().set_to(elements)
-    except Exception:
-        pass
+if __name__ == "__main__":
+    selectionpick.keep_matching(is_editable)

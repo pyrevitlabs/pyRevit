@@ -1,36 +1,16 @@
-"""Activates selection tool that picks only Detail 2D elements."""
+# -*- coding: utf-8 -*-
+"""Pick only 2D detail elements by drawing a rectangle."""
 
-# pylint: disable=import-error,invalid-name,unused-argument,broad-except,missing-docstring
-from pyrevit import revit, DB, UI
+from pyrevit import DB
 
-
-selection = revit.get_selection()
-
-
-class MassSelectionFilter(UI.Selection.ISelectionFilter):
-    # standard API override function
-    def AllowElement(self, element):
-        # only allow view-specific (detail) elements
-        # that are not part of a group
-        if element.ViewSpecific:
-            if element.GroupId == element.GroupId.InvalidElementId:
-                return True
-        return False
-
-    # standard API override function
-    def AllowReference(self, refer, point):
-        return False
+import selectionpick
 
 
-try:
-    msfilter = MassSelectionFilter()
-    selection_list = revit.pick_rectangle(pick_filter=msfilter)
+def is_ungrouped_detail_element(element):
+    # only allow view-specific (detail) elements
+    # that are not part of a group
+    return element.ViewSpecific and element.GroupId == DB.ElementId.InvalidElementId
 
-    filtered_list = []
-    for el in selection_list:
-        filtered_list.append(el.Id)
 
-    selection.set_to(filtered_list)
-    revit.uidoc.RefreshActiveView()
-except Exception:
-    pass
+if __name__ == "__main__":
+    selectionpick.select_picked(is_ungrouped_detail_element)

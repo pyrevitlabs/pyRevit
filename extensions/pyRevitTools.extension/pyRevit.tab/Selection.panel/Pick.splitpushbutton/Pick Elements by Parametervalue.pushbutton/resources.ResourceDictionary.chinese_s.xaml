@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_element_prompt">拾取一个图元以选择参数</sys:String>
+    <sys:String x:Key="pick_rectangle_prompt">绘制矩形以拾取参数值匹配的图元</sys:String>
+    <sys:String x:Key="no_readable_parameters">所选参数均无法从图元本身读取。不支持类型参数。未拾取任何图元。</sys:String>
+    <sys:String x:Key="select_parameters_title">选择要匹配的参数</sys:String>
+    <sys:String x:Key="select_parameters_button">选择</sys:String>
+</ResourceDictionary>

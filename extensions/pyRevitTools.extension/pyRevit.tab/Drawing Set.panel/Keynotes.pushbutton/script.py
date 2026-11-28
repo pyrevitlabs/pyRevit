@@ -49,6 +49,11 @@ import keynotesdb as kdb
 logger = script.get_logger()
 output = script.get_output()
 
+EM_DASH = b"\xe2\x80\x94".decode("utf-8")
+MIDDLE_DOT = b"\xc2\xb7".decode("utf-8")
+LEFT_DOUBLE_QUOTE = b"\xe2\x80\x9c".decode("utf-8")
+RIGHT_DOUBLE_QUOTE = b"\xe2\x80\x9d".decode("utf-8")
+
 
 def _resolve_bundle_dir():
     """Resolve the bundle directory at module load.
@@ -414,7 +419,7 @@ def format_age(seconds):
     return "{} days ago".format(hours // 24)
 
 
-def ui_guard(fn, _logger=logger, _alert=forms.alert):
+def ui_guard(fn, _logger=logger, _alert=forms.alert, _em_dash=EM_DASH):
     """Shield a UI-thread entry point so no exception can escape into
     Revit's message pump.  SystemExit (forms.alert(exitscript=True),
     script.exit()) is also intercepted — it is fatal in modeless context.
@@ -460,7 +465,7 @@ def ui_guard(fn, _logger=logger, _alert=forms.alert):
                         _alert(
                             "Keynote Manager lost its script engine "
                             "(pyRevit recycled it).\n\n"
-                            "The window will close — please reopen it. "
+                            "The window will close " + _em_dash + " please reopen it. "
                             "If this happens repeatedly, reload pyRevit.",
                             title="Keynote Manager",
                         )
@@ -592,7 +597,7 @@ KEYNOTEMGR_WINDOW_ENVVAR = "KEYNOTEMGR_ACTIVE_WINDOW"
 MAX_KFILE_ATTEMPTS = 5
 MAX_SAVED_EXPANDED = 500
 USAGE_SCOPE_NOTE = (
-    "Usage is checked against keynote tags in THIS project only — other "
+    "Usage is checked against keynote tags in THIS project only " + EM_DASH + " other "
     "projects sharing this keynote file, linked models and un-tagged "
     "element/material keynotes are not visible to this check."
 )
@@ -1060,9 +1065,18 @@ class PastePreviewWindow(forms.WPFWindow):
         if same_file:
             source_name += " " + self._text("SameFileNote", "(same keynote file)")
         self.headerText.Text = (
-            self._text("HeaderInto", "{0} record(s) from “{1}” into “{2}”.").format(
-                len(self._rows), source_name, target_name
-            )
+            self._text(
+                "HeaderInto",
+                "{0} record(s) from "
+                + LEFT_DOUBLE_QUOTE
+                + "{1}"
+                + RIGHT_DOUBLE_QUOTE
+                + " into "
+                + LEFT_DOUBLE_QUOTE
+                + "{2}"
+                + RIGHT_DOUBLE_QUOTE
+                + ".",
+            ).format(len(self._rows), source_name, target_name)
             + "\n"
             + self._text(
                 "HeaderNote",
@@ -1072,8 +1086,9 @@ class PastePreviewWindow(forms.WPFWindow):
         )
         self.footerNote.Text = self._text(
             "FooterNote",
-            "Taking a conflicting row replaces the target's TEXT only — "
-            "its place in the tree is kept.",
+            "Taking a conflicting row replaces the target's TEXT only "
+            + EM_DASH
+            + " its place in the tree is kept.",
         )
         self._build_rows()
         self._update_summary()
@@ -1218,7 +1233,12 @@ class PastePreviewWindow(forms.WPFWindow):
             1 for b in self._boxes if b.IsChecked and b.Tag["status"] == "Conflict"
         )
         self.summaryText.Text = self._text(
-            "SummaryCounts", "{0} to add · {1} to replace · {2} left alone"
+            "SummaryCounts",
+            "{0} to add "
+            + MIDDLE_DOT
+            + " {1} to replace "
+            + MIDDLE_DOT
+            + " {2} left alone",
         ).format(adds, overs, len(self._rows) - adds - overs)
         self.pasteBtn.IsEnabled = bool(adds or overs)
 
@@ -1574,16 +1594,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # =========================================================================
 
     def _update_status_bar(self):
-        safe = " — SAFE MODE (no persistent engine)" if self._modal_mode else ""
+        safe = (
+            " " + EM_DASH + " SAFE MODE (no persistent engine)"
+            if self._modal_mode
+            else ""
+        )
         if self._follow_error and not self._modal_mode:
-            safe += " — NOT following ({})".format(self._follow_error)
+            safe += " " + EM_DASH + " NOT following (" + str(self._follow_error) + ")"
         if self._bind_error:
             self.statusLeft.Text = self._bind_error.replace("\n", "  ") + safe
         elif self._kfile:
             fname = op.basename(self._kfile)
             handler = " ( ACC / FORMA )" if self._kfile_handler == "adc" else ""
-            self.statusLeft.Text = "{}{} — {}{}".format(
-                fname, handler, op.dirname(self._kfile), safe
+            self.statusLeft.Text = (
+                fname + handler + " " + EM_DASH + " " + op.dirname(self._kfile) + safe
             )
         else:
             self.statusLeft.Text = "No keynote file loaded" + safe
@@ -1598,11 +1622,21 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 if self._usage_stale
                 else "{} in use".format(len(self._used_keysdict))
             )
-            self.statusRight.Text = "{} groups · {} keynotes · {}".format(
-                len(cats), len(knotes), used
+            self.statusRight.Text = (
+                "{} groups".format(len(cats))
+                + " "
+                + MIDDLE_DOT
+                + " "
+                + "{} keynotes".format(len(knotes))
+                + " "
+                + MIDDLE_DOT
+                + " "
+                + used
             )
             if len(self._sel_keys) > 1:
-                self.statusRight.Text += " · {} selected".format(len(self._sel_keys))
+                self.statusRight.Text += (
+                    " " + MIDDLE_DOT + " " + "{} selected".format(len(self._sel_keys))
+                )
         except Exception:
             self.statusRight.Text = ""
 
@@ -1795,9 +1829,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         }
         knote_count = sum(1 for r in rows if not r["is_category"])
         self._hint(
-            "Copied {} — {} keynote(s), {} group(s)".format(
-                ", ".join(root_keys), knote_count, len(rows) - knote_count
-            )
+            "Copied {} ".format(", ".join(root_keys))
+            + EM_DASH
+            + " {} keynote(s), {} group(s)".format(knote_count, len(rows) - knote_count)
         )
 
     def _classify_paste(self, items, target_parent):
@@ -1904,7 +1938,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             alert_db_error(toutex)
             return
         except Exception as ex:
-            alert_db_error(ex, "Paste failed — nothing was written.\n%s" % ex)
+            alert_db_error(
+                ex, "Paste failed " + EM_DASH + " nothing was written.\n" + str(ex)
+            )
             return
 
         # every open project on THIS file now has a stale keynote table;
@@ -2628,10 +2664,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not self._usage_stale:
             return None
         return (
-            "Cannot verify whether '%s' is placed in the model — reading "
+            "Cannot verify whether '"
+            + key
+            + "' is placed in the model "
+            + EM_DASH
+            + " reading "
             "keynote usage from the document failed, so this tool does NOT "
             "know whether any tag references it.\n\n"
-            "Press F5 to refresh first." % key
+            "Press F5 to refresh first."
         )
 
     def _collect_used_ids(self, keys, operation):
@@ -2954,7 +2994,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """
         bits = [self._base_title]
         if self._binding is not None:
-            bits.append("— " + self._binding.title)
+            bits.append(EM_DASH + " " + self._binding.title)
         if self._kfile_handler == "adc":
             bits.append("( ACC / FORMA )")
         if self._modal_mode:
@@ -3112,10 +3152,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             # the tree would show blank — disconnect loudly instead.
             self._conn = None
             forms.alert(
-                "The keynote file is missing — renamed or removed by the "
-                "sync client?\n{}\n\nUse Change Keynote File to reconnect.".format(
-                    self._kfile
-                )
+                "The keynote file is missing "
+                + EM_DASH
+                + " renamed or removed by the sync client?\n"
+                + self._kfile
+                + "\n\nUse Change Keynote File to reconnect."
             )
             return []
         try:
@@ -3575,15 +3616,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """Pick any node (category or keynote) as a parent."""
         cats = self.all_categories
         kns = self.all_keynotes
+        separator = " " + EM_DASH + " "
         items = natsorted(
-            ["{} — {}".format(x.key, x.text) for x in cats]
-            + ["{} — {}".format(x.key, x.text) for x in kns],
+            [x.key + separator + x.text for x in cats]
+            + [x.key + separator + x.text for x in kns],
         )
         chosen = forms.SelectFromList.show(
             items, title="Select Parent", multiselect=False, owner=self
         )
         if chosen:
-            return chosen.split(" — ")[0].strip()
+            return chosen.split(separator)[0].strip()
         return None
 
     # =========================================================================
@@ -4280,8 +4322,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             fresh_keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
             forms.alert(
-                "Keynote file is busy — move not applied.\n%s\n\n"
-                "Try the move again." % ex
+                "Keynote file is busy "
+                + EM_DASH
+                + " move not applied.\n"
+                + str(ex)
+                + "\n\nTry the move again."
             )
             return
 
@@ -4454,8 +4499,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception as ex:
             alert_db_error(
                 ex,
-                "Keynote file is busy — nothing was deleted.\n"
-                "%s\n\nPlease try again." % ex,
+                "Keynote file is busy "
+                + EM_DASH
+                + " nothing was deleted.\n"
+                + str(ex)
+                + "\n\nPlease try again.",
             )
             return
 
@@ -4494,7 +4542,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         def _blocked_lines(limit):
             items = list(blocked.items())[:limit]
-            out = "\n  ".join("%s — %s" % (k, why) for k, why in items)
+            out = "\n  ".join(k + " " + EM_DASH + " " + why for k, why in items)
             if len(blocked) > limit:
                 out += "\n  ... and {} more".format(len(blocked) - limit)
             return out
@@ -4542,7 +4590,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             alert_db_error(toutex)
             return
         except Exception as ex:
-            alert_db_error(ex, "Delete failed — nothing was removed.\n%s" % ex)
+            alert_db_error(
+                ex, "Delete failed " + EM_DASH + " nothing was removed.\n" + str(ex)
+            )
             return
 
         self._needs_update = True
@@ -4574,8 +4624,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             db_keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
             forms.alert(
-                "Keynote file is busy — nothing was deleted.\n%s\n\n"
-                "Please try again." % ex
+                "Keynote file is busy "
+                + EM_DASH
+                + " nothing was deleted.\n"
+                + str(ex)
+                + "\n\nPlease try again."
             )
             return
         has_any_children = any(k.parent_key == sel.key for k in db_keynotes)
@@ -4645,12 +4698,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
             db_keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
             forms.alert(
-                "Keynote file is busy — re-key not applied.\n%s\n\n"
-                "Please try again." % ex
+                "Keynote file is busy "
+                + EM_DASH
+                + " re-key not applied.\n"
+                + str(ex)
+                + "\n\nPlease try again."
             )
             return
         if any(k.locked for k in db_keynotes if k.parent_key == sel.key):
-            forms.alert("Some children are locked — cannot re-key.")
+            forms.alert("Some children are locked " + EM_DASH + " cannot re-key.")
             return
         try:
             from_key = sel.key
@@ -4791,9 +4847,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not kids:
             # an unverified map reports everything as unplaced — don't claim it
             self.statusLeft.Text = (
-                "Keynote '{}' — usage unverified, press F5".format(key)
+                "Keynote '{}' ".format(key) + EM_DASH + " usage unverified, press F5"
                 if self._usage_stale
-                else "Keynote '{}' — not placed in model".format(key)
+                else "Keynote '{}' ".format(key) + EM_DASH + " not placed in model"
             )
             return
 
@@ -4819,7 +4875,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         def _update_status():
             self.statusLeft.Text = (
-                "Keynote '{}' — {} placements shown in output".format(key, len(kids))
+                "Keynote '{}' ".format(key)
+                + EM_DASH
+                + " {} placements shown in output".format(len(kids))
             )
 
         self._revit_run(_do, callback=_update_status, callback_on_error=False)
@@ -4838,17 +4896,23 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not sel:
             return
         if sel.locked:
-            self._hint("%s is locked by another user — cannot place" % sel.key)
+            self._hint(
+                sel.key + " is locked by another user " + EM_DASH + " cannot place"
+            )
             return
         if not sel.parent_key:
-            self._hint("%s is a group — Alt+Click a keynote to place" % sel.key)
+            self._hint(
+                sel.key + " is a group " + EM_DASH + " Alt+Click a keynote to place"
+            )
             return
 
         if self._modal_mode:
             forms.alert(
                 "Placing keynotes needs the modeless window, which requires "
                 "a persistent engine (see SAFE MODE in the status bar).\n\n"
-                "Close the Keynote Manager, then place the tag — or reload "
+                "Close the Keynote Manager, then place the tag "
+                + EM_DASH
+                + " or reload "
                 "pyRevit so the tool gets a persistent engine.",
                 title="Not available in Safe Mode",
             )
@@ -4892,7 +4956,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._update_full_tree()
             self._update_status_bar()
 
-            self._hint("Placing %s — click in the view" % sel_key)
+            self._hint("Placing " + sel_key + " " + EM_DASH + " click in the view")
 
         self._revit_run(_do, callback=_on_placed, callback_on_error=False)
 

@@ -140,7 +140,7 @@ namespace pyRevitLabs.PyRevit {
                     return Definition != null ? Definition.Url : "";
                 }
 
-                return originUrl;
+                return originUrl ?? Definition?.Url ?? "";
             }
         }
         public string Website => Definition != null ? Definition.Website : "";

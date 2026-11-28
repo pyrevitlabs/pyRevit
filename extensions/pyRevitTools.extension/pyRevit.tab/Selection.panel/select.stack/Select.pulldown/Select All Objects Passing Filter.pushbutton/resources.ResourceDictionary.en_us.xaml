@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_filters">This project has no view filters.</sys:String>
+    <sys:String x:Key="no_valid_filters">The selected filters have no rules to apply.</sys:String>
+    <sys:String x:Key="select_title">Select view filters</sys:String>
+    <sys:String x:Key="select_button">Select</sys:String>
+    <sys:String x:Key="nothing_found">No matching elements were found.</sys:String>
+    <sys:String x:Key="config_title">Options for selecting by filter</sys:String>
+    <sys:String x:Key="config_button">Save</sys:String>
+    <sys:String x:Key="exclude_nested">Exclude nested family instances</sys:String>
+    <sys:String x:Key="only_current_view">Search only the active view</sys:String>
+    <sys:String x:Key="reverse_filter">Select the elements that do not pass</sys:String>
+</ResourceDictionary>

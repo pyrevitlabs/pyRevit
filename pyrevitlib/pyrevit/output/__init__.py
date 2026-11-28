@@ -354,6 +354,31 @@ class PyRevitOutputWindow(object):
         """int: Return current window height."""
         return self._runtime_output().get_height()
 
+    def scroll_to_top(self):
+        """Scroll the output window to its first line.
+
+        By default the window follows the end of the output while a script
+        prints. Call this after the last print to show the beginning of long
+        output instead. Everything printed so far is rendered before the scroll
+        happens.
+
+        Note:
+            Output printed after this call keeps the window at the top, unless
+            the page is short enough that the top is within 50 pixels of the
+            bottom, where the window still follows new prints. Output printed
+            while the window is frozen stays hidden until ``unfreeze()``, so
+            unfreeze before scrolling.
+
+        Examples:
+            ```python
+            output = pyrevit.output.get_output()
+            for line in report_lines:
+                output.print_md(line)
+            output.scroll_to_top()
+            ```
+        """
+        return self._runtime_output().scroll_to_top()
+
     def close(self):
         """Close the window."""
         return self._runtime_output().close()

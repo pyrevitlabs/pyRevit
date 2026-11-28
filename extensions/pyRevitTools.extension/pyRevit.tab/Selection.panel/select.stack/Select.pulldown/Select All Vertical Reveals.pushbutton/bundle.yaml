@@ -5,47 +5,47 @@ title:
   ru: Выделить вертикальные/горизонтальные профили ●
   chinese_s: 选择垂直/水平凹槽 ●
   es_es: Seleccionar ranuras verticales/horizontales ●
-  de_de: Alle horizontale / vertikalen Wandfugen auswählen ●
+  de_de: Vertikale/horizontale Wandfugen auswählen ●
   pt_br: Selecionar Frisos Verticais/Horizontais ●
 tooltip:
   en_us: |-
-    Select all vertical wall reveals in the project.
+    Select all vertical wall reveals in the project and replace the current selection.
 
     Shift-click:
-    Select horizontal wall reveals instead.
+    Select all horizontal wall reveals instead.
   ko: |-
-    프로젝트의 모든 수직 벽 홈을 선택합니다.
+    프로젝트의 모든 수직 벽 홈을 선택하고 현재 선택 항목을 대체합니다.
 
     Shift 키를 누르고 클릭:
-    수평 벽 홈을 대신 선택합니다.
+    대신 모든 수평 벽 홈을 선택합니다.
   fr_fr: |-
-    Sélectionne tous les profils verticaux (par défaut) ou horizontaux dans le projet
+    Sélectionne tous les profils de mur verticaux du projet et remplace la sélection actuelle.
 
     Maj+clic :
-    Sélectionnez les profils horizontaux
+    Sélectionne à la place tous les profils de mur horizontaux.
   ru: |-
-    Выделяет все вертикальные (по умолчанию) или горизонтальные профили в проекте.
+    Выделяет все вертикальные профили стен в проекте и заменяет текущее выделение.
 
     Shift + Щелчок:
-    Выделить горизонтальные профили.
+    Вместо этого выделяет все горизонтальные профили стен.
   chinese_s: |-
-    选择项目中的所有垂直（默认）或水平凹槽
+    选择项目中的所有垂直墙凹槽，并替换当前选择集。
 
     按住 Shift 键单击：
-    选择水平凹槽
+    改为选择所有水平墙凹槽。
   es_es: |-
-    Selecciona todas las ranuras verticales (predeterminado) u horizontales en el proyecto
+    Selecciona todas las ranuras de muro verticales del proyecto y reemplaza la selección actual.
 
     Mayús-clic:
-    Seleccionar ranuras horizontales
+    Selecciona en su lugar todas las ranuras de muro horizontales.
   de_de: |-
-    Es werden alle vertikalen Wandfugen ausgewählt (Standardeinstellung)
+    Wählt alle vertikalen Wandfugen im Projekt aus und ersetzt die aktuelle Auswahl.
 
     Bei gedrückter Umschalttaste klicken:
-    Mit gedrückter Umschalttaste auf das Werkzeug werden alle horizontalen Wandfugen ausgewählt.
+    Wählt stattdessen alle horizontalen Wandfugen aus.
   pt_br: |-
-    Seleciona todos os frisos verticais (padrão) ou horizontais no projeto
+    Seleciona todos os frisos de parede verticais do projeto e substitui a seleção atual.
 
     Clique mantendo a tecla Shift pressionada:
-    Selecionar frisos horizontais
+    Seleciona, em vez disso, todos os frisos de parede horizontais.
 context: doc-project

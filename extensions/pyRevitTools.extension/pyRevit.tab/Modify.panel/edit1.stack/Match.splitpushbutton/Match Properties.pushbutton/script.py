@@ -40,15 +40,17 @@ def remember(src_props):
     """
     try:
         with open(MEMFILE, "wb") as mf:
-            pickle.dump(src_props, mf)
+            pickle.dump(src_props, mf, 2)
     except Exception as ex:
-        logger.debug("Failed saving matched properties to memory | %s", str(ex))
+        logger.warning("Failed saving matched properties to memory | %s", str(ex))
 
 
 # ── Shift+Click: open modeless recall window ─────────────────────────────────
 if EXEC_PARAMS.config_mode:
     target_type, recalled_props = recall()
-    RecallWindow(target_type, recalled_props, MEMFILE).Show()
+    recall_window = RecallWindow(target_type, recalled_props, MEMFILE)
+    recall_window.recall_logger = logger
+    recall_window.Show()
     script.exit()
 
 # ── Normal click ─────────────────────────────────────────────────────────────

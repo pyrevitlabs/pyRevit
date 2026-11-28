@@ -1,26 +1,12 @@
-"""Discard pinned elements from current selection.
+# -*- coding: utf-8 -*-
+"""Discard pinned elements from the selection, or from a picked rectangle."""
 
-If nothing is selected, pick a region to filter non-pinned elements from.
-"""
-
-from pyrevit import revit, UI
+import selectionpick
 
 
-class NonPinnedSelectionFilter(UI.Selection.ISelectionFilter):
-    def AllowElement(self, element):
-        return not element.Pinned
-
-    def AllowReference(self, reference, point):
-        return False
+def is_not_pinned(element):
+    return not element.Pinned
 
 
-selection = list(revit.get_selection())
-if selection:
-    filtered = [el.Id for el in selection if not el.Pinned]
-    revit.get_selection().set_to(filtered)
-else:
-    try:
-        elements = revit.pick_rectangle(pick_filter=NonPinnedSelectionFilter())
-        revit.get_selection().set_to(elements)
-    except Exception:
-        pass
+if __name__ == "__main__":
+    selectionpick.keep_matching(is_not_pinned)

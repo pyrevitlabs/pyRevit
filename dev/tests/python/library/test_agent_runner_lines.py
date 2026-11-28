@@ -7,6 +7,8 @@ TEST_LEVEL = "Unit"
 import ast
 import builtins
 import contextlib
+import importlib.abc
+import importlib.machinery
 import importlib.util
 import linecache
 import os
@@ -20,6 +22,7 @@ import tokenize
 import traceback
 import types
 import unittest
+import zipfile
 from pathlib import Path
 from unittest import mock
 
@@ -425,6 +428,17 @@ class AgentRunnerLinesTests(unittest.TestCase):
         """Do not unload interpreter libraries installed below the workspace."""
         module_file = os.path.join(sys.prefix, "Lib", "io.py")
         self.assertTrue(self.runner._is_runtime_module(module_file))
+
+    def test_workspace_goes_after_the_library_paths_on_sys_path(self):
+        """A workspace module can't shadow a module an earlier path entry provides."""
+        folder = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, folder, True)
+        saved_path = list(sys.path)
+        self.addCleanup(lambda: sys.path.__setitem__(slice(None), saved_path))
+        token = self.runner._enter_workspace(folder)
+        self.assertEqual((folder, []), token)
+        self.assertEqual(folder, sys.path[-1])
+        self.assertEqual(saved_path, sys.path[:-1])
 
     def test_compile_reports_whether_loops_are_guarded(self):
         """Guard loops only when asked, and report it."""
@@ -1278,6 +1292,229 @@ class AgentRunnerStartRecorderTests(unittest.TestCase):
                     errors, _, _ = self._run(source, timeout_s=0.3, workspace=folder)
                 self.assertEqual(["timeout"], errors)
                 self.assertLess(time.time() - started, 3)
+
+    def test_workspace_module_does_not_shadow_an_earlier_path_entry(self):
+        """A workspace module named like an earlier module loses; a unique one imports."""
+        earlier = self._workspace({"shared_name.py": "SOURCE = 'earlier'\n"})
+        workspace = self._workspace(
+            {
+                "shared_name.py": "SOURCE = 'workspace'\n",
+                "unique_workspace_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        with (
+            mock.patch.object(sys, "path", [earlier] + sys.path),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import shared_name\nimport unique_workspace_name\n"
+                "assert shared_name.SOURCE == 'earlier'\n"
+                "assert unique_workspace_name.SOURCE == 'workspace'\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
+
+    def test_workspace_module_does_not_shadow_a_zip_on_sys_path(self):
+        """A module a ZIP entry provides wins over a workspace module of that name."""
+        archive_folder = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, archive_folder, True)
+        archive = os.path.join(archive_folder, "provider.zip")
+        with zipfile.ZipFile(archive, "w") as handle:
+            handle.writestr("zip_shadowed_name.py", "SOURCE = 'zip'\n")
+        workspace = self._workspace(
+            {
+                "zip_shadowed_name.py": "SOURCE = 'workspace'\n",
+                "zip_unique_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        with (
+            mock.patch.object(sys, "path", [archive] + sys.path),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import zip_shadowed_name\nimport zip_unique_name\n"
+                "assert zip_shadowed_name.SOURCE == 'zip'\n"
+                "assert zip_unique_name.SOURCE == 'workspace'\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
+
+    def test_workspace_module_does_not_shadow_a_meta_path_finder(self):
+        """A module another meta path finder provides wins over a workspace one."""
+
+        class Provider(importlib.abc.MetaPathFinder, importlib.abc.Loader):
+            def find_spec(self, fullname, path, target=None):
+                if fullname != "finder_shadowed_name":
+                    return None
+                return importlib.machinery.ModuleSpec(fullname, self)
+
+            def create_module(self, spec):
+                return None
+
+            def exec_module(self, module):
+                module.SOURCE = "finder"
+
+        workspace = self._workspace(
+            {"finder_shadowed_name.py": "SOURCE = 'workspace'\n"}
+        )
+        with (
+            mock.patch.object(sys, "meta_path", [Provider()] + sys.meta_path),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import finder_shadowed_name\n"
+                "assert finder_shadowed_name.SOURCE == 'finder'\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
+
+    def test_provider_after_a_path_finder_still_wins_over_the_workspace(self):
+        """A find_module-only finder placed after the path finder beats a workspace module."""
+
+        class Legacy(object):
+            def find_module(self, fullname, path=None):
+                return self if fullname == "legacy_shadowed_name" else None
+
+            def create_module(self, spec):
+                return None
+
+            def exec_module(self, module):
+                module.SOURCE = "legacy"
+
+            def load_module(self, fullname):
+                module = types.ModuleType(fullname)
+                module.SOURCE = "legacy"
+                sys.modules[fullname] = module
+                return module
+
+        workspace = self._workspace(
+            {
+                "legacy_shadowed_name.py": "SOURCE = 'workspace'\n",
+                "legacy_unique_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        with (
+            mock.patch.object(sys, "meta_path", sys.meta_path + [Legacy()]),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import legacy_shadowed_name\nimport legacy_unique_name\n"
+                "assert legacy_shadowed_name.SOURCE == 'legacy'\n"
+                "assert legacy_unique_name.SOURCE == 'workspace'\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
+
+    def test_legacy_loader_is_delegated_only_outside_the_workspace(self):
+        """A find_module loader for a workspace file stays guarded; a library one is delegated."""
+        outside = self._workspace({"loader_outside_name.py": "SOURCE = 'outside'\n"})
+        workspace = self._workspace(
+            {
+                "loader_inside_name.py": "SOURCE = 'inside'\n",
+                "loader_outside_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        files = {
+            "loader_inside_name": os.path.join(workspace, "loader_inside_name.py"),
+            "loader_outside_name": os.path.join(outside, "loader_outside_name.py"),
+        }
+
+        class Legacy(object):
+            def find_module(self, fullname, path=None):
+                if fullname not in files:
+                    return None
+                return importlib.machinery.SourceFileLoader(fullname, files[fullname])
+
+        with (
+            mock.patch.object(sys, "meta_path", sys.meta_path + [Legacy()]),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import loader_inside_name\nimport loader_outside_name\n"
+                "assert loader_inside_name.SOURCE == 'inside'\n"
+                "assert '__agent_tick__' in vars(loader_inside_name)\n"
+                "assert loader_outside_name.SOURCE == 'outside'\n"
+                "assert '__agent_tick__' not in vars(loader_outside_name)\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
+
+    def test_workspace_already_early_on_sys_path_is_moved_behind_for_the_run(self):
+        """A pre-existing early workspace entry loses to later entries, then returns."""
+        earlier = self._workspace({"early_shadowed_name.py": "SOURCE = 'earlier'\n"})
+        workspace = self._workspace(
+            {
+                "early_shadowed_name.py": "SOURCE = 'workspace'\n",
+                "early_unique_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        original = [workspace, earlier] + sys.path
+        patched = list(original)
+        with (
+            mock.patch.object(sys, "path", patched),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import early_shadowed_name\nimport early_unique_name\n"
+                "assert early_shadowed_name.SOURCE == 'earlier'\n"
+                "assert early_unique_name.SOURCE == 'workspace'\n",
+                workspace=workspace,
+            )
+            self.assertEqual(original, patched)
+        self.assertEqual([], errors)
+
+    def test_leaving_the_workspace_restores_its_place_after_the_preceding_entry(self):
+        """The workspace entry returns after the entry that preceded it, not at its old index."""
+        folder = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, folder, True)
+        for edits, expected in (
+            ([], ["A", folder, "B"]),
+            ([("insert", 0, "X")], ["X", "A", folder, "B"]),
+            ([("insert", 0, "X"), ("remove", "A")], ["X", "B", folder]),
+            ([("remove", "A"), ("remove", "B")], [folder]),
+        ):
+            with self.subTest(edits=edits):
+                patched = ["A", folder, "B"]
+                with mock.patch.object(sys, "path", patched):
+                    token = self.runner._enter_workspace(folder)
+                    self.assertEqual(["A", "B", folder], patched)
+                    for edit in edits:
+                        if edit[0] == "insert":
+                            patched.insert(edit[1], edit[2])
+                        else:
+                            patched.remove(edit[1])
+                    self.runner._leave_workspace(folder, token)
+                    self.assertEqual(expected, patched)
+
+    def test_bare_folder_earlier_on_the_path_does_not_block_the_workspace(self):
+        """A folder without __init__ is no module: the workspace module or package still imports."""
+        earlier = self._workspace(
+            {
+                "bare_module_name/data.txt": "x",
+                "bare_package_name/data.txt": "x",
+                "real_package_name/__init__.py": "SOURCE = 'earlier'\n",
+            }
+        )
+        workspace = self._workspace(
+            {
+                "bare_module_name.py": "SOURCE = 'workspace'\n",
+                "bare_package_name/__init__.py": "SOURCE = 'workspace'\n",
+                "real_package_name.py": "SOURCE = 'workspace'\n",
+            }
+        )
+        with (
+            mock.patch.object(sys, "path", [earlier] + sys.path),
+            mock.patch.dict(sys.modules),
+        ):
+            errors, _, _ = self._run(
+                "import bare_module_name\nimport bare_package_name\n"
+                "import real_package_name\n"
+                "assert bare_module_name.SOURCE == 'workspace'\n"
+                "assert bare_package_name.SOURCE == 'workspace'\n"
+                "assert real_package_name.SOURCE == 'earlier'\n",
+                workspace=workspace,
+            )
+        self.assertEqual([], errors)
 
     def test_sys_path_order_still_picks_the_module(self):
         """A folder placed before the workspace keeps winning its imports."""

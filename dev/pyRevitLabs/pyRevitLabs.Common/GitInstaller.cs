@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using LibGit2Sharp;
@@ -81,7 +82,7 @@ namespace pyRevitLabs.Common {
                 cloneOps.FetchOptions.CredentialsProvider = (_url, _usernameFromUrl, _credTypes) => creds.GetCredentials();
             try {
                 // attempt at cloning the repo
-                logger.Debug("Cloning \"{0}:{1}\" to \"{2}\"", repoPath.RedactUrlCredentials(), branchName, destPath);
+                logger.Debug("Cloning \"{0}\" branch \"{1}\" to \"{2}\"", repoPath.RedactUrlCredentials(), branchName, destPath);
                 Repository.Clone(repoPath, destPath, cloneOps);
 
                 // make repository object and return
@@ -277,38 +278,108 @@ namespace pyRevitLabs.Common {
             return head;
         }
 
+        /// <summary>
+        /// Tells whether the checked-out branch has commits that are not on its tracking branch.
+        /// </summary>
+        /// <returns>
+        /// False when the folder is not a repository or the branch has no usable tracking branch, including
+        /// one whose remote ref no longer exists.
+        /// </returns>
         public static bool IsLocalAheadOfTrackingBranch(string repoPath) {
             if (!IsValidRepo(repoPath))
                 return false;
 
             using (var repo = new Repository(repoPath)) {
-                var tracked = repo.Head?.TrackedBranch;
-                if (tracked == null)
+                if (!TryGetTrackedTip(repo, out var trackedTip))
                     return false;
 
-                var divergence = repo.ObjectDatabase.CalculateHistoryDivergence(repo.Head.Tip, tracked.Tip);
-                return divergence.AheadBy > 0;
+                return repo.ObjectDatabase.CalculateHistoryDivergence(repo.Head.Tip, trackedTip).AheadBy > 0;
             }
         }
 
+        /// <summary>
+        /// Tells whether the checked-out branch tracks a remote branch whose ref still exists; a branch tracking
+        /// another local branch does not count.
+        /// </summary>
+        public static bool HasTrackingBranch(string repoPath) {
+            if (!IsValidRepo(repoPath))
+                return false;
+
+            using (var repo = new Repository(repoPath))
+                return TryGetTrackedTip(repo, out _);
+        }
+
+        /// <summary>
+        /// Tells whether the checked-out branch and its tracking branch point at the same history.
+        /// </summary>
+        /// <returns>
+        /// True when the folder is not a repository or the branch has no usable tracking branch.
+        /// </returns>
         public static bool IsSyncedWithTrackingBranch(string repoPath) {
             if (!IsValidRepo(repoPath))
                 return true;
 
             using (var repo = new Repository(repoPath)) {
-                var tracked = repo.Head?.TrackedBranch;
-                if (tracked == null)
+                if (!TryGetTrackedTip(repo, out var trackedTip))
                     return true;
 
-                var divergence = repo.ObjectDatabase.CalculateHistoryDivergence(repo.Head.Tip, tracked.Tip);
+                var divergence = repo.ObjectDatabase.CalculateHistoryDivergence(repo.Head.Tip, trackedTip);
                 return divergence.AheadBy == 0 && divergence.BehindBy == 0;
             }
         }
 
+        /// <summary>
+        /// Tells whether HEAD points at a commit instead of a branch, as after a tag or commit checkout.
+        /// </summary>
+        public static bool IsHeadDetached(string repoPath) {
+            if (!IsValidRepo(repoPath))
+                return false;
+
+            using (var repo = new Repository(repoPath))
+                return repo.Info.IsHeadDetached;
+        }
+
+        /// <summary>
+        /// Tells whether the checkout of a repository finished: the index exists and no tracked file is missing
+        /// from the working tree.
+        /// </summary>
+        /// <remarks>
+        /// Modified, staged, untracked and ignored files do not count as incomplete; only tracked files
+        /// absent from disk do. A clone interrupted before its checkout completed has no index.
+        /// </remarks>
+        public static bool HasCompleteWorkingTree(string repoPath) {
+            if (!IsValidRepo(repoPath))
+                return false;
+
+            using (var repo = new Repository(repoPath)) {
+                if (!File.Exists(Path.Combine(repo.Info.Path, "index")))
+                    return false;
+
+                var options = new StatusOptions { IncludeUntracked = false, IncludeIgnored = false };
+                return !repo.RetrieveStatus(options).Any(entry => entry.State.HasFlag(FileStatus.DeletedFromWorkdir));
+            }
+        }
+
+        private static bool TryGetTrackedTip(Repository repo, out Commit trackedTip) {
+            var tracked = repo.Head?.TrackedBranch;
+            trackedTip = tracked != null && tracked.IsRemote ? tracked.Tip : null;
+            return trackedTip != null && repo.Head.Tip != null;
+        }
+
+        /// <summary>
+        /// Reads the url of a named remote of a git repository.
+        /// </summary>
+        /// <param name="repoPath">The repository folder.</param>
+        /// <param name="remoteName">The remote name, such as <c>origin</c>.</param>
+        /// <returns>
+        /// The remote url, or null when the folder is not a valid repository or the remote does not exist.
+        /// </returns>
+        /// <exception cref="PyRevitException">The repository could not be read.</exception>
         public static string GetRemoteUrl(string repoPath, string remoteName) {
             if (IsValidRepo(repoPath)) {
                 try {
-                    return new Repository(repoPath).Network.Remotes[remoteName].Url;
+                    using (var repo = new Repository(repoPath))
+                        return repo.Network.Remotes[remoteName]?.Url;
                 }
                 catch (Exception ex) {
                     logger.Debug("Can not determine remote \"{0}\" url for \"{1}\"", remoteName, repoPath);
@@ -316,6 +387,25 @@ namespace pyRevitLabs.Common {
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Tells whether two clone sources point at the same repository.
+        /// </summary>
+        /// <param name="first">A remote URL, scp-style address or local path, such as a stored remote.</param>
+        /// <param name="second">The source to compare with.</param>
+        /// <returns>True when both resolve to the same repository; false when either is empty.</returns>
+        /// <remarks>
+        /// Credentials, scheme, a trailing <c>.git</c>, trailing slashes, backslash use and host case are
+        /// ignored. The path case is significant for remote URLs, and a different port counts as a
+        /// different remote. Local sources compare as full paths, ignoring case; relative local paths resolve
+        /// against the process working directory and <c>file://</c> URLs compare as their local path. Two
+        /// scp-style addresses differ when only one path starts with a slash, since that path starts at the
+        /// server root instead of the remote user's home. A home-relative scp-style path also differs from an
+        /// <c>ssh://</c> URL, whose path is always absolute.
+        /// </remarks>
+        public static bool AreSameRemote(string first, string second) {
+            return RemoteAddressComparer.AreSame(first, second);
         }
 
         // private methods

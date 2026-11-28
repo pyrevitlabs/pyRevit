@@ -459,7 +459,10 @@ namespace pyRevitCLI {
         /// This command is often launched from Revit (Settings → Agent Runtime), and Revit's
         /// environment keeps the PATH from when Revit started, which misses tools installed since.
         /// So the tool is located on the PATH freshly read from the registry plus the usual install
-        /// folders, and the child process gets that fresh PATH too.
+        /// folders, and the child process gets that fresh PATH too. Relative PATH entries are
+        /// dropped, <c>cmd.exe</c> is started by its full path under the system folder, and the
+        /// child gets <c>NoDefaultCurrentDirectoryInExePath=1</c>, so neither the tool lookup nor
+        /// the shim's own bare commands search the current folder first.
         /// An <c>.exe</c> starts directly. A <c>.cmd</c> or <c>.bat</c> shim (npm installs) needs
         /// <c>cmd.exe</c>, which would expand <c>%NAME%</c> in a quoted path, so such a call is
         /// refused when it contains <c>%</c>. The tool gets <see cref="ClientCliTimeout"/> to finish
@@ -482,15 +485,7 @@ namespace pyRevitCLI {
                 throw new PyRevitException(
                     $"'{tool}' is a command script, and cmd.exe would expand the '%' in its arguments. Register by hand: {tool} {arguments}");
             }
-            var startInfo = new ProcessStartInfo(
-                viaCmd ? "cmd.exe" : executable,
-                viaCmd ? $"/d /s /c \"\"{executable}\" {arguments}\"" : arguments) {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-            };
-            startInfo.Environment["PATH"] = FreshPath();
+            var startInfo = BuildClientStartInfo(executable, arguments);
 
             Process process;
             try {
@@ -531,6 +526,30 @@ namespace pyRevitCLI {
             }
         }
 
+        /// <summary>
+        /// The process start for a client tool: an <c>.exe</c> directly, a <c>.cmd</c> or
+        /// <c>.bat</c> shim through <c>cmd.exe</c> at its full path.
+        /// </summary>
+        /// <remarks>
+        /// The child environment is this process's plus the fresh PATH and
+        /// <c>NoDefaultCurrentDirectoryInExePath=1</c>, which stops <c>cmd.exe</c> from looking in the
+        /// current folder before PATH for the bare commands a shim runs.
+        /// </remarks>
+        internal static ProcessStartInfo BuildClientStartInfo(string executable, string arguments) {
+            var viaCmd = !executable.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+            var startInfo = new ProcessStartInfo(
+                viaCmd ? Path.Combine(Environment.SystemDirectory, "cmd.exe") : executable,
+                viaCmd ? $"/d /s /c \"\"{executable}\" {arguments}\"" : arguments) {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+            startInfo.Environment["PATH"] = FreshPath();
+            startInfo.Environment["NoDefaultCurrentDirectoryInExePath"] = "1";
+            return startInfo;
+        }
+
         internal static TimeSpan ClientCliTimeout = TimeSpan.FromMinutes(2);
 
         private static string ResolveClientTool(string tool) {
@@ -557,16 +576,22 @@ namespace pyRevitCLI {
                 .Distinct(StringComparer.OrdinalIgnoreCase);
         }
 
-        private static string FreshPath() {
+        /// <summary>
+        /// The PATH of this process plus the machine and user values, expanded, without quotes and
+        /// without relative entries (a tool found through the current folder is never run). UNC
+        /// entries are kept.
+        /// </summary>
+        internal static string FreshPath() {
             var entries = new[] {
                     Environment.GetEnvironmentVariable("PATH"),
                     Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine),
                     Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User),
                 }
                 .Where(value => !string.IsNullOrEmpty(value))
+                .Select(Environment.ExpandEnvironmentVariables)
                 .SelectMany(value => value.Split(Path.PathSeparator))
-                .Select(entry => Environment.ExpandEnvironmentVariables(entry.Trim()))
-                .Where(entry => entry.Length > 0)
+                .Select(entry => entry.Trim().Trim('"').Trim())
+                .Where(entry => entry.Length > 0 && Path.IsPathFullyQualified(entry))
                 .Distinct(StringComparer.OrdinalIgnoreCase);
             return string.Join(Path.PathSeparator.ToString(), entries);
         }

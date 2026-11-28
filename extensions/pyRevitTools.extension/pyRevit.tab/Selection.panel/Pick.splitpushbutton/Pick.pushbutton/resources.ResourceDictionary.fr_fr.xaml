@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="favourites_title">Sélectionner les catégories favorites</sys:String>
+    <sys:String x:Key="favourites_button">Appliquer</sys:String>
+    <sys:String x:Key="choose_category">Sélectionner uniquement les éléments de la catégorie :</sys:String>
+</ResourceDictionary>
