@@ -1,0 +1,382 @@
+# -*- coding: utf-8 -*-
+"""Where the Attribute Editor gets its rows and columns from.
+
+``ScheduleSource`` mirrors an existing Revit schedule: its elements, its
+supported fields in order, its sort. ``ScratchSource`` builds a grid from
+categories without any schedule. Both hand out the same shapes so the grid
+code does not care which one it reads.
+"""
+
+import itertools
+
+from pyrevit import DB, framework, revit, script
+from pyrevit.compat import get_elementid_from_value_func
+from pyrevit.coreutils import get_enum_none
+
+from attribute_columns import (
+    SCOPE_ELEMENT,
+    SCOPE_TYPE,
+    ColumnSpec,
+    id_value,
+    key_for_parameter,
+    key_for_parameter_id,
+)
+from attribute_strings import t
+from attribute_values import EditError
+
+logger = script.get_logger()
+
+get_elementid_from_value = get_elementid_from_value_func()
+
+SCRATCH_SCOPES = ("model", "view", "selection")
+INSTANCE_SAMPLE = 60
+TYPE_SAMPLE = 40
+SCAN_ALL_SAMPLE = 5000
+
+
+def list_schedules(doc):
+    """Return ``[{id, name}]`` for every usable schedule, sorted by name."""
+    listing = [
+        {"id": id_value(schedule.Id), "name": revit.query.get_name(schedule)}
+        for schedule in revit.query.get_all_schedules(doc=doc)
+    ]
+    return sorted(listing, key=lambda item: item["name"].lower())
+
+
+def list_categories(doc):
+    """Return ``[{id, name, instances, types}]`` for categories that hold elements."""
+    listing = []
+    for category in doc.Settings.Categories:
+        if category.CategoryType not in (
+            DB.CategoryType.Model,
+            DB.CategoryType.Annotation,
+        ):
+            continue
+        if not category.AllowsBoundParameters or category.IsTagCategory:
+            continue
+        collector = DB.FilteredElementCollector(doc).OfCategoryId(category.Id)
+        instances = collector.WhereElementIsNotElementType().GetElementCount()
+        collector = DB.FilteredElementCollector(doc).OfCategoryId(category.Id)
+        types = collector.WhereElementIsElementType().GetElementCount()
+        if instances or types:
+            listing.append(
+                {
+                    "id": id_value(category.Id),
+                    "name": category.Name,
+                    "instances": instances,
+                    "types": types,
+                }
+            )
+    return sorted(listing, key=lambda item: item["name"].lower())
+
+
+def _field_format(field):
+    """Return the number format a schedule field overrides the project with, or None."""
+    try:
+        options = field.GetFormatOptions()
+        return None if options.UseDefault else options
+    except Exception as ex:
+        logger.debug("No field format: %s", ex)
+        return None
+
+
+def id_value_of_field(field_id):
+    return int(field_id.IntegerValue)
+
+
+def _scope_of_field_type(field_type):
+    if field_type == DB.ScheduleFieldType.Instance:
+        return SCOPE_ELEMENT
+    if field_type == DB.ScheduleFieldType.ElementType:
+        return SCOPE_TYPE
+    return None
+
+
+class ScheduleSource(object):
+    """The elements and fields of one Revit schedule."""
+
+    kind = "schedule"
+
+    def __init__(self, doc, schedule):
+        self.doc = doc
+        self.schedule = schedule
+        self.title = revit.query.get_name(schedule)
+
+    def to_json(self):
+        return {"kind": self.kind, "id": id_value(self.schedule.Id)}
+
+    def elements(self):
+        collector = DB.FilteredElementCollector(self.doc, self.schedule.Id)
+        return [
+            element
+            for element in collector
+            if element.Category is not None and not element.Category.IsTagCategory
+        ]
+
+    def default_columns(self):
+        """Return a ColumnSpec per visible, supported field, in schedule order."""
+        definition = self.schedule.Definition
+        columns = []
+        seen = set()
+        for field_id in definition.GetFieldOrder():
+            field = definition.GetField(field_id)
+            key = self._key_of_field(field)
+            if field.IsHidden or key is None or key in seen:
+                continue
+            seen.add(key)
+            columns.append(ColumnSpec(key, field.ColumnHeading, _field_format(field)))
+        return columns
+
+    def _key_of_field(self, field):
+        scope = _scope_of_field_type(field.FieldType)
+        if scope is None or field.IsCalculatedField:
+            return None
+        if field.ParameterId == DB.ElementId.InvalidElementId:
+            return None
+        return key_for_parameter_id(self.doc, field.ParameterId, scope)
+
+    def field_ids_by_key(self, hidden=False):
+        """Return ``{column key: ScheduleFieldId}`` of the supported fields.
+
+        Args:
+            hidden (bool): list the hidden fields instead of the visible ones.
+        """
+        definition = self.schedule.Definition
+        by_key = {}
+        for field_id in definition.GetFieldOrder():
+            field = definition.GetField(field_id)
+            key = self._key_of_field(field)
+            if bool(field.IsHidden) == hidden and key is not None and key not in by_key:
+                by_key[key] = field_id
+        return by_key
+
+    def column_formats(self):
+        """Return ``{column key: DB.FormatOptions}`` of the fields with their own format."""
+        return dict(
+            (column.key, column.field_format)
+            for column in self.default_columns()
+            if column.field_format is not None
+        )
+
+    def fields_in_use(self):
+        """Return the ids of the schedule fields a filter, sort or group refers to.
+
+        Removing such a field would remove the rule with it, so a layout change
+        hides it instead.
+        """
+        definition = self.schedule.Definition
+        used = set(
+            id_value_of_field(definition.GetFilter(index).FieldId)
+            for index in range(definition.GetFilterCount())
+        )
+        used.update(
+            id_value_of_field(definition.GetSortGroupField(index).FieldId)
+            for index in range(definition.GetSortGroupFieldCount())
+        )
+        return used
+
+    def sort_hints(self, keys):
+        """Return the schedule's sort fields that map to ``keys``."""
+        definition = self.schedule.Definition
+        key_of_field = dict(
+            (int(field_id.IntegerValue), key)
+            for key, field_id in self.field_ids_by_key().items()
+        )
+        hints = []
+        for index in range(definition.GetSortGroupFieldCount()):
+            sort_field = definition.GetSortGroupField(index)
+            key = key_of_field.get(int(sort_field.FieldId.IntegerValue))
+            if key in keys:
+                descending = sort_field.SortOrder == DB.ScheduleSortOrder.Descending
+                hints.append({"key": key, "dir": "desc" if descending else "asc"})
+        return hints
+
+    def schedulable_fields(self):
+        """Return ``{column key: SchedulableField}`` for every field that can be added."""
+        by_key = {}
+        for field in self.schedule.Definition.GetSchedulableFields():
+            scope = _scope_of_field_type(field.FieldType)
+            if scope is None or field.ParameterId == DB.ElementId.InvalidElementId:
+                continue
+            key = key_for_parameter_id(self.doc, field.ParameterId, scope)
+            if key is not None and key not in by_key:
+                by_key[key] = field
+        return by_key
+
+    def available(self, scan_all=False):
+        """Return ``[{key, heading, scope}]`` for every field the schedule can show.
+
+        ``scan_all`` is ignored: a schedule lists its schedulable fields
+        exactly, there is no sample to widen.
+        """
+        return sorted(
+            (
+                {
+                    "key": key,
+                    "heading": field.GetName(self.doc),
+                    "scope": key.rsplit("|", 1)[1],
+                }
+                for key, field in self.schedulable_fields().items()
+            ),
+            key=lambda item: item["heading"].lower(),
+        )
+
+
+class ScratchSource(object):
+    """Elements of chosen categories, with columns picked by the user."""
+
+    kind = "scratch"
+    title = ""
+
+    def __init__(self, doc, payload):
+        self.doc = doc
+        self.category_ids = [int(value) for value in payload.get("categories") or []]
+        scope = payload.get("scope")
+        self.scope = scope if scope in SCRATCH_SCOPES else "model"
+        self.types = bool(payload.get("types"))
+        selection = payload.get("selection")
+        self.selection_ids = None if selection is None else [int(v) for v in selection]
+
+    def to_json(self):
+        description = {
+            "kind": self.kind,
+            "categories": self.category_ids,
+            "scope": self.scope,
+            "types": self.types,
+        }
+        if self.scope == "selection" and self.selection_ids is not None:
+            description["selection"] = self.selection_ids
+        return description
+
+    def _selected_ids(self):
+        """Return the selection this source works on, read once and then kept.
+
+        A later Pull must not follow whatever Revit has selected by then (Show
+        in Revit changes it), so the ids travel with the source description.
+
+        Raises:
+            EditError: when nothing is selected.
+        """
+        if self.selection_ids is None:
+            self.selection_ids = [
+                id_value(element_id) for element_id in revit.get_selection().element_ids
+            ]
+        if not self.selection_ids:
+            raise EditError(t("err_empty_selection"))
+        return [get_elementid_from_value(value) for value in self.selection_ids]
+
+    def default_columns(self):
+        return []
+
+    def column_formats(self):
+        return {}
+
+    def sort_hints(self, keys):
+        return []
+
+    def _category_filter(self):
+        ids = [get_elementid_from_value(value) for value in self.category_ids]
+        return DB.ElementMulticategoryFilter(framework.to_clr_list(DB.ElementId, ids))
+
+    def _type_collector(self):
+        return (
+            DB.FilteredElementCollector(self.doc)
+            .WherePasses(self._category_filter())
+            .WhereElementIsElementType()
+        )
+
+    def _scoped_collector(self):
+        if self.scope == "view":
+            return DB.FilteredElementCollector(self.doc, self.doc.ActiveView.Id)
+        if self.scope == "selection":
+            return DB.FilteredElementCollector(
+                self.doc, framework.to_clr_list(DB.ElementId, self._selected_ids())
+            )
+        return DB.FilteredElementCollector(self.doc)
+
+    def _instance_collector(self):
+        return (
+            self._scoped_collector()
+            .WherePasses(self._category_filter())
+            .WhereElementIsNotElementType()
+        )
+
+    def iter_elements(self):
+        if not self.category_ids:
+            return []
+        if self.types and self.scope == "model":
+            return self._type_collector()
+        if not self.types:
+            return self._instance_collector()
+        return self._types_of_scoped_instances()
+
+    def _types_of_scoped_instances(self):
+        seen = set()
+        types = []
+        for element in self._instance_collector():
+            type_id = element.GetTypeId()
+            if type_id == DB.ElementId.InvalidElementId or id_value(type_id) in seen:
+                continue
+            seen.add(id_value(type_id))
+            types.append(self.doc.GetElement(type_id))
+        return types
+
+    def elements(self):
+        return list(self.iter_elements())
+
+    @staticmethod
+    def _describe_parameter(parameter, scope, no_storage):
+        """Return the ``available`` entry of ``parameter``, or None when unusable.
+
+        Some parameters (material assets, for one) answer with a missing
+        definition or throw; reading them blindly has crashed Revit.
+        """
+        try:
+            definition = parameter.Definition
+            if definition is None or parameter.StorageType == no_storage:
+                return None
+            return {
+                "key": key_for_parameter(parameter, scope),
+                "heading": definition.Name,
+                "scope": scope,
+            }
+        except Exception as ex:
+            logger.debug("Skipping a parameter that cannot be read: %s", ex)
+            return None
+
+    def available(self, scan_all=False):
+        """Return ``[{key, heading, scope}]`` found on a sample of the chosen elements.
+
+        The sample is the first few elements and types, so a parameter that only
+        a few families carry can be missed unless ``scan_all`` reads them all.
+        """
+        instance_limit = SCAN_ALL_SAMPLE if scan_all else INSTANCE_SAMPLE
+        type_limit = SCAN_ALL_SAMPLE if scan_all else TYPE_SAMPLE
+        sources = [(itertools.islice(self.iter_elements(), instance_limit), "i")]
+        if self.category_ids and not self.types:
+            type_sample = itertools.islice(self._type_collector(), type_limit)
+            sources.append((type_sample, SCOPE_TYPE))
+        no_storage = get_enum_none(DB.StorageType)
+        found = {}
+        for elements, scope in sources:
+            for element in elements:
+                for parameter in element.Parameters:
+                    entry = self._describe_parameter(parameter, scope, no_storage)
+                    if entry is not None and entry["key"] not in found:
+                        found[entry["key"]] = entry
+        return sorted(found.values(), key=lambda item: item["heading"].lower())
+
+
+def source_from_payload(doc, payload):
+    """Build the source a page message describes.
+
+    Raises:
+        EditError: when a schedule id no longer resolves to a schedule.
+    """
+    description = payload.get("source") or {}
+    if description.get("kind") == "schedule":
+        schedule = doc.GetElement(get_elementid_from_value(int(description["id"])))
+        if not isinstance(schedule, DB.ViewSchedule):
+            raise EditError(t("err_schedule_missing"))
+        return ScheduleSource(doc, schedule)
+    return ScratchSource(doc, description)

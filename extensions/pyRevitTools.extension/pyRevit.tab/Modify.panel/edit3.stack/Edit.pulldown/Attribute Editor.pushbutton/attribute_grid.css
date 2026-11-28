@@ -1,0 +1,681 @@
+/*
+ * Attribute Editor page. Colours follow pyRevit's brand palette, the same one
+ * pyrevit.forms and the output window use: navy #2c3e50 (pyRevitDark) for the
+ * chrome, darker navy #23303d (pyRevitDarkerDark) for text and dark surfaces,
+ * amber #f39c12 (pyRevitAccent) for the primary action, the active cell and
+ * focus. Selection stays a navy tint so it never competes with the amber.
+ */
+.ae-root {
+  --ae-brand: #2c3e50;
+  --ae-brand-deep: #23303d;
+  --ae-brand-text: #ffffff;
+  --ae-brand-muted: #b9c6d3;
+  --ae-bg: #ffffff;
+  --ae-surface: #f4f6f8;
+  --ae-surface-2: #e8ecf0;
+  --ae-border: #d3dae1;
+  --ae-text: #23303d;
+  --ae-muted: #5f6f7f;
+  --ae-accent: #f39c12;
+  --ae-accent-text: #23303d;
+  --ae-link: #2c3e50;
+  --ae-select: rgba(44, 62, 80, 0.12);
+  --ae-select-edge: #2c3e50;
+  --ae-active: #f39c12;
+  --ae-dirty: #fdf0d5;
+  --ae-dirty-edge: #f39c12;
+  --ae-locked: #f1f3f5;
+  --ae-locked-text: #7b8794;
+  --ae-error: #fbeef2;
+  --ae-error-edge: #c7254e;
+  --ae-conflict: #fbe6cf;
+  --ae-conflict-edge: #e17700;
+  --ae-odd: #fafbfc;
+  --ae-ok: #618401;
+  --ae-shadow: 0 6px 20px rgba(35, 48, 61, 0.22);
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--ae-bg);
+  color: var(--ae-text);
+  font: 13px/1.35 "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+
+.ae-root[data-theme="dark"] {
+  --ae-bg: #1b242e;
+  --ae-surface: #23303d;
+  --ae-surface-2: #2c3e50;
+  --ae-border: #3d5166;
+  --ae-text: #e8edf2;
+  --ae-muted: #9fb0c0;
+  --ae-link: #f5b041;
+  --ae-select: rgba(127, 166, 204, 0.26);
+  --ae-select-edge: #7fa6cc;
+  --ae-dirty: #4a3a14;
+  --ae-locked: #202b36;
+  --ae-locked-text: #7f90a0;
+  --ae-error: #5a2335;
+  --ae-error-edge: #ff7b9c;
+  --ae-conflict: #5a3a14;
+  --ae-conflict-edge: #ffa24d;
+  --ae-odd: #1f2a35;
+  --ae-ok: #a6d34a;
+  --ae-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+.ae-root * {
+  box-sizing: border-box;
+}
+
+.ae-root.busy,
+.ae-root.busy * {
+  cursor: progress;
+}
+
+.ae-toolbar,
+.ae-findbar,
+.ae-conflictbar,
+.ae-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--ae-surface);
+  border-bottom: 1px solid var(--ae-border);
+  flex-wrap: wrap;
+}
+
+.ae-toolbar {
+  background: var(--ae-brand);
+  border-bottom-color: var(--ae-brand-deep);
+  color: var(--ae-brand-text);
+}
+
+.ae-toolbar .ae-label {
+  color: var(--ae-brand-muted);
+}
+
+.ae-toolbar .ae-sep {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.ae-toolbar .ae-button,
+.ae-toolbar .ae-seg,
+.ae-toolbar .ae-select {
+  color: var(--ae-brand-text);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.ae-toolbar .ae-select option {
+  color: var(--ae-text);
+  background: var(--ae-bg);
+}
+
+.ae-status {
+  border-bottom: 0;
+  border-top: 1px solid var(--ae-border);
+  color: var(--ae-muted);
+  gap: 16px;
+  padding: 4px 10px;
+}
+
+.ae-conflictbar {
+  background: var(--ae-conflict);
+  border-bottom-color: var(--ae-conflict-edge);
+}
+
+.ae-toolbar [hidden],
+.ae-findbar[hidden],
+.ae-conflictbar[hidden],
+.ae-panel[hidden],
+.ae-empty[hidden],
+.ae-fill[hidden],
+.ae-editor[hidden] {
+  display: none;
+}
+
+.ae-spacer {
+  flex: 1;
+}
+
+.ae-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--ae-border);
+  margin: 0 4px;
+}
+
+.ae-label {
+  color: var(--ae-muted);
+}
+
+.ae-button,
+.ae-seg,
+.ae-mini {
+  font: inherit;
+  color: var(--ae-text);
+  background: var(--ae-bg);
+  border: 1px solid var(--ae-border);
+  border-radius: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.ae-button:hover:not(:disabled),
+.ae-seg:hover:not(:disabled),
+.ae-mini:hover:not(:disabled) {
+  border-color: var(--ae-accent);
+}
+
+.ae-button:disabled,
+.ae-seg:disabled,
+.ae-mini:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ae-toolbar .ae-button.primary,
+.ae-toolbar .ae-button.on,
+.ae-toolbar .ae-seg.on,
+.ae-button.primary,
+.ae-button.on,
+.ae-seg.on {
+  background: var(--ae-accent);
+  border-color: var(--ae-accent);
+  color: var(--ae-accent-text);
+  font-weight: 600;
+}
+
+.ae-button:focus-visible,
+.ae-seg:focus-visible,
+.ae-mini:focus-visible,
+.ae-select:focus-visible,
+.ae-input:focus-visible,
+.ae-filter:focus-visible {
+  outline: 2px solid var(--ae-accent);
+  outline-offset: 1px;
+}
+
+.ae-segs {
+  display: inline-flex;
+}
+
+.ae-seg {
+  border-radius: 0;
+  margin-left: -1px;
+  padding: 3px 9px;
+}
+
+.ae-seg:first-child {
+  border-radius: 4px 0 0 4px;
+  margin-left: 0;
+}
+
+.ae-seg:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.ae-mini {
+  padding: 0 5px;
+  font-size: 11px;
+}
+
+.ae-select,
+.ae-input {
+  font: inherit;
+  color: var(--ae-text);
+  background: var(--ae-bg);
+  border: 1px solid var(--ae-border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  min-width: 0;
+}
+
+.ae-input.narrow {
+  width: 56px;
+  margin-left: 6px;
+}
+
+.ae-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ae-text);
+}
+
+.ae-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.ae-panel {
+  width: 320px;
+  flex: none;
+  overflow: auto;
+  padding: 8px 10px;
+  background: var(--ae-surface);
+  border-right: 1px solid var(--ae-border);
+}
+
+.ae-section {
+  margin-bottom: 12px;
+}
+
+.ae-section h3 {
+  margin: 4px 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ae-muted);
+}
+
+.ae-section .ae-input {
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.ae-section .ae-select {
+  flex: 1;
+}
+
+.ae-section > .ae-check {
+  display: flex;
+  margin: 4px 0 6px;
+}
+
+.ae-row2 {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.ae-list {
+  max-height: 190px;
+  overflow: auto;
+  background: var(--ae-bg);
+  border: 1px solid var(--ae-border);
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.ae-list.tall {
+  max-height: 260px;
+}
+
+.ae-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--ae-surface-2);
+}
+
+.ae-item.dim {
+  opacity: 0.5;
+}
+
+.ae-item.add {
+  cursor: pointer;
+}
+
+.ae-item.add:hover {
+  background: var(--ae-select);
+}
+
+.ae-item .grow {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ae-item .count,
+.ae-item .plus {
+  color: var(--ae-muted);
+}
+
+.ae-item .grip {
+  color: var(--ae-muted);
+  cursor: grab;
+}
+
+.ae-gridwrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
+.ae-scroll {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: var(--ae-bg);
+}
+
+.ae-sizer {
+  position: relative;
+  min-width: 100%;
+}
+
+.ae-header {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--ae-surface);
+  box-shadow: 0 2px 0 var(--ae-accent);
+}
+
+.ae-hrow {
+  display: flex;
+  position: relative;
+}
+
+.ae-hcell,
+.ae-rowhead {
+  flex: none;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ae-surface);
+  border-right: 1px solid var(--ae-border);
+  border-bottom: 1px solid var(--ae-border);
+  font-weight: 600;
+  user-select: none;
+}
+
+.ae-hcell.frozen,
+.ae-cell.frozen {
+  position: sticky;
+  z-index: 4;
+}
+
+.ae-hcell.filter {
+  padding: 2px 3px;
+  font-weight: 400;
+}
+
+.ae-rowhead {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  justify-content: space-between;
+  font-weight: 400;
+  color: var(--ae-muted);
+  cursor: pointer;
+}
+
+.ae-rowhead.hcell {
+  z-index: 7;
+  font-weight: 600;
+  color: var(--ae-text);
+}
+
+.ae-rowhead.sel {
+  background: var(--ae-surface-2);
+  color: var(--ae-text);
+}
+
+.ae-cat {
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 50px;
+}
+
+.ae-htext {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ae-htext em {
+  font-weight: 400;
+  color: var(--ae-muted);
+}
+
+.ae-badge {
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--ae-surface-2);
+  border: 1px solid var(--ae-border);
+  color: var(--ae-muted);
+  font-weight: 600;
+}
+
+.ae-badge.ro {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+
+.ae-sort {
+  font-size: 10px;
+  padding: 0 3px;
+  background: none;
+  border: 0;
+  color: var(--ae-muted);
+  cursor: pointer;
+}
+
+.ae-sort.on {
+  color: var(--ae-link);
+}
+
+.ae-resize {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+}
+
+.ae-filter {
+  width: 100%;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ae-text);
+  background: var(--ae-bg);
+  border: 1px solid var(--ae-border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.ae-body {
+  position: relative;
+}
+
+.ae-row {
+  position: absolute;
+  left: 0;
+  display: flex;
+  height: 26px;
+}
+
+.ae-row.odd .ae-cell:not(.sel):not(.dirty):not(.error):not(.conflict):not(.locked) {
+  background: var(--ae-odd);
+}
+
+.ae-cell {
+  flex: none;
+  height: 26px;
+  line-height: 25px;
+  padding: 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: var(--ae-bg);
+  border-right: 1px solid var(--ae-border);
+  border-bottom: 1px solid var(--ae-border);
+  cursor: cell;
+}
+
+.ae-cell.num {
+  text-align: right;
+}
+
+.ae-cell.locked {
+  background: var(--ae-locked);
+  color: var(--ae-locked-text);
+  cursor: default;
+}
+
+.ae-cell.dirty {
+  background: var(--ae-dirty);
+  box-shadow: inset 4px 0 0 var(--ae-dirty-edge);
+}
+
+.ae-cell.dirty.sel {
+  background: linear-gradient(var(--ae-select), var(--ae-select)), var(--ae-dirty);
+}
+
+.ae-cell.error {
+  background: var(--ae-error);
+  box-shadow: inset 0 0 0 1px var(--ae-error-edge);
+}
+
+.ae-cell.conflict {
+  background: var(--ae-conflict);
+  box-shadow: inset 0 0 0 1px var(--ae-conflict-edge);
+}
+
+.ae-cell.sel {
+  background: var(--ae-select);
+}
+
+.ae-cell.fillpad {
+  background: var(--ae-select);
+  outline: 1px dashed var(--ae-active);
+  outline-offset: -1px;
+}
+
+.ae-cell.active {
+  box-shadow: inset 0 0 0 2px var(--ae-active);
+}
+
+.ae-cell.active.dirty {
+  box-shadow: inset 0 0 0 2px var(--ae-active), inset 4px 0 0 var(--ae-dirty-edge);
+}
+
+.ae-fill {
+  position: absolute;
+  z-index: 3;
+  width: 9px;
+  height: 9px;
+  background: var(--ae-active);
+  border: 1px solid var(--ae-bg);
+  cursor: crosshair;
+}
+
+.ae-editor {
+  position: absolute;
+  z-index: 8;
+  font: inherit;
+  color: var(--ae-text);
+  background: var(--ae-bg);
+  border: 2px solid var(--ae-active);
+  padding: 0 6px;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  white-space: pre;
+  line-height: 22px;
+}
+
+.ae-clip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  resize: none;
+  pointer-events: none;
+}
+
+.ae-empty {
+  position: absolute;
+  inset: 90px 0 0 0;
+  text-align: center;
+  color: var(--ae-muted);
+  padding: 40px 20px;
+  pointer-events: none;
+}
+
+.ae-toasts {
+  position: absolute;
+  right: 14px;
+  bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 30;
+  max-width: 420px;
+}
+
+.ae-toast {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--ae-surface-2);
+  border: 1px solid var(--ae-border);
+  box-shadow: var(--ae-shadow);
+}
+
+.ae-toast.info {
+  border-left: 4px solid var(--ae-select-edge);
+}
+
+.ae-toast.ok {
+  border-left: 4px solid var(--ae-ok);
+}
+
+.ae-toast.warn {
+  border-left: 4px solid var(--ae-conflict-edge);
+}
+
+.ae-toast.error {
+  border-left: 4px solid var(--ae-error-edge);
+}
+
+.ae-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.ae-dialog {
+  max-width: 440px;
+  padding: 16px 18px;
+  border-radius: 8px;
+  background: var(--ae-surface);
+  border: 1px solid var(--ae-border);
+  border-top: 4px solid var(--ae-accent);
+  box-shadow: var(--ae-shadow);
+}
+
+.ae-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}

@@ -118,6 +118,23 @@ pyRevit's own dialogs (`SelectFromList`, `GetValueWindow`, the settings window, 
 additionally sets the exact caption and caption-text colours. The exact-colour operation is a
 no-op on older Windows. Before Windows 10 20H1, the title bar stays in the system colour.
 
+## Pages in the output window
+
+Interactive pages in the WebView2 output window cannot use `Theme.xaml`, so they restate the brand palette as CSS custom properties scoped to the page root. The [Attribute Editor](tools/attribute-editor.md) page is the reference; copy its `attribute_grid.css` tokens for a new page.
+
+| Role | Value | Brand name | Use |
+|---|---|---|---|
+| Chrome | `#2c3e50` | `pyRevitDark` | Toolbars and header bars, in both themes |
+| Ink and dark surfaces | `#23303d` | `pyRevitDarkerDark` | Text on light surfaces, text on amber, dark-theme panels |
+| Accent | `#f39c12` | `pyRevitAccent` | Primary action, active cell, focus ring, fill handle |
+| Success | `#618401` | | Success marks (`#a6d34a` on dark) |
+| Error | `#c7254e` | | Rejected values (`#ff7b9c` on dark) |
+| Warning | `#e17700` | | Conflicts (`#ffa24d` on dark) |
+
+The status colors are the ones in `pyrevitlib/pyrevit/output/outputstyles.css`. Amber is never used for text on a light surface, where it does not reach contrast, and text on an amber fill is the dark ink. Selection is a navy tint, so it does not compete with the amber active cell. A page follows the host theme with a `data-theme` attribute on its root (set from `pyrevit.forms.is_dark_theme()`), or with `prefers-color-scheme` when it has no Python side.
+
+Older pages (Diagnose Invisibility, Section Box Navigator) predate this and use the output window's own ink `#233749` with a blue accent.
+
 ## Writing theme-aware forms
 
 - Never hardcode `White`, `Black`, `DimGray` or similar in XAML. Bind to a palette brush instead.
