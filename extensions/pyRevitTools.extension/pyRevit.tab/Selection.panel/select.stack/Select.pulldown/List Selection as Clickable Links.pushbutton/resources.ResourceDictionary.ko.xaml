@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="all_elements">모든 요소</sys:String>
+    <sys:String x:Key="table_title">선택한 요소</sys:String>
+    <sys:String x:Key="column_number">#</sys:String>
+    <sys:String x:Key="column_id">Id</sys:String>
+    <sys:String x:Key="column_name">이름</sys:String>
+    <sys:String x:Key="no_elements">선택된 요소가 없습니다.</sys:String>
+</ResourceDictionary>

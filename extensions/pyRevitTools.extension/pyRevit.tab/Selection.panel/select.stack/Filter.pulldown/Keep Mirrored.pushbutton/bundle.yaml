@@ -9,64 +9,53 @@ title:
   pt_br: Manter Espelhados ●
 tooltip:
   en_us: |-
-    Keep only mirrored elements in the current selection. If nothing is selected, pick a region to filter.
+    Keep only the mirrored family instances in the current selection; all other elements are dropped. With nothing selected, draw a rectangle to select the mirrored family instances inside it.
 
     Shift-click:
-    Keep only elements that are not mirrored.
+    Keep only the family instances that are not mirrored.
   ko: |-
-    현재 선택 항목에서 미러된 요소만 유지합니다. 선택 항목이 없으면 필터링할 영역을 선택합니다.
+    현재 선택 항목에서 미러된 패밀리 인스턴스만 유지하고 다른 요소는 제외합니다. 선택한 항목이 없으면 사각형을 그려 그 안에서 미러된 패밀리 인스턴스를 선택합니다.
 
     Shift 키를 누르고 클릭:
-    미러되지 않은 요소만 유지합니다.
+    미러되지 않은 패밀리 인스턴스만 유지합니다.
   fr_fr: |-
-    Conserver uniquement les éléments symétrisés dans la sélection actuelle.
-    Si rien n'est sélectionné, délimitez une zone à filtrer.
+    Conservez dans la sélection actuelle uniquement les instances de famille symétrisées ; les autres éléments sont retirés. Si rien n'est sélectionné, tracez un rectangle pour sélectionner les instances de famille symétrisées qu'il contient.
 
     Maj+clic :
-    Conserver uniquement les non-symétrisés.
-    Si rien n'est sélectionné, délimitez une zone à filtrer.
-  ru: >-
-    Удерживает только отзеркаленные элементы в текущем выделении.
-    Если ничего не выбрано, выберите область для фильтрации.
+    Conserver uniquement les instances de famille non symétrisées.
+  ru: |-
+    Оставьте в текущем выборе только отзеркаленные экземпляры семейств; остальные элементы отбрасываются. Если ничего не выбрано, нарисуйте прямоугольник, чтобы выбрать внутри него отзеркаленные экземпляры семейств.
 
     Shift + Щелчок:
-    Удержать только не отзеркаленные элементы.
-    Если ничего не выбрано, выберите область для фильтрации.
+    Оставить только экземпляры семейств, которые не отзеркалены.
   chinese_s: |-
-    在当前选择中仅保留已镜像的图元。
-    若未选择任何内容，则框选区域进行过滤。
+    在当前选择中仅保留已镜像的族实例，其他图元会被舍弃。若未选择任何内容，则绘制矩形，选择其中已镜像的族实例。
 
     按住 Shift 键单击：
-    仅保留未镜像的图元。
-    若未选择任何内容，则框选区域进行过滤。
+    仅保留未镜像的族实例。
   es_es: |-
-    Mantener solo elementos reflejados en la selección actual.
-    Si no hay nada seleccionado, delimite una región para filtrar.
+    Conserve en la selección actual solo las instancias de familia reflejadas; el resto de elementos se descarta. Si no hay nada seleccionado, dibuje un rectángulo para seleccionar las instancias de familia reflejadas que contiene.
 
     Mayús-clic:
-    Mantener solo no reflejados.
-    Si no hay nada seleccionado, delimite una región para filtrar.
+    Conservar solo las instancias de familia que no estén reflejadas.
   de_de: |-
-    Die aktuelle Elementauswahl wird so vermindert, dass nur gespiegelte Elemente
-    in der Auswahl verbleiben. Die Elemente werden nicht gelöscht, sondern nur aus
-    der aktuellen Auswahl entfernt.
-    Wenn nichts ausgewählt ist, kann ein Bereich zum Filtern gewählt werden.
+    In der aktuellen Auswahl nur gespiegelte Familieninstanzen behalten; alle anderen Elemente fallen weg. Ist nichts ausgewählt, ein Rechteck aufziehen, um die gespiegelten Familieninstanzen darin auszuwählen.
 
     Bei gedrückter Umschalttaste klicken:
-    Die aktuelle Elementauswahl wird so vermindert, dass nur NICHT-gespiegelte
-    Elemente in der Auswahl verbleiben.
-    Wenn nichts ausgewählt ist, kann ein Bereich zum Filtern gewählt werden.
+    Nur Familieninstanzen behalten, die nicht gespiegelt sind.
   pt_br: |-
-    Manter apenas elementos espelhados na seleção atual.
-    Se nada estiver selecionado, selecione uma região para filtrar.
+    Mantenha na seleção atual apenas as instâncias de família espelhadas; os outros elementos são descartados. Se nada estiver selecionado, desenhe um retângulo para selecionar as instâncias de família espelhadas dentro dele.
 
     Clique mantendo a tecla Shift pressionada:
-    Manter apenas não espelhados.
-    Se nada estiver selecionado, selecione uma região para filtrar.
+    Manter apenas as instâncias de família que não estão espelhadas.
 context:
   any:
     - selection
     - active-plan-view
     - active-section-view
-    - active-3d-view
     - active-elevation-view
+    - active-3d-view
+    - active-sheet
+    - active-legend
+    - active-drafting-view
+    - active-detail-view

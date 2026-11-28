@@ -8,11 +8,24 @@ title:
   de_de: Nur 2D Detail-Elemente auswählen
   pt_br: Selecionar Elementos de Detalhe
 tooltip:
-  en_us: Activates selection tool that picks only Detail 2D elements
-  ko: 상세도 2D 요소만 선택하는 선택 도구를 활성화합니다
-  fr_fr: Active l'outil de sélection qui sélectionne uniquement les éléments de détail 2D
-  ru: Активирует инструмент выбора, который выбирает только 2D элементы узлов.
-  chinese_s: 激活仅选择二维详图图元的选择工具
-  es_es: Activa la herramienta de selección que elige solo elementos de detalle 2D
-  de_de: Aktiviert ein besonderes Auswahlwerkzeug, das nur 2D Detail Elemente auswählt
-  pt_br: Ativa a ferramenta de seleção que escolhe apenas elementos de Detalhe 2D
+  en_us: |-
+    Draw a rectangle to select only the 2D detail elements inside it, such as detail lines, text notes, dimensions and tags. Elements that are part of a group are skipped. The result replaces the current selection.
+  ko: |-
+    사각형을 그려 그 안의 2D 상세도 요소(상세선, 텍스트 노트, 치수, 태그 등)만 선택합니다. 그룹에 속한 요소는 건너뜁니다. 결과는 현재 선택 항목을 대체합니다.
+  fr_fr: |-
+    Tracez un rectangle pour sélectionner uniquement les éléments de détail 2D qu'il contient, comme les lignes de détail, les notes de texte, les cotes et les étiquettes. Les éléments d'un groupe sont ignorés. Le résultat remplace la sélection actuelle.
+  ru: |-
+    Нарисуйте прямоугольник, чтобы выбрать только 2D-элементы узлов внутри него, например линии детализации, текстовые примечания, размеры и марки. Элементы, входящие в группу, пропускаются. Результат заменяет текущий выбор.
+  chinese_s: |-
+    绘制矩形，仅选择其中的二维详图图元，例如详图线、文字注释、尺寸标注和标记。属于组的图元会被跳过。结果会替换当前选择。
+  es_es: |-
+    Dibuje un rectángulo para seleccionar solo los elementos de detalle 2D que contiene, como líneas de detalle, notas de texto, cotas y etiquetas. Se omiten los elementos que forman parte de un grupo. El resultado sustituye la selección actual.
+  de_de: |-
+    Ein Rechteck aufziehen, um nur die 2D-Detailelemente darin auszuwählen, z. B. Detaillinien, Textnotizen, Bemaßungen und Beschriftungen. Elemente in Gruppen werden übersprungen. Das Ergebnis ersetzt die aktuelle Auswahl.
+  pt_br: |-
+    Desenhe um retângulo para selecionar apenas os elementos de detalhe 2D dentro dele, como linhas de detalhe, notas de texto, cotas e etiquetas. Elementos que fazem parte de um grupo são ignorados. O resultado substitui a seleção atual.
+context:
+  not_any:
+    - active-schedule
+    - active-project-browser
+    - active-system-browser

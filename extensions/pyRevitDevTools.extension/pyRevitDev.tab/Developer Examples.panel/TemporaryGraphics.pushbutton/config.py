@@ -1,6 +1,8 @@
-from pyrevit import revit
-from pyrevit.revit.tmpgfx import ControlManager
+# -*- coding: utf-8 -*-
+"""tmpgfx example — remove the icons this example placed."""
 
-cm = ControlManager(revit.doc)
-cm.sync()
-cm.unregister()
+from pyrevit.revit import tmpgfx
+
+TOOL_NAME = "pyRevitDev.TemporaryGraphicsExample"
+
+tmpgfx.dispose(TOOL_NAME)

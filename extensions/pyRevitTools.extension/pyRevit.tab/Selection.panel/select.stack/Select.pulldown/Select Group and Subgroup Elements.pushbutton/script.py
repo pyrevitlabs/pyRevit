@@ -1,28 +1,35 @@
-"""Replaces current selection with elements inside the groups
-and their subgroups.
-"""
+# -*- coding: utf-8 -*-
+"""Replace the selection with the elements of the selected groups and their subgroups."""
 
+from pyrevit import forms, script
 from pyrevit import revit, DB
+from pyrevit.coreutils import applocales
 
-doc = revit.doc
-selection = revit.get_selection()
+RESOURCES = script.get_bundle_file("resources.xaml")
 
 
-def deepest_element_ids_extractor(group):
-    """Extracts element ids from the group and its subgroups."""
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
+
+
+def leaf_member_ids(group):
     for member_id in group.GetMemberIds():
-        member = doc.GetElement(member_id)
+        member = revit.doc.GetElement(member_id)
         if isinstance(member, DB.Group):
-            for sub_member_id in deepest_element_ids_extractor(member):
-                yield sub_member_id
+            for leaf_id in leaf_member_ids(member):
+                yield leaf_id
         else:
             yield member_id
 
 
-deepest_element_ids = []
-for elem in selection.elements:
-    if isinstance(elem, DB.Group):
-        for id in deepest_element_ids_extractor(elem):
-            deepest_element_ids.append(id)
+selection = revit.get_selection()
 
-selection.set_to(deepest_element_ids)
+element_ids = [
+    leaf_id
+    for group in selection.include(DB.Group)
+    for leaf_id in leaf_member_ids(group)
+]
+if not element_ids:
+    forms.alert(_t("no_groups"), exitscript=True)
+
+selection.set_to(element_ids)

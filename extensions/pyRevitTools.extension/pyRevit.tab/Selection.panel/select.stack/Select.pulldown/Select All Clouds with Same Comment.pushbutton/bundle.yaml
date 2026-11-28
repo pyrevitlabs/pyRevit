@@ -8,13 +8,14 @@ title:
   de_de: Alle Wolken mit identischem Kommentar auswählen
   pt_br: Selecionar Todas as Nuvens com o Mesmo Comentário
 tooltip:
-  en_us: Selects all revision clouds in the model with comment matching selected revision cloud
-  ko: 선택한 수정 기호와 주석이 일치하는 모델의 모든 수정 기호를 선택합니다
-  fr_fr: Sélectionne tous les nuages de révision dans le modèle avec le commentaire correspondant au nuage de révision sélectionné
-  ru: Выделяет все пометочные облака в модели с комментарием выделенного пометочного облака.
-  chinese_s: 选择模型中注释与所选修订云线相匹配的所有修订云线
-  es_es: Selecciona todas las nubes de revisión en el modelo con comentario que coincida con la nube de revisión seleccionada
-  de_de: >-
-    Wählen Sie eine einzele Änderungswolke aus, die einen Kommentar enthält.  Wenn der Befehl ausgeführt wird, werden alle Änderungswolken im  Modell ausgewählt, die den gleichen Kommentar enthalten
-  pt_br: Seleciona todas as nuvens de revisão no modelo com comentário correspondente à nuvem de revisão selecionada
-context: selection
+  en_us: Select all revision clouds in the project that have the same comment as the selected revision clouds. Clouds without a comment are ignored.
+  ko: 선택한 수정 기호와 주석이 같은 프로젝트의 모든 수정 기호를 선택합니다. 주석이 없는 수정 기호는 무시됩니다.
+  fr_fr: Sélectionne tous les nuages de révision du projet ayant le même commentaire que les nuages de révision sélectionnés. Les nuages sans commentaire sont ignorés.
+  ru: Выделяет все пометочные облака проекта с таким же комментарием, как у выбранных облаков. Облака без комментария игнорируются.
+  chinese_s: 选择项目中与所选修订云线注释相同的所有修订云线。没有注释的云线会被忽略。
+  es_es: Selecciona todas las nubes de revisión del proyecto con el mismo comentario que las nubes de revisión seleccionadas. Las nubes sin comentario se ignoran.
+  de_de: Wählt alle Änderungswolken im Projekt aus, die denselben Kommentar haben wie die ausgewählten Änderungswolken. Änderungswolken ohne Kommentar werden ignoriert.
+  pt_br: Seleciona todas as nuvens de revisão do projeto com o mesmo comentário das nuvens de revisão selecionadas. Nuvens sem comentário são ignoradas.
+context:
+  - doc-project
+  - OST_RevisionClouds

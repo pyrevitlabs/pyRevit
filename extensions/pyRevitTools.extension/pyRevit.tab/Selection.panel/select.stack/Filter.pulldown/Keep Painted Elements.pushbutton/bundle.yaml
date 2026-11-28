@@ -8,34 +8,30 @@ title:
   de_de: Nur Elemente mit gefärbten Flächen in aktueller Auswahl belassen
   pt_br: Manter Elementos Pintados
 tooltip:
-  en_us: >-
-    Keeps elements with painted faces in current selection and filters everything else out.
-    If nothing is selected, pick a region to filter from.
-  ko: 현재 선택 항목에서 페인트된 면이 있는 요소를 유지하고 나머지를 필터링합니다.
-  fr_fr: >-
-    Conserve les éléments avec des faces peintes dans la sélection actuelle et filtre tout le reste.
-    Si rien n'est sélectionné, délimitez une zone à filtrer.
-  ru: >-
-    Удерживает элементы с раскрашенными гранями в текущем выделении и отфильтровывает всё остальное.
-    Если ничего не выбрано, выберите область для фильтрации.
-  chinese_s: >-
-    在当前选择中保留表面已涂刷的图元，并过滤掉其他所有图元。
-    若未选择任何内容，则框选区域进行过滤。
-  es_es: >-
-    Mantiene elementos con caras pintadas en la selección actual y filtra todo lo demás.
-    Si no hay nada seleccionado, delimite una región para filtrar.
-  de_de: >-
-    Die aktuelle Elementauswahl wird so vermindert, dass nur Elemente in der Auswahl
-    verbleiben, die eingefärbte Flächen haben. Die Elemente werden nicht gelöscht,
-    sondern nur aus der aktuellen Auswahl entfernt.
-    Wenn nichts ausgewählt ist, kann ein Bereich zum Filtern gewählt werden.
-  pt_br: >-
-    Mantém elementos com faces pintadas na seleção atual e filtra todo o resto.
-    Se nada estiver selecionado, selecione uma região para filtrar.
+  en_us: |-
+    Keep only the elements in the current selection that have painted faces. With nothing selected, draw a rectangle to select the painted elements inside it.
+  ko: |-
+    현재 선택 항목에서 페인트된 면이 있는 요소만 유지합니다. 선택한 항목이 없으면 사각형을 그려 그 안에서 페인트된 요소를 선택합니다.
+  fr_fr: |-
+    Conservez dans la sélection actuelle uniquement les éléments dont des faces sont peintes. Si rien n'est sélectionné, tracez un rectangle pour sélectionner les éléments peints qu'il contient.
+  ru: |-
+    Оставьте в текущем выборе только элементы с раскрашенными гранями. Если ничего не выбрано, нарисуйте прямоугольник, чтобы выбрать внутри него раскрашенные элементы.
+  chinese_s: |-
+    在当前选择中仅保留表面已涂刷的图元。若未选择任何内容，则绘制矩形，选择其中已涂刷的图元。
+  es_es: |-
+    Conserve en la selección actual solo los elementos con caras pintadas. Si no hay nada seleccionado, dibuje un rectángulo para seleccionar los elementos pintados que contiene.
+  de_de: |-
+    In der aktuellen Auswahl nur Elemente mit eingefärbten Flächen behalten. Ist nichts ausgewählt, ein Rechteck aufziehen, um die Elemente mit eingefärbten Flächen darin auszuwählen.
+  pt_br: |-
+    Mantenha na seleção atual apenas os elementos com faces pintadas. Se nada estiver selecionado, desenhe um retângulo para selecionar os elementos pintados dentro dele.
 context:
   any:
     - selection
     - active-plan-view
     - active-section-view
-    - active-3d-view
     - active-elevation-view
+    - active-3d-view
+    - active-sheet
+    - active-legend
+    - active-drafting-view
+    - active-detail-view

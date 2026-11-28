@@ -1,75 +1,39 @@
-"""Activates selection tool that picks a specific type of element.
+# -*- coding: utf-8 -*-
+"""Pick only the elements of one favourite category by drawing a rectangle."""
 
-Shift-Click:
-Pick favorites from all available categories
-"""
-
-# pylint: disable=E0401,W0703,C0103
-from collections import namedtuple
-
-from pyrevit import revit, UI
-from pyrevit import forms
-from pyrevit import script
+from pyrevit import forms, script
+from pyrevit.coreutils import applocales
 
 # import this script's configurator
 import pick_config
+import selectionpick
+
+RESOURCES = script.get_bundle_file("resources.xaml")
 
 
-logger = script.get_logger()
-my_config = script.get_config()
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
-CategoryOption = namedtuple("CategoryOption", ["name", "revit_cat"])
+def is_in_category(element, category):
+    return element.Category is not None and element.Category.Id == category.Id
 
 
-class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
-    """Selection filter implementation"""
-
-    def __init__(self, category_opt):
-        self.category_opt = category_opt
-
-    def AllowElement(self, element):
-        """Is element allowed to be selected?"""
-        if element.Category and self.category_opt.revit_cat.Id == element.Category.Id:
-            return True
-        else:
-            return False
-
-    def AllowReference(self, refer, point):  # pylint: disable=W0613
-        """Not used for selection"""
-        return False
-
-
-def pick_by_category(category_opt):
-    """Handle selection by category"""
-    try:
-        selection = revit.get_selection()
-        msfilter = PickByCategorySelectionFilter(category_opt)
-        selection_list = revit.pick_rectangle(pick_filter=msfilter)
-        filtered_list = []
-        for element in selection_list:
-            filtered_list.append(element.Id)
-        selection.set_to(filtered_list)
-    except Exception as err:
-        logger.debug(err)
-
-
-source_categories = pick_config.load_configs()
-
-# ask user to select a category to select by
-if source_categories:
-    category_opts = [
-        CategoryOption(name=x.Name, revit_cat=x) for x in source_categories
-    ]
-    selected_category = forms.CommandSwitchWindow.show(
-        sorted([x.name for x in category_opts]),
-        title="Pick only elements of type:",
-        message="Pick only elements of type:",
+def main():
+    categories = pick_config.load_configs()
+    if not categories:
+        return
+    # ask user to select a category to select by
+    selected_name = forms.CommandSwitchWindow.show(
+        sorted(category.Name for category in categories),
+        title=_t("choose_category"),
+        message=_t("choose_category"),
     )
+    if not selected_name:
+        return
+    category = next(x for x in categories if x.Name == selected_name)
+    selectionpick.select_picked(lambda element: is_in_category(element, category))
 
-    if selected_category:
-        selected_category_opt = next(
-            x for x in category_opts if x.name == selected_category
-        )
-        logger.debug(selected_category_opt)
-        pick_by_category(selected_category_opt)
+
+if __name__ == "__main__":
+    main()

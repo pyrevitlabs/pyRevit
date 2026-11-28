@@ -15,6 +15,8 @@ public partial class McpServerTests : IDisposable {
         "run_automation", "lookup_revit_api", "get_run", "get_recording",
     };
 
+    private static readonly string[] OpenWorldTools = { "run_query", "run_modify" };
+
     private static readonly string[] PresentationTools = { "show_elements", "navigate_revit_link", "capture_view" };
 
     private readonly FakeAgentHost host = new FakeAgentHost();
@@ -133,6 +135,22 @@ public partial class McpServerTests : IDisposable {
         Assert.Equal(-32700, responses[1]["error"].Value<int>("code"));
         Assert.Equal(JTokenType.Null, responses[1]["id"].Type);
         Assert.Equal(2, responses[2].Value<int>("id"));
+    }
+
+    /// <summary>A handshake gets its replies in request order, and the notification, having no id, gets none.</summary>
+    [Fact]
+    public void AFullClientHandshakeIsAnsweredInOrderWithNothingForTheNotification() {
+        var responses = Serve(
+            Request(1, "initialize", new JObject { ["protocolVersion"] = "2025-06-18" }),
+            new JObject { ["jsonrpc"] = "2.0", ["method"] = "notifications/initialized" },
+            Request(2, "tools/list"));
+
+        Assert.Equal(2, responses.Count);
+        Assert.Equal(1, responses[0].Value<int>("id"));
+        Assert.NotNull(responses[0]["result"]);
+        Assert.Equal(2, responses[1].Value<int>("id"));
+        var tools = Assert.IsType<JArray>(responses[1]["result"]?["tools"]);
+        Assert.Contains(tools, tool => tool.Value<string>("name") == "get_context");
     }
 
     /// <summary>A request line past the 16 MB limit is refused without ending the session (issue #3922).</summary>
@@ -525,7 +543,9 @@ public partial class McpServerTests : IDisposable {
                 Assert.True(properties[required.Value<string>()] != null, name + " requires an undeclared property");
             var readOnly = ReadOnlyTools.Contains(name);
             Assert.Equal(readOnly, tool["annotations"].Value<bool>("readOnlyHint"));
-            Assert.Equal(!readOnly && !PresentationTools.Contains(name), tool["annotations"].Value<bool>("destructiveHint"));
+            var destructive = !readOnly && !PresentationTools.Contains(name);
+            Assert.Equal(destructive, tool["annotations"].Value<bool>("destructiveHint"));
+            Assert.Equal(OpenWorldTools.Contains(name), tool["annotations"].Value<bool>("openWorldHint"));
         }
     }
 

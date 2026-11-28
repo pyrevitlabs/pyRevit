@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_selection">请先选择至少一个图元。</sys:String>
+    <sys:String x:Key="no_suitable">所选图元均无法按类型匹配。</sys:String>
+    <sys:String x:Key="model_elements">模型图元（{}）</sys:String>
+    <sys:String x:Key="view_elements">视图 {} 专有图元（{}）</sys:String>
+    <sys:String x:Key="column_id">ID</sys:String>
+    <sys:String x:Key="column_class">类</sys:String>
+</ResourceDictionary>

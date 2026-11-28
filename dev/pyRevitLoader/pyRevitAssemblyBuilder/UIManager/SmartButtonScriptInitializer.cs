@@ -309,6 +309,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly UIApplication _uiApp;
         private readonly RevitThemeDetector _themeDetector;
         private readonly BuildContext _buildContext;
+        private readonly Lazy<List<string>> _libraryExtensionPaths;
         private static Assembly _pyRevitLoaderAssembly;
         private static Type _executorType;
         private static bool _staticInitialized;
@@ -319,12 +320,24 @@ namespace pyRevitAssemblyBuilder.UIManager
         private bool _instanceInitialized;
         private bool _instanceInitializationFailed;
 
-        public SmartButtonScriptInitializer(UIApplication uiApp, ILogger logger, BuildContext buildContext = null)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SmartButtonScriptInitializer"/> class.
+        /// </summary>
+        /// <param name="libraryPathsProvider">Supplies the search paths of the installed library extensions; read once, on first use.
+        /// When it throws, the reason is logged once and this initializer's scripts get no library-extension paths.</param>
+        public SmartButtonScriptInitializer(
+            UIApplication uiApp,
+            ILogger logger,
+            BuildContext buildContext = null,
+            Func<IEnumerable<string>> libraryPathsProvider = null)
         {
             _uiApp = uiApp;
             _logger = logger;
             _buildContext = buildContext;
             _themeDetector = new RevitThemeDetector(logger);
+            _libraryExtensionPaths = LibraryExtensionSearchPaths.ReadOnFirstUse(
+                libraryPathsProvider,
+                ex => _logger.Warning($"Reading the library extensions' paths failed, so smart buttons cannot import from them until pyRevit reloads: {ex.Message}"));
 
             // Do static initialization once
             EnsureStaticInitialized();
@@ -409,6 +422,8 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// Executes the __selfinit__ function for a SmartButton.
         /// </summary>
         /// <remarks>
+        /// The script can import from the bundle's ancestor <c>lib</c> folders and from installed library
+        /// extensions, which the executor puts before <c>pyrevitlib</c> and <c>site-packages</c>, as for commands.
         /// Note: self-init always runs under IronPython, also for a button whose click runs under CPython.
         /// A failure of such a button's script is not reported as an error, because syntax or imports that
         /// only CPython supports fail here on every start-up while the button works; the executor's debug
@@ -459,6 +474,8 @@ namespace pyRevitAssemblyBuilder.UIManager
                     current = current.Parent;
                 }
             }
+
+            additionalPaths.AddRange(_libraryExtensionPaths.Value);
 
             var span = LoadTimeline.Active?.StartSpan($"SmartButton '{component?.Name ?? "<unknown>"}'");
             try

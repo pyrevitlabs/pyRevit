@@ -25,7 +25,7 @@ def update_cache(parsed_ext):
         cache_file = _get_cache_file(parsed_ext)
         mlogger.debug("Cache file is: %s", cache_file)
         with open(cache_file, "wb") as bin_cache_file:
-            pickle.dump(parsed_ext, bin_cache_file, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(parsed_ext, bin_cache_file, 2)
     except Exception as err:
         raise PyRevitException(
             "Error writing cache for: {} | {}".format(parsed_ext, err)

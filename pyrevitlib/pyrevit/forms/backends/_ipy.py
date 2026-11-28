@@ -136,7 +136,20 @@ from pyrevit.framework import ComponentModel
 class Reactive(ComponentModel.INotifyPropertyChanged):
     """WPF property updator base mixin."""
 
-    PropertyChanged, _propertyChangedCaller = pyevent.make_event()
+    @property
+    def PropertyChanged(self):
+        """Per-instance event, so a row only notifies its own listeners."""
+        if "_property_changed" not in self.__dict__:
+            self.__dict__["_property_changed"] = pyevent.event()
+        return self.__dict__["_property_changed"]
+
+    @PropertyChanged.setter
+    def PropertyChanged(self, value):
+        self.__dict__["_property_changed"] = value
+
+    @property
+    def _propertyChangedCaller(self):
+        return self.PropertyChanged.make_caller()
 
     def add_PropertyChanged(self, value):
         """Called when a property is added to the object."""

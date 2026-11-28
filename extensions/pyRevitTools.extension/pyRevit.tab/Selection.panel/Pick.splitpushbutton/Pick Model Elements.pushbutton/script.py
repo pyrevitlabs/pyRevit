@@ -1,34 +1,12 @@
-"""Activates selection tool that picks only Model elements."""
+# -*- coding: utf-8 -*-
+"""Pick only model elements by drawing a rectangle."""
 
-from pyrevit.framework import List
-from pyrevit import revit, DB, UI
-
-
-selection = revit.get_selection()
+import selectionpick
 
 
-class MassSelectionFilter(UI.Selection.ISelectionFilter):
-    # standard API override function
-    def AllowElement(self, element):
-        if not element.ViewSpecific:
-            return True
-        else:
-            return False
-
-    # standard API override function
-    def AllowReference(self, refer, point):
-        return False
+def is_model_element(element):
+    return not element.ViewSpecific
 
 
-try:
-    msfilter = MassSelectionFilter()
-    selection_list = revit.pick_rectangle(pick_filter=msfilter)
-
-    filtered_list = []
-    for el in selection_list:
-        filtered_list.append(el.Id)
-
-    selection.set_to(filtered_list)
-    revit.uidoc.RefreshActiveView()
-except Exception:
-    pass
+if __name__ == "__main__":
+    selectionpick.select_picked(is_model_element)

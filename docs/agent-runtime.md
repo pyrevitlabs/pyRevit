@@ -41,6 +41,15 @@ runtime is independent of the Routes server and doesn't need it enabled.
     `.mcp.json`, Cursor: `.cursor/mcp.json`, VS Code: `.vscode/mcp.json`, OpenCode:
     `opencode.json[c]`). Codex only supports user-level servers. A JSON config file that
     contains comments is never rewritten; the command prints the entry to add by hand.
+    A project install is refused when the current folder or the client's config folder is a
+    link or junction, or the config file itself is a link, so the file isn't written outside the
+    project. The check runs when the command starts and walks every folder above the target, so a
+    only folders that report the reparse-point attribute (junctions, symlinks, mount points) are
+    refused; cloud placeholder folders such as a OneDrive root are not detected. The check doesn't
+    guard against a swap afterwards. The client's own tool
+    (`claude`) is looked up in absolute `PATH` entries and the usual install folders only; relative
+    entries are skipped. The entry pins the absolute path of this `pyrevit.exe`, so review
+    a project file before you commit it.
 
 2. **Start Revit** (or reload pyRevit), and open a model.
 3. **Check the connection:**
@@ -111,7 +120,7 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. Up to 20000 integer ids and 100 distinct categories (a repeated category counts once), and the categories may match at most 20000 elements (`too_many_elements` otherwise); an id with no element is listed in `missing_ids`. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. `isolate` and `hide` leave out ids the active view doesn't show and list them in `not_in_view_ids`; `select` lists them there too but still selects them, so `zoom` can open a view that shows them; while a temporary isolate is on, the elements it hides count as not shown, so `reset` before isolating others. `view` is the view acted on; when zooming makes Revit open another view, `active_view` names it. |
 | `navigate_revit_link` | no | Select, zoom to, isolate or temporarily hide the elements of a `link` returned by `inspect_elements` (see [Navigation links](#navigation-links)) |
 | `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit, named by name, id or sheet number, and a schedule on a temporary sheet that is rolled back (a schedule rejects `detail_level` and `display_style` with `view_not_supported`, and so does one filtered by sheet on Revit 2023 and later, which would render empty there; Revit 2021 and 2022 can't report it); `viewport` renders an open view through Revit cropped to what its window shows now (zoom, pan, temporary isolate; no selection highlight), in a rolled-back transaction; `screen` captures the active view window as the user sees it (selection, temporary isolate), fails with `view_not_active` for any other view, and fails with `view_obscured` when another application's window covers any part of it (click-through overlays such as the GeForce overlay don't count); view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`, up to 20000 integer ids) and seen from `direction`, which is rolled back. `eye` and `target` (feet) switch it to a perspective camera without a section box; `section` (`origin`, `normal`, optional `depth`) renders a temporary section or elevation for a horizontal `normal`, or a plan cut at `origin` height for `[0, 0, -1]`, framed on `elements` or the model; ids in `elements` that don't exist are listed in `missing_ids`, also on an error. `detail_level` (`coarse`, `medium`, `fine`) and `display_style` (`wireframe`, `hidden_line`, `shaded`, `shaded_edges`) apply to the temporary view and, in `export` and `viewport` modes, to a named view for that capture only, inside the same rolled-back group (a view template that controls them is detached there; in a workshared model a view you don't own is duplicated and the copy is changed, so nothing is borrowed; `viewport` refuses such a view while its temporary hide/isolate is on). A view name shared by several views fails with `view_ambiguous` and lists their ids, types and sheet numbers (pass `view_type`, a Revit `ViewType` name such as `FloorPlan`, to keep only views of that type; not valid with `active` or `3d`), except in `screen` mode when one of them is the active view; a digits-only selector is tried as an id first, then as a name. Saved under `%APPDATA%\pyRevit\agent\captures`. |
-| `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
+| `run_query` | never | Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. `workspace` appends a folder of the agent's own modules to `sys.path`, after the library paths, so its modules don't take precedence over standard library or pyRevit modules by path order (give them unique names: a top-level name that another import finder or an earlier `sys.path` entry, a ZIP included, can already resolve, such as a standard library module, resolves there and never to the workspace; a workspace folder that is already on `sys.path` is moved last for the run and put back afterwards); they are re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
 | `run_modify` | after approval | Run a changing script against the active document; it is refused when no document is active. `dry_run=true` previews the change set and rolls back. `document` (title or path from `get_context`) refuses the run with `document_changed` when another document is active. |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
 | `get_recording` | no | A [session recording](#session-recorder) the user made: a JSON timeline of element changes, pyRevit commands and output, logs, extension breadcrumbs and screenshot files. Without `recording_id` it lists recent recordings. Works without Revit |
@@ -137,7 +146,13 @@ transaction because the Revit API requires one, and that state isn't saved with 
 model. The agent is told to use it rather than writing `run_modify` scripts to show
 things. Because they change view state or write files, `show_elements`,
 `navigate_revit_link` and `capture_view` are annotated for MCP clients as neither
-read-only nor destructive.
+read-only nor destructive. `run_query` and `run_modify` are annotated open-world and
+destructive, and not read-only, because the script they run can reach the network, the file
+system and other processes. `run_automation` is annotated read-only and closed-world: it only
+invokes shipped operations marked `query` or `pure` that open no transaction, and the run is a
+rolled-back query. That annotation reflects the marker contract, not a sandbox: the marker
+limits an operation's mode and transactions, not what the Python it calls can reach. Clients
+should ask the user to approve each run call.
 
 `run_query` and `run_modify` return a compact result for the agent: `status`, then
 `error` (when present), `decision`, `result` and `output`. The non-empty change set,
@@ -331,8 +346,8 @@ Rules the host enforces:
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
-  the run, it is rolled back, and it can't be saved or saved as, so the file on disk stays
-  unchanged. A family from `EditFamily` or a new document the script creates has no file yet;
+  the run, it is rolled back, and the guard cancels save and save as while the run lasts, so
+  the file on disk stays unchanged unless the script writes it by other means. A family from `EditFamily` or a new document the script creates has no file yet;
   it is reported there with a `scope` statement and without a `rolled_back` field, doesn't fail
   the run, and isn't rolled back; it is discarded when closed.
 - When `blocked` isn't empty, `warnings` gains an `operation_blocked` entry
@@ -385,8 +400,8 @@ Rules the host enforces:
   time limit. Time spent waiting for approval doesn't count.
 - The runner compiles the script with every bare `except` and `except BaseException`
   (also spelled as an attribute, such as `except builtins.BaseException`) narrowed to
-  `except Exception`, so a script can't swallow its own timeout, and can't catch
-  `KeyboardInterrupt` or `SystemExit` that way. If a handler can't be rewritten in the
+  `except Exception`, so a script that doesn't go out of its way doesn't swallow its own timeout or
+  catch `KeyboardInterrupt` or `SystemExit` that way. If a handler can't be rewritten in the
   source, the run compiles the narrowed syntax tree instead, at the cost of line numbers,
   rather than keep the broad handler. A script that suppresses the timeout some
   other way, such as through an alias, `except tuple(...)`, a library's bare `except`, or
@@ -424,7 +439,8 @@ Rules the host enforces:
   no timeout, outside the guard (see the limits under [The guarded run](#the-guarded-run)).
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
-- Documents can't be saved or synchronized during a run.
+- The guard cancels save, save as and synchronize for the run's documents while the run lasts.
+  It is not a sandbox: a script can leave code behind that acts after the run.
   Closing is blocked for documents open when the run started.
   The script may close documents it creates or opens during the run.
 
@@ -454,8 +470,8 @@ pyrevit configs agent reckless          # prints the current setting
 The host reads the setting at the start of each run, so a change applies to the next run
 without reloading pyRevit. Turning it off applies at once. Turning it on applies only after
 you confirm it in a Revit prompt before the next run of any mode, so a script that rewrites
-the config can't make later runs reckless; No keeps it off until the setting is turned off
-and on again or Revit restarts. A script can't turn it on for its own run. A reckless run's
+the config doesn't make later runs reckless; No keeps it off until the setting is turned off
+and on again or Revit restarts. A script that rewrites the config doesn't turn it on for its own run. A reckless run's
 response, its `response.json` record and the compact MCP result carry `"reckless": true`,
 and `get_context` reports `agent.reckless: true` while it is in force.
 
@@ -633,7 +649,11 @@ pyrevit mcp uninstall --all [--owned]      every client's user-level entry; --ow
 `capture`, `inspect` and `lookup` are the CLI forms of the `capture_view`, `inspect_elements` and `lookup_revit_api` tools, for clients without MCP. `capture` takes the view the way the tool does (a name, sheet number or id; the active view without one; `3d` for a temporary 3D view; `--view-type=FloorPlan` and the like keep only views of that type when a name is shared, as `view_type` does) and prints the host's answer without the image data. The host keeps the PNG under `%APPDATA%\pyRevit\agent\captures`; `--out` writes it to a file of your choice as well, and `path` in the output then names that file. `inspect` takes up to 50 element ids of the active document.
 
 `--timeout` defaults to 300 and is capped at 3600; [reckless mode](#reckless-mode) ignores it.
-`--workspace` must be an existing local folder; network (UNC) paths are refused.
+`--workspace` must be an existing local folder; network (UNC) paths are refused, and so is a folder that is a link or junction or sits behind one (the error names the link). The
+check runs when the request is parsed, not at import time. Only folders that report the
+reparse-point attribute (junctions, symlinks, mount points) are refused; cloud placeholder
+folders such as a OneDrive root are not detected. Give workspace modules unique names: the folder is last on
+`sys.path`, so a name a library module has resolves to the library.
 
 When its output is redirected to a pipe or file, the CLI writes UTF-8 without a BOM for every command. Readers must decode it as UTF-8; in PowerShell, set `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` first, or a legacy code page shows non-ASCII text as mojibake. In Windows PowerShell 5.1, `>` is equivalent to `Out-File` with no parameters, which writes UTF-16LE, so to keep the CLI's UTF-8 bytes redirect in `cmd` (`cmd /c "pyrevit ... > out.json"`) or pipe to `Out-File -Encoding utf8`. Read a BOM-less UTF-8 file with `Get-Content -Encoding UTF8`, because Windows PowerShell 5.1 otherwise decodes it with the system's active (ANSI) code page, which `[Console]::OutputEncoding` does not change.
 
@@ -643,6 +663,36 @@ the build that provides the agent runtime. If that still happens after an upgrad
 install comes first on `PATH`: `where.exe pyrevit` in a new terminal lists every `pyrevit.exe` in the
 order Windows resolves them (`pyrevit env path which` does the same on a CLI that has it), and
 the first one is the one that runs. Update or uninstall that install.
+
+### MCP server does not connect or tools are missing
+
+Claude Code was observed not to list a server's tools after a `/mcp` reconnect when the server had failed at session start (see [issue 4018](https://github.com/pyrevitlabs/pyRevit/issues/4018)). Restart the client session after a failed connect.
+
+Stale `pyrevit.exe` processes lock `bin\` and can block a rebuild. List them with their command lines:
+
+```powershell
+Get-CimInstance Win32_Process -Filter "Name='pyrevit.exe'" | Select-Object ProcessId,CreationDate,CommandLine
+```
+
+If you have confirmed that no client is using an `mcp` process, stop it by its process ID (`Stop-Process -Id`). Before rebuilding a repository checkout, use `dev/scripts/Stop-McpServers.ps1` only if you want to stop all MCP servers running from that clone's `bin\` folder, including servers still in use (see [Testing agent skills and library changes through MCP](#testing-agent-skills-and-library-changes-through-mcp)); the script lives under `dev/`, so it exists only in a checkout.
+
+Builds before 7.1.0 can leave `mcp` processes running after the client closes stdin. From 7.1.0 an idle server exits as soon as stdin closes; while tool calls are still running it waits for them at most 5 minutes, then cancels them and waits at most 10 more seconds before exiting.
+
+To check the handshake by hand from the repository root (`.\bin\pyrevit.exe` is relative to it), pipe an `initialize` request into the server and read the returned JSON line. A banner or a corrupt first frame shows up here:
+
+```powershell
+'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' | .\bin\pyrevit.exe mcp
+```
+
+To time the exchange, discard the output:
+
+```powershell
+Measure-Command { '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' | .\bin\pyrevit.exe mcp | Out-Null }
+```
+
+`Measure-Command` measures start to exit, not time to the first line. On a healthy install it usually returns well under a second. Revit does not need to be running for the handshake or for local tools such as `list_skills`. Tools that need a live Revit session, such as `get_context`, fail with the error code `no_revit` when no agent host is running, with the message "No running Revit with the pyRevit agent host was found. Start Revit with '[agent] enabled = true' (pyrevit configs agent enable)."
+
+`get_context.pyrevit.bin_stale: true` means the binaries were built from another commit than the clone; it is a rebuild hint, not a connection failure (see above).
 
 ### Run records
 
@@ -899,7 +949,7 @@ engine; pick one by clone name, or by process id when one clone runs in several 
  │ pyrevit mcp                  │   MCP protocol, tool schemas, instructions,
  │                              │   instance discovery, run records
  └──────────────┬───────────────┘
-                │  named pipe  \\.\pipe\pyrevit-agent-<pid>  (current user only)
+                │  named pipe  \\.\pipe\pyrevit-agent-<pid>-<nonce>  (current user only)
                 ▼
  ┌──────────────────────────────┐   inside Revit (PyRevit.Runtime, Agent/)
  │ AgentHost                    │
@@ -926,9 +976,18 @@ access list allows only the current Windows user and denies network logons, and 
 the authentication. The trust boundary is the Windows account: any process running as that
 user can connect to the host and submit scripts.
 
-The CLI also checks that the process serving the pipe is the Revit recorded in the instance
-file, and refuses to send a request otherwise, so another local process can't take over a
-pipe name while the host is down.
+The pipe name is `pyrevit-agent-<pid>-<nonce>`, where the nonce is 32 random hex characters
+chosen at host start and recorded in the instance file, so another process can't guess the
+name and create the pipe first. The host creates every pipe instance natively with the
+reject-remote-clients flag on every target framework (the managed constructors don't set it). The CLI
+refuses to send a request unless the registered name has that form (the older
+`pyrevit-agent-<pid>` form is still accepted for one release), the process serving the pipe is
+the Revit recorded in the instance file, and that process runs as the current user (compared by
+user SID, so an elevated Revit of the same user matches). A process whose owner can't be read is
+refused with its own message. Whether a non-elevated CLI can read an elevated process's owner is
+unverified; the host never runs elevated. This keeps a request from reaching a pipe
+another local process created while the host was down. It does not stop a process of the same
+user, which is inside the trust boundary above.
 
 Remote use is through Remote Desktop only. An RDP session is an interactive logon, so
 `pyrevit mcp` started inside it reaches Revit. SSH is refused on purpose: an SSH logon
@@ -1044,7 +1103,7 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
 1. **Arm guards** (only while the run is active):
     - `DocumentSynchronizingWithCentral`, `DocumentSaving` and `DocumentSavingAs` are cancelled for documents open when the run started and for documents the script creates or opens during the run, when Revit marks the event cancellable.
       `DocumentClosing` is cancelled only for documents open when the run started.
-      The script may close documents it creates or opens during the run, but cannot save them.
+      The script may close documents it creates or opens during the run; save is cancelled while the run lasts.
       After the guard is disposed, the host closes any of these documents still open in the background without saving; documents with an open view are left open.
     - `DialogBoxShowing` is captured and dismissed.
     - `FailuresProcessing` warnings are recorded and deleted, and errors roll back the
@@ -1064,7 +1123,7 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
     - **modify** with policy `readonly`: the policy is read before the script and again here,
       and the stricter value (`readonly`, then `ask`, then `auto`) decides. A run queued before
       the switch to `readonly` rolls back with `policy_readonly` instead of committing, and a
-      script that rewrites the policy can't loosen it for its own run, nor, without the user
+      script that rewrites the policy doesn't loosen it for its own run, nor, without the user
       confirming it in Revit, for later runs.
     - **modify** with policy `auto`: `Assimilate()` straight away. The response says
       `approval: auto`.

@@ -1,66 +1,83 @@
-"""Select all element types of chosen category."""
+# -*- coding: utf-8 -*-
+"""Select all element types of a family, graphics style category or style list."""
 
-# pylint: disable=E0401,W0703,C0103
+from functools import partial
+
+from pyrevit import forms, script
 from pyrevit import revit, DB
-from pyrevit import forms
-from pyrevit import script
-
+from pyrevit.coreutils import applocales
 
 logger = script.get_logger()
 
+RESOURCES = script.get_bundle_file("resources.xaml")
 
-# collect all element types
-element_types = {
-    x.FamilyName
-    for x in revit.query.get_types_by_class(DB.ElementType, doc=revit.doc)
-    if x.FamilyName
-}
 
-graphic_styles = {
-    "Graphics Styles: " + x.GraphicsStyleCategory.Name
-    for x in revit.query.get_types_by_class(DB.GraphicsStyle, doc=revit.doc)
-    if x.GraphicsStyleCategory
-    and x.GraphicsStyleCategory.CategoryType != DB.CategoryType.Internal
-}
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
-all_options = list(element_types)
-all_options.extend(graphic_styles)
-all_options.extend(["Fill Patterns", "Area Schemes", "Line Styles"])
-selected_option = forms.CommandSwitchWindow.show(
-    all_options, message="Pick type category:", recognize_access_key=False
-)
 
-if selected_option:
-    logger.debug(selected_option)
-    selection = revit.get_selection()
-    if selected_option == "Fill Patterns":
-        fill_patterns = revit.query.get_types_by_class(
-            DB.FillPatternElement, doc=revit.doc
-        )
-        selection.set_to(list(fill_patterns))
-    elif selected_option == "Area Schemes":
-        area_schemes = revit.query.get_types_by_class(DB.AreaScheme, doc=revit.doc)
-        selection.set_to(list(area_schemes))
-    elif selected_option == "Line Styles":
-        line_styles = revit.query.get_line_styles(doc=revit.doc)
-        selection.set_to(list(line_styles))
-    elif selected_option.startswith("Graphics Styles: "):
-        graphic_style_cat = selected_option.replace("Graphics Styles: ", "")
-        graphic_styles = [
-            x
-            for x in revit.query.get_types_by_class(DB.GraphicsStyle, doc=revit.doc)
-            if x.GraphicsStyleCategory
-            and x.GraphicsStyleCategory.CategoryType != DB.CategoryType.Internal
-            and graphic_style_cat == x.GraphicsStyleCategory.Name
-        ]
-        selection.set_to(list(graphic_styles))
-    else:
-        all_types = revit.query.get_types_by_class(DB.ElementType, doc=revit.doc)
-        selection.set_to(
-            [
-                x
-                for x in all_types
-                if selected_option == x.FamilyName
-                and revit.query.get_name(x) != x.FamilyName
-            ]
-        )
+def types_by_family_name():
+    types = {}
+    for element_type in revit.query.get_types_by_class(DB.ElementType, doc=revit.doc):
+        if element_type.FamilyName:
+            types.setdefault(element_type.FamilyName, []).append(element_type)
+    return types
+
+
+def graphics_styles_by_category_name():
+    styles = {}
+    for style in revit.query.get_types_by_class(DB.GraphicsStyle, doc=revit.doc):
+        category = style.GraphicsStyleCategory
+        if category and category.CategoryType != DB.CategoryType.Internal:
+            styles.setdefault(category.Name, []).append(style)
+    return styles
+
+
+def own_named_types(family_name, element_types):
+    return [
+        element_type
+        for element_type in element_types
+        if revit.query.get_name(element_type) != family_name
+    ]
+
+
+def special_choices():
+    choices = {}
+    for category_name, styles in graphics_styles_by_category_name().items():
+        choices[_t("graphics_styles").format(category_name)] = partial(list, styles)
+    choices[_t("fill_patterns")] = partial(
+        revit.query.get_types_by_class, DB.FillPatternElement, doc=revit.doc
+    )
+    choices[_t("area_schemes")] = partial(
+        revit.query.get_types_by_class, DB.AreaScheme, doc=revit.doc
+    )
+    choices[_t("line_styles")] = partial(revit.query.get_line_styles, doc=revit.doc)
+    return choices
+
+
+def type_choices():
+    choices = special_choices()
+    for family_name, element_types in types_by_family_name().items():
+        label = family_name
+        if label in choices:
+            label = _t("family_choice").format(family_name)
+        choices[label] = partial(own_named_types, family_name, element_types)
+    return choices
+
+
+def main():
+    choices = type_choices()
+    choice = forms.CommandSwitchWindow.show(
+        sorted(choices), message=_t("pick_category"), recognize_access_key=False
+    )
+    if not choice:
+        return
+    logger.debug(choice)
+    types = list(choices[choice]())
+    if not types:
+        forms.alert(_t("no_types"), exitscript=True)
+    revit.get_selection().set_to(types)
+
+
+if __name__ == "__main__":
+    main()

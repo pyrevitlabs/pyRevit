@@ -9,42 +9,43 @@ title:
   pt_br: Selecionar Todos os Objetos Que Passam No Filtro
 tooltip:
   en_us: |-
-    Select elements visible in the active view that pass the chosen view filters.
+    Select the elements that pass any of the view filters you pick. By default the search covers the active view and skips nested family instances.
 
     Shift-click:
-    Configure whether to search the whole project, exclude nested elements, or reverse the filter selection.
+    Choose whether to search only the active view, whether to leave out nested family instances, and whether to select the elements that do not pass instead.
   ko: |-
-    활성 뷰에서 선택한 필터를 통과해 표시되는 요소를 모두 선택합니다. 미리 정의된 조건으로 요소를 빠르게 필터링할 수 있습니다.
+    선택한 뷰 필터 중 하나라도 통과하는 요소를 선택합니다. 기본적으로 활성 뷰에서 검색하며 중첩된 패밀리 인스턴스는 건너뜁니다.
 
     Shift 키를 누르고 클릭:
-    전체 프로젝트 검색, 중첩 요소 제외 또는 필터 결과 반전을 설정합니다.
+    활성 뷰에서만 검색할지, 중첩된 패밀리 인스턴스를 제외할지, 대신 필터를 통과하지 않는 요소를 선택할지 설정합니다.
   fr_fr: |-
-    Sélectionne les éléments visibles dans la vue active qui correspondent aux filtres de vue choisis.
+    Sélectionne les éléments qui correspondent à l'un des filtres de vue choisis. Par défaut, la recherche porte sur la vue active et ignore les instances de famille imbriquées.
 
     Maj+clic :
-    Configurer la recherche dans tout le projet, l'exclusion des éléments imbriqués ou l'inversion de la sélection par filtre.
+    Choisir si la recherche se limite à la vue active, si les instances de famille imbriquées sont exclues et si ce sont les éléments qui ne correspondent pas qui sont sélectionnés.
   ru: |-
-    Выделяет элементы, видимые в текущем виде и соответствующие выбранным фильтрам вида.
+    Выделяет элементы, проходящие любой из выбранных фильтров вида. По умолчанию поиск ведётся в текущем виде, вложенные экземпляры семейств пропускаются.
 
     Shift + Щелчок:
-    Настроить поиск по всему проекту, исключение вложенных элементов или инверсию результатов фильтра.
+    Выбрать, искать ли только в текущем виде, исключать ли вложенные экземпляры семейств и выделять ли вместо этого элементы, не проходящие фильтр.
   chinese_s: |-
-    选择活动视图中可见且符合所选视图过滤器的图元。
+    选择通过所选任一视图过滤器的图元。默认情况下，搜索范围为活动视图，并跳过嵌套族实例。
 
     按住 Shift 键单击：
-    配置是否搜索整个项目、排除嵌套图元或反转过滤结果。
+    设置是否仅搜索活动视图、是否排除嵌套族实例，以及是否改为选择未通过过滤器的图元。
   es_es: |-
-    Selecciona los elementos visibles en la vista activa que cumplen los filtros de vista elegidos.
+    Selecciona los elementos que cumplen alguno de los filtros de vista elegidos. De forma predeterminada, la búsqueda abarca la vista activa y omite las instancias de familia anidadas.
 
     Mayús-clic:
-    Configurar si se busca en todo el proyecto, se excluyen elementos anidados o se invierte la selección del filtro.
+    Elegir si se busca solo en la vista activa, si se excluyen las instancias de familia anidadas y si se seleccionan en su lugar los elementos que no cumplen.
   de_de: |-
-    Wählt Elemente aus, die in der aktiven Ansicht sichtbar sind und den ausgewählten Ansichtsfiltern entsprechen.
+    Wählt die Elemente aus, die einen der gewählten Ansichtsfilter erfüllen. Standardmäßig wird die aktive Ansicht durchsucht und verschachtelte Familienexemplare werden übersprungen.
 
     Bei gedrückter Umschalttaste klicken:
-    Festlegen, ob das gesamte Projekt durchsucht, verschachtelte Elemente ausgeschlossen oder die Filterauswahl umgekehrt wird.
+    Festlegen, ob nur die aktive Ansicht durchsucht wird, ob verschachtelte Familienexemplare ausgelassen werden und ob stattdessen die Elemente ausgewählt werden, die den Filter nicht erfüllen.
   pt_br: |-
-    Seleciona os elementos visíveis na vista ativa que correspondem aos filtros de vista escolhidos.
+    Seleciona os elementos que correspondem a qualquer um dos filtros de vista escolhidos. Por padrão, a busca abrange a vista ativa e ignora instâncias de família aninhadas.
 
     Clique mantendo a tecla Shift pressionada:
-    Configurar se a busca abrange todo o projeto, exclui elementos aninhados ou inverte a seleção do filtro.
+    Escolher se a busca fica só na vista ativa, se as instâncias de família aninhadas são excluídas e se são selecionados, em vez disso, os elementos que não correspondem.
+context: doc-project

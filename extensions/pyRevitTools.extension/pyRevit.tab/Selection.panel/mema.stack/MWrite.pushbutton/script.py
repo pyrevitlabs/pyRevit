@@ -12,5 +12,5 @@ get_elementid_value = get_elementid_value_func()
 selected_ids = {str(get_elementid_value(elid)) for elid in selection.element_ids}
 
 f = open(datafile, "wb")
-pickle.dump(selected_ids, f)
+pickle.dump(selected_ids, f, 2)
 f.close()

@@ -8,11 +8,18 @@ title:
   de_de: Nur Elemente ohne Beschriftung auswählen
   pt_br: Encontrar e Selecionar Elementos sem Identificadores
 tooltip:
-  en_us: Selects elements with no associated tags in current view
-  ko: 현재 뷰에서 연결된 태그가 없는 요소를 선택합니다
-  fr_fr: Sélectionne les éléments sans étiquettes associées dans la vue actuelle
-  ru: Выделяет элементы без связанных марок в текущем виде.
-  chinese_s: 在当前视图中选择没有关联标记的图元
-  es_es: Selecciona elementos sin etiquetas asociadas en la vista actual
-  de_de: Es werden in der aktuellen Ansicht alle Elemente ausgewählt, die nicht beschriftet wurden
-  pt_br: Seleciona elementos sem identificadores associados na vista atual
+  en_us: Select the elements of one category that have no tag in the active view. A window asks for the category (rooms, doors, walls, furniture, equipment and more). Tags in other views and multi-category tags do not count.
+  ko: 활성 뷰에 태그가 없는 한 카테고리의 요소를 선택합니다. 창에서 카테고리(방, 문, 벽, 가구, 장비 등)를 선택합니다. 다른 뷰의 태그와 다중 카테고리 태그는 계산하지 않습니다.
+  fr_fr: Sélectionne les éléments d'une catégorie sans étiquette dans la vue active. Une fenêtre demande la catégorie (pièces, portes, murs, mobilier, équipements, etc.). Les étiquettes des autres vues et les étiquettes multicatégories ne comptent pas.
+  ru: Выделяет элементы одной категории без марки в текущем виде. В окне нужно выбрать категорию (помещения, двери, стены, мебель, оборудование и другие). Марки на других видах и марки нескольких категорий не учитываются.
+  chinese_s: 选择某一类别中、在活动视图里没有标记的图元。会弹出窗口让您选择类别（房间、门、墙、家具、设备等）。其他视图中的标记以及多类别标记不计算在内。
+  es_es: Selecciona los elementos de una categoría que no tienen etiqueta en la vista activa. Una ventana pregunta por la categoría (habitaciones, puertas, muros, mobiliario, equipos y más). Las etiquetas de otras vistas y las etiquetas multicategoría no cuentan.
+  de_de: Wählt die Elemente einer Kategorie aus, die in der aktiven Ansicht keine Beschriftung haben. Ein Fenster fragt nach der Kategorie (Räume, Türen, Wände, Möbel, Ausrüstung und weitere). Beschriftungen in anderen Ansichten und Mehrkategorie-Beschriftungen zählen nicht.
+  pt_br: Seleciona os elementos de uma categoria que não têm identificador na vista ativa. Uma janela pergunta a categoria (ambientes, portas, paredes, mobiliário, equipamentos e mais). Os identificadores de outras vistas e os identificadores multicategoria não contam.
+context:
+  all:
+    - doc-project
+  not_any:
+    - active-sheet
+    - active-project-browser
+    - active-system-browser

@@ -281,6 +281,12 @@
     "line": 0.722488038277512,
     "lines": 209
   },
+  "python/pyrevitlib/pyrevit/output/bridge.py": {
+    "branch": 1.0,
+    "branches": 6,
+    "line": 1.0,
+    "lines": 49
+  },
   "python/pyrevitlib/pyrevit/revit/events.py": {
     "branch": 0.4574468085106383,
     "branches": 94,

@@ -105,5 +105,56 @@ namespace pyRevitAssemblyBuilder.Tests
             CollectionAssert.IsEmpty(LibraryExtensionSearchPaths.Collect(null!));
             Assert.AreEqual(string.Empty, LibraryExtensionSearchPaths.CacheSeed(null!));
         }
+
+        [Test]
+        [Category("Unit")]
+        public void ReadOnFirstUse_CallsProviderOnceOnFirstRead()
+        {
+            var calls = 0;
+            var paths = LibraryExtensionSearchPaths.ReadOnFirstUse(
+                () =>
+                {
+                    calls++;
+                    return new[] { "A.lib", "B.lib" };
+                },
+                ex => Assert.Fail($"Unexpected provider error: {ex}"));
+
+            Assert.AreEqual(0, calls);
+            CollectionAssert.AreEqual(new[] { "A.lib", "B.lib" }, paths.Value);
+            CollectionAssert.AreEqual(new[] { "A.lib", "B.lib" }, paths.Value);
+            Assert.AreEqual(1, calls);
+        }
+
+        /// <summary>Regression coverage for the pyrevitlabs/pyRevit#4138 review: a provider that throws must not fail every later read.</summary>
+        [Test]
+        [Category("Unit")]
+        [Category("Regression")]
+        public void ReadOnFirstUse_ProviderThrows_YieldsNoPathsAndReportsOnce()
+        {
+            var calls = 0;
+            var failure = new IOException("library extension folder unavailable");
+            var errors = new List<Exception>();
+            var paths = LibraryExtensionSearchPaths.ReadOnFirstUse(
+                () =>
+                {
+                    calls++;
+                    throw failure;
+                },
+                errors.Add);
+
+            CollectionAssert.IsEmpty(paths.Value);
+            CollectionAssert.IsEmpty(paths.Value);
+            Assert.AreEqual(1, calls);
+            CollectionAssert.AreEqual(new[] { failure }, errors);
+        }
+
+        [Test]
+        [Category("Unit")]
+        public void ReadOnFirstUse_NoProvider_YieldsNoPaths()
+        {
+            var paths = LibraryExtensionSearchPaths.ReadOnFirstUse(null!, ex => Assert.Fail($"Unexpected provider error: {ex}"));
+
+            CollectionAssert.IsEmpty(paths.Value);
+        }
     }
 }

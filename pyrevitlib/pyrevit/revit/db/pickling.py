@@ -6,7 +6,7 @@ from pyrevit import DB
 from pyrevit.compat import Iterable
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
-from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import get_elementid_value_func, get_elementid_from_value_func
 
 
 __all__ = ("serialize", "deserialize")
@@ -43,10 +43,10 @@ class ElementId(Serializable):
 
     def __init__(self, element_id):
         get_elementid_value = get_elementid_value_func()
-        self.integer_value = get_elementid_value(element_id)
+        self.integer_value = int(get_elementid_value(element_id))
 
     def deserialize(self):
-        return DB.ElementId(self.integer_value)
+        return get_elementid_from_value_func()(self.integer_value)
 
 
 class XYZ(Serializable):

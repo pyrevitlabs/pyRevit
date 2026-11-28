@@ -686,6 +686,9 @@ def store_data(slot_name, data, this_project=True):
 
     To store native Revit objects, use revit.serialize(). See Example
 
+    The file is written with pickle protocol 2 so that every engine (CPython,
+    IronPython 2.7 and IronPython 3) can read data stored by any other.
+
     Args:
         slot_name (type): desc
         data (obj): any pickalable data
@@ -734,7 +737,7 @@ def store_data(slot_name, data, this_project=True):
         )
 
     with open(data_file, "wb") as dfile:
-        pickle.dump(data, dfile)
+        pickle.dump(data, dfile, 2)
 
 
 def load_data(slot_name, this_project=True):

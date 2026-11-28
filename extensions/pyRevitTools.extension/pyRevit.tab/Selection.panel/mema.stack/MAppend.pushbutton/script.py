@@ -21,5 +21,5 @@ except Exception:
     new_selection = selected_ids
 
 f = open(datafile, "wb")
-pickle.dump(new_selection, f)
+pickle.dump(new_selection, f, 2)
 f.close()

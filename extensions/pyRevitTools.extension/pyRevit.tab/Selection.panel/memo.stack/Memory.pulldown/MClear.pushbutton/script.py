@@ -9,5 +9,5 @@ from pyrevit import script
 datafile = script.get_document_data_file("SelList", "pym")
 
 f = open(datafile, "wb")
-pl.dump([], f)
+pl.dump([], f, 2)
 f.close()

@@ -9,43 +9,43 @@ title:
   pt_br: Inverter Seleção ●
 tooltip:
   en_us: |-
-    Invert the selection in the active view.
+    Invert the selection in the active view: select every element of the view that is not selected now and deselect the rest. Members of groups are skipped, so a group is selected as a whole.
 
     Shift-click:
-    Select group members instead of their parent group elements.
+    Select the members of groups as well as the groups themselves.
   ko: |-
-    활성 뷰에서 선택 항목을 반전합니다.
+    활성 뷰에서 선택을 반전합니다. 뷰에서 현재 선택되지 않은 모든 요소를 선택하고 나머지는 선택 해제합니다. 그룹 구성원은 건너뛰므로 그룹이 하나로 선택됩니다.
 
     Shift 키를 누르고 클릭:
-    상위 그룹 요소 대신 그룹 구성원을 선택합니다.
+    그룹과 함께 그룹 구성원도 선택합니다.
   fr_fr: |-
-    Inverse la sélection dans la vue active
+    Inverse la sélection dans la vue active : sélectionne chaque élément de la vue qui n'est pas sélectionné actuellement et désélectionne les autres. Les membres de groupes sont ignorés, un groupe est donc sélectionné dans son ensemble.
 
     Maj+clic :
-    Sélectionnez les membres du groupe au lieu des éléments du groupe parent
+    Sélectionne les membres des groupes en plus des groupes eux-mêmes.
   ru: |-
-    Инвертирует выделение в текущем виде.
+    Инвертирует выделение в текущем виде: выделяет каждый элемент вида, который сейчас не выделен, и снимает выделение с остальных. Члены групп пропускаются, поэтому группа выделяется целиком.
 
     Shift + Щелчок:
-    Выделить члены группы вместо элементов родительской группы.
+    Выделить члены групп вместе с самими группами.
   chinese_s: |-
-    反转活动视图中的选择。
+    反转活动视图中的选择：选择视图中当前未选中的所有图元，并取消选择其余图元。组成员会被跳过，因此组将作为整体被选中。
 
     按住 Shift 键单击：
-    选择组成员而不是其父组图元。
+    同时选择组及其成员。
   es_es: |-
-    Invierte la selección en la vista activa
+    Invierte la selección en la vista activa: selecciona cada elemento de la vista que no está seleccionado actualmente y anula la selección de los demás. Los miembros de grupos se omiten, de modo que un grupo se selecciona como un todo.
 
     Mayús-clic:
-    Seleccionar miembros del grupo en lugar de elementos del grupo padre
+    Selecciona los miembros de los grupos además de los propios grupos.
   de_de: |-
-    Kehrt die Auswahl in der aktiven Ansicht um.
+    Kehrt die Auswahl in der aktiven Ansicht um: wählt jedes Element der Ansicht aus, das derzeit nicht ausgewählt ist, und hebt die Auswahl der übrigen auf. Gruppenmitglieder werden übersprungen, eine Gruppe wird also als Ganzes ausgewählt.
 
     Bei gedrückter Umschalttaste klicken:
-    Wählt Gruppenmitglieder statt der übergeordneten Gruppenelemente aus.
+    Wählt neben den Gruppen auch deren Mitglieder aus.
   pt_br: |-
-    Inverte a seleção na vista ativa
+    Inverte a seleção na vista ativa: seleciona cada elemento da vista que não está selecionado no momento e desmarca os demais. Os membros de grupos são ignorados, portanto um grupo é selecionado como um todo.
 
     Clique mantendo a tecla Shift pressionada:
-    Selecionar membros do grupo em vez de elementos do grupo pai
+    Selecionar os membros dos grupos além dos próprios grupos.
 context: selection
