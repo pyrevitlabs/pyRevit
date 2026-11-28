@@ -2,11 +2,12 @@ import xlsxwriter
 import numbers
 import os
 import re
-from collections import namedtuple
+from collections import Counter, namedtuple
 
 from pyrevit import script, forms, coreutils, revit, EXEC_PARAMS
 from pyrevit import DB
-from pyrevit.revit import get_parameter_data_type, is_yesno_parameter
+from pyrevit.revit import get_parameter_data_type
+from pyrevit.revit.valuecodec import UNIT_INTERNAL, ValueCodec
 from pyrevit.compat import get_elementid_value_func
 from pyrevit.userconfig import user_config
 
@@ -89,51 +90,34 @@ def write_cell(worksheet, row, col, value, cell_format):
         worksheet.write_string(row, col, "" if value is None else value, cell_format)
 
 
-def get_unit_label_and_value(param, forge_type_id, field, project_units):
-    """
-    Returns (converted_value, label_string, unit_type_id, symbol_type_id) for a parameter.
-    Respects schedule field overrides if provided, otherwise uses project units.
-    """
-    if not forge_type_id or not measurable(forge_type_id):
-        return param.AsValueString(), "", None, None
-
-    # Prefer field overrides, otherwise project units
-    fmt_opts = None
-    if field:
-        try:
-            field_fmt = field.GetFormatOptions()
-            # Only use field format if it's not using defaults
-            if field_fmt and not field_fmt.UseDefault:
-                fmt_opts = field_fmt
-        except Exception:
-            pass
-
-    # Fall back to project units if no valid field override
-    if not fmt_opts:
-        fmt_opts = project_units.GetFormatOptions(forge_type_id)
-
-    # Check UseDefault before accessing unit type
-    if fmt_opts.UseDefault:
-        # Should not happen with project units, but handle it safely
-        fmt_opts = project_units.GetFormatOptions(forge_type_id)
-
-    unit_id = fmt_opts.GetUnitTypeId()
-    symbol_id = fmt_opts.GetSymbolTypeId()
-
-    # Convert
-    val = DB.UnitUtils.ConvertFromInternalUnits(param.AsDouble(), unit_id)
-
-    # Label
-    label = ""
+def get_field_format(field):
+    """Return a schedule field's number format, or None."""
+    if not field:
+        return None
     try:
-        label = DB.LabelUtils.GetLabelForSymbol(symbol_id)
-    except Exception:
-        try:
-            label = DB.LabelUtils.GetLabelForUnit(unit_id)
-        except Exception:
-            label = ""
+        return field.GetFormatOptions()
+    except Exception as ex:
+        logger.debug("No field format: {}".format(ex))
+        return None
 
-    return val, "[{}]".format(label) if label else "", unit_id, symbol_id
+
+def get_cell_number(codec, param, column_unit_id):
+    """Return a number in the unit that XLS Import will read it back with.
+
+    Returns:
+        (tuple): the number, and whether it is in the column's unit. A
+            parameter that the column's unit does not fit is written in its
+            own project unit.
+    """
+    data_type = get_parameter_data_type(param.Definition)
+    if not (data_type and measurable(data_type)):
+        return param.AsDouble(), not column_unit_id
+    if column_unit_id and DB.UnitUtils.IsValidUnit(data_type, column_unit_id):
+        return (
+            DB.UnitUtils.ConvertFromInternalUnits(param.AsDouble(), column_unit_id),
+            True,
+        )
+    return codec.display_number(param), False
 
 
 def create_element_definitions(elements):
@@ -549,6 +533,10 @@ def export_xls(src_elements, selected_params, field_mapping=None):
     metadata_sheet.write(0, 3, "SymbolTypeId", bold)
     metadata_sheet.write(0, 4, "IsScheduleOverride", bold)
 
+    codec = ValueCodec(doc, UNIT_INTERNAL)
+    column_unit_ids = {}
+    other_unit_counts = Counter()
+
     valid_params = []
     for param in selected_params:
         if unit_postfix_pattern.search(param.name):
@@ -578,39 +566,23 @@ def export_xls(src_elements, selected_params, field_mapping=None):
         is_schedule_override = param.name in field_mapping
 
         if forge_type_id and measurable(forge_type_id):
-            # Get field for this parameter if available
-            field = field_mapping.get(param.name)
+            fmt_opts = codec.format_options(
+                forge_type_id, get_field_format(field_mapping.get(param.name))
+            )
+            unit_type_id = fmt_opts.GetUnitTypeId()
+            symbol_type_id = fmt_opts.GetSymbolTypeId()
+            column_unit_ids[param.name] = unit_type_id
 
-            # Get format options (field override or project units)
-            fmt_opts = None
-            if field:
+            if not symbol_type_id.Empty():
                 try:
-                    field_fmt = field.GetFormatOptions()
-                    # Only use field format if it's not using defaults
-                    if field_fmt and not field_fmt.UseDefault:
-                        fmt_opts = field_fmt
+                    symbol = DB.LabelUtils.GetLabelForSymbol(symbol_type_id)
+                    postfix = " [" + symbol + "]"
                 except Exception:
-                    pass
-
-            # Fall back to project units if no valid field override
-            if not fmt_opts:
-                fmt_opts = project_units.GetFormatOptions(forge_type_id)
-
-            # Check UseDefault before accessing unit type
-            if not fmt_opts.UseDefault:
-                unit_type_id = fmt_opts.GetUnitTypeId()
-                symbol_type_id = fmt_opts.GetSymbolTypeId()
-
-                if not symbol_type_id.Empty():
                     try:
-                        symbol = DB.LabelUtils.GetLabelForSymbol(symbol_type_id)
+                        symbol = DB.LabelUtils.GetLabelForUnit(unit_type_id)
                         postfix = " [" + symbol + "]"
                     except Exception:
-                        try:
-                            symbol = DB.LabelUtils.GetLabelForUnit(unit_type_id)
-                            postfix = " [" + symbol + "]"
-                        except Exception:
-                            pass
+                        pass
 
         worksheet.write(0, col_idx + 1, param.name + postfix, header_format)
 
@@ -644,30 +616,13 @@ def export_xls(src_elements, selected_params, field_mapping=None):
                 if param_el.HasValue:
                     try:
                         if param_el.StorageType == DB.StorageType.Double:
-                            forge_type_id = param.forge_type_id
-                            field = field_mapping.get(param_name)
-
-                            if forge_type_id and measurable(forge_type_id):
-                                val, _, _, _ = get_unit_label_and_value(
-                                    param_el, forge_type_id, field, project_units
-                                )
-                            else:
-                                val = param_el.AsDouble()
-                        elif param_el.StorageType == DB.StorageType.String:
-                            val = param_el.AsString()
-                        elif param_el.StorageType == DB.StorageType.Integer:
-                            if get_elementid_value(param_el.Id) == int(
-                                BIP.ELEM_PARTITION_PARAM
-                            ):
-                                val = str(revit.query.get_element_workset(el).Name)
-                            elif is_yesno_parameter(param.definition):
-                                val = "Yes" if param_el.AsInteger() else "No"
-                            else:
-                                val = str(param_el.AsInteger())
-                        elif param_el.StorageType == DB.StorageType.ElementId:
-                            val = param_el.AsValueString()
+                            val, in_column_unit = get_cell_number(
+                                codec, param_el, column_unit_ids.get(param_name)
+                            )
+                            if not in_column_unit:
+                                other_unit_counts[param_name] += 1
                         else:
-                            val = "<unsupported>"
+                            val = codec.read(param_el)
                     except Exception as e:
                         logger.warning(
                             "Error reading param '{}' from element {}: {}".format(
@@ -695,6 +650,15 @@ def export_xls(src_elements, selected_params, field_mapping=None):
             "be a type parameter). Those cells are empty and locked.".format(
                 param_name, missing_count, len(src_elements)
             )
+        )
+
+    for param_name, other_count in sorted(
+        other_unit_counts.items(), key=lambda item: item[0]
+    ):
+        logger.warning(
+            "Parameter '{}' has another kind of unit on {} exported elements than "
+            "the column header says. Those cells are in the project unit of their "
+            "own parameter.".format(param_name, other_count)
         )
 
     for col_idx, param in enumerate(valid_params):

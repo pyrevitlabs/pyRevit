@@ -293,6 +293,18 @@
     "line": 0.5560344827586207,
     "lines": 232
   },
+  "python/pyrevitlib/pyrevit/revit/units.py": {
+    "branch": 0.36666666666666664,
+    "branches": 60,
+    "line": 0.5326633165829145,
+    "lines": 199
+  },
+  "python/pyrevitlib/pyrevit/revit/valuecodec.py": {
+    "branch": 0.8617021276595744,
+    "branches": 188,
+    "line": 0.958005249343832,
+    "lines": 381
+  },
   "python/pyrevitlib/pyrevit/unittests/junit.py": {
     "branch": 0.8235294117647058,
     "branches": 34,

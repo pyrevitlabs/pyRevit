@@ -1,6 +1,7 @@
 """Unit conversion utilities for Revit."""
 
 import math
+import numbers
 import re
 
 from pyrevit import DOCS, HOST_APP
@@ -17,6 +18,58 @@ _SLOPE_RATIO = re.compile(
     r"^\s*(?P<rise>\d+(?:\.\d+)?)\s*(?::|/|\s+in\s+)\s*(?P<run>\d+(?:\.\d+)?)\s*$"
 )
 _SLOPE_DEGREES = re.compile(r"^\s*(?P<deg>\d+(?:\.\d+)?)\s*deg(?:rees)?\s*$")
+_WHITESPACE = re.compile(r"\s+", re.UNICODE)
+
+
+class ValueRefused(PyRevitException):
+    """A text or number that must not be written to a Revit value.
+
+    Attributes:
+        reason (str): one of the ``REFUSED_*`` constants, for callers that
+            show their own, localized message.
+
+    Note:
+        ``str()`` returns the plain English message without the traceback
+        report that other pyRevit exceptions add.
+    """
+
+    def __init__(self, reason, message):
+        PyRevitException.__init__(self, message)
+        self.reason = reason
+
+    def __str__(self):
+        return self.msg
+
+
+REFUSED_AMBIGUOUS = "ambiguous"
+REFUSED_EMPTY = "empty"
+REFUSED_NUMBER = "number"
+REFUSED_RANGE = "range"
+REFUSED_READ_ONLY = "read_only"
+REFUSED_REFERENCE = "reference"
+REFUSED_REJECTED = "rejected"
+REFUSED_UNSUPPORTED = "unsupported"
+REFUSED_WHOLE_NUMBER = "whole_number"
+REFUSED_WORKSET = "workset"
+REFUSED_YES_NO = "yes_no"
+
+
+def _number_patterns(decimal):
+    grouping = re.escape("." if decimal == "," else ",")
+    mark = re.escape(decimal)
+    fraction = r"(?:%s[0-9]*)?" % mark
+    leading = r"[+-]?[1-9][0-9]{0,2}"
+    return (
+        re.compile(
+            r"^[+-]?(?:[0-9]+%s|%s[0-9]+)(?:[eE][+-]?[0-9]+)?$" % (fraction, mark)
+        ),
+        re.compile(r"^%s(?: [0-9]{3})+%s$" % (leading, fraction)),
+        re.compile(r"^%s(?:%s[0-9]{3}){2,}%s$" % (leading, grouping, fraction)),
+        re.compile(r"^%s%s[0-9]{3}%s[0-9]+$" % (leading, grouping, mark)),
+    )
+
+
+_NUMBER_PATTERNS = {".": _number_patterns("."), ",": _number_patterns(",")}
 
 
 def _to_internal_length(value, unit):
@@ -226,6 +279,127 @@ def format_slope(slope_value, doc=None, append_symbol=False):
     return _format_in_document_units(
         slope_value, doc, "Slope", "UT_Slope", append_symbol
     )
+
+
+def decimal_symbol(doc=None):
+    """Return the decimal symbol that a document's project units use.
+
+    Args:
+        doc (DB.Document, optional): Revit document, defaults to current
+
+    Returns:
+        (str): ``"."`` or ``","``
+    """
+    units = (doc or DOCS.doc).GetUnits()
+    return "," if units.DecimalSymbol == DB.DecimalSymbol.Comma else "."
+
+
+def _shortest_text(value):
+    """Return the shortest ``%g`` text that reads back as exactly ``value``.
+
+    ``repr`` is not used because IronPython 3 does not shorten it the way
+    CPython and IronPython 2 do.
+    """
+    for digits in (15, 16, 17):
+        text = "%.*g" % (digits, value)
+        if float(text) == value:
+            return text
+    return repr(value)
+
+
+def _expand_exponent(text):
+    mantissa, exponent = text.lower().split("e")
+    sign = "-" if mantissa.startswith("-") else ""
+    whole, _, fraction = mantissa.lstrip("-").partition(".")
+    digits = whole + fraction
+    point = len(whole) + int(exponent)
+    if point <= 0:
+        return sign + "0." + "0" * (-point) + digits
+    if point >= len(digits):
+        return sign + digits + "0" * (point - len(digits))
+    return sign + digits[:point] + "." + digits[point:]
+
+
+def _require_finite(number, source):
+    if math.isnan(number) or math.isinf(number):
+        raise ValueRefused(REFUSED_NUMBER, "'{}' is not a finite number".format(source))
+    return number
+
+
+def format_number(value, decimal=".", significant_digits=None):
+    """Return a number as plain text, without exponent notation or grouping.
+
+    Args:
+        value (float | int): finite number
+        decimal (str, optional): decimal symbol to write, ``"."`` or ``","``
+        significant_digits (int, optional): round to this many significant
+            digits. Excel shows 15.
+
+    Returns:
+        (str): the text. Without ``significant_digits`` it keeps every digit,
+            so :func:`parse_number` with the same decimal symbol reads back
+            exactly ``value``.
+
+    Raises:
+        ValueRefused: when the value is NaN or infinite.
+    """
+    number = _require_finite(float(value), value)
+    if number == 0:
+        number = 0.0
+    if significant_digits is None:
+        text = _shortest_text(number)
+    else:
+        text = "%.*g" % (significant_digits, number)
+    if "e" in text or "E" in text:
+        text = _expand_exponent(text)
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text if decimal == "." else text.replace(".", decimal)
+
+
+def parse_number(value, decimal="."):
+    """Read a number written with a given decimal symbol, without guessing.
+
+    The decimal symbol is the only decimal mark. The other one of ``.`` and
+    ``,`` is read as digit grouping only where it cannot be a decimal mark:
+    two or more groups of three (``1,234,567``), or one group followed by the
+    decimal symbol (``1,234.5``). A space may group digits in threes.
+
+    Args:
+        value (str | float | int): the text, or an already numeric value
+        decimal (str, optional): ``"."`` or ``","``, usually
+            :func:`decimal_symbol` of the document
+
+    Returns:
+        (float): the finite number
+
+    Raises:
+        ValueRefused: for text that is not a number in that notation, such as
+            ``1,5`` or ``1,234`` with a dot decimal symbol, and for NaN,
+            infinity and values too large for a double.
+
+    Important:
+        Do not accept a lone grouping symbol: ``1,234`` and ``1.234`` mean
+        values a factor of 1000 apart depending on who wrote them.
+    """
+    if isinstance(value, numbers.Real):
+        return _require_finite(float(value), value)
+    cleaned = _WHITESPACE.sub(" ", value).strip()
+    patterns = _NUMBER_PATTERNS[decimal]
+    if not any(pattern.match(cleaned) for pattern in patterns):
+        raise ValueRefused(
+            REFUSED_NUMBER,
+            "'{}' is not a number written with the decimal symbol '{}'".format(
+                value, decimal
+            ),
+        )
+    grouping = "." if decimal == "," else ","
+    normalized = cleaned.replace(" ", "").replace(grouping, "").replace(decimal, ".")
+    try:
+        number = float(normalized)
+    except OverflowError:
+        number = float("inf")
+    return _require_finite(number, value)
 
 
 def _create_view_plane(view):

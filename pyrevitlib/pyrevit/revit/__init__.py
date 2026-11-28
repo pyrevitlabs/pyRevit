@@ -63,6 +63,9 @@ _perfmark("pyrevit.revit:after geom")
 from pyrevit.revit import units
 
 _perfmark("pyrevit.revit:after units")
+from pyrevit.revit import valuecodec
+
+_perfmark("pyrevit.revit:after valuecodec")
 from pyrevit.revit import features
 
 _perfmark("pyrevit.revit:after features")

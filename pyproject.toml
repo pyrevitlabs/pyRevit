@@ -32,4 +32,6 @@ include = [
     "pyrevitlib/pyrevit/unittests/junit.py",
     "pyrevitlib/pyrevit/unittests/runner.py",
     "pyrevitlib/pyrevit/revit/events.py",
+    "pyrevitlib/pyrevit/revit/units.py",
+    "pyrevitlib/pyrevit/revit/valuecodec.py",
 ]
