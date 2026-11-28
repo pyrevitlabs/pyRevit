@@ -850,6 +850,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../tools/tab-coloring/" class="md-nav__link">
         
   
@@ -11041,8 +11069,8 @@
 </tr>
 </tbody>
 </table>
-<p>Smart buttons and combo boxes keep their modules apart the same way: all smart buttons share one IronPython engine and all combo boxes share another, but each bundle keeps its own copy of the modules it imports from its <code>lib</code> folders. This covers the bundle's script and the functions pyRevit calls: <code>__selfinit__</code>, the <code>__cmb_*__</code> handlers and the <code>__chk_*__</code> handlers. A handler that a script subscribes itself, such as a Revit event handler added in <code>__selfinit__</code>, runs outside its bundle and without the folders the script added to <code>sys.path</code>, so import what it needs at the top of the script rather than inside the handler.</p>
-<p>Every checkbox, smart button and combo box also keeps its own copy of the modules it imports from its extension's <code>lib</code> folder, so a cache or other state kept in such a module is not shared between bundles. A module in a bundle's <code>lib</code> folder also wins over a module of the same name from <code>site-packages</code> or <code>pyrevitlib</code>, even after another bundle loaded that one. A package the bundle ships keeps the submodules it loads from <code>site-packages</code> through its own <code>__path__</code>, so each bundle that ships it has its own copy of them, with its own state.</p>
+<p>Smart buttons and combo boxes keep their modules apart the same way: all smart buttons share one IronPython engine and all combo boxes share another, but each bundle keeps its own copy of the modules it imports from its <code>lib</code> folders and from library extensions. This covers the bundle's script and the functions pyRevit calls: <code>__selfinit__</code>, the <code>__cmb_*__</code> handlers and the <code>__chk_*__</code> handlers. A handler that a script subscribes itself, such as a Revit event handler added in <code>__selfinit__</code>, runs outside its bundle and without the folders the script added to <code>sys.path</code>, so import what it needs at the top of the script rather than inside the handler.</p>
+<p>Every checkbox, smart button and combo box also keeps its own copy of the modules it imports from its extension's <code>lib</code> folder, so a cache or other state kept in such a module is not shared between bundles. A module in a bundle's <code>lib</code> folders or in a library extension also wins over a module of the same name from <code>site-packages</code> or <code>pyrevitlib</code>, even after another bundle loaded that one. A package the bundle ships keeps the submodules it loads from <code>site-packages</code> through its own <code>__path__</code>, so each bundle that ships it has its own copy of them, with its own state.</p>
 <p>Module isolation has two gaps, for checkboxes, smart buttons and combo boxes alike:</p>
 <ul>
 <li><code>sys.path</code> is a new list each time a bundle's code starts to run, so a reference kept to an earlier list, such as <code>from sys import path</code> at the top of a script, does not change the live path in later calls. Use <code>sys.path</code> itself.</li>
@@ -11070,8 +11098,9 @@
 <li><code>context</code> — restricts when the button is enabled (active view, selected category, workset, etc.); see the context grammar in <code>pyrevit.extensions.genericcomps._parse_context_directives</code> or human friendly <a href="../build-extensions/bundles/context/">here</a>.</li>
 <li><code>min_revit_version</code> / <code>max_revit_version</code>.</li>
 <li><code>is_beta</code>, <code>highlight</code> (<code>new</code> or <code>updated</code>), <code>collapsed</code>.</li>
+<li><code>shortcuts</code> — Revit keyboard shortcuts for push, smart, invoke, URL and link buttons, as a string or a list. Applied by the C# loader (<code>ShortcutRegistrar</code>); the Python <code>shortcuts</code> attribute is metadata only. Invalid keys and keys another command owns are skipped with a warning. See <a href="../build-extensions/bundles/metadata/#keyboard-shortcuts">Keyboard Shortcuts</a>.</li>
 <li><code>engine</code> — <code>clean</code>, <code>full_frame</code>, <code>persistent</code>, <code>mainthread</code> (plus Dynamo-specific <code>automate</code>, <code>dynamo_path</code>, <code>dynamo_path_check_existing</code>, <code>dynamo_force_manual_run</code>, <code>dynamo_model_nodes_info</code>).</li>
-<li><code>layout</code> — reorders/nests child buttons instead of relying on folder order; use <code>---</code> for a separator and <code>&gt;&gt;&gt;</code> to start a slideout.</li>
+<li><code>layout</code> — lists the child bundles shown on the ribbon, in order, instead of relying on folder order; unlisted ones are <a href="../build-extensions/bundles/layout/#unlisted-bundles">hidden</a>. Use <code>---</code> for a separator and <code>&gt;&gt;&gt;</code> to start a slideout.</li>
 <li><code>background</code> / <code>background_dark</code> — panel bundles only; see <a href="#panel-background-colors">Panel background colors</a>.</li>
 </ul>
 <p>Bundle-type-specific keys: <code>modules</code> (link buttons), <code>assembly</code> / <code>command_class</code> / <code>availability_class</code> (invoke/link buttons), <code>hyperlink</code> (URL buttons), <code>checked</code> (checkboxes; the starting state, <code>false</code> by default).</p>

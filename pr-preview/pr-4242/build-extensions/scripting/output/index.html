@@ -850,6 +850,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../tools/tab-coloring/" class="md-nav__link">
         
   
@@ -2110,6 +2138,17 @@
     <span class="md-ellipsis">
       
         Printing Code Blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scrolling-to-the-top" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scrolling to the Top
       
     </span>
   </a>
@@ -10929,6 +10968,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#scrolling-to-the-top" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scrolling to the Top
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#showing-progress" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11210,78 +11260,89 @@
 </span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="s2">"""</span><span class="p">)</span>
 </span></code></pre></div>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-28-11-29-07-output-tests.png" /></p>
-<h3 id="showing-progress">Showing Progress</h3>
-<h4 id="output-progress-bar">Output Progress Bar</h4>
-<p>The progress bar from the output object, can be used to report progress on the output window.  <a href="https://docs.pyrevitlabs.io/reference/pyrevit/output/#pyrevit.output.PyRevitOutputWindow.update_progress">See documentation here</a>.</p>
+<h3 id="scrolling-to-the-top">Scrolling to the Top</h3>
+<p>The output window follows the end of the output while a script prints. For long reports, call <code>scroll_to_top()</code> after the last print to show the beginning instead. <a href="https://docs.pyrevitlabs.io/reference/pyrevit/output/#pyrevit.output.PyRevitOutputWindow.scroll_to_top">See documentation here</a>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">script</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">output</span> <span class="o">=</span> <span class="n">script</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
 </span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="c1"># do stuff here</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">output</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">500</span><span class="p">):</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">output</span><span class="o">.</span><span class="n">print_md</span><span class="p">(</span><span class="s1">'Line </span><span class="si">{}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">output</span><span class="o">.</span><span class="n">scroll_to_top</span><span class="p">()</span>
+</span></code></pre></div>
+<h3 id="showing-progress">Showing Progress</h3>
+<h4 id="output-progress-bar">Output Progress Bar</h4>
+<p>The progress bar from the output object, can be used to report progress on the output window.  <a href="https://docs.pyrevitlabs.io/reference/pyrevit/output/#pyrevit.output.PyRevitOutputWindow.update_progress">See documentation here</a>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">script</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">output</span> <span class="o">=</span> <span class="n">script</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="c1"># do stuff here</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">output</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 </span></code></pre></div>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-28-11-31-08-output-tests.png" /></p>
 <p><strong>Indeterminate Progress</strong></p>
 <p>You can also set the output window progress to indeterminate. The progress bar will show an animated pattern until deactivated.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">output</span><span class="o">.</span><span class="n">indeterminate_progress</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="c1"># do stuff here</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># split the work in chunks and run output.update_progress periodically</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">output</span><span class="o">.</span><span class="n">indeterminate_progress</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">output</span><span class="o">.</span><span class="n">indeterminate_progress</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># do stuff here</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1"># split the work in chunks and run output.update_progress periodically</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">output</span><span class="o">.</span><span class="n">indeterminate_progress</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 </span></code></pre></div>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-29-16-42-02-test-output-stream.png" /></p>
 <p><strong>Manually Hiding and Unhiding the Progress Bar</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">output</span><span class="o">.</span><span class="n">hide_progress</span><span class="p">()</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">output</span><span class="o">.</span><span class="n">unhide_progress</span><span class="p">()</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">output</span><span class="o">.</span><span class="n">hide_progress</span><span class="p">()</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">output</span><span class="o">.</span><span class="n">unhide_progress</span><span class="p">()</span>
 </span></code></pre></div>
 <h4 id="application-progress-bar">Application Progress Bar</h4>
 <p>pyRevit forms module has an application progress bar that is displayed on top of the Revit window, can accept formatting for the progress text, has indeterminate state, and is cancellable as well.</p>
 <p><strong>Basic Usage</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit.forms</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressBar</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">max_value</span> <span class="o">=</span> <span class="mi">1000</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="k">with</span> <span class="n">ProgressBar</span><span class="p">()</span> <span class="k">as</span> <span class="n">pb</span><span class="p">:</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="p">):</span>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>        <span class="n">pb</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit.forms</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressBar</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">max_value</span> <span class="o">=</span> <span class="mi">1000</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="k">with</span> <span class="n">ProgressBar</span><span class="p">()</span> <span class="k">as</span> <span class="n">pb</span><span class="p">:</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="p">):</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>        <span class="n">pb</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
 </span></code></pre></div>
 <p><strong>Update Intervals</strong></p>
 <p>Steps could be provided to update the progress bar at intervals specified by <code>step</code></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">max_value</span> <span class="o">=</span> <span class="mi">1000</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">with</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="n">step</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="k">as</span> <span class="n">pb</span><span class="p">:</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="p">):</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>        <span class="n">pb</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">max_value</span> <span class="o">=</span> <span class="mi">1000</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="k">with</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="n">step</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="k">as</span> <span class="n">pb</span><span class="p">:</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="p">):</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>        <span class="n">pb</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
 </span></code></pre></div>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-28-11-40-58-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png" /></p>
 <p><strong>Formatted Progress</strong></p>
 <p>The progress bar text can be formatted to your desire. The <code>{value}</code> and <code>{max_value}</code> formatting keys must exist in the formatting string that is set on progress bar <code>title</code> argument</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">max_value</span> <span class="o">=</span> <span class="mi">1000</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="k">with</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'My Process... (</span><span class="si">{value}</span><span class="s1"> of </span><span class="si">{max_value}</span><span class="s1">)'</span><span class="p">)</span> <span class="k">as</span> <span class="n">pb</span><span class="p">:</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="p">):</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>        <span class="n">pb</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">max_value</span> <span class="o">=</span> <span class="mi">1000</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="k">with</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'My Process... (</span><span class="si">{value}</span><span class="s1"> of </span><span class="si">{max_value}</span><span class="s1">)'</span><span class="p">)</span> <span class="k">as</span> <span class="n">pb</span><span class="p">:</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="p">):</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>        <span class="n">pb</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
 </span></code></pre></div>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-28-11-43-29-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png" /></p>
 <p><strong>Cancellable Progress</strong></p>
 <p>If the progress bar is marked as <code>cancellable</code>, a cancel button will be displayed and the <code>.cancelled</code> propery will be set to <code>True</code> when user clicks on the cancel. You need to check for the <code>.cancelled</code> value in your code and cancel the operation graceully.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">max_value</span> <span class="o">=</span> <span class="mi">1000</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="k">with</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="n">cancellable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">pb</span><span class="p">:</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="p">):</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>        <span class="k">if</span> <span class="n">pb</span><span class="o">.</span><span class="n">cancelled</span><span class="p">:</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>            <span class="k">break</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>            <span class="n">pb</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">max_value</span> <span class="o">=</span> <span class="mi">1000</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="k">with</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="n">cancellable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">pb</span><span class="p">:</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="p">):</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>        <span class="k">if</span> <span class="n">pb</span><span class="o">.</span><span class="n">cancelled</span><span class="p">:</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>            <span class="k">break</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>            <span class="n">pb</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
 </span></code></pre></div>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-28-11-44-57-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png" /></p>
 <p><strong>Indeterminate Progress</strong></p>
 <p>If the progress bar is marked as Cancellable, a cancel button will be displayed and the <code>.cancelled</code> propery will be set to <code>True</code> when user clicks on the cancel. You need to check for the <code>.cancelled</code> value in your code and cancel the operation graceully. It is good practice for indeterminate progress bars to be cancellable.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">max_value</span> <span class="o">=</span> <span class="mi">1000</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="k">with</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="n">indeterminate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cancellable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">pb</span><span class="p">:</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="c1"># split the work in chunks and run pb.update_progress</span>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="c1"># periodically</span>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>    <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="p">):</span>
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>        <span class="k">if</span> <span class="n">pb</span><span class="o">.</span><span class="n">cancelled</span><span class="p">:</span>
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>            <span class="k">break</span>
-</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>            <span class="n">pb</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">max_value</span> <span class="o">=</span> <span class="mi">1000</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="k">with</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="n">indeterminate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cancellable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">pb</span><span class="p">:</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="c1"># split the work in chunks and run pb.update_progress</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>    <span class="c1"># periodically</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>    <span class="k">for</span> <span class="n">counter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_value</span><span class="p">):</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>        <span class="k">if</span> <span class="n">pb</span><span class="o">.</span><span class="n">cancelled</span><span class="p">:</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>            <span class="k">break</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>            <span class="n">pb</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
 </span></code></pre></div>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-28-11-46-13-autodesk-revit-2019-2-project1-rvt-floor-plan-level-1.png" /></p>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-28-14-53-10.png" /></p>
@@ -11291,11 +11352,11 @@ Except when using <strong>Application Progress Bar</strong> with <strong>Revit â
 <h3 id="showing-operation-results">Showing Operation Results</h3>
 <p>The output window has a colored bar (where the progress bar is usually shown) that could be used to visualize the results of a progress or report errors without adding the error reports in the main output contents. When shown, it also shows a small <code>CLEAR</code> button to the user to clear the message.</p>
 <p><strong>Reporting Errors</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">script</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="n">output</span> <span class="o">=</span> <span class="n">script</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="n">output</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="s1">'Some error message'</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">script</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="n">output</span> <span class="o">=</span> <span class="n">script</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="n">output</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="s1">'Some error message'</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The message is shown on the colored bar</p>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-28-11-51-22-pyrevitlabs-module-tests.png" /></p>
@@ -11303,29 +11364,29 @@ Except when using <strong>Application Progress Bar</strong> with <strong>Revit â
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-09-06-21-05-22-pyrevitlabs-module-tests.png" /></p>
 <p><strong>Reporting Other Message Types</strong></p>
 <p>There are more message types for this panel, each have their own color.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">script</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="n">output</span> <span class="o">=</span> <span class="n">script</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="c1"># warnings</span>
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="n">output</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span><span class="s1">'Some message'</span><span class="p">)</span>
-</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>
-</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="c1"># success</span>
-</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="n">output</span><span class="o">.</span><span class="n">log_success</span><span class="p">(</span><span class="s1">'Some message'</span><span class="p">)</span>
-</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>
-</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="c1"># general info</span>
-</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="n">output</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="s1">'Some message'</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">script</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="n">output</span> <span class="o">=</span> <span class="n">script</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="c1"># warnings</span>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="n">output</span><span class="o">.</span><span class="n">log_warning</span><span class="p">(</span><span class="s1">'Some message'</span><span class="p">)</span>
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="c1"># success</span>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="n">output</span><span class="o">.</span><span class="n">log_success</span><span class="p">(</span><span class="s1">'Some message'</span><span class="p">)</span>
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="c1"># general info</span>
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="n">output</span><span class="o">.</span><span class="n">log_info</span><span class="p">(</span><span class="s1">'Some message'</span><span class="p">)</span>
 </span></code></pre></div>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-28-11-54-28-pyrevitlabs-module-tests.png" /></p>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-28-12-07-23-pyrevitlabs-module-tests.png" /></p>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-08-28-12-07-03-pyrevitlabs-module-tests.png" /></p>
 <p>You can also log debug messages to this panel without changing the color. These messages will only be visible when this panel is expanded.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">script</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="n">output</span> <span class="o">=</span> <span class="n">script</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="c1"># hidden messages</span>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="n">output</span><span class="o">.</span><span class="n">log_debug</span><span class="p">(</span><span class="s1">'Some message'</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">script</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="n">output</span> <span class="o">=</span> <span class="n">script</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="c1"># hidden messages</span>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="n">output</span><span class="o">.</span><span class="n">log_debug</span><span class="p">(</span><span class="s1">'Some message'</span><span class="p">)</span>
 </span></code></pre></div>
 <p><img alt="" src="../../../assets/build-extensions/scripting/output/2019-09-06-21-05-50-pyrevitlabs-module-tests.png" /></p>
 
