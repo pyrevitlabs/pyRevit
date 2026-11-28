@@ -27,6 +27,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// first start creates an ExternalEvent.
     /// Warning: off unless <c>[agent] enabled = true</c> is set in the pyRevit config. Agent
     /// scripts run with the user's full rights; the pipe ACL is the only access control.
+    /// An administrator pin in <c>[agent.admin]</c> of the machine config overrides the user's
+    /// <c>enabled</c> value in either direction.
     /// Important: the host never starts in an elevated Revit. The pipe ACL admits any process of
     /// the user, including unelevated ones, which would let them run code as administrator.
     /// </remarks>

@@ -239,7 +239,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (request.Mode == AgentRunMode.Modify && policyAtStart == AgentPolicy.ReadOnly)
                 throw new AgentException(
                     "policy_readonly",
-                    "The pyRevit agent policy is 'readonly': modify runs are disabled. Use query or dry_run.");
+                    "The pyRevit agent policy is 'readonly'"
+                    + (PyRevitConfigs.GetAgentPolicyCeiling() == PyRevitConsts.ConfigsAgentPolicyReadOnly
+                        ? " (set by your administrator)" : string.Empty)
+                    + ": modify runs are disabled. Use query or dry_run.");
             var reckless = recklessInForce.Start(PyRevitConfigs.GetAgentReckless(),
                 (inForce, configured) => AgentApproval.ConfirmReckless(app.MainWindowHandle));
 

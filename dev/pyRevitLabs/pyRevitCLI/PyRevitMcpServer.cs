@@ -363,8 +363,9 @@ namespace pyRevitCLI {
                 return entry;
             }
             try {
-                PyRevitAgentClient.Ping(instance);
+                var ping = PyRevitAgentClient.Ping(instance);
                 entry["responding"] = true;
+                entry["disabled_by_admin"] = ping?.Value<bool?>("disabled_by_admin") ?? false;
             }
             catch (AgentClientException ex) when (ex.Code == "revit_busy" && PyRevitAgentClient.PipeExists(instance.Pipe)) {
                 entry["busy"] = true;
@@ -650,7 +651,7 @@ namespace pyRevitCLI {
             return new JObject {
                 ["type"] = "string",
                 ["enum"] = new JArray("ironpython", "cpython"),
-                ["description"] = "Script engine. Defaults to get_context.scripting.default_engine; see scripting.engines for each engine's Python version and syntax limits.",
+                ["description"] = "Script engine. Defaults to get_context.scripting.default_engine; see scripting.engines for each engine's Python version and syntax limits. An administrator can lock the engine, and a run that names another one is refused with engine_locked.",
             };
         }
 
