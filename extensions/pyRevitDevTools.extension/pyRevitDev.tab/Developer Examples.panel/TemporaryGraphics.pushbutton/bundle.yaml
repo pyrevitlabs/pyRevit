@@ -1,4 +1,9 @@
 title: "Temporary\nGraphics"
+tooltip: |-
+  Place a clickable warning icon on a picked element.
+
+  Shift-click:
+  Remove the icons this button placed.
 min_revit_version: 2022
 engine:
   persistent: true
