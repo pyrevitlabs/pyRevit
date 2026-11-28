@@ -822,6 +822,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../tools/tab-coloring/" class="md-nav__link">
         
   
@@ -6572,6 +6600,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../reference/pyrevit/output/bridge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bridge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reference/pyrevit/output/cards/" class="md-nav__link">
         
   
@@ -10255,6 +10311,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mcp-server-does-not-connect-or-tools-are-missing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP server does not connect or tools are missing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#run-records" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11151,6 +11218,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mcp-server-does-not-connect-or-tools-are-missing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP server does not connect or tools are missing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#run-records" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11425,7 +11503,16 @@ runtime is independent of the Routes server and doesn't need it enabled.</p>
 <p>Add <code>--project</code> to register for the current directory instead (Claude Code:
 <code>.mcp.json</code>, Cursor: <code>.cursor/mcp.json</code>, VS Code: <code>.vscode/mcp.json</code>, OpenCode:
 <code>opencode.json[c]</code>). Codex only supports user-level servers. A JSON config file that
-contains comments is never rewritten; the command prints the entry to add by hand.</p>
+contains comments is never rewritten; the command prints the entry to add by hand.
+A project install is refused when the current folder or the client's config folder is a
+link or junction, or the config file itself is a link, so the file isn't written outside the
+project. The check runs when the command starts and walks every folder above the target, so a
+only folders that report the reparse-point attribute (junctions, symlinks, mount points) are
+refused; cloud placeholder folders such as a OneDrive root are not detected. The check doesn't
+guard against a swap afterwards. The client's own tool
+(<code>claude</code>) is looked up in absolute <code>PATH</code> entries and the usual install folders only; relative
+entries are skipped. The entry pins the absolute path of this <code>pyrevit.exe</code>, so review
+a project file before you commit it.</p>
 </li>
 <li>
 <p><strong>Start Revit</strong> (or reload pyRevit), and open a model.</p>
@@ -11561,7 +11648,7 @@ Three consecutive visual failures disable highlighting until pyRevit is reloaded
 <tr>
 <td><code>run_query</code></td>
 <td>never</td>
-<td>Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. <code>workspace</code> puts a folder of the agent's own modules on <code>sys.path</code>, re-imported fresh every run. <code>timeout_s</code> (default 300) stops a script that runs too long. <code>document</code> (title or path from <code>get_context</code>) refuses the run with <code>document_changed</code> when another document is active.</td>
+<td>Run a read-only script; model changes are always rolled back, but the script itself has full access to the machine, so the tool isn't marked read-only for MCP clients. <code>workspace</code> appends a folder of the agent's own modules to <code>sys.path</code>, after the library paths, so its modules don't take precedence over standard library or pyRevit modules by path order (give them unique names: a top-level name that another import finder or an earlier <code>sys.path</code> entry, a ZIP included, can already resolve, such as a standard library module, resolves there and never to the workspace; a workspace folder that is already on <code>sys.path</code> is moved last for the run and put back afterwards); they are re-imported fresh every run. <code>timeout_s</code> (default 300) stops a script that runs too long. <code>document</code> (title or path from <code>get_context</code>) refuses the run with <code>document_changed</code> when another document is active.</td>
 </tr>
 <tr>
 <td><code>run_modify</code></td>
@@ -11611,7 +11698,13 @@ transaction because the Revit API requires one, and that state isn't saved with 
 model. The agent is told to use it rather than writing <code>run_modify</code> scripts to show
 things. Because they change view state or write files, <code>show_elements</code>,
 <code>navigate_revit_link</code> and <code>capture_view</code> are annotated for MCP clients as neither
-read-only nor destructive.</p>
+read-only nor destructive. <code>run_query</code> and <code>run_modify</code> are annotated open-world and
+destructive, and not read-only, because the script they run can reach the network, the file
+system and other processes. <code>run_automation</code> is annotated read-only and closed-world: it only
+invokes shipped operations marked <code>query</code> or <code>pure</code> that open no transaction, and the run is a
+rolled-back query. That annotation reflects the marker contract, not a sandbox: the marker
+limits an operation's mode and transactions, not what the Python it calls can reach. Clients
+should ask the user to approve each run call.</p>
 <p><code>run_query</code> and <code>run_modify</code> return a compact result for the agent: <code>status</code>, then
 <code>error</code> (when present), <code>decision</code>, <code>result</code> and <code>output</code>. The non-empty change set,
 failures, dialogs and blocked operations follow, and <code>exports</code> lists the files the run
@@ -11782,8 +11875,8 @@ character ever written, so <code>truncate(0)</code> or <code>seek</code> does no
 <li>A run in any mode that changes another open document fails with <code>other_document_modified</code>
   and is rolled back. <code>changes.other_documents</code> lists what changed. A project the script opens
   or a family from a file during the run counts as one that was already open: changing it fails
-  the run, it is rolled back, and it can't be saved or saved as, so the file on disk stays
-  unchanged. A family from <code>EditFamily</code> or a new document the script creates has no file yet;
+  the run, it is rolled back, and the guard cancels save and save as while the run lasts, so
+  the file on disk stays unchanged unless the script writes it by other means. A family from <code>EditFamily</code> or a new document the script creates has no file yet;
   it is reported there with a <code>scope</code> statement and without a <code>rolled_back</code> field, doesn't fail
   the run, and isn't rolled back; it is discarded when closed.</li>
 <li>When <code>blocked</code> isn't empty, <code>warnings</code> gains an <code>operation_blocked</code> entry
@@ -11836,8 +11929,8 @@ character ever written, so <code>truncate(0)</code> or <code>seek</code> does no
   time limit. Time spent waiting for approval doesn't count.</li>
 <li>The runner compiles the script with every bare <code>except</code> and <code>except BaseException</code>
   (also spelled as an attribute, such as <code>except builtins.BaseException</code>) narrowed to
-  <code>except Exception</code>, so a script can't swallow its own timeout, and can't catch
-  <code>KeyboardInterrupt</code> or <code>SystemExit</code> that way. If a handler can't be rewritten in the
+  <code>except Exception</code>, so a script that doesn't go out of its way doesn't swallow its own timeout or
+  catch <code>KeyboardInterrupt</code> or <code>SystemExit</code> that way. If a handler can't be rewritten in the
   source, the run compiles the narrowed syntax tree instead, at the cost of line numbers,
   rather than keep the broad handler. A script that suppresses the timeout some
   other way, such as through an alias, <code>except tuple(...)</code>, a library's bare <code>except</code>, or
@@ -11875,7 +11968,8 @@ character ever written, so <code>truncate(0)</code> or <code>seek</code> does no
   no timeout, outside the guard (see the limits under <a href="#the-guarded-run">The guarded run</a>).</li>
 <li>Revit dialogs are closed automatically and reported in <code>dialogs</code>. Warnings are removed
   and reported in <code>failures</code>, and errors roll back the failing transaction.</li>
-<li>Documents can't be saved or synchronized during a run.
+<li>The guard cancels save, save as and synchronize for the run's documents while the run lasts.
+  It is not a sandbox: a script can leave code behind that acts after the run.
   Closing is blocked for documents open when the run started.
   The script may close documents it creates or opens during the run.</li>
 </ul>
@@ -11898,8 +11992,8 @@ on IronPython, where every traced line or checked loop header costs several micr
 <p>The host reads the setting at the start of each run, so a change applies to the next run
 without reloading pyRevit. Turning it off applies at once. Turning it on applies only after
 you confirm it in a Revit prompt before the next run of any mode, so a script that rewrites
-the config can't make later runs reckless; No keeps it off until the setting is turned off
-and on again or Revit restarts. A script can't turn it on for its own run. A reckless run's
+the config doesn't make later runs reckless; No keeps it off until the setting is turned off
+and on again or Revit restarts. A script that rewrites the config doesn't turn it on for its own run. A reckless run's
 response, its <code>response.json</code> record and the compact MCP result carry <code>"reckless": true</code>,
 and <code>get_context</code> reports <code>agent.reckless: true</code> while it is in force.</p>
 <p>What a reckless run skips:</p>
@@ -12086,7 +12180,11 @@ it. A run that asks for an engine other than the default also starts cold.</p>
 </span></code></pre></div>
 <p><code>capture</code>, <code>inspect</code> and <code>lookup</code> are the CLI forms of the <code>capture_view</code>, <code>inspect_elements</code> and <code>lookup_revit_api</code> tools, for clients without MCP. <code>capture</code> takes the view the way the tool does (a name, sheet number or id; the active view without one; <code>3d</code> for a temporary 3D view; <code>--view-type=FloorPlan</code> and the like keep only views of that type when a name is shared, as <code>view_type</code> does) and prints the host's answer without the image data. The host keeps the PNG under <code>%APPDATA%\pyRevit\agent\captures</code>; <code>--out</code> writes it to a file of your choice as well, and <code>path</code> in the output then names that file. <code>inspect</code> takes up to 50 element ids of the active document.</p>
 <p><code>--timeout</code> defaults to 300 and is capped at 3600; <a href="#reckless-mode">reckless mode</a> ignores it.
-<code>--workspace</code> must be an existing local folder; network (UNC) paths are refused.</p>
+<code>--workspace</code> must be an existing local folder; network (UNC) paths are refused, and so is a folder that is a link or junction or sits behind one (the error names the link). The
+check runs when the request is parsed, not at import time. Only folders that report the
+reparse-point attribute (junctions, symlinks, mount points) are refused; cloud placeholder
+folders such as a OneDrive root are not detected. Give workspace modules unique names: the folder is last on
+<code>sys.path</code>, so a name a library module has resolves to the library.</p>
 <p>When its output is redirected to a pipe or file, the CLI writes UTF-8 without a BOM for every command. Readers must decode it as UTF-8; in PowerShell, set <code>[Console]::OutputEncoding = [System.Text.Encoding]::UTF8</code> first, or a legacy code page shows non-ASCII text as mojibake. In Windows PowerShell 5.1, <code>&gt;</code> is equivalent to <code>Out-File</code> with no parameters, which writes UTF-16LE, so to keep the CLI's UTF-8 bytes redirect in <code>cmd</code> (<code>cmd /c "pyrevit ... &gt; out.json"</code>) or pipe to <code>Out-File -Encoding utf8</code>. Read a BOM-less UTF-8 file with <code>Get-Content -Encoding UTF8</code>, because Windows PowerShell 5.1 otherwise decodes it with the system's active (ANSI) code page, which <code>[Console]::OutputEncoding</code> does not change.</p>
 <p>The <code>agent</code> and <code>mcp</code> commands ship with the pyRevit CLI of the same build. An older <code>pyrevit</code>
 on <code>PATH</code> doesn't know them and prints the global usage; upgrade the CLI or call the one from
@@ -12094,6 +12192,21 @@ the build that provides the agent runtime. If that still happens after an upgrad
 install comes first on <code>PATH</code>: <code>where.exe pyrevit</code> in a new terminal lists every <code>pyrevit.exe</code> in the
 order Windows resolves them (<code>pyrevit env path which</code> does the same on a CLI that has it), and
 the first one is the one that runs. Update or uninstall that install.</p>
+<h3 id="mcp-server-does-not-connect-or-tools-are-missing">MCP server does not connect or tools are missing</h3>
+<p>Claude Code was observed not to list a server's tools after a <code>/mcp</code> reconnect when the server had failed at session start (see <a href="https://github.com/pyrevitlabs/pyRevit/issues/4018">issue 4018</a>). Restart the client session after a failed connect.</p>
+<p>Stale <code>pyrevit.exe</code> processes lock <code>bin\</code> and can block a rebuild. List them with their command lines:</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">Get-CimInstance</span> <span class="n">Win32_Process</span> <span class="n">-Filter</span> <span class="s2">"Name='pyrevit.exe'"</span> <span class="p">|</span> <span class="nb">Select-Object</span> <span class="n">ProcessId</span><span class="p">,</span><span class="n">CreationDate</span><span class="p">,</span><span class="n">CommandLine</span>
+</span></code></pre></div>
+<p>If you have confirmed that no client is using an <code>mcp</code> process, stop it by its process ID (<code>Stop-Process -Id</code>). Before rebuilding a repository checkout, use <code>dev/scripts/Stop-McpServers.ps1</code> only if you want to stop all MCP servers running from that clone's <code>bin\</code> folder, including servers still in use (see <a href="#testing-agent-skills-and-library-changes-through-mcp">Testing agent skills and library changes through MCP</a>); the script lives under <code>dev/</code>, so it exists only in a checkout.</p>
+<p>Builds before 7.1.0 can leave <code>mcp</code> processes running after the client closes stdin. From 7.1.0 an idle server exits as soon as stdin closes; while tool calls are still running it waits for them at most 5 minutes, then cancels them and waits at most 10 more seconds before exiting.</p>
+<p>To check the handshake by hand from the repository root (<code>.\bin\pyrevit.exe</code> is relative to it), pipe an <code>initialize</code> request into the server and read the returned JSON line. A banner or a corrupt first frame shows up here:</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="s1">'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}'</span> <span class="p">|</span> <span class="p">.\</span><span class="n">bin</span><span class="p">\</span><span class="n">pyrevit</span><span class="p">.</span><span class="n">exe</span> <span class="n">mcp</span>
+</span></code></pre></div>
+<p>To time the exchange, discard the output:</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">Measure-Command</span> <span class="p">{</span> <span class="s1">'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}'</span> <span class="p">|</span> <span class="p">.\</span><span class="n">bin</span><span class="p">\</span><span class="n">pyrevit</span><span class="p">.</span><span class="n">exe</span> <span class="n">mcp</span> <span class="p">|</span> <span class="nb">Out-Null</span> <span class="p">}</span>
+</span></code></pre></div>
+<p><code>Measure-Command</code> measures start to exit, not time to the first line. On a healthy install it usually returns well under a second. Revit does not need to be running for the handshake or for local tools such as <code>list_skills</code>. Tools that need a live Revit session, such as <code>get_context</code>, fail with the error code <code>no_revit</code> when no agent host is running, with the message "No running Revit with the pyRevit agent host was found. Start Revit with '[agent] enabled = true' (pyrevit configs agent enable)."</p>
+<p><code>get_context.pyrevit.bin_stale: true</code> means the binaries were built from another commit than the clone; it is a rebuild hint, not a connection failure (see above).</p>
 <h3 id="run-records">Run records</h3>
 <p>Every run is recorded under <code>%APPDATA%\pyRevit\agent\runs\&lt;timestamp&gt;-&lt;run_id&gt;\</code>:</p>
 <ul>
@@ -12140,11 +12253,11 @@ even while the session that made it is still open.</p>
 </div>
 <p>An agent only sees a bug through what the user says afterwards. The session recorder records what happens in Revit between two
 explicit user actions, so the agent can read the sequence that led to a bug.</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>record<span class="w"> </span>start<span class="w"> </span><span class="o">[</span>--no-screenshots<span class="o">]</span><span class="w"> </span><span class="o">[</span>--screenshot-interval<span class="o">=</span><span class="m">5</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--max-screenshots<span class="o">=</span><span class="m">20</span><span class="o">]</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">                           </span><span class="o">[</span>--max-events<span class="o">=</span><span class="m">5000</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--max-duration<span class="o">=</span><span class="m">1800</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--revit<span class="o">=</span>&lt;year<span class="p">|</span>pid<span class="p">|</span>clone&gt;<span class="o">]</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>record<span class="w"> </span>stop
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>record<span class="w"> </span>status
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>recordings<span class="w"> </span><span class="o">[</span>--limit<span class="o">=</span>&lt;count&gt;<span class="o">]</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>record<span class="w"> </span>start<span class="w"> </span><span class="o">[</span>--no-screenshots<span class="o">]</span><span class="w"> </span><span class="o">[</span>--screenshot-interval<span class="o">=</span><span class="m">5</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--max-screenshots<span class="o">=</span><span class="m">20</span><span class="o">]</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">                           </span><span class="o">[</span>--max-events<span class="o">=</span><span class="m">5000</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--max-duration<span class="o">=</span><span class="m">1800</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--revit<span class="o">=</span>&lt;year<span class="p">|</span>pid<span class="p">|</span>clone&gt;<span class="o">]</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>record<span class="w"> </span>stop
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>record<span class="w"> </span>status
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>pyrevit<span class="w"> </span>agent<span class="w"> </span>recordings<span class="w"> </span><span class="o">[</span>--limit<span class="o">=</span>&lt;count&gt;<span class="o">]</span>
 </span></code></pre></div>
 <p>The options take numbers in these ranges: <code>--screenshot-interval</code> 0 to 3600 seconds (<code>0</code> allows a screenshot at every opportunity until <code>--max-screenshots</code> is reached), <code>--max-screenshots</code> 0 to 100 (<code>0</code> takes none), <code>--max-events</code> 1 to 20000 and <code>--max-duration</code> 1 to 14400 seconds. All but the interval must be whole numbers. A value that is not a number or is outside its range is refused with the option's name.</p>
 <p>The user starts a recording, reproduces the problem and stops it. Then the agent calls
@@ -12223,9 +12336,9 @@ the agent host enabled, because the CLI reaches Revit through the same pipe.</p>
   A page stops at about 200 KB: use <code>next_offset</code> to continue.</li>
 </ul>
 <h4 id="extension-trace-api">Extension trace API</h4>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">recorder</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">recorder</span><span class="o">.</span><span class="n">mark</span><span class="p">(</span><span class="s2">"my-extension"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"step"</span><span class="p">:</span> <span class="s2">"placed sheets"</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">12</span><span class="p">})</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyrevit</span><span class="w"> </span><span class="kn">import</span> <span class="n">recorder</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">recorder</span><span class="o">.</span><span class="n">mark</span><span class="p">(</span><span class="s2">"my-extension"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"step"</span><span class="p">:</span> <span class="s2">"placed sheets"</span><span class="p">,</span> <span class="s2">"count"</span><span class="p">:</span> <span class="mi">12</span><span class="p">})</span>
 </span></code></pre></div>
 <p><code>recorder.mark(source, data)</code> adds a <code>mark</code> event with the JSON-serializable <code>data</code>. It does nothing
 and never raises when no recording is active (<code>recorder.is_recording()</code> tells which). Without
@@ -12248,10 +12361,10 @@ wrong:</p>
    A build started while either runs fails with "The process cannot access the file ... because it
    is being used by another process", for example on <code>pyRevitLabs.Language.dll</code> (Revit) or
    <code>Colorful.Console.dll</code> (a server). Servers of other client sessions count too.</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>pwsh<span class="w"> </span>dev/scripts/Stop-McpServers.ps1
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nb">cd</span><span class="w"> </span>build
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>dotnet<span class="w"> </span>run<span class="w"> </span>-c<span class="w"> </span>Debug<span class="w"> </span>--<span class="w"> </span>--trust-cert
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>dotnet<span class="w"> </span>run<span class="w"> </span>-c<span class="w"> </span>Debug<span class="w"> </span>--<span class="w"> </span><span class="nb">local</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>pwsh<span class="w"> </span>dev/scripts/Stop-McpServers.ps1
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="nb">cd</span><span class="w"> </span>build
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>dotnet<span class="w"> </span>run<span class="w"> </span>-c<span class="w"> </span>Debug<span class="w"> </span>--<span class="w"> </span>--trust-cert
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>dotnet<span class="w"> </span>run<span class="w"> </span>-c<span class="w"> </span>Debug<span class="w"> </span>--<span class="w"> </span><span class="nb">local</span>
 </span></code></pre></div>
 <p><code>--trust-cert</code> is needed once per Windows user and again after the certificate is renewed (about
 a year after it was created, within 30 days of expiry): <code>local</code> refuses to start until the developer
@@ -12296,9 +12409,9 @@ of the automation operations on both engines.</p>
 attached to a year at a time, and rewriting it changes what the next Revit of that year loads.
 Parallel review or test sessions should not attach at all. <code>pyrevit launch</code> starts Revit with a
 manifest of its own and leaves the shared one alone:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>pyrevit<span class="w"> </span>launch<span class="w"> </span>&lt;clone<span class="w"> </span>name<span class="w"> </span>or<span class="w"> </span>path&gt;<span class="w"> </span>default<span class="w"> </span><span class="m">2026</span><span class="w"> </span>--language<span class="o">=</span>ENU
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>pyrevit<span class="w"> </span>launch<span class="w"> </span>&lt;clone<span class="w"> </span>name<span class="w"> </span>or<span class="w"> </span>path&gt;<span class="w"> </span><span class="m">342</span><span class="w"> </span><span class="m">2026</span><span class="w"> </span>--isolated
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>pyrevit<span class="w"> </span>launch<span class="w"> </span>&lt;clone<span class="w"> </span>name<span class="w"> </span>or<span class="w"> </span>path&gt;<span class="w"> </span>default<span class="w"> </span><span class="m">2026</span><span class="w"> </span>&lt;model<span class="w"> </span>path&gt;
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>pyrevit<span class="w"> </span>launch<span class="w"> </span>&lt;clone<span class="w"> </span>name<span class="w"> </span>or<span class="w"> </span>path&gt;<span class="w"> </span>default<span class="w"> </span><span class="m">2026</span><span class="w"> </span>--language<span class="o">=</span>ENU
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>pyrevit<span class="w"> </span>launch<span class="w"> </span>&lt;clone<span class="w"> </span>name<span class="w"> </span>or<span class="w"> </span>path&gt;<span class="w"> </span><span class="m">342</span><span class="w"> </span><span class="m">2026</span><span class="w"> </span>--isolated
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>pyrevit<span class="w"> </span>launch<span class="w"> </span>&lt;clone<span class="w"> </span>name<span class="w"> </span>or<span class="w"> </span>path&gt;<span class="w"> </span>default<span class="w"> </span><span class="m">2026</span><span class="w"> </span>&lt;model<span class="w"> </span>path&gt;
 </span></code></pre></div>
 <p>Run it as a background process: it prints the process id, the clone, the engine and the launch
 directory, stays running while that Revit runs, and deletes its temporary files when Revit exits.
@@ -12349,25 +12462,25 @@ number is a process id or a year. When several sessions match, <code>ambiguous_r
 engine; pick one by clone name, or by process id when one clone runs in several sessions.</p>
 <h2 id="design">Design</h2>
 <h3 id="architecture">Architecture</h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a> Claude Code / Codex / Cursor / VS Code / OpenCode
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>            │  MCP over stdio
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>            ▼
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a> ┌──────────────────────────────┐   pyRevitCLI (net8, out of process)
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a> │ pyrevit mcp                  │   MCP protocol, tool schemas, instructions,
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a> │                              │   instance discovery, run records
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a> └──────────────┬───────────────┘
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>                │  named pipe  \\.\pipe\pyrevit-agent-&lt;pid&gt;  (current user only)
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>                ▼
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a> ┌──────────────────────────────┐   inside Revit (PyRevit.Runtime, Agent/)
-</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a> │ AgentHost                    │
-</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a> │  AgentDispatcher ─► ExternalEvent
-</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a> │  AgentRunGuard: TransactionGroup, DocumentChanged diff,
-</span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a> │                 save/sync/close blocking, dialog + failure capture
-</span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a> │  approval + isolate preview, AgentScriptRunner, run records,
-</span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a> │  AgentInspector, AgentApiLookup
-</span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a> └──────────────┬───────────────┘
-</span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a>                ▼
-</span><span id="__span-13-19"><a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a>     ScriptExecutor ─► IronPython / CPython ─► Revit API + pyrevitlib
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a> Claude Code / Codex / Cursor / VS Code / OpenCode
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>            │  MCP over stdio
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>            ▼
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a> ┌──────────────────────────────┐   pyRevitCLI (net8, out of process)
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a> │ pyrevit mcp                  │   MCP protocol, tool schemas, instructions,
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a> │                              │   instance discovery, run records
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a> └──────────────┬───────────────┘
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>                │  named pipe  \\.\pipe\pyrevit-agent-&lt;pid&gt;-&lt;nonce&gt;  (current user only)
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>                ▼
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a> ┌──────────────────────────────┐   inside Revit (PyRevit.Runtime, Agent/)
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a> │ AgentHost                    │
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a> │  AgentDispatcher ─► ExternalEvent
+</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a> │  AgentRunGuard: TransactionGroup, DocumentChanged diff,
+</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a> │                 save/sync/close blocking, dialog + failure capture
+</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a> │  approval + isolate preview, AgentScriptRunner, run records,
+</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a> │  AgentInspector, AgentApiLookup
+</span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a> └──────────────┬───────────────┘
+</span><span id="__span-16-18"><a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>                ▼
+</span><span id="__span-16-19"><a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>     ScriptExecutor ─► IronPython / CPython ─► Revit API + pyrevitlib
 </span></code></pre></div>
 <p>Why two processes:</p>
 <ul>
@@ -12381,9 +12494,18 @@ engine; pick one by clone name, or by process id when one clone runs in several 
 access list allows only the current Windows user and denies network logons, and that is
 the authentication. The trust boundary is the Windows account: any process running as that
 user can connect to the host and submit scripts.</p>
-<p>The CLI also checks that the process serving the pipe is the Revit recorded in the instance
-file, and refuses to send a request otherwise, so another local process can't take over a
-pipe name while the host is down.</p>
+<p>The pipe name is <code>pyrevit-agent-&lt;pid&gt;-&lt;nonce&gt;</code>, where the nonce is 32 random hex characters
+chosen at host start and recorded in the instance file, so another process can't guess the
+name and create the pipe first. The host creates every pipe instance natively with the
+reject-remote-clients flag on every target framework (the managed constructors don't set it). The CLI
+refuses to send a request unless the registered name has that form (the older
+<code>pyrevit-agent-&lt;pid&gt;</code> form is still accepted for one release), the process serving the pipe is
+the Revit recorded in the instance file, and that process runs as the current user (compared by
+user SID, so an elevated Revit of the same user matches). A process whose owner can't be read is
+refused with its own message. Whether a non-elevated CLI can read an elevated process's owner is
+unverified; the host never runs elevated. This keeps a request from reaching a pipe
+another local process created while the host was down. It does not stop a process of the same
+user, which is inside the trust boundary above.</p>
 <p>Remote use is through Remote Desktop only. An RDP session is an interactive logon, so
 <code>pyrevit mcp</code> started inside it reaches Revit. SSH is refused on purpose: an SSH logon
 carries the Network SID, so connecting fails with <code>UnauthorizedAccessException</code>, even
@@ -12532,7 +12654,7 @@ the request id in <code>request.json</code> and <code>response.json</code> (<cod
 either way. Lookups work for the ids the CLI and MCP server generate (<code>req-</code> and twelve hex
 digits). A request another client sent under a different <code>id</code> is stored under that id, but
 <code>pyrevit agent show</code> and <code>get_run</code> only search for the generated form:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>pyrevit agent show req-0123456789ab
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>pyrevit agent show req-0123456789ab
 </span></code></pre></div>
 <p>The MCP tool <code>get_run</code> accepts the same request ids. Errors from the MCP server carry
 <code>outcome</code>, <code>request_id</code> and, when the host recorded one, <code>run_id</code>. A request that is still
@@ -12555,7 +12677,7 @@ after that wait has passed, and send it again only if there is still no record.<
 <li><strong>Arm guards</strong> (only while the run is active):<ul>
 <li><code>DocumentSynchronizingWithCentral</code>, <code>DocumentSaving</code> and <code>DocumentSavingAs</code> are cancelled for documents open when the run started and for documents the script creates or opens during the run, when Revit marks the event cancellable.
   <code>DocumentClosing</code> is cancelled only for documents open when the run started.
-  The script may close documents it creates or opens during the run, but cannot save them.
+  The script may close documents it creates or opens during the run; save is cancelled while the run lasts.
   After the guard is disposed, the host closes any of these documents still open in the background without saving; documents with an open view are left open.</li>
 <li><code>DialogBoxShowing</code> is captured and dismissed.</li>
 <li><code>FailuresProcessing</code> warnings are recorded and deleted, and errors roll back the
@@ -12577,7 +12699,7 @@ after that wait has passed, and send it again only if there is still no record.<
 <li><strong>modify</strong> with policy <code>readonly</code>: the policy is read before the script and again here,
   and the stricter value (<code>readonly</code>, then <code>ask</code>, then <code>auto</code>) decides. A run queued before
   the switch to <code>readonly</code> rolls back with <code>policy_readonly</code> instead of committing, and a
-  script that rewrites the policy can't loosen it for its own run, nor, without the user
+  script that rewrites the policy doesn't loosen it for its own run, nor, without the user
   confirming it in Revit, for later runs.</li>
 <li><strong>modify</strong> with policy <code>auto</code>: <code>Assimilate()</code> straight away. The response says
   <code>approval: auto</code>.</li>

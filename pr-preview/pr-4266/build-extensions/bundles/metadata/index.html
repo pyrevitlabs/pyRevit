@@ -822,6 +822,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../tools/section-box-navigator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Section Box Navigator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../tools/tab-coloring/" class="md-nav__link">
         
   
@@ -1509,6 +1537,17 @@
     <span class="md-ellipsis">
       
         Bundle Layout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyboard-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard Shortcuts
       
     </span>
   </a>
@@ -6733,6 +6772,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../reference/pyrevit/output/bridge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bridge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../reference/pyrevit/output/cards/" class="md-nav__link">
         
   
@@ -10808,6 +10875,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keyboard-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard Shortcuts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#bundle-environment-configs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11099,35 +11177,60 @@
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PushButton B</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PullDown A</span>
 </span></code></pre></div>
+<h3 id="keyboard-shortcuts">Keyboard Shortcuts</h3>
+<p>The bundle file can assign Revit keyboard shortcuts to a button. pyRevit registers them each time it loads, so users don't have to set them up in Revit's <strong>Keyboard Shortcuts</strong> dialog.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># a single shortcut</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">shortcuts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZQ</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># or a list of shortcuts</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">shortcuts</span><span class="p">:</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZQ</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ctrl+Shift+K</span>
+</span></code></pre></div>
+<p>Shortcuts work on push, smart, invoke, URL and link buttons, including those inside a pulldown, split button or stack. Other bundle types ignore the key.</p>
+<p>Write each shortcut the way Revit's Keyboard Shortcuts dialog shows it: a key sequence such as <code>ZQ</code>, or a combination such as <code>Ctrl+Shift+K</code>. Letter case does not matter, so <code>zq</code> and <code>ZQ</code> are the same shortcut.</p>
+<p>When pyRevit registers the shortcuts:</p>
+<ul>
+<li>A shortcut Revit rejects as invalid is skipped, and a warning is written to the pyRevit log.</li>
+<li>A shortcut already assigned to another command, including Revit's own commands such as <code>WA</code> for Wall, is never overridden. It is skipped with a warning. Pick a free one in the Keyboard Shortcuts dialog.</li>
+<li>When two bundles ask for the same shortcut, the first button loaded gets it and the other is skipped with a warning.</li>
+<li>Shortcuts the user assigned to the same command in Revit are kept; the bundle's shortcut is added next to them.</li>
+</ul>
+<p>Shortcuts from the bundle file apply to the current session and are not written to Revit's <code>KeyboardShortcuts.xml</code>. This has a few consequences:</p>
+<ul>
+<li>Removing a shortcut from the bundle file removes it on the next start.</li>
+<li>If the user clears a bundle shortcut in Revit without saving, it comes back on the next load.</li>
+<li>Once the user saves the Keyboard Shortcuts dialog, Revit stores every current assignment, including the bundle's, in its own file. From then on the shortcut stays even if it is removed from the bundle file; remove it in the Keyboard Shortcuts dialog as well.</li>
+</ul>
 <h3 id="bundle-environment-configs">Bundle Environment Configs</h3>
 <h4 id="supported-revit-versions">Supported Revit Versions</h4>
 <p>Bundle file can define the range of Revit versions that support the bundle. pyRevit will not load the bundle if it is not supported under the running Revit. In the example below, the bundle will be loaded with Revit 2022 up to 2025 and is expected to work with the APIs for these versions.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># minimium supported Revit version</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">min_revit_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2022</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># maximum supported Revit version</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">max_revit_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2025</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># minimium supported Revit version</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">min_revit_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2022</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># maximum supported Revit version</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nt">max_revit_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2025</span>
 </span></code></pre></div>
 <p>Bundle file can also set the state of the bundle. pyRevit user can decide whether to load the <em>Beta</em> bundles when starting Revit or not.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">is_beta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">is_beta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 </span></code></pre></div>
 <h3 id="using-liquid-templates">Using Liquid Templates</h3>
 <p>Bundles can define template values for all their child command bundles (and IronPython global variables). These are key, value pairs that are set inside the bundle file. The child bundle files can user the liquid tags <code>{{ tag }}</code> to reuse these template values.</p>
 <p>For example, imagine all the help URLs for a series of tools, all direct to YouTube videos. Considering that YouTube videos have similar URLs that are formatted as <code>https://www.youtube.com/watch?v=&lt;video_id&gt;</code>, and the only unique part is the <code>&lt;video_id&gt;</code>, a good way to simplify these URLs is to define the repeated part of the URL (<code>https://www.youtube.com/watch?v=</code>) as a template and reuse the value in help URLs of the child bundles. In the examples below the liquid template tag <code>{{youtube}}</code> will be replaced with the value of <code>youtube</code> defined in the parent bundle file (<code>https://www.youtube.com/watch?v=</code>) when pyRevit is loading.</p>
 <p><strong>Inside Parent Bundle File</strong></p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">youtube</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://www.youtube.com/watch?v=</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">youtube</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://www.youtube.com/watch?v=</span>
 </span></code></pre></div>
 <p><strong>Inside Child Bundle Files</strong></p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">help_url</span><span class="p">:</span><span class="w"> </span><span class="s">"{{youtube}}H7b8hjHbauE"</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># final help url: https://www.youtube.com/watch?v=H7b8hjHbauE</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">help_url</span><span class="p">:</span><span class="w"> </span><span class="s">"{{youtube}}H7b8hjHbauE"</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># final help url: https://www.youtube.com/watch?v=H7b8hjHbauE</span>
 </span></code></pre></div>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">help_url</span><span class="p">:</span><span class="w"> </span><span class="s">"{{youtube}}po0lCldSGmk"</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># final help url: https://www.youtube.com/watch?v=po0lCldSGmk</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">help_url</span><span class="p">:</span><span class="w"> </span><span class="s">"{{youtube}}po0lCldSGmk"</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="c1"># final help url: https://www.youtube.com/watch?v=po0lCldSGmk</span>
 </span></code></pre></div>
 <p>You can also group all your template values under the <code>templates</code> key. This cleans up the metadata files.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">templates</span><span class="p">:</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">youtube</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://www.youtube.com/watch?v=</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">author</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ehsan Iran-Nejad</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">templates</span><span class="p">:</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">youtube</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://www.youtube.com/watch?v=</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">author</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ehsan Iran-Nejad</span>
 </span></code></pre></div>
 
 
