@@ -466,6 +466,13 @@ class PyRevitOutputWindow(object):
         message in arrival order. Return values are ignored; answer with
         :func:`post_message`. Handlers are released when the window closes.
 
+        Warning:
+            A message is untrusted input to a handler that can modify the
+            model. Any script in the output window's document can post one,
+            including script that got there through unescaped text printed by
+            this or an earlier command. Escape model data before printing it
+            as HTML or Markdown, and validate each message before acting on it.
+
         Args:
             handler (function): ``handler(message)``; a plain function or
                 method, as required by ``execute_in_revit_context``
