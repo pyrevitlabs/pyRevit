@@ -12,7 +12,8 @@
 #
 # With RELEASE=X.Y.Z, "version" records the release in <version>/.release and
 # skips the deploy when that folder already holds a newer release, so a slow
-# build of an older patch never replaces newer docs.
+# build of an older patch never replaces newer docs. Without RELEASE, the
+# deploy replaces the docs and keeps the release already recorded.
 #
 # Environment:
 #   PAGES_DIR       checkout of the gh-pages branch with push access (default: gh-pages)
@@ -66,6 +67,10 @@ newer_release_published() {
 }
 
 apply() {
+  local release="$RELEASE"
+  if [[ "$mode" == "version" && -z "$release" && -f "./$target/.release" ]]; then
+    release="$(< "./$target/.release")"
+  fi
   rm -rf "./$target"
   if [[ "$mode" != "remove" ]]; then
     mkdir -p "./$target"
@@ -73,7 +78,7 @@ apply() {
     rm -f "./$target/CNAME"
   fi
   if [[ "$mode" == "version" ]]; then
-    [[ -z "$RELEASE" ]] || echo "$RELEASE" > "./$target/.release"
+    [[ -z "$release" ]] || echo "$release" > "./$target/.release"
     [[ -f CNAME || ! -f "$site/CNAME" ]] || cp "$site/CNAME" CNAME
     "$PYTHON" "$SCRIPTS_DIR/docs_versions.py" . "$target"
   fi
