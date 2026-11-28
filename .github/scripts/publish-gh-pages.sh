@@ -1,16 +1,24 @@
 #!/usr/bin/env bash
 # Publish to (or remove from) the gh-pages branch without touching the rest of it.
 #
-#   publish-gh-pages.sh publish <site-dir> <target>
-#   publish-gh-pages.sh remove  <target>
+#   publish-gh-pages.sh version <site-dir> <dev|X.Y>
+#   publish-gh-pages.sh publish <site-dir> pr-preview/pr-<number>
+#   publish-gh-pages.sh remove  pr-preview/pr-<number>
 #
-# <target> is "." for the production site, or "pr-preview/pr-<number>" for a
-# pull request preview. Publishing the production site replaces everything
-# except pr-preview/, so open previews survive a docs deploy.
+# "version" publishes the docs of a release (X.Y) or of develop (dev) into
+# <version>/ and lets docs_versions.py update versions.json, latest/ and the
+# root redirects. "publish" and "remove" manage pull request previews. No mode
+# touches another version or another preview.
+#
+# With RELEASE=X.Y.Z, "version" records the release in <version>/.release and
+# skips the deploy when that folder already holds a newer release, so a slow
+# build of an older patch never replaces newer docs. Without RELEASE, the
+# deploy replaces the docs and keeps the release already recorded.
 #
 # Environment:
 #   PAGES_DIR       checkout of the gh-pages branch with push access (default: gh-pages)
 #   COMMIT_MESSAGE  commit message (default: derived from the arguments)
+#   RELEASE         X.Y.Z release being published by "version" (optional)
 #
 # The push is retried on top of a fresh fetch, so concurrent deploys of other
 # previews do not make this one fail.
@@ -19,39 +27,60 @@ set -euo pipefail
 BRANCH="gh-pages"
 PREVIEW_ROOT="pr-preview"
 PAGES_DIR="${PAGES_DIR:-gh-pages}"
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON="${PYTHON:-python3}"
+RELEASE="${RELEASE:-}"
 
 mode="${1:-}"
 case "$mode" in
+  version) site="${2:?site directory required}"; target="${3:?version required}" ;;
   publish) site="${2:?site directory required}"; target="${3:?target required}" ;;
   remove)  site=""; target="${2:?target required}" ;;
-  *) echo "usage: $0 publish <site-dir> <target> | remove <target>" >&2; exit 2 ;;
+  *) echo "usage: $0 version <site-dir> <dev|X.Y> | publish <site-dir> <target> | remove <target>" >&2; exit 2 ;;
 esac
 
-if [[ "$target" != "." && ! "$target" =~ ^${PREVIEW_ROOT}/pr-[0-9]+$ ]]; then
-  echo "error: target must be '.' or '${PREVIEW_ROOT}/pr-<number>', got '$target'" >&2
+if [[ "$mode" == "version" ]]; then
+  if [[ ! "$target" =~ ^(dev|[0-9]+\.[0-9]+)$ ]]; then
+    echo "error: version must be 'dev' or 'X.Y', got '$target'" >&2
+    exit 2
+  fi
+  if [[ -n "$RELEASE" && ! "$RELEASE" =~ ^${target//./\.}\.[0-9]+$ ]]; then
+    echo "error: RELEASE must be '$target.<patch>', got '$RELEASE'" >&2
+    exit 2
+  fi
+elif [[ ! "$target" =~ ^${PREVIEW_ROOT}/pr-[0-9]+$ ]]; then
+  echo "error: target must be '${PREVIEW_ROOT}/pr-<number>', got '$target'" >&2
   exit 2
 fi
-if [[ "$mode" == "remove" && "$target" == "." ]]; then
-  echo "error: refusing to remove the production site" >&2
-  exit 2
-fi
-if [[ "$mode" == "publish" ]]; then
+if [[ "$mode" != "remove" ]]; then
   [[ -f "$site/index.html" ]] || { echo "error: $site/index.html not found" >&2; exit 1; }
   [[ ! -e "$site/$PREVIEW_ROOT" ]] || { echo "error: site must not contain $PREVIEW_ROOT/" >&2; exit 1; }
   site="$(cd "$site" && pwd)"
 fi
 
+newer_release_published() {
+  [[ -n "$RELEASE" && -f "./$target/.release" ]] || return 1
+  local published
+  published="$(< "./$target/.release")"
+  [[ "$published" != "$RELEASE" && "$(printf '%s
+' "$published" "$RELEASE" | sort -V | tail -n 1)" == "$published" ]]
+}
+
 apply() {
-  if [[ "$target" == "." ]]; then
-    find . -mindepth 1 -maxdepth 1 ! -name .git ! -name "$PREVIEW_ROOT" -exec rm -rf {} +
-    cp -a "$site/." .
-  else
-    rm -rf "./$target"
-    if [[ "$mode" == "publish" ]]; then
-      mkdir -p "./$target"
-      cp -a "$site/." "./$target/"
-      rm -f "./$target/CNAME"
-    fi
+  local release="$RELEASE"
+  if [[ "$mode" == "version" && -z "$release" && -f "./$target/.release" ]]; then
+    release="$(< "./$target/.release")"
+  fi
+  rm -rf "./$target"
+  if [[ "$mode" != "remove" ]]; then
+    mkdir -p "./$target"
+    cp -a "$site/." "./$target/"
+    rm -f "./$target/CNAME"
+  fi
+  if [[ "$mode" == "version" ]]; then
+    [[ -z "$release" ]] || echo "$release" > "./$target/.release"
+    [[ -f CNAME || ! -f "$site/CNAME" ]] || cp "$site/CNAME" CNAME
+    "$PYTHON" "$SCRIPTS_DIR/docs_versions.py" . "$target"
   fi
   touch .nojekyll
 }
@@ -65,6 +94,10 @@ for attempt in 1 2 3 4 5; do
   git fetch --quiet --depth 1 origin "$BRANCH"
   git reset --quiet --hard FETCH_HEAD
   git clean --quiet -fdx
+  if [[ "$mode" == "version" ]] && newer_release_published; then
+    echo "/$target/ already holds $(< "./$target/.release"), newer than $RELEASE. Skipping."
+    break
+  fi
   apply
   git add --all
   if git diff --cached --quiet; then

@@ -1,9 +1,11 @@
 name: pyRevitDocsCI
 on:
-  # when PRs from forked repos are merged
   push:
     branches:
       - docs
+      - develop
+    tags:
+      - 'v*'
     paths:
       - 'mkdocs.yml'
       - 'docs/**'
@@ -12,50 +14,101 @@ on:
       - 'pyRevitfile'
       - 'dev/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt'
       - 'dev/pyRevitLabs.PyRevit.Runtime/ScriptExecutor.cs'
-  # when PR from develop->master is created
-  pull_request:
-    branches:
-      - master
-    paths:
-      - 'mkdocs.yml'
-      - 'docs/**'
-      - 'pyrevitlib/**'
-      - '*.md'
-      - 'pyRevitfile'
-      - 'dev/pyRevitLabs/pyRevitCLI/Resources/UsagePatterns.txt'
-      - 'dev/pyRevitLabs.PyRevit.Runtime/ScriptExecutor.cs'
-  # manual run
+      - '.github/workflows/docs.yml'
+      - '.github/scripts/publish-gh-pages.sh'
+      - '.github/scripts/docs_versions.py'
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or tag to build (e.g. v7.0.1.26312+1155). Empty builds the selected branch.
+        type: string
+        default: ''
+      version:
+        description: Version folder (X.Y or dev). Empty reads it from pyrevitlib/pyrevit/version.
+        type: string
+        default: ''
 
 permissions:
   contents: write
 
 concurrency:
-  group: pyrevit-docs-${{ github.ref }}
+  group: pyrevit-docs-${{ inputs.ref || github.ref }}
   cancel-in-progress: false
 
 jobs:
   docs:
+    if: github.repository == 'pyrevitlabs/pyRevit'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          path: src
+          persist-credentials: false
+
+      - name: Check out scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: tools
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          release="$(grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' src/pyrevitlib/pyrevit/version || true)"
+          if [[ -n "$INPUT_VERSION" ]]; then
+            version="$INPUT_VERSION"
+          elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/develop" ]]; then
+            version="dev"
+          else
+            version="${release%.*}"
+          fi
+          if [[ "$release" != "$version".* ]]; then
+            release=""
+          fi
+          if [[ ! "$version" =~ ^(dev|[0-9]+\.[0-9]+)$ ]]; then
+            echo "::error::Could not resolve a version folder (got '$version')."
+            exit 1
+          fi
+          echo "Publishing /$version/"
+          {
+            echo "version=$version"
+            echo "release=$release"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Prepare Python 3.14
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.14'
 
       - name: Prepare pipenv
+        working-directory: src
         run: |
           pip install pipenv
           pipenv sync
 
       - name: Build docs
+        working-directory: src
         env:
           DISABLE_MKDOCS_2_WARNING: 'true'
           NO_MKDOCS_2_WARNING: '1'
-        run: pipenv run mkdocs build --site-dir site
+        run: |
+          domain="$(tr -d '[:space:]' < docs/CNAME)"
+          cat > mkdocs.versioned.yml <<YAML
+          INHERIT: mkdocs.yml
+          site_url: https://$domain/latest/
+          extra:
+            version:
+              provider: mike
+              default: latest
+              alias: true
+          YAML
+          pipenv run mkdocs build -f mkdocs.versioned.yml --site-dir "$RUNNER_TEMP/site"
 
       - name: Check out gh-pages
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -66,5 +119,7 @@ jobs:
 
       - name: Deploy docs
         env:
-          COMMIT_MESSAGE: "docs: deploy ${{ github.sha }}"
-        run: bash .github/scripts/publish-gh-pages.sh publish site .
+          VERSION: ${{ steps.version.outputs.version }}
+          RELEASE: ${{ steps.version.outputs.release }}
+          COMMIT_MESSAGE: "docs: deploy ${{ steps.version.outputs.version }} from ${{ inputs.ref || github.ref_name }}"
+        run: bash tools/.github/scripts/publish-gh-pages.sh version "$RUNNER_TEMP/site" "$VERSION"
