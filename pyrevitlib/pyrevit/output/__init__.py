@@ -18,7 +18,7 @@ import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS, DB
 from pyrevit import framework
-from pyrevit.compat import IRONPY, PY3, safe_strtype
+from pyrevit.compat import PY3, safe_strtype
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import charts
 from pyrevit.coreutils.logger import get_logger
@@ -466,12 +466,6 @@ class PyRevitOutputWindow(object):
         message in arrival order. Return values are ignored; answer with
         :func:`post_message`. Handlers are released when the window closes.
 
-        Warning:
-            ``execute_in_revit_context`` is IronPython-only. Under CPython
-            handlers run directly on the UI thread, outside Revit API
-            context, so they can update the page but cannot read or modify
-            the model.
-
         Args:
             handler (function): ``handler(message)``; a plain function or
                 method, as required by ``execute_in_revit_context``
@@ -554,13 +548,7 @@ class PyRevitOutputWindow(object):
             mlogger.debug("Ignoring output page message that is not valid JSON")
             return
         for handler in list(self.__dict__.get("_message_handlers", [])):
-            if IRONPY:
-                events.execute_in_revit_context(handler, message)
-                continue
-            try:
-                handler(message)
-            except Exception as ex:
-                mlogger.error("Output message handler failed: {}".format(ex))
+            events.execute_in_revit_context(handler, message)
 
     def update_progress(self, cur_value, max_value):
         """Activate and update the output window progress bar.
@@ -702,7 +690,7 @@ class PyRevitOutputWindow(object):
         title="",
         last_line_style="",
         **kwargs
-    ):
+    ):  # fmt: skip
         """Print provided data in a HTML table in output window.
 
         The same window can output several tables, each with their own
