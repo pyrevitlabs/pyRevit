@@ -261,21 +261,11 @@ namespace pyRevitCLI {
         }
 
         private static bool IsReparsePoint(string path) {
-            return (File.Exists(path) || System.IO.Directory.Exists(path))
-                && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+            return ReparsePoints.IsLink(path);
         }
 
         private static bool HasReparsePoint(string root, string path) {
-            if (IsReparsePoint(path))
-                return true;
-            var boundary = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            for (var current = new DirectoryInfo(Path.GetDirectoryName(path)); current != null; current = current.Parent) {
-                if (IsReparsePoint(current.FullName))
-                    return true;
-                if (string.Equals(current.FullName, boundary, StringComparison.OrdinalIgnoreCase))
-                    return false;
-            }
-            return true;
+            return ReparsePoints.FindLink(path, root) != null;
         }
 
         private static string Hash(string path) {

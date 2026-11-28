@@ -45,9 +45,11 @@ class Transaction:
         `SubTransaction` inside an already open transaction.
 
     Note:
-        Leaving the context never raises when Revit refuses the commit: the
-        transaction is rolled back and the error is logged. Read `committed`
-        after the `with` block to tell whether Revit kept the changes.
+        Leaving the context does not raise when Revit refuses the commit. If
+        the commit raises, the transaction is rolled back and the error is
+        logged; a commit that only returns a rolled back status is not logged.
+        Read `committed` after the `with` block to tell whether Revit kept the
+        changes.
     """
 
     def __init__(
@@ -128,6 +130,8 @@ class Transaction:
 
         False before the context ends, after a rollback, after an exception in
         the body, and when a failures preprocessor answered with a rollback.
+        For a nested `SubTransaction`, True only means it joined the enclosing
+        transaction, which can still be rolled back.
         """
         return self._committed
 

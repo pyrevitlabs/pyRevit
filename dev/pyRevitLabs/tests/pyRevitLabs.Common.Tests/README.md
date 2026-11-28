@@ -1,6 +1,6 @@
 # pyRevitLabs.Common.Tests
 
-Common-library load timelines, identifiers, path/environment handling, build stamps, registry PATH values, and GitHub artifact naming. Deployment integration belongs to `pyRevitLabs.PyRevit.Integration.Tests`.
+Common-library load timelines, identifiers, path/environment handling, build stamps, registry PATH values, GitHub artifact naming, and git remote comparison and clone-source checks. Deployment integration belongs to `pyRevitLabs.PyRevit.Integration.Tests`.
 
 Owner: the owning module maintainers; unassigned failures and quarantines belong to the change author. Quarantines require an issue and review within 14 days.
 

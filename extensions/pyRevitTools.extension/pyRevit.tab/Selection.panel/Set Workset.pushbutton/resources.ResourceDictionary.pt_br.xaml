@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="transaction_set_workset">Definir workset ativo</sys:String>
+    <sys:String x:Key="transaction_set_work_plane">Definir plano de trabalho ativo no nível</sys:String>
+    <sys:String x:Key="transaction_set_phase">Definir fase da vista</sys:String>
+    <sys:String x:Key="not_workshared">O modelo não usa worksharing.</sys:String>
+    <sys:String x:Key="phase_not_editable">A fase da vista não pode ser modificada (provavelmente o modo de vista temporária está ativo).</sys:String>
+    <sys:String x:Key="config_title">Escolher o que definir</sys:String>
+    <sys:String x:Key="config_button">Salvar seleção</sys:String>
+    <sys:String x:Key="option_set_workset">Workset</sys:String>
+    <sys:String x:Key="option_set_workset_checkout">Emprestar workset</sys:String>
+    <sys:String x:Key="option_set_workplane_to_level">Plano de trabalho no nível</sys:String>
+    <sys:String x:Key="option_set_workplane_visible">Exibir plano de trabalho</sys:String>
+    <sys:String x:Key="option_set_phase">Fase</sys:String>
+</ResourceDictionary>

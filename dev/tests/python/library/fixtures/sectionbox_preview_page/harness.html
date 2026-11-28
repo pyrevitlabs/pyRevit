@@ -25,6 +25,15 @@
   }, extra || {});
   const word = new Proxy({}, { get: (t, k) => String(k) });
 
+  const loadPageStyles = () => new Promise((resolve) => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "../../../../../../extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/3D.pulldown/Section%20Box%20Navigator.pushbutton/preview.css";
+    link.onload = resolve;
+    link.onerror = resolve;
+    document.head.append(link);
+  });
+
   function packed(array) {
     let binary = "";
     for (const b of new Uint8Array(array.buffer)) binary += String.fromCharCode(b);
@@ -671,14 +680,7 @@
       line.textContent = "INFO [Section Box Navigator] Form updated due to view or document change.";
       document.body.insertBefore(line, app);
     }
-    await new Promise((resolve) => {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = "../../../../../../extensions/pyRevitTools.extension/pyRevit.tab/Modify.panel/3D.pulldown/Section%20Box%20Navigator.pushbutton/preview.css";
-      link.onload = resolve;
-      link.onerror = resolve;
-      document.head.append(link);
-    });
+    await loadPageStyles();
     window.pyRevitSectionBoxPreview.mount("app", {
       channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
       view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] },
@@ -766,6 +768,288 @@
     R.truncated_status = document.querySelector(".sbp-status-text").textContent;
     p.onSources({ done: true, truncated: 0 });
     R.loaded_status = document.querySelector(".sbp-status-text").textContent;
+    return R;
+  };
+
+  scenarios.relevant_grids = () => {
+    const vertical = (name, x) => ({ name, segs: [[x, -40, x, 40]] });
+    const horizontal = (name, y) => ({ name, segs: [[-40, y, 40, y]] });
+    const grids = [
+      vertical("W2", -30), vertical("W1", -9), vertical("IN", 1), vertical("E1", 12), vertical("E2", 25),
+      horizontal("S1", -8), horizontal("N1", 7), horizontal("N2", 18),
+      { name: "SHORT", segs: [[8, 30, 9, 31]] },
+    ];
+    const names = (set) => [...set].map((i) => grids[i].name).sort();
+    const diagonal = [{ name: "D", segs: [[-20, -20, 20, 20]] }, vertical("E1", 30), vertical("E2", 40)];
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box(), editable: ["x0", "x1", "y0", "y1", "z0", "z1"], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    p.setGuides({ levels: [], grids, scopeBoxes: [] });
+    const visible = () => p._visibleGridIndexes().map((i) => grids[i].name).sort();
+    const R = { around: names(A.relevantGrids(grids, box())) };
+    R.rotated = names(A.relevantGrids(grids, A.setYaw(box(), Math.PI / 2)));
+    R.diagonal = [...A.relevantGrids(diagonal, box())].map((i) => diagonal[i].name).sort();
+    R.visible = visible().length;
+    p.snapHighlight = { kind: "grid", name: "E2" };
+    R.with_snapped = visible().includes("E2");
+    p.snapHighlight = null;
+    p.setCameraPreset("top");
+    p.frameBounds({ min: [-45, -45, 0], max: [45, 45, 10] });
+    p._render();
+    R.labels = [...document.querySelectorAll(".sbp-label-grid")].map((n) => n.textContent).sort();
+    p.setMode("grid");
+    R.picking = visible().length;
+    p.setMode(null);
+    p.flags.allGrids = true;
+    R.all = visible().length;
+    p.flags.allGrids = false;
+    p.view.box = null;
+    R.without_box = visible().length;
+    return R;
+  };
+
+  scenarios.theme = async () => {
+    await loadPageStyles();
+    const app = window.pyRevitSectionBoxPreview;
+    const mount = (theme) => {
+      app.mount("app", {
+        channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+        view: { kind: "3d", name: "3D", theme, box: box(), editable: [], blocker: null, camera: null, bookmarks: [] },
+      });
+      return app.instance;
+    };
+    const state = (p) => [document.documentElement.dataset.theme, p.dark, getComputedStyle(p.root).backgroundColor, getComputedStyle(p.toolbar).backgroundColor];
+    const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const R = { preferred: preferred ? "dark" : "light" };
+    R.dark = state(mount("dark"));
+    R.light = state(mount("light"));
+    const p = app.instance;
+    p._onEvent("box", Object.assign({}, p.view, { theme: "dark" }));
+    R.switched = state(p);
+    R.fallback = mount(undefined).dark === preferred;
+    return R;
+  };
+
+  scenarios.range_math = () => {
+    const floor = [{ id: "top", z: 8 }, { id: "cut", z: 4 }, { id: "bottom", z: 0 }, { id: "depth", z: 0 }];
+    const apart = floor.map((q) => (q.id === "depth" ? { id: "depth", z: -3 } : q));
+    const ceiling = [{ id: "depth", z: 12 }, { id: "top", z: 9 }, { id: "cut", z: 6 }];
+    const moved = (planes, id, z, up) => A.dragRangePlane(planes, id, z, !!up);
+    const raised = A.withHeights([{ id: "cut", z: 4, elevation: 104, level: "L" }], { cut: 6 });
+    return {
+      cut_up: moved(floor, "cut", 20), cut_down: moved(floor, "cut", -20), top_down: moved(floor, "top", 1),
+      carried: moved(floor, "bottom", -2), separated_up: moved(floor, "bottom", 2),
+      depth_down: moved(floor, "depth", -5), depth_up: moved(floor, "depth", 3),
+      apart_bottom: moved(apart, "bottom", -10),
+      ceiling_cut_down: moved(ceiling, "cut", -50, true), ceiling_top_up: moved(ceiling, "top", 20, true),
+      ceiling_depth_down: moved(ceiling, "depth", 0, true),
+      unlimited: moved([{ id: "cut", z: 4 }, { id: "bottom", z: 0 }], "cut", 99),
+      unknown: moved(floor, "other", 1),
+      raised: [raised[0].z, raised[0].elevation],
+      rounded: A.roundToStep(10.26, 10, 0.25),
+      typed: [A.parseOffset(" 1,5 "), A.parseOffset("-2.25"), A.parseOffset(""), A.parseOffset("x")],
+    };
+  };
+
+  const rangePlanes = () => [
+    { id: "top", z: 8, elevation: 108, level: "L2", levelZ: 0 },
+    { id: "cut", z: 4, elevation: 104, level: "L2", levelZ: 0 },
+    { id: "bottom", z: 0, elevation: 100, level: "L2", levelZ: 0 },
+    { id: "depth", z: 0, elevation: 100, level: "L2", levelZ: 0 },
+  ];
+
+  function mountPlan(range) {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: new Proxy({}, { get: (t, k) => (k === "PreviewRangeTemplate" || k === "PreviewRangeRelative" ? k + " {0}" : String(k)) }),
+      units: { factor: 1, symbol: "ft", decimals: 2, dragStep: 0.25 },
+      view: {
+        kind: "crop", name: "Plan", generation: 1, box: box({ min: [-10, -10, 0], max: [10, 10, 8] }),
+        editable: ["x0", "x1", "y0", "y1"], blocker: null, camera: null, bookmarks: [],
+        viewRange: range === null ? null : Object.assign({ ceiling: false, template: null, relative: [], planes: rangePlanes() }, range || {}),
+      },
+    });
+    const p = app.instance;
+    p.loading = false;
+    p.glMissing = false;
+    p.setGuides({ levels: [{ name: "L1", z: -6, elevation: 94 }], grids: [], scopeBoxes: [] });
+    p.setCameraPreset("front");
+    p.frameBounds({ min: [-12, -12, -12], max: [12, 12, 14] });
+    p._render();
+    p.refreshChrome();
+    return p;
+  }
+
+  const shownHandles = () => [...document.querySelectorAll(".sbp-plane-handle")].filter((n) => n.style.display !== "none").length;
+  const shownChips = () => [...document.querySelectorAll(".sbp-plane-chip")].filter((n) => n.style.display !== "none");
+  const status = () => document.querySelector(".sbp-status-text").textContent;
+  const sentRanges = () => window.__sent.filter((m) => m.action === "apply_view_range").map((m) => m.payload.planes);
+
+  function pointerAt(p, id, z) {
+    const point = p._rangeHandlePoint(Object.assign({}, p.view.viewRange.planes.find((q) => q.id === id), { z }));
+    const s = p._project(p.viewProj, point);
+    const rect = p.canvas.getBoundingClientRect();
+    return { clientX: rect.left + s.x, clientY: rect.top + s.y };
+  }
+
+  function startPlaneDrag(p, id) {
+    const handle = p.rangeHandles[id].handle;
+    const from = p.view.viewRange.planes.find((q) => q.id === id).z;
+    p._startRangeDrag(Object.assign({ pointerId: 1, currentTarget: handle, preventDefault() {}, stopPropagation() {} }, pointerAt(p, id, from)), id);
+    return {
+      to: (z, altKey) => p._moveRangeDrag(Object.assign({ altKey: !!altKey }, pointerAt(p, id, z))),
+      drop: () => handle.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1, bubbles: true })),
+    };
+  }
+
+  const height = (p, id) => Number(p.view.viewRange.planes.find((q) => q.id === id).z.toFixed(4));
+  const rounded = (changes) => Object.fromEntries(Object.entries(changes).map(([k, v]) => [k, Number(v.toFixed(4))]));
+
+  scenarios.range_handles = async () => {
+    await loadPageStyles();
+    const R = {};
+    let p = mountPlan();
+    R.handles = shownHandles();
+    R.chips = shownChips().map((n) => n.textContent);
+    const x = [...document.querySelectorAll(".sbp-plane-handle")].map((n) => Math.round(parseFloat(n.style.left)));
+    R.distinct_positions = new Set(x).size;
+    const tops = shownChips().map((n) => parseFloat(n.style.top)).sort((a, b) => a - b);
+    R.chip_gaps_ok = shownChips().every((a) => shownChips().every((b) => a === b || Math.abs(parseFloat(a.style.top) - parseFloat(b.style.top)) >= 1 || Math.abs(parseFloat(a.style.left) - parseFloat(b.style.left)) > 20));
+    const rects = (selector) => [...document.querySelectorAll(selector)].filter((n) => n.style.display !== "none").map((n) => [n.dataset.plane, n.getBoundingClientRect()]);
+    const overlap = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+    const stage = p.canvas.getBoundingClientRect();
+    R.chips_over_handles = rects(".sbp-plane-chip").filter(([id, chip]) => rects(".sbp-plane-handle").some(([other, handle]) => other !== id && overlap(chip, handle))).map(([id]) => id);
+    R.chips_off_stage = rects(".sbp-plane-chip").filter(([, chip]) => chip.right > stage.right + 1 || chip.left < stage.left - 1).map(([id]) => id);
+    R.help = status();
+    R.toggle_shown = p.rangeToggle.parentNode.style.display !== "none";
+    p.setCameraPreset("top");
+    p._render();
+    R.top_camera = [shownHandles(), shownChips().length];
+    p.setCameraPreset("front");
+    p.frameBounds({ min: [-12, -12, -12], max: [12, 12, 14] });
+    p._render();
+    p.flags.viewRange = false;
+    p.refreshChrome();
+    p._render();
+    R.toggled_off = [shownHandles(), shownChips().length, status()];
+
+    p = mountPlan({ template: "Plans" });
+    R.template = [shownHandles(), shownChips().length, shownChips().every((n) => n.disabled), status()];
+    startPlaneDrag(p, "cut");
+    R.template_drag = p.drag;
+
+    p = mountPlan({ template: "Plans" });
+    p.view.blocker = "scope_box";
+    p.refreshChrome();
+    R.blocked_and_template = status();
+
+    p = mountPlan({ relative: ["top"], planes: rangePlanes().filter((q) => q.id !== "top") });
+    R.relative = [shownHandles(), status()];
+
+    p = mountPlan(null);
+    R.without_range = [shownHandles(), p.rangeToggle.parentNode.style.display];
+    return R;
+  };
+
+  scenarios.range_dragging = () => {
+    const R = {};
+    window.__sent.length = 0;
+    let p = mountPlan();
+    let drag = startPlaneDrag(p, "cut");
+    drag.to(5.1, true);
+    R.rounded_while_dragging = height(p, "cut");
+    R.elevation_shifted = Number(p.view.viewRange.planes[1].elevation.toFixed(4));
+    p._render();
+    R.dragged_label = p.rangeHandles.cut.chip.textContent;
+    drag.to(30, true);
+    R.stopped_at_top = height(p, "cut");
+    drag.drop();
+    R.committed = sentRanges().map(rounded);
+
+    window.__sent.length = 0;
+    p = mountPlan();
+    drag = startPlaneDrag(p, "bottom");
+    drag.to(-6.05, false);
+    R.snapped = [height(p, "bottom"), height(p, "depth"), p.snapHighlight && p.snapHighlight.name];
+    drag.to(1, true);
+    R.back_up = [height(p, "bottom"), height(p, "depth")];
+    drag.drop();
+    R.carried_commit = sentRanges().map(rounded);
+
+    window.__sent.length = 0;
+    p = mountPlan();
+    drag = startPlaneDrag(p, "top");
+    drag.to(10, true);
+    p._cancelDrag();
+    R.cancelled = [height(p, "top"), sentRanges().length];
+
+    window.__sent.length = 0;
+    p = mountPlan();
+    drag = startPlaneDrag(p, "top");
+    drag.drop();
+    R.click_without_move = sentRanges().length;
+
+    window.__sent.length = 0;
+    p = mountPlan();
+    p.flags.live = true;
+    drag = startPlaneDrag(p, "top");
+    p.drag.lastSend = -1000;
+    drag.to(10, true);
+    p._cancelDrag();
+    R.live_cancel = sentRanges().map(rounded);
+    return R;
+  };
+
+  scenarios.range_typing = () => {
+    const R = {};
+    window.__sent.length = 0;
+    let p = mountPlan();
+    window.prompt = (text, preset) => {
+      R.preset = preset;
+      return "-2,5";
+    };
+    p.rangeHandles.bottom.chip.click();
+    R.typed = sentRanges().map(rounded);
+    p._onEvent("result", { requestId: window.__sent[window.__sent.length - 1].requestId, ok: false, message: "Rejected" });
+    p._onEvent("box", Object.assign({}, p.view, { revision: p.editRevision }));
+    R.status_after_rejection = [status(), document.querySelector(".sbp-status-text").className];
+    p._onEvent("box", Object.assign({}, p.view, { revision: p.editRevision }));
+    R.status_later = status();
+    window.__sent.length = 0;
+    window.prompt = () => "abc";
+    p.rangeHandles.cut.chip.click();
+    R.not_a_number = [status(), sentRanges().length];
+    window.prompt = () => null;
+    p.rangeHandles.cut.chip.click();
+    R.cancelled = sentRanges().length;
+    return R;
+  };
+
+  scenarios.model_reload = () => {
+    const app = window.pyRevitSectionBoxPreview;
+    app.mount("app", {
+      channel: "c", document: "d", strings: word, units: { factor: 1, symbol: "ft", decimals: 2 },
+      view: { kind: "3d", name: "3D", box: box(), editable: [], blocker: null, camera: null, bookmarks: [] },
+    });
+    const p = app.instance;
+    const mesh = (id, group) => ({ id, source: 0, group, approx: false, positions: packed(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0])), indices: packed(new Uint32Array([0, 1, 2])) });
+    p._onEvent("scene", { progress: [2, 2], meshes: [mesh(1, "Walls"), mesh(2, "Floors")] });
+    p.groups.get("0|Walls").visible = false;
+    const far = Object.assign(mesh(4, "Walls"), { positions: packed(new Float32Array([500, 500, 90, 501, 500, 90, 500, 501, 90])) });
+    p._onEvent("scene", { progress: [3, 3], meshes: [far] });
+    const R = { bounds_before: p.modelBounds.max.slice() };
+    p._onEvent("sources", { dropAll: true, loading: true });
+    R.dropped = [p.elements.size, p.groups.size, p.batches.length, p.loading];
+    R.bounds_dropped = p.modelBounds;
+    p._onEvent("scene", { progress: [2, 2], meshes: [mesh(1, "Walls"), mesh(3, "Roofs")] });
+    R.bounds_reloaded = p.modelBounds;
+    R.radius = Number(p._radius().toFixed(4));
+    p.frameModel();
+    R.fit_to_model_target = p.camera.target.map((v) => Number(v.toFixed(4)));
+    R.visible = [...p.groups.values()].map((g) => [g.name, g.visible]);
     return R;
   };
 

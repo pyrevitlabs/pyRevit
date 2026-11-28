@@ -1,246 +1,123 @@
-"""Selects elements with no associated tags in current view."""
+# -*- coding: utf-8 -*-
+"""Select the elements of a category that have no tag in the active view."""
 
-from collections import namedtuple
-
-from pyrevit import revit, DB, HOST_APP, forms
+from pyrevit import forms, script
+from pyrevit import HOST_APP, revit, DB
 from pyrevit.compat import get_elementid_value_func
+from pyrevit.coreutils import applocales
+
+RESOURCES = script.get_bundle_file("resources.xaml")
+BIC = DB.BuiltInCategory
+TAGGABLE_CATEGORIES = [
+    (BIC.OST_Rooms, BIC.OST_RoomTags),
+    (BIC.OST_Areas, BIC.OST_AreaTags),
+    (BIC.OST_MEPSpaces, BIC.OST_MEPSpaceTags),
+    (BIC.OST_Doors, BIC.OST_DoorTags),
+    (BIC.OST_Windows, BIC.OST_WindowTags),
+    (BIC.OST_SpecialityEquipment, BIC.OST_SpecialityEquipmentTags),
+    (BIC.OST_MechanicalEquipment, BIC.OST_MechanicalEquipmentTags),
+    (BIC.OST_ElectricalEquipment, BIC.OST_ElectricalEquipmentTags),
+    (BIC.OST_Walls, BIC.OST_WallTags),
+    (BIC.OST_CurtainWallPanels, BIC.OST_CurtainWallPanelTags),
+    (BIC.OST_Ceilings, BIC.OST_CeilingTags),
+    (BIC.OST_StructuralColumns, BIC.OST_StructuralColumnTags),
+    (BIC.OST_Furniture, BIC.OST_FurnitureTags),
+    (BIC.OST_FurnitureSystems, BIC.OST_FurnitureSystemTags),
+    (BIC.OST_StructuralFraming, BIC.OST_StructuralFramingTags),
+    (BIC.OST_StructuralFoundation, BIC.OST_StructuralFoundationTags),
+    (BIC.OST_DuctTerminal, BIC.OST_DuctTerminalTags),
+    (BIC.OST_CommunicationDevices, BIC.OST_CommunicationDeviceTags),
+    (BIC.OST_DataDevices, BIC.OST_DataDeviceTags),
+    (BIC.OST_DuctAccessory, BIC.OST_DuctAccessoryTags),
+    (BIC.OST_ElectricalFixtures, BIC.OST_ElectricalFixtureTags),
+    (BIC.OST_FireAlarmDevices, BIC.OST_FireAlarmDeviceTags),
+    (BIC.OST_LightingDevices, BIC.OST_LightingDeviceTags),
+    (BIC.OST_LightingFixtures, BIC.OST_LightingFixtureTags),
+    (BIC.OST_NurseCallDevices, BIC.OST_NurseCallDeviceTags),
+    (BIC.OST_PipeAccessory, BIC.OST_PipeAccessoryTags),
+    (BIC.OST_PlumbingFixtures, BIC.OST_PlumbingFixtureTags),
+    (BIC.OST_SecurityDevices, BIC.OST_SecurityDeviceTags),
+    (BIC.OST_Sprinklers, BIC.OST_SprinklerTags),
+    (BIC.OST_TelephoneDevices, BIC.OST_TelephoneDeviceTags),
+]
+if HOST_APP.is_newer_than(2023, or_equal=True):
+    TAGGABLE_CATEGORIES.append(
+        (BIC.OST_PlumbingEquipment, BIC.OST_PlumbingEquipmentTags)
+    )
 
 get_elementid_value = get_elementid_value_func()
 
-Taggable = namedtuple("Taggable", ["tag_type", "element_type"])
 
-doc = revit.doc
-
-# make sure active view is not a sheet
-curview = revit.active_view
-if isinstance(curview, DB.ViewSheet):
-    forms.alert("You're on a Sheet. Activate a model view please.", exitscript=True)
-
-options = {
-    "Rooms": Taggable(
-        tag_type=DB.BuiltInCategory.OST_RoomTags,
-        element_type=DB.BuiltInCategory.OST_Rooms,
-    ),
-    "Areas": Taggable(
-        tag_type=DB.BuiltInCategory.OST_AreaTags,
-        element_type=DB.BuiltInCategory.OST_Areas,
-    ),
-    "Spaces": Taggable(
-        tag_type=DB.BuiltInCategory.OST_MEPSpaceTags,
-        element_type=DB.BuiltInCategory.OST_MEPSpaces,
-    ),
-    "Doors": Taggable(
-        tag_type=DB.BuiltInCategory.OST_DoorTags,
-        element_type=DB.BuiltInCategory.OST_Doors,
-    ),
-    "Windows": Taggable(
-        tag_type=DB.BuiltInCategory.OST_WindowTags,
-        element_type=DB.BuiltInCategory.OST_Windows,
-    ),
-    "Speciality Equipment": Taggable(
-        tag_type=DB.BuiltInCategory.OST_SpecialityEquipmentTags,
-        element_type=DB.BuiltInCategory.OST_SpecialityEquipment,
-    ),
-    "Mechanical Equipment": Taggable(
-        tag_type=DB.BuiltInCategory.OST_MechanicalEquipmentTags,
-        element_type=DB.BuiltInCategory.OST_MechanicalEquipment,
-    ),
-    "Electrical Equipment": Taggable(
-        tag_type=DB.BuiltInCategory.OST_ElectricalEquipmentTags,
-        element_type=DB.BuiltInCategory.OST_ElectricalEquipment,
-    ),
-    "Walls": Taggable(
-        tag_type=DB.BuiltInCategory.OST_WallTags,
-        element_type=DB.BuiltInCategory.OST_Walls,
-    ),
-    "Curtain Walls": Taggable(
-        tag_type=DB.BuiltInCategory.OST_CurtainWallPanelTags,
-        element_type=DB.BuiltInCategory.OST_CurtainWallPanels,
-    ),
-    "Ceilings": Taggable(
-        tag_type=DB.BuiltInCategory.OST_CeilingTags,
-        element_type=DB.BuiltInCategory.OST_Ceilings,
-    ),
-    "Columns": Taggable(
-        tag_type=DB.BuiltInCategory.OST_StructuralColumnTags,
-        element_type=DB.BuiltInCategory.OST_StructuralColumns,
-    ),
-    "Furniture": Taggable(
-        tag_type=DB.BuiltInCategory.OST_FurnitureTags,
-        element_type=DB.BuiltInCategory.OST_Furniture,
-    ),
-    "Furniture Systems": Taggable(
-        tag_type=DB.BuiltInCategory.OST_FurnitureSystemTags,
-        element_type=DB.BuiltInCategory.OST_FurnitureSystems,
-    ),
-    "Structural framing": Taggable(
-        tag_type=DB.BuiltInCategory.OST_StructuralFramingTags,
-        element_type=DB.BuiltInCategory.OST_StructuralFraming,
-    ),
-    "Structural foundations": Taggable(
-        tag_type=DB.BuiltInCategory.OST_StructuralFoundationTags,
-        element_type=DB.BuiltInCategory.OST_StructuralFoundation,
-    ),
-    "Air terminals": Taggable(
-        tag_type=DB.BuiltInCategory.OST_DuctTerminalTags,
-        element_type=DB.BuiltInCategory.OST_DuctTerminal,
-    ),
-    "Communication devices": Taggable(
-        tag_type=DB.BuiltInCategory.OST_CommunicationDeviceTags,
-        element_type=DB.BuiltInCategory.OST_CommunicationDevices,
-    ),
-    "Data devices": Taggable(
-        tag_type=DB.BuiltInCategory.OST_DataDeviceTags,
-        element_type=DB.BuiltInCategory.OST_DataDevices,
-    ),
-    "Duct accessories": Taggable(
-        tag_type=DB.BuiltInCategory.OST_DuctAccessoryTags,
-        element_type=DB.BuiltInCategory.OST_DuctAccessory,
-    ),
-    "Electrical fixtures": Taggable(
-        tag_type=DB.BuiltInCategory.OST_ElectricalFixtureTags,
-        element_type=DB.BuiltInCategory.OST_ElectricalFixtures,
-    ),
-    "Fire alarm devices": Taggable(
-        tag_type=DB.BuiltInCategory.OST_FireAlarmDeviceTags,
-        element_type=DB.BuiltInCategory.OST_FireAlarmDevices,
-    ),
-    "Lighting devices": Taggable(
-        tag_type=DB.BuiltInCategory.OST_LightingDeviceTags,
-        element_type=DB.BuiltInCategory.OST_LightingDevices,
-    ),
-    "Lighting fixtures": Taggable(
-        tag_type=DB.BuiltInCategory.OST_LightingFixtureTags,
-        element_type=DB.BuiltInCategory.OST_LightingFixtures,
-    ),
-    "Nurse call devices": Taggable(
-        tag_type=DB.BuiltInCategory.OST_NurseCallDeviceTags,
-        element_type=DB.BuiltInCategory.OST_NurseCallDevices,
-    ),
-    "Pipe accessories": Taggable(
-        tag_type=DB.BuiltInCategory.OST_PipeAccessoryTags,
-        element_type=DB.BuiltInCategory.OST_PipeAccessory,
-    ),
-    "Plumbing equipment": Taggable(
-        tag_type=DB.BuiltInCategory.OST_PlumbingFixtureTags,
-        element_type=DB.BuiltInCategory.OST_PlumbingFixtures,
-    ),
-    "Plumbing fixtures": Taggable(
-        tag_type=DB.BuiltInCategory.OST_PlumbingFixtureTags,
-        element_type=DB.BuiltInCategory.OST_PlumbingFixtures,
-    ),
-    "Security devices": Taggable(
-        tag_type=DB.BuiltInCategory.OST_SecurityDeviceTags,
-        element_type=DB.BuiltInCategory.OST_SecurityDevices,
-    ),
-    "Sprinklers": Taggable(
-        tag_type=DB.BuiltInCategory.OST_SprinklerTags,
-        element_type=DB.BuiltInCategory.OST_Sprinklers,
-    ),
-    "Telephone devices": Taggable(
-        tag_type=DB.BuiltInCategory.OST_TelephoneDeviceTags,
-        element_type=DB.BuiltInCategory.OST_TelephoneDevices,
-    ),
-}
-
-selected_switch = forms.CommandSwitchWindow.show(
-    sorted(options.keys()), message="Find untagged elements of type:"
-)
+def _t(key):
+    return applocales.get_locale_string_from_xaml(RESOURCES, key)
 
 
-if selected_switch:
-    target = options[selected_switch]
-    selection = revit.get_selection()
+def category_choices():
+    choices = {}
+    for element_category, tag_category in TAGGABLE_CATEGORIES:
+        category = DB.Category.GetCategory(revit.doc, element_category)
+        if category:
+            choices[category.Name] = (element_category, tag_category)
+    return choices
 
-    # collect target elements and tags in view
-    target_tags = (
-        DB.FilteredElementCollector(doc, curview.Id)
-        .OfCategory(target.tag_type)
+
+def category_element_ids_in_view(builtin_category, view):
+    return list(
+        DB.FilteredElementCollector(revit.doc, view.Id)
+        .OfCategory(builtin_category)
         .WhereElementIsNotElementType()
         .ToElementIds()
     )
 
-    target_elements = (
-        DB.FilteredElementCollector(doc, curview.Id)
-        .OfCategory(target.element_type)
-        .WhereElementIsNotElementType()
-        .ToElementIds()
-    )
 
-    if selected_switch == "Rooms":
-        tagged_rooms = []
-        untagged_rooms = []
-        for room_tag_id in target_tags:
-            room_tag = doc.GetElement(room_tag_id)
-            if room_tag.Room is not None:
-                tagged_rooms.append(get_elementid_value(room_tag.Room.Id))
-
-        for room_id in target_elements:
-            room = doc.GetElement(room_id)
-            if get_elementid_value(room.Id) not in tagged_rooms:
-                untagged_rooms.append(room_id)
-
-        if untagged_rooms:
-            selection.set_to(untagged_rooms)
-        else:
-            forms.alert("All rooms have associated tags.")
-
-    elif selected_switch == "Areas":
-        tagged_areas = []
-        untagged_areas = []
-        for area_tag_id in target_tags:
-            area_tag = doc.GetElement(area_tag_id)
-            if area_tag.Area is not None:
-                tagged_areas.append(get_elementid_value(area_tag.Area.Id))
-
-        for area_id in target_elements:
-            area = doc.GetElement(area_id)
-            if get_elementid_value(area.Id) not in tagged_areas:
-                untagged_areas.append(area_id)
-
-        if untagged_areas:
-            selection.set_to(untagged_areas)
-        else:
-            forms.alert("All areas have associated tags.")
-
-    elif selected_switch == "Spaces":
-        tagged_spaces = []
-        untagged_spaces = []
-        for space_tag_id in target_tags:
-            space_tag = doc.GetElement(space_tag_id)
-            if space_tag.Space is not None:
-                tagged_spaces.append(get_elementid_value(space_tag.Space.Id))
-
-        for space_id in target_elements:
-            space = doc.GetElement(space_id)
-            if get_elementid_value(space.Id) not in tagged_spaces:
-                untagged_spaces.append(space_id)
-
-        if untagged_spaces:
-            selection.set_to(untagged_spaces)
-        else:
-            forms.alert("All spaces have associated tags.")
-
+def tagged_element_values(tag):
+    if isinstance(tag, DB.Architecture.RoomTag):
+        hosts = [tag.Room]
+    elif isinstance(tag, DB.AreaTag):
+        hosts = [tag.Area]
+    elif isinstance(tag, DB.Mechanical.SpaceTag):
+        hosts = [tag.Space]
+    elif HOST_APP.is_newer_than(2022, or_equal=True):
+        return [
+            get_elementid_value(host_id) for host_id in tag.GetTaggedLocalElementIds()
+        ]
+    elif tag.TaggedLocalElementId != DB.ElementId.InvalidElementId:
+        return [get_elementid_value(tag.TaggedLocalElementId)]
     else:
-        tagged_elements = []
-        untagged_elements = []
-        for eltid in target_tags:
-            elt = doc.GetElement(eltid)
-            if HOST_APP.is_newer_than(2022, or_equal=True):
-                tagged_element_ids = elt.GetTaggedLocalElementIds()
-                if tagged_element_ids and len(tagged_element_ids) > 0:
-                    for tagged_id in tagged_element_ids:
-                        tagged_elements.append(get_elementid_value(tagged_id))
-            else:
-                if elt.TaggedLocalElementId != DB.ElementId.InvalidElementId:
-                    tagged_elements.append(elt.TaggedLocalElementId.IntegerValue)
+        return []
+    return [get_elementid_value(host.Id) for host in hosts if host is not None]
 
-        for elid in target_elements:
-            el = doc.GetElement(elid)
-            if get_elementid_value(el.Id) not in tagged_elements:
-                untagged_elements.append(elid)
 
-        if untagged_elements:
-            selection.set_to(untagged_elements)
-        else:
-            forms.alert("All {} have associated tags.".format(selected_switch.lower()))
+def tagged_values_in_view(tag_category, view):
+    tag_ids = category_element_ids_in_view(tag_category, view)
+    tagged_values = set()
+    for tag_id in tag_ids:
+        tagged_values.update(tagged_element_values(revit.doc.GetElement(tag_id)))
+    return tagged_values
+
+
+def main():
+    choices = category_choices()
+    category_name = forms.CommandSwitchWindow.show(
+        sorted(choices), message=_t("pick_category")
+    )
+    if not category_name:
+        return
+    element_category, tag_category = choices[category_name]
+    view = revit.active_view
+    element_ids = category_element_ids_in_view(element_category, view)
+    if not element_ids:
+        forms.alert(_t("no_elements").format(category_name), exitscript=True)
+    tagged_values = tagged_values_in_view(tag_category, view)
+    untagged_ids = [
+        element_id
+        for element_id in element_ids
+        if get_elementid_value(element_id) not in tagged_values
+    ]
+    if not untagged_ids:
+        forms.alert(_t("all_tagged").format(category_name), exitscript=True)
+    revit.get_selection().set_to(untagged_ids)
+
+
+if __name__ == "__main__":
+    main()

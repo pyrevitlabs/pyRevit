@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_category">Pick type category:</sys:String>
+    <sys:String x:Key="graphics_styles">Graphics Styles: {}</sys:String>
+    <sys:String x:Key="family_choice">Family: {}</sys:String>
+    <sys:String x:Key="fill_patterns">Fill Patterns</sys:String>
+    <sys:String x:Key="area_schemes">Area Schemes</sys:String>
+    <sys:String x:Key="line_styles">Line Styles</sys:String>
+    <sys:String x:Key="no_types">No types were found.</sys:String>
+</ResourceDictionary>

@@ -1,0 +1,7 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_vertical_reveals">In diesem Projekt wurden keine vertikalen Wandfugen gefunden.</sys:String>
+    <sys:String x:Key="no_horizontal_reveals">In diesem Projekt wurden keine horizontalen Wandfugen gefunden.</sys:String>
+</ResourceDictionary>

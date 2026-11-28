@@ -22,6 +22,7 @@ internal sealed class FakeAgentHost : IDisposable {
     private readonly Func<System.Diagnostics.Process, string> previousProcessNameReader = PyRevitAgentClient.ProcessNameReader;
     private readonly Func<System.Diagnostics.Process, DateTime> previousProcessStartTimeReader = PyRevitAgentClient.ProcessStartTimeReader;
     private readonly Func<string, bool> previousPipeExists = PyRevitAgentClient.PipeExists;
+    private readonly Func<int, System.Security.Principal.SecurityIdentifier> previousProcessOwnerReader = PyRevitAgentClient.ProcessOwnerReader;
     private readonly Action<int> previousDiscoveryDelay = PyRevitAgentClient.DiscoveryDelay;
     private readonly List<Task> serving = new List<Task>();
 
@@ -30,7 +31,7 @@ internal sealed class FakeAgentHost : IDisposable {
         PyRevitAgentClient.AgentDirOverride = AgentDir;
         PyRevitAgentClient.ProcessNameReader = process => process.Id == Environment.ProcessId ? "Revit" : process.ProcessName;
         PyRevitAgentClient.DiscoveryDelay = milliseconds => { };
-        PipeName = "pyrevit-fake-" + Guid.NewGuid().ToString("N");
+        PipeName = "pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N");
         if (register)
             Register(revitVersion, Environment.ProcessId, DateTime.UtcNow);
         serving.Add(Task.Run(() => Serve(PipeName)));
@@ -41,7 +42,7 @@ internal sealed class FakeAgentHost : IDisposable {
     /// <see cref="Handler"/>, and returns the pipe name.
     /// </summary>
     public string AddInstance(string revitVersion) {
-        var pipeName = "pyrevit-fake-" + Guid.NewGuid().ToString("N");
+        var pipeName = "pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N");
         Register(revitVersion, Environment.ProcessId, DateTime.UtcNow, revitVersion + "-extra.json", pipeName);
         serving.Add(Task.Run(() => Serve(pipeName)));
         return pipeName;
@@ -158,6 +159,7 @@ internal sealed class FakeAgentHost : IDisposable {
         PyRevitAgentClient.ProcessNameReader = previousProcessNameReader;
         PyRevitAgentClient.ProcessStartTimeReader = previousProcessStartTimeReader;
         PyRevitAgentClient.PipeExists = previousPipeExists;
+        PyRevitAgentClient.ProcessOwnerReader = previousProcessOwnerReader;
         PyRevitAgentClient.DiscoveryDelay = previousDiscoveryDelay;
         Directory.Delete(AgentDir, recursive: true);
     }

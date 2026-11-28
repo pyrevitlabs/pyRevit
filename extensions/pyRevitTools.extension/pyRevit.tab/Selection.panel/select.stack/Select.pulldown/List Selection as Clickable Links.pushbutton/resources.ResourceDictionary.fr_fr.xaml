@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="all_elements">Tous les éléments</sys:String>
+    <sys:String x:Key="table_title">Éléments sélectionnés</sys:String>
+    <sys:String x:Key="column_number">#</sys:String>
+    <sys:String x:Key="column_id">Id</sys:String>
+    <sys:String x:Key="column_name">Nom</sys:String>
+    <sys:String x:Key="no_elements">Aucun élément n'est sélectionné.</sys:String>
+</ResourceDictionary>

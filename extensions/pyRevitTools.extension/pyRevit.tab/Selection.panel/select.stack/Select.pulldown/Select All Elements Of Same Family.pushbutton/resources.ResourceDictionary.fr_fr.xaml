@@ -1,0 +1,7 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_family_instances">La sélection ne contient aucune instance de famille ni aucun type de famille.</sys:String>
+    <sys:String x:Key="no_instances">Les familles sélectionnées n'ont aucune instance dans le modèle.</sys:String>
+</ResourceDictionary>

@@ -5,14 +5,6 @@ import pickle
 from pyrevit import forms, revit, op, script
 from pyrevit import DB
 from pyrevit.revit.events import execute_in_revit_context
-from pyrevit.framework import (
-    ComponentModel,
-    wpf,
-    Controls,
-    Uri,
-    UriKind,
-    ResourceDictionary,
-)
 from pyrevit.compat import get_elementid_value_func
 
 from match.match_utils import (
@@ -44,15 +36,24 @@ _PAGE_XAML = op.join(_DIR, "clipboard_page.xaml")
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def _merge_resource_dict(control, xaml_path):
-    """Merge a ResourceDictionary XAML file into a WPF element's Resources."""
-    rd = ResourceDictionary()
-    rd.Source = Uri(xaml_path, UriKind.Absolute)
-    control.Resources.MergedDictionaries.Add(rd)
+_CONTENT_MARKER = "@@CONTENT@@"
+
+
+def _compose_xaml(root_xaml_path):
+    """Return root XAML text with the shared clipboard grid injected."""
+    with open(root_xaml_path, "rb") as f:
+        root = f.read().decode("utf-8-sig")
+    with open(_CONTENT_XAML, "rb") as f:
+        content = f.read().decode("utf-8-sig")
+    if _CONTENT_MARKER not in root:
+        raise ValueError(
+            "{} has no {} marker".format(op.basename(root_xaml_path), _CONTENT_MARKER)
+        )
+    return root.replace(_CONTENT_MARKER, content)
 
 
 def _merge_locale(control):
-    """Merge the clipboard locale ResourceDictionary into a WPF element."""
+    """Merge the clipboard locale ResourceDictionary into a form."""
     from pyrevit.userconfig import user_config
 
     base = op.join(_DIR, "clipboard_ui")
@@ -60,29 +61,7 @@ def _merge_locale(control):
     if not op.exists(locale_path):
         locale_path = "{}.ResourceDictionary.en_us.xaml".format(base)
     if op.exists(locale_path):
-        _merge_resource_dict(control, locale_path)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# INotifyPropertyChanged base — required for two-way checkbox binding in WPF
-# ─────────────────────────────────────────────────────────────────────────────
-
-
-class _INotifyBase(ComponentModel.INotifyPropertyChanged):
-    def __init__(self):
-        self._handlers = []
-
-    def add_PropertyChanged(self, handler):
-        self._handlers.append(handler)
-
-    def remove_PropertyChanged(self, handler):
-        if handler in self._handlers:
-            self._handlers.remove(handler)
-
-    def _notify(self, prop_name):
-        ev_args = ComponentModel.PropertyChangedEventArgs(prop_name)
-        for h in self._handlers:
-            h(self, ev_args)
+        control.merge_resource_dict(locale_path)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -90,11 +69,10 @@ class _INotifyBase(ComponentModel.INotifyPropertyChanged):
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-class ParameterItem(_INotifyBase):
+class ParameterItem(forms.Reactive):
     """One row in the history list view."""
 
     def __init__(self, pkv):
-        _INotifyBase.__init__(self)
         self._pkv = pkv
         self._selected = False
 
@@ -129,7 +107,7 @@ class ParameterItem(_INotifyBase):
     def IsSelected(self, value):
         if self._selected != value:
             self._selected = value
-            self._notify("IsSelected")
+            self.OnPropertyChanged("IsSelected")
 
     @property
     def source_prop(self):
@@ -137,36 +115,48 @@ class ParameterItem(_INotifyBase):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Shared clipboard UI — UserControl hosting both the panel and recall window
+# Shared clipboard logic — mixed into the panel and the recall window
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-class ClipboardContent(Controls.UserControl):
-    """Self-contained clipboard parameter UI.
+class _ClipboardLogic(object):
+    """Behaviour of the clipboard parameter UI, mixed into a WPF form.
 
-    Args:
-        is_recall (bool): False = full panel mode; True = recall mode.
-            In recall mode the view-filter and filter-element load buttons are
-            hidden, load_from_element opens select_parameters with preselect,
-            and paste closes the parent window after saving to memfile.
-        target_type (str): "Elements" or "Views" — only used in recall mode
-            for re-saving to the memory file on paste.
-        memfile (str): absolute path to the pickle memory file — only used in
-            recall mode.
+    The host form loads XAML composed from clipboard_content.xaml. It calls
+    `_init_clipboard` before loading, because handlers can fire during load,
+    and `_finish_clipboard` after.
+
+    Important:
+        Must not derive from a WPF type: CPython forms cannot subclass them.
     """
 
-    def __init__(self, is_recall=False, target_type=None, memfile=None):
-        Controls.UserControl.__init__(self)
+    def _init_clipboard(self, is_recall=False, target_type=None, memfile=None):
+        """Set the state the XAML handlers read.
+
+        Args:
+            is_recall (bool): False = full panel mode; True = recall mode.
+                In recall mode the view-filter and filter-element load buttons
+                are hidden and load_from_element opens select_parameters with
+                preselect.
+            target_type (str): "Elements" or "Views"; recall mode only, saved
+                back to the memory file on close.
+            memfile (str): absolute path to the pickle memory file; recall
+                mode only.
+        """
         self._is_recall = is_recall
         self._recall_target_type = target_type
         self._memfile = memfile
         self._items = []
+        self._visible_items = []
 
-        _merge_resource_dict(self, _ICONS_XAML)
+    def _finish_clipboard(self):
+        """Merge icon and locale dictionaries and apply recall-mode layout."""
+        if not hasattr(self, "_is_recall"):
+            raise RuntimeError("_init_clipboard must run before the form loads")
+        self.merge_resource_dict(_ICONS_XAML)
         _merge_locale(self)
-        wpf.LoadComponent(self, _CONTENT_XAML)
 
-        if is_recall:
+        if self._is_recall:
             self.loadViewFiltersBtn.Visibility = forms.WPF_COLLAPSED
             self.loadFilterElemBtn.Visibility = forms.WPF_COLLAPSED
             self.categoryFilterCheck.Visibility = forms.WPF_COLLAPSED
@@ -216,7 +206,8 @@ class ClipboardContent(Controls.UserControl):
         both the parameter name and display value.
         """
         if not search_text:
-            self.paramListView.ItemsSource = list(self._items)
+            self._visible_items = list(self._items)
+            self.paramListView.ItemsSource = self._visible_items
             return
 
         use_regex = bool(self.regexToggle_b.IsChecked)
@@ -238,6 +229,7 @@ class ClipboardContent(Controls.UserControl):
                 if low in i.Name.lower() or low in i.DisplayValue.lower()
             ]
 
+        self._visible_items = items
         self.paramListView.ItemsSource = items
 
     def _set_check_states(self, state=None, flip=False):
@@ -246,7 +238,7 @@ class ClipboardContent(Controls.UserControl):
         Deduplication: only the first occurrence of each parameter name
         is checked; later duplicates are forced unchecked.
         """
-        visible = self.paramListView.ItemsSource or []
+        visible = self._visible_items
         if state is True:
             # build set of already-selected names from ALL items
             seen = set()
@@ -429,9 +421,9 @@ class ClipboardContent(Controls.UserControl):
     def toggle_regex(self, sender, args):
         """Switch between substring and regex search; swap the button icon."""
         if bool(self.regexToggle_b.IsChecked):
-            self.regexToggle_b.Content = self.Resources["regexIcon"]
+            self.regexToggle_b.Content = self.FindResource("regexIcon")
         else:
-            self.regexToggle_b.Content = self.Resources["filterIcon"]
+            self.regexToggle_b.Content = self.FindResource("filterIcon")
         text = self.search_tb.Text.strip()
         self._refresh_list(search_text=text if text else None)
         self.search_tb.Focus()
@@ -466,40 +458,59 @@ class ClipboardContent(Controls.UserControl):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Dockable panel — thin wrapper around ClipboardContent
+# Dockable panel
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-class MatchHistoryClipboard(forms.WPFPanel):
+class MatchHistoryClipboard(_ClipboardLogic, forms.WPFPanel):
+    """Dockable panel keeping the history of matched parameters.
+
+    Registered by the extension startup and opened from the Match History
+    Clipboard button.
+    """
+
     panel_title = "pyRevit MatchHistory Clipboard"
     panel_id = "0f3a0866-0123-4178-9f2c-121961bd292c"
     panel_source = _PAGE_XAML
     resolve_theme = True
 
     def __init__(self):
+        self._init_clipboard(is_recall=False)
         forms.WPFPanel.__init__(self)
-        self.Content = ClipboardContent(is_recall=False)
+        self._finish_clipboard()
+
+    def load_xaml(self, xaml_source, literal_string=False):
+        """Compose the clipboard template before loading it as a page."""
+        if not literal_string and xaml_source == _PAGE_XAML:
+            xaml_source = _compose_xaml(xaml_source)
+            literal_string = True
+        forms.WPFPanel.load_xaml(self, xaml_source, literal_string=literal_string)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Modeless recall window — thin wrapper around ClipboardContent
+# Modeless recall window
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-class RecallWindow(forms.WPFWindow):
+class RecallWindow(_ClipboardLogic, forms.WPFWindow):
+    """Modeless window recalling the parameters saved by Match Properties.
+
+    Opened by Match Properties in config mode. Closing it pickles the checked
+    rows back to the memory file.
+    """
+
     resolve_theme = True
 
     def __init__(self, target_type, initial_props, memfile):
-        forms.WPFWindow.__init__(self, _WINDOW_XAML)
-        self._content = ClipboardContent(
+        self._init_clipboard(
             is_recall=True,
             target_type=target_type,
             memfile=memfile,
         )
-        self.Content = self._content
-        self._content.populate(initial_props, all_selected=True)
+        forms.WPFWindow.__init__(self, _compose_xaml(_WINDOW_XAML), literal_string=True)
+        self._finish_clipboard()
+        self.populate(initial_props, all_selected=True)
         script.restore_window_position(self, "MatchPropertiesRecall")
-        self.Closing += self._on_closing
 
     def _on_closing(self, sender, args):
         script.save_window_position(self, "MatchPropertiesRecall")
@@ -507,7 +518,7 @@ class RecallWindow(forms.WPFWindow):
 
     def _save_recall(self):
         """Persist selected props to the memory file."""
-        c = self._content
+        c = self
         if not c._memfile:
             return
         selected = [i.source_prop for i in c._items if i.IsSelected]
@@ -527,6 +538,9 @@ class RecallWindow(forms.WPFWindow):
             )
         try:
             with open(c._memfile, "wb") as f:
-                pickle.dump((c._recall_target_type, serializable), f)
-        except Exception:
-            pass
+                pickle.dump((c._recall_target_type, serializable), f, 2)
+        except Exception as ex:
+            command_logger = getattr(self, "recall_logger", None)
+            (command_logger or script.get_logger()).warning(
+                "Failed saving matched properties to memory | %s", ex
+            )

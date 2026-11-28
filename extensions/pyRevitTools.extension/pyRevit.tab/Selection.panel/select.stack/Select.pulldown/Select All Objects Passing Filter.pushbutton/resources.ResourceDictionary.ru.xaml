@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_filters">В проекте нет фильтров вида.</sys:String>
+    <sys:String x:Key="no_valid_filters">У выбранных фильтров нет правил для применения.</sys:String>
+    <sys:String x:Key="select_title">Выберите фильтры вида</sys:String>
+    <sys:String x:Key="select_button">Выбрать</sys:String>
+    <sys:String x:Key="nothing_found">Подходящие элементы не найдены.</sys:String>
+    <sys:String x:Key="config_title">Параметры выбора по фильтру</sys:String>
+    <sys:String x:Key="config_button">Сохранить</sys:String>
+    <sys:String x:Key="exclude_nested">Исключить вложенные экземпляры семейств</sys:String>
+    <sys:String x:Key="only_current_view">Искать только в текущем виде</sys:String>
+    <sys:String x:Key="reverse_filter">Выбрать элементы, не проходящие фильтр</sys:String>
+</ResourceDictionary>

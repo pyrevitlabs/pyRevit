@@ -262,11 +262,13 @@ namespace pyRevitLabs.Common.Extensions {
         /// <summary>
         /// Returns <paramref name="sourceString"/> with the user name and password of a URL replaced by
         /// <c>***</c>, so the text is safe to write to a log. Text without credentials is returned unchanged.
+        /// A <c>user:password</c> pair is redacted up to the last <c>@</c> of the text, because an unencoded
+        /// password may itself contain <c>@</c> and <c>/</c>; a bare <c>user@</c> ends at the first <c>/</c>.
         /// </summary>
         public static string RedactUrlCredentials(this string sourceString) {
             return string.IsNullOrEmpty(sourceString)
                 ? sourceString
-                : Regex.Replace(sourceString, @"(?<=://)([^/]*@|[^/@]+:[^@]*@)", "***@");
+                : Regex.Replace(sourceString, @"(?<=://)([^/:]*:(?s:.*)@|[^/]*@)", "***@");
         }
 
         public static List<string> GetLines(this string sourceString) {

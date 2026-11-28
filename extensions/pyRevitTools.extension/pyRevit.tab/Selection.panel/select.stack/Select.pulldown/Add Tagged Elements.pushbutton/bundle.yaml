@@ -8,13 +8,12 @@ title:
   de_de: Elemente von Beschriftungen der Auswahl hinzufügen
   pt_br: Adicionar Elementos Identificados
 tooltip:
-  en_us: Select a series of tags and this tool will add their associated elements to selection. This is especially useful for isolating elements and their tags
-  ko: 일련의 태그를 선택하면 이 도구가 연결된 요소를 선택에 추가합니다. 요소와 해당 태그를 격리하는 데 특히 유용합니다
-  fr_fr: Sélectionnez une série d'étiquettes et cet outil ajoutera leurs éléments associés à la sélection. Ceci est particulièrement utile pour isoler des éléments et leurs étiquettes
-  ru: Выберите марки а данный инструмент добавит связанные элементы к выделению. Это особенно полезно для выдеделения элементов и их марок.
-  chinese_s: 选择一系列标记，此工具会将其关联的图元添加到选择集中。这对于隔离图元及其标记特别有用
-  es_es: Seleccione una serie de etiquetas y esta herramienta agregará sus elementos asociados a la selección. Esto es especialmente útil para aislar elementos y sus etiquetas
-  de_de: >-
-    Wählen Sie Beschriftungen aus und dieses Werkzeug fügt  die dazugehörigen beschrifteten Elemente zur aktuellen  Auswahl hinzu. Dies ist besonders nützlich, um Elemente  und ihre Beschriftungen zu isolieren
-  pt_br: Selecione uma série de identificadores e esta ferramenta adicionará seus elementos associados à seleção. Isso é especialmente útil para isolar elementos e seus identificadores
+  en_us: Add the elements that the selected tags refer to (element, room, space and area tags) to the selection. The tags and all other selected elements stay selected, so elements can be isolated together with their tags. Tags of elements in linked models are ignored.
+  ko: 선택한 태그가 참조하는 요소(요소, 룸, 스페이스, 면적 태그)를 선택 항목에 추가합니다. 태그와 다른 선택 요소는 그대로 선택된 상태로 유지되므로 요소를 태그와 함께 분리할 수 있습니다. 링크된 모델의 요소를 참조하는 태그는 무시됩니다.
+  fr_fr: Ajoute à la sélection les éléments auxquels se rapportent les étiquettes sélectionnées (étiquettes d'élément, de pièce, d'espace et de surface). Les étiquettes et tous les autres éléments sélectionnés restent sélectionnés, ce qui permet d'isoler des éléments avec leurs étiquettes. Les étiquettes d'éléments de modèles liés sont ignorées.
+  ru: Добавляет к выделению элементы, к которым относятся выбранные марки (марки элементов, помещений, пространств и зон). Марки и все остальные выбранные элементы остаются выделенными, поэтому элементы можно изолировать вместе с их марками. Марки элементов из связанных моделей игнорируются.
+  chinese_s: 将所选标记所引用的图元（图元、房间、空间和面积标记）添加到选择集中。标记和其他已选图元保持选中状态，因此可以将图元连同其标记一起隔离。引用链接模型中图元的标记会被忽略。
+  es_es: Agrega a la selección los elementos a los que hacen referencia las etiquetas seleccionadas (etiquetas de elemento, de habitación, de espacio y de área). Las etiquetas y el resto de elementos seleccionados permanecen seleccionados, de modo que se pueden aislar los elementos junto con sus etiquetas. Se ignoran las etiquetas de elementos de modelos vinculados.
+  de_de: Fügt der Auswahl die Elemente hinzu, auf die sich die ausgewählten Beschriftungen beziehen (Element-, Raum-, MEP-Raum- und Flächenbeschriftungen). Die Beschriftungen und alle anderen ausgewählten Elemente bleiben ausgewählt, sodass Elemente zusammen mit ihren Beschriftungen isoliert werden können. Beschriftungen von Elementen in verknüpften Modellen werden ignoriert.
+  pt_br: Adiciona à seleção os elementos aos quais as etiquetas selecionadas se referem (identificadores de elemento, ambiente, espaço e área). Os identificadores e todos os outros elementos selecionados continuam selecionados, o que permite isolar elementos junto com seus identificadores. Identificadores de elementos em modelos vinculados são ignorados.
 context: selection

@@ -749,6 +749,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
             PostScriptWhenReady("window.scrollTo(0, document.body.scrollHeight);");
         }
 
+        /// <summary>
+        /// Scrolls the document to its first line after the buffered entries, so the scroll
+        /// cannot run before the last append and be undone by the auto-follow of
+        /// <see cref="BuildInsertEntriesJs"/>.
+        /// </summary>
+        /// <remarks>
+        /// Never blocks: if the document is not ready yet (session load), the entries and the
+        /// scroll stay queued and run in that order once it is. While the window is frozen,
+        /// output stays hidden until <see cref="Unfreeze"/>, so unfreeze before scrolling.
+        /// </remarks>
+        public void ScrollToTop() {
+            FlushPendingEntries();
+            PostScriptWhenReady("window.scrollTo(0, 0);");
+        }
+
         internal void ForceRenderFrame() {
             if (_renderingFrame)
                 return;
@@ -980,7 +995,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void FlushPendingScripts() {
             string[] pendingScripts;
             lock (_pendingLock) {
-                if (_pendingScripts.Count == 0 || ClosedByUser)
+                if (_pendingScripts.Count == 0 || ClosedByUser || !_renderer.IsDocumentReady)
                     return;
                 pendingScripts = _pendingScripts.ToArray();
                 _pendingScripts.Clear();

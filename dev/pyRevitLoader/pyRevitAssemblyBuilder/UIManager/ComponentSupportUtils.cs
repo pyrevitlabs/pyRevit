@@ -77,7 +77,8 @@ namespace pyRevitAssemblyBuilder.UIManager
         }
 
         /// <summary>
-        /// Checks if a component is supported based on beta and Revit version constraints.
+        /// Checks if a component belongs on the ribbon, based on its parent's layout and on beta
+        /// and Revit version constraints.
         /// </summary>
         public static bool IsSupported(
             ParsedComponent? component,
@@ -89,6 +90,12 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return false;
 
             var displayName = component.DisplayName ?? component.Name ?? component.Type.ToString();
+
+            if (component.IsExcludedByLayout)
+            {
+                logger?.Debug($"Skipping component '{displayName}' - not listed in its parent's layout.");
+                return false;
+            }
 
             if (component.IsBeta)
             {

@@ -23,45 +23,45 @@ title:
     Workset
 tooltip:
   en_us: |-
-    Set the active workset based on the selection.
+    Make the workset of the selected element the active workset. With nothing selected, pick an element. If several elements are selected, the first one is used.
 
     Shift-click:
-    Configure whether to set the workset, check out elements, set or show the workplane, and set the phase.
+    Choose what the button sets from the element: the active workset, a checkout of its workset, the active work plane at its level and whether that work plane is shown, and the phase of the active view.
   ko: |-
-    선택 항목을 기준으로 활성 작업 세트를 설정합니다.
+    선택한 요소의 작업 세트를 활성 작업 세트로 설정합니다. 선택한 항목이 없으면 요소를 선택합니다. 여러 요소를 선택한 경우 첫 번째 요소를 사용합니다.
 
     Shift 키를 누르고 클릭:
-    작업 세트 설정, 요소 체크아웃, 작업 기준면 설정 또는 표시, 단계 설정 방식을 구성합니다.
+    버튼이 요소를 기준으로 설정할 항목을 선택합니다: 활성 작업 세트, 해당 작업 세트 체크아웃, 해당 레벨의 활성 작업 기준면과 그 표시 여부, 활성 뷰의 단계.
   fr_fr: |-
-    Définit le sous-projet actif à partir de la sélection.
+    Définissez le sous-projet de l'élément sélectionné comme sous-projet actif. Si rien n'est sélectionné, choisissez un élément. Si plusieurs éléments sont sélectionnés, le premier est utilisé.
 
     Maj+clic :
-    Configurer la définition du sous-projet, l'emprunt des éléments, le réglage ou l'affichage du plan de travail et la phase.
+    Choisir ce que le bouton définit à partir de l'élément : le sous-projet actif, l'emprunt de son sous-projet, le plan de travail actif sur son niveau et l'affichage de ce plan de travail, ainsi que la phase de la vue active.
   ru: |-
-    Устанавливает текущий рабочий набор на основе выбранных элементов.
+    Сделайте рабочий набор выбранного элемента активным. Если ничего не выбрано, укажите элемент. Если выбрано несколько элементов, используется первый.
 
     Shift + Щелчок:
-    Настроить рабочий набор, заимствование элементов, установку или отображение рабочей плоскости и фазу.
+    Выбрать, что кнопка задаёт по элементу: активный рабочий набор, заимствование его рабочего набора, активную рабочую плоскость на его уровне и её отображение, а также фазу текущего вида.
   chinese_s: |-
-    根据所选内容设置活动工作集。
+    将所选图元所在的工作集设为活动工作集。若未选择任何内容，则拾取一个图元。若选择了多个图元，则使用第一个。
 
     按住 Shift 键单击：
-    配置工作集设置、借用图元、设置或显示工作平面以及设置阶段。
+    选择按钮根据图元设置的内容：活动工作集、借用其工作集、在其标高上设置活动工作平面以及是否显示该工作平面，还有活动视图的阶段。
   es_es: |-
-    Establece el área de trabajo activa a partir de la selección.
+    Establezca el área de trabajo del elemento seleccionado como área de trabajo activa. Si no hay nada seleccionado, elija un elemento. Si hay varios elementos seleccionados, se usa el primero.
 
     Mayús-clic:
-    Configurar si se establece el área de trabajo, se toman prestados elementos, se establece o muestra el plano de trabajo y se define la fase.
+    Elegir qué establece el botón a partir del elemento: el área de trabajo activa, la toma en préstamo de su área de trabajo, el plano de trabajo activo en su nivel y si ese plano de trabajo se muestra, y la fase de la vista activa.
   de_de: |-
-    Legt anhand der Auswahl den aktiven Arbeitsbereich (Workset) fest.
+    Das Workset des ausgewählten Elements zum aktiven Workset machen. Ist nichts ausgewählt, ein Element wählen. Sind mehrere Elemente ausgewählt, wird das erste verwendet.
 
     Bei gedrückter Umschalttaste klicken:
-    Festlegen, ob der Arbeitsbereich gesetzt, Elemente ausgeliehen, die Arbeitsebene gesetzt oder angezeigt und die Phase festgelegt wird.
+    Festlegen, was die Schaltfläche anhand des Elements setzt: das aktive Workset, das Ausleihen seines Worksets, die aktive Arbeitsebene auf sein Geschoss und ob diese Arbeitsebene angezeigt wird, sowie die Phase der aktiven Ansicht.
   pt_br: |-
-    Define o workset ativo com base na seleção.
+    Defina o workset do elemento selecionado como workset ativo. Se nada estiver selecionado, escolha um elemento. Se vários elementos estiverem selecionados, o primeiro é usado.
 
     Clique mantendo a tecla Shift pressionada:
-    Configurar se o workset será definido, elementos serão emprestados, o plano de trabalho será definido ou exibido e a fase será definida.
+    Escolher o que o botão define a partir do elemento: o workset ativo, o empréstimo do seu workset, o plano de trabalho ativo no seu nível e se esse plano de trabalho é exibido, e a fase da vista ativa.
 author: 'Jean-Marc Couffin, Wurschdhaud (extra functionality)'
 contact: 'https://github.com/jmcouffin, https://github.com/Wurschdhaud'
 context:

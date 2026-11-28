@@ -12,6 +12,14 @@ Tools that render an interactive page (a report, a grid, a preview) create one
 :meth:`PageBridge.start` it. The page side posts with
 ``window.chrome.webview.postMessage`` and listens with
 ``window.chrome.webview.addEventListener("message", ...)``.
+
+Warning:
+    The channel routes messages; it does not authenticate them. Any script in
+    the output window's document can read it and post to any registered
+    action, including script that got there through unescaped text printed by
+    this or an earlier command. Escape model data before printing it as HTML
+    or Markdown, insert it in page scripts with ``textContent`` rather than
+    ``innerHTML``, and treat each payload in a handler as untrusted input.
 """
 
 import json
@@ -90,13 +98,18 @@ class PageBridge(object):
         if not isinstance(message, dict) or message.get("channel") != self.channel:
             return
         action = message.get("action")
-        handler = self.handlers.get(action)
+        handler = (
+            None if isinstance(action, (dict, list)) else self.handlers.get(action)
+        )
         if handler is None:
             mlogger.debug("No handler for action '%s'", action)
             return
         request_id = message.get("requestId")
+        payload = message.get("payload")
+        if payload is None:
+            payload = {}
         try:
-            handler(message.get("payload") or {}, request_id)
+            handler(payload, request_id)
         except Exception as ex:
             mlogger.debug("Handler '%s' failed: %s", action, ex)
             self.send(

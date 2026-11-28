@@ -1,38 +1,21 @@
-"""Keep elements hosted on a linked model surface in current selection.
+# -*- coding: utf-8 -*-
+"""Keep only elements hosted on a linked model, from the selection or a picked rectangle."""
 
-If nothing is selected, pick a region to filter linked-hosted elements from.
-"""
-
-from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import DB
 
+import selectionpick
 
 logger = script.get_logger()
 
 
-def _is_hosted_on_link(el):
+def is_hosted_on_link(element):
     try:
-        return isinstance(el.Host, DB.RevitLinkInstance)
+        return isinstance(element.Host, DB.RevitLinkInstance)
     except Exception as err:
-        logger.debug("{} | {}".format(el.Id, err))
+        logger.debug("{} | {}".format(element.Id, err))
         return False
 
 
-class LinkedModelHostedFilter(UI.Selection.ISelectionFilter):
-    def AllowElement(self, element):
-        return _is_hosted_on_link(element)
-
-    def AllowReference(self, reference, point):
-        return False
-
-
-selection = list(revit.get_selection())
-if selection:
-    filtered = [el.Id for el in selection if _is_hosted_on_link(el)]
-    revit.get_selection().set_to(filtered)
-else:
-    try:
-        elements = revit.pick_rectangle(pick_filter=LinkedModelHostedFilter())
-        revit.get_selection().set_to(elements)
-    except Exception:
-        pass
+if __name__ == "__main__":
+    selectionpick.keep_matching(is_hosted_on_link)

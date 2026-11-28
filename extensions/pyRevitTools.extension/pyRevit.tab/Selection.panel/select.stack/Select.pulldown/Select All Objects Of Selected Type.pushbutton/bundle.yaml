@@ -9,51 +9,43 @@ title:
   pt_br: Selecionar Todos os Objetos do Tipo Selecionado ●
 tooltip:
   en_us: |-
-    Select all elements of the same type as the selected element and report their IDs.
+    Select all elements in the project that have the same type as the selected elements. Lines match by line style.
 
     Shift-click:
-    Print matching element IDs and details in the results while selecting them.
+    Also list the selected elements in the output window: model elements first, then view-specific elements grouped by the view that owns them.
   ko: |-
-    선택한 요소와 같은 유형의 모든 요소를 선택하고 해당 ID를 보고합니다.
+    프로젝트에서 선택한 요소와 유형이 같은 모든 요소를 선택합니다. 선은 선 스타일로 일치시킵니다.
 
     Shift 키를 누르고 클릭:
-    일치하는 요소를 선택하면서 결과에 요소 ID와 세부 정보를 출력합니다.
+    선택한 요소를 출력 창에도 나열합니다. 모델 요소가 먼저, 그다음 뷰 전용 요소가 소유 뷰별로 묶여 표시됩니다.
   fr_fr: |-
-    Sélectionnez tous les éléments du même type que l'élément sélectionné
-    et rapporte leurs identifiants (triés par la vue propriétaire s'ils
-    sont des objets spécifiques à la vue)
+    Sélectionne tous les éléments du projet ayant le même type que les éléments sélectionnés. Les lignes correspondent par style de ligne.
 
     Maj+clic :
-    Montrer les résultats
+    Liste aussi les éléments sélectionnés dans la fenêtre de sortie : d'abord les éléments de modèle, puis les éléments propres à une vue, regroupés par vue.
   ru: |-
-    Выделяет все элементы с одинаковым типом, что и текущий выделенный элемент
-    и печатает их идентификаторы (отсортированные по владельцу вида
-    если они могут отображаться на видах).
+    Выделяет в проекте все элементы того же типоразмера, что и выбранные. Линии сопоставляются по стилю линии.
 
     Shift + Щелчок:
-    Показать результаты.
-  chinese_s: "选择与选定图元类型相同的所有图元，并报告其ID（如果它们是视图专有图元，则按所属视图排序）
+    Дополнительно выводит выбранные элементы в окне вывода: сначала элементы модели, затем элементы, принадлежащие видам, сгруппированные по виду.
+  chinese_s: |-
+    选择项目中与所选图元类型相同的所有图元。线按线样式匹配。
 
     按住 Shift 键单击：
-
-    显示结果"
+    同时在输出窗口中列出所选图元：先列出模型图元，再按所属视图分组列出视图专有图元。
   es_es: |-
-    Seleccionar todos los elementos del mismo tipo que el elemento seleccionado
-    y reporta sus IDs (ordenados por la vista propietaria si son
-    objetos específicos de vista)
+    Selecciona todos los elementos del proyecto del mismo tipo que los elementos seleccionados. Las líneas se comparan por estilo de línea.
 
     Mayús-clic:
-    Mostrar resultados
+    Muestra también los elementos seleccionados en la ventana de resultados: primero los elementos de modelo y después los elementos propios de una vista, agrupados por vista.
   de_de: |-
-    Wählen Sie zunächst ein Element aus und danach starten  Sie das Skript. Es werden dann alle Elemente des gleichen  Typs ausgewählt. 
+    Wählt alle Elemente im Projekt aus, die denselben Typ haben wie die ausgewählten Elemente. Linien werden nach Linienstil verglichen.
 
     Bei gedrückter Umschalttaste klicken:
-    Die durch das Skript ausgewählten Elemente werden in der  Konsole mit anklickbaren IDs angezeigt. Zudem werden IDs  der Exemplare angezeigt. Sortiert werden die Elemente  nach der Ansicht, wenn es sich um ansichtsspezifische  Elemente handelt.
+    Listet die ausgewählten Elemente zusätzlich im Ausgabefenster auf: zuerst Modellelemente, danach ansichtsspezifische Elemente, gruppiert nach der Ansicht, zu der sie gehören.
   pt_br: |-
-    Seleciona todos os elementos do mesmo tipo que o elemento selecionado
-    e relata seus IDs (ordenados pela vista proprietária se forem
-    objetos específicos da vista)
+    Seleciona todos os elementos do projeto do mesmo tipo que os elementos selecionados. Linhas são comparadas pelo estilo de linha.
 
     Clique mantendo a tecla Shift pressionada:
-    Mostrar resultados
+    Lista também os elementos selecionados na janela de resultados: primeiro os elementos de modelo, depois os elementos próprios de uma vista, agrupados por vista.
 context: selection

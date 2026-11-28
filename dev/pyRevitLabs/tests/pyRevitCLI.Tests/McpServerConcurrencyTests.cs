@@ -310,7 +310,7 @@ public partial class McpServerTests {
 
     [Fact]
     public void ARevitWhosePipeIsNotListeningIsListedNotRespondingRatherThanBusy() {
-        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, "2091-nopipe.json", "pyrevit-missing-" + Guid.NewGuid().ToString("N"));
+        host.Register("2091", Environment.ProcessId, DateTime.UtcNow, "2091-nopipe.json", "pyrevit-agent-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N"));
         host.Handler = request => FakeAgentHost.Result(request, new JObject { ["pong"] = true });
         PyRevitAgentClient.PingConnectTimeoutMs = 300;
 

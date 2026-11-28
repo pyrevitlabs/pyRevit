@@ -38,3 +38,5 @@ layout:
   - Query get_name Tests
   - -----
   - Test Project Parameters
+  - Create View Helpers Tests
+  - Ribbon Control Id Tests

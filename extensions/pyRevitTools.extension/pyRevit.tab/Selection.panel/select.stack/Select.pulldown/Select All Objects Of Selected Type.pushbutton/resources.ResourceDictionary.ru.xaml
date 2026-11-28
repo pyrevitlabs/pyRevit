@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="no_selection">Сначала выберите хотя бы один элемент.</sys:String>
+    <sys:String x:Key="no_suitable">Ни один выбранный элемент нельзя сопоставить по типу.</sys:String>
+    <sys:String x:Key="model_elements">Элементы модели ({})</sys:String>
+    <sys:String x:Key="view_elements">Элементы, принадлежащие виду {} ({})</sys:String>
+    <sys:String x:Key="column_id">ID</sys:String>
+    <sys:String x:Key="column_class">Класс</sys:String>
+</ResourceDictionary>

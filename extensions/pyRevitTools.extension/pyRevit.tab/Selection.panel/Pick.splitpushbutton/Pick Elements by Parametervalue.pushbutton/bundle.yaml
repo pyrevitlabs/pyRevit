@@ -10,44 +10,49 @@ title:
 
 tooltip:
   en_us: |-
-    Select elements that match the chosen parameter value or values. By default, any matching value is accepted.
+    Use the selected element, or pick one, then choose which of its parameters to match. Draw a rectangle to select the elements inside it that have the same value for any of the chosen parameters.
 
     Shift-click:
-    Require every chosen parameter value to match.
+    Select only elements that have the same value for every chosen parameter.
   ko: |-
-    선택한 매개변수 값과 일치하는 요소를 선택합니다. 기본적으로 하나 이상의 값이 일치하면 선택됩니다.
+    선택한 요소를 사용하거나 요소를 하나 선택한 다음, 일치시킬 매개변수를 고릅니다. 사각형을 그려 그 안에서 선택한 매개변수 중 하나라도 값이 같은 요소를 선택합니다.
 
     Shift 키를 누르고 클릭:
-    선택한 모든 매개변수 값이 일치해야 선택되도록 합니다.
+    선택한 모든 매개변수의 값이 같은 요소만 선택합니다.
   fr_fr: |-
-    Sélectionne les éléments correspondant aux valeurs de paramètres choisies. Par défaut, toute valeur correspondante est acceptée.
+    Utilisez l'élément sélectionné ou choisissez-en un, puis indiquez les paramètres à comparer. Tracez un rectangle pour sélectionner les éléments qu'il contient dont la valeur est identique pour l'un des paramètres choisis.
 
     Maj+clic :
-    Exiger que toutes les valeurs de paramètres choisies correspondent.
+    Sélectionner uniquement les éléments dont la valeur est identique pour tous les paramètres choisis.
   ru: |-
-    Выбирает элементы, совпадающие с выбранными значениями параметров. По умолчанию достаточно любого совпадения.
+    Используйте выбранный элемент или укажите его, затем выберите параметры для сравнения. Нарисуйте прямоугольник, чтобы выбрать внутри него элементы, у которых совпадает значение хотя бы одного из выбранных параметров.
 
     Shift + Щелчок:
-    Требовать совпадения каждого выбранного значения параметра.
+    Выбирать только элементы, у которых совпадают значения всех выбранных параметров.
   chinese_s: |-
-    选择与所选参数值匹配的图元。默认情况下，任一参数值匹配即可。
+    使用已选图元，或拾取一个图元，然后选择要匹配的参数。绘制矩形，选择其中任一所选参数值相同的图元。
 
     按住 Shift 键单击：
-    要求每个所选参数值都匹配。
+    仅选择所有所选参数值都相同的图元。
   es_es: |-
-    Selecciona elementos que coinciden con los valores de parámetro elegidos. De forma predeterminada, se acepta cualquier coincidencia.
+    Use el elemento seleccionado o elija uno y, a continuación, elija los parámetros que deben coincidir. Dibuje un rectángulo para seleccionar los elementos que contiene con el mismo valor en alguno de los parámetros elegidos.
 
     Mayús-clic:
-    Exigir que coincidan todos los valores de parámetro elegidos.
+    Seleccionar solo los elementos con el mismo valor en todos los parámetros elegidos.
   de_de: |-
-    Wählt Elemente mit übereinstimmenden Parameterwerten aus. Standardmäßig reicht eine beliebige Übereinstimmung.
+    Das ausgewählte Element verwenden oder eines wählen, dann die zu vergleichenden Parameter auswählen. Ein Rechteck aufziehen, um die Elemente darin auszuwählen, die bei mindestens einem der gewählten Parameter denselben Wert haben.
 
     Bei gedrückter Umschalttaste klicken:
-    Verlangen, dass alle ausgewählten Parameterwerte übereinstimmen.
+    Nur Elemente auswählen, die bei allen gewählten Parametern denselben Wert haben.
   pt_br: |-
-    Seleciona elementos que correspondem aos valores de parâmetro escolhidos. Por padrão, qualquer correspondência é aceita.
+    Use o elemento selecionado ou escolha um e depois escolha os parâmetros a comparar. Desenhe um retângulo para selecionar os elementos dentro dele que têm o mesmo valor em qualquer um dos parâmetros escolhidos.
 
     Clique mantendo a tecla Shift pressionada:
-    Exigir que todos os valores de parâmetro escolhidos correspondam.
+    Selecionar apenas elementos com o mesmo valor em todos os parâmetros escolhidos.
 
 author: wurschdhaud
+context:
+  not_any:
+    - active-schedule
+    - active-project-browser
+    - active-system-browser

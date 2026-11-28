@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_category">Find elements without tags of category:</sys:String>
+    <sys:String x:Key="no_elements">No elements of category {} found in the active view.</sys:String>
+    <sys:String x:Key="all_tagged">All elements of category {} in the active view have tags.</sys:String>
+</ResourceDictionary>
